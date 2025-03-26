@@ -7,5 +7,6 @@ export default {
   'settings-mcp': 'MCP设置',
   'settings-database': '数据设置',
   'settings-about': '关于',
-  'settings-shortcut': '快捷键'
+  'settings-shortcut': '快捷键',
+  login: '登录'
 }

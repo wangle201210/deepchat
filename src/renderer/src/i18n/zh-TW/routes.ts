@@ -7,5 +7,6 @@ export default {
   'settings-provider': '大型語言模型設定',
   'settings-mcp': 'MCP設定',
   'settings-about': '關於',
-  'settings-shortcut': '快捷鍵'
+  'settings-shortcut': '快捷鍵',
+  login: '登入'
 }

@@ -2,10 +2,21 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import ChatTabView from '@/views/ChatTabView.vue'
 import SettingsTabView from '@/views/SettingsTabView.vue'
 import WelcomeView from '@/views/WelcomeView.vue'
+import LoginView from '@/views/LoginView.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      meta: {
+        titleKey: 'routes.login',
+        icon: 'lucide:log-in'
+      }
+    },
     {
       path: '/',
       name: 'chat',
@@ -90,6 +101,26 @@ const router = createRouter({
       ]
     }
   ]
+})
+
+router.beforeEach((to, from, next) => {
+  const authStore = useAuthStore()
+  const isAuthenticated = authStore.isAuthenticated
+
+  // 初始化认证状态
+  if (!from.name) {
+    authStore.initAuth()
+  }
+
+  // 如果用户未登录且访问的不是登录页面，则重定向到登录页
+  if (!isAuthenticated && to.name !== 'login') {
+    next({ name: 'login' })
+  } else if (isAuthenticated && to.name === 'login') {
+    // 如果用户已登录且尝试访问登录页，则重定向到首页
+    next({ name: 'chat' })
+  } else {
+    next()
+  }
 })
 
 export default router

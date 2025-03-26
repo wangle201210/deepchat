@@ -7,5 +7,6 @@ export default {
   'settings-mcp': 'MCP Settings',
   'settings-database': 'Data Settings',
   'settings-about': 'About',
-  'settings-shortcut': 'Shortcuts'
+  'settings-shortcut': 'Shortcuts',
+  login: 'Login'
 }
