@@ -32,6 +32,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     }
   },
   {
+    id: 'qiniu',
+    name: 'Qiniu',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.qnaigc.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://www.qiniu.com?utm_source=deepchat&utm_medium=ai-cps&utm_content=index',
+      apiKey: 'https://developer.qiniu.com/aitokenapi/12884/how-to-get-api-key?utm_source=deepchat&utm_medium=ai-cps&utm_content=docs',
+      docs: 'https://developer.qiniu.com/aitokenapi?utm_source=deepchat&utm_medium=ai-cps&utm_content=docs',
+      models: 'https://developer.qiniu.com/aitokenapi/12883/model-list?utm_source=deepchat&utm_medium=ai-cps&utm_content=model_list',
+      defaultBaseUrl: 'https://api.qnaigc.com/v1'
+    }
+  },
+  {
     id: 'silicon',
     name: 'Silicon',
     apiType: 'silicon',
