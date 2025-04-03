@@ -17,6 +17,7 @@ import toolCall from './toolCall.json'
 // 单独的顶层键
 const others = {
   Silicon: '矽基流動',
+  Qiniu: '七牛雲',
   QwenLM: '千問模型',
   Doubao: '豆包',
   PPIO: '派歐雲',

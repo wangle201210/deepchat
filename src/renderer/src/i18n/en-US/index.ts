@@ -18,6 +18,7 @@ import about from './about.json'
 // Individual top-level keys
 const others = {
   Silicon: 'Silicon Flow',
+  Qiniu: 'Qiniu',
   QwenLM: 'Qwen Model',
   Doubao: 'Doubao',
   PPIO: 'PPIO Cloud',
