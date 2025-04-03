@@ -20,25 +20,26 @@ if (process.platform == 'win32') {
 if (process.platform === 'darwin') {
   app.commandLine.appendSwitch('disable-features', 'DesktopCaptureMacV2,IOSurfaceCapturer')
 }
+
+// 初始化 DeepLink 处理
+presenter.deeplinkPresenter.init()
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.wefonk.deepchat')
+  // 从配置中读取日志设置
+  const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
+  setLoggingEnabled(loggingEnabled)
+
+  console.log('应用程序准备就绪')
 
   // 从配置中读取代理设置并初始化
   const proxyMode = presenter.configPresenter.getProxyMode() as ProxyMode
   const customProxyUrl = presenter.configPresenter.getCustomProxyUrl()
   proxyConfig.initFromConfig(proxyMode as ProxyMode, customProxyUrl)
-
-  // 从配置中读取日志设置
-  const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
-
-  setLoggingEnabled(loggingEnabled)
-
-  // 初始化 DeepLink 处理
-  presenter.deeplinkPresenter.init()
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
@@ -47,19 +48,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  // 创建主窗口
   presenter.windowPresenter.createMainWindow()
   presenter.shortcutPresenter.registerShortcuts()
 
-  // const worker = new LlamaWorker(mainWindow)
-  // ipcMain.on('new-chat', () => {
-  //   worker.startNewChat()
-  // })
-  // // IPC test
-  // ipcMain.on('prompt', (e, prompt: string) => {
-  //   worker.prompt(prompt).then(() => {
-  //     console.log('finished')
-  //   })
-  // })
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.

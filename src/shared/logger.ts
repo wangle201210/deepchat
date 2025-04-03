@@ -30,13 +30,13 @@ log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
 
 // 创建不同级别的日志函数
 const logger = {
-  error: (...params: any[]) => log.error(...params),
-  warn: (...params: any[]) => log.warn(...params),
-  info: (...params: any[]) => log.info(...params),
-  verbose: (...params: any[]) => log.verbose(...params),
-  debug: (...params: any[]) => log.debug(...params),
-  silly: (...params: any[]) => log.silly(...params),
-  log: (...params: any[]) => log.info(...params)
+  error: (...params: unknown[]) => log.error(...params),
+  warn: (...params: unknown[]) => log.warn(...params),
+  info: (...params: unknown[]) => log.info(...params),
+  verbose: (...params: unknown[]) => log.verbose(...params),
+  debug: (...params: unknown[]) => log.debug(...params),
+  silly: (...params: unknown[]) => log.silly(...params),
+  log: (...params: unknown[]) => log.info(...params)
 }
 
 // 拦截console方法，重定向到logger
@@ -51,42 +51,42 @@ function hookConsole() {
   }
 
   // 替换console方法
-  console.log = (...args: any[]) => {
+  console.log = (...args: unknown[]) => {
     // 只有在启用日志或开发模式下才记录日志
     if (loggingEnabled || is.dev) {
       logger.info(...args)
     }
   }
 
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     // 只有在启用日志或开发模式下才记录日志
     if (loggingEnabled || is.dev) {
       logger.error(...args)
     }
   }
 
-  console.warn = (...args: any[]) => {
+  console.warn = (...args: unknown[]) => {
     // 只有在启用日志或开发模式下才记录日志
     if (loggingEnabled || is.dev) {
       logger.warn(...args)
     }
   }
 
-  console.info = (...args: any[]) => {
+  console.info = (...args: unknown[]) => {
     // 只有在启用日志或开发模式下才记录日志
     if (loggingEnabled || is.dev) {
       logger.info(...args)
     }
   }
 
-  console.debug = (...args: any[]) => {
+  console.debug = (...args: unknown[]) => {
     // 只有在启用日志或开发模式下才记录日志
     if (loggingEnabled || is.dev) {
       logger.debug(...args)
     }
   }
 
-  console.trace = (...args: any[]) => {
+  console.trace = (...args: unknown[]) => {
     // 只有在启用日志或开发模式下才记录日志
     if (loggingEnabled || is.dev) {
       logger.debug(...args)
