@@ -289,6 +289,8 @@ export class SearchManager {
     const engine = this.engines.find((e) => e.id === engineId)
     if (engine) {
       this.activeEngine = engine
+      // 保存搜索引擎选择到配置中
+      await presenter.configPresenter.setSetting('searchEngine', engineId)
       return true
     }
     return false
