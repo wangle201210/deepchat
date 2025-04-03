@@ -39,10 +39,10 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     baseUrl: 'https://api.qnaigc.com/v1',
     enable: false,
     websites: {
-      official: 'https://www.qiniu.com?utm_source=deepchat&utm_medium=ai-cps&utm_content=index',
-      apiKey: 'https://developer.qiniu.com/aitokenapi/12884/how-to-get-api-key?utm_source=deepchat&utm_medium=ai-cps&utm_content=docs',
-      docs: 'https://developer.qiniu.com/aitokenapi?utm_source=deepchat&utm_medium=ai-cps&utm_content=docs',
-      models: 'https://developer.qiniu.com/aitokenapi/12883/model-list?utm_source=deepchat&utm_medium=ai-cps&utm_content=model_list',
+      official: 'https://www.qiniu.com',
+      apiKey: 'https://developer.qiniu.com/aitokenapi/12884/how-to-get-api-key',
+      docs: 'https://developer.qiniu.com/aitokenapi',
+      models: 'https://developer.qiniu.com/aitokenapi/12883/model-list',
       defaultBaseUrl: 'https://api.qnaigc.com/v1'
     }
   },
