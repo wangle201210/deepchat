@@ -233,7 +233,8 @@
       "skipToManual": "Перейти к ручной настройке",
       "parseAndContinue": "Обработать и продолжить",
       "jsonParseError": "JSON SAINING не удалось",
-      "typeHttp": "Потоковые http -запросы (http)"
+      "typeHttp": "Потоковые http -запросы (http)",
+      "useSSE": "Включить передачу SSE"
     },
     "deleteServer": "Удалить сервер",
     "editServer": "Редактировать сервер",

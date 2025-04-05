@@ -273,7 +273,7 @@ export class McpClient {
       } else if (this.serverConfig.baseUrl && this.serverConfig.type === 'http') {
         this.transport = new StreamableHttpClientTransport(
           new URL(this.serverConfig.baseUrl as string),
-          { useSSE: false }
+          { useSSE: !!this.serverConfig.useSSE }
         )
       } else {
         throw new Error(`不支持的传输类型: ${this.serverConfig.type}`)

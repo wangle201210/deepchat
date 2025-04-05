@@ -235,7 +235,8 @@
       "skipToManual": "수동 구성으로 건너뛰기",
       "parseAndContinue": "파싱 및 계속",
       "jsonParseError": "JSON 파싱이 실패했습니다",
-      "typeHttp": "스트리밍 HTTP 요청 (HTTP)"
+      "typeHttp": "스트리밍 HTTP 요청 (HTTP)",
+      "useSSE": "SSE 전송을 활성화합니다"
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",

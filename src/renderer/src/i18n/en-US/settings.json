@@ -236,7 +236,8 @@
       "skipToManual": "Skip to Manual Configuration",
       "parseAndContinue": "Parse & Continue",
       "jsonParseError": "JSON parsing failed",
-      "typeHttp": "Streaming HTTP Requests (HTTP)"
+      "typeHttp": "Streaming HTTP Requests (HTTP)",
+      "useSSE": "Enable SSE transfer"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",

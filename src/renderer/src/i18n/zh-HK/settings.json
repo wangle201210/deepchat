@@ -234,7 +234,8 @@
       "skipToManual": "跳過至手動配置",
       "parseAndContinue": "解析並繼續",
       "jsonParseError": "JSON解析失敗",
-      "typeHttp": "可流式傳輸的HTTP請求(HTTP)"
+      "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
+      "useSSE": "啟用SSE傳輸"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",

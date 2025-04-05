@@ -247,7 +247,8 @@
       "parseError": "解析错误",
       "skipToManual": "跳过至手动配置",
       "parseAndContinue": "解析并继续",
-      "jsonParseError": "JSON解析失败"
+      "jsonParseError": "JSON解析失败",
+      "useSSE": "启用SSE传输"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",
