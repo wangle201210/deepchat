@@ -632,12 +632,23 @@ export const defaultModelsSettings = [
 
   // Gemma系列
   {
+    id: 'gemma-3',
+    name: 'Gemma 3',
+    temperature: 0.7,
+    maxTokens: 40000,
+    contextLength: 120_000,
+    match: ['gemma-3', 'gemma3'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
     id: 'gemma-2-27b',
     name: 'Gemma 2 27B',
     temperature: 0.7,
     maxTokens: 8192,
     contextLength: 8192,
-    match: ['gemma-2-27b'],
+    match: ['gemma-2-27b', 'gemma2'],
     vision: false,
     functionCall: false,
     reasoning: false

@@ -229,47 +229,897 @@ const modelToDelete = ref('')
 
 // 预设可拉取的模型列表
 const presetModels = [
-  { name: 'qwq' },
-  { name: 'deepseek-r1:1.5b' },
-  { name: 'deepseek-r1:7b' },
-  { name: 'deepseek-r1:8b' },
-  { name: 'deepseek-r1:14b' },
-  { name: 'deepseek-r1:32b' },
-  { name: 'deepseek-r1:70b' },
-  { name: 'deepseek-r1:671b' },
-  { name: 'llama3.3:70b' },
-  { name: 'llama3.2:1b' },
-  { name: 'llama3.2:3b' },
-  { name: 'llama3.1:8b' },
-  { name: 'llama3.1:70b' },
-  { name: 'llama3.1:405b' },
-  { name: 'llama3:8b' },
-  { name: 'llama3:70b' },
-  { name: 'phi4:14b' },
-  { name: 'mistral:7b' },
-  { name: 'qwen2.5:0.5b' },
-  { name: 'qwen2.5:1.5b' },
-  { name: 'qwen2.5:3b' },
-  { name: 'qwen2.5:7b' },
-  { name: 'qwen2.5:14b' },
-  { name: 'qwen2.5:32b' },
-  { name: 'qwen2.5:72b' },
-  { name: 'qwen:0.5b' },
-  { name: 'qwen:1.5b' },
-  { name: 'qwen:3b' },
-  { name: 'qwen:7b' },
-  { name: 'qwen:14b' },
-  { name: 'qwen:32b' },
-  { name: 'qwen:72b' },
-  { name: 'qwen:110b' },
-  { name: 'qwen2.5-coder:0.5b' },
-  { name: 'qwen2.5-coder:1.5b' },
-  { name: 'qwen2.5-coder:3b' },
-  { name: 'qwen2.5-coder:7b' },
-  { name: 'qwen2.5-coder:14b' },
-  { name: 'qwen2.5-coder:32b' },
-  { name: 'gemma:2b' },
-  { name: 'gemma:7b' }
+  {
+    name: 'gemma3:1b'
+  },
+  {
+    name: 'gemma3:4b'
+  },
+  {
+    name: 'gemma3:12b'
+  },
+  {
+    name: 'gemma3:27b'
+  },
+  {
+    name: 'qwq:32b'
+  },
+  {
+    name: 'deepseek-r1:1.5b'
+  },
+  {
+    name: 'deepseek-r1:7b'
+  },
+  {
+    name: 'deepseek-r1:8b'
+  },
+  {
+    name: 'deepseek-r1:14b'
+  },
+  {
+    name: 'deepseek-r1:32b'
+  },
+  {
+    name: 'deepseek-r1:70b'
+  },
+  {
+    name: 'deepseek-r1:671b'
+  },
+  {
+    name: 'llama3.3:70b'
+  },
+  {
+    name: 'phi4:14b'
+  },
+  {
+    name: 'llama3.2:1b'
+  },
+  {
+    name: 'llama3.2:3b'
+  },
+  {
+    name: 'llama3.1:8b'
+  },
+  {
+    name: 'llama3.1:70b'
+  },
+  {
+    name: 'llama3.1:405b'
+  },
+  {
+    name: 'mistral:7b'
+  },
+  {
+    name: 'llama3:8b'
+  },
+  {
+    name: 'llama3:70b'
+  },
+  {
+    name: 'qwen2.5:0.5b'
+  },
+  {
+    name: 'qwen2.5:1.5b'
+  },
+  {
+    name: 'qwen2.5:3b'
+  },
+  {
+    name: 'qwen2.5:7b'
+  },
+  {
+    name: 'qwen2.5:14b'
+  },
+  {
+    name: 'qwen2.5:32b'
+  },
+  {
+    name: 'qwen2.5:72b'
+  },
+  {
+    name: 'qwen2.5-coder:0.5b'
+  },
+  {
+    name: 'qwen2.5-coder:1.5b'
+  },
+  {
+    name: 'qwen2.5-coder:3b'
+  },
+  {
+    name: 'qwen2.5-coder:7b'
+  },
+  {
+    name: 'qwen2.5-coder:14b'
+  },
+  {
+    name: 'qwen2.5-coder:32b'
+  },
+  {
+    name: 'llava:7b'
+  },
+  {
+    name: 'llava:13b'
+  },
+  {
+    name: 'llava:34b'
+  },
+  {
+    name: 'qwen:0.5b'
+  },
+  {
+    name: 'qwen:1.8b'
+  },
+  {
+    name: 'qwen:4b'
+  },
+  {
+    name: 'qwen:7b'
+  },
+  {
+    name: 'qwen:14b'
+  },
+  {
+    name: 'qwen:32b'
+  },
+  {
+    name: 'qwen:72b'
+  },
+  {
+    name: 'qwen:110b'
+  },
+  {
+    name: 'gemma:2b'
+  },
+  {
+    name: 'gemma:7b'
+  },
+  {
+    name: 'qwen2:0.5b'
+  },
+  {
+    name: 'qwen2:1.5b'
+  },
+  {
+    name: 'qwen2:7b'
+  },
+  {
+    name: 'qwen2:72b'
+  },
+  {
+    name: 'gemma2:2b'
+  },
+  {
+    name: 'gemma2:9b'
+  },
+  {
+    name: 'gemma2:27b'
+  },
+  {
+    name: 'llama2:7b'
+  },
+  {
+    name: 'llama2:13b'
+  },
+  {
+    name: 'llama2:70b'
+  },
+  {
+    name: 'phi3:3.8b'
+  },
+  {
+    name: 'phi3:14b'
+  },
+  {
+    name: 'mxbai-embed-large:335m'
+  },
+  {
+    name: 'codellama:7b'
+  },
+  {
+    name: 'codellama:13b'
+  },
+  {
+    name: 'codellama:34b'
+  },
+  {
+    name: 'codellama:70b'
+  },
+  {
+    name: 'llama3.2-vision:11b'
+  },
+  {
+    name: 'llama3.2-vision:90b'
+  },
+  {
+    name: 'mistral-nemo:12b'
+  },
+  {
+    name: 'tinyllama:1.1b'
+  },
+  {
+    name: 'deepseek-v3:671b'
+  },
+  {
+    name: 'starcoder2:3b'
+  },
+  {
+    name: 'starcoder2:7b'
+  },
+  {
+    name: 'starcoder2:15b'
+  },
+  {
+    name: 'llama2-uncensored:7b'
+  },
+  {
+    name: 'llama2-uncensored:70b'
+  },
+  {
+    name: 'minicpm-v:8b'
+  },
+  {
+    name: 'bge-m3:567m'
+  },
+  {
+    name: 'deepseek-coder-v2:16b'
+  },
+  {
+    name: 'deepseek-coder-v2:236b'
+  },
+  {
+    name: 'snowflake-arctic-embed:22m'
+  },
+  {
+    name: 'snowflake-arctic-embed:33m'
+  },
+  {
+    name: 'snowflake-arctic-embed:110m'
+  },
+  {
+    name: 'snowflake-arctic-embed:137m'
+  },
+  {
+    name: 'snowflake-arctic-embed:335m'
+  },
+  {
+    name: 'dolphin3:8b'
+  },
+  {
+    name: 'deepseek-coder:1.3b'
+  },
+  {
+    name: 'deepseek-coder:6.7b'
+  },
+  {
+    name: 'deepseek-coder:33b'
+  },
+  {
+    name: 'mixtral:8x7b'
+  },
+  {
+    name: 'mixtral:8x22b'
+  },
+  {
+    name: 'olmo2:7b'
+  },
+  {
+    name: 'olmo2:13b'
+  },
+  {
+    name: 'llava-llama3:8b'
+  },
+  {
+    name: 'codegemma:2b'
+  },
+  {
+    name: 'codegemma:7b'
+  },
+  {
+    name: 'dolphin-mixtral:8x7b'
+  },
+  {
+    name: 'dolphin-mixtral:8x22b'
+  },
+  {
+    name: 'openthinker:7b'
+  },
+  {
+    name: 'openthinker:32b'
+  },
+  {
+    name: 'smollm2:135m'
+  },
+  {
+    name: 'smollm2:360m'
+  },
+  {
+    name: 'smollm2:1.7b'
+  },
+  {
+    name: 'phi:2.7b'
+  },
+  {
+    name: 'mistral-small:22b'
+  },
+  {
+    name: 'mistral-small:24b'
+  },
+  {
+    name: 'wizardlm2:7b'
+  },
+  {
+    name: 'wizardlm2:8x22b'
+  },
+  {
+    name: 'all-minilm:22m'
+  },
+  {
+    name: 'all-minilm:33m'
+  },
+  {
+    name: 'dolphin-mistral:7b'
+  },
+  {
+    name: 'orca-mini:3b'
+  },
+  {
+    name: 'orca-mini:7b'
+  },
+  {
+    name: 'orca-mini:13b'
+  },
+  {
+    name: 'orca-mini:70b'
+  },
+  {
+    name: 'dolphin-llama3:8b'
+  },
+  {
+    name: 'dolphin-llama3:70b'
+  },
+  {
+    name: 'command-r:35b'
+  },
+  {
+    name: 'yi:6b'
+  },
+  {
+    name: 'yi:9b'
+  },
+  {
+    name: 'yi:34b'
+  },
+  {
+    name: 'hermes3:3b'
+  },
+  {
+    name: 'hermes3:8b'
+  },
+  {
+    name: 'hermes3:70b'
+  },
+  {
+    name: 'hermes3:405b'
+  },
+  {
+    name: 'phi3.5:3.8b'
+  },
+  {
+    name: 'zephyr:7b'
+  },
+  {
+    name: 'zephyr:141b'
+  },
+  {
+    name: 'codestral:22b'
+  },
+  {
+    name: 'smollm:135m'
+  },
+  {
+    name: 'smollm:360m'
+  },
+  {
+    name: 'smollm:1.7b'
+  },
+  {
+    name: 'granite-code:3b'
+  },
+  {
+    name: 'granite-code:8b'
+  },
+  {
+    name: 'granite-code:20b'
+  },
+  {
+    name: 'granite-code:34b'
+  },
+  {
+    name: 'wizard-vicuna-uncensored:7b'
+  },
+  {
+    name: 'wizard-vicuna-uncensored:13b'
+  },
+  {
+    name: 'wizard-vicuna-uncensored:30b'
+  },
+  {
+    name: 'starcoder:1b'
+  },
+  {
+    name: 'starcoder:3b'
+  },
+  {
+    name: 'starcoder:7b'
+  },
+  {
+    name: 'starcoder:15b'
+  },
+  {
+    name: 'vicuna:7b'
+  },
+  {
+    name: 'vicuna:13b'
+  },
+  {
+    name: 'vicuna:33b'
+  },
+  {
+    name: 'mistral-openorca:7b'
+  },
+  {
+    name: 'moondream:1.8b'
+  },
+  {
+    name: 'llama2-chinese:7b'
+  },
+  {
+    name: 'llama2-chinese:13b'
+  },
+  {
+    name: 'openchat:7b'
+  },
+  {
+    name: 'codegeex4:9b'
+  },
+  {
+    name: 'aya:8b'
+  },
+  {
+    name: 'aya:35b'
+  },
+  {
+    name: 'codeqwen:7b'
+  },
+  {
+    name: 'deepseek-llm:7b'
+  },
+  {
+    name: 'deepseek-llm:67b'
+  },
+  {
+    name: 'deepseek-v2:16b'
+  },
+  {
+    name: 'deepseek-v2:236b'
+  },
+  {
+    name: 'mistral-large:123b'
+  },
+  {
+    name: 'glm4:9b'
+  },
+  {
+    name: 'stable-code:3b'
+  },
+  {
+    name: 'tinydolphin:1.1b'
+  },
+  {
+    name: 'nous-hermes2:10.7b'
+  },
+  {
+    name: 'nous-hermes2:34b'
+  },
+  {
+    name: 'qwen2-math:1.5b'
+  },
+  {
+    name: 'qwen2-math:7b'
+  },
+  {
+    name: 'qwen2-math:72b'
+  },
+  {
+    name: 'command-r-plus:104b'
+  },
+  {
+    name: 'wizardcoder:33b'
+  },
+  {
+    name: 'bakllava:7b'
+  },
+  {
+    name: 'stablelm2:1.6b'
+  },
+  {
+    name: 'stablelm2:12b'
+  },
+  {
+    name: 'neural-chat:7b'
+  },
+  {
+    name: 'reflection:70b'
+  },
+  {
+    name: 'wizard-math:7b'
+  },
+  {
+    name: 'wizard-math:13b'
+  },
+  {
+    name: 'wizard-math:70b'
+  },
+  {
+    name: 'llama3-chatqa:8b'
+  },
+  {
+    name: 'llama3-chatqa:70b'
+  },
+  {
+    name: 'llama3-gradient:8b'
+  },
+  {
+    name: 'llama3-gradient:70b'
+  },
+  {
+    name: 'sqlcoder:7b'
+  },
+  {
+    name: 'sqlcoder:15b'
+  },
+  {
+    name: 'bge-large:335m'
+  },
+  {
+    name: 'phi4-mini:3.8b'
+  },
+  {
+    name: 'samantha-mistral:7b'
+  },
+  {
+    name: 'granite3.1-dense:2b'
+  },
+  {
+    name: 'granite3.1-dense:8b'
+  },
+  {
+    name: 'dolphincoder:7b'
+  },
+  {
+    name: 'dolphincoder:15b'
+  },
+  {
+    name: 'xwinlm:7b'
+  },
+  {
+    name: 'xwinlm:13b'
+  },
+  {
+    name: 'llava-phi3:3.8b'
+  },
+  {
+    name: 'nous-hermes:7b'
+  },
+  {
+    name: 'nous-hermes:13b'
+  },
+  {
+    name: 'phind-codellama:34b'
+  },
+  {
+    name: 'starling-lm:7b'
+  },
+  {
+    name: 'solar:10.7b'
+  },
+  {
+    name: 'yarn-llama2:7b'
+  },
+  {
+    name: 'yarn-llama2:13b'
+  },
+  {
+    name: 'yi-coder:1.5b'
+  },
+  {
+    name: 'yi-coder:9b'
+  },
+  {
+    name: 'athene-v2:72b'
+  },
+  {
+    name: 'internlm2:1m'
+  },
+  {
+    name: 'internlm2:1.8b'
+  },
+  {
+    name: 'internlm2:7b'
+  },
+  {
+    name: 'internlm2:20b'
+  },
+  {
+    name: 'nemotron-mini:4b'
+  },
+  {
+    name: 'deepscaler:1.5b'
+  },
+  {
+    name: 'falcon:7b'
+  },
+  {
+    name: 'falcon:40b'
+  },
+  {
+    name: 'falcon:180b'
+  },
+  {
+    name: 'granite3-dense:2b'
+  },
+  {
+    name: 'granite3-dense:8b'
+  },
+  {
+    name: 'nemotron:70b'
+  },
+  {
+    name: 'dolphin-phi:2.7b'
+  },
+  {
+    name: 'orca2:7b'
+  },
+  {
+    name: 'orca2:13b'
+  },
+  {
+    name: 'wizardlm-uncensored:13b'
+  },
+  {
+    name: 'stable-beluga:7b'
+  },
+  {
+    name: 'stable-beluga:13b'
+  },
+  {
+    name: 'stable-beluga:70b'
+  },
+  {
+    name: 'llama3-groq-tool-use:8b'
+  },
+  {
+    name: 'llama3-groq-tool-use:70b'
+  },
+  {
+    name: 'granite3.2:2b'
+  },
+  {
+    name: 'granite3.2:8b'
+  },
+  {
+    name: 'paraphrase-multilingual:278m'
+  },
+  {
+    name: 'snowflake-arctic-embed2:568m'
+  },
+  {
+    name: 'deepseek-v2.5:236b'
+  },
+  {
+    name: 'smallthinker:3b'
+  },
+  {
+    name: 'aya-expanse:8b'
+  },
+  {
+    name: 'aya-expanse:32b'
+  },
+  {
+    name: 'meditron:7b'
+  },
+  {
+    name: 'meditron:70b'
+  },
+  {
+    name: 'medllama2:7b'
+  },
+  {
+    name: 'granite3-moe:1b'
+  },
+  {
+    name: 'granite3-moe:3b'
+  },
+  {
+    name: 'falcon3:1b'
+  },
+  {
+    name: 'falcon3:3b'
+  },
+  {
+    name: 'falcon3:7b'
+  },
+  {
+    name: 'falcon3:10b'
+  },
+  {
+    name: 'yarn-mistral:7b'
+  },
+  {
+    name: 'nexusraven:13b'
+  },
+  {
+    name: 'codeup:13b'
+  },
+  {
+    name: 'everythinglm:13b'
+  },
+  {
+    name: 'nous-hermes2-mixtral:8x7b'
+  },
+  {
+    name: 'granite3.1-moe:1b'
+  },
+  {
+    name: 'granite3.1-moe:3b'
+  },
+  {
+    name: 'shieldgemma:2b'
+  },
+  {
+    name: 'shieldgemma:9b'
+  },
+  {
+    name: 'shieldgemma:27b'
+  },
+  {
+    name: 'reader-lm:0.5b'
+  },
+  {
+    name: 'reader-lm:1.5b'
+  },
+  {
+    name: 'granite3.2-vision:2b'
+  },
+  {
+    name: 'marco-o1:7b'
+  },
+  {
+    name: 'exaone3.5:2.4b'
+  },
+  {
+    name: 'exaone3.5:7.8b'
+  },
+  {
+    name: 'exaone3.5:32b'
+  },
+  {
+    name: 'mathstral:7b'
+  },
+  {
+    name: 'llama-guard3:1b'
+  },
+  {
+    name: 'llama-guard3:8b'
+  },
+  {
+    name: 'solar-pro:22b'
+  },
+  {
+    name: 'falcon2:11b'
+  },
+  {
+    name: 'stablelm-zephyr:3b'
+  },
+  {
+    name: 'magicoder:7b'
+  },
+  {
+    name: 'codebooga:34b'
+  },
+  {
+    name: 'duckdb-nsql:7b'
+  },
+  {
+    name: 'mistrallite:7b'
+  },
+  {
+    name: 'wizard-vicuna:13b'
+  },
+  {
+    name: 'command-r7b:7b'
+  },
+  {
+    name: 'granite-embedding:30m'
+  },
+  {
+    name: 'granite-embedding:278m'
+  },
+  {
+    name: 'opencoder:1.5b'
+  },
+  {
+    name: 'opencoder:8b'
+  },
+  {
+    name: 'nuextract:3.8b'
+  },
+  {
+    name: 'megadolphin:120b'
+  },
+  {
+    name: 'bespoke-minicheck:7b'
+  },
+  {
+    name: 'notux:8x7b'
+  },
+  {
+    name: 'open-orca-platypus2:13b'
+  },
+  {
+    name: 'notus:7b'
+  },
+  {
+    name: 'exaone-deep:2.4b'
+  },
+  {
+    name: 'exaone-deep:7.8b'
+  },
+  {
+    name: 'exaone-deep:32b'
+  },
+  {
+    name: 'tulu3:8b'
+  },
+  {
+    name: 'tulu3:70b'
+  },
+  {
+    name: 'r1-1776:70b'
+  },
+  {
+    name: 'r1-1776:671b'
+  },
+  {
+    name: 'firefunction-v2:70b'
+  },
+  {
+    name: 'dbrx:132b'
+  },
+  {
+    name: 'granite3-guardian:2b'
+  },
+  {
+    name: 'granite3-guardian:8b'
+  },
+  {
+    name: 'alfred:40b'
+  },
+  {
+    name: 'sailor2:1b'
+  },
+  {
+    name: 'sailor2:8b'
+  },
+  {
+    name: 'sailor2:20b'
+  },
+  {
+    name: 'command-a:111b'
+  },
+  {
+    name: 'command-r7b-arabic:7b'
+  }
 ]
 
 // 可拉取的模型（排除已有的和正在拉取的）
