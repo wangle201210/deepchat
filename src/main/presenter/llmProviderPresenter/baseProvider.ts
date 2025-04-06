@@ -86,7 +86,6 @@ export abstract class BaseLLMProvider {
    */
   protected async autoEnableModelsIfNeeded() {
     if (!this.models || this.models.length === 0) return
-
     const providerId = this.provider.id
 
     // 检查是否有自定义模型
@@ -123,6 +122,7 @@ export abstract class BaseLLMProvider {
       const models = await this.fetchProviderModels()
       console.log('Fetched models:', models?.length)
       this.models = models
+      this.configPresenter.setProviderModels(this.provider.id, models)
       return models
     } catch (e) {
       console.error('Failed to fetch models:', e)
