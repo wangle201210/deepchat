@@ -1,4 +1,4 @@
-import { LLM_PROVIDER, LLMResponse, LLMResponseStream } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, LLMResponseStream, MODEL_META } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import { ChatMessage } from '../baseProvider'
@@ -6,6 +6,22 @@ import { ChatMessage } from '../baseProvider'
 export class SiliconcloudProvider extends OpenAICompatibleProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
+  }
+
+  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+    const response = await this.openai.models.list({
+      ...options,
+      query: { type: 'text', sub_type: 'chat' }
+    })
+    return response.data.map((model) => ({
+      id: model.id,
+      name: model.id,
+      group: 'default',
+      providerId: this.provider.id,
+      isCustom: false,
+      contextLength: 4096,
+      maxTokens: 2048
+    }))
   }
 
   async completions(

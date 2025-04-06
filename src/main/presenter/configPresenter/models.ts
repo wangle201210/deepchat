@@ -381,6 +381,28 @@ export const defaultModelsSettings = [
   },
   // Llama系列
   {
+    id: 'llama-4-maverick',
+    name: 'Llama 4 Maverick',
+    temperature: 1,
+    maxTokens: 200_000,
+    contextLength: 200_000,
+    match: ['llama-4-maverick'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
+    id: 'llama-4-scout',
+    name: 'Llama 4 Scout',
+    temperature: 1,
+    maxTokens: 480_000,
+    contextLength: 480_000,
+    match: ['llama-4-scout'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
     id: 'llama-3.1-405b',
     name: 'Llama 3.1 405B',
     temperature: 0.7,
