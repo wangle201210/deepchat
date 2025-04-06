@@ -8,7 +8,10 @@
             <p>{{ t('update.version') }}: {{ settings.updateInfo?.version }}</p>
             <p>{{ t('update.releaseDate') }}: {{ settings.updateInfo?.releaseDate }}</p>
             <p>{{ t('update.releaseNotes') }}:</p>
-            <p class="whitespace-pre-line">{{ settings.updateInfo?.releaseNotes }}</p>
+            <p
+              class="whitespace-pre-line"
+              v-html="renderMarkdown(getCommonMarkdown(), settings.updateInfo?.releaseNotes || '')"
+            />
           </div>
         </DialogDescription>
       </DialogHeader>
@@ -39,6 +42,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { useSettingsStore } from '@/stores/settings'
+import { renderMarkdown, getCommonMarkdown } from '@/lib/markdown.helper'
 
 const { t } = useI18n()
 const settings = useSettingsStore()
