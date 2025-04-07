@@ -97,10 +97,9 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
     const token = tokens[idx]
     const info = token.info ? token.info.trim() : ''
     const str = token.content
-
     const encodedCode = btoa(unescape(encodeURIComponent(str)))
     const language = info || 'text'
-    const uniqueId = `editor-${Math.random().toString(36).substr(2, 9)}`
+    const uniqueId = `editor-${msgId}-${idx}-${language}`
 
     return `<div class="code-block" data-code="${encodedCode}" data-lang="${language}" id="${uniqueId}">
       <div class="code-header">
