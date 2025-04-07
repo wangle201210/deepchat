@@ -88,7 +88,6 @@ export class StreamableHttpClientTransport implements Transport {
   private _authProvider?: OAuthClientProvider
   private _useSSE: boolean
   private _sessionId?: string
-  private _lastEventId?: string
   private _pendingRequests: Map<string, (response: JSONRPCMessage) => void> = new Map()
 
   onclose?: () => void
