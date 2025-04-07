@@ -12,13 +12,22 @@ on:
         required: true
         type: boolean
         default: false
+      use_existing_release:
+        description: '是否使用已存在的 release?'
+        required: true
+        type: boolean
+        default: false
+      release_tag:
+        description: '如果使用已存在的 release，请提供 tag 名称 (如: v1.0.0)'
+        required: false
+        type: string
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts from workflow
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v6
         with:
           workflow_conclusion: success
           run_id: ${{ github.event.inputs.workflow_id }}
@@ -43,21 +52,21 @@ jobs:
       - name: Prepare release assets
         run: |
           mkdir -p release_assets
-          
+
           # Process Windows x64 artifacts
           if [ -d "artifacts/deepchat-win-x64" ]; then
             cp artifacts/deepchat-win-x64/*.exe release_assets/ 2>/dev/null || true
             cp artifacts/deepchat-win-x64/*.msi release_assets/ 2>/dev/null || true
             cp artifacts/deepchat-win-x64/*.zip release_assets/ 2>/dev/null || true
           fi
-          
+
           # Process Windows arm64 artifacts
           if [ -d "artifacts/deepchat-win-arm64" ]; then
             cp artifacts/deepchat-win-arm64/*.exe release_assets/ 2>/dev/null || true
             cp artifacts/deepchat-win-arm64/*.msi release_assets/ 2>/dev/null || true
             cp artifacts/deepchat-win-arm64/*.zip release_assets/ 2>/dev/null || true
           fi
-          
+
           # Process Linux x64 artifacts
           if [ -d "artifacts/deepchat-linux-x64" ]; then
             cp artifacts/deepchat-linux-x64/*.AppImage release_assets/ 2>/dev/null || true
@@ -65,15 +74,29 @@ jobs:
             cp artifacts/deepchat-linux-x64/*.rpm release_assets/ 2>/dev/null || true
             cp artifacts/deepchat-linux-x64/*.tar.gz release_assets/ 2>/dev/null || true
           fi
-          
+
           ls -la release_assets/
 
-      - name: Create Release
-        id: create_release
+      - name: Create New Release
+        if: ${{ github.event.inputs.use_existing_release != 'true' }}
+        id: create_new_release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           name: DeepChat ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: |
+            release_assets/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload To Existing Release
+        if: ${{ github.event.inputs.use_existing_release == 'true' }}
+        id: upload_existing_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
           draft: false
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
