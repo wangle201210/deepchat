@@ -43,7 +43,11 @@
     "loggingEnableDesc": "Enabling logging will help us diagnose issues and improve the application. Log files may contain sensitive information.",
     "loggingDisableDesc": "Disabling logging will stop collecting application logs.",
     "loggingRestartNotice": "Changing this setting will restart the application. Do you want to continue?",
-    "openLogFolder": "Open Log Folder"
+    "openLogFolder": "Open Log Folder",
+    "shortcut": {
+      "newChat": "Create a new chat",
+      "title": "Shortcut key settings"
+    }
   },
   "data": {
     "title": "Data Settings",
@@ -84,8 +88,15 @@
       "description": "Set the maximum length of the AI response"
     },
     "artifacts": {
-      "description": "Enabling the Artifacts feature allows the AI to generate richer content"
-    }
+      "description": "Enabling the Artifacts feature allows the AI to generate richer content",
+      "title": "Artifacts effects"
+    },
+    "addModel": "Add a model",
+    "configureModel": "Configuration model",
+    "modelList": "Model List",
+    "provider": "Service provider",
+    "providerSetting": "Service provider settings",
+    "selectModel": "Select a model"
   },
   "provider": {
     "enable": "Enable Service",

@@ -33,5 +33,15 @@
   "proxyModeCustom": "Custom Proxy",
   "customProxyUrl": "Custom Proxy URL",
   "customProxyUrlPlaceholder": "Example: http://127.0.0.1:7890",
-  "invalidProxyUrl": "Invalid proxy URL, please enter a valid http/https URL"
+  "invalidProxyUrl": "Invalid proxy URL, please enter a valid http/https URL",
+  "disclaimer": "Disclaimer",
+  "language": "language",
+  "languageSelect": "Select a language",
+  "resetData": "Reset data",
+  "searchAssistantModel": "Search Assistant Model",
+  "searchEngine": "Search Engine",
+  "searchEngineSelect": "Select a search engine",
+  "searchPreview": "Search preview",
+  "selectModel": "Select a model",
+  "title": "General settings"
 }

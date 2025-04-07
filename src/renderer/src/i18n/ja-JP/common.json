@@ -33,5 +33,15 @@
   "proxyModeCustom": "カスタムプロキシ",
   "customProxyUrl": "カスタムプロキシURL",
   "customProxyUrlPlaceholder": "例: http://127.0.0.1:7890",
-  "invalidProxyUrl": "無効なプロキシURL、有効なhttp/https URLを入力してください"
+  "invalidProxyUrl": "無効なプロキシURL、有効なhttp/https URLを入力してください",
+  "disclaimer": "免責事項",
+  "language": "言語",
+  "languageSelect": "言語を選択します",
+  "resetData": "データをリセットします",
+  "searchAssistantModel": "検索アシスタントモデル",
+  "searchEngine": "検索エンジン",
+  "searchEngineSelect": "検索エンジンを選択します",
+  "searchPreview": "プレビューを検索します",
+  "selectModel": "モデルを選択します",
+  "title": "一般的な設定"
 }

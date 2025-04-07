@@ -118,6 +118,8 @@
     "enableToUse": "도구를 사용하려면 MCP를 활성화하세요",
     "enabled": "MCP 활성화",
     "enabledDescription": "도구 호출을 사용하도록 MCP 기능 활성화",
-    "empty": "비어있음"
+    "empty": "비어있음",
+    "invalidJsonFormat": "유효하지 않은 JSON 형식",
+    "jsonInputPlaceholder": "JSON 형식의 매개 변수를 입력하십시오"
   }
 }

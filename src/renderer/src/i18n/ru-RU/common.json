@@ -33,5 +33,15 @@
   "proxyModeCustom": "Пользовательский прокси",
   "customProxyUrl": "URL пользовательского прокси",
   "customProxyUrlPlaceholder": "Пример: http://127.0.0.1:7890",
-  "invalidProxyUrl": "Неверный URL прокси, введите корректный http/https URL"
+  "invalidProxyUrl": "Неверный URL прокси, введите корректный http/https URL",
+  "disclaimer": "Отказ от ответственности",
+  "language": "язык",
+  "languageSelect": "Выберите язык",
+  "resetData": "Сбросить данные",
+  "searchAssistantModel": "Помощник поиска",
+  "searchEngine": "Поисковая система",
+  "searchEngineSelect": "Выберите поисковую систему",
+  "searchPreview": "Поиск предварительного просмотра",
+  "selectModel": "Выберите модель",
+  "title": "Общие настройки"
 }

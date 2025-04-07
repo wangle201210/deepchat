@@ -42,7 +42,12 @@
     "loggingDialogTitle": "確認日誌設定變更",
     "loggingEnableDesc": "啟用日誌將幫助我們診斷問題並改進應用程式。日誌檔案可能包含敏感資訊。",
     "loggingDisableDesc": "停用日誌將停止收集應用程式日誌。",
-    "loggingRestartNotice": "切換此設定將會重新啟動應用程式，請問您是否要繼續？"
+    "loggingRestartNotice": "切換此設定將會重新啟動應用程式，請問您是否要繼續？",
+    "openLogFolder": "打開日誌文件夾",
+    "shortcut": {
+      "newChat": "新建聊天",
+      "title": "快捷鍵設置"
+    }
   },
   "data": {
     "title": "資料設定",
@@ -242,7 +247,8 @@
       "parseAndContinue": "解析並繼續",
       "jsonParseError": "JSON解析失敗",
       "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
-      "useSSE": "啟用SSE傳輸"
+      "useSSE": "啟用SSE傳輸",
+      "typeInMemory": "內存(InMemory)"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -264,7 +270,13 @@
     "resetToDefault": "恢復預設服務",
     "resetConfirmTitle": "恢復預設服務",
     "resetConfirmDescription": "此操作將恢復所有預設伺服器，同時保留您自訂的伺服器。對預設伺服器的任何修改將會丟失。",
-    "resetConfirm": "恢復"
+    "resetConfirm": "恢復",
+    "builtIn": "內建",
+    "builtInServerCannotBeRemoved": "內置服務不能被刪除，僅支持修改參數和環境變量",
+    "builtInServers": "內置服務",
+    "cannotRemoveBuiltIn": "無法刪除內置服務",
+    "customServers": "自定義服務",
+    "removeDefault": "移除默認"
   },
   "about": {
     "title": "關於我們",

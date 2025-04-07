@@ -43,7 +43,11 @@
     "theme": "テーマ",
     "themeSelect": "テーマを選択",
     "closeToQuit": "閉じるボタンをクリックするとアプリケーションを終了します",
-    "openLogFolder": "ログフォルダを開く"
+    "openLogFolder": "ログフォルダを開く",
+    "shortcut": {
+      "newChat": "新しいチャットを作成します",
+      "title": "ショートカットキー設定"
+    }
   },
   "data": {
     "title": "データ設定",
@@ -84,8 +88,15 @@
       "description": "AIの応答の最大長を設定します"
     },
     "artifacts": {
-      "description": "Artifacts機能を有効にすると、AIはより豊かなコンテンツを生成できます"
-    }
+      "description": "Artifacts機能を有効にすると、AIはより豊かなコンテンツを生成できます",
+      "title": "アーティファクト効果"
+    },
+    "addModel": "モデルを追加します",
+    "configureModel": "構成モデル",
+    "modelList": "モデルリスト",
+    "provider": "サービスプロバイダー",
+    "providerSetting": "サービスプロバイダーの設定",
+    "selectModel": "モデルを選択します"
   },
   "provider": {
     "enable": "サービスを有効にする",
@@ -236,7 +247,8 @@
       "parseAndContinue": "解析して続行",
       "jsonParseError": "JSONの解析は失敗しました",
       "typeHttp": "ストリーミングHTTPリクエスト（HTTP）",
-      "useSSE": "SSE転送を有効にします"
+      "useSSE": "SSE転送を有効にします",
+      "typeInMemory": "メモリ"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -258,7 +270,13 @@
     "resetToDefault": "デフォルトに戻す",
     "resetConfirmTitle": "デフォルトサーバーに戻す",
     "resetConfirmDescription": "この操作は、カスタムサーバーを保持したまま、すべてのデフォルトサーバーを復元します。デフォルトサーバーへの変更はすべて失われます。",
-    "resetConfirm": "リセット"
+    "resetConfirm": "リセット",
+    "builtIn": "組み込み",
+    "builtInServerCannotBeRemoved": "ビルトインサービスは削除できず、パラメーターの変更のみを変更し、環境変数がサポートされています。",
+    "builtInServers": "組み込みサービス",
+    "cannotRemoveBuiltIn": "ビルトインサービスを削除できません",
+    "customServers": "カスタムサービス",
+    "removeDefault": "デフォルトを削除します"
   },
   "about": {
     "title": "私たちについて",

@@ -10,5 +10,9 @@
     "objects": "Объекты",
     "symbols": "Символы",
     "flags": "Флаги"
+  },
+  "messageBlockAction": {
+    "continue": "продолжать",
+    "continued": "Продолжать"
   }
 }

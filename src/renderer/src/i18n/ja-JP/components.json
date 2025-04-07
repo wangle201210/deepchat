@@ -10,5 +10,9 @@
     "objects": "物",
     "symbols": "記号",
     "flags": "旗"
+  },
+  "messageBlockAction": {
+    "continue": "続く",
+    "continued": "続く"
   }
 }

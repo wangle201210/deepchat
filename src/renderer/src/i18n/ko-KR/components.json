@@ -1,16 +1,18 @@
 {
-  "modelList": {
-    "search": "모델 검색",
-    "noModelsFound": "모델을 찾을 수 없음",
-    "noModelsEnabled": "활성화된 모델 없음",
-    "noMatchingModels": "일치하는 모델 없음",
-    "enabledModels": "활성화된 모델",
-    "disabledModels": "비활성화된 모델",
-    "modelTags": "태그"
+  "emojiPicker": {
+    "search": "이모지 검색",
+    "smileys": "스마일과 감정",
+    "people": "사람과 신체",
+    "animals": "동물과 자연",
+    "food": "음식과 음료",
+    "travel": "여행과 장소",
+    "activities": "활동",
+    "objects": "물체",
+    "symbols": "기호",
+    "flags": "국기"
   },
-  "dropdown": {
-    "empty": "비어 있음",
-    "notFound": "결과 없음",
-    "searching": "검색 중..."
+  "messageBlockAction": {
+    "continue": "계속",
+    "continued": "계속됨"
   }
 }

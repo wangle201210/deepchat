@@ -23,7 +23,6 @@
   "stateDiagramOf": "Диаграмма состояний {name}",
   "erDiagramOf": "ER-диаграмма {name}",
   "pieChartOf": "Круговая диаграмма {name}",
-  "and": " и ",
   "unknownDocument": "Неизвестный документ",
   "preview": "Предпросмотр",
   "code": "Код",

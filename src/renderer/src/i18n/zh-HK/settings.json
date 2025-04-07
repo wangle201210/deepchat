@@ -42,7 +42,12 @@
     "loggingDialogTitle": "確認日誌設定變更",
     "loggingEnableDesc": "啟用日誌將幫助我們診斷問題並改進應用程式。日誌檔案可能包含敏感資訊。",
     "loggingDisableDesc": "停用日誌將停止收集應用程式日誌。",
-    "loggingRestartNotice": "切換此設定將導致程序重啟，請確認是否繼續？"
+    "loggingRestartNotice": "切換此設定將導致程序重啟，請確認是否繼續？",
+    "openLogFolder": "打開日誌文件夾",
+    "shortcut": {
+      "newChat": "新建聊天",
+      "title": "快捷鍵設置"
+    }
   },
   "data": {
     "title": "數據設置",
@@ -83,8 +88,15 @@
       "description": "設置AI響應的最大長度"
     },
     "artifacts": {
-      "description": "啟用Artifacts功能允許AI生成更豐富的內容"
-    }
+      "description": "啟用Artifacts功能允許AI生成更豐富的內容",
+      "title": "Artifacts效果"
+    },
+    "addModel": "添加模型",
+    "configureModel": "配置模型",
+    "modelList": "模型列表",
+    "provider": "服務商",
+    "providerSetting": "服務商設置",
+    "selectModel": "選擇模型"
   },
   "provider": {
     "enable": "開啟服務",
@@ -160,7 +172,8 @@
     "deleteModel": "刪除模型",
     "deleteModelConfirm": "是否確認刪除模型 \"{name}\"？此操作不可恢復。",
     "noLocalModels": "沒有本地模型",
-    "localModels": "本地模型"
+    "localModels": "本地模型",
+    "modelsEnabled": "模型已經啟用"
   },
   "mcp": {
     "title": "MCP設置",
