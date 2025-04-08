@@ -206,7 +206,12 @@ export const useChatStore = defineStore('chat', () => {
   })
 
   // Deeplink 消息缓存
-  const deeplinkCache = ref<{ msg?: string; modelId?: string; systemPrompt?: string } | null>(null)
+  const deeplinkCache = ref<{
+    msg?: string
+    modelId?: string
+    systemPrompt?: string
+    autoSend?: boolean
+  } | null>(null)
 
   // Getters
   const activeThread = computed(() => {
@@ -859,7 +864,8 @@ export const useChatStore = defineStore('chat', () => {
       deeplinkCache.value = {
         msg: data.msg,
         modelId: data.modelId,
-        systemPrompt: data.systemPrompt
+        systemPrompt: data.systemPrompt,
+        autoSend: data.autoSend
       }
     }
   })

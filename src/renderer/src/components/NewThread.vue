@@ -241,6 +241,15 @@ watch(
       if (newCache.systemPrompt) {
         systemPrompt.value = newCache.systemPrompt
       }
+      if (newCache.autoSend && newCache.msg) {
+        handleSend({
+          text: newCache.msg || '',
+          files: [],
+          links: [],
+          think: false,
+          search: false
+        })
+      }
       // 清理缓存
       chatStore.clearDeeplinkCache()
     }

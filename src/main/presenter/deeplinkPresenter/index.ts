@@ -150,10 +150,14 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     } else {
       systemPrompt = ''
     }
+    // 如果用户增加了yolo=1或者yolo=true，则自动发送消息
+    const yolo = params.get('yolo')
+    const autoSend = yolo && yolo.trim() !== ''
     console.log('msg:', msg)
     console.log('modelId:', modelId)
     console.log('systemPrompt:', systemPrompt)
-    eventBus.emit(DEEPLINK_EVENTS.START, { msg, modelId, systemPrompt })
+    console.log('autoSend:', autoSend)
+    eventBus.emit(DEEPLINK_EVENTS.START, { msg, modelId, systemPrompt, autoSend })
   }
 
   async handleMcpInstall(params: URLSearchParams): Promise<void> {
