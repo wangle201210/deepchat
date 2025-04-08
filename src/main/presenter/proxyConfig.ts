@@ -1,5 +1,5 @@
 import { session } from 'electron'
-import { Agent, ProxyAgent, setGlobalDispatcher } from 'undici'
+import { Agent, EnvHttpProxyAgent, setGlobalDispatcher } from 'undici'
 import { eventBus } from '@/eventbus'
 import { CONFIG_EVENTS } from '@/events'
 
@@ -8,6 +8,26 @@ export enum ProxyMode {
   SYSTEM = 'system',
   NONE = 'none',
   CUSTOM = 'custom'
+}
+const NO_PROXY = 'localhost, 127.0.0.1, ::1, 192.168.*.*, 10.*.*.*, *.local, host.docker.internal'
+// const NO_PROXY = ''
+
+// 合并系统和自定义的 no_proxy 设置
+function mergeNoProxy(defaultNoProxy: string): string {
+  const systemNoProxy = process.env.no_proxy || process.env.NO_PROXY || ''
+  console.log('systemNoProxy', systemNoProxy)
+  if (!systemNoProxy) {
+    return defaultNoProxy
+  }
+  // 将两个 no_proxy 字符串分割成数组，去重，然后重新组合
+  const noProxySet = new Set(
+    [
+      ...defaultNoProxy.split(',').map((item) => item.trim()),
+      ...systemNoProxy.split(',').map((item) => item.trim())
+    ].filter(Boolean)
+  ) // 过滤掉空字符串
+
+  return Array.from(noProxySet).join(', ')
 }
 
 export class ProxyConfig {
@@ -60,7 +80,16 @@ export class ProxyConfig {
         process.env.HTTPS_PROXY = this.proxyUrl
         process.env.GRPC_PROXY = this.proxyUrl
         process.env.grpc_proxy = this.proxyUrl
-        setGlobalDispatcher(new ProxyAgent(this.proxyUrl || ''))
+        const mergedNoProxy = mergeNoProxy(NO_PROXY)
+        process.env.no_proxy = mergedNoProxy
+        process.env.NO_PROXY = mergedNoProxy
+        setGlobalDispatcher(
+          new EnvHttpProxyAgent({
+            httpProxy: this.proxyUrl,
+            httpsProxy: this.proxyUrl,
+            noProxy: mergedNoProxy
+          })
+        )
       }
       eventBus.emit(CONFIG_EVENTS.PROXY_RESOLVED)
     } catch (error) {
@@ -75,6 +104,10 @@ export class ProxyConfig {
     delete process.env.https_proxy
     delete process.env.HTTP_PROXY
     delete process.env.HTTPS_PROXY
+    delete process.env.GRPC_PROXY
+    delete process.env.grpc_proxy
+    delete process.env.no_proxy
+    delete process.env.NO_PROXY
     session.defaultSession.setProxy({ mode: 'direct' })
     setGlobalDispatcher(new Agent())
   }
@@ -87,8 +120,17 @@ export class ProxyConfig {
     process.env.HTTPS_PROXY = proxyUrl
     process.env.GRPC_PROXY = proxyUrl
     process.env.grpc_proxy = proxyUrl
+    const mergedNoProxy = mergeNoProxy(NO_PROXY)
+    process.env.no_proxy = mergedNoProxy
+    process.env.NO_PROXY = mergedNoProxy
     session.defaultSession.setProxy({ proxyRules: proxyUrl })
-    setGlobalDispatcher(new ProxyAgent(proxyUrl))
+    setGlobalDispatcher(
+      new EnvHttpProxyAgent({
+        httpProxy: proxyUrl,
+        httpsProxy: proxyUrl,
+        noProxy: mergedNoProxy
+      })
+    )
   }
 
   /**
