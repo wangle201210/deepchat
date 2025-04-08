@@ -352,7 +352,7 @@ const disabledSend = computed(() => {
   return (
     chatStore.generatingThreadIds.has(chatStore.activeThreadId ?? '') ||
     inputText.value.length <= 0 ||
-    currentContextLength.value > (props.contextLength ?? 4096)
+    currentContextLength.value > (props.contextLength ?? chatStore.chatConfig.contextLength)
   )
 })
 
