@@ -18,6 +18,7 @@ import { HttpsProxyAgent } from 'https-proxy-agent'
 import { presenter } from '@/presenter'
 import { getModelConfig } from '../modelConfigs'
 
+const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
   private isNoModelsApi: boolean = false
@@ -92,14 +93,20 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     if (!modelId) {
       throw new Error('Model ID is required')
     }
-
-    const completion = await this.openai.chat.completions.create({
+    const requestParams: OpenAI.Chat.ChatCompletionCreateParams = {
       messages: messages as ChatCompletionMessageParam[],
       model: modelId,
       stream: false,
       temperature: temperature,
       max_tokens: maxTokens
+    }
+    OPENAI_REASONING_MODELS.forEach((noTempId) => {
+      if (modelId.startsWith(noTempId)) {
+        delete requestParams.temperature
+      }
     })
+    const completion = await this.openai.chat.completions.create(requestParams)
+
     const message = completion.choices[0].message as ChatCompletionMessage & {
       reasoning_content?: string
     }
@@ -198,8 +205,11 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       temperature: temperature,
       max_tokens: maxTokens
     }
-
-    // 只有在有工具且工具列表不为空且模型支持原生function call时才添加工具参数
+    OPENAI_REASONING_MODELS.forEach((noTempId) => {
+      if (modelId.startsWith(noTempId)) {
+        delete requestParams.temperature
+      }
+    })
     if (tools && tools.length > 0 && supportsFunctionCall) {
       requestParams.tools = tools
     }
