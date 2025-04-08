@@ -1,0 +1,37 @@
+{
+  "steps": {
+    "welcome": {
+      "title": "Bienvenue",
+      "description": "Commençons la configuration de DeepChat"
+    },
+    "provider": {
+      "title": "Fournisseur de modèles",
+      "description": "Choisissez votre fournisseur de modèles préféré"
+    },
+    "configuration": {
+      "title": "Configuration des modèles",
+      "description": "Configurez les modèles que vous souhaitez utiliser"
+    },
+    "complete": {
+      "title": "Terminé",
+      "description": "Tout est prêt !"
+    }
+  },
+  "title": "Bienvenue sur DeepChat",
+  "description": "Terminons le processus de configuration",
+  "provider": {
+    "select": "Sélectionner le fournisseur",
+    "apiUrl": "URL de l'API",
+    "apiKey": "Clé API",
+    "verifyLink": "Vérifier le lien"
+  },
+  "complete": {
+    "title": "C'est fait !",
+    "description": "Vous avez terminé le processus de configuration, commençons !"
+  },
+  "buttons": {
+    "getStarted": "Commencer",
+    "next": "Suivant",
+    "back": "Retour"
+  }
+}

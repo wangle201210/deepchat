@@ -1,0 +1,18 @@
+{
+  "emojiPicker": {
+    "search": "Rechercher un emoji",
+    "smileys": "Émoticônes & Émotions",
+    "people": "Personnes & Corps",
+    "animals": "Animaux & Nature",
+    "food": "Nourriture & Boissons",
+    "travel": "Voyages & Lieux",
+    "activities": "Activités",
+    "objects": "Objets",
+    "symbols": "Symboles",
+    "flags": "Drapeaux"
+  },
+  "messageBlockAction": {
+    "continue": "Continuer",
+    "continued": "Suite"
+  }
+}

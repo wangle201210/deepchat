@@ -1,0 +1,25 @@
+{
+  "input": {
+    "placeholder": "Tapez un message...",
+    "fileArea": "Zone de fichiers",
+    "inputArea": "Zone de saisie",
+    "functionSwitch": "Commutateur de fonction",
+    "fileSelect": "Sélection de fichier"
+  },
+  "features": {
+    "deepThinking": "Réflexion approfondie",
+    "webSearch": "Recherche web",
+    "deepThinkingProgress": "Réflexion approfondie en cours...",
+    "thinkingDuration": "(A pris {0} secondes)",
+    "artifactThinking": "Réflexion sur les artefacts"
+  },
+  "search": {
+    "results": "{0} pages web trouvées",
+    "searching": "Recherche en cours...",
+    "title": "Résultats de recherche",
+    "description": "{0} résultats connexes trouvés",
+    "optimizing": "Optimisation de la requête de recherche...",
+    "reading": "Recherche et lecture des pages web...",
+    "error": "La recherche a échoué"
+  }
+}

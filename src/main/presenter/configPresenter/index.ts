@@ -458,7 +458,16 @@ export class ConfigPresenter implements IConfigPresenter {
   // 获取系统语言并匹配支持的语言列表
   private getSystemLanguage(): string {
     const systemLang = app.getLocale()
-    const supportedLanguages = ['zh-CN', 'zh-TW', 'en-US', 'zh-HK', 'ko-KR', 'ru-RU', 'ja-JP']
+    const supportedLanguages = [
+      'zh-CN',
+      'zh-TW',
+      'en-US',
+      'zh-HK',
+      'ko-KR',
+      'ru-RU',
+      'ja-JP',
+      'fr-FR'
+    ]
 
     // 完全匹配
     if (supportedLanguages.includes(systemLang)) {

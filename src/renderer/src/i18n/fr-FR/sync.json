@@ -1,0 +1,17 @@
+{
+  "success": {
+    "importComplete": "Données importées avec succès. Cliquez sur OK pour redémarrer l'application."
+  },
+  "error": {
+    "notEnabled": "La fonction de synchronisation n'est pas activée",
+    "folderNotExists": "Le dossier de synchronisation n'existe pas",
+    "noValidBackup": "Aucun fichier de sauvegarde valide dans le dossier de synchronisation",
+    "dbNotExists": "Le fichier de base de données n'existe pas",
+    "configNotExists": "Le fichier de configuration n'existe pas",
+    "tempDbFailed": "Échec de la création du fichier de sauvegarde temporaire de la base de données",
+    "tempConfigFailed": "Échec de la création du fichier de sauvegarde temporaire de la configuration",
+    "importFailed": "L'importation a échoué, les données d'origine ont été restaurées",
+    "importProcess": "Erreur dans le processus d'importation",
+    "unknown": "Erreur inconnue"
+  }
+}

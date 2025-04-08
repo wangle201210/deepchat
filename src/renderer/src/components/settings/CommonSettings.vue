@@ -523,7 +523,8 @@ const languageOptions = [
   { value: 'zh-HK', label: '繁體中文（香港）' },
   { value: 'ko-KR', label: '한국어' },
   { value: 'ru-RU', label: 'Русский' },
-  { value: 'ja-JP', label: '日本語' }
+  { value: 'ja-JP', label: '日本語' },
+  { value: 'fr-FR', label: 'Français' }
 ]
 
 const proxyModes = [

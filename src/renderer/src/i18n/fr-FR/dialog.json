@@ -1,0 +1,23 @@
+{
+  "cancel": "Annuler",
+  "confirm": "Confirmer",
+  "close": "Fermer",
+  "ok": "OK",
+  "delete": {
+    "title": "Êtes-vous sûr de vouloir supprimer cette conversation ?",
+    "description": "Cette action ne peut pas être annulée, veuillez procéder avec prudence.",
+    "confirm": "Supprimer"
+  },
+  "rename": {
+    "title": "Renommer la conversation",
+    "description": "Veuillez entrer un nouveau nom pour la conversation."
+  },
+  "error": {
+    "title": "Erreur"
+  },
+  "cleanMessages": {
+    "title": "Nettoyer les messages de la conversation",
+    "description": "Le nettoyage supprimera tous les messages et fichiers de cette conversation. Êtes-vous sûr de vouloir continuer ?",
+    "confirm": "Nettoyer"
+  }
+}

@@ -5,6 +5,7 @@ import koKR from './ko-KR'
 import zhHK from './zh-HK'
 import zhTW from './zh-TW'
 import ruRU from './ru-RU'
+import frFR from './fr-FR'
 
 const locales = {
   'zh-CN': zhCN,
@@ -14,8 +15,10 @@ const locales = {
   'ja-JP': jaJP,
   'ko-KR': koKR,
   'ru-RU': ruRU,
+  'fr-FR': frFR,
   zh: zhCN,
-  en: enUS
+  en: enUS,
+  fr: frFR
 }
 console.log('locales', locales)
 export default locales

@@ -1,0 +1,30 @@
+{
+  "search": {
+    "placeholder": "Rechercher des modèles..."
+  },
+  "error": {
+    "loadFailed": "Échec du chargement du modèle"
+  },
+  "type": {
+    "custom": "Modèle personnalisé",
+    "official": "Modèle officiel"
+  },
+  "add": {
+    "namePlaceholder": "Nom du modèle",
+    "idPlaceholder": "ID du modèle",
+    "contextLengthPlaceholder": "Longueur du contexte",
+    "maxTokensPlaceholder": "Tokens maximum"
+  },
+  "actions": {
+    "add": "Ajouter un modèle",
+    "enableAll": "Tout activer",
+    "disableAll": "Tout désactiver"
+  },
+  "tags": {
+    "reasoning": "Raisonnement",
+    "chat": "Discussion",
+    "code": "Code",
+    "writing": "Écriture",
+    "analysis": "Analyse"
+  }
+}

@@ -8,4 +8,4 @@ i18n:
   framework: 'vue-i18n'
   location: 'src/renderer/src/i18n'
   requirement: 'all user-facing strings must use i18n keys'
-  locales: ['zh-CN','en-US','ko-KR','ru-RU','zh-HK']
+  locales: ['zh-CN','en-US','ko-KR','ru-RU','zh-HK','fr-FR']

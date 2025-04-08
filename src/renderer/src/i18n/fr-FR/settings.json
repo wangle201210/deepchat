@@ -1,0 +1,253 @@
+{
+  "title": "Paramètres",
+  "common": {
+    "title": "Paramètres généraux",
+    "resetData": "Réinitialiser les données",
+    "language": "Langue",
+    "languageSelect": "Sélectionner la langue",
+    "searchEngine": "Moteur de recherche",
+    "searchEngineSelect": "Sélectionner le moteur de recherche",
+    "searchPreview": "Aperçu de la recherche",
+    "searchAssistantModel": "Modèle d'assistant de recherche",
+    "selectModel": "Sélectionner le modèle",
+    "proxyMode": "Mode proxy",
+    "proxyModeSelect": "Sélectionner le mode proxy",
+    "proxyModeSystem": "Proxy système",
+    "proxyModeNone": "Pas de proxy",
+    "proxyModeCustom": "Proxy personnalisé",
+    "customProxyUrl": "URL du proxy personnalisé",
+    "customProxyUrlPlaceholder": "Exemple : http://127.0.0.1:7890",
+    "invalidProxyUrl": "URL de proxy invalide, veuillez entrer une URL http/https valide",
+    "addCustomSearchEngine": "Ajouter un moteur de recherche personnalisé",
+    "addCustomSearchEngineDesc": "Ajoutez un nouveau moteur de recherche en fournissant un nom et une URL de recherche. L'URL doit inclure {query} comme espace réservé pour la requête.",
+    "searchEngineName": "Nom du moteur de recherche",
+    "searchEngineNamePlaceholder": "Entrez le nom du moteur de recherche",
+    "searchEngineUrl": "URL de recherche",
+    "searchEngineUrlPlaceholder": "Ex : https://a.com/search?q={'{'}query{'}'}",
+    "searchEngineUrlError": "L'URL doit inclure {'{'}query{'}'} comme espace réservé pour la requête",
+    "deleteCustomSearchEngine": "Supprimer le moteur de recherche personnalisé",
+    "deleteCustomSearchEngineDesc": "Êtes-vous sûr de vouloir supprimer le moteur de recherche personnalisé \"{name}\" ? Cette action ne peut pas être annulée.",
+    "testSearchEngine": "Tester le moteur de recherche",
+    "testSearchEngineDesc": "Une recherche test pour \"météo\" sera effectuée en utilisant le moteur de recherche {engine}.",
+    "testSearchEngineNote": "Si la page de recherche nécessite une connexion ou d'autres actions, vous pouvez les effectuer dans la fenêtre de test. Veuillez fermer la fenêtre de test lorsque vous avez terminé.",
+    "theme": "Thème",
+    "themeSelect": "Sélectionner le thème",
+    "closeToQuit": "Quitter l'application lors de la fermeture de la fenêtre",
+    "contentProtection": "Protection de l'écran",
+    "contentProtectionDialogTitle": "Confirmer le changement de protection de l'écran",
+    "contentProtectionEnableDesc": "L'activation de la protection de l'écran empêche les logiciels de partage d'écran de capturer la fenêtre DeepChat, protégeant ainsi la confidentialité de votre contenu. Notez que cette fonctionnalité ne masquera pas complètement toutes les interfaces. Veuillez utiliser cette fonctionnalité de manière responsable et conformément aux réglementations. De plus, tous les logiciels de partage d'écran ne prennent pas en charge cette fonctionnalité. Certains environnements peuvent laisser une fenêtre noire.",
+    "contentProtectionDisableDesc": "La désactivation de la protection de l'écran permettra aux logiciels de partage d'écran de capturer la fenêtre DeepChat.",
+    "contentProtectionRestartNotice": "La modification de ce paramètre redémarrera l'application. Voulez-vous continuer ?",
+    "loggingEnabled": "Activer la journalisation",
+    "loggingDialogTitle": "Confirmer le changement de paramètre de journalisation",
+    "loggingEnableDesc": "L'activation de la journalisation nous aidera à diagnostiquer les problèmes et à améliorer l'application. Les fichiers journaux peuvent contenir des informations sensibles.",
+    "loggingDisableDesc": "La désactivation de la journalisation arrêtera la collecte des journaux d'application.",
+    "loggingRestartNotice": "La modification de ce paramètre redémarrera l'application. Voulez-vous continuer ?",
+    "openLogFolder": "Ouvrir le dossier des journaux",
+    "shortcut": {
+      "newChat": "Créer une nouvelle conversation",
+      "title": "Paramètres des raccourcis clavier"
+    }
+  },
+  "data": {
+    "title": "Paramètres des données",
+    "syncEnable": "Activer la synchronisation des données",
+    "syncFolder": "Dossier de synchronisation",
+    "openSyncFolder": "Ouvrir le dossier de synchronisation",
+    "lastSyncTime": "Dernière synchronisation",
+    "never": "Jamais",
+    "startBackup": "Sauvegarder maintenant",
+    "backingUp": "Sauvegarde en cours...",
+    "importData": "Importer des données",
+    "incrementImport": "Import incrémental",
+    "overwriteImport": "Import avec écrasement",
+    "importConfirmTitle": "Confirmer l'importation des données",
+    "importConfirmDescription": "L'importation écrasera toutes les données actuelles, y compris l'historique des conversations et les paramètres. Assurez-vous d'avoir sauvegardé les données importantes. Vous devrez redémarrer l'application après l'importation.",
+    "importing": "Importation en cours...",
+    "confirmImport": "Confirmer l'importation",
+    "importSuccessTitle": "Importation réussie",
+    "importErrorTitle": "Échec de l'importation"
+  },
+  "model": {
+    "title": "Paramètres du modèle",
+    "systemPrompt": {
+      "label": "Prompt système",
+      "placeholder": "Veuillez entrer le prompt système...",
+      "description": "Définissez le prompt système pour l'assistant IA afin de définir son comportement et son rôle"
+    },
+    "temperature": {
+      "label": "Température du modèle",
+      "description": "Contrôle l'aléatoire de la sortie ; des valeurs plus élevées produisent des réponses plus créatives"
+    },
+    "contextLength": {
+      "label": "Longueur du contexte",
+      "description": "Définir la longueur maximale du contexte de la conversation"
+    },
+    "responseLength": {
+      "label": "Longueur de la réponse",
+      "description": "Définir la longueur maximale de la réponse de l'IA"
+    },
+    "artifacts": {
+      "description": "L'activation de la fonction Artifacts permet à l'IA de générer un contenu plus riche",
+      "title": "Effets des artefacts"
+    },
+    "addModel": "Ajouter un modèle",
+    "configureModel": "Configuration du modèle",
+    "modelList": "Liste des modèles",
+    "provider": "Fournisseur de service",
+    "providerSetting": "Paramètres du fournisseur",
+    "selectModel": "Sélectionner un modèle"
+  },
+  "provider": {
+    "enable": "Activer le service",
+    "urlPlaceholder": "Veuillez entrer l'URL de l'API",
+    "keyPlaceholder": "Veuillez entrer la clé API",
+    "verifyKey": "Vérifier la clé",
+    "howToGet": "Comment obtenir",
+    "getKeyTip": "Veuillez visiter",
+    "getKeyTipEnd": "pour obtenir la clé API",
+    "urlFormat": "Exemple d'API : {defaultUrl}",
+    "modelList": "Liste des modèles",
+    "enableModels": "Activer les modèles",
+    "disableAllModels": "Désactiver tous les modèles",
+    "modelsEnabled": "Les modèles ont été activés",
+    "verifyLink": "Vérifier le lien",
+    "syncModelsFailed": "Échec de la synchronisation des modèles...",
+    "addCustomProvider": "Ajouter un fournisseur personnalisé",
+    "delete": "Supprimer",
+    "stopModel": "Arrêter le modèle",
+    "pulling": "Récupération...",
+    "runModel": "Exécuter le modèle",
+    "dialog": {
+      "disableModel": {
+        "title": "Confirmer la désactivation du modèle",
+        "content": "Êtes-vous sûr de vouloir désactiver le modèle \"{name}\" ?",
+        "confirm": "Désactiver"
+      },
+      "disableAllModels": {
+        "title": "Confirmer la désactivation de tous les modèles",
+        "content": "Êtes-vous sûr de vouloir désactiver tous les modèles ?",
+        "confirm": "Désactiver tout"
+      },
+      "configModels": {
+        "title": "Configurer la liste des modèles"
+      },
+      "verify": {
+        "missingFields": "Veuillez entrer la clé API et l'URL de l'API",
+        "failed": "Échec de la vérification",
+        "success": "Vérification réussie"
+      },
+      "addCustomProvider": {
+        "title": "Ajouter un fournisseur personnalisé",
+        "description": "Veuillez remplir les informations nécessaires pour le fournisseur",
+        "name": "Nom",
+        "namePlaceholder": "Veuillez entrer le nom du fournisseur",
+        "apiType": "Type d'API",
+        "apiTypePlaceholder": "Veuillez sélectionner le type d'API",
+        "apiKey": "Clé API",
+        "apiKeyPlaceholder": "Veuillez entrer la clé API",
+        "baseUrl": "URL de base de l'API",
+        "baseUrlPlaceholder": "Veuillez entrer l'URL de base de l'API",
+        "enable": "Activer le fournisseur"
+      },
+      "deleteProvider": {
+        "title": "Confirmer la suppression du fournisseur",
+        "content": "Êtes-vous sûr de vouloir supprimer le fournisseur \"{name}\" ? Cette action ne peut pas être annulée.",
+        "confirm": "Supprimer"
+      },
+      "deleteModel": {
+        "title": "Confirmer la suppression du modèle",
+        "content": "Êtes-vous sûr de vouloir supprimer le modèle \"{name}\" ? Cette action ne peut pas être annulée.",
+        "confirm": "Supprimer"
+      },
+      "pullModel": {
+        "title": "Récupérer le modèle",
+        "pull": "Récupérer"
+      }
+    },
+    "pullModels": "Récupérer les modèles",
+    "refreshModels": "Actualiser les modèles",
+    "modelsRunning": "Modèles en cours d'exécution",
+    "runningModels": "Modèles en cours d'exécution",
+    "noRunningModels": "Aucun modèle en cours d'exécution",
+    "deleteModel": "Supprimer le modèle",
+    "deleteModelConfirm": "Êtes-vous sûr de vouloir supprimer le modèle \"{name}\" ? Cette action ne peut pas être annulée.",
+    "noLocalModels": "Aucun modèle local",
+    "localModels": "Modèles locaux"
+  },
+  "mcp": {
+    "title": "Paramètres MCP",
+    "description": "Gérer et configurer les serveurs et outils MCP (Model Control Protocol)",
+    "enabledTitle": "Activer MCP",
+    "enabledDescription": "Activer ou désactiver les fonctionnalités et outils MCP",
+    "enableToAccess": "Veuillez activer MCP pour accéder aux options de configuration",
+    "tabs": {
+      "servers": "Serveurs",
+      "tools": "Outils"
+    },
+    "serverList": "Liste des serveurs",
+    "addServer": "Ajouter un serveur",
+    "running": "En cours d'exécution",
+    "stopped": "Arrêté",
+    "stopServer": "Arrêter le serveur",
+    "startServer": "Démarrer le serveur",
+    "noServersFound": "Aucun serveur trouvé",
+    "addServerDialog": {
+      "title": "Ajouter un serveur",
+      "description": "Configurer un nouveau serveur MCP"
+    },
+    "editServerDialog": {
+      "title": "Modifier le serveur",
+      "description": "Modifier la configuration du serveur MCP"
+    },
+    "serverForm": {
+      "name": "Nom du serveur",
+      "namePlaceholder": "Entrer le nom du serveur",
+      "nameRequired": "Le nom du serveur est requis",
+      "type": "Type de serveur",
+      "typePlaceholder": "Sélectionner le type de serveur",
+      "typeStdio": "Entrée et sortie standard (Stdio)",
+      "typeSse": "Server Send Events (SSE)",
+      "typeInMemory": "En mémoire",
+      "baseUrl": "URL de base",
+      "baseUrlPlaceholder": "Entrer l'URL de base du serveur (ex : http://localhost:3000)",
+      "command": "Commande",
+      "commandPlaceholder": "Entrer la commande",
+      "commandRequired": "La commande est requise",
+      "args": "Arguments",
+      "argsPlaceholder": "Entrer les arguments séparés par des espaces",
+      "argsRequired": "Les arguments sont requis",
+      "env": "Variables d'environnement",
+      "envPlaceholder": "Entrer les variables d'environnement au format JSON",
+      "envInvalid": "Les variables d'environnement doivent être au format JSON valide",
+      "description": "Description",
+      "descriptionPlaceholder": "Entrer la description du serveur",
+      "descriptions": "Description",
+      "descriptionsPlaceholder": "Entrer la description du serveur",
+      "icon": "Icône",
+      "iconPlaceholder": "Entrer l'icône",
+      "icons": "Icône",
+      "iconsPlaceholder": "Entrer l'icône",
+      "autoApprove": "Approbation automatique",
+      "autoApproveAll": "Tout",
+      "autoApproveRead": "Lecture",
+      "autoApproveWrite": "Écriture",
+      "autoApproveHelp": "Sélectionner les types d'opérations à approuver automatiquement sans confirmation de l'utilisateur",
+      "submit": "Soumettre",
+      "add": "Ajouter",
+      "update": "Mettre à jour",
+      "cancel": "Annuler",
+      "jsonConfigIntro": "Vous pouvez coller une configuration JSON directement ou choisir de configurer le serveur manuellement.",
+      "jsonConfig": "Configuration JSON",
+      "jsonConfigPlaceholder": "Collez votre configuration de serveur MCP au format JSON",
+      "jsonConfigExample": "Exemple de configuration JSON",
+      "parseSuccess": "Configuration analysée",
+      "configImported": "Configuration importée avec succès",
+      "parseError": "Erreur d'analyse",
+      "skipToManual": "Passer à la configuration manuelle",
+      "parseAndContinue": "Analyser et continuer",
+      "jsonParseError": "Échec de l'analyse JSON",
+      "typeHttp": "Requêtes HTTP en streaming (HTTP)"
+    }
+  }
+}

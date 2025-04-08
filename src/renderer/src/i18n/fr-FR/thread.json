@@ -1,0 +1,7 @@
+{
+  "actions": {
+    "rename": "Renommer",
+    "delete": "Supprimer",
+    "cleanMessages": "Nettoyer les messages"
+  }
+}
