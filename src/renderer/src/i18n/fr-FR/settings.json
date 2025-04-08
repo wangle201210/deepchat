@@ -247,7 +247,42 @@
       "skipToManual": "Passer à la configuration manuelle",
       "parseAndContinue": "Analyser et continuer",
       "jsonParseError": "Échec de l'analyse JSON",
-      "typeHttp": "Requêtes HTTP en streaming (HTTP)"
-    }
+      "typeHttp": "Requêtes HTTP en streaming (HTTP)",
+      "useSSE": "Activer le transfert SSE"
+    },
+    "builtIn": "intégré",
+    "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
+    "builtInServers": "Service intégré",
+    "cannotRemoveBuiltIn": "Impossible de supprimer les services intégrés",
+    "confirmDelete": {
+      "cancel": "Annuler",
+      "confirm": "supprimer",
+      "description": "Êtes-vous sûr de vouloir supprimer le serveur {nom}? Cette opération ne peut pas être annulée.",
+      "title": "Confirmer la suppression"
+    },
+    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {nom}? Cette opération ne peut pas être annulée.",
+    "customServers": "Services personnalisés",
+    "default": "défaut",
+    "deleteServer": "Supprimer le serveur",
+    "editServer": "Modifier le serveur",
+    "isDefault": "Serveur par défaut",
+    "removeDefault": "Supprimer par défaut",
+    "removeServer": "Supprimer le serveur",
+    "removeServerDialog": {
+      "title": "Supprimer le serveur"
+    },
+    "resetConfirm": "récupérer",
+    "resetConfirmDescription": "Cette action restaure tous les serveurs par défaut tout en conservant vos serveurs personnalisés. Toutes les modifications du serveur par défaut seront perdues.",
+    "resetConfirmTitle": "Restaurer le service par défaut",
+    "resetToDefault": "Restaurer le service par défaut",
+    "setAsDefault": "Définir en tant que serveur par défaut",
+    "setDefault": "Définir par défaut"
+  },
+  "about": {
+    "checkUpdate": "Vérifier les mises à jour",
+    "checking": "Vérification...",
+    "latestVersion": "C'est la dernière version",
+    "title": "à propos de nous",
+    "version": "Version"
   }
 }
