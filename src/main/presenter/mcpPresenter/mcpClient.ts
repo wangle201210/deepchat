@@ -281,7 +281,7 @@ export class McpClient {
 
       // 创建 MCP 客户端
       this.client = new Client(
-        { name: `deepchat-client-${this.serverName}`, version: '1.0.0' },
+        { name: 'DeepChat', version: app.getVersion() },
         {
           capabilities: {
             resources: {},
