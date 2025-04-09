@@ -299,6 +299,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<void> {
+    // 记录输入到大模型的消息内容
+    console.log('startStreamCompletion', JSON.stringify(messages, null, 2))
+
     if (!this.canStartNewStream()) {
       throw new Error('已达到最大并发流数量限制')
     }
@@ -425,7 +428,15 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string> {
-    console.log('generateCompletion', providerId, modelId, temperature, maxTokens)
+    // 记录输入到大模型的消息内容
+    console.log(
+      'generateCompletion',
+      providerId,
+      modelId,
+      temperature,
+      maxTokens,
+      JSON.stringify(messages, null, 2)
+    )
     const provider = this.getProviderInstance(providerId)
     const response = await provider.completions(messages, modelId, temperature, maxTokens)
     return response.content

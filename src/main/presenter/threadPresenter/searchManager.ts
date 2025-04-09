@@ -200,7 +200,7 @@ const defaultEngines: SearchEngineTemplate[] = [
 
 // 格式化搜索结果的函数
 export function formatSearchResults(results: SearchResult[]): string {
-  return results
+  const formattedResults = results
     .map(
       (result, index) => `[webpage ${index + 1} begin]
 title: ${result.title}
@@ -209,13 +209,21 @@ content：${result.content || ''}
 [webpage ${index + 1} end]`
     )
     .join('\n\n')
+  // 记录格式化后的搜索结果
+  console.log('formattedResults:', formattedResults)
+  return formattedResults
 }
 // 生成带搜索结果的提示词
 export function generateSearchPrompt(query: string, results: SearchResult[]): string {
   if (results.length > 0) {
-    return SEARCH_PROMPT_TEMPLATE.replace('{{SEARCH_RESULTS}}', formatSearchResults(results))
+    const searchPrompt = SEARCH_PROMPT_TEMPLATE.replace('{{SEARCH_RESULTS}}', formatSearchResults(results))
       .replace('{{USER_QUERY}}', query)
       .replace('{{CUR_DATE}}', new Date().toLocaleDateString())
+
+    // 记录最终生成的提示词
+    console.log('generateSearchPrompt', searchPrompt)
+
+    return searchPrompt
   } else {
     return query
   }
