@@ -336,36 +336,47 @@ export const defaultModelsSettings = [
     reasoning: false
   },
   {
-    id: 'o1',
-    name: 'OpenAi o1 Preview',
-    temperature: 0.7,
-    maxTokens: 32768,
-    contextLength: 128000,
-    match: ['o1'],
-    vision: true,
-    functionCall: true,
-    reasoning: true
-  },
-  {
     id: 'o1-preview',
-    name: 'OpenAi o1 Preview',
+    name: 'OpenAI o1 Preview',
     temperature: 0.7,
     maxTokens: 32768,
     contextLength: 128000,
     match: ['o1-preview'],
     vision: true,
-    functionCall: true,
+    functionCall: false,
     reasoning: true
   },
   {
     id: 'o1-mini',
-    name: 'Claude Opus 1 Mini',
+    name: 'OpenAI o1 Mini',
     temperature: 0.7,
     maxTokens: 65536,
     contextLength: 128000,
     match: ['o1-mini'],
     vision: true,
-    functionCall: true,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'o1-mini',
+    name: 'OpenAI o1 Mini',
+    temperature: 0.7,
+    maxTokens: 65536,
+    contextLength: 128000,
+    match: ['o1-mini'],
+    vision: true,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'o1',
+    name: 'OpenAI o1',
+    temperature: 0.7,
+    maxTokens: 32768,
+    contextLength: 128000,
+    match: ['o1'],
+    vision: true,
+    functionCall: false,
     reasoning: true
   },
   {
