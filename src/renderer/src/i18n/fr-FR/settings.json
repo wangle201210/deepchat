@@ -247,8 +247,7 @@
       "skipToManual": "Passer à la configuration manuelle",
       "parseAndContinue": "Analyser et continuer",
       "jsonParseError": "Échec de l'analyse JSON",
-      "typeHttp": "Requêtes HTTP en streaming (HTTP)",
-      "useSSE": "Activer le transfert SSE"
+      "typeHttp": "Requêtes HTTP en streaming (HTTP)"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",

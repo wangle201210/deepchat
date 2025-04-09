@@ -41,7 +41,6 @@ const descriptions = ref(props.initialConfig?.descriptions || '')
 const icons = ref(props.initialConfig?.icons || '📁')
 const type = ref<'sse' | 'stdio' | 'inmemory' | 'http'>(props.initialConfig?.type || 'stdio')
 const baseUrl = ref(props.initialConfig?.baseUrl || '')
-const useSSE = ref(props.initialConfig?.useSSE || false)
 
 // 判断是否是inmemory类型
 const isInMemoryType = computed(() => type.value === 'inmemory')
@@ -104,7 +103,6 @@ const parseJsonConfig = () => {
     icons.value = serverConfig.icons || '📁'
     type.value = serverConfig.type || 'stdio'
     baseUrl.value = serverConfig.url || ''
-    useSSE.value = serverConfig.useSSE || false
     if (type.value !== 'stdio' && type.value !== 'sse' && type.value !== 'http') {
       if (baseUrl.value) {
         type.value = 'sse'
@@ -220,8 +218,7 @@ const handleSubmit = () => {
       command: '', // 提供空字符串作为默认值
       args: [], // 提供空数组作为默认值
       env: {}, // 提供空对象作为默认值
-      baseUrl: baseUrl.value.trim(),
-      useSSE: useSSE.value
+      baseUrl: baseUrl.value.trim()
     }
   } else {
     // STDIO类型的服务器
@@ -371,19 +368,6 @@ watch(
             :disabled="isFieldReadOnly"
             required
           />
-        </div>
-
-        <!-- HTTP类型的SSE选项 -->
-        <div class="space-y-2" v-if="type === 'http'">
-          <div class="flex items-center space-x-2">
-            <Checkbox id="use-sse" v-model:checked="useSSE" :disabled="isFieldReadOnly" />
-            <label
-              for="use-sse"
-              class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              {{ t('settings.mcp.serverForm.useSSE') }}
-            </label>
-          </div>
         </div>
 
         <!-- 命令 -->

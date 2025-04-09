@@ -247,7 +247,6 @@
       "parseAndContinue": "解析並繼續",
       "jsonParseError": "JSON解析失敗",
       "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
-      "useSSE": "啟用SSE傳輸",
       "typeInMemory": "內存(InMemory)"
     },
     "deleteServer": "刪除伺服器",

@@ -247,7 +247,6 @@
       "parseAndContinue": "解析して続行",
       "jsonParseError": "JSONの解析は失敗しました",
       "typeHttp": "ストリーミングHTTPリクエスト（HTTP）",
-      "useSSE": "SSE転送を有効にします",
       "typeInMemory": "メモリ"
     },
     "deleteServer": "サーバーを削除",

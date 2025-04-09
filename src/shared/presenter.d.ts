@@ -612,7 +612,6 @@ export interface MCPServerConfig {
   disable?: boolean
   baseUrl?: string
   type: 'sse' | 'stdio' | 'inmemory' | 'http'
-  useSSE?: boolean
 }
 
 export interface MCPConfig {
