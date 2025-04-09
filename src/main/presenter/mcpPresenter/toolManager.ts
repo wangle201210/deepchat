@@ -103,6 +103,13 @@ export class ToolManager {
     try {
       // 解析工具调用参数
       const { name, arguments: argsString } = toolCall.function
+
+      // 记录工具调用的详细输入信息
+      console.info('[MCP] ToolManager arg', {
+        toolName: name,
+        rawArguments: argsString
+      })
+
       let args: Record<string, unknown> | null = null
       try {
         args = JSON.parse(argsString)
@@ -213,6 +220,13 @@ export class ToolManager {
         content: formattedContent,
         isError: result.isError
       }
+
+      // 记录工具调用的详细输出信息
+      console.info('[MCP] ToolManager resp', {
+        toolName: name,
+        isError: result.isError,
+        content: formattedContent
+      })
 
       // 触发工具调用结果事件
       eventBus.emit(MCP_EVENTS.TOOL_CALL_RESULT, response)
