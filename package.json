@@ -87,6 +87,7 @@
     "electron-store": "^8.2.0",
     "electron-updater": "^6.1.7",
     "embla-carousel-vue": "^8.5.2",
+    "eventsource-parser": "^3.0.1",
     "fflate": "^0.8.2",
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",
