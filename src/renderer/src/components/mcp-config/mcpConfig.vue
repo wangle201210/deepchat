@@ -634,7 +634,10 @@ watch(
             </div>
             <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
               <div class="flex justify-between items-center">
-                <div class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                <div v-if="server.type === 'http'" class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                  {{ server.baseUrl }}
+                </div>
+                <div v-else class="text-xs font-mono overflow-x-auto whitespace-nowrap">
                   {{ server.command }} {{ server.args.join(' ') }}
                 </div>
                 <span
