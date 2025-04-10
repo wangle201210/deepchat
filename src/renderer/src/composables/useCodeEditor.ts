@@ -27,6 +27,8 @@ import { EditorState, Extension } from '@codemirror/state'
 import { anysphereTheme } from '@/lib/code.theme'
 
 export const editorInstances: Map<string, EditorView> = new Map()
+// 收集当前可见的编辑器ID
+const currentEditorIds = new Set<string>()
 // 存储代码内容和语言信息的映射，保持稳定性
 const codeCache: Map<string, { code: string; lang: string }> = new Map()
 
@@ -102,9 +104,6 @@ const getLanguageExtension = (lang: string): Extension => {
 export const useCodeEditor = (id: string) => {
   const initCodeEditors = (status?: 'loading' | 'success' | 'error') => {
     const codeBlocks = document.querySelectorAll(`#${id} .code-block`)
-
-    // 收集当前可见的编辑器ID
-    const currentEditorIds = new Set<string>()
 
     codeBlocks.forEach((block) => {
       const editorId = block.getAttribute('id')
