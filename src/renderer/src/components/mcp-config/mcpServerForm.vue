@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { MCPServerConfig } from '@shared/presenter'
 import { EmojiPicker } from '@/components/ui/emoji-picker'
 import { useToast } from '@/components/ui/toast'
+import { Icon } from '@iconify/vue'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -276,6 +277,11 @@ watch(
   },
   { immediate: true }
 )
+
+// 打开MCP Marketplace
+const openMcpMarketplace = () => {
+  window.open('https://mcp.deepchatai.cn', '_blank')
+}
 </script>
 
 <template>
@@ -285,6 +291,19 @@ watch(
       <div class="space-y-4 px-4 pb-4">
         <div class="text-sm">
           {{ t('settings.mcp.serverForm.jsonConfigIntro') }}
+        </div>
+
+        <!-- MCP Marketplace 入口 -->
+        <div class="my-4">
+          <Button
+            variant="outline"
+            class="w-full flex items-center justify-center gap-2"
+            @click="openMcpMarketplace"
+          >
+            <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
+            <span>{{ t('settings.mcp.serverForm.browseMarketplace') }}</span>
+            <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+          </Button>
         </div>
 
         <div class="space-y-2">

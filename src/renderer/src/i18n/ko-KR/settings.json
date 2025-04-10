@@ -247,7 +247,8 @@
       "skipToManual": "수동 구성으로 건너뛰기",
       "parseAndContinue": "파싱 및 계속",
       "jsonParseError": "JSON 파싱이 실패했습니다",
-      "typeHttp": "스트리밍 HTTP 요청 (HTTP)"
+      "typeHttp": "스트리밍 HTTP 요청 (HTTP)",
+      "browseMarketplace": "MCP 서비스 시장을 탐색하십시오"
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",
@@ -275,7 +276,8 @@
     "customServers": "사용자 정의 서버",
     "builtIn": "내장",
     "cannotRemoveBuiltIn": "내장 서버를 제거할 수 없음",
-    "builtInServerCannotBeRemoved": "내장 서버는 제거할 수 없으며, 매개변수와 환경 변수만 수정할 수 있습니다"
+    "builtInServerCannotBeRemoved": "내장 서버는 제거할 수 없으며, 매개변수와 환경 변수만 수정할 수 있습니다",
+    "marketplace": "MCP 서비스 시장을 탐색하십시오"
   },
   "about": {
     "title": "우리에 대해",

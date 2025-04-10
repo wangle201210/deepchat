@@ -181,6 +181,7 @@
     "enabledTitle": "Enable MCP",
     "enabledDescription": "Enable or disable MCP functionality and tools",
     "enableToAccess": "Please enable MCP to access configuration options",
+    "marketplace": "Browse MCP Marketplace",
     "tabs": {
       "servers": "Servers",
       "tools": "Tools"
@@ -209,6 +210,7 @@
       "typeStdio": "Standard input and output (Stdio)",
       "typeSse": "Server Send Events (SSE)",
       "typeInMemory": "In-Memory",
+      "typeHttp": "Streaming HTTP Requests (HTTP)",
       "baseUrl": "Base URL",
       "baseUrlPlaceholder": "Enter server base URL (e.g. http://localhost:3000)",
       "command": "Command",
@@ -247,7 +249,7 @@
       "skipToManual": "Skip to Manual Configuration",
       "parseAndContinue": "Parse & Continue",
       "jsonParseError": "JSON parsing failed",
-      "typeHttp": "Streaming HTTP Requests (HTTP)"
+      "browseMarketplace": "Browse MCP Marketplace"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",

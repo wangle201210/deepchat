@@ -247,7 +247,8 @@
       "parseAndContinue": "解析並繼續",
       "jsonParseError": "JSON解析失敗",
       "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
-      "typeInMemory": "內存(InMemory)"
+      "typeInMemory": "內存(InMemory)",
+      "browseMarketplace": "瀏覽MCP服務市場"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -275,7 +276,8 @@
     "builtInServers": "內置服務",
     "cannotRemoveBuiltIn": "無法刪除內置服務",
     "customServers": "自定義服務",
-    "removeDefault": "移除默認"
+    "removeDefault": "移除默認",
+    "marketplace": "瀏覽MCP服務市場"
   },
   "about": {
     "title": "關於我們",

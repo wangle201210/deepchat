@@ -247,7 +247,8 @@
       "skipToManual": "Passer à la configuration manuelle",
       "parseAndContinue": "Analyser et continuer",
       "jsonParseError": "Échec de l'analyse JSON",
-      "typeHttp": "Requêtes HTTP en streaming (HTTP)"
+      "typeHttp": "Requêtes HTTP en streaming (HTTP)",
+      "browseMarketplace": "Parcourir le marché des services MCP"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -275,7 +276,8 @@
     "resetConfirmTitle": "Restaurer le service par défaut",
     "resetToDefault": "Restaurer le service par défaut",
     "setAsDefault": "Définir en tant que serveur par défaut",
-    "setDefault": "Définir par défaut"
+    "setDefault": "Définir par défaut",
+    "marketplace": "Parcourir le marché des services MCP"
   },
   "about": {
     "checkUpdate": "Vérifier les mises à jour",

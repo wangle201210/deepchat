@@ -247,7 +247,8 @@
       "parseAndContinue": "解析して続行",
       "jsonParseError": "JSONの解析は失敗しました",
       "typeHttp": "ストリーミングHTTPリクエスト（HTTP）",
-      "typeInMemory": "メモリ"
+      "typeInMemory": "メモリ",
+      "browseMarketplace": "MCPサービス市場を閲覧します"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -275,7 +276,8 @@
     "builtInServers": "組み込みサービス",
     "cannotRemoveBuiltIn": "ビルトインサービスを削除できません",
     "customServers": "カスタムサービス",
-    "removeDefault": "デフォルトを削除します"
+    "removeDefault": "デフォルトを削除します",
+    "marketplace": "MCPサービス市場を閲覧します"
   },
   "about": {
     "title": "私たちについて",

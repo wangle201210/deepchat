@@ -247,7 +247,8 @@
       "skipToManual": "Перейти к ручной настройке",
       "parseAndContinue": "Обработать и продолжить",
       "jsonParseError": "JSON SAINING не удалось",
-      "typeHttp": "Потоковые http -запросы (http)"
+      "typeHttp": "Потоковые http -запросы (http)",
+      "browseMarketplace": "Просмотреть рынок услуг MCP"
     },
     "deleteServer": "Удалить сервер",
     "editServer": "Редактировать сервер",
@@ -275,7 +276,8 @@
     "customServers": "Пользовательские серверы",
     "builtIn": "Встроенный",
     "cannotRemoveBuiltIn": "Невозможно удалить встроенный сервер",
-    "builtInServerCannotBeRemoved": "Встроенные серверы нельзя удалить, можно изменять только параметры и переменные окружения"
+    "builtInServerCannotBeRemoved": "Встроенные серверы нельзя удалить, можно изменять только параметры и переменные окружения",
+    "marketplace": "Просмотреть рынок услуг MCP"
   },
   "about": {
     "title": "О нас",
