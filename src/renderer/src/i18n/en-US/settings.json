@@ -181,7 +181,7 @@
     "enabledTitle": "Enable MCP",
     "enabledDescription": "Enable or disable MCP functionality and tools",
     "enableToAccess": "Please enable MCP to access configuration options",
-    "marketplace": "Browse MCP Marketplace",
+    "marketplace": "Go to the MCP Market for one-click installation",
     "tabs": {
       "servers": "Servers",
       "tools": "Tools"

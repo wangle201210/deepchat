@@ -181,7 +181,7 @@
     "enabledTitle": "启用MCP",
     "enabledDescription": "启用或禁用MCP功能和工具",
     "enableToAccess": "请先启用MCP以访问配置选项",
-    "marketplace": "浏览MCP服务市场",
+    "marketplace": "前往MCP市场一键安装",
     "tabs": {
       "servers": "服务器",
       "tools": "工具"
