@@ -24,7 +24,9 @@ import { StreamLanguage } from '@codemirror/language'
 import { php } from '@codemirror/lang-php'
 import { yaml } from '@codemirror/lang-yaml'
 import { EditorState, Extension } from '@codemirror/state'
-import { anysphereTheme } from '@/lib/code.theme'
+import { anysphereThemeDark, anysphereThemeLight } from '@/lib/code.theme'
+import { useDark } from '@vueuse/core'
+import { watch } from 'vue'
 
 export const editorInstances: Map<string, EditorView> = new Map()
 // 收集当前可见的编辑器ID
@@ -102,6 +104,48 @@ const getLanguageExtension = (lang: string): Extension => {
 }
 
 export const useCodeEditor = (id: string) => {
+  const isDark = useDark()
+
+  // 创建编辑器实例的函数
+  const createEditor = (
+    editorContainer: HTMLElement,
+    decodedCode: string,
+    lang: string,
+    editorId: string
+  ) => {
+    const extensions = [
+      basicSetup,
+      isDark.value ? anysphereThemeDark : anysphereThemeLight,
+      EditorView.lineWrapping,
+      EditorState.tabSize.of(2),
+      getLanguageExtension(lang),
+      EditorState.readOnly.of(true)
+    ]
+
+    try {
+      const editorView = new EditorView({
+        state: EditorState.create({
+          doc: decodedCode,
+          extensions
+        }),
+        parent: editorContainer
+      })
+      editorInstances.set(editorId, editorView)
+    } catch (error) {
+      console.error('Failed to initialize editor:', error)
+      // Fallback方法：使用简单的pre标签
+      const escapedCode = decodedCode
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+      editorContainer.innerHTML = `<pre style="white-space: pre-wrap; color: ${
+        isDark.value ? '#ffffff' : '#000000'
+      }; margin: 0;">${escapedCode}</pre>`
+    }
+  }
+
   const initCodeEditors = (status?: 'loading' | 'success' | 'error') => {
     const codeBlocks = document.querySelectorAll(`#${id} .code-block`)
 
@@ -152,39 +196,8 @@ export const useCodeEditor = (id: string) => {
         existingEditor.destroy()
       }
 
-      // 创建基础扩展
-      const extensions = [
-        basicSetup,
-        anysphereTheme,
-        EditorView.lineWrapping,
-        EditorState.tabSize.of(2),
-        getLanguageExtension(lang),
-        EditorState.readOnly.of(true)
-      ]
-
-      try {
-        if (editorContainer instanceof HTMLElement) {
-          const editorView = new EditorView({
-            state: EditorState.create({
-              doc: decodedCode,
-              extensions
-            }),
-            parent: editorContainer
-          })
-          editorInstances.set(editorId, editorView)
-        }
-      } catch (error) {
-        console.error('Failed to initialize editor:', error)
-        // Fallback方法：使用简单的pre标签
-        if (editorContainer instanceof HTMLElement) {
-          const escapedCode = decodedCode
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;')
-          editorContainer.innerHTML = `<pre style="white-space: pre-wrap; color: #ffffff; margin: 0;">${escapedCode}</pre>`
-        }
+      if (editorContainer instanceof HTMLElement) {
+        createEditor(editorContainer, decodedCode, lang, editorId)
       }
     })
 
@@ -205,6 +218,19 @@ export const useCodeEditor = (id: string) => {
     editorInstances.clear()
     codeCache.clear()
   }
+
+  // 监听主题变化
+  watch(isDark, () => {
+    // 遍历所有编辑器实例，重新创建以应用新主题
+    editorInstances.forEach((editor, editorId) => {
+      const cachedInfo = codeCache.get(editorId)
+      if (cachedInfo && editor.dom.parentElement) {
+        const parentElement = editor.dom.parentElement
+        editor.destroy() // 销毁旧的编辑器实例
+        createEditor(parentElement, cachedInfo.code, cachedInfo.lang, editorId)
+      }
+    })
+  })
 
   return {
     initCodeEditors,

@@ -296,41 +296,29 @@ onUnmounted(() => {
 }
 
 .prose .code-block {
-  @apply rounded-lg overflow-hidden mt-2 mb-4 text-xs;
+  @apply rounded-lg overflow-hidden mt-2 mb-4 text-xs shadow-sm;
 }
 
 .prose .code-header {
-  @apply flex justify-between items-center px-4 py-2 bg-[#181818];
+  @apply flex justify-between rounded-t-lg items-center px-3 py-2 bg-zinc-100 dark:bg-zinc-900 border-t border-l border-r;
 }
 
 .prose .code-lang {
-  @apply text-xs text-gray-400;
+  @apply text-xs text-muted-foreground;
 }
 
 .prose .copy-button {
-  @apply text-xs text-gray-400 hover:text-white;
+  @apply text-xs text-muted-foreground hover:text-foreground;
 }
 
 .prose .code-editor {
-  @apply overflow-auto;
+  @apply overflow-auto dark:bg-gray-900 border;
   min-height: 10px;
-  background-color: #1e1e1e;
-  color: #ffffff;
-  padding: 8px;
   border-radius: 0 0 0.5rem 0.5rem;
 }
 
-.prose .code-editor .cm-editor {
-  background-color: #1e1e1e;
-  font-family: 'JetBrains Mono', Consolas, 'Courier New', monospace !important;
-}
-
-.prose .code-editor .cm-content {
-  color: #ffffff !important;
-}
-
-.prose .code-editor .cm-line {
-  padding: 0 8px;
+.prose .code-editor * {
+  font-family: Menlo, Monaco, 'JetBrains Mono', Consolas, 'Courier New', monospace !important;
 }
 
 .prose hr {
