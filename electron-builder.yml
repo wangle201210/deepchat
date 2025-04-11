@@ -50,14 +50,13 @@ mac:
       arch: arm64
     - target: zip
       arch: arm64
-dmg:
   artifactName: ${name}-${version}-mac-${arch}.${ext}
 linux:
   target:
     - AppImage
+    - tar.gz
   maintainer: ThinkInAIXYZ
   category: Utility
-appImage:
   artifactName: ${name}-${version}-linux-${arch}.${ext}
 npmRebuild: true
 publish:

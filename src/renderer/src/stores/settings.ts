@@ -730,6 +730,12 @@ export const useSettingsStore = defineStore('settings', () => {
           githubUrl: status.updateInfo.githubUrl,
           downloadUrl: status.updateInfo.downloadUrl
         }
+
+        // 检查是否已经下载完成，只有在下载完成的情况下才打开对话框
+        if (status.status === 'downloaded') {
+          openUpdateDialog()
+        }
+        // 否则不打开对话框，让更新在后台静默下载
       }
     } catch (error) {
       console.error('Failed to check update:', error)

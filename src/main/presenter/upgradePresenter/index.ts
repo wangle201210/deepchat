@@ -74,7 +74,8 @@ export class UpgradePresenter implements IUpgradePresenter {
       this._error = e.message
       eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
         status: this._status,
-        error: this._error
+        error: this._error,
+        info: this._versionInfo
       })
     })
 
@@ -97,32 +98,15 @@ export class UpgradePresenter implements IUpgradePresenter {
     autoUpdater.on('update-available', (info) => {
       console.log('检测到新版本', info)
       this._status = 'available'
-      // 保存版本信息
-      if (this._versionInfo) {
-        this._versionInfo.version = info.version
-        this._versionInfo.releaseDate = info.releaseDate?.toString() || ''
-        this._versionInfo.releaseNotes = info.releaseNotes?.toString() || ''
-      }
 
-      // 确保释放日志信息正确传递
-      let releaseNotes = ''
-      if (info.releaseNotes) {
-        releaseNotes =
-          typeof info.releaseNotes === 'string' ? info.releaseNotes : info.releaseNotes.toString()
-      } else if (this._versionInfo?.releaseNotes) {
-        releaseNotes = this._versionInfo.releaseNotes
-      }
+      // 重要：这里不再使用info中的信息更新this._versionInfo
+      // 而是确保使用之前从versionUrl获取的原始信息
+      console.log('使用已保存的版本信息:', this._versionInfo)
 
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
-        status: this._status,
-        info: {
-          version: info.version,
-          releaseDate: info.releaseDate?.toString() || this._versionInfo?.releaseDate || '',
-          releaseNotes: releaseNotes,
-          githubUrl: this._versionInfo?.githubUrl,
-          downloadUrl: this._versionInfo?.downloadUrl
-        }
-      })
+      // eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      //   status: this._status,
+      //   info: this._versionInfo // 使用已保存的版本信息
+      // })
 
       // 检测到更新后自动开始下载
       this.startDownloadUpdate()
@@ -148,29 +132,14 @@ export class UpgradePresenter implements IUpgradePresenter {
       this._status = 'downloaded'
 
       // 写入更新标记文件
-      this.writeUpdateMarker(info.version)
+      this.writeUpdateMarker(this._versionInfo?.version || info.version)
 
-      // 确保保存完整的更新信息，包括releaseNotes
-      console.log('更新信息:', this._versionInfo)
-
-      // 确保释放日志信息正确传递
-      let releaseNotes = ''
-      if (info.releaseNotes) {
-        releaseNotes =
-          typeof info.releaseNotes === 'string' ? info.releaseNotes : info.releaseNotes.toString()
-      } else if (this._versionInfo?.releaseNotes) {
-        releaseNotes = this._versionInfo.releaseNotes
-      }
+      // 确保保存完整的更新信息
+      console.log('使用已保存的版本信息:', this._versionInfo)
 
       eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
         status: this._status,
-        info: {
-          version: info.version,
-          releaseDate: info.releaseDate?.toString() || this._versionInfo?.releaseDate || '',
-          releaseNotes: releaseNotes,
-          githubUrl: this._versionInfo?.githubUrl,
-          downloadUrl: this._versionInfo?.downloadUrl
-        }
+        info: this._versionInfo // 使用已保存的版本信息
       })
     })
 
@@ -280,13 +249,23 @@ export class UpgradePresenter implements IUpgradePresenter {
       const remoteVersion = response.data
       const currentVersion = app.getVersion()
 
+      // 保存完整的远程版本信息到内存中，作为唯一的标准信息源
+      this._versionInfo = {
+        version: remoteVersion.version,
+        releaseDate: remoteVersion.releaseDate,
+        releaseNotes: remoteVersion.releaseNotes,
+        githubUrl: remoteVersion.githubUrl,
+        downloadUrl: remoteVersion.downloadUrl
+      }
+
+      console.log('保存版本信息到内存：', this._versionInfo)
+
       // 更新上次检查时间
       this._lastCheckTime = Date.now()
 
       // 比较版本号
       if (compare(remoteVersion.version, currentVersion, '>')) {
         // 有新版本
-        this._versionInfo = remoteVersion
 
         // 如果上次更新失败，这次不再尝试自动更新，直接进入错误状态让用户手动更新
         if (this._previousUpdateFailed) {
@@ -294,19 +273,10 @@ export class UpgradePresenter implements IUpgradePresenter {
           this._status = 'error'
           this._error = '自动更新可能不稳定，请手动下载更新'
 
-          // 确保传递完整的更新日志
-          const releaseNotes = remoteVersion.releaseNotes || ''
-
           eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
             status: this._status,
             error: this._error,
-            info: {
-              version: remoteVersion.version,
-              releaseDate: remoteVersion.releaseDate,
-              releaseNotes: releaseNotes,
-              githubUrl: remoteVersion.githubUrl,
-              downloadUrl: remoteVersion.downloadUrl
-            }
+            info: this._versionInfo
           })
           return
         }
@@ -324,18 +294,9 @@ export class UpgradePresenter implements IUpgradePresenter {
           // 如果自动更新失败，回退到手动更新
           this._status = 'available'
 
-          // 确保传递完整的更新日志
-          const releaseNotes = remoteVersion.releaseNotes || ''
-
           eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
             status: this._status,
-            info: {
-              version: remoteVersion.version,
-              releaseDate: remoteVersion.releaseDate,
-              releaseNotes: releaseNotes,
-              githubUrl: remoteVersion.githubUrl,
-              downloadUrl: remoteVersion.downloadUrl
-            }
+            info: this._versionInfo // 使用已保存的版本信息
           })
         }
       } else {
