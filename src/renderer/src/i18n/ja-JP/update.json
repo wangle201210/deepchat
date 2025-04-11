@@ -6,5 +6,9 @@
   "later": "後で",
   "githubDownload": "Github ダウンロード",
   "netdiskDownload": "クラウドダウンロード",
-  "checkUpdate": "アップデートを確認する"
+  "checkUpdate": "アップデートを確認する",
+  "autoUpdate": "自動更新",
+  "downloading": "ダウンロード",
+  "installNow": "今すぐインストールしてください",
+  "restarting": "再起動"
 }

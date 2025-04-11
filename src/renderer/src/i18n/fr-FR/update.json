@@ -6,5 +6,9 @@
   "later": "Plus tard",
   "githubDownload": "Téléchargement Github",
   "netdiskDownload": "Téléchargement Cloud",
-  "checkUpdate": "Vérifier les mises à jour"
+  "checkUpdate": "Vérifier les mises à jour",
+  "autoUpdate": "Mise à jour automatique",
+  "downloading": "Téléchargement",
+  "installNow": "Installer maintenant",
+  "restarting": "Redémarrage"
 }

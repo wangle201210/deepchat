@@ -128,6 +128,21 @@ export class Presenter implements IPresenter {
       this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.STATUS_CHANGED, msg)
     })
 
+    eventBus.on(UPDATE_EVENTS.PROGRESS, (msg) => {
+      console.log(UPDATE_EVENTS.PROGRESS, msg)
+      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.PROGRESS, msg)
+    })
+
+    eventBus.on(UPDATE_EVENTS.WILL_RESTART, (msg) => {
+      console.log(UPDATE_EVENTS.WILL_RESTART, msg)
+      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.WILL_RESTART, msg)
+    })
+
+    eventBus.on(UPDATE_EVENTS.ERROR, (msg) => {
+      console.log(UPDATE_EVENTS.ERROR, msg)
+      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.ERROR, msg)
+    })
+
     // 消息编辑事件
     eventBus.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (msgId: string) => {
       this.windowPresenter.mainWindow?.webContents.send(CONVERSATION_EVENTS.MESSAGE_EDITED, msgId)

@@ -35,14 +35,24 @@
             size="sm"
             class="mb-2 text-xs text-muted-foreground"
             @click="handleCheckUpdate"
-            :disabled="settings.isChecking"
+            :disabled="settings.isChecking || settings.isDownloading || settings.isRestarting"
           >
             <Icon
               icon="lucide:refresh-cw"
               class="mr-1 h-3 w-3"
-              :class="{ 'animate-spin': settings.isChecking }"
+              :class="{
+                'animate-spin': settings.isChecking || settings.isDownloading
+              }"
             />
-            {{ t('about.checkUpdateButton') }}
+            <span v-if="settings.isDownloading && settings.updateProgress">
+              {{ t('update.downloading') }}: {{ Math.round(settings.updateProgress.percent) }}%
+            </span>
+            <span v-else-if="settings.isReadyToInstall">
+              {{ t('update.installNow') }}
+            </span>
+            <span v-else>
+              {{ t('about.checkUpdateButton') }}
+            </span>
           </Button>
         </div>
 
@@ -146,10 +156,16 @@ const openDisclaimerDialog = () => {
 
 // 检查更新
 const handleCheckUpdate = async () => {
-  await settings.checkUpdate()
-  if (settings.hasUpdate) {
+  // 如果已下载完成，直接打开更新对话框
+  if (settings.isReadyToInstall) {
     settings.openUpdateDialog()
+    return
   }
+
+  // 正常检查更新流程
+  await settings.checkUpdate()
+
+  // 不再自动打开对话框，而是由下载完成后自动弹出
 }
 
 const md = getCommonMarkdown()

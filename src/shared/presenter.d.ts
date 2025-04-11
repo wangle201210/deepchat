@@ -525,6 +525,9 @@ export interface IUpgradePresenter {
     } | null
   }
   goDownloadUpgrade(type: 'github' | 'netdisk'): Promise<void>
+  startDownloadUpdate(): boolean
+  restartToUpdate(): boolean
+  restartApp(): void
 }
 // 更新状态类型
 export type UpdateStatus =

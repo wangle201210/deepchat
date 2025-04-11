@@ -6,5 +6,9 @@
   "later": "Позже",
   "githubDownload": "Скачать с Github",
   "netdiskDownload": "Скачать с облака",
-  "checkUpdate": "Проверить обновления"
+  "checkUpdate": "Проверить обновления",
+  "autoUpdate": "Автоматическое обновление",
+  "downloading": "Загрузка",
+  "installNow": "Установить сейчас",
+  "restarting": "Перезапуск"
 }
