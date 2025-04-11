@@ -4,32 +4,14 @@ import path from 'path'
 
 export class TextFileAdapter extends BaseFileAdapter {
   public async getLLMContent(): Promise<string | undefined> {
-    const fullPath = path.join(this.filePath)
-    const stats = await fs.stat(fullPath)
     const content = await this.getContent()
 
-    const fileDescription = `# File Description
-
-  ## Basic File Information
-
-  * **File Name:** ${path.basename(this.filePath)}
-  * **File Type:** Text File
-  * **File Format:** ${path.extname(this.filePath).substring(1)}
-  * **File Size:** ${stats.size} bytes
-  * **Creation Date:** ${stats.birthtime.toISOString().split('T')[0]}
-  * **Updated Date:** ${stats.mtime.toISOString().split('T')[0]}
+    return `
+    ## File Content
+      \`\`\`
+      ${content}
+      \`\`\`
   `
-    if (content) {
-      return `${fileDescription}
-
-## File Content
-  \`\`\`
-  ${content}
-  \`\`\`
-  `
-    } else {
-      return fileDescription
-    }
   }
   private maxFileSize: number
   private fileContent: string | undefined

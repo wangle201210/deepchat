@@ -44,14 +44,14 @@ export class ExcelFileAdapter extends BaseFileAdapter {
     }
 
     // 转换为格式化的字符串
-    return rows.map(row => row.join('\t')).join('\n')
+    return rows.map((row) => row.join('\t')).join('\n')
   }
 
   async getContent(): Promise<string | undefined> {
     if (this.fileContent === undefined) {
       const workbook = await this.loadWorkbook()
       if (workbook) {
-        const sheets = workbook.SheetNames.map(name => {
+        const sheets = workbook.SheetNames.map((name) => {
           const sheet = workbook.Sheets[name]
           return `Sheet: ${name}\n${this.generateSheetContent(sheet)}`
         })
@@ -66,38 +66,34 @@ export class ExcelFileAdapter extends BaseFileAdapter {
     if (!workbook) return undefined
 
     const stats = await fs.stat(this.filePath)
-    
-    const fileDescription = `# Excel File Description
 
-## Basic File Information
-* **File Name:** ${path.basename(this.filePath)}
-* **File Type:** Excel File
-* **File Format:** ${path.extname(this.filePath).substring(1).toUpperCase()}
-* **File Size:** ${stats.size} bytes
-* **Creation Date:** ${stats.birthtime.toISOString().split('T')[0]}
-* **Last Modified:** ${stats.mtime.toISOString().split('T')[0]}
-* **Total Sheets:** ${workbook.SheetNames.length}
+    const fileDescription = `
+    # Excel File Description
 
-## Sheets Information\n`
+    ## Basic Excel File Information
+    * **Total Sheets:** ${workbook.SheetNames.length}
+
+    ## Sheets Information\n`
 
     // 为每个工作表生成预览
-    const sheetsContent = workbook.SheetNames.map(sheetName => {
+    const sheetsContent = workbook.SheetNames.map((sheetName) => {
       const sheet = workbook.Sheets[sheetName]
       const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1:A1')
       const totalRows = range.e.r - range.s.r + 1
       const totalCols = range.e.c - range.s.c + 1
 
-      return `### Sheet: ${sheetName}
-* **Total Rows:** ${totalRows}
-* **Total Columns:** ${totalCols}
+      return `
+        ### Sheet: ${sheetName}
+        * **Total Rows:** ${totalRows}
+        * **Total Columns:** ${totalCols}
 
-#### Data Preview (First 10 Rows)
-\`\`\`
-${this.generateSheetContent(sheet).split('\n').slice(0, 10).join('\n')}
-\`\`\`
-`
+        #### Data Preview (First 10 Rows)
+        \`\`\`
+        ${this.generateSheetContent(sheet).split('\n').slice(0, 10).join('\n')}
+        \`\`\`
+      `
     }).join('\n')
 
     return fileDescription + sheetsContent
   }
-} 
+}

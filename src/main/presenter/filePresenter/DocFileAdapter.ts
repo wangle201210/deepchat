@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { BaseFileAdapter } from './BaseFileAdapter'
 import fs from 'fs/promises'
-import path from 'path'
 import mammoth from 'mammoth'
 import TurndownService from 'turndown'
 
@@ -86,21 +85,15 @@ export class DocFileAdapter extends BaseFileAdapter {
 
     const markdown = this.turndownService.turndown(html)
     const pages = this.paginateContent(markdown)
-    const stats = await fs.stat(this.filePath)
 
-    const fileDescription = `# Word Document Description
+    const fileDescription = `
+    # Word Document Description
 
-## Basic File Information
-* **File Name:** ${path.basename(this.filePath)}
-* **File Type:** Word Document
-* **File Format:** ${path.extname(this.filePath).substring(1).toUpperCase()}
-* **File Size:** ${stats.size} bytes
-* **Creation Date:** ${stats.birthtime.toISOString().split('T')[0]}
-* **Last Modified:** ${stats.mtime.toISOString().split('T')[0]}
-* **Total Pages:** ${pages.length}
+    ## Basic Word Document Information
+    * **Total Pages:** ${pages.length}
 
-## Document Content Preview
-`
+    ## Document Content \n
+    `
 
     // Generate a preview for each page
     const pagesContent = pages

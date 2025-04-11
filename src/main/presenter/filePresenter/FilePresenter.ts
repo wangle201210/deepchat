@@ -14,14 +14,12 @@ import { v4 as uuidv4 } from 'uuid'
 
 export class FilePresenter implements IFilePresenter {
   private userDataPath: string
-  private fileAdapters: Map<string, BaseFileAdapter>
   private maxFileSize: number = 1024 * 1024 * 30 // 30 MB
   private tempDir: string
 
   constructor() {
     this.userDataPath = app.getPath('userData')
     this.tempDir = path.join(this.userDataPath, 'temp')
-    this.fileAdapters = new Map<string, BaseFileAdapter>()
     // Ensure temp directory exists
     fs.mkdir(this.tempDir, { recursive: true }).catch(console.error)
   }
@@ -59,7 +57,7 @@ export class FilePresenter implements IFilePresenter {
     } else {
       mimeType = mime.lookup(filePath)
       if (!mimeType) {
-        throw new Error('无法确定文件类型'+filePath)
+        throw new Error('无法确定文件类型' + filePath)
       }
     }
 
@@ -75,87 +73,35 @@ export class FilePresenter implements IFilePresenter {
   async prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile> {
     const fullPath = path.join(absPath)
     try {
-      if (!this.fileAdapters.has(fullPath)) {
-        const adapter = await this.createFileAdapter(fullPath, typeInfo)
-        if (adapter) {
-          await adapter.processFile()
-          this.fileAdapters.set(fullPath, adapter)
-          const content = await adapter.getLLMContent()
-          const result = {
-            name: adapter.fileMetaData?.fileName ?? '',
-            token: adapter.mimeType && adapter.mimeType.startsWith('image')
+      const adapter = await this.createFileAdapter(fullPath, typeInfo)
+      if (adapter) {
+        await adapter.processFile()
+        const content = (await adapter.getLLMContent()) ?? ''
+        const result = {
+          name: adapter.fileMetaData?.fileName ?? '',
+          token:
+            adapter.mimeType && adapter.mimeType.startsWith('image')
               ? calculateImageTokens(adapter as ImageFileAdapter)
               : approximateTokenSize(content || ''),
-            path: adapter.filePath,
-            mimeType: adapter.mimeType ?? '',
-            metadata: adapter.fileMetaData ?? {
-              fileName: '',
-              fileSize: 0,
-              fileDescription: '',
-              fileCreated: new Date(),
-              fileModified: new Date()
-            },
-            content: content || ''
-          }
-          // If this is a temp file, clean it up
-          if (fullPath.startsWith(this.tempDir)) {
-            await fs.unlink(fullPath).catch(console.error)
-            this.fileAdapters.delete(fullPath)
-          }
-          return result
-        } else {
-          throw new Error(`无法创建文件适配器: ${fullPath}`)
+          path: adapter.filePath,
+          mimeType: adapter.mimeType ?? '',
+          metadata: adapter.fileMetaData ?? {
+            fileName: '',
+            fileSize: 0,
+            fileDescription: '',
+            fileCreated: new Date(),
+            fileModified: new Date()
+          },
+          content: content || ''
         }
+        return result
       } else {
-        const adapter = this.fileAdapters.get(fullPath)
-        if (adapter) {
-          const content = await adapter.getLLMContent()
-          const result = {
-            name: adapter.fileMetaData?.fileName ?? '',
-            token: adapter.mimeType && adapter.mimeType.startsWith('image')
-              ? calculateImageTokens(adapter as ImageFileAdapter)
-              : approximateTokenSize(content || ''),
-            path: adapter.filePath,
-            mimeType: adapter.mimeType ?? '',
-            metadata: adapter.fileMetaData ?? {
-              fileName: '',
-              fileSize: 0,
-              fileDescription: '',
-              fileCreated: new Date(),
-              fileModified: new Date()
-            },
-            content: content || ''
-          }
-          // If this is a temp file, clean it up
-          if (fullPath.startsWith(this.tempDir)) {
-            await fs.unlink(fullPath).catch(console.error)
-            this.fileAdapters.delete(fullPath)
-          }
-          return result
-        }
+        throw new Error(`无法创建文件适配器: ${fullPath}`)
       }
-      throw new Error(`无法读取文件: ${fullPath}`)
     } catch (error) {
       // Clean up temp file in case of error
-      if (fullPath.startsWith(this.tempDir)) {
-        await fs.unlink(fullPath).catch(console.error)
-        this.fileAdapters.delete(fullPath)
-      }
-      throw error
+      throw new Error(`无法读取文件: ${fullPath}`)
     }
-  }
-
-  /**
-   * 从文件适配器映射中移除指定路径的文件适配器
-   * @param filePath 文件的绝对路径
-   * @returns 是否成功移除
-   */
-  async onFileRemoved(filePath: string): Promise<boolean> {
-    const fullPath = path.join(filePath)
-    if (this.fileAdapters.has(fullPath)) {
-      return this.fileAdapters.delete(fullPath)
-    }
-    return false
   }
 
   private findAdapterForMimeType(
@@ -174,7 +120,7 @@ export class FilePresenter implements IFilePresenter {
     return wildcardMatch
   }
 
-  async writeTemp(file: { name: string, content: string }): Promise<string> {
+  async writeTemp(file: { name: string; content: string }): Promise<string> {
     const ext = path.extname(file.name)
     const tempName = `${uuidv4()}${ext}`
     const tempPath = path.join(this.tempDir, tempName)

@@ -17,12 +17,10 @@ export class CsvFileAdapter extends BaseFileAdapter {
   }
 
   private parseCsvContent(content: string): string[][] {
-    const rows = content.split('\n').map(row => 
-      row.split(',').map(cell => 
-        cell.trim().replace(/^["'](.*)["']$/, '$1')
-      )
-    )
-    return rows.filter(row => row.length > 0 && row.some(cell => cell.length > 0))
+    const rows = content
+      .split('\n')
+      .map((row) => row.split(',').map((cell) => cell.trim().replace(/^["'](.*)["']$/, '$1')))
+    return rows.filter((row) => row.length > 0 && row.some((cell) => cell.length > 0))
   }
 
   private generateTableMarkdown(rows: string[][]): string {
@@ -30,14 +28,14 @@ export class CsvFileAdapter extends BaseFileAdapter {
 
     const headers = rows[0]
     const data = rows.slice(1)
-    
+
     // 生成表头
     let markdown = '| ' + headers.join(' | ') + ' |\n'
     markdown += '| ' + headers.map(() => '---').join(' | ') + ' |\n'
-    
+
     // 生成数据行
-    data.forEach(row => {
-      markdown += '| ' + row.map(cell => cell || '').join(' | ') + ' |\n'
+    data.forEach((row) => {
+      markdown += '| ' + row.map((cell) => cell || '').join(' | ') + ' |\n'
     })
 
     return markdown
@@ -45,31 +43,26 @@ export class CsvFileAdapter extends BaseFileAdapter {
 
   public async getLLMContent(): Promise<string | undefined> {
     const fullPath = path.join(this.filePath)
-    const stats = await fs.stat(fullPath)
     const content = await this.getContent()
 
     if (!content) return undefined
 
     const csvRows = this.parseCsvContent(content)
     const headers = csvRows[0] || []
-    
-    const fileDescription = `# CSV File Description
 
-## Basic File Information
-* **File Name:** ${path.basename(this.filePath)}
-* **File Type:** CSV File
-* **File Size:** ${stats.size} bytes
-* **Creation Date:** ${stats.birthtime.toISOString().split('T')[0]}
-* **Last Modified:** ${stats.mtime.toISOString().split('T')[0]}
-* **Total Rows:** ${csvRows.length}
-* **Total Columns:** ${headers.length}
+    const fileDescription = `
+      # CSV File Description
 
-## Column Headers
-${headers.map((header, index) => `${index + 1}. ${header}`).join('\n')}
+      ## Basic CSV File Information
+      * **Total Rows:** ${csvRows.length}
+      * **Total Columns:** ${headers.length}
 
-## Data Preview (First 10 Rows)
-${this.generateTableMarkdown(csvRows.slice(0, 11))}
-`
+      ## Column Headers
+      ${headers.map((header, index) => `${index + 1}. ${header}`).join('\n')}
+
+      ## Data Preview (First 10 Rows)
+      ${this.generateTableMarkdown(csvRows.slice(0, 11))}
+      `
     return fileDescription
   }
 
