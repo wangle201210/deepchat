@@ -11,7 +11,7 @@ import { app } from 'electron'
 import fs from 'fs'
 import { proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
-import { StreamableHTTPClientTransport} from './streamableHttp'
+import { StreamableHTTPClientTransport } from './streamableHttp'
 
 // 确保 TypeScript 能够识别 SERVER_STATUS_CHANGED 属性
 type MCPEventsType = typeof MCP_EVENTS & {

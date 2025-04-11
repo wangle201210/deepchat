@@ -90,6 +90,58 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
   }
 }
 
+// 错误消息翻译
+export const errorMessageTranslations: Record<string, TranslationMap> = {
+  'zh-CN': {
+    mcpConnectionErrorTitle: 'MCP 连接错误',
+    mcpConnectionErrorMessage: '连接到 MCP 服务器失败',
+    genericErrorTitle: '错误',
+    genericErrorMessage: '发生了一个错误'
+  },
+  'zh-TW': {
+    mcpConnectionErrorTitle: 'MCP 連接錯誤',
+    mcpConnectionErrorMessage: '連接到 MCP 服務器失敗',
+    genericErrorTitle: '錯誤',
+    genericErrorMessage: '發生了一個錯誤'
+  },
+  'en-US': {
+    mcpConnectionErrorTitle: 'MCP Connection Error',
+    mcpConnectionErrorMessage: 'Failed to connect to MCP server',
+    genericErrorTitle: 'Error',
+    genericErrorMessage: 'An error occurred'
+  },
+  ja: {
+    mcpConnectionErrorTitle: 'MCP 接続エラー',
+    mcpConnectionErrorMessage: 'MCP サーバーへの接続に失敗しました',
+    genericErrorTitle: 'エラー',
+    genericErrorMessage: 'エラーが発生しました'
+  },
+  ko: {
+    mcpConnectionErrorTitle: 'MCP 연결 오류',
+    mcpConnectionErrorMessage: 'MCP 서버에 연결하지 못했습니다',
+    genericErrorTitle: '오류',
+    genericErrorMessage: '오류가 발생했습니다'
+  },
+  fr: {
+    mcpConnectionErrorTitle: 'Erreur de connexion MCP',
+    mcpConnectionErrorMessage: 'Échec de la connexion au serveur MCP',
+    genericErrorTitle: 'Erreur',
+    genericErrorMessage: "Une erreur s'est produite"
+  },
+  de: {
+    mcpConnectionErrorTitle: 'MCP-Verbindungsfehler',
+    mcpConnectionErrorMessage: 'Verbindung zum MCP-Server fehlgeschlagen',
+    genericErrorTitle: 'Fehler',
+    genericErrorMessage: 'Ein Fehler ist aufgetreten'
+  },
+  es: {
+    mcpConnectionErrorTitle: 'Error de conexión MCP',
+    mcpConnectionErrorMessage: 'Error al conectar con el servidor MCP',
+    genericErrorTitle: 'Error',
+    genericErrorMessage: 'Se ha producido un error'
+  }
+}
+
 /**
  * 根据语言代码获取最佳匹配的翻译
  * @param locale 语言代码
@@ -124,4 +176,13 @@ export function getBestMatchTranslation(
  */
 export function getContextMenuLabels(locale: string): TranslationMap {
   return getBestMatchTranslation(locale, contextMenuTranslations)
+}
+
+/**
+ * 获取错误消息的翻译
+ * @param locale 语言代码
+ * @returns 错误消息翻译
+ */
+export function getErrorMessageLabels(locale: string): TranslationMap {
+  return getBestMatchTranslation(locale, errorMessageTranslations)
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import AppBar from './components/AppBar.vue'
 import SideBar from './components/SideBar.vue'
@@ -8,11 +8,85 @@ import { usePresenter } from './composables/usePresenter'
 import ArtifactDialog from './components/artifacts/ArtifactDialog.vue'
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
+import { NOTIFICATION_EVENTS } from './events'
+import { useToast } from './components/ui/toast/use-toast'
+import Toaster from './components/ui/toast/Toaster.vue'
 
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
 const artifactStore = useArtifactStore()
 const chatStore = useChatStore()
+const { toast } = useToast()
+
+// 错误通知队列及当前正在显示的错误
+const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
+const currentErrorId = ref<string | null>(null)
+const errorDisplayTimer = ref<number | null>(null)
+
+// 处理错误通知
+const showErrorToast = (error: { id: string; title: string; message: string; type: string }) => {
+  // 查找队列中是否已存在相同ID的错误，防止重复
+  const existingErrorIndex = errorQueue.value.findIndex((e) => e.id === error.id)
+
+  if (existingErrorIndex === -1) {
+    // 如果当前有错误正在展示，将新错误放入队列
+    if (currentErrorId.value) {
+      errorQueue.value.push(error)
+    } else {
+      // 否则直接展示这个错误
+      displayError(error)
+    }
+  }
+}
+
+// 显示指定的错误
+const displayError = (error: { id: string; title: string; message: string; type: string }) => {
+  // 更新当前显示的错误ID
+  currentErrorId.value = error.id
+
+  // 显示错误通知
+  toast({
+    title: error.title,
+    description: error.message,
+    variant: 'destructive',
+    onOpenChange: (open) => {
+      if (!open) {
+        // 用户手动关闭时也显示下一个错误
+        handleErrorClosed()
+      }
+    }
+  })
+
+  // 设置定时器，3秒后自动关闭当前错误
+  if (errorDisplayTimer.value) {
+    clearTimeout(errorDisplayTimer.value)
+  }
+
+  errorDisplayTimer.value = window.setTimeout(() => {
+    // 处理错误关闭后的逻辑
+    handleErrorClosed()
+  }, 3000)
+}
+
+// 处理错误关闭后的逻辑
+const handleErrorClosed = () => {
+  // 清除当前错误ID
+  currentErrorId.value = null
+
+  // 显示队列中的下一个错误（如果有）
+  if (errorQueue.value.length > 0) {
+    const nextError = errorQueue.value.shift()
+    if (nextError) {
+      displayError(nextError)
+    }
+  } else {
+    // 队列为空，清除定时器
+    if (errorDisplayTimer.value) {
+      clearTimeout(errorDisplayTimer.value)
+      errorDisplayTimer.value = null
+    }
+  }
+}
 
 const router = useRouter()
 const activeTab = ref('chat')
@@ -27,6 +101,11 @@ const getInitComplete = async () => {
 getInitComplete()
 
 onMounted(() => {
+  // 监听全局错误通知事件
+  window.electron.ipcRenderer.on(NOTIFICATION_EVENTS.SHOW_ERROR, (_event, error) => {
+    showErrorToast(error)
+  })
+
   watch(
     () => activeTab.value,
     (newVal) => {
@@ -66,6 +145,14 @@ onMounted(() => {
     }
   )
 })
+
+// 在组件卸载前清除定时器
+onBeforeUnmount(() => {
+  if (errorDisplayTimer.value) {
+    clearTimeout(errorDisplayTimer.value)
+    errorDisplayTimer.value = null
+  }
+})
 </script>
 
 <template>
@@ -94,5 +181,7 @@ onMounted(() => {
     </div>
     <!-- 全局更新弹窗 -->
     <UpdateDialog />
+    <!-- 全局Toast提示 -->
+    <Toaster />
   </div>
 </template>

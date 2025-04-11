@@ -86,3 +86,8 @@ export const DEEPLINK_EVENTS = {
   START: 'deeplink:start',
   MCP_INSTALL: 'deeplink:mcp-install'
 }
+
+// 全局通知相关事件
+export const NOTIFICATION_EVENTS = {
+  SHOW_ERROR: 'notification:show-error' // 显示错误通知
+}

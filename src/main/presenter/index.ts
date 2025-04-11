@@ -24,7 +24,8 @@ import {
   OLLAMA_EVENTS,
   MCP_EVENTS,
   SYNC_EVENTS,
-  DEEPLINK_EVENTS
+  DEEPLINK_EVENTS,
+  NOTIFICATION_EVENTS
 } from '@/events'
 
 export class Presenter implements IPresenter {
@@ -202,6 +203,9 @@ export class Presenter implements IPresenter {
     })
     eventBus.on(DEEPLINK_EVENTS.MCP_INSTALL, (mcpConfig) => {
       this.windowPresenter.mainWindow?.webContents.send(DEEPLINK_EVENTS.MCP_INSTALL, mcpConfig)
+    })
+    eventBus.on(NOTIFICATION_EVENTS.SHOW_ERROR, (error) => {
+      this.windowPresenter.mainWindow?.webContents.send(NOTIFICATION_EVENTS.SHOW_ERROR, error)
     })
   }
 
