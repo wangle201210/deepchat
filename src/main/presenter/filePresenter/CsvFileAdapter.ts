@@ -42,7 +42,7 @@ export class CsvFileAdapter extends BaseFileAdapter {
   }
 
   public async getLLMContent(): Promise<string | undefined> {
-    const fullPath = path.join(this.filePath)
+    // const fullPath = path.join(this.filePath)
     const content = await this.getContent()
 
     if (!content) return undefined

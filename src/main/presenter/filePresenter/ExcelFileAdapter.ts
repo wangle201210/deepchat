@@ -1,6 +1,5 @@
 import { BaseFileAdapter } from './BaseFileAdapter'
 import fs from 'fs/promises'
-import path from 'path'
 import * as XLSX from 'xlsx'
 
 export class ExcelFileAdapter extends BaseFileAdapter {
@@ -65,7 +64,7 @@ export class ExcelFileAdapter extends BaseFileAdapter {
     const workbook = await this.loadWorkbook()
     if (!workbook) return undefined
 
-    const stats = await fs.stat(this.filePath)
+    // const stats = await fs.stat(this.filePath)
 
     const fileDescription = `
     # Excel File Description

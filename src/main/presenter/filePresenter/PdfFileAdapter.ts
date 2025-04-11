@@ -1,6 +1,5 @@
 import { BaseFileAdapter } from './BaseFileAdapter'
 import fs from 'fs/promises'
-import path from 'path'
 import pdfParse from 'pdf-parse-new'
 
 export class PdfFileAdapter extends BaseFileAdapter {

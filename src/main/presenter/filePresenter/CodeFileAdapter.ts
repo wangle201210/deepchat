@@ -17,10 +17,8 @@ export class CodeFileAdapter extends BaseFileAdapter {
     const ext = path.extname(this.filePath).toLowerCase()
     switch (ext) {
       case '.js':
-      case '.jsx':
         return 'JavaScript Source File'
       case '.ts':
-      case '.tsx':
         return 'TypeScript Source File'
       case '.py':
         return 'Python Source File'
