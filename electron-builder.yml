@@ -45,12 +45,14 @@ mac:
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
   gatekeeperAssess: false
   category: public.app-category.utilities
+  target:
+    - target: dmg
+      arch: arm64
 dmg:
   artifactName: ${name}-${version}-mac-${arch}.${ext}
 linux:
   target:
     - AppImage
-    - tar.gz
   maintainer: ThinkInAIXYZ
   category: Utility
 appImage:
