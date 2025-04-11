@@ -209,7 +209,7 @@ export class PdfFileAdapter extends BaseFileAdapter {
       if (pdfData) {
         // 如果有分页内容，则使用分页内容
         if (pdfData.pageContents && pdfData.pageContents.length > 0) {
-          this.fileContent = pdfData.pageContents.join('\n\n--- 页面分隔符 ---\n\n')
+          this.fileContent = pdfData.pageContents.join('\n\n--- Page Separator ---\n\n')
         } else {
           // 否则使用整体内容
           this.fileContent = pdfData.text
@@ -223,15 +223,13 @@ export class PdfFileAdapter extends BaseFileAdapter {
     const pdfData = await this.loadPdfData()
     if (!pdfData) return undefined
 
-    const stats = await fs.stat(this.filePath)
-
     // 获取所有页面的Markdown内容
     let allPagesMarkdown = ''
     if (pdfData.pageContents) {
       const markdownPages = pdfData.pageContents.map((pageContent, index) => {
         const pageNumber = index + 1
         const pageMarkdown = this.convertTextToMarkdown(pageContent)
-        return `## 第 ${pageNumber} 页\n\n${pageMarkdown}`
+        return `## Page ${pageNumber}\n\n${pageMarkdown}`
       })
 
       allPagesMarkdown = markdownPages.join('\n\n---\n\n')
@@ -240,22 +238,17 @@ export class PdfFileAdapter extends BaseFileAdapter {
       allPagesMarkdown = this.convertTextToMarkdown(pdfData.text)
     }
 
-    const fileDescription = `# PDF 文档描述
+    const fileDescription = `
+      # PDF file description
 
-## 基本文件信息
-* **文件名:** ${path.basename(this.filePath)}
-* **文件类型:** PDF 文档
-* **文件大小:** ${stats.size} 字节
-* **创建日期:** ${stats.birthtime.toISOString().split('T')[0]}
-* **最后修改:** ${stats.mtime.toISOString().split('T')[0]}
-* **总页数:** ${pdfData.numpages}
-* **PDF 版本:** ${pdfData.info?.PDFFormatVersion || '未知'}
-* **PDF 生成器:** ${pdfData.info?.Producer || '未知'}
-* **PDF 创建者:** ${pdfData.info?.Creator || '未知'}
+      ## Basic PDF file information
+      * **Total pages:** ${pdfData.numpages}
+      * **PDF version:** ${pdfData.info?.PDFFormatVersion || 'Unknown'}
+      * **PDF generator:** ${pdfData.info?.Producer || 'Unknown'}
+      * **PDF creator:** ${pdfData.info?.Creator || 'Unknown'}
 
-# 文档内容 (按页面分隔)
-
-${allPagesMarkdown}
+      ## PDF content (page by page)
+      ${allPagesMarkdown}
 `
     return fileDescription
   }

@@ -1,6 +1,5 @@
 import { BaseFileAdapter } from './BaseFileAdapter'
 import fs from 'fs/promises'
-import path from 'path'
 import { unzip } from 'fflate'
 import { parseStringPromise } from 'xml2js'
 
@@ -127,26 +126,15 @@ export class PptFileAdapter extends BaseFileAdapter {
 
   public async getLLMContent(): Promise<string | undefined> {
     try {
-      const stats = await fs.stat(this.filePath)
-
-      if (stats.size > this.maxFileSize) {
-        return `File too large to process (${stats.size} bytes, max: ${this.maxFileSize} bytes)`
-      }
-
       const slideFiles = await this.unzipPresentation()
 
-      const fileDescription = `# PowerPoint Presentation Description
+      const fileDescription = `
+      # PowerPoint Presentation Description
 
-## Basic File Information
-* **File Name:** ${path.basename(this.filePath)}
-* **File Type:** PowerPoint Presentation
-* **File Format:** ${path.extname(this.filePath).substring(1).toUpperCase()}
-* **File Size:** ${stats.size} bytes
-* **Creation Date:** ${stats.birthtime.toISOString().split('T')[0]}
-* **Last Modified:** ${stats.mtime.toISOString().split('T')[0]}
-* **Total Slides:** ${slideFiles.length}
+      ## Basic PowerPoint Presentation Information
+      * **Total Slides:** ${slideFiles.length}
 
-## Slides Information\n`
+      ## Slides Information\n`
 
       // Generate preview for each slide
       const slidesContent = await Promise.all(

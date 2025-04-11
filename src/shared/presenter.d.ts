@@ -566,7 +566,6 @@ export interface IFilePresenter {
   writeFile(operation: FileOperation): Promise<void>
   deleteFile(relativePath: string): Promise<void>
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
-  onFileRemoved(filePath: string): Promise<boolean>
 }
 
 export interface FileMetaData {

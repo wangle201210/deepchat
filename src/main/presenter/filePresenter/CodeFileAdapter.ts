@@ -65,6 +65,110 @@ export class CodeFileAdapter extends BaseFileAdapter {
         return 'HTML File'
       case '.css':
         return 'CSS File'
+      case '.dart':
+        return 'Dart Source File'
+      case '.r':
+        return 'R Source File'
+      case '.m':
+        return 'MATLAB/Objective-C Source File'
+      case '.sql':
+        return 'SQL Script File'
+      case '.json':
+        return 'JSON File'
+      case '.yaml':
+      case '.yml':
+        return 'YAML File'
+      case '.xml':
+        return 'XML File'
+      case '.md':
+        return 'Markdown File'
+      case '.vue':
+        return 'Vue.js Component File'
+      case '.svelte':
+        return 'Svelte Component File'
+      case '.sass':
+      case '.scss':
+        return 'Sass/SCSS File'
+      case '.less':
+        return 'Less File'
+      case '.f90':
+      case '.f95':
+      case '.f03':
+        return 'Fortran Source File'
+      case '.jl':
+        return 'Julia Source File'
+      case '.ex':
+      case '.exs':
+        return 'Elixir Source File'
+      case '.elm':
+        return 'Elm Source File'
+      case '.clj':
+      case '.cljs':
+        return 'Clojure Source File'
+      case '.fs':
+      case '.fsx':
+        return 'F# Source File'
+      case '.hs':
+        return 'Haskell Source File'
+      case '.ml':
+      case '.mli':
+        return 'OCaml Source File'
+      case '.nim':
+        return 'Nim Source File'
+      case '.proto':
+        return 'Protocol Buffers File'
+      case '.groovy':
+        return 'Groovy Source File'
+      case '.tf':
+      case '.tfvars':
+        return 'Terraform Configuration File'
+      case '.dockerfile':
+        return 'Dockerfile'
+      case '.toml':
+        return 'TOML File'
+      case '.graphql':
+      case '.gql':
+        return 'GraphQL File'
+      case '.tsx':
+      case '.jsx':
+        return 'React Component File'
+      case '.astro':
+        return 'Astro Component File'
+      case '.zig':
+        return 'Zig Source File'
+      case '.v':
+        return 'V Source File'
+      case '.ini':
+        return 'INI Configuration File'
+      case '.env':
+        return 'Environment Configuration File'
+      case '.conf':
+      case '.config':
+        return 'Configuration File'
+      case '.properties':
+        return 'Properties Configuration File'
+      case '.lock':
+        return 'Lock File'
+      case '.npmrc':
+        return 'NPM Configuration File'
+      case '.babelrc':
+      case '.babel.config.js':
+        return 'Babel Configuration File'
+      case '.eslintrc':
+      case '.eslintignore':
+        return 'ESLint Configuration File'
+      case '.prettierrc':
+        return 'Prettier Configuration File'
+      case '.gitignore':
+        return 'Git Ignore File'
+      case '.dockerignore':
+        return 'Docker Ignore File'
+      case '.editorconfig':
+        return 'Editor Configuration File'
+      case '.htaccess':
+        return 'Apache Configuration File'
+      case '.nginx':
+        return 'Nginx Configuration File'
       default:
         return 'Source Code File'
     }
@@ -122,6 +226,107 @@ export class CodeFileAdapter extends BaseFileAdapter {
         return 'html'
       case '.css':
         return 'css'
+      case '.dart':
+        return 'dart'
+      case '.r':
+        return 'r'
+      case '.m':
+        return 'matlab'
+      case '.sql':
+        return 'sql'
+      case '.json':
+        return 'json'
+      case '.yaml':
+      case '.yml':
+        return 'yaml'
+      case '.xml':
+        return 'xml'
+      case '.md':
+        return 'markdown'
+      case '.vue':
+        return 'vue'
+      case '.svelte':
+        return 'svelte'
+      case '.sass':
+      case '.scss':
+        return 'scss'
+      case '.less':
+        return 'less'
+      case '.f90':
+      case '.f95':
+      case '.f03':
+        return 'fortran'
+      case '.jl':
+        return 'julia'
+      case '.ex':
+      case '.exs':
+        return 'elixir'
+      case '.elm':
+        return 'elm'
+      case '.clj':
+      case '.cljs':
+        return 'clojure'
+      case '.fs':
+      case '.fsx':
+        return 'fsharp'
+      case '.hs':
+        return 'haskell'
+      case '.ml':
+      case '.mli':
+        return 'ocaml'
+      case '.nim':
+        return 'nim'
+      case '.proto':
+        return 'protobuf'
+      case '.groovy':
+        return 'groovy'
+      case '.tf':
+      case '.tfvars':
+        return 'terraform'
+      case '.dockerfile':
+        return 'dockerfile'
+      case '.toml':
+        return 'toml'
+      case '.graphql':
+      case '.gql':
+        return 'graphql'
+      case '.astro':
+        return 'astro'
+      case '.zig':
+        return 'zig'
+      case '.v':
+        return 'v'
+      case '.ini':
+        return 'ini'
+      case '.env':
+        return 'dotenv'
+      case '.conf':
+      case '.config':
+        return 'configuration'
+      case '.properties':
+        return 'properties'
+      case '.lock':
+        return 'yaml'
+      case '.npmrc':
+        return 'ini'
+      case '.babelrc':
+      case '.babel.config.js':
+        return 'json'
+      case '.eslintrc':
+        return 'json'
+      case '.eslintignore':
+        return 'gitignore'
+      case '.prettierrc':
+        return 'json'
+      case '.gitignore':
+      case '.dockerignore':
+        return 'gitignore'
+      case '.editorconfig':
+        return 'ini'
+      case '.htaccess':
+        return 'apacheconf'
+      case '.nginx':
+        return 'nginx'
       default:
         return 'plaintext'
     }
