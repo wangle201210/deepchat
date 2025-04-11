@@ -22,7 +22,17 @@
     "sessionInterrupted": "Session was unexpectedly interrupted, generation is incomplete",
     "noModelResponse": "Model did not return any content, it may have timed out",
     "invalidJson": "Invalid JSON format",
-    "maximumToolCallsReached": "Maximum tool calls reached"
+    "maximumToolCallsReached": "Maximum tool calls reached",
+    "causeOfError": "Possible causes of error:",
+    "error400": "Bad request, possibly a parameter or compatibility issue",
+    "error401": "Authentication failed, possibly incorrect API Key or domain",
+    "error403": "Access to the model forbidden, possibly insufficient balance or no permission",
+    "error404": "Requested URL not found, possibly incorrect domain or model name",
+    "error429": "Too many requests, possibly rate limited by the service",
+    "error500": "Server error, the service might be unstable, please try again later",
+    "error502": "Gateway error, the service might be unstable, please try again later",
+    "error503": "Service unavailable, the service might be unstable, please try again later",
+    "error504": "Request timeout, the service might be unstable or there might be network issues, please check proxy settings and try again"
   },
   "resetDataConfirmTitle": "Reset All Data?",
   "resetDataConfirmDescription": "This will reset all your data to default settings. This action cannot be undone.",

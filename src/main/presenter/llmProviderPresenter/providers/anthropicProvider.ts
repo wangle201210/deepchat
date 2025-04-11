@@ -237,7 +237,6 @@ export class AnthropicProvider extends BaseLLMProvider {
       }
     }
 
-    console.log(JSON.stringify({ system: systemContent || undefined, messages: formattedMessages }))
     return {
       system: systemContent || undefined,
       messages: formattedMessages

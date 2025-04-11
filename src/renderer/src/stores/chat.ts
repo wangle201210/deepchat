@@ -285,8 +285,9 @@ export const useChatStore = defineStore('chat', () => {
 
   const setActiveThread = async (threadId: string) => {
     try {
-      await threadP.setActiveConversation(threadId)
       activeThreadId.value = threadId
+      messages.value = []
+      await threadP.setActiveConversation(threadId)
       // no need to load messages and chat config here, because they will be loaded when the conversation-activated event is triggered
       // await loadMessages()
       // await loadChatConfig() // 加载对话配置

@@ -22,7 +22,17 @@
     "sessionInterrupted": "La session a été interrompue de manière inattendue, la génération est incomplète",
     "noModelResponse": "Le modèle n'a renvoyé aucun contenu, il a peut-être expiré",
     "invalidJson": "Format JSON invalide",
-    "maximumToolCallsReached": "Nombre maximum d'appels d'outils atteint"
+    "maximumToolCallsReached": "Nombre maximum d'appels d'outils atteint",
+    "causeOfError": "Causes possibles d'erreur:",
+    "error400": "Demandez une erreur, des paramètres ou des problèmes de compatibilité",
+    "error401": "Authentification Échec, mauvaise clé API ou nom de domaine configuré",
+    "error403": "L'accès à ce modèle peut être dû à un équilibre insuffisant ou sans autorisation d'accès",
+    "error404": "L'adresse de demande n'existe pas, le nom de domaine configuré ou le nom du modèle est incorrect",
+    "error429": "La vitesse de demande est trop rapide et la fréquence d'accès est limitée par le fournisseur de services",
+    "error500": "Il y a une erreur dans le serveur et le service demandé peut être très stable à l'heure actuelle. Vous pouvez l'essayer plus tard",
+    "error502": "Erreur de passerelle, le service demandé peut ne pas être stable à l'heure actuelle, vous pouvez réessayer plus tard",
+    "error503": "Le service n'est pas disponible, le service demandé peut être actuellement instable, vous pouvez l'essayer plus tard",
+    "error504": "La demande a expiré, le service demandé peut être actuellement instable ou le lien réseau est défectueux. Veuillez vérifier le proxy et d'autres configurations réseau avant d'essayer."
   },
   "resetDataConfirmTitle": "Réinitialiser toutes les données ?",
   "resetDataConfirmDescription": "Cela réinitialisera toutes vos données aux paramètres par défaut. Cette action ne peut pas être annulée.",

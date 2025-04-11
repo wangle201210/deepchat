@@ -264,7 +264,7 @@ export class McpConfHelper {
       // 迁移 filesystem 服务器到 buildInFileSystem
       try {
         const mcpServers = this.mcpStore.get('mcpServers') || {}
-        console.log('mcpServers', mcpServers)
+        // console.log('mcpServers', mcpServers)
         if (mcpServers.filesystem) {
           console.log('检测到旧版本的 filesystem MCP 服务器，开始迁移到 buildInFileSystem')
 
