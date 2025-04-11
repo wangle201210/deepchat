@@ -6,5 +6,9 @@
   "later": "稍后再说",
   "githubDownload": "Github下载",
   "netdiskDownload": "网盘下载",
-  "checkUpdate": "检查更新"
+  "checkUpdate": "检查更新",
+  "downloading": "正在下载",
+  "installNow": "立即安装",
+  "autoUpdate": "自动更新",
+  "restarting": "正在重启"
 }
