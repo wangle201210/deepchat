@@ -354,6 +354,6 @@ onUnmounted(() => {
 }
 
 .prose code {
-  @apply rounded-md bg-secondary px-1 py-0.5 text-accent-foreground;
+  @apply rounded-md bg-secondary px-1 py-0.5 mx-1 text-accent-foreground;
 }
 </style>

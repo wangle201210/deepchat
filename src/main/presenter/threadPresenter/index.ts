@@ -1166,13 +1166,14 @@ export class ThreadPresenter implements IThreadPresenter {
     // 处理文本内容
     const userContent = `
       ${userMessage.content.text}
-      ${getFileContext(userMessage.content.files.filter((file) => !file.mimeType.startsWith('image')))}
+      ${getFileContext(userMessage.content.files)}
     `
 
     // 从用户消息中提取并丰富URL内容
     const urlResults = await ContentEnricher.extractAndEnrichUrls(userMessage.content.text)
 
     // 提取图片文件
+
     const imageFiles =
       userMessage.content.files?.filter((file) => {
         // 根据文件类型、MIME类型或扩展名过滤图片文件

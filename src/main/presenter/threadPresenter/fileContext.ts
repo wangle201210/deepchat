@@ -9,7 +9,10 @@ export const getFileContext = (files: MessageFile[]) => {
       .map(
         (file) => `<file>
       <name>${file.name}</name>
-      <content>${file.content}</content>
+      <mimeType>${file.mimeType}</mimeType>
+      <size>${file.metadata.fileSize}</size>
+      <path>${file.path}</path>
+      <content>${!file.mimeType.startsWith('image') ? file.content : ''}</content>
     </file>`
       )
       .join('\n')}
