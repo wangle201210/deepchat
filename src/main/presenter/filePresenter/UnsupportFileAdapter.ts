@@ -1,9 +1,7 @@
 import { BaseFileAdapter } from './BaseFileAdapter'
 import fs from 'fs/promises'
-
 export class UnsupportFileAdapter extends BaseFileAdapter {
   private maxFileSize: number
-
   constructor(filePath: string, maxFileSize: number) {
     super(filePath)
     this.maxFileSize = maxFileSize
@@ -18,15 +16,10 @@ export class UnsupportFileAdapter extends BaseFileAdapter {
     if (stats.size > this.maxFileSize) {
       return undefined
     }
-
     return ``
   }
 
   async getContent(): Promise<string | undefined> {
-    // if (this.visionDescription === undefined) {
-    //   this.visionDescription = await this.generateImageDescription()
-    // }
-    // return this.visionDescription
     return ''
   }
 }

@@ -213,6 +213,7 @@ import { approximateTokenSize } from 'tokenx'
 import { useSettingsStore } from '@/stores/settings'
 import McpToolsList from './mcpToolsList.vue'
 import { useEventListener } from '@vueuse/core'
+import { calculateImageTokens, getClipboardImageInfo, imageFileToBase64 } from '@/lib/image'
 
 const { t } = useI18n()
 const configPresenter = usePresenter('configPresenter')
@@ -269,13 +270,36 @@ const previewFile = (filePath: string) => {
   windowPresenter.previewFile(filePath)
 }
 
-const handlePaste = (e: ClipboardEvent) => {
+const handlePaste = async (e: ClipboardEvent) => {
   const files = e.clipboardData?.files
   if (files && files.length > 0) {
     for (const file of files) {
-      console.log(file)
-      const path = window.api.getPathForFile(file)
-      console.log('path', path)
+      if (file.type.startsWith('image/')) {
+        const base64 = (await imageFileToBase64(file)) as string
+        const imageInfo = await getClipboardImageInfo(file)
+
+        const fileInfo: MessageFile = {
+          name: file.name ?? 'image',
+          content: base64,
+          mimeType: file.type,
+          metadata: {
+            fileName: file.name ?? 'image',
+            fileSize: file.size,
+            // fileHash: string
+            fileDescription: file.type,
+            fileCreated: new Date(),
+            fileModified: new Date()
+          },
+          token: calculateImageTokens(imageInfo.width, imageInfo.height),
+          path: ''
+        }
+        if (fileInfo) {
+          selectedFiles.value.push(fileInfo)
+        }
+      }
+    }
+    if (selectedFiles.value.length > 0) {
+      emit('file-upload', selectedFiles.value)
     }
   }
 }

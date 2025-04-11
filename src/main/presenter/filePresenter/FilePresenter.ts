@@ -76,7 +76,7 @@ export class FilePresenter implements IFilePresenter {
       const adapter = await this.createFileAdapter(fullPath, typeInfo)
       if (adapter) {
         await adapter.processFile()
-        const content = await adapter.getLLMContent()
+        const content = (await adapter.getLLMContent()) ?? ''
         const result = {
           name: adapter.fileMetaData?.fileName ?? '',
           token:
