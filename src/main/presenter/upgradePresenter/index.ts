@@ -103,12 +103,22 @@ export class UpgradePresenter implements IUpgradePresenter {
         this._versionInfo.releaseDate = info.releaseDate?.toString() || ''
         this._versionInfo.releaseNotes = info.releaseNotes?.toString() || ''
       }
+
+      // 确保释放日志信息正确传递
+      let releaseNotes = ''
+      if (info.releaseNotes) {
+        releaseNotes =
+          typeof info.releaseNotes === 'string' ? info.releaseNotes : info.releaseNotes.toString()
+      } else if (this._versionInfo?.releaseNotes) {
+        releaseNotes = this._versionInfo.releaseNotes
+      }
+
       eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
         status: this._status,
         info: {
           version: info.version,
-          releaseDate: info.releaseDate?.toString() || '',
-          releaseNotes: info.releaseNotes || '',
+          releaseDate: info.releaseDate?.toString() || this._versionInfo?.releaseDate || '',
+          releaseNotes: releaseNotes,
           githubUrl: this._versionInfo?.githubUrl,
           downloadUrl: this._versionInfo?.downloadUrl
         }
@@ -140,12 +150,24 @@ export class UpgradePresenter implements IUpgradePresenter {
       // 写入更新标记文件
       this.writeUpdateMarker(info.version)
 
+      // 确保保存完整的更新信息，包括releaseNotes
+      console.log('更新信息:', this._versionInfo)
+
+      // 确保释放日志信息正确传递
+      let releaseNotes = ''
+      if (info.releaseNotes) {
+        releaseNotes =
+          typeof info.releaseNotes === 'string' ? info.releaseNotes : info.releaseNotes.toString()
+      } else if (this._versionInfo?.releaseNotes) {
+        releaseNotes = this._versionInfo.releaseNotes
+      }
+
       eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
         status: this._status,
         info: {
           version: info.version,
-          releaseDate: info.releaseDate?.toString() || '',
-          releaseNotes: info.releaseNotes || '',
+          releaseDate: info.releaseDate?.toString() || this._versionInfo?.releaseDate || '',
+          releaseNotes: releaseNotes,
           githubUrl: this._versionInfo?.githubUrl,
           downloadUrl: this._versionInfo?.downloadUrl
         }
@@ -271,13 +293,17 @@ export class UpgradePresenter implements IUpgradePresenter {
           console.log('上次更新失败，本次不进行自动更新，改为手动更新')
           this._status = 'error'
           this._error = '自动更新可能不稳定，请手动下载更新'
+
+          // 确保传递完整的更新日志
+          const releaseNotes = remoteVersion.releaseNotes || ''
+
           eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
             status: this._status,
             error: this._error,
             info: {
               version: remoteVersion.version,
               releaseDate: remoteVersion.releaseDate,
-              releaseNotes: remoteVersion.releaseNotes,
+              releaseNotes: releaseNotes,
               githubUrl: remoteVersion.githubUrl,
               downloadUrl: remoteVersion.downloadUrl
             }
@@ -297,12 +323,16 @@ export class UpgradePresenter implements IUpgradePresenter {
           console.error('自动更新检查失败，回退到手动更新', err)
           // 如果自动更新失败，回退到手动更新
           this._status = 'available'
+
+          // 确保传递完整的更新日志
+          const releaseNotes = remoteVersion.releaseNotes || ''
+
           eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
             status: this._status,
             info: {
               version: remoteVersion.version,
               releaseDate: remoteVersion.releaseDate,
-              releaseNotes: remoteVersion.releaseNotes,
+              releaseNotes: releaseNotes,
               githubUrl: remoteVersion.githubUrl,
               downloadUrl: remoteVersion.downloadUrl
             }
