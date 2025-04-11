@@ -221,13 +221,6 @@ export class ToolManager {
         isError: result.isError
       }
 
-      // 记录工具调用的详细输出信息
-      console.info('[MCP] ToolManager resp', {
-        toolName: name,
-        isError: result.isError,
-        content: formattedContent
-      })
-
       // 触发工具调用结果事件
       eventBus.emit(MCP_EVENTS.TOOL_CALL_RESULT, response)
 

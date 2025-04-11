@@ -102,11 +102,12 @@ const parseJsonConfig = () => {
     env.value = JSON.stringify(serverConfig.env || {}, null, 2)
     descriptions.value = serverConfig.descriptions || ''
     icons.value = serverConfig.icons || '📁'
-    type.value = serverConfig.type || 'stdio'
+    type.value = serverConfig.type || ''
     baseUrl.value = serverConfig.url || ''
+    console.log('type', type.value, baseUrl.value)
     if (type.value !== 'stdio' && type.value !== 'sse' && type.value !== 'http') {
       if (baseUrl.value) {
-        type.value = 'sse'
+        type.value = 'http'
       } else {
         type.value = 'stdio'
       }

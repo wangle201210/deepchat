@@ -535,7 +535,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
             // 调用工具
             const toolCallResponse = await presenter.mcpPresenter.callTool(mcpTool)
-            console.log('toolCallResponse', toolCallResponse)
             yield {
               content: '',
               tool_call: 'end',

@@ -150,7 +150,9 @@ onMounted(() => {
   // 默认显示最后一个变体
   currentVariantIndex.value = allVariants.value.length
 })
-
+const filterDom = (node: HTMLElement) => {
+  return !node.classList?.contains('message-toolbar')
+}
 const handleAction = (action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'copyImage') => {
   if (action === 'retry') {
     chatStore.retryMessage(props.message.id)
@@ -179,7 +181,8 @@ const handleAction = (action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'c
     if (messageNode.value) {
       toBlob(messageNode.value, {
         quality: 1,
-        backgroundColor: isDark ? '#000000' : '#FFFFFF'
+        backgroundColor: isDark ? '#000000' : '#FFFFFF',
+        filter: filterDom
       }).then((blob) => {
         if (blob) {
           const rd = new FileReader()

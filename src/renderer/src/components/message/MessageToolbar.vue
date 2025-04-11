@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-xs text-secondary-foreground items-start justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
+    class="message-toolbar text-xs text-secondary-foreground items-start justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
   >
     <span v-show="!loading" class="flex flex-row gap-3">
       <!-- Edit mode buttons (save/cancel) -->
