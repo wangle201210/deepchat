@@ -45,4 +45,4 @@ mac:
 npmRebuild: true
 publish:
   provider: generic
-  url: https://deepchat.thinkinai.xyz/auth/
+  url: https://cdn.deepchatai.cn/upgrade/
