@@ -347,4 +347,13 @@ onUnmounted(() => {
 .prose .reference-link {
   @apply inline-block text-xs text-muted-foreground bg-muted rounded-md text-center min-w-4 py-0.5 mx-0.5 hover:bg-accent;
 }
+
+.prose code:before,
+.prose code:after {
+  content: '';
+}
+
+.prose code {
+  @apply rounded-md bg-secondary px-1 py-0.5 text-accent-foreground;
+}
 </style>

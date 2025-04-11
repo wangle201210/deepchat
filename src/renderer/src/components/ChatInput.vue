@@ -5,6 +5,7 @@
     @dragover.prevent="handleDragOver"
     @drop.prevent="handleDrop"
     @dragleave.prevent="handleDragLeave"
+    @paste="handlePaste"
   >
     <TooltipProvider>
       <div
@@ -266,6 +267,17 @@ const openFilePicker = () => {
 
 const previewFile = (filePath: string) => {
   windowPresenter.previewFile(filePath)
+}
+
+const handlePaste = (e: ClipboardEvent) => {
+  const files = e.clipboardData?.files
+  if (files && files.length > 0) {
+    for (const file of files) {
+      console.log(file)
+      const path = window.api.getPathForFile(file)
+      console.log('path', path)
+    }
+  }
 }
 
 const handleFileSelect = async (e: Event) => {
