@@ -117,11 +117,10 @@
       <img src="./src/renderer/src/assets/llm-icons/grok.svg" width="50" height="50"><br/>
       <a href="https://x.ai/">Grok</a>
     </td>
-    <td colspan="1">
-          Compatible with any model provider in openai/gemini API format
-    </td>
   </tr>
 </table>
+
+### Compatible with any model provider in OpenAI/Gemini/Anthropic API format
 
 ## Other Features
 

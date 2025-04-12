@@ -116,12 +116,10 @@
       <img src="./src/renderer/src/assets/llm-icons/grok.svg" width="50" height="50"><br/>
       <a href="https://x.ai/">Grok</a>
     </td>
-    <td colspan="1">
-      兼容任意 openai/gemini 格式API的供应商
-    </td>
   </tr>
 </table>
 
+### 兼容任意 OpenAI/Gemini/Anthropic API格式的供应商
 ## 其他特性
 
 - 支持 Ollama 本地模型管理
