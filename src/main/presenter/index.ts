@@ -82,7 +82,9 @@ export class Presenter implements IPresenter {
 
     // 流式响应事件
     eventBus.on(STREAM_EVENTS.RESPONSE, (msg) => {
-      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.RESPONSE, msg)
+      const dataToRender = { ...msg }
+      delete dataToRender.tool_call_response_raw // 删除 rawData 字段,此处不需要上发给 renderer，节约性能
+      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.RESPONSE, dataToRender)
     })
 
     eventBus.on(STREAM_EVENTS.END, (msg) => {

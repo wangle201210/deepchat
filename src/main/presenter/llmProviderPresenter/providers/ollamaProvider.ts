@@ -495,7 +495,8 @@ export class OllamaProvider extends BaseLLMProvider {
                   tool_call_id: `ollama-${toolCall.id}`,
                   tool_call_server_name: mcpTool.server.name,
                   tool_call_server_icons: mcpTool.server.icons,
-                  tool_call_server_description: mcpTool.server.description
+                  tool_call_server_description: mcpTool.server.description,
+                  tool_call_response_raw: toolCallResponse.rawData
                 }
                 // 将工具响应添加到消息中
                 conversationMessages.push({
