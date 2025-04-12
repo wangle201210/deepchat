@@ -1201,12 +1201,6 @@ export class ThreadPresenter implements IThreadPresenter {
   } {
     const { systemPrompt, contextLength, artifacts } = conversation.settings
 
-    // 计算搜索提示词和丰富用户消息
-    // const searchPrompt = searchResults
-    //   ? artifacts === 1
-    //     ? generateSearchPromptWithArtifacts(userContent, searchResults)
-    //     : generateSearchPrompt(userContent, searchResults)
-    //   : ''
     const searchPrompt = searchResults ? generateSearchPrompt(userContent, searchResults) : ''
     const enrichedUserMessage =
       urlResults.length > 0

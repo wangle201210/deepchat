@@ -25,7 +25,7 @@ export const defaultModelsSettings = [
   {
     id: 'grok-3-fast-beta',
     name: 'Grok 3 Fast Beta',
-    temperature: 1,
+    temperature: 0.7,
     contextLength: 120000,
     maxTokens: 100_000,
     match: ['grok-3-fast', 'grok-3-fast-latest', 'grok-3-fast-beta'],
@@ -36,6 +36,7 @@ export const defaultModelsSettings = [
   {
     id: 'grok-2-vision-1212',
     name: 'Grok 2 Vision 1212',
+    temperature: 0.7,
     contextLength: 32000,
     maxTokens: 32000,
     match: ['grok-2-vision', 'grok-2-vision-latest', 'grok-2-vision-1212'],
@@ -46,6 +47,7 @@ export const defaultModelsSettings = [
   {
     id: 'grok-2-image-1212',
     name: 'Grok 2 Image 1212',
+    temperature: 0.7,
     contextLength: 130_000,
     maxTokens: 100_000,
     match: ['grok-2-image', 'grok-2-image-latest', 'grok-2-image-1212'],
@@ -56,6 +58,7 @@ export const defaultModelsSettings = [
   {
     id: 'grok-3-beta',
     name: 'Grok 3 Beta',
+    temperature: 0.7,
     contextLength: 120000,
     maxTokens: 100_000,
     match: ['grok-3', 'grok-3-latest', 'grok-3-beta'],
@@ -67,6 +70,7 @@ export const defaultModelsSettings = [
     id: 'grok-2-1212',
     name: 'Grok 2 1212',
     contextLength: 120000,
+    temperature: 0.7,
     maxTokens: 100_000,
     match: ['grok-2', 'grok-2-latest', 'grok-2-1212'],
     vision: false,

@@ -9,7 +9,7 @@ import { MAIN_WIN } from '../windowPresenter'
 import { eventBus } from '@/eventbus'
 import { CONFIG_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
-import { SEARCH_PROMPT_ARTIFACTS_TEMPLATE, SEARCH_PROMPT_TEMPLATE } from './const'
+import { SEARCH_PROMPT_TEMPLATE } from './const'
 
 const helperPage = path.join(app.getAppPath(), 'resources', 'blankSearch.html')
 
@@ -234,20 +234,6 @@ export function generateSearchPrompt(query: string, results: SearchResult[]): st
   }
 }
 
-// Add a function to generate search prompt with artifacts support
-// @deprecated 由mcp提供
-export function generateSearchPromptWithArtifacts(query: string, results: SearchResult[]): string {
-  if (results.length > 0) {
-    return SEARCH_PROMPT_ARTIFACTS_TEMPLATE.replace(
-      '{{SEARCH_RESULTS}}',
-      formatSearchResults(results)
-    )
-      .replace('{{USER_QUERY}}', query)
-      .replace('{{CUR_DATE}}', new Date().toLocaleDateString())
-  } else {
-    return query
-  }
-}
 export class SearchManager {
   private searchWindows: Map<string, BrowserWindow> = new Map()
   private maxConcurrentSearches = 3
