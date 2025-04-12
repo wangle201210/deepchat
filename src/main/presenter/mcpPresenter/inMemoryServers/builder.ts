@@ -9,7 +9,7 @@ export function getInMemoryServer(serverName: string, args: string[]) {
     case 'Artifacts':
       return new ArtifactsServer()
     case 'imageServer':
-      return new ImageServer()
+      return new ImageServer(args[0], args[1])
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

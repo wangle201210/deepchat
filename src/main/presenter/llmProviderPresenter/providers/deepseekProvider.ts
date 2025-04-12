@@ -79,9 +79,10 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
+    toolcall?: boolean
   ): AsyncGenerator<LLMResponseStream> {
-    yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens)
+    yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens, toolcall)
   }
 
   async *streamSummaries(

@@ -9,6 +9,10 @@ import path from 'path'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
+import { presenter } from '@/presenter'
+import { ChatMessage, ChatMessageContent } from '../../llmProviderPresenter/baseProvider' // Corrected Import Path
+import { getModelConfig } from '@/presenter/llmProviderPresenter/modelConfigs'
+// import { GenerateCompletionOptions } from '@/presenter/llmProviderPresenter' // Assuming this path and type exist - using any for now
 
 // --- Zod Schemas for Tool Arguments ---
 
@@ -28,6 +32,13 @@ const UploadMultipleImagesArgsSchema = z.object({
   paths: z.array(z.string()).describe('List of paths to the image files to upload.')
 })
 
+const QueryImageWithPromptArgsSchema = z.object({
+  path: z.string().describe('Path to the image file to query.'),
+  prompt: z
+    .string()
+    .describe('The prompt to use when querying the image with the multimodal model.')
+})
+
 const DescribeImageArgsSchema = z.object({
   path: z.string().describe('Path to the image file to describe.')
 })
@@ -43,8 +54,12 @@ type ToolInput = z.infer<typeof ToolInputSchema>
 
 export class ImageServer {
   private server: Server
+  private provider: string
+  private model: string
 
-  constructor() {
+  constructor(provider: string, model: string) {
+    this.provider = provider
+    this.model = model
     this.server = new Server(
       {
         name: 'image-processing-server',
@@ -82,24 +97,102 @@ export class ImageServer {
   }
 
   // --- Placeholder for Multimodal Model Interaction ---
-  private async describeImageWithModel(filePath: string, fileBuffer: Buffer): Promise<string> {
+  private async queryImageWithModel(
+    filePath: string,
+    fileBuffer: Buffer,
+    prompt: string
+  ): Promise<string> {
     // TODO: Implement actual API call to a multimodal model (e.g., GPT-4o, Gemini)
-    console.log(`Requesting description for ${filePath} (size: ${fileBuffer.length} bytes)...`)
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    const fakeDescription = `This is a placeholder description for the image at ${path.basename(filePath)}.`
-    console.log(`Description received: ${fakeDescription}`)
-    return fakeDescription
+    console.log(
+      `Querying ${filePath} (size: ${fileBuffer.length} bytes) using ${this.provider}/${this.model} with prompt: "${prompt}"...`
+    )
+
+    // Construct the messages array for the multimodal model
+    const base64Image = fileBuffer.toString('base64')
+    // TODO: Dynamically determine mime type if possible, otherwise assume common type like jpeg
+    const dataUrl = `data:image/jpeg;base64,${base64Image}`
+
+    const messages: ChatMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: prompt }, // Use the provided prompt
+          {
+            type: 'image_url',
+            image_url: { url: dataUrl }
+          }
+        ] as ChatMessageContent[] // Type assertion might be needed depending on ChatMessageContent definition
+      }
+    ]
+
+    const modelConfig = getModelConfig(this.model)
+
+    try {
+      const response = await presenter.llmproviderPresenter.generateCompletionStandalone(
+        this.provider,
+        messages,
+        this.model,
+        modelConfig?.temperature || 0.6,
+        modelConfig?.maxTokens || 1000,
+        false
+      )
+      console.log(`Model response received: ${response}`)
+      return response ?? 'No response generated.' // Handle potential null/undefined response
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`Error querying image: ${errorMessage}`)
+      // Re-throw or return an error message
+      throw new Error(`Failed to query image: ${errorMessage}`)
+      // Or return `Error generating response: ${errorMessage}`;
+    }
   }
 
   private async ocrImageWithModel(filePath: string, fileBuffer: Buffer): Promise<string> {
     // TODO: Implement actual API call to an OCR service or a multimodal model capable of OCR
-    console.log(`Requesting OCR for ${filePath} (size: ${fileBuffer.length} bytes)...`)
-    // Simulate API call delay
-    await new Promise((resolve) => setTimeout(resolve, 800))
-    const fakeOcrText = `Placeholder OCR text for ${path.basename(filePath)}:\nLine 1\nLine 2`
-    console.log(`OCR text received: ${fakeOcrText}`)
-    return fakeOcrText
+    console.log(
+      `Requesting OCR for ${filePath} (size: ${fileBuffer.length} bytes) using ${this.provider}/${this.model}...`
+    )
+
+    // Construct the messages array for the multimodal model
+    const base64Image = fileBuffer.toString('base64')
+    // TODO: Dynamically determine mime type if possible
+    const dataUrl = `data:image/jpeg;base64,${base64Image}`
+
+    const messages: ChatMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Perform OCR on this image and return the extracted text.' },
+          {
+            type: 'image_url',
+            image_url: { url: dataUrl }
+          }
+        ] as ChatMessageContent[] // Type assertion
+      }
+    ]
+
+    console.log(messages)
+
+    const modelConfig = getModelConfig(this.model)
+
+    try {
+      const ocrText = await presenter.llmproviderPresenter.generateCompletionStandalone(
+        this.provider,
+        messages,
+        this.model,
+        modelConfig?.temperature || 0.6,
+        modelConfig?.maxTokens || 1000,
+        false
+      )
+      console.log(`OCR text received: ${ocrText}`)
+      return ocrText ?? 'No text extracted.' // Handle potential null/undefined response
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(`Error performing OCR: ${errorMessage}`)
+      // Re-throw or return an error message
+      throw new Error(`Failed to perform OCR: ${errorMessage}`)
+      // Or return `Error performing OCR: ${errorMessage}`;
+    }
   }
 
   // --- Request Handlers ---
@@ -138,6 +231,12 @@ export class ImageServer {
             description:
               'Uses a multimodal model to generate a description of the image at the specified path.',
             inputSchema: zodToJsonSchema(DescribeImageArgsSchema) as ToolInput
+          },
+          {
+            name: 'query_image_with_prompt',
+            description:
+              'Uses a multimodal model to answer a query (prompt) about the image at the specified path.',
+            inputSchema: zodToJsonSchema(QueryImageWithPromptArgsSchema) as ToolInput
           },
           {
             name: 'ocr_image',
@@ -203,7 +302,8 @@ export class ImageServer {
                   }
                 } catch (error) {
                   const errorMessage = error instanceof Error ? error.message : String(error)
-                  return { path: filePath, error: errorMessage, status: 'rejected' }
+                  // Ensure the structure includes path and error for rejected promises
+                  return Promise.reject({ path: filePath, error: errorMessage })
                 }
               })
             )
@@ -213,6 +313,7 @@ export class ImageServer {
               if (result.status === 'fulfilled') {
                 return { path: result.value.path, base64: result.value.base64 }
               } else {
+                // Access reason directly as it contains the rejected structure
                 return { path: result.reason.path, error: result.reason.error }
               }
             })
@@ -237,7 +338,8 @@ export class ImageServer {
                   return { path: filePath, url: url, status: 'fulfilled' }
                 } catch (error) {
                   const errorMessage = error instanceof Error ? error.message : String(error)
-                  return { path: filePath, error: errorMessage, status: 'rejected' }
+                  // Ensure the structure includes path and error for rejected promises
+                  return Promise.reject({ path: filePath, error: errorMessage })
                 }
               })
             )
@@ -247,9 +349,8 @@ export class ImageServer {
               if (result.status === 'fulfilled') {
                 return { path: result.value.path, url: result.value.url }
               } else {
-                // Adjusting access to path and error based on the structure in the catch block
-                const reason = result.reason as { path: string; error: string; status: 'rejected' }
-                return { path: reason.path, error: reason.error }
+                // Access reason directly as it contains the rejected structure
+                return { path: result.reason.path, error: result.reason.error }
               }
             })
 
@@ -266,9 +367,29 @@ export class ImageServer {
             // TODO: Implement path validation if necessary
             const filePath = parsed.data.path
             const fileBuffer = await fs.readFile(filePath)
-            const description = await this.describeImageWithModel(filePath, fileBuffer)
+            const description = await this.queryImageWithModel(
+              filePath,
+              fileBuffer,
+              'Describe this image.'
+            )
             return {
               content: [{ type: 'text', text: description }]
+            }
+          }
+
+          case 'query_image_with_prompt': {
+            const parsed = QueryImageWithPromptArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`Invalid arguments for ${name}: ${parsed.error}`)
+            }
+            // TODO: Implement path validation if necessary
+            const filePath = parsed.data.path
+            const prompt = parsed.data.prompt // Get the prompt
+            const fileBuffer = await fs.readFile(filePath)
+            // Call the renamed function with the prompt
+            const response = await this.queryImageWithModel(filePath, fileBuffer, prompt)
+            return {
+              content: [{ type: 'text', text: response }]
             }
           }
 
@@ -293,9 +414,10 @@ export class ImageServer {
         const errorMessage = error instanceof Error ? error.message : String(error)
         // Consider logging the error server-side
         console.error(`Error processing tool call: ${errorMessage}`)
+        // Ensure the error response structure matches expected format
         return {
           content: [{ type: 'text', text: `Error: ${errorMessage}` }],
-          isError: true
+          isError: true // Indicate this is an error response
         }
       }
     })
@@ -305,7 +427,7 @@ export class ImageServer {
 // --- Usage Example (similar to FileSystemServer) ---
 // import { WebSocketServerTransport } from '@modelcontextprotocol/sdk/transport/node';
 //
-// const imageServer = new ImageServer();
+// const imageServer = new ImageServer('your-llm-provider', 'your-multimodal-model');
 // // await imageServer.initialize(); // If initialization is added
 //
 // // Example using WebSocket transport
