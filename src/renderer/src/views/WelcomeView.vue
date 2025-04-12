@@ -1,33 +1,65 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, defineAsyncComponent } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import logo from '@/assets/logo.png'
-import { Label } from '@/components/ui/label'
-import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { usePresenter } from '@/composables/usePresenter'
 import { useRouter } from 'vue-router'
 import { MODEL_META } from '@shared/presenter'
-import ModelConfigItem from '@/components/settings/ModelConfigItem.vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog'
 import { useI18n } from 'vue-i18n'
+
+const Button = defineAsyncComponent(() =>
+  import('@/components/ui/button').then((mod) => mod.Button)
+)
+const Card = defineAsyncComponent(() => import('@/components/ui/card').then((mod) => mod.Card))
+const CardHeader = defineAsyncComponent(() =>
+  import('@/components/ui/card').then((mod) => mod.CardHeader)
+)
+const CardContent = defineAsyncComponent(() =>
+  import('@/components/ui/card').then((mod) => mod.CardContent)
+)
+const CardFooter = defineAsyncComponent(() =>
+  import('@/components/ui/card').then((mod) => mod.CardFooter)
+)
+const Label = defineAsyncComponent(() => import('@/components/ui/label').then((mod) => mod.Label))
+const ModelIcon = defineAsyncComponent(() => import('@/components/icons/ModelIcon.vue'))
+const Input = defineAsyncComponent(() => import('@/components/ui/input').then((mod) => mod.Input))
+const Select = defineAsyncComponent(() =>
+  import('@/components/ui/select').then((mod) => mod.Select)
+)
+const SelectContent = defineAsyncComponent(() =>
+  import('@/components/ui/select').then((mod) => mod.SelectContent)
+)
+const SelectItem = defineAsyncComponent(() =>
+  import('@/components/ui/select').then((mod) => mod.SelectItem)
+)
+const SelectTrigger = defineAsyncComponent(() =>
+  import('@/components/ui/select').then((mod) => mod.SelectTrigger)
+)
+const SelectValue = defineAsyncComponent(() =>
+  import('@/components/ui/select').then((mod) => mod.SelectValue)
+)
+const ModelConfigItem = defineAsyncComponent(
+  () => import('@/components/settings/ModelConfigItem.vue')
+)
+const Dialog = defineAsyncComponent(() =>
+  import('@/components/ui/dialog').then((mod) => mod.Dialog)
+)
+const DialogContent = defineAsyncComponent(() =>
+  import('@/components/ui/dialog').then((mod) => mod.DialogContent)
+)
+const DialogHeader = defineAsyncComponent(() =>
+  import('@/components/ui/dialog').then((mod) => mod.DialogHeader)
+)
+const DialogTitle = defineAsyncComponent(() =>
+  import('@/components/ui/dialog').then((mod) => mod.DialogTitle)
+)
+const DialogDescription = defineAsyncComponent(() =>
+  import('@/components/ui/dialog').then((mod) => mod.DialogDescription)
+)
+const DialogFooter = defineAsyncComponent(() =>
+  import('@/components/ui/dialog').then((mod) => mod.DialogFooter)
+)
 
 const settingsStore = useSettingsStore()
 const configPresenter = usePresenter('configPresenter')
