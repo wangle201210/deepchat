@@ -172,6 +172,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
     // 获取模型配置，判断是否支持functionCall
     const modelConfig = getModelConfig(modelId)
+
     const supportsFunctionCall = modelConfig?.functionCall || false
 
     // 根据是否支持functionCall处理messages

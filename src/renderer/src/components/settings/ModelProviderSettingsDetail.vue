@@ -308,6 +308,7 @@ const validateApiKey = async () => {
 }
 
 const initData = async () => {
+  console.log('initData', settingsStore.allProviderModels)
   const providerData = settingsStore.allProviderModels.find(
     (p) => p.providerId === props.provider.id
   )

@@ -891,6 +891,9 @@ export class ThreadPresenter implements IThreadPresenter {
         queryMsgId
       )
 
+      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+      const modelConfig = getModelConfig(modelId)
+      const { vision } = modelConfig || {}
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
 
@@ -933,7 +936,7 @@ export class ThreadPresenter implements IThreadPresenter {
         searchResults,
         urlResults,
         userMessage,
-        imageFiles
+        vision ? imageFiles : []
       )
 
       // 检查是否已被取消
@@ -946,7 +949,7 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 6. 启动流式生成
-      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+
       await this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
