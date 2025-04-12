@@ -277,7 +277,9 @@
     "cannotRemoveBuiltIn": "ビルトインサービスを削除できません",
     "customServers": "カスタムサービス",
     "removeDefault": "デフォルトを削除します",
-    "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします"
+    "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします",
+    "maxDefaultServersReached": "せいぜい3つのデフォルトサーバーのみを設定できます",
+    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください"
   },
   "about": {
     "title": "私たちについて",

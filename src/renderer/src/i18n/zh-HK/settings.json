@@ -277,7 +277,9 @@
     "builtIn": "內置",
     "cannotRemoveBuiltIn": "無法刪除內置服務",
     "builtInServerCannotBeRemoved": "內置服務不能被刪除，僅支持修改參數和環境變量",
-    "marketplace": "前往MCP市場一鍵安裝"
+    "marketplace": "前往MCP市場一鍵安裝",
+    "maxDefaultServersReached": "最多只能設置3個默認服務器",
+    "removeDefaultFirst": "請先移除一些默認服務器"
   },
   "about": {
     "title": "關於我們",

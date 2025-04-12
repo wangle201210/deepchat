@@ -32,7 +32,8 @@
     "error500": "Server error, the service might be unstable, please try again later",
     "error502": "Gateway error, the service might be unstable, please try again later",
     "error503": "Service unavailable, the service might be unstable, please try again later",
-    "error504": "Request timeout, the service might be unstable or there might be network issues, please check proxy settings and try again"
+    "error504": "Request timeout, the service might be unstable or there might be network issues, please check proxy settings and try again",
+    "operationFailed": "Operation failed"
   },
   "resetDataConfirmTitle": "Reset All Data?",
   "resetDataConfirmDescription": "This will reset all your data to default settings. This action cannot be undone.",

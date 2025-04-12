@@ -113,6 +113,10 @@
       <img src="./src/renderer/src/assets/llm-icons/qiniu.svg" width="50" height="50"><br/>
       <a href="https://www.qiniu.com/products/ai-token-api">Qiniu</a>
     </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/grok.svg" width="50" height="50"><br/>
+      <a href="https://x.ai/">Grok</a>
+    </td>
     <td colspan="1">
           Compatible with any model provider in openai/gemini API format
     </td>
