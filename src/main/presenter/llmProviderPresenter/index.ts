@@ -473,19 +473,15 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number,
-    toolcall?: boolean
+    maxTokens?: number
   ): Promise<string> {
     // 记录输入到大模型的消息内容
     console.log('streamCompletionStandalone', messages)
     const provider = this.getProviderInstance(providerId)
     let response = ''
     try {
-      const stream = provider.streamCompletions(messages, modelId, temperature, maxTokens, toolcall)
-      for await (const chunk of stream) {
-        console.log('chunk', chunk)
-        response += chunk.content
-      }
+      const llmResponse = await provider.completions(messages, modelId, temperature, maxTokens)
+      response = llmResponse.content
 
       return response
     } catch (error) {

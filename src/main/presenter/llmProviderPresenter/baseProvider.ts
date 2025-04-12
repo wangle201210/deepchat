@@ -407,8 +407,7 @@ export abstract class BaseLLMProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number,
-    toolcall?: boolean
+    maxTokens?: number
   ): AsyncGenerator<LLMResponseStream>
 
   /**

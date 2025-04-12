@@ -40,7 +40,7 @@ const QueryImageWithPromptArgsSchema = z.object({
 })
 
 const DescribeImageArgsSchema = z.object({
-  path: z.string().describe('Path to the image file to describe.')
+  path: z.string().describe('Path to the image file to do simple describe.')
 })
 
 const OcrImageArgsSchema = z.object({
@@ -133,8 +133,7 @@ export class ImageServer {
         messages,
         this.model,
         modelConfig?.temperature || 0.6,
-        modelConfig?.maxTokens || 1000,
-        false
+        modelConfig?.maxTokens || 1000
       )
       console.log(`Model response received: ${response}`)
       return response ?? 'No response generated.' // Handle potential null/undefined response
@@ -181,8 +180,7 @@ export class ImageServer {
         messages,
         this.model,
         modelConfig?.temperature || 0.6,
-        modelConfig?.maxTokens || 1000,
-        false
+        modelConfig?.maxTokens || 1000
       )
       console.log(`OCR text received: ${ocrText}`)
       return ocrText ?? 'No text extracted.' // Handle potential null/undefined response
@@ -229,7 +227,7 @@ export class ImageServer {
           {
             name: 'describe_image',
             description:
-              'Uses a multimodal model to generate a description of the image at the specified path.',
+              'Uses a multimodal model to simply describe the image at the specified path.',
             inputSchema: zodToJsonSchema(DescribeImageArgsSchema) as ToolInput
           },
           {

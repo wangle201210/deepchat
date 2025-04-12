@@ -157,8 +157,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     messages: any[],
     modelId?: string,
     temperature?: number,
-    maxTokens?: number,
-    toolcall: boolean = true
+    maxTokens?: number
   ): AsyncGenerator<LLMResponseStream> {
     if (!this.isInitialized) {
       throw new Error('Provider not initialized')
@@ -169,14 +168,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     }
 
     // 获取MCP工具定义
-    const mcpTools = toolcall ? await presenter.mcpPresenter.getAllToolDefinitions() : []
+    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
 
     // 获取模型配置，判断是否支持functionCall
     const modelConfig = getModelConfig(modelId)
 
-    console.log('toolcall', toolcall)
     const supportsFunctionCall = modelConfig?.functionCall || false
-    console.log('supportsFunctionCall', supportsFunctionCall)
 
     // 根据是否支持functionCall处理messages
     let processedMessages = [...messages] as ChatCompletionMessageParam[]

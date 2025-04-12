@@ -78,10 +78,9 @@ export class OpenAIProvider extends OpenAICompatibleProvider {
     messages: ChatMessage[],
     modelId: string,
     temperature?: number,
-    maxTokens?: number,
-    toolcall?: boolean
+    maxTokens?: number
   ): AsyncGenerator<LLMResponseStream> {
-    yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens, toolcall)
+    yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens)
   }
 
   async *streamSummaries(
