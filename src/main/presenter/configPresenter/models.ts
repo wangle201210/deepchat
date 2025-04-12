@@ -1,4 +1,79 @@
 export const defaultModelsSettings = [
+  // Grok,
+  {
+    id: 'grok-3-mini-fast-beta',
+    name: 'Grok 3 Mini Fast Beta',
+    temperature: 1,
+    contextLength: 120000,
+    maxTokens: 100_000,
+    match: ['grok-3-mini-fast', 'grok-3-mini-fast-latest', 'grok-3-mini-fast-beta'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'grok-3-mini-beta',
+    name: 'Grok 3 Mini Beta',
+    temperature: 1,
+    contextLength: 120000,
+    maxTokens: 100_000,
+    match: ['grok-3-mini', 'grok-3-mini-latest', 'grok-3-mini-beta'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'grok-3-fast-beta',
+    name: 'Grok 3 Fast Beta',
+    temperature: 1,
+    contextLength: 120000,
+    maxTokens: 100_000,
+    match: ['grok-3-fast', 'grok-3-fast-latest', 'grok-3-fast-beta'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'grok-2-vision-1212',
+    name: 'Grok 2 Vision 1212',
+    contextLength: 32000,
+    maxTokens: 32000,
+    match: ['grok-2-vision', 'grok-2-vision-latest', 'grok-2-vision-1212'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
+    id: 'grok-2-image-1212',
+    name: 'Grok 2 Image 1212',
+    contextLength: 130_000,
+    maxTokens: 100_000,
+    match: ['grok-2-image', 'grok-2-image-latest', 'grok-2-image-1212'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
+    id: 'grok-3-beta',
+    name: 'Grok 3 Beta',
+    contextLength: 120000,
+    maxTokens: 100_000,
+    match: ['grok-3', 'grok-3-latest', 'grok-3-beta'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'grok-2-1212',
+    name: 'Grok 2 1212',
+    contextLength: 120000,
+    maxTokens: 100_000,
+    match: ['grok-2', 'grok-2-latest', 'grok-2-1212'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+
   // Gemini 系列模型
   {
     id: 'gemini-2.5-pro-exp-03-25',

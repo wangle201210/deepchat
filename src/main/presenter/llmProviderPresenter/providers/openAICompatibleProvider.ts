@@ -17,6 +17,8 @@ import { proxyConfig } from '../../proxyConfig'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { presenter } from '@/presenter'
 import { getModelConfig } from '../modelConfigs'
+import { eventBus } from '@/eventbus'
+import { NOTIFICATION_EVENTS } from '@/events'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
 export class OpenAICompatibleProvider extends BaseLLMProvider {
@@ -299,13 +301,19 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           continue
         }
 
+        if (delta?.reasoning) {
+          yield {
+            reasoning_content: delta.reasoning
+          }
+          continue
+        }
+
         let content = delta?.content || ''
 
         if (!content) continue
 
         // 累积完整响应
         fullAssistantResponse += content
-
         // 如果模型不支持function call，检查<function_call>标签
         if (!supportsFunctionCall && mcpTools.length > 0) {
           const result = this.processFunctionCallTagInContent(
@@ -342,12 +350,17 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 })
               }
 
-              // 设置完成原因为tool_calls，中断当前流处理
+              // 标记需要继续对话，但不中断当前流处理
+              // 从fullAssistantResponse中移除function call部分以保持响应干净
+              const functionCallPattern = new RegExp(
+                `<function_call>${result.completeFunctionCall.replace(/<function_call>|<\/function_call>/g, '')}.*?</function_call>`,
+                'gs'
+              )
+              fullAssistantResponse = fullAssistantResponse.replace(functionCallPattern, '')
               needContinueConversation = true
-              break
+              // 不要break，继续处理当前流
             }
           }
-
           // 如果在function call标签内，不输出内容
           if (isInFunctionCallTag) {
             continue
@@ -557,15 +570,25 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 tool_call_id: toolCall.id
               })
             } else {
-              conversationMessages.push({
-                role: 'user',
-                content:
-                  `\n<tool_call_response name="${toolCall.function.name}" id="${toolCallRenderId}">\n` +
-                  (typeof toolCallResponse.content === 'string'
-                    ? toolCallResponse.content
-                    : JSON.stringify(toolCallResponse.content)) +
-                  `\n</tool_call_response>\n`
-              })
+              // 检查最后一条消息是否是user角色
+              const lastMessage = conversationMessages[conversationMessages.length - 1]
+              const toolResponseContent =
+                `\n<tool_call_response name="${toolCall.function.name}" id="${toolCallRenderId}">\n` +
+                (typeof toolCallResponse.content === 'string'
+                  ? toolCallResponse.content
+                  : JSON.stringify(toolCallResponse.content)) +
+                `\n</tool_call_response>\n`
+
+              if (lastMessage && lastMessage.role === 'user') {
+                // 如果是，则将工具调用响应附加到最后一条消息
+                lastMessage.content += toolResponseContent
+              } else {
+                // 如果不是，则创建新的用户消息
+                conversationMessages.push({
+                  role: 'user',
+                  content: toolResponseContent
+                })
+              }
             }
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : '未知错误'
@@ -895,6 +918,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
+      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+        title: 'API错误',
+        message: error?.message,
+        id: `openai-error-${Date.now()}`,
+        type: 'error'
+      })
       return {
         isOk: false,
         errorMsg: error?.message

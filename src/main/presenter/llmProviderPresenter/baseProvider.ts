@@ -222,7 +222,7 @@ export abstract class BaseLLMProvider {
     <tool_list>
   ${JSON.stringify(tools)}
     </tool_list>
-    当用户的意图需要使用工具时，你必须严格按照以下格式回复，保证函数调用的信息在function_call的标签中,每个标签有且只能有一个调用:
+    当需要使用工具时，你必须严格按照以下格式回复，保证函数调用的信息在function_call的标签中,每个标签有且只能有一个调用,如果需要调用多个工具,你需要生成多个function_call标签:
 <function_call>
 {
   "function_call": {
