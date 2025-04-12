@@ -120,9 +120,9 @@ const confirmRemoveServer = async () => {
 const handleToggleDefaultServer = async (serverName: string) => {
   // 检查是否已经是默认服务器
   const isDefault = mcpStore.config.defaultServers.includes(serverName)
-
+  console.log('mcpStore.config.defaultServers', mcpStore.config.defaultServers)
   // 如果不是默认服务器，且已达到最大数量，显示提示
-  if (!isDefault && mcpStore.config.defaultServers.length >= 3) {
+  if (!isDefault && mcpStore.config.defaultServers.length > 3) {
     toast({
       title: t('settings.mcp.maxDefaultServersReached'),
       description: t('settings.mcp.removeDefaultFirst'),
@@ -634,7 +634,10 @@ watch(
             </div>
             <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
               <div class="flex justify-between items-center">
-                <div v-if="server.type === 'http'" class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                <div
+                  v-if="server.type === 'http'"
+                  class="text-xs font-mono overflow-x-auto whitespace-nowrap"
+                >
                   {{ server.baseUrl }}
                 </div>
                 <div v-else class="text-xs font-mono overflow-x-auto whitespace-nowrap">

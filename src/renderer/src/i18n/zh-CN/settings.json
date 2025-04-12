@@ -277,7 +277,9 @@
     "customServers": "自定义服务",
     "builtIn": "内置",
     "cannotRemoveBuiltIn": "无法删除内置服务",
-    "builtInServerCannotBeRemoved": "内置服务不能被删除，仅支持修改参数和环境变量"
+    "builtInServerCannotBeRemoved": "内置服务不能被删除，仅支持修改参数和环境变量",
+    "maxDefaultServersReached": "最多只能设置3个默认服务器",
+    "removeDefaultFirst": "请先移除一些默认服务器"
   },
   "about": {
     "title": "关于我们",

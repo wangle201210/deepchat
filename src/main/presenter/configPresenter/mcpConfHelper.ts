@@ -157,12 +157,31 @@ export class McpConfHelper {
   // 添加默认服务器
   async addMcpDefaultServer(serverName: string): Promise<void> {
     const defaultServers = this.mcpStore.get('defaultServers') || []
-    if (!defaultServers.includes(serverName)) {
-      defaultServers.push(serverName)
-      this.mcpStore.set('defaultServers', defaultServers)
+    const mcpServers = this.mcpStore.get('mcpServers') || {}
+
+    // 检测并清理失效的服务器
+    const validDefaultServers = defaultServers.filter((server) => {
+      const exists = mcpServers[server] !== undefined
+      if (!exists) {
+        console.log(`检测到失效的MCP服务器: ${server}，已从默认列表中移除`)
+      }
+      return exists
+    })
+
+    // 添加新服务器（如果不在列表中）
+    if (!validDefaultServers.includes(serverName)) {
+      validDefaultServers.push(serverName)
+    }
+
+    // 如果有变化则更新存储并发送事件
+    if (
+      validDefaultServers.length !== defaultServers.length ||
+      !defaultServers.includes(serverName)
+    ) {
+      this.mcpStore.set('defaultServers', validDefaultServers)
       eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
-        mcpServers: this.mcpStore.get('mcpServers'),
-        defaultServers,
+        mcpServers: mcpServers,
+        defaultServers: validDefaultServers,
         mcpEnabled: this.mcpStore.get('mcpEnabled')
       })
     }
