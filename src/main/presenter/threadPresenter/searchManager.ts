@@ -100,7 +100,7 @@ const defaultEngines: SearchEngineTemplate[] = [
     searchUrl: 'https://www.bing.com/search?q={query}',
     extractorScript: `
       const results = []
-      const items = document.querySelectorAll('#b_content .b_algo')
+      const items = document.querySelectorAll('#b_results h2')
       items.forEach((item, index) => {
         const titleEl = item.querySelector('h2 a')
         const linkEl = item.querySelector('h2 a')
@@ -216,7 +216,10 @@ content：${result.content || ''}
 // 生成带搜索结果的提示词
 export function generateSearchPrompt(query: string, results: SearchResult[]): string {
   if (results.length > 0) {
-    const searchPrompt = SEARCH_PROMPT_TEMPLATE.replace('{{SEARCH_RESULTS}}', formatSearchResults(results))
+    const searchPrompt = SEARCH_PROMPT_TEMPLATE.replace(
+      '{{SEARCH_RESULTS}}',
+      formatSearchResults(results)
+    )
       .replace('{{USER_QUERY}}', query)
       .replace('{{CUR_DATE}}', new Date().toLocaleDateString())
 
