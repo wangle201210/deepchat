@@ -39,6 +39,18 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     env: {},
     disable: false
   },
+  bochaSearch: {
+    args: [],
+    descriptions: 'DeepChat内置网络搜索服务',
+    icons: '🔍',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'bochaSearch',
+    env: {
+      apiKey: 'YOUR_BOCHA_API_KEY' // 需要用户提供实际的API Key
+    },
+    disable: false
+  },
   imageServer: {
     args: [],
     descriptions: 'Image processing MCP service',

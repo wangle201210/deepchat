@@ -928,7 +928,8 @@ export class GeminiProvider extends BaseLLMProvider {
                 tool_call_id: toolCallId,
                 tool_call_server_name: mcpToolCall.server.name,
                 tool_call_server_icons: mcpToolCall.server.icons,
-                tool_call_server_description: mcpToolCall.server.description
+                tool_call_server_description: mcpToolCall.server.description,
+                tool_call_response_raw: toolResponse.rawData
               }
 
               // 设置需要继续对话的标志

@@ -9,7 +9,8 @@ import {
   MODEL_META,
   ISQLitePresenter,
   IConfigPresenter,
-  ILlmProviderPresenter
+  ILlmProviderPresenter,
+  MCPToolResponse
 } from '../../../shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './messageManager'
@@ -88,6 +89,7 @@ export class ThreadPresenter implements IThreadPresenter {
         tool_call_server_name,
         tool_call_server_icons,
         tool_call_server_description,
+        tool_call_response_raw,
         tool_call,
         totalUsage
       } = msg
@@ -145,6 +147,84 @@ export class ThreadPresenter implements IThreadPresenter {
         }
 
         const lastBlock = state.message.content[state.message.content.length - 1]
+
+        // 检查tool_call_response_raw中是否包含搜索结果
+        if (tool_call_response_raw && tool_call === 'end') {
+          try {
+            // 检查返回的内容中是否有deepchat-webpage类型的资源
+            const hasSearchResults = tool_call_response_raw.content?.some(
+              (item: { type: string; resource?: { mimeType: string } }) =>
+                item?.type === 'resource' &&
+                item?.resource?.mimeType === 'application/deepchat-webpage'
+            )
+
+            if (hasSearchResults) {
+              // 解析搜索结果
+              const searchResults = tool_call_response_raw.content
+                .filter(
+                  (item: {
+                    type: string
+                    resource?: { mimeType: string; text: string; uri?: string }
+                  }) =>
+                    item.type === 'resource' &&
+                    item.resource?.mimeType === 'application/deepchat-webpage'
+                )
+                .map((item: { resource: { text: string; uri?: string } }) => {
+                  try {
+                    const blobContent = JSON.parse(item.resource.text) as {
+                      title?: string
+                      url?: string
+                      content?: string
+                      icon?: string
+                    }
+                    return {
+                      title: blobContent.title || '',
+                      url: blobContent.url || item.resource.uri || '',
+                      content: blobContent.content || '',
+                      description: blobContent.content || '',
+                      icon: blobContent.icon || ''
+                    }
+                  } catch (e) {
+                    console.error('解析搜索结果失败:', e)
+                    return null
+                  }
+                })
+                .filter(Boolean)
+
+              if (searchResults.length > 0) {
+                // 添加搜索结果块
+                const searchBlock: AssistantMessageBlock = {
+                  type: 'search',
+                  content: '',
+                  status: 'success',
+                  timestamp: Date.now(),
+                  extra: {
+                    total: searchResults.length
+                  }
+                }
+
+                // 将搜索块插入到内容的最前面
+                state.message.content.unshift(searchBlock)
+
+                // 保存搜索结果
+                for (const result of searchResults) {
+                  await this.sqlitePresenter.addMessageAttachment(
+                    eventId,
+                    'search_result',
+                    JSON.stringify(result)
+                  )
+                }
+
+                await this.messageManager.editMessage(
+                  eventId,
+                  JSON.stringify(state.message.content)
+                )
+              }
+            }
+          } catch (error) {
+            console.error('处理搜索结果时出错:', error)
+          }
+        }
 
         // 处理工具调用
         if (tool_call) {
@@ -996,7 +1076,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 3. 检查是否是 maximum_tool_calls_reached
-      let toolCallResponse: { content: string } | null = null
+      let toolCallResponse: { content: string; rawData: MCPToolResponse } | null = null
       const toolCall = lastActionBlock.tool_call
 
       if (lastActionBlock.action_type === 'maximum_tool_calls_reached' && toolCall) {
@@ -1082,7 +1162,8 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_params: toolCall.params,
           tool_call_server_name: toolCall.server_name,
           tool_call_server_icons: toolCall.server_icons,
-          tool_call_server_description: toolCall.server_description
+          tool_call_server_description: toolCall.server_description,
+          tool_call_response_raw: toolCallResponse.rawData
         })
       }
 
