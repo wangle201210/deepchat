@@ -1,6 +1,7 @@
 import { ArtifactsServer } from './artifactsServer'
 import { FileSystemServer } from './filesystem'
 import { BochaSearchServer } from './bochaSearchServer'
+import { ImageServer } from './imageServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -14,6 +15,8 @@ export function getInMemoryServer(
       return new ArtifactsServer()
     case 'bochaSearch':
       return new BochaSearchServer(env)
+    case 'imageServer':
+      return new ImageServer(args[0], args[1])
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

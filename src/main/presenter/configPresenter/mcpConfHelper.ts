@@ -50,6 +50,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
       apiKey: 'YOUR_BOCHA_API_KEY' // 需要用户提供实际的API Key
     },
     disable: false
+  },
+  imageServer: {
+    args: [],
+    descriptions: 'Image processing MCP service',
+    icons: '🖼️',
+    autoApprove: ['read_image_base64', 'read_multiple_images_base64'], // Auto-approve reading, require confirmation for uploads
+    type: 'inmemory' as MCPServerType,
+    command: 'image', // We need to map this command to the ImageServer class later
+    env: {},
+    disable: false
   }
 }
 
