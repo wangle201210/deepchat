@@ -192,19 +192,38 @@ export class ThreadPresenter implements IThreadPresenter {
                 .filter(Boolean)
 
               if (searchResults.length > 0) {
-                // 添加搜索结果块
-                const searchBlock: AssistantMessageBlock = {
-                  type: 'search',
-                  content: '',
-                  status: 'success',
-                  timestamp: Date.now(),
-                  extra: {
-                    total: searchResults.length
-                  }
-                }
+                // 检查是否已经存在搜索块
+                const existingSearchBlock =
+                  state.message.content.length > 0 && state.message.content[0].type === 'search'
+                    ? state.message.content[0]
+                    : null
 
-                // 将搜索块插入到内容的最前面
-                state.message.content.unshift(searchBlock)
+                if (existingSearchBlock) {
+                  // 如果已经存在搜索块，更新其状态和总数
+                  existingSearchBlock.status = 'success'
+                  existingSearchBlock.timestamp = Date.now()
+                  if (existingSearchBlock.extra) {
+                    // 累加搜索结果数量
+                    existingSearchBlock.extra.total =
+                      (existingSearchBlock.extra.total || 0) + searchResults.length
+                  } else {
+                    existingSearchBlock.extra = {
+                      total: searchResults.length
+                    }
+                  }
+                } else {
+                  // 如果不存在搜索块，创建新的并添加到内容的最前面
+                  const searchBlock: AssistantMessageBlock = {
+                    type: 'search',
+                    content: '',
+                    status: 'success',
+                    timestamp: Date.now(),
+                    extra: {
+                      total: searchResults.length
+                    }
+                  }
+                  state.message.content.unshift(searchBlock)
+                }
 
                 // 保存搜索结果
                 for (const result of searchResults) {
