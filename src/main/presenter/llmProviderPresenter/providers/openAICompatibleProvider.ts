@@ -278,6 +278,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           currentUsage.completion_tokens = chunk.usage.completion_tokens
           currentUsage.total_tokens = chunk.usage.total_tokens
         }
+        // console.log('openai chunk', choice)
         // 原生支持function call的模型处理
         if (
           supportsFunctionCall &&
@@ -353,11 +354,26 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
               // 标记需要继续对话，但不中断当前流处理
               // 从fullAssistantResponse中移除function call部分以保持响应干净
+              const functionCallContent = result.completeFunctionCall.replace(
+                /<function_call>|<\/function_call>/g,
+                ''
+              )
+              // 创建一个更安全的正则表达式来匹配完整的function call标签及其内容
               const functionCallPattern = new RegExp(
-                `<function_call>${result.completeFunctionCall.replace(/<function_call>|<\/function_call>/g, '')}.*?</function_call>`,
+                `<function_call>${functionCallContent}</function_call>`,
                 'gs'
               )
-              fullAssistantResponse = fullAssistantResponse.replace(functionCallPattern, '')
+              // 先尝试精确匹配
+              let cleanedResponse = fullAssistantResponse.replace(functionCallPattern, '')
+
+              // 如果还有残留的标签，使用更通用的模式清理
+              const openTagPattern = /<function_call>/g
+              const closeTagPattern = /<\/function_call>/g
+              cleanedResponse = cleanedResponse.replace(openTagPattern, '')
+              cleanedResponse = cleanedResponse.replace(closeTagPattern, '')
+
+              fullAssistantResponse = cleanedResponse
+
               needContinueConversation = true
               // 不要break，继续处理当前流
             }
@@ -805,8 +821,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // 已经在标签内，继续累积内容
       result.functionCallBuffer += content
 
+      // 检查buffer中是否包含有效的<function_call>开始
+      const tagPrefix = '<function_call>'
+      const lastLessThanIndex = result.functionCallBuffer.lastIndexOf('<')
+
       // 检查结束标签
       const tagEndIndex = result.functionCallBuffer.indexOf('</function_call>')
+
       if (tagEndIndex !== -1) {
         // 找到完整的function call
         result.completeFunctionCall = `<function_call>${result.functionCallBuffer.substring(0, tagEndIndex)}</function_call>`
@@ -819,7 +840,51 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         // 重置状态
         result.isInFunctionCallTag = false
         result.functionCallBuffer = ''
+        return result
       }
+
+      // 如果没有结束标签，检查是否是有效的开始标签内容
+      // 如果没有<字符，或者<字符后面没有内容，则继续等待
+      if (lastLessThanIndex === -1 || lastLessThanIndex === result.functionCallBuffer.length - 1) {
+        return result
+      }
+
+      // 检查<字符后面的内容是否匹配function_call标签，需要排除结束标签的可能
+      const afterLessThan = result.functionCallBuffer.substring(lastLessThanIndex)
+
+      // 如果是结束标签格式，即 </function_call>，则继续等待更多内容
+      if (afterLessThan.startsWith('</')) {
+        return result
+      }
+
+      // 检查是否完全匹配<function_call>标签开头部分
+      let isValidStart = true
+      // 只比较共同存在的字符数，避免越界
+      const compareLength = Math.min(afterLessThan.length, tagPrefix.length)
+
+      for (let i = 0; i < compareLength; i++) {
+        if (afterLessThan[i] !== tagPrefix[i]) {
+          isValidStart = false
+          break
+        }
+      }
+
+      // 即使当前字符都匹配，但如果afterLessThan比tagPrefix长，且包含了非标签部分，也需要判断
+      // 例如"<function_call>xyz"，此时应该继续保持在标签内，因为标签已经完整匹配了
+      if (isValidStart && afterLessThan.length > tagPrefix.length) {
+        // 如果已经完整匹配了标签开头，保持标签模式
+        isValidStart = true
+      }
+
+      // 如果不是有效开始，将内容作为普通文本处理
+      if (!isValidStart) {
+        result.pendingContent = result.functionCallBuffer
+        result.isInFunctionCallTag = false
+        result.functionCallBuffer = ''
+        return result
+      }
+
+      // 我们这里已经检查过结束标签了，不需要再次检查
       return result
     }
 
@@ -863,6 +928,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // 如果部分匹配<function_call>的开头
       else if (remainingContent.length < functionCallTag.length) {
         const partialTag = remainingContent
+
         if (functionCallTag.startsWith(partialTag)) {
           // 可能是不完整的标签开始，缓存起来等待下一个chunk
           result.functionCallBuffer = partialTag
@@ -883,6 +949,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         for (let i = 0; i < Math.min(functionCallTag.length, remainingContent.length); i++) {
           if (functionCallTag[i] !== remainingContent[i]) {
             isPotentialMatch = false
+
             break
           }
         }
