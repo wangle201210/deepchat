@@ -22,7 +22,7 @@
     "sessionInterrupted": "Session was unexpectedly interrupted, generation is incomplete",
     "noModelResponse": "Model did not return any content, it may have timed out",
     "invalidJson": "Invalid JSON format",
-    "maximumToolCallsReached": "Maximum tool calls reached",
+    "maximumToolCallsReached": "Maximum Tool Calls Reached",
     "causeOfError": "Possible causes of error:",
     "error400": "Bad request, possibly a parameter or compatibility issue",
     "error401": "Authentication failed, possibly incorrect API Key or domain",
@@ -46,13 +46,9 @@
   "customProxyUrlPlaceholder": "Example: http://127.0.0.1:7890",
   "invalidProxyUrl": "Invalid proxy URL, please enter a valid http/https URL",
   "disclaimer": "Disclaimer",
-  "language": "language",
-  "languageSelect": "Select a language",
   "resetData": "Reset data",
   "searchAssistantModel": "Search Assistant Model",
   "searchEngine": "Search Engine",
   "searchEngineSelect": "Select a search engine",
-  "searchPreview": "Search preview",
-  "selectModel": "Select a model",
-  "title": "General settings"
+  "searchPreview": "Search preview"
 }
