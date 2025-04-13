@@ -41,7 +41,7 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
   },
   bochaSearch: {
     args: [],
-    descriptions: 'DeepChat内置网络搜索服务',
+    descriptions: 'DeepChat内置博查搜索服务',
     icons: '🔍',
     autoApprove: ['all'],
     type: 'inmemory' as MCPServerType,
@@ -77,24 +77,6 @@ const DEFAULT_MCP_SERVERS = {
       autoApprove: ['all'],
       disable: true,
       type: 'stdio' as MCPServerType
-    },
-    bitcoin: {
-      command: 'npx',
-      args: ['-y', 'bitcoin-mcp@latest'],
-      env: {},
-      descriptions: '查询比特币',
-      icons: '💰',
-      autoApprove: ['all'],
-      type: 'stdio' as MCPServerType
-    },
-    airbnb: {
-      descriptions: 'Airbnb',
-      icons: '🏠',
-      autoApprove: ['all'],
-      type: 'stdio' as MCPServerType,
-      command: 'npx',
-      args: ['-y', '@openbnb/mcp-server-airbnb', '--ignore-robots-txt'],
-      env: {}
     }
   },
   defaultServers: ['Artifacts'], // 默认服务器列表

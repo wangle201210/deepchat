@@ -48,6 +48,21 @@ const isInMemoryType = computed(() => type.value === 'inmemory')
 // 判断字段是否只读(inmemory类型除了args和env外都是只读的)
 const isFieldReadOnly = computed(() => props.editMode && isInMemoryType.value)
 
+// 获取内置服务器的本地化名称和描述
+const getLocalizedName = computed(() => {
+  if (isInMemoryType.value && name.value) {
+    return t(`mcp.inmemory.${name.value}.name`, name.value)
+  }
+  return name.value
+})
+
+const getLocalizedDesc = computed(() => {
+  if (isInMemoryType.value && name.value) {
+    return t(`mcp.inmemory.${name.value}.desc`, descriptions.value)
+  }
+  return descriptions.value
+})
+
 // 权限设置
 const autoApproveAll = ref(props.initialConfig?.autoApprove?.includes('all') || false)
 const autoApproveRead = ref(
@@ -342,6 +357,9 @@ const openMcpMarketplace = () => {
             :disabled="editMode || isFieldReadOnly"
             required
           />
+          <div v-if="isInMemoryType && name" class="text-xs text-muted-foreground mt-1">
+            {{ t('settings.mcp.serverForm.localizedName') }}: {{ getLocalizedName }}
+          </div>
         </div>
 
         <!-- 图标 -->
@@ -441,6 +459,9 @@ const openMcpMarketplace = () => {
             :placeholder="t('settings.mcp.serverForm.descriptionsPlaceholder')"
             :disabled="isFieldReadOnly"
           />
+          <div v-if="isInMemoryType && name" class="text-xs text-muted-foreground mt-1">
+            {{ t('settings.mcp.serverForm.localizedDesc') }}: {{ getLocalizedDesc }}
+          </div>
         </div>
 
         <!-- 自动授权选项 -->

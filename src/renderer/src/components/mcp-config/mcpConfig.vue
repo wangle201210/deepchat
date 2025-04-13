@@ -224,6 +224,15 @@ const regularServers = computed(() => {
   })
 })
 
+// 获取内置服务器的本地化名称和描述
+const getLocalizedServerName = (serverName: string) => {
+  return t(`mcp.inmemory.${serverName}.name`, serverName)
+}
+
+const getLocalizedServerDesc = (serverName: string, fallbackDesc: string) => {
+  return t(`mcp.inmemory.${serverName}.desc`, fallbackDesc)
+}
+
 // 监听 MCP 安装缓存
 watch(
   () => settingsStore.mcpInstallCache,
@@ -363,7 +372,7 @@ watch(
                   <div>
                     <div class="flex items-center">
                       <span class="text-xl mr-2">{{ server.icons }}</span>
-                      <h4 class="text-sm font-medium">{{ server.name }}</h4>
+                      <h4 class="text-sm font-medium">{{ getLocalizedServerName(server.name) }}</h4>
                       <span
                         :class="[
                           'ml-2 px-2 py-0.5 text-xs rounded-full',
@@ -377,7 +386,9 @@ watch(
                         }}
                       </span>
                     </div>
-                    <p class="text-xs text-muted-foreground mt-1">{{ server.descriptions }}</p>
+                    <p class="text-xs text-muted-foreground mt-1">
+                      {{ getLocalizedServerDesc(server.name, server.descriptions) }}
+                    </p>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">

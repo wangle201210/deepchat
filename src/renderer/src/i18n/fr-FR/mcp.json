@@ -121,5 +121,23 @@
     "servers": "serveur",
     "tools": "outil"
   },
-  "title": "Paramètres MCP"
+  "title": "Paramètres MCP",
+  "inmemory": {
+    "Artifacts": {
+      "desc": "Rendez votre sortie DeepChat diversifiée avec du contenu d'Artifacts",
+      "name": "Artifacts"
+    },
+    "bochaSearch": {
+      "desc": "API de Bocha Search https://open.bochaai.com/",
+      "name": "Recherche Bocha"
+    },
+    "buildInFileSystem": {
+      "desc": "Permettre à DeepChat de manipuler des fichiers locaux",
+      "name": "Système de fichiers"
+    },
+    "imageServer": {
+      "desc": "Après ouverture, tout modèle dans DeepChat peut comprendre des images et générer des images.",
+      "name": "Service d'images"
+    }
+  }
 }

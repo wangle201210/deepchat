@@ -121,5 +121,23 @@
     "jsonInputPlaceholder": "輸入JSON格式的參數",
     "invalidJsonFormat": "無效的JSON格式",
     "empty": "空"
+  },
+  "inmemory": {
+    "Artifacts": {
+      "desc": "讓你的 DeepChat 輸出的多樣化的 Artifacts 內容",
+      "name": "Artifacts"
+    },
+    "bochaSearch": {
+      "desc": "博查搜索 API https://open.bochaai.com/",
+      "name": "博查搜索"
+    },
+    "buildInFileSystem": {
+      "desc": "讓 DeepChat 能夠操作本地文件",
+      "name": "文件系統"
+    },
+    "imageServer": {
+      "desc": "開啟後 DeepChat 中任意模型都能看懂圖片，能生成圖片",
+      "name": "圖片服務"
+    }
   }
 }
