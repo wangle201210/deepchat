@@ -142,6 +142,10 @@
     "braveSearch": {
       "desc": "용감한 검색 API https://brave.com/search/api/",
       "name": "용감한 검색"
+    },
+    "powerpack": {
+      "desc": "대규모 모델에 대한 시간 쿼리, 웹 정보 수집 및 보안 코드 실행과 같은 향상된 기능을 제공하여 모델에보다 강력하고 정확한 정보 수집 기능이 있습니다.",
+      "name": "향상 툴킷"
     }
   }
 }

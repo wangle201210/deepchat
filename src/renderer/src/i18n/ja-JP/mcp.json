@@ -142,6 +142,10 @@
     "braveSearch": {
       "desc": "勇敢な検索API https://brave.com/search/api/",
       "name": "勇敢な検索"
+    },
+    "powerpack": {
+      "desc": "モデルがより強力で正確な情報収集機能を持つように、タイムクエリ、Web情報取得、セキュアコード実行などの強化された機能を提供します。",
+      "name": "拡張ツールキット"
     }
   }
 }

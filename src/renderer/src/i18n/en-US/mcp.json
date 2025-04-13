@@ -142,6 +142,10 @@
     "braveSearch": {
       "desc": "Brave Search API https://brave.com/search/api/",
       "name": "Brave Search"
+    },
+    "powerpack": {
+      "desc": "Provide enhanced capabilities such as time query, web information acquisition and secure code execution for any large model, so that the model has more powerful and accurate information acquisition capabilities.",
+      "name": "Enhancement Toolkit"
     }
   }
 }

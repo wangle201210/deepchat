@@ -3,6 +3,7 @@ import { FileSystemServer } from './filesystem'
 import { BochaSearchServer } from './bochaSearchServer'
 import { BraveSearchServer } from './braveSearchServer'
 import { ImageServer } from './imageServer'
+import { PowerpackServer } from './powerpackServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -20,6 +21,8 @@ export function getInMemoryServer(
       return new BraveSearchServer(env)
     case 'imageServer':
       return new ImageServer(args[0], args[1])
+    case 'powerpack':
+      return new PowerpackServer()
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

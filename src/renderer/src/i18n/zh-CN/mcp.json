@@ -142,6 +142,10 @@
     "braveSearch": {
       "name": "Brave搜索",
       "desc": "Brave搜索 API https://brave.com/search/api/"
+    },
+    "powerpack": {
+      "name": "增强工具包",
+      "desc": "为任意大模型提供时间查询、网页信息获取和安全的代码执行等增强能力，让模型拥有更强大和准确的信息获取能力"
     }
   }
 }

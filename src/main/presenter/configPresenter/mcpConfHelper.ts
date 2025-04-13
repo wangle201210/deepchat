@@ -72,6 +72,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     command: 'image', // We need to map this command to the ImageServer class later
     env: {},
     disable: false
+  },
+  powerpack: {
+    args: [],
+    descriptions: 'DeepChat内置增强工具包',
+    icons: '🛠️',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'powerpack',
+    env: {},
+    disable: false
   }
 }
 
