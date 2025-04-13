@@ -553,7 +553,7 @@ export class ArtifactsServer {
     // 创建服务器实例
     this.server = new Server(
       {
-        name: 'artifacts-server',
+        name: 'deepchat-inmemory/artifacts-server',
         version: '1.0.0'
       },
       {
@@ -581,11 +581,11 @@ export class ArtifactsServer {
           {
             name: 'get_artifact_instructions',
             description:
-              'The assistant can create and reference artifacts during conversations. Artifacts are for substantial, self-contained content that users might modify or reuse, displayed in a separate UI window for clarity. \n' +
-              'When needs to generate code, documents, html, svg, mermaid diagrams, or react components, please call this function to get the instructions and definition of artifacts.\n ' +
-              'Get complete information about artifacts, including what makes a good artifact, artifact instructions, and format examples for specific artifact types. \n' +
-              'Then, you can use the instructions to generate artifacts.' +
-              'Pass a type parameter to specify the desired artifact type: code, documents, html, svg, mermaid, or react.',
+              'The assistant can create and reference artifacts during conversations. Artifacts are used for substantial, self-contained content—such as code, documents, HTML, SVG, Mermaid diagrams, or React components—and are displayed in a dedicated UI window for clarity.' +
+              'Only call this function once per session or task, and only if the assistant does not already have instructions or definitions for the requested artifact type in the current context.' +
+              'Use this function to retrieve complete information about artifacts, including what makes a good artifact, how to generate one, and format examples for each artifact type.' +
+              'Pass the type parameter to specify the desired artifact category: code, documents, html, svg, mermaid, or react.' +
+              'Avoid repeated calls if the necessary instructions or artifact definitions are already available in context.',
             inputSchema: zodToJsonSchema(GetArtifactInstructionsArgsSchema) as ToolInput
           }
         ]
