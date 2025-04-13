@@ -1,0 +1,34 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+
+jobs:
+  build-check:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        arch: [x64]
+        include:
+          - arch: x64
+            platform: win-x64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+        env:
+          npm_config_platform: win32
+          npm_config_arch: ${{ matrix.arch }}
+      - name: Install Node Runtime
+        run: npm run installRuntime:win:${{ matrix.arch }}
+      - name: Install Sharp
+        run: npm install sharp --build-from-source
+      - name: Build
+        run: npm run build
