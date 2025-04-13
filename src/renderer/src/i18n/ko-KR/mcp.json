@@ -138,6 +138,10 @@
     "imageServer": {
       "desc": "열린 후 DeepChat의 모든 모델은 그림을 이해하고 그림을 생성 할 수 있습니다.",
       "name": "이미지 서비스"
+    },
+    "braveSearch": {
+      "desc": "용감한 검색 API https://brave.com/search/api/",
+      "name": "용감한 검색"
     }
   }
 }

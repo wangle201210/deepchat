@@ -51,6 +51,18 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     },
     disable: false
   },
+  braveSearch: {
+    args: [],
+    descriptions: 'DeepChat内置Brave搜索服务',
+    icons: '🦁',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'braveSearch',
+    env: {
+      apiKey: 'YOUR_BRAVE_API_KEY' // 需要用户提供实际的API Key
+    },
+    disable: false
+  },
   imageServer: {
     args: [],
     descriptions: 'Image processing MCP service',

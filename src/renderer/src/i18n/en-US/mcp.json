@@ -138,6 +138,10 @@
     "imageServer": {
       "desc": "After opening, any model in DeepChat can understand images and generate images.",
       "name": "Image Service"
+    },
+    "braveSearch": {
+      "desc": "Brave Search API https://brave.com/search/api/",
+      "name": "Brave Search"
     }
   }
 }

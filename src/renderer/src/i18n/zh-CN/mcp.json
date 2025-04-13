@@ -138,6 +138,10 @@
     "imageServer": {
       "name": "图片服务",
       "desc": "开启后 DeepChat 中任意模型都能看懂图片，能生成图片"
+    },
+    "braveSearch": {
+      "name": "Brave搜索",
+      "desc": "Brave搜索 API https://brave.com/search/api/"
     }
   }
 }
