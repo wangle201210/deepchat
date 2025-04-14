@@ -248,7 +248,8 @@
       "jsonParseError": "JSON解析失敗",
       "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
       "typeInMemory": "內存(InMemory)",
-      "browseMarketplace": "瀏覽MCP服務市場"
+      "browseMarketplace": "瀏覽MCP服務市場",
+      "imageModel": "選擇視覺模型"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",

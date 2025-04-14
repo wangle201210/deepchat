@@ -18,9 +18,16 @@ import { MCPServerConfig } from '@shared/presenter'
 import { EmojiPicker } from '@/components/ui/emoji-picker'
 import { useToast } from '@/components/ui/toast'
 import { Icon } from '@iconify/vue'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ChevronDown } from 'lucide-vue-next'
+import ModelSelect from '@/components/ModelSelect.vue'
+import ModelIcon from '@/components/icons/ModelIcon.vue'
+import { useSettingsStore } from '@/stores/settings'
+import type { RENDERER_MODEL_META } from '@shared/presenter'
 
 const { t } = useI18n()
 const { toast } = useToast()
+const settingsStore = useSettingsStore()
 
 const props = defineProps<{
   serverName?: string
@@ -43,10 +50,26 @@ const icons = ref(props.initialConfig?.icons || '📁')
 const type = ref<'sse' | 'stdio' | 'inmemory' | 'http'>(props.initialConfig?.type || 'stdio')
 const baseUrl = ref(props.initialConfig?.baseUrl || '')
 
+// 模型选择相关
+const modelSelectOpen = ref(false)
+const selectedImageModel = ref<RENDERER_MODEL_META | null>(null)
+const selectedImageModelProvider = ref('')
+
 // 判断是否是inmemory类型
 const isInMemoryType = computed(() => type.value === 'inmemory')
+// 判断是否是imageServer
+const isImageServer = computed(() => isInMemoryType.value && name.value === 'imageServer')
 // 判断字段是否只读(inmemory类型除了args和env外都是只读的)
 const isFieldReadOnly = computed(() => props.editMode && isInMemoryType.value)
+
+// 处理模型选择
+const handleImageModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
+  selectedImageModel.value = model
+  selectedImageModelProvider.value = providerId
+  // 将provider和modelId以空格分隔拼接成args的值
+  args.value = `${providerId} ${model.id}`
+  modelSelectOpen.value = false
+}
 
 // 获取内置服务器的本地化名称和描述
 const getLocalizedName = computed(() => {
@@ -239,7 +262,7 @@ const handleSubmit = () => {
       baseUrl: baseUrl.value.trim()
     }
   } else {
-    // STDIO类型的服务器
+    // STDIO类型的服务器或者inmemory类型
     try {
       serverConfig = {
         ...baseConfig,
@@ -290,6 +313,30 @@ watch(
     if (newConfig) {
       jsonConfig.value = newConfig
       parseJsonConfig()
+    }
+  },
+  { immediate: true }
+)
+
+// 初始化时解析args中的provider和modelId（针对imageServer）
+watch(
+  [() => name.value, () => args.value, () => type.value],
+  ([newName, newArgs, newType]) => {
+    if (newType === 'inmemory' && newName === 'imageServer' && newArgs) {
+      // 从args中解析出provider和modelId
+      const argsParts = newArgs.split(/\s+/)
+      if (argsParts.length >= 2) {
+        const providerId = argsParts[0]
+        const modelId = argsParts[1]
+        // 查找对应的模型
+        const foundModel = settingsStore.findModelByIdOrName(modelId)
+        if (foundModel && foundModel.providerId === providerId) {
+          selectedImageModel.value = foundModel.model
+          selectedImageModelProvider.value = providerId
+        } else {
+          console.warn(`未找到匹配的模型: ${providerId} ${modelId}`)
+        }
+      }
     }
   },
   { immediate: true }
@@ -433,7 +480,28 @@ const openMcpMarketplace = () => {
         </div>
 
         <!-- 参数 -->
-        <div class="space-y-2" v-if="showCommandFields || isInMemoryType">
+        <div v-if="isImageServer" class="space-y-2">
+          <Label class="text-xs text-muted-foreground" for="server-model">
+            {{ t('settings.mcp.serverForm.imageModel') || '模型选择' }}
+          </Label>
+          <Popover v-model:open="modelSelectOpen">
+            <PopoverTrigger as-child>
+              <Button variant="outline" class="w-full justify-between">
+                <div class="flex items-center gap-2">
+                  <ModelIcon :model-id="selectedImageModel?.id || ''" class="h-4 w-4" />
+                  <span class="truncate">{{
+                    selectedImageModel?.name || t('settings.common.selectModel')
+                  }}</span>
+                </div>
+                <ChevronDown class="h-4 w-4 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-80 p-0">
+              <ModelSelect @update:model="handleImageModelSelect" />
+            </PopoverContent>
+          </Popover>
+        </div>
+        <div class="space-y-2" v-else-if="showCommandFields || isInMemoryType">
           <Label class="text-xs text-muted-foreground" for="server-args">{{
             t('settings.mcp.serverForm.args')
           }}</Label>

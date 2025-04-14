@@ -248,7 +248,8 @@
       "parseAndContinue": "Analyser et continuer",
       "jsonParseError": "Échec de l'analyse JSON",
       "typeHttp": "Requêtes HTTP en streaming (HTTP)",
-      "browseMarketplace": "Allez sur MCP Market et installez-le en un seul clic"
+      "browseMarketplace": "Allez sur MCP Market et installez-le en un seul clic",
+      "imageModel": "Sélectionnez un modèle visuel"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",

@@ -50,5 +50,9 @@
   "searchAssistantModel": "Search Assistant Model",
   "searchEngine": "Search Engine",
   "searchEngineSelect": "Select a search engine",
-  "searchPreview": "Search preview"
+  "searchPreview": "Search preview",
+  "language": "language",
+  "languageSelect": "Select a language",
+  "selectModel": "Select a model",
+  "title": "General settings"
 }

@@ -249,7 +249,8 @@
       "skipToManual": "Skip to Manual Configuration",
       "parseAndContinue": "Parse & Continue",
       "jsonParseError": "JSON parsing failed",
-      "browseMarketplace": "Browse MCP Marketplace"
+      "browseMarketplace": "Browse MCP Marketplace",
+      "imageModel": "Choose a vision model"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",

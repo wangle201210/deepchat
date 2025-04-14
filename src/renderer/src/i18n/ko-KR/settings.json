@@ -248,7 +248,8 @@
       "parseAndContinue": "파싱 및 계속",
       "jsonParseError": "JSON 파싱이 실패했습니다",
       "typeHttp": "스트리밍 HTTP 요청 (HTTP)",
-      "browseMarketplace": "MCP 서비스 시장을 탐색하십시오"
+      "browseMarketplace": "MCP 서비스 시장을 탐색하십시오",
+      "imageModel": "시각적 모델을 선택하십시오"
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",
