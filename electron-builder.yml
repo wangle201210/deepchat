@@ -54,6 +54,7 @@ mac:
 linux:
   target:
     - AppImage
+    - tar.gz
   maintainer: ThinkInAIXYZ
   category: Utility
   artifactName: ${name}-${version}-linux-${arch}.${ext}
