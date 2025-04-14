@@ -46,8 +46,11 @@ type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 限制和安全配置
 const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
-  /require\s*\(\s*['"](fs|child_process|path|dgram|os|cluster|v8|vm|module|process|worker_threads|perf_hooks|readline|repl|stream|string_decoder|tls|trace_events|tty|zlib)['"]\s*\)/gi,
-  /process\.(exit|kill|abort|chdir|cwd|umask|uptime|hrtime|cpuUsage|memoryUsage|binding|dlopen|abort)/gi,
+  // 允许os模块用于系统信息读取，但仍然禁止其他危险模块
+  /require\s*\(\s*['"](fs|child_process|path|dgram|cluster|v8|vm|module|worker_threads|repl|tls)['"]\s*\)/gi,
+  // 允许安全的只读操作，禁止危险的修改操作
+  /process\.(exit|kill|abort|chdir|cwd|binding|dlopen|abort)/gi,
+  // 禁止动态代码执行
   /eval\s*\(/gi,
   /Function\s*\(/gi,
   /new\s+Function/gi,

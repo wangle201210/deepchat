@@ -346,7 +346,7 @@ export class MessagesTable extends BaseTable {
 
     // 为每个助手消息添加变体
     return mainMessages.map((msg) => {
-      if (msg.role === 'assistant') {
+      if (msg.role === 'assistant' && msg.parent_id !== '') {
         const variants = getVariants.all(msg.parent_id) as SQLITE_MESSAGE[]
         if (variants.length > 0) {
           return {
