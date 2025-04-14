@@ -7,9 +7,11 @@ import axios from 'axios'
 import { compare } from 'compare-versions'
 import fs from 'fs'
 import path from 'path'
+import { nanoid } from 'nanoid'
 
 const { autoUpdater } = electronUpdater
 
+const randomId = nanoid()
 // 版本信息接口
 interface VersionInfo {
   version: string
@@ -242,7 +244,7 @@ export class UpgradePresenter implements IUpgradePresenter {
 
       // 首先获取版本信息文件
       const platformString = getPlatformInfo()
-      const versionUrl = `${this._baseUrl}/${platformString}.json`
+      const versionUrl = `${this._baseUrl}/${platformString}.json?noCache=${randomId}`
 
       const response = await axios.get<VersionInfo>(versionUrl)
       console.info('获取更新信息响应', response.data)
