@@ -181,7 +181,7 @@ const handleAction = (action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'c
     if (messageNode.value) {
       toBlob(messageNode.value, {
         quality: 1,
-        backgroundColor: isDark ? '#000000' : '#FFFFFF',
+        backgroundColor: isDark.value ? '#000000' : '#FFFFFF',
         filter: filterDom
       }).then((blob) => {
         if (blob) {
