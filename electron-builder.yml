@@ -28,7 +28,7 @@ extraResources:
 win:
   executableName: DeepChat
 nsis:
-  artifactName: ${name}-${version}-setup-windows-${arch}.${ext}
+  artifactName: ${name}-${version}-windows-${arch}.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
