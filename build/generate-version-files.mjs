@@ -70,7 +70,7 @@ platforms.forEach((platform) => {
   }
   // Start of Selection
   if (os === 'windows') {
-    platformData.githubUrl = `https://github.com/ThinkInAIXYZ/deepchat/releases/download/v${params.version}/DeepChat-${params.version}-setup-${os}-${arch}.exe`
+    platformData.githubUrl = `https://github.com/ThinkInAIXYZ/deepchat/releases/download/v${params.version}/DeepChat-${params.version}-windows-${arch}.exe`
   } else if (os === 'mac') {
     platformData.githubUrl = `https://github.com/ThinkInAIXYZ/deepchat/releases/download/v${params.version}/DeepChat-${params.version}-mac-${arch}.dmg`
   } else if (os === 'linux') {
