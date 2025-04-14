@@ -339,6 +339,14 @@ export interface IThreadPresenter {
     settings: Partial<CONVERSATION_SETTINGS>
   ): Promise<void>
 
+  // 会话分支操作
+  forkConversation(
+    targetConversationId: string,
+    targetMessageId: string,
+    newTitle: string,
+    settings?: Partial<CONVERSATION_SETTINGS>
+  ): Promise<string>
+
   // 对话列表和激活状态
   getConversationList(
     page: number,

@@ -1798,4 +1798,101 @@ export class ThreadPresenter implements IThreadPresenter {
   destroy() {
     this.searchManager.destroy()
   }
+
+  /**
+   * 创建会话的分支
+   * @param targetConversationId 源会话ID
+   * @param targetMessageId 目标消息ID（截止到该消息的所有消息将被复制）
+   * @param newTitle 新会话标题
+   * @param settings 新会话设置
+   * @returns 新创建的会话ID
+   */
+  async forkConversation(
+    targetConversationId: string,
+    targetMessageId: string,
+    newTitle: string,
+    settings?: Partial<CONVERSATION_SETTINGS>
+  ): Promise<string> {
+    try {
+      // 1. 获取源会话信息
+      const sourceConversation = await this.sqlitePresenter.getConversation(targetConversationId)
+      if (!sourceConversation) {
+        throw new Error('源会话不存在')
+      }
+
+      // 2. 创建新会话
+      const newConversationId = await this.sqlitePresenter.createConversation(newTitle)
+
+      // 更新会话设置
+      if (settings || sourceConversation.settings) {
+        await this.updateConversationSettings(
+          newConversationId,
+          settings || sourceConversation.settings
+        )
+      }
+
+      // 更新is_new标志
+      await this.sqlitePresenter.updateConversation(newConversationId, { is_new: 0 })
+
+      // 3. 获取源会话中的消息历史
+      const message = await this.messageManager.getMessage(targetMessageId)
+      if (!message) {
+        throw new Error('目标消息不存在')
+      }
+
+      // 获取目标消息之前的所有消息（包括目标消息）
+      const messageHistory = await this.getMessageHistory(targetMessageId, 100)
+
+      // 4. 直接操作数据库复制消息到新会话
+      for (const msg of messageHistory) {
+        // 只复制已发送成功的消息
+        if (msg.status !== 'sent') {
+          continue
+        }
+
+        // 获取消息序号
+        const orderSeq = (await this.sqlitePresenter.getMaxOrderSeq(newConversationId)) + 1
+
+        // 解析元数据
+        const metadata: MESSAGE_METADATA = {
+          totalTokens: msg.usage?.total_tokens || 0,
+          generationTime: 0,
+          firstTokenTime: 0,
+          tokensPerSecond: 0,
+          inputTokens: msg.usage?.input_tokens || 0,
+          outputTokens: msg.usage?.output_tokens || 0,
+          ...(msg.model_id ? { model: msg.model_id } : {}),
+          ...(msg.model_provider ? { provider: msg.model_provider } : {})
+        }
+
+        // 计算token数量
+        const tokenCount = msg.usage?.total_tokens || 0
+
+        // 内容处理（确保是字符串）
+        const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+
+        // 直接插入消息记录
+        await this.sqlitePresenter.insertMessage(
+          newConversationId, // 新会话ID
+          content, // 内容
+          msg.role, // 角色
+          '', // 无父消息ID
+          JSON.stringify(metadata), // 元数据
+          orderSeq, // 序号
+          tokenCount, // token数
+          'sent', // 状态固定为sent
+          0, // 不是上下文边界
+          0 // 不是变体
+        )
+      }
+
+      // 5. 触发会话创建事件
+      eventBus.emit(CONVERSATION_EVENTS.CREATED, { conversationId: newConversationId })
+
+      return newConversationId
+    } catch (error) {
+      console.error('分支会话失败:', error)
+      throw error
+    }
+  }
 }
