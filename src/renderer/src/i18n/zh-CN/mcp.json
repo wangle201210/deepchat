@@ -121,5 +121,31 @@
     "jsonInputPlaceholder": "输入JSON格式的参数",
     "invalidJsonFormat": "无效的JSON格式",
     "empty": "空"
+  },
+  "inmemory": {
+    "bochaSearch": {
+      "name": "博查搜索",
+      "desc": "博查搜索 API https://open.bochaai.com/"
+    },
+    "buildInFileSystem": {
+      "name": "文件系统",
+      "desc": "让 DeepChat 能够操作本地文件"
+    },
+    "Artifacts": {
+      "name": "Artifacts",
+      "desc": "让你的 DeepChat 输出的多样化的 Artifacts 内容"
+    },
+    "imageServer": {
+      "name": "图片服务",
+      "desc": "开启后 DeepChat 中任意模型都能看懂图片，能生成图片"
+    },
+    "braveSearch": {
+      "name": "Brave搜索",
+      "desc": "Brave搜索 API https://brave.com/search/api/"
+    },
+    "powerpack": {
+      "name": "增强工具包",
+      "desc": "为任意大模型提供时间查询、网页信息获取和安全的代码执行等增强能力，让模型拥有更强大和准确的信息获取能力"
+    }
   }
 }

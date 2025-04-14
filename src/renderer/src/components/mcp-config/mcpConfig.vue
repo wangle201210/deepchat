@@ -120,9 +120,9 @@ const confirmRemoveServer = async () => {
 const handleToggleDefaultServer = async (serverName: string) => {
   // 检查是否已经是默认服务器
   const isDefault = mcpStore.config.defaultServers.includes(serverName)
-
+  console.log('mcpStore.config.defaultServers', mcpStore.config.defaultServers)
   // 如果不是默认服务器，且已达到最大数量，显示提示
-  if (!isDefault && mcpStore.config.defaultServers.length >= 3) {
+  if (!isDefault && mcpStore.config.defaultServers.length > 3) {
     toast({
       title: t('settings.mcp.maxDefaultServersReached'),
       description: t('settings.mcp.removeDefaultFirst'),
@@ -223,6 +223,15 @@ const regularServers = computed(() => {
     return config?.type !== 'inmemory'
   })
 })
+
+// 获取内置服务器的本地化名称和描述
+const getLocalizedServerName = (serverName: string) => {
+  return t(`mcp.inmemory.${serverName}.name`, serverName)
+}
+
+const getLocalizedServerDesc = (serverName: string, fallbackDesc: string) => {
+  return t(`mcp.inmemory.${serverName}.desc`, fallbackDesc)
+}
 
 // 监听 MCP 安装缓存
 watch(
@@ -363,7 +372,7 @@ watch(
                   <div>
                     <div class="flex items-center">
                       <span class="text-xl mr-2">{{ server.icons }}</span>
-                      <h4 class="text-sm font-medium">{{ server.name }}</h4>
+                      <h4 class="text-sm font-medium">{{ getLocalizedServerName(server.name) }}</h4>
                       <span
                         :class="[
                           'ml-2 px-2 py-0.5 text-xs rounded-full',
@@ -377,7 +386,9 @@ watch(
                         }}
                       </span>
                     </div>
-                    <p class="text-xs text-muted-foreground mt-1">{{ server.descriptions }}</p>
+                    <p class="text-xs text-muted-foreground mt-1">
+                      {{ getLocalizedServerDesc(server.name, server.descriptions) }}
+                    </p>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -634,7 +645,10 @@ watch(
             </div>
             <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
               <div class="flex justify-between items-center">
-                <div v-if="server.type === 'http'" class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                <div
+                  v-if="server.type === 'http'"
+                  class="text-xs font-mono overflow-x-auto whitespace-nowrap"
+                >
                   {{ server.baseUrl }}
                 </div>
                 <div v-else class="text-xs font-mono overflow-x-auto whitespace-nowrap">

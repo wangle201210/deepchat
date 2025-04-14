@@ -28,7 +28,7 @@ extraResources:
 win:
   executableName: DeepChat
 nsis:
-  artifactName: ${name}-${version}-setup-windows-${arch}.${ext}
+  artifactName: ${name}-${version}-windows-${arch}.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
@@ -48,16 +48,16 @@ mac:
   target:
     - target: dmg
       arch: arm64
-dmg:
+    - target: zip
+      arch: arm64
   artifactName: ${name}-${version}-mac-${arch}.${ext}
 linux:
   target:
     - AppImage
   maintainer: ThinkInAIXYZ
   category: Utility
-appImage:
   artifactName: ${name}-${version}-linux-${arch}.${ext}
 npmRebuild: true
 publish:
   provider: generic
-  url: https://deepchat.thinkinai.xyz/auth/
+  url: https://cdn.deepchatai.cn/upgrade/

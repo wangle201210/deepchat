@@ -121,5 +121,31 @@
     "servers": "サーバ",
     "tools": "道具"
   },
-  "title": "MCP設定"
+  "title": "MCP設定",
+  "inmemory": {
+    "Artifacts": {
+      "desc": "Deepchat出力の多様化されたアーティファクトコンテンツを作成します",
+      "name": "Artifacts"
+    },
+    "bochaSearch": {
+      "desc": "Bocha検索API https://open.bochaai.com/",
+      "name": "Bocha Search"
+    },
+    "buildInFileSystem": {
+      "desc": "DeepChatがローカルファイルを操作できるようにします",
+      "name": "ファイルシステム"
+    },
+    "imageServer": {
+      "desc": "開いた後、deepchatのモデルは写真を理解して写真を生成できます。",
+      "name": "画像サービス"
+    },
+    "braveSearch": {
+      "desc": "勇敢な検索API https://brave.com/search/api/",
+      "name": "勇敢な検索"
+    },
+    "powerpack": {
+      "desc": "モデルがより強力で正確な情報収集機能を持つように、タイムクエリ、Web情報取得、セキュアコード実行などの強化された機能を提供します。",
+      "name": "拡張ツールキット"
+    }
+  }
 }

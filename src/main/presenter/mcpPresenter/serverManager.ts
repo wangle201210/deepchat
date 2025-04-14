@@ -2,6 +2,9 @@ import { IConfigPresenter } from '@shared/presenter'
 import { McpClient } from './mcpClient'
 import axios from 'axios'
 import { proxyConfig } from '@/presenter/proxyConfig'
+import { eventBus } from '@/eventbus'
+import { NOTIFICATION_EVENTS } from '@/events'
+import { getErrorMessageLabels } from '@shared/i18n'
 
 const NPM_REGISTRY_LIST = [
   'https://registry.npmjs.org/',
@@ -179,7 +182,35 @@ export class ServerManager {
       // 移除客户端引用
       this.clients.delete(name)
 
+      // 发送全局错误通知
+      this.sendMcpConnectionError(name, error)
+
       throw error
+    }
+  }
+
+  // 处理并发送MCP连接错误通知
+  private sendMcpConnectionError(serverName: string, error: unknown): void {
+    // 引入所需模块
+
+    try {
+      // 获取当前语言
+      const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
+      const errorMessages = getErrorMessageLabels(locale)
+
+      // 格式化错误信息
+      const errorMsg = error instanceof Error ? error.message : '未知错误'
+      const formattedMessage = `${serverName}: ${errorMsg}`
+
+      // 发送全局错误通知
+      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+        title: errorMessages.mcpConnectionErrorTitle,
+        message: formattedMessage,
+        id: `mcp-error-${serverName}-${Date.now()}`, // 添加时间戳和服务器名称确保每个错误有唯一ID
+        type: 'error'
+      })
+    } catch (notifyError) {
+      console.error('发送MCP错误通知失败:', notifyError)
     }
   }
 

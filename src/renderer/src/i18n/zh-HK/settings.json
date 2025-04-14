@@ -248,7 +248,8 @@
       "parseAndContinue": "解析並繼續",
       "jsonParseError": "JSON解析失敗",
       "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
-      "browseMarketplace": "瀏覽MCP服務市場"
+      "browseMarketplace": "瀏覽MCP服務市場",
+      "imageModel": "選擇視覺模型"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -277,7 +278,9 @@
     "builtIn": "內置",
     "cannotRemoveBuiltIn": "無法刪除內置服務",
     "builtInServerCannotBeRemoved": "內置服務不能被刪除，僅支持修改參數和環境變量",
-    "marketplace": "前往MCP市場一鍵安裝"
+    "marketplace": "前往MCP市場一鍵安裝",
+    "maxDefaultServersReached": "最多只能設置3個默認服務器",
+    "removeDefaultFirst": "請先移除一些默認服務器"
   },
   "about": {
     "title": "關於我們",

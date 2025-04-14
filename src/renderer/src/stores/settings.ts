@@ -730,6 +730,12 @@ export const useSettingsStore = defineStore('settings', () => {
           githubUrl: status.updateInfo.githubUrl,
           downloadUrl: status.updateInfo.downloadUrl
         }
+
+        // 检查是否已经下载完成，只有在下载完成的情况下才打开对话框
+        if (status.status === 'downloaded') {
+          openUpdateDialog()
+        }
+        // 否则不打开对话框，让更新在后台静默下载
       }
     } catch (error) {
       console.error('Failed to check update:', error)
@@ -753,11 +759,38 @@ export const useSettingsStore = defineStore('settings', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     window.electron.ipcRenderer.on(UPDATE_EVENTS.STATUS_CHANGED, (_, event: any) => {
       const { status, info, error } = event
-      hasUpdate.value = status === 'available'
       console.log(UPDATE_EVENTS.STATUS_CHANGED, status, info, error)
       // 根据不同状态更新UI
       switch (status) {
         case 'available':
+          hasUpdate.value = true
+          updateInfo.value = info
+            ? {
+                version: info.version,
+                releaseDate: info.releaseDate,
+                releaseNotes: info.releaseNotes,
+                githubUrl: info.githubUrl,
+                downloadUrl: info.downloadUrl
+              }
+            : null
+          // 不自动弹出对话框，由主进程自动开始下载
+          break
+        case 'not-available':
+          hasUpdate.value = false
+          updateInfo.value = null
+          isDownloading.value = false
+          isUpdating.value = false
+          break
+        case 'downloading':
+          hasUpdate.value = true
+          isDownloading.value = true
+          isUpdating.value = true
+          break
+        case 'downloaded':
+          hasUpdate.value = true
+          isDownloading.value = false
+          isReadyToInstall.value = true
+          isUpdating.value = false
           if (info) {
             updateInfo.value = {
               version: info.version,
@@ -766,16 +799,55 @@ export const useSettingsStore = defineStore('settings', () => {
               githubUrl: info.githubUrl,
               downloadUrl: info.downloadUrl
             }
+            // 下载完成后自动打开安装确认对话框
+            openUpdateDialog()
           }
           break
-        case 'not-available':
-          updateInfo.value = null
-          break
         case 'error':
-          updateInfo.value = null
+          isDownloading.value = false
+          isUpdating.value = false
+
+          // 如果有错误，但仍然有更新信息，说明自动更新失败，需要手动下载
+          if (info) {
+            hasUpdate.value = true
+            updateInfo.value = {
+              version: info.version,
+              releaseDate: info.releaseDate,
+              releaseNotes: info.releaseNotes,
+              githubUrl: info.githubUrl,
+              downloadUrl: info.downloadUrl
+            }
+            // 自动更新失败，打开手动下载对话框
+            openUpdateDialog()
+          } else {
+            hasUpdate.value = false
+            updateInfo.value = null
+          }
+
+          updateError.value = error || '更新出错'
           console.error('Update error:', error)
           break
       }
+    })
+
+    // 监听更新进度
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    window.electron.ipcRenderer.on(UPDATE_EVENTS.PROGRESS, (_, progressData: any) => {
+      console.log(UPDATE_EVENTS.PROGRESS, progressData)
+      if (progressData) {
+        updateProgress.value = {
+          percent: progressData.percent || 0,
+          bytesPerSecond: progressData.bytesPerSecond || 0,
+          transferred: progressData.transferred || 0,
+          total: progressData.total || 0
+        }
+      }
+    })
+
+    // 监听即将重启事件
+    window.electron.ipcRenderer.on(UPDATE_EVENTS.WILL_RESTART, () => {
+      console.log(UPDATE_EVENTS.WILL_RESTART)
+      isRestarting.value = true
     })
 
     // 监听更新错误
@@ -784,6 +856,9 @@ export const useSettingsStore = defineStore('settings', () => {
       console.error(UPDATE_EVENTS.ERROR, errorData.error)
       hasUpdate.value = false
       updateInfo.value = null
+      isDownloading.value = false
+      isUpdating.value = false
+      updateError.value = errorData.error || '更新出错'
     })
   }
 
@@ -998,10 +1073,32 @@ export const useSettingsStore = defineStore('settings', () => {
     showUpdateDialog.value = false
   }
 
-  // 处理更新操作
-  const handleUpdate = async (type: 'github' | 'netdisk') => {
+  // 处理更新操作 - 修改此方法
+  const handleUpdate = async (type: 'github' | 'netdisk' | 'auto') => {
     isUpdating.value = true
     try {
+      // 如果更新已下载，执行安装
+      if (isReadyToInstall.value) {
+        await upgradeP.restartToUpdate()
+        return
+      }
+
+      // 如果下载中，不做任何操作
+      if (isDownloading.value) {
+        return
+      }
+
+      // 如果是自动更新模式，启动下载
+      if (type === 'auto') {
+        const success = await upgradeP.startDownloadUpdate()
+        if (!success) {
+          // 如果自动更新失败，则使用手动链接
+          openUpdateDialog()
+        }
+        return
+      }
+
+      // 否则进行手动更新
       const success = await startUpdate(type)
       if (success) {
         closeUpdateDialog()
@@ -1337,6 +1434,27 @@ export const useSettingsStore = defineStore('settings', () => {
     return null
   }
 
+  // 添加在 const updateInfo = ref<any>(null) 附近
+  const updateProgress = ref<{
+    percent: number
+    bytesPerSecond: number
+    transferred: number
+    total: number
+  } | null>(null)
+  const isDownloading = ref(false)
+  const isReadyToInstall = ref(false)
+  const isRestarting = ref(false)
+  const updateError = ref<string | null>(null)
+
+  // 添加重启应用方法
+  const restartApp = async () => {
+    try {
+      await upgradeP.restartApp()
+    } catch (error) {
+      console.error('Failed to restart app:', error)
+    }
+  }
+
   return {
     providers,
     theme,
@@ -1407,6 +1525,13 @@ export const useSettingsStore = defineStore('settings', () => {
     refreshSearchEngines,
     findModelByIdOrName,
     mcpInstallCache,
-    clearMcpInstallCache
+    clearMcpInstallCache,
+    updateProgress,
+    isDownloading,
+    isReadyToInstall,
+    isRestarting,
+    updateError,
+    restartApp,
+    isUpdating
   }
 })

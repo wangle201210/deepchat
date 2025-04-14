@@ -237,7 +237,6 @@ export class AnthropicProvider extends BaseLLMProvider {
       }
     }
 
-    console.log(JSON.stringify({ system: systemContent || undefined, messages: formattedMessages }))
     return {
       system: systemContent || undefined,
       messages: formattedMessages
@@ -820,7 +819,6 @@ ${context}
                         role: 'user',
                         content: contentBlocks
                       })
-
                       yield {
                         content: '',
                         tool_call: 'end',
@@ -830,7 +828,8 @@ ${context}
                         tool_call_id: `anthropic-${toolCall.id}`,
                         tool_call_server_name: mcpToolCall.server.name,
                         tool_call_server_icons: mcpToolCall.server.icons,
-                        tool_call_server_description: mcpToolCall.server.description
+                        tool_call_server_description: mcpToolCall.server.description,
+                        tool_call_response_raw: toolResponse.rawData
                       }
                     } catch (error) {
                       console.error('工具调用失败:', error)

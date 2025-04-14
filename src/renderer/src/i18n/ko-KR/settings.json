@@ -248,7 +248,8 @@
       "parseAndContinue": "파싱 및 계속",
       "jsonParseError": "JSON 파싱이 실패했습니다",
       "typeHttp": "스트리밍 HTTP 요청 (HTTP)",
-      "browseMarketplace": "MCP 서비스 시장을 탐색하십시오"
+      "browseMarketplace": "MCP 서비스 시장을 탐색하십시오",
+      "imageModel": "시각적 모델을 선택하십시오"
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",
@@ -277,7 +278,9 @@
     "builtIn": "내장",
     "cannotRemoveBuiltIn": "내장 서버를 제거할 수 없음",
     "builtInServerCannotBeRemoved": "내장 서버는 제거할 수 없으며, 매개변수와 환경 변수만 수정할 수 있습니다",
-    "marketplace": "MCP 시장으로 가서 한 번의 클릭으로 설치하십시오."
+    "marketplace": "MCP 시장으로 가서 한 번의 클릭으로 설치하십시오.",
+    "maxDefaultServersReached": "최대 3 개의 기본 서버 만 설정할 수 있습니다",
+    "removeDefaultFirst": "기본 서버를 먼저 제거하십시오"
   },
   "about": {
     "title": "우리에 대해",

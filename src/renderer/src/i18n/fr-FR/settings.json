@@ -248,7 +248,8 @@
       "parseAndContinue": "Analyser et continuer",
       "jsonParseError": "Échec de l'analyse JSON",
       "typeHttp": "Requêtes HTTP en streaming (HTTP)",
-      "browseMarketplace": "Allez sur MCP Market et installez-le en un seul clic"
+      "browseMarketplace": "Allez sur MCP Market et installez-le en un seul clic",
+      "imageModel": "Sélectionnez un modèle visuel"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -277,7 +278,9 @@
     "resetToDefault": "Restaurer le service par défaut",
     "setAsDefault": "Définir en tant que serveur par défaut",
     "setDefault": "Définir par défaut",
-    "marketplace": "Allez sur MCP Market et installez-le en un seul clic"
+    "marketplace": "Allez sur MCP Market et installez-le en un seul clic",
+    "maxDefaultServersReached": "Seuls 3 serveurs par défaut peuvent être définis au maximum",
+    "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut"
   },
   "about": {
     "checkUpdate": "Vérifier les mises à jour",

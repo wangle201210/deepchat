@@ -5,6 +5,7 @@
     @dragover.prevent="handleDragOver"
     @drop.prevent="handleDrop"
     @dragleave.prevent="handleDragLeave"
+    @paste="handlePaste"
   >
     <TooltipProvider>
       <div
@@ -212,6 +213,7 @@ import { approximateTokenSize } from 'tokenx'
 import { useSettingsStore } from '@/stores/settings'
 import McpToolsList from './mcpToolsList.vue'
 import { useEventListener } from '@vueuse/core'
+import { calculateImageTokens, getClipboardImageInfo, imageFileToBase64 } from '@/lib/image'
 
 const { t } = useI18n()
 const configPresenter = usePresenter('configPresenter')
@@ -268,6 +270,40 @@ const previewFile = (filePath: string) => {
   windowPresenter.previewFile(filePath)
 }
 
+const handlePaste = async (e: ClipboardEvent) => {
+  const files = e.clipboardData?.files
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        const base64 = (await imageFileToBase64(file)) as string
+        const imageInfo = await getClipboardImageInfo(file)
+
+        const fileInfo: MessageFile = {
+          name: file.name ?? 'image',
+          content: base64,
+          mimeType: file.type,
+          metadata: {
+            fileName: file.name ?? 'image',
+            fileSize: file.size,
+            // fileHash: string
+            fileDescription: file.type,
+            fileCreated: new Date(),
+            fileModified: new Date()
+          },
+          token: calculateImageTokens(imageInfo.width, imageInfo.height),
+          path: ''
+        }
+        if (fileInfo) {
+          selectedFiles.value.push(fileInfo)
+        }
+      }
+    }
+    if (selectedFiles.value.length > 0) {
+      emit('file-upload', selectedFiles.value)
+    }
+  }
+}
+
 const handleFileSelect = async (e: Event) => {
   const files = (e.target as HTMLInputElement).files
 
@@ -311,14 +347,6 @@ const emitSend = () => {
 
     // 清理已上传的文件
     if (selectedFiles.value.length > 0) {
-      // 清理每个文件资源
-      selectedFiles.value.forEach((file) => {
-        if (file.path) {
-          filePresenter.onFileRemoved(file.path).catch((err) => {
-            console.error('清理文件资源失败:', err)
-          })
-        }
-      })
       // 清空文件列表
       selectedFiles.value = []
       // 重置文件输入控件
@@ -336,15 +364,9 @@ const adjustHeight = (e: Event) => {
 }
 
 const deleteFile = (idx: number) => {
-  const deletedFile = selectedFiles.value[idx]
   selectedFiles.value.splice(idx, 1)
   if (fileInput.value) {
     fileInput.value.value = ''
-  }
-  if (deletedFile && deletedFile.path) {
-    filePresenter.onFileRemoved(deletedFile.path).catch((err) => {
-      console.error('移除文件适配器失败:', err)
-    })
   }
 }
 

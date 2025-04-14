@@ -339,6 +339,14 @@ export interface IThreadPresenter {
     settings: Partial<CONVERSATION_SETTINGS>
   ): Promise<void>
 
+  // 会话分支操作
+  forkConversation(
+    targetConversationId: string,
+    targetMessageId: string,
+    newTitle: string,
+    settings?: Partial<CONVERSATION_SETTINGS>
+  ): Promise<string>
+
   // 对话列表和激活状态
   getConversationList(
     page: number,
@@ -481,6 +489,7 @@ export type LLMResponse = {
   tool_call_server_name?: string
   tool_call_server_icons?: string
   tool_call_server_description?: string
+  tool_call_response_raw?: MCPToolResponse
   maximum_tool_calls_reached?: boolean
   totalUsage?: {
     prompt_tokens: number
@@ -503,6 +512,7 @@ export type LLMResponseStream = {
   tool_call_server_name?: string
   tool_call_server_icons?: string
   tool_call_server_description?: string
+  tool_call_response_raw?: MCPToolResponse
   maximum_tool_calls_reached?: boolean
   totalUsage?: {
     prompt_tokens: number
@@ -525,6 +535,9 @@ export interface IUpgradePresenter {
     } | null
   }
   goDownloadUpgrade(type: 'github' | 'netdisk'): Promise<void>
+  startDownloadUpdate(): boolean
+  restartToUpdate(): boolean
+  restartApp(): void
 }
 // 更新状态类型
 export type UpdateStatus =
@@ -566,7 +579,6 @@ export interface IFilePresenter {
   writeFile(operation: FileOperation): Promise<void>
   deleteFile(relativePath: string): Promise<void>
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
-  onFileRemoved(filePath: string): Promise<boolean>
 }
 
 export interface FileMetaData {

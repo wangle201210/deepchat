@@ -24,7 +24,8 @@ import {
   OLLAMA_EVENTS,
   MCP_EVENTS,
   SYNC_EVENTS,
-  DEEPLINK_EVENTS
+  DEEPLINK_EVENTS,
+  NOTIFICATION_EVENTS
 } from '@/events'
 
 export class Presenter implements IPresenter {
@@ -81,7 +82,9 @@ export class Presenter implements IPresenter {
 
     // 流式响应事件
     eventBus.on(STREAM_EVENTS.RESPONSE, (msg) => {
-      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.RESPONSE, msg)
+      const dataToRender = { ...msg }
+      delete dataToRender.tool_call_response_raw // 删除 rawData 字段,此处不需要上发给 renderer，节约性能
+      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.RESPONSE, dataToRender)
     })
 
     eventBus.on(STREAM_EVENTS.END, (msg) => {
@@ -126,6 +129,21 @@ export class Presenter implements IPresenter {
     eventBus.on(UPDATE_EVENTS.STATUS_CHANGED, (msg) => {
       console.log(UPDATE_EVENTS.STATUS_CHANGED, msg)
       this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.STATUS_CHANGED, msg)
+    })
+
+    eventBus.on(UPDATE_EVENTS.PROGRESS, (msg) => {
+      console.log(UPDATE_EVENTS.PROGRESS, msg)
+      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.PROGRESS, msg)
+    })
+
+    eventBus.on(UPDATE_EVENTS.WILL_RESTART, (msg) => {
+      console.log(UPDATE_EVENTS.WILL_RESTART, msg)
+      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.WILL_RESTART, msg)
+    })
+
+    eventBus.on(UPDATE_EVENTS.ERROR, (msg) => {
+      console.log(UPDATE_EVENTS.ERROR, msg)
+      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.ERROR, msg)
     })
 
     // 消息编辑事件
@@ -187,6 +205,9 @@ export class Presenter implements IPresenter {
     })
     eventBus.on(DEEPLINK_EVENTS.MCP_INSTALL, (mcpConfig) => {
       this.windowPresenter.mainWindow?.webContents.send(DEEPLINK_EVENTS.MCP_INSTALL, mcpConfig)
+    })
+    eventBus.on(NOTIFICATION_EVENTS.SHOW_ERROR, (error) => {
+      this.windowPresenter.mainWindow?.webContents.send(NOTIFICATION_EVENTS.SHOW_ERROR, error)
     })
   }
 

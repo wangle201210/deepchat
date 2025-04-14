@@ -39,11 +39,10 @@ mac:
   target:
     - target: dmg
       arch: x64
-dmg:
+    - target: zip
+      arch: x64
   artifactName: ${name}-${version}-mac-${arch}.${ext}
 npmRebuild: true
 publish:
   provider: generic
-  url: https://deepchat.thinkinai.xyz/auth/
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/
+  url: https://cdn.deepchatai.cn/upgrade/

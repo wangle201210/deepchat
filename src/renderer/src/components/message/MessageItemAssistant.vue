@@ -58,15 +58,37 @@
         :is-assistant="true"
         :current-variant-index="currentVariantIndex"
         :total-variants="totalVariants"
+        :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
         @retry="handleAction('retry')"
         @delete="handleAction('delete')"
         @copy="handleAction('copy')"
         @copyImage="handleAction('copyImage')"
         @prev="handleAction('prev')"
         @next="handleAction('next')"
+        @fork="handleAction('fork')"
       />
     </div>
   </div>
+
+  <!-- 分支会话确认对话框 -->
+  <Dialog v-model:open="isForkDialogOpen">
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>{{ t('dialog.fork.title') }}</DialogTitle>
+        <DialogDescription>
+          {{ t('dialog.fork.description') }}
+        </DialogDescription>
+      </DialogHeader>
+      <DialogFooter>
+        <Button variant="outline" @click="cancelFork">
+          {{ t('dialog.cancel') }}
+        </Button>
+        <Button variant="default" @click="confirmFork">
+          {{ t('dialog.fork.confirm') }}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -85,6 +107,17 @@ import { Icon } from '@iconify/vue'
 import { toBlob } from 'html-to-image'
 import { useDark } from '@vueuse/core'
 import MessageBlockAction from './MessageBlockAction.vue'
+import { useI18n } from 'vue-i18n'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+
 const props = defineProps<{
   message: AssistantMessage
 }>()
@@ -92,6 +125,7 @@ const props = defineProps<{
 const isDark = useDark()
 const chatStore = useChatStore()
 const currentVariantIndex = ref(0)
+const { t } = useI18n()
 
 const messageNode = useTemplateRef('messageNode')
 
@@ -150,8 +184,37 @@ onMounted(() => {
   // 默认显示最后一个变体
   currentVariantIndex.value = allVariants.value.length
 })
+const filterDom = (node: HTMLElement) => {
+  return !node.classList?.contains('message-toolbar')
+}
 
-const handleAction = (action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'copyImage') => {
+// 分支会话对话框
+const isForkDialogOpen = ref(false)
+
+// 显示分支对话框
+const showForkDialog = () => {
+  isForkDialogOpen.value = true
+}
+
+// 取消分支
+const cancelFork = () => {
+  isForkDialogOpen.value = false
+}
+
+// 确认分支
+const confirmFork = async () => {
+  try {
+    // 执行fork操作
+    await chatStore.forkThread(props.message.id, t('dialog.fork.tag'))
+    isForkDialogOpen.value = false
+  } catch (error) {
+    console.error('创建对话分支失败:', error)
+  }
+}
+
+const handleAction = (
+  action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'copyImage' | 'fork'
+) => {
   if (action === 'retry') {
     chatStore.retryMessage(props.message.id)
   } else if (action === 'delete') {
@@ -179,7 +242,8 @@ const handleAction = (action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'c
     if (messageNode.value) {
       toBlob(messageNode.value, {
         quality: 1,
-        backgroundColor: isDark ? '#000000' : '#FFFFFF'
+        backgroundColor: isDark.value ? '#000000' : '#FFFFFF',
+        filter: filterDom
       }).then((blob) => {
         if (blob) {
           const rd = new FileReader()
@@ -191,6 +255,8 @@ const handleAction = (action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'c
         }
       })
     }
+  } else if (action === 'fork') {
+    showForkDialog()
   }
 }
 

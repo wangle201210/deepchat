@@ -285,8 +285,9 @@ export const useChatStore = defineStore('chat', () => {
 
   const setActiveThread = async (threadId: string) => {
     try {
-      await threadP.setActiveConversation(threadId)
       activeThreadId.value = threadId
+      messages.value = []
+      await threadP.setActiveConversation(threadId)
       // no need to load messages and chat config here, because they will be loaded when the conversation-activated event is triggered
       // await loadMessages()
       // await loadChatConfig() // 加载对话配置
@@ -430,6 +431,39 @@ export const useChatStore = defineStore('chat', () => {
       throw error
     }
   }
+
+  // 创建会话分支（从指定消息开始fork一个新会话）
+  const forkThread = async (messageId: string, forkTag: string = '(fork)') => {
+    if (!activeThreadId.value) return
+
+    try {
+      // 获取当前会话信息
+      const currentThread = await threadP.getConversation(activeThreadId.value)
+
+      // 创建分支会话标题
+      const newThreadTitle = `${currentThread.title} ${forkTag}`
+
+      // 调用main层的forkConversation方法
+      const newThreadId = await threadP.forkConversation(
+        activeThreadId.value,
+        messageId,
+        newThreadTitle,
+        currentThread.settings
+      )
+
+      // 重新加载会话列表
+      await loadThreads(1)
+
+      // 切换到新会话
+      await setActiveThread(newThreadId)
+
+      return newThreadId
+    } catch (error) {
+      console.error('创建会话分支失败:', error)
+      throw error
+    }
+  }
+
   const handleStreamResponse = (msg: {
     eventId: string
     content?: string
@@ -908,6 +942,7 @@ export const useChatStore = defineStore('chat', () => {
     clearAllMessages,
     continueStream,
     deeplinkCache,
-    clearDeeplinkCache
+    clearDeeplinkCache,
+    forkThread
   }
 })

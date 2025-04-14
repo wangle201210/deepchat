@@ -9,7 +9,8 @@ import {
   MODEL_META,
   ISQLitePresenter,
   IConfigPresenter,
-  ILlmProviderPresenter
+  ILlmProviderPresenter,
+  MCPToolResponse
 } from '../../../shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './messageManager'
@@ -88,6 +89,7 @@ export class ThreadPresenter implements IThreadPresenter {
         tool_call_server_name,
         tool_call_server_icons,
         tool_call_server_description,
+        tool_call_response_raw,
         tool_call,
         totalUsage
       } = msg
@@ -145,6 +147,103 @@ export class ThreadPresenter implements IThreadPresenter {
         }
 
         const lastBlock = state.message.content[state.message.content.length - 1]
+
+        // 检查tool_call_response_raw中是否包含搜索结果
+        if (tool_call_response_raw && tool_call === 'end') {
+          try {
+            // 检查返回的内容中是否有deepchat-webpage类型的资源
+            const hasSearchResults = tool_call_response_raw.content?.some(
+              (item: { type: string; resource?: { mimeType: string } }) =>
+                item?.type === 'resource' &&
+                item?.resource?.mimeType === 'application/deepchat-webpage'
+            )
+
+            if (hasSearchResults) {
+              // 解析搜索结果
+              const searchResults = tool_call_response_raw.content
+                .filter(
+                  (item: {
+                    type: string
+                    resource?: { mimeType: string; text: string; uri?: string }
+                  }) =>
+                    item.type === 'resource' &&
+                    item.resource?.mimeType === 'application/deepchat-webpage'
+                )
+                .map((item: { resource: { text: string; uri?: string } }) => {
+                  try {
+                    const blobContent = JSON.parse(item.resource.text) as {
+                      title?: string
+                      url?: string
+                      content?: string
+                      icon?: string
+                    }
+                    return {
+                      title: blobContent.title || '',
+                      url: blobContent.url || item.resource.uri || '',
+                      content: blobContent.content || '',
+                      description: blobContent.content || '',
+                      icon: blobContent.icon || ''
+                    }
+                  } catch (e) {
+                    console.error('解析搜索结果失败:', e)
+                    return null
+                  }
+                })
+                .filter(Boolean)
+
+              if (searchResults.length > 0) {
+                // 检查是否已经存在搜索块
+                const existingSearchBlock =
+                  state.message.content.length > 0 && state.message.content[0].type === 'search'
+                    ? state.message.content[0]
+                    : null
+
+                if (existingSearchBlock) {
+                  // 如果已经存在搜索块，更新其状态和总数
+                  existingSearchBlock.status = 'success'
+                  existingSearchBlock.timestamp = Date.now()
+                  if (existingSearchBlock.extra) {
+                    // 累加搜索结果数量
+                    existingSearchBlock.extra.total =
+                      (existingSearchBlock.extra.total || 0) + searchResults.length
+                  } else {
+                    existingSearchBlock.extra = {
+                      total: searchResults.length
+                    }
+                  }
+                } else {
+                  // 如果不存在搜索块，创建新的并添加到内容的最前面
+                  const searchBlock: AssistantMessageBlock = {
+                    type: 'search',
+                    content: '',
+                    status: 'success',
+                    timestamp: Date.now(),
+                    extra: {
+                      total: searchResults.length
+                    }
+                  }
+                  state.message.content.unshift(searchBlock)
+                }
+
+                // 保存搜索结果
+                for (const result of searchResults) {
+                  await this.sqlitePresenter.addMessageAttachment(
+                    eventId,
+                    'search_result',
+                    JSON.stringify(result)
+                  )
+                }
+
+                await this.messageManager.editMessage(
+                  eventId,
+                  JSON.stringify(state.message.content)
+                )
+              }
+            }
+          } catch (error) {
+            console.error('处理搜索结果时出错:', error)
+          }
+        }
 
         // 处理工具调用
         if (tool_call) {
@@ -891,6 +990,9 @@ export class ThreadPresenter implements IThreadPresenter {
         queryMsgId
       )
 
+      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+      const modelConfig = getModelConfig(modelId)
+      const { vision } = modelConfig || {}
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
 
@@ -933,7 +1035,7 @@ export class ThreadPresenter implements IThreadPresenter {
         searchResults,
         urlResults,
         userMessage,
-        imageFiles
+        vision ? imageFiles : []
       )
 
       // 检查是否已被取消
@@ -946,7 +1048,7 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 6. 启动流式生成
-      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+
       await this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
@@ -993,7 +1095,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 3. 检查是否是 maximum_tool_calls_reached
-      let toolCallResponse: { content: string } | null = null
+      let toolCallResponse: { content: string; rawData: MCPToolResponse } | null = null
       const toolCall = lastActionBlock.tool_call
 
       if (lastActionBlock.action_type === 'maximum_tool_calls_reached' && toolCall) {
@@ -1079,7 +1181,8 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_params: toolCall.params,
           tool_call_server_name: toolCall.server_name,
           tool_call_server_icons: toolCall.server_icons,
-          tool_call_server_description: toolCall.server_description
+          tool_call_server_description: toolCall.server_description,
+          tool_call_response_raw: toolCallResponse.rawData
         })
       }
 
@@ -1166,13 +1269,14 @@ export class ThreadPresenter implements IThreadPresenter {
     // 处理文本内容
     const userContent = `
       ${userMessage.content.text}
-      ${getFileContext(userMessage.content.files.filter((file) => !file.mimeType.startsWith('image')))}
+      ${getFileContext(userMessage.content.files)}
     `
 
     // 从用户消息中提取并丰富URL内容
     const urlResults = await ContentEnricher.extractAndEnrichUrls(userMessage.content.text)
 
     // 提取图片文件
+
     const imageFiles =
       userMessage.content.files?.filter((file) => {
         // 根据文件类型、MIME类型或扩展名过滤图片文件
@@ -1200,12 +1304,6 @@ export class ThreadPresenter implements IThreadPresenter {
   } {
     const { systemPrompt, contextLength, artifacts } = conversation.settings
 
-    // 计算搜索提示词和丰富用户消息
-    // const searchPrompt = searchResults
-    //   ? artifacts === 1
-    //     ? generateSearchPromptWithArtifacts(userContent, searchResults)
-    //     : generateSearchPrompt(userContent, searchResults)
-    //   : ''
     const searchPrompt = searchResults ? generateSearchPrompt(userContent, searchResults) : ''
     const enrichedUserMessage =
       urlResults.length > 0
@@ -1699,5 +1797,102 @@ export class ThreadPresenter implements IThreadPresenter {
 
   destroy() {
     this.searchManager.destroy()
+  }
+
+  /**
+   * 创建会话的分支
+   * @param targetConversationId 源会话ID
+   * @param targetMessageId 目标消息ID（截止到该消息的所有消息将被复制）
+   * @param newTitle 新会话标题
+   * @param settings 新会话设置
+   * @returns 新创建的会话ID
+   */
+  async forkConversation(
+    targetConversationId: string,
+    targetMessageId: string,
+    newTitle: string,
+    settings?: Partial<CONVERSATION_SETTINGS>
+  ): Promise<string> {
+    try {
+      // 1. 获取源会话信息
+      const sourceConversation = await this.sqlitePresenter.getConversation(targetConversationId)
+      if (!sourceConversation) {
+        throw new Error('源会话不存在')
+      }
+
+      // 2. 创建新会话
+      const newConversationId = await this.sqlitePresenter.createConversation(newTitle)
+
+      // 更新会话设置
+      if (settings || sourceConversation.settings) {
+        await this.updateConversationSettings(
+          newConversationId,
+          settings || sourceConversation.settings
+        )
+      }
+
+      // 更新is_new标志
+      await this.sqlitePresenter.updateConversation(newConversationId, { is_new: 0 })
+
+      // 3. 获取源会话中的消息历史
+      const message = await this.messageManager.getMessage(targetMessageId)
+      if (!message) {
+        throw new Error('目标消息不存在')
+      }
+
+      // 获取目标消息之前的所有消息（包括目标消息）
+      const messageHistory = await this.getMessageHistory(targetMessageId, 100)
+
+      // 4. 直接操作数据库复制消息到新会话
+      for (const msg of messageHistory) {
+        // 只复制已发送成功的消息
+        if (msg.status !== 'sent') {
+          continue
+        }
+
+        // 获取消息序号
+        const orderSeq = (await this.sqlitePresenter.getMaxOrderSeq(newConversationId)) + 1
+
+        // 解析元数据
+        const metadata: MESSAGE_METADATA = {
+          totalTokens: msg.usage?.total_tokens || 0,
+          generationTime: 0,
+          firstTokenTime: 0,
+          tokensPerSecond: 0,
+          inputTokens: msg.usage?.input_tokens || 0,
+          outputTokens: msg.usage?.output_tokens || 0,
+          ...(msg.model_id ? { model: msg.model_id } : {}),
+          ...(msg.model_provider ? { provider: msg.model_provider } : {})
+        }
+
+        // 计算token数量
+        const tokenCount = msg.usage?.total_tokens || 0
+
+        // 内容处理（确保是字符串）
+        const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+
+        // 直接插入消息记录
+        await this.sqlitePresenter.insertMessage(
+          newConversationId, // 新会话ID
+          content, // 内容
+          msg.role, // 角色
+          '', // 无父消息ID
+          JSON.stringify(metadata), // 元数据
+          orderSeq, // 序号
+          tokenCount, // token数
+          'sent', // 状态固定为sent
+          0, // 不是上下文边界
+          0 // 不是变体
+        )
+      }
+
+      // 5. 触发会话创建事件
+      eventBus.emit(CONVERSATION_EVENTS.CREATED, { conversationId: newConversationId })
+
+      return newConversationId
+    } catch (error) {
+      console.error('分支会话失败:', error)
+      throw error
+    }
   }
 }

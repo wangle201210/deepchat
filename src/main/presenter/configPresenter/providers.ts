@@ -349,21 +349,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       defaultBaseUrl: 'https://api.anthropic.com'
     }
   },
-  // {
-  //   id: 'grok',
-  //   name: 'Grok',
-  //   apiType: 'grok',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.x.ai',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://x.ai/',
-  //     apiKey: '',
-  //     docs: 'https://docs.x.ai/',
-  //     models: 'https://docs.x.ai/docs#getting-started',
-  //     defaultBaseUrl: 'https://api.x.ai'
-  //   }
-  // },
+  {
+    id: 'grok',
+    name: 'Grok',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.x.ai/v1',
+    enable: false,
+    websites: {
+      official: 'https://x.ai/',
+      apiKey: 'https://console.x.ai',
+      docs: 'https://docs.x.ai/',
+      models: 'https://docs.x.ai/docs#getting-started',
+      defaultBaseUrl: 'https://api.x.ai/v1'
+    }
+  },
   // {
   //   id: 'hyperbolic',
   //   name: 'Hyperbolic',

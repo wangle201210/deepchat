@@ -249,7 +249,8 @@
       "skipToManual": "Skip to Manual Configuration",
       "parseAndContinue": "Parse & Continue",
       "jsonParseError": "JSON parsing failed",
-      "browseMarketplace": "Browse MCP Marketplace"
+      "browseMarketplace": "Browse MCP Marketplace",
+      "imageModel": "Choose a vision model"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
@@ -277,7 +278,9 @@
     "customServers": "Custom Servers",
     "builtIn": "Built-in",
     "cannotRemoveBuiltIn": "Cannot Remove Built-in Server",
-    "builtInServerCannotBeRemoved": "Built-in servers cannot be removed, only parameters and environment variables can be modified"
+    "builtInServerCannotBeRemoved": "Built-in servers cannot be removed, only parameters and environment variables can be modified",
+    "maxDefaultServersReached": "Only 3 default servers can be set at most",
+    "removeDefaultFirst": "Please remove some default servers first"
   },
   "about": {
     "title": "About Us",

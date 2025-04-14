@@ -26,21 +26,6 @@ export class ImageFileAdapter extends BaseFileAdapter {
   }
 
   /**
-   * 使用视觉模型生成图片描述
-   * 后续可以接入具体的视觉模型实现
-   */
-  // private async generateImageDescription(): Promise<string> {
-  //   const visionConfig = loadVisionConfig()
-  //   console.info('visionconfig', visionConfig)
-  //   if (!visionConfig) {
-  //     return ''
-  //   }
-
-  //   const visionService = new VisionService(visionConfig)
-  //   return visionService.describeImage(this.filePath)
-  // }
-
-  /**
    * 提取图片的基本信息
    */
   private async extractImageMetadata(): Promise<void> {

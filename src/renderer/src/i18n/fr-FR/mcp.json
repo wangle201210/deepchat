@@ -121,5 +121,31 @@
     "servers": "serveur",
     "tools": "outil"
   },
-  "title": "Paramètres MCP"
+  "title": "Paramètres MCP",
+  "inmemory": {
+    "Artifacts": {
+      "desc": "Rendez votre sortie DeepChat diversifiée avec du contenu d'Artifacts",
+      "name": "Artifacts"
+    },
+    "bochaSearch": {
+      "desc": "API de Bocha Search https://open.bochaai.com/",
+      "name": "Recherche Bocha"
+    },
+    "buildInFileSystem": {
+      "desc": "Permettre à DeepChat de manipuler des fichiers locaux",
+      "name": "Système de fichiers"
+    },
+    "imageServer": {
+      "desc": "Après ouverture, tout modèle dans DeepChat peut comprendre des images et générer des images.",
+      "name": "Service d'images"
+    },
+    "braveSearch": {
+      "desc": "Brave Search API https://brave.com/search/API/",
+      "name": "Recherche courageuse"
+    },
+    "powerpack": {
+      "desc": "Fournissez des capacités améliorées telles que la requête temporelle, l'acquisition d'informations Web et l'exécution de code sécurisé pour tout grand modèle, afin que le modèle ait des capacités d'acquisition d'informations plus puissantes et précises.",
+      "name": "Boîte à outils d'amélioration"
+    }
+  }
 }

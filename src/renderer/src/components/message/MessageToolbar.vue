@@ -1,6 +1,6 @@
 <template>
   <div
-    class="text-xs text-secondary-foreground items-start justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
+    class="message-toolbar text-xs text-secondary-foreground items-start justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
   >
     <span v-show="!loading" class="flex flex-row gap-3">
       <!-- Edit mode buttons (save/cancel) -->
@@ -74,6 +74,15 @@
           <Icon icon="lucide:refresh-cw" class="w-4 h-4" />
         </Button>
         <Button
+          v-show="isAssistant && !loading && !isInGeneratingThread"
+          variant="ghost"
+          size="icon"
+          class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+          @click="emit('fork')"
+        >
+          <Icon icon="lucide:git-branch" class="w-4 h-4" />
+        </Button>
+        <Button
           v-show="!isAssistant && !isEditMode"
           variant="ghost"
           size="icon"
@@ -125,6 +134,7 @@ const props = defineProps<{
   currentVariantIndex?: number
   totalVariants?: number
   isEditMode?: boolean
+  isInGeneratingThread?: boolean
 }>()
 const emit = defineEmits<{
   (e: 'retry'): void
@@ -136,6 +146,7 @@ const emit = defineEmits<{
   (e: 'edit'): void
   (e: 'save'): void
   (e: 'cancel'): void
+  (e: 'fork'): void
 }>()
 
 const hasTokensPerSecond = computed(() => props.usage.tokens_per_second > 0)

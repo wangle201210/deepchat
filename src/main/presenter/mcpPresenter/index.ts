@@ -422,7 +422,7 @@ export class McpPresenter implements IMCPPresenter {
         description: tool.server.description
       }
     }
-    console.log('mcpToolCall', mcpToolCall, tool)
+    // console.log('mcpToolCall', mcpToolCall, tool)
 
     return mcpToolCall
   }
@@ -465,7 +465,7 @@ export class McpPresenter implements IMCPPresenter {
     const mcpTools = await this.getAllToolDefinitions()
 
     const tool = mcpTools.find((tool) => tool.function.name === toolUse.name)
-    console.log('tool', tool, toolUse)
+    // console.log('tool', tool, toolUse)
     if (!tool) {
       return undefined
     }

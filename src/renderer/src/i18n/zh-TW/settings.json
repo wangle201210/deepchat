@@ -248,7 +248,8 @@
       "jsonParseError": "JSON解析失敗",
       "typeHttp": "可流式傳輸的HTTP請求(HTTP)",
       "typeInMemory": "內存(InMemory)",
-      "browseMarketplace": "瀏覽MCP服務市場"
+      "browseMarketplace": "瀏覽MCP服務市場",
+      "imageModel": "選擇視覺模型"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -277,7 +278,9 @@
     "cannotRemoveBuiltIn": "無法刪除內置服務",
     "customServers": "自定義服務",
     "removeDefault": "移除默認",
-    "marketplace": "前往MCP市場一鍵安裝"
+    "marketplace": "前往MCP市場一鍵安裝",
+    "maxDefaultServersReached": "最多只能設置3個默認服務器",
+    "removeDefaultFirst": "請先移除一些默認服務器"
   },
   "about": {
     "title": "關於我們",

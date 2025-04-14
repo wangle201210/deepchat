@@ -19,5 +19,8 @@
     "title": "Nettoyer les messages de la conversation",
     "description": "Le nettoyage supprimera tous les messages et fichiers de cette conversation. Êtes-vous sûr de vouloir continuer ?",
     "confirm": "Nettoyer"
+  },
+  "fork": {
+    "tag": "Branches"
   }
 }

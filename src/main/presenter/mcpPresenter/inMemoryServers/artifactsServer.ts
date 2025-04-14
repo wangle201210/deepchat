@@ -11,7 +11,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 // Artifacts 相关的常量定义
 const ARTIFACTS_INFO = `
 <artifacts_info>
-The assistant can create and reference artifacts during conversations. Artifacts are for substantial, self-contained content that users might modify or reuse, displayed in a separate UI window for clarity.
+You should create and reference artifacts during conversations. Artifacts are for substantial, self-contained content that users might modify or reuse, displayed in a separate UI window for clarity.
 
 # Good artifacts are...
 - Substantial content (>15 lines)
@@ -38,7 +38,7 @@ The assistant can create and reference artifacts during conversations. Artifacts
 </artifacts_info>
 `
 
-const ARTIFACT_INSTRUCTIONS = `
+const ARTIFACT_INSTRUCTIONS_HEAD = `
 <artifact_instructions>
   When collaborating with the user on creating content that falls into compatible categories, the assistant should follow these steps:
 
@@ -47,47 +47,10 @@ const ARTIFACT_INSTRUCTIONS = `
   3. Assign an identifier to the \`identifier\` attribute of the opening \`<antArtifact>\` tag. For updates, reuse the prior identifier. For new artifacts, the identifier should be descriptive and relevant to the content, using kebab-case (e.g., "example-code-snippet"). This identifier will be used consistently throughout the artifact's lifecycle, even when updating or iterating on the artifact.
   4. Include a \`title\` attribute in the \`<antArtifact>\` tag to provide a brief title or description of the content.
   5. Add a \`type\` attribute to the opening \`<antArtifact>\` tag to specify the type of content the artifact represents. Assign one of the following values to the \`type\` attribute:
-    - Code: "application/vnd.ant.code"
-      - Use for code snippets or scripts in any programming language.
-      - Include the language name as the value of the \`language\` attribute (e.g., \`language="python"\`).
-      - Do not use triple backticks when putting code in an artifact.
-    - Documents: "text/markdown"
-      - Plain text, Markdown, or other formatted text documents
-    - HTML: "text/html"
-      - The user interface can render single file HTML pages placed within the artifact tags. HTML, JS, and CSS should be in a single file when using the \`text/html\` type.
-      - Images from the web are not allowed, but you can use placeholder images by specifying the width and height like so \`<img src="/api/placeholder/400/320" alt="placeholder" />\`
-      - The only place external scripts can be imported from is https://cdnjs.cloudflare.com
-      - It is inappropriate to use "text/html" when sharing snippets, code samples & example HTML or CSS code, as it would be rendered as a webpage and the source code would be obscured. The assistant should instead use "application/vnd.ant.code" defined above.
-      - If the assistant is unable to follow the above requirements for any reason, use "application/vnd.ant.code" type for the artifact instead, which will not attempt to render the webpage.
-      - Do not put HTML code in a code block when using artifacts.
-    - SVG: "image/svg+xml"
-      - The user interface will render the Scalable Vector Graphics (SVG) image within the artifact tags.
-      - The assistant should specify the viewbox of the SVG rather than defining a width/height
-      - Do not put Svg code in a code block when using artifacts.
-    - Mermaid Diagrams: "application/vnd.ant.mermaid"
-      - The user interface will render Mermaid diagrams placed within the artifact tags.
-      - Do not put Mermaid code in a code block when using artifacts.
-    - React Components: "application/vnd.ant.react"
-      - Do not put React code in a code block when using artifacts.
-      - Use this for displaying either: React elements, e.g. \`<strong>Hello World!</strong>\`, React pure functional components, e.g. \`() => <strong>Hello World!</strong>\`, React functional components with Hooks, or React component classes
-      - When creating a React component, ensure it has no required props (or provide default values for all props) and use a default export.
-      - Use Tailwind classes for styling. DO NOT USE ARBITRARY VALUES (e.g. \`h-[600px]\`).
-      - The lucide library 'https://unpkg.com/lucide@latest/dist/umd/lucide.js' is available you can use  like ' <i data-lucide="x"></i>' finally by calling \`lucide.createIcons();\`
-      - The recharts charting library 'https://unpkg.com/recharts/umd/Recharts.js' is available, you can use it like '<Recharts.LineChart width={600} height={300}><Recharts.XAxis dataKey="name" /></Recharts.LineChart>'
-      - NO OTHER LIBRARIES (e.g. zod, hookform) ARE INSTALLED OR ABLE TO BE IMPORTED.
-      - This is a react 18 project, so you can use the new syntax for hooks.
-      - The react-dom library is available to be imported.
-      - The react-dom/client library is available to be imported.
-      - The component must be named as 'App'
-      - Do not use the ReactDOM.render() method, use the createRoot() method instead.
-      - Do not export the component as default, use the createRoot() method instead.
-      - Do not 'import React from "react"', use the React library already available.
-      - Do not use 'import React from "react";' in the artifact.
-      - Use React.useState() instead of useState()
-      - Use React.useEffect() instead of useEffect()
-      - Images from the web are not allowed, but you can use placeholder images by specifying the width and height like so \`< img src="/api/placeholder/400/320" alt="placeholder" />\`
-      - If you are unable to follow the above requirements for any reason, use "application/vnd.ant.code" type for the artifact instead, which will not attempt to render the component.
-  6. Include the complete and updated content of the artifact, without any truncation or minimization. Don't use "// rest of the code remains the same...".
+  `
+
+const ARTIFACT_INSTRUCTIONS_TAIL = `
+ 6. Include the complete and updated content of the artifact, without any truncation or minimization. Don't use "// rest of the code remains the same...".
   7. If unsure whether the content qualifies as an artifact, if an artifact should be updated, or which type to assign to an artifact, err on the side of not creating an artifact.
 </artifact_instructions>
 `
@@ -95,6 +58,12 @@ const ARTIFACT_INSTRUCTIONS = `
 // 存储各类型的示例
 const EXAMPLE_TEMPLATES = {
   code: `
+${ARTIFACT_INSTRUCTIONS_HEAD}
+    - Code: "application/vnd.ant.code"
+      - Use for code snippets or scripts in any programming language.
+      - Include the language name as the value of the \`language\` attribute (e.g., \`language="python"\`).
+      - Do not use triple backticks when putting code in an artifact.
+${ARTIFACT_INSTRUCTIONS_TAIL}
 <example>
   <user_query>Can you help me create a Python script to calculate the factorial of a number?</user_query>
 
@@ -122,6 +91,10 @@ const EXAMPLE_TEMPLATES = {
 `,
 
   documents: `
+${ARTIFACT_INSTRUCTIONS_HEAD}
+    - Documents: "text/markdown"
+      - Plain text, Markdown, or other formatted text documents
+${ARTIFACT_INSTRUCTIONS_TAIL}
 <example>
   <user_query>Can you draft a project proposal document for a new mobile app that helps people track their daily water intake?</user_query>
 
@@ -204,6 +177,15 @@ const EXAMPLE_TEMPLATES = {
 `,
 
   html: `
+${ARTIFACT_INSTRUCTIONS_HEAD}
+    - HTML: "text/html"
+      - The user interface can render single file HTML pages placed within the artifact tags. HTML, JS, and CSS should be in a single file when using the \`text/html\` type.
+      - Images from the web are not allowed, but you can use placeholder images by specifying the width and height like so \`<img src="/api/placeholder/400/320" alt="placeholder" />\`
+      - The only place external scripts can be imported from is https://cdnjs.cloudflare.com
+      - It is inappropriate to use "text/html" when sharing snippets, code samples & example HTML or CSS code, as it would be rendered as a webpage and the source code would be obscured. The assistant should instead use "application/vnd.ant.code" defined above.
+      - If the assistant is unable to follow the above requirements for any reason, use "application/vnd.ant.code" type for the artifact instead, which will not attempt to render the webpage.
+      - Do not put HTML code in a code block when using artifacts.
+${ARTIFACT_INSTRUCTIONS_TAIL}
 <example>
   <user_query>Can you create a simple HTML landing page for a fictional coffee shop called "Morning Brew"?</user_query>
 
@@ -411,6 +393,12 @@ const EXAMPLE_TEMPLATES = {
 `,
 
   svg: `
+${ARTIFACT_INSTRUCTIONS_HEAD}
+    - SVG: "image/svg+xml"
+      - The user interface will render the Scalable Vector Graphics (SVG) image within the artifact tags.
+      - The assistant should specify the viewbox of the SVG rather than defining a width/height
+      - Do not put SVG code in a code block when using artifacts.
+${ARTIFACT_INSTRUCTIONS_TAIL}
 <example>
   <user_query>Can you draw a simple blue circle in SVG?</user_query>
 
@@ -431,6 +419,11 @@ const EXAMPLE_TEMPLATES = {
 `,
 
   mermaid: `
+${ARTIFACT_INSTRUCTIONS_HEAD}
+    - Mermaid Diagrams: "application/vnd.ant.mermaid"
+      - The user interface will render Mermaid diagrams placed within the artifact tags.
+      - Do not put Mermaid code in a code block when using artifacts.
+${ARTIFACT_INSTRUCTIONS_TAIL}
 <example>
   <user_query>Can you create a simple flow chart showing the process of making tea using Mermaid?</user_query>
 
@@ -459,6 +452,28 @@ const EXAMPLE_TEMPLATES = {
 `,
 
   react: `
+${ARTIFACT_INSTRUCTIONS_HEAD}
+    - React Components: "application/vnd.ant.react"
+      - Do not put React code in a code block when using artifacts.
+      - Use this for displaying either: React elements, e.g. \`<strong>Hello World!</strong>\`, React pure functional components, e.g. \`() => <strong>Hello World!</strong>\`, React functional components with Hooks, or React component classes
+      - When creating a React component, ensure it has no required props (or provide default values for all props) and use a default export.
+      - Use Tailwind classes for styling. DO NOT USE ARBITRARY VALUES (e.g. \`h-[600px]\`).
+      - The lucide library 'https://unpkg.com/lucide@latest/dist/umd/lucide.js' is available you can use  like ' <i data-lucide="x"></i>' finally by calling \`lucide.createIcons();\`
+      - The recharts charting library 'https://unpkg.com/recharts/umd/Recharts.js' is available, you can use it like '<Recharts.LineChart width={600} height={300}><Recharts.XAxis dataKey="name" /></Recharts.LineChart>'
+      - NO OTHER LIBRARIES (e.g. zod, hookform) ARE INSTALLED OR ABLE TO BE IMPORTED.
+      - This is a react 18 project, so you can use the new syntax for hooks.
+      - The react-dom library is available to be imported.
+      - The react-dom/client library is available to be imported.
+      - The component must be named as 'App'
+      - Do not use the ReactDOM.render() method, use the createRoot() method instead.
+      - Do not export the component as default, use the createRoot() method instead.
+      - Do not 'import React from "react"', use the React library already available.
+      - Do not use 'import React from "react";' in the artifact.
+      - Use React.useState() instead of useState()
+      - Use React.useEffect() instead of useEffect()
+      - Images from the web are not allowed, but you can use placeholder images by specifying the width and height like so \`< img src="/api/placeholder/400/320" alt="placeholder" />\`
+      - If you are unable to follow the above requirements for any reason, use "application/vnd.ant.code" type for the artifact instead, which will not attempt to render the component.
+${ARTIFACT_INSTRUCTIONS_TAIL}
 <example>
     <user_query>Can you create a React component for a metrics dashboard?</user_query>
 
@@ -538,7 +553,7 @@ export class ArtifactsServer {
     // 创建服务器实例
     this.server = new Server(
       {
-        name: 'artifacts-server',
+        name: 'deepchat-inmemory/artifacts-server',
         version: '1.0.0'
       },
       {
@@ -566,11 +581,11 @@ export class ArtifactsServer {
           {
             name: 'get_artifact_instructions',
             description:
-              'The assistant can create and reference artifacts during conversations. Artifacts are for substantial, self-contained content that users might modify or reuse, displayed in a separate UI window for clarity. \n' +
-              'When needs to generate code, documents, html, svg, mermaid diagrams, or react components, please call this function to get the instructions and definition of artifacts.\n ' +
-              'Get complete information about artifacts, including what makes a good artifact, artifact instructions, and format examples for specific artifact types. \n' +
-              'Then, you can use the instructions to generate artifacts.' +
-              'Pass a type parameter to specify the desired artifact type: code, documents, html, svg, mermaid, or react.',
+              'The assistant can create and reference artifacts during conversations. Artifacts are used for substantial, self-contained content—such as code, documents, HTML, SVG, Mermaid diagrams, or React components—and are displayed in a dedicated UI window for clarity.' +
+              'Only call this function once per session or task, and only if the assistant does not already have instructions or definitions for the requested artifact type in the current context.' +
+              'Use this function to retrieve complete information about artifacts, including what makes a good artifact, how to generate one, and format examples for each artifact type.' +
+              'Pass the type parameter to specify the desired artifact category: code, documents, html, svg, mermaid, or react.' +
+              'Avoid repeated calls if the necessary instructions or artifact definitions are already available in context.',
             inputSchema: zodToJsonSchema(GetArtifactInstructionsArgsSchema) as ToolInput
           }
         ]
@@ -593,7 +608,7 @@ export class ArtifactsServer {
             content: [
               {
                 type: 'text',
-                text: `${ARTIFACTS_INFO}\n\n${ARTIFACT_INSTRUCTIONS}\n\n${EXAMPLE_TEMPLATES[parsed.data.type]}`
+                text: `${ARTIFACTS_INFO}\n\n${EXAMPLE_TEMPLATES[parsed.data.type]}`
               }
             ]
           }

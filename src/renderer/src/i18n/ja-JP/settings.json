@@ -248,7 +248,8 @@
       "jsonParseError": "JSONの解析は失敗しました",
       "typeHttp": "ストリーミングHTTPリクエスト（HTTP）",
       "typeInMemory": "メモリ",
-      "browseMarketplace": "MCPサービス市場を閲覧します"
+      "browseMarketplace": "MCPサービス市場を閲覧します",
+      "imageModel": "視覚モデルを選択します"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -277,7 +278,9 @@
     "cannotRemoveBuiltIn": "ビルトインサービスを削除できません",
     "customServers": "カスタムサービス",
     "removeDefault": "デフォルトを削除します",
-    "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします"
+    "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします",
+    "maxDefaultServersReached": "せいぜい3つのデフォルトサーバーのみを設定できます",
+    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください"
   },
   "about": {
     "title": "私たちについて",

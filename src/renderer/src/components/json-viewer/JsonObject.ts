@@ -77,7 +77,7 @@ export const JsonObject = defineComponent({
                     'div',
                     {
                       class:
-                        'flex-1 py-1 text-xs px-2 bg-background border rounded-md max-h-64 overflow-auto'
+                        'flex-1 py-1 text-xs px-2 bg-background border rounded-md max-h-64 overflow-auto break-words whitespace-pre-wrap'
                     },
                     [h(JsonValue, { value })]
                   )

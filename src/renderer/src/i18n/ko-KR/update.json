@@ -6,5 +6,9 @@
   "later": "나중에",
   "githubDownload": "Github 다운로드",
   "netdiskDownload": "클라우드 다운로드",
-  "checkUpdate": "업데이트 확인"
+  "checkUpdate": "업데이트 확인",
+  "autoUpdate": "자동 업데이트",
+  "downloading": "다운로드",
+  "installNow": "지금 설치하십시오",
+  "restarting": "다시 시작"
 }
