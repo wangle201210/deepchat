@@ -81,6 +81,7 @@ export class WindowPresenter implements IWindowPresenter {
       },
       frame: false
     })
+
     // 获取内容保护设置的值
     const contentProtectionEnabled = this.configPresenter.getContentProtectionEnabled()
     // 更新内容保护设置

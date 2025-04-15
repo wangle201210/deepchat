@@ -1,4 +1,4 @@
-import { clipboard, contextBridge, nativeImage, webUtils } from 'electron'
+import { clipboard, contextBridge, nativeImage, webUtils, webFrame } from 'electron'
 import { exposeElectronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
@@ -29,3 +29,7 @@ if (process.contextIsolated) {
   // @ts-ignore (define in dts)
   window.api = api
 }
+window.addEventListener('DOMContentLoaded', () => {
+  webFrame.setVisualZoomLevelLimits(1, 1) // 禁用 trackpad 缩放
+  webFrame.setZoomFactor(1)
+})
