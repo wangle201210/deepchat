@@ -229,10 +229,11 @@ export class McpConfHelper {
   }
 
   // 添加MCP服务器
-  async addMcpServer(name: string, config: MCPServerConfig): Promise<void> {
+  async addMcpServer(name: string, config: MCPServerConfig): Promise<boolean> {
     const mcpServers = await this.getMcpServers()
     mcpServers[name] = config
     await this.setMcpServers(mcpServers)
+    return true
   }
 
   // 移除MCP服务器

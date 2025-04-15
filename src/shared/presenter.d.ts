@@ -188,9 +188,9 @@ export interface IConfigPresenter {
   toggleMcpDefaultServer(serverName: string): Promise<void>
   getMcpEnabled(): Promise<boolean>
   setMcpEnabled(enabled: boolean): Promise<void>
-  addMcpServer(name: string, config: MCPServerConfig): Promise<void>
-  removeMcpServer(name: string): Promise<void>
-  updateMcpServer(name: string, config: Partial<MCPServerConfig>): Promise<void>
+  addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean>
+  removeMcpServer(serverName: string): Promise<void>
+  updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
 }
 export type RENDERER_MODEL_META = {
@@ -720,9 +720,9 @@ export interface IMCPPresenter {
   addMcpDefaultServer(serverName: string): Promise<void>
   removeMcpDefaultServer(serverName: string): Promise<void>
   toggleMcpDefaultServer(serverName: string): Promise<void>
-  addMcpServer(serverName: string, config: MCPServerConfig): Promise<void>
-  updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
+  addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean>
   removeMcpServer(serverName: string): Promise<void>
+  updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   isServerRunning(serverName: string): Promise<boolean>
   startServer(serverName: string): Promise<void>
   stopServer(serverName: string): Promise<void>

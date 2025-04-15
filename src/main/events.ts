@@ -66,7 +66,8 @@ export const MCP_EVENTS = {
   SERVER_STOPPED: 'mcp:server-stopped',
   CONFIG_CHANGED: 'mcp:config-changed',
   TOOL_CALL_RESULT: 'mcp:tool-call-result',
-  SERVER_STATUS_CHANGED: 'mcp:server-status-changed'
+  SERVER_STATUS_CHANGED: 'mcp:server-status-changed',
+  CLIENT_LIST_UPDATED: 'mcp:client-list-updated'
 }
 
 // 同步相关事件
