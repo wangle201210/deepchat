@@ -271,22 +271,20 @@ watch(
     <!-- 选项卡 -->
     <div class="flex border-b mb-4 px-4">
       <button
-        class="px-3 py-1.5 text-sm"
         :class="
           activeTab === 'servers'
-            ? 'border-b-2 border-primary font-medium text-primary'
-            : 'text-muted-foreground'
+            ? 'px-3 py-1.5 text-sm border-b-2 border-primary font-medium text-primary'
+            : 'px-3 py-1.5 text-sm text-muted-foreground'
         "
         @click="activeTab = 'servers'"
       >
         {{ t('settings.mcp.tabs.servers') }}
       </button>
       <button
-        class="px-3 py-1.5 text-sm ml-2"
         :class="
           activeTab === 'tools'
-            ? 'border-b-2 border-primary font-medium text-primary'
-            : 'text-muted-foreground'
+            ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
+            : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
         "
         @click="activeTab = 'tools'"
       >
