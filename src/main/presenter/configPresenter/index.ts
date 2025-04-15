@@ -690,7 +690,7 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 
   // 添加MCP服务器
-  async addMcpServer(name: string, config: MCPServerConfig): Promise<void> {
+  async addMcpServer(name: string, config: MCPServerConfig): Promise<boolean> {
     return this.mcpConfHelper.addMcpServer(name, config)
   }
 

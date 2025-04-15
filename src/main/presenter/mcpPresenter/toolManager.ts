@@ -195,6 +195,7 @@ export class ToolManager {
     serverName: string,
     autoApprove: string[]
   ): boolean {
+    console.log('checkToolPermission', originalToolName, serverName, autoApprove)
     // 如果有 'all' 权限，则允许所有操作
     if (autoApprove.includes('all')) {
       return true
