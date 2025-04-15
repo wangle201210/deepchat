@@ -29,8 +29,8 @@
         <div v-if="isEditMode" class="text-sm w-full whitespace-pre-wrap break-all">
           <textarea
             v-model="editedText"
-            class="text-sm bg-[#EFF6FF] dark:bg-muted rounded-lg p-2 border flex flex-col gap-1.5 resize-y"
-            :style="{ height: originalContentHeight + 'px', width: originalContentWidth + 'px' }"
+            class="text-sm bg-[#EFF6FF] dark:bg-muted rounded-lg p-2 border flex flex-col gap-1.5 resize"
+            :style="{ height: originalContentHeight + 18 + 'px', width: originalContentWidth + 20 + 'px' }"
           ></textarea>
         </div>
         <div v-else class="text-sm whitespace-pre-wrap break-all" ref="originalContent">{{ displayText }}</div>
