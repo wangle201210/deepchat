@@ -250,7 +250,10 @@
       "parseAndContinue": "Parse & Continue",
       "jsonParseError": "JSON parsing failed",
       "browseMarketplace": "Browse MCP Marketplace",
-      "imageModel": "Choose a vision model"
+      "imageModel": "Choose a vision model",
+      "customHeadersParseError": "Custom Header parsing failed",
+      "customHeaders": "Custom request header",
+      "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct."
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",

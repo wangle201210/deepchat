@@ -19,7 +19,8 @@ import { EmojiPicker } from '@/components/ui/emoji-picker'
 import { useToast } from '@/components/ui/toast'
 import { Icon } from '@iconify/vue'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown, X } from 'lucide-vue-next'
+import { Badge } from '@/components/ui/badge'
 import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
@@ -49,6 +50,7 @@ const descriptions = ref(props.initialConfig?.descriptions || '')
 const icons = ref(props.initialConfig?.icons || '📁')
 const type = ref<'sse' | 'stdio' | 'inmemory' | 'http'>(props.initialConfig?.type || 'stdio')
 const baseUrl = ref(props.initialConfig?.baseUrl || '')
+const customHeaders = ref('')
 
 // 模型选择相关
 const modelSelectOpen = ref(false)
@@ -62,6 +64,12 @@ const isImageServer = computed(() => isInMemoryType.value && name.value === 'ima
 // 判断字段是否只读(inmemory类型除了args和env外都是只读的)
 const isFieldReadOnly = computed(() => props.editMode && isInMemoryType.value)
 
+// 格式化 JSON 对象为 Key=Value 文本
+const formatJsonHeaders = (headers: Record<string, string>): string => {
+  return Object.entries(headers)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n')
+}
 // 处理模型选择
 const handleImageModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
   selectedImageModel.value = model
@@ -108,6 +116,10 @@ const jsonConfig = ref('')
 const showBaseUrl = computed(() => type.value === 'sse' || type.value === 'http')
 // 添加计算属性来控制命令相关字段的显示
 const showCommandFields = computed(() => type.value === 'stdio')
+// 控制参数输入框的显示 (stdio 或 非imageServer的inmemory)
+const showArgsInput = computed(
+  () => showCommandFields.value || (isInMemoryType.value && !isImageServer.value)
+)
 
 // 当选择 all 时，自动选中其他权限
 const handleAutoApproveAllChange = (checked: boolean) => {
@@ -152,6 +164,13 @@ const parseJsonConfig = () => {
       }
     }
 
+    // 填充 customHeaders (如果存在)
+    if (serverConfig.customHeaders) {
+      customHeaders.value = formatJsonHeaders(serverConfig.customHeaders) // 加载时格式化为 Key=Value
+    } else {
+      customHeaders.value = '' // 默认空字符串
+    }
+
     // 权限设置
     autoApproveAll.value = serverConfig.autoApprove?.includes('all') || false
     autoApproveRead.value =
@@ -190,11 +209,15 @@ const isNameValid = computed(() => name.value.trim().length > 0)
 const isCommandValid = computed(() => {
   // 对于SSE类型，命令不是必需的
   if (type.value === 'sse' || type.value === 'http') return true
-  // 对于STDIO类型，命令是必需的
-  return command.value.trim().length > 0
+  // 对于STDIO 或 inmemory 类型，命令是必需的 (排除内置 server)
+  if (type.value === 'stdio' || (isInMemoryType.value && !isImageServer.value)) {
+    return command.value.trim().length > 0
+  }
+  return true // 其他情况（如 imageServer）默认有效
 })
 const isEnvValid = computed(() => {
   try {
+    if (!env.value.trim()) return true // Allow empty env
     JSON.parse(env.value)
     return true
   } catch (error) {
@@ -206,18 +229,104 @@ const isBaseUrlValid = computed(() => {
   return baseUrl.value.trim().length > 0
 })
 
+// 新增：验证 Key=Value 格式的函数
+const validateKeyValueHeaders = (text: string): boolean => {
+  if (!text.trim()) return true // 允许为空
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    if (trimmedLine === '') {
+      // 只允许空行
+      continue
+    }
+    // 简单的检查，确保包含 = 并且 key 不为空
+    const parts = trimmedLine.split('=')
+    if (parts.length < 2 || !parts[0].trim()) {
+      return false
+    }
+  }
+  return true
+}
+
+// 新增：计算属性用于验证 Key=Value 格式
+const isCustomHeadersFormatValid = computed(() => validateKeyValueHeaders(customHeaders.value))
+
 const isFormValid = computed(() => {
   // 基本验证：名称必须有效
   if (!isNameValid.value) return false
 
   // 对于SSE类型，只需要名称和baseUrl有效
   if (type.value === 'sse' || type.value === 'http') {
-    return isNameValid.value && isBaseUrlValid.value
+    return isNameValid.value && isBaseUrlValid.value && isCustomHeadersFormatValid.value
   }
 
   // 对于STDIO类型，需要名称和命令有效，以及环境变量格式正确
   return isNameValid.value && isCommandValid.value && isEnvValid.value
 })
+
+// 参数输入相关状态 (用于标签式输入)
+const argumentsList = ref<string[]>([])
+const currentArgumentInput = ref('')
+const argsInputRef = ref<HTMLInputElement | null>(null) // 用于聚焦输入框
+
+// 监听外部 args 变化，更新内部列表
+watch(
+  args,
+  (newArgs) => {
+    if (newArgs) {
+      argumentsList.value = newArgs.split(/\s+/).filter(Boolean)
+    } else {
+      argumentsList.value = []
+    }
+  },
+  { immediate: true }
+)
+
+// 监听内部列表变化，更新外部 args 字符串
+watch(
+  argumentsList,
+  (newList) => {
+    args.value = newList.join(' ')
+  },
+  { deep: true }
+)
+
+// 添加参数到列表
+const addArgument = () => {
+  const value = currentArgumentInput.value.trim()
+  if (value) {
+    argumentsList.value.push(value)
+  }
+  currentArgumentInput.value = '' // 清空输入框
+}
+
+// 移除指定索引的参数
+const removeArgument = (index: number) => {
+  argumentsList.value.splice(index, 1)
+}
+
+// 处理输入框键盘事件
+const handleArgumentInputKeydown = (event: KeyboardEvent) => {
+  switch (event.key) {
+    case 'Enter':
+    case ' ': // 按下空格也添加
+      event.preventDefault() // 阻止默认行为 (如换行或输入空格)
+      addArgument()
+      break
+    case 'Backspace':
+      // 如果输入框为空，且参数列表不为空，则将最后一个tag的内容移回输入框，并从列表中移除
+      if (currentArgumentInput.value === '' && argumentsList.value.length > 0) {
+        event.preventDefault() // 阻止默认的退格行为
+        currentArgumentInput.value = argumentsList.value.pop() || ''
+      }
+      break
+  }
+}
+
+// 点击容器时聚焦输入框
+const focusArgsInput = () => {
+  argsInputRef.value?.focus()
+}
 
 // 提交表单
 const handleSubmit = () => {
@@ -243,47 +352,64 @@ const handleSubmit = () => {
   // 创建符合MCPServerConfig接口的配置对象
   let serverConfig: MCPServerConfig
 
-  if (type.value === 'sse') {
-    // SSE类型的服务器
-    serverConfig = {
-      ...baseConfig,
-      command: '', // 提供空字符串作为默认值
-      args: [], // 提供空数组作为默认值
-      env: {}, // 提供空对象作为默认值
-      baseUrl: baseUrl.value.trim()
+  // 解析 env
+  let parsedEnv = {}
+  try {
+    if ((type.value === 'stdio' || isInMemoryType.value) && env.value.trim()) {
+      parsedEnv = JSON.parse(env.value)
     }
-  } else if (type.value === 'http') {
-    // HTTP类型的服务器
+  } catch (error) {
+    toast({
+      title: t('settings.mcp.serverForm.jsonParseError'),
+      description: String(error),
+      variant: 'destructive'
+    })
+    // 阻止提交或根据需要处理错误
+    return
+  }
+
+  // 解析 customHeaders
+  let parsedCustomHeaders = {}
+  try {
+    if ((type.value === 'sse' || type.value === 'http') && customHeaders.value.trim()) {
+      parsedCustomHeaders = parseKeyValueHeaders(customHeaders.value)
+    }
+  } catch (error) {
+    toast({
+      title: t('settings.mcp.serverForm.parseError'),
+      description: t('settings.mcp.serverForm.customHeadersParseError') + ': ' + String(error),
+      variant: 'destructive'
+    })
+    return
+  }
+
+  if (type.value === 'sse' || type.value === 'http') {
+    // SSE 或 HTTP 类型的服务器
     serverConfig = {
       ...baseConfig,
       command: '', // 提供空字符串作为默认值
       args: [], // 提供空数组作为默认值
       env: {}, // 提供空对象作为默认值
-      baseUrl: baseUrl.value.trim()
+      baseUrl: baseUrl.value.trim(),
+      customHeaders: parsedCustomHeaders // 使用解析后的 Key=Value
     }
   } else {
-    // STDIO类型的服务器或者inmemory类型
-    try {
-      serverConfig = {
-        ...baseConfig,
-        command: command.value.trim(),
-        args: args.value.split(/\s+/).filter(Boolean),
-        env: JSON.parse(env.value)
-      }
-    } catch (error) {
-      // 如果JSON解析失败，使用空对象
-      serverConfig = {
-        ...baseConfig,
-        command: command.value.trim(),
-        args: args.value.split(/\s+/).filter(Boolean),
-        env: {}
-      }
-      toast({
-        title: t('settings.mcp.serverForm.jsonParseError'),
-        description: String(error),
-        variant: 'destructive'
-      })
+    // STDIO 或 inmemory 类型的服务器
+    serverConfig = {
+      ...baseConfig,
+      command: command.value.trim(),
+      // args 从 argumentsList 更新，所以直接使用 split 即可，或者直接使用 argumentsList.value
+      args: args.value.split(/\s+/).filter(Boolean),
+      env: parsedEnv,
+      baseUrl: baseUrl.value.trim()
     }
+  }
+
+  // 填充 customHeaders (如果存在)
+  if (serverConfig.customHeaders) {
+    customHeaders.value = formatJsonHeaders(serverConfig.customHeaders) // 加载时格式化为 Key=Value
+  } else {
+    customHeaders.value = '' // 默认空字符串
   }
 
   emit('submit', name.value.trim(), serverConfig)
@@ -342,10 +468,78 @@ watch(
   { immediate: true }
 )
 
+// Watch for initial config changes (primarily for edit mode)
+watch(
+  () => props.initialConfig,
+  (newConfig) => {
+    // Check if we are in edit mode and have a new valid config, but avoid overwriting if defaultJsonConfig was also provided and parsed
+    if (newConfig && props.editMode && !props.defaultJsonConfig) {
+      console.log('Applying initialConfig in edit mode:', newConfig)
+      // Reset fields based on initialConfig
+      // name.value = props.serverName || ''; // Name is usually passed separately and kept disabled
+      command.value = newConfig.command || 'npx'
+      args.value = newConfig.args?.join(' ') || ''
+      env.value = JSON.stringify(newConfig.env || {}, null, 2)
+      descriptions.value = newConfig.descriptions || ''
+      icons.value = newConfig.icons || '📁'
+      type.value = newConfig.type || 'stdio'
+      baseUrl.value = newConfig.baseUrl || ''
+
+      // Format customHeaders from initialConfig
+      if (newConfig.customHeaders) {
+        customHeaders.value = formatJsonHeaders(newConfig.customHeaders)
+      } else {
+        customHeaders.value = ''
+      }
+
+      // Set autoApprove based on initialConfig
+      autoApproveAll.value = newConfig.autoApprove?.includes('all') || false
+      autoApproveRead.value =
+        newConfig.autoApprove?.includes('read') || newConfig.autoApprove?.includes('all') || false
+      autoApproveWrite.value =
+        newConfig.autoApprove?.includes('write') || newConfig.autoApprove?.includes('all') || false
+
+      // Ensure we are in the detailed view for edit mode
+      currentStep.value = 'detailed'
+    }
+  },
+  { immediate: true } // Run immediately on component mount
+)
+
 // 打开MCP Marketplace
 const openMcpMarketplace = () => {
   window.open('https://mcp.deepchatai.cn', '_blank')
 }
+
+// --- 新增辅助函数 ---
+// 解析 Key=Value 格式为 JSON 对象
+const parseKeyValueHeaders = (text: string): Record<string, string> => {
+  const headers: Record<string, string> = {}
+  if (!text) return headers
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const trimmedLine = line.trim()
+    if (trimmedLine === '') {
+      // 跳过空行
+      continue
+    }
+    const separatorIndex = trimmedLine.indexOf('=')
+    if (separatorIndex > 0) {
+      const key = trimmedLine.substring(0, separatorIndex).trim()
+      const value = trimmedLine.substring(separatorIndex + 1).trim()
+      if (key) {
+        headers[key] = value
+      }
+    }
+  }
+  return headers
+}
+
+// --- 结束新增辅助函数 ---
+
+// 定义 customHeaders 的 placeholder
+const customHeadersPlaceholder = `Authorization=Bearer your_token
+HTTP-Referer=deepchatai.cn`
 </script>
 
 <template>
@@ -451,7 +645,7 @@ const openMcpMarketplace = () => {
           </Select>
         </div>
 
-        <!-- 基础URL，仅在类型为SSE时显示 -->
+        <!-- 基础URL，仅在类型为SSE或HTTP时显示 -->
         <div class="space-y-2" v-if="showBaseUrl">
           <Label class="text-xs text-muted-foreground" for="server-base-url">{{
             t('settings.mcp.serverForm.baseUrl')
@@ -479,7 +673,7 @@ const openMcpMarketplace = () => {
           />
         </div>
 
-        <!-- 参数 -->
+        <!-- 参数 (特殊处理 imageServer) -->
         <div v-if="isImageServer" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-model">
             {{ t('settings.mcp.serverForm.imageModel') || '模型选择' }}
@@ -501,15 +695,44 @@ const openMcpMarketplace = () => {
             </PopoverContent>
           </Popover>
         </div>
-        <div class="space-y-2" v-else-if="showCommandFields || isInMemoryType">
+        <!-- 参数 (标签式输入 for stdio/inmemory) -->
+        <div class="space-y-2" v-else-if="showArgsInput">
           <Label class="text-xs text-muted-foreground" for="server-args">{{
             t('settings.mcp.serverForm.args')
           }}</Label>
-          <Input
-            id="server-args"
-            v-model="args"
-            :placeholder="t('settings.mcp.serverForm.argsPlaceholder')"
-          />
+          <div
+            class="flex flex-wrap items-center gap-1 p-2 border border-input rounded-md min-h-[40px] cursor-text"
+            @click="focusArgsInput"
+          >
+            <Badge
+              v-for="(arg, index) in argumentsList"
+              :key="index"
+              variant="outline"
+              class="flex items-center gap-1 whitespace-nowrap"
+            >
+              <span>{{ arg }}</span>
+              <button
+                type="button"
+                class="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                @click.stop="removeArgument(index)"
+                :aria-label="`Remove ${arg}`"
+              >
+                <X class="h-3 w-3 text-muted-foreground hover:text-foreground" />
+              </button>
+            </Badge>
+            <input
+              ref="argsInputRef"
+              id="server-args-input"
+              v-model="currentArgumentInput"
+              :placeholder="
+                argumentsList.length === 0 ? t('settings.mcp.serverForm.argsPlaceholder') : ''
+              "
+              class="flex-1 bg-transparent outline-none text-sm min-w-[60px]"
+              @keydown="handleArgumentInputKeydown"
+            />
+          </div>
+          <!-- 隐藏原始Input，但保留v-model绑定以利用其验证状态或原有逻辑(如果需要) -->
+          <Input id="server-args" v-model="args" class="hidden" />
         </div>
 
         <!-- 环境变量 -->
@@ -598,6 +821,24 @@ const openMcpMarketplace = () => {
               </label>
             </div>
           </div>
+        </div>
+
+        <!-- Custom Headers，仅在类型为SSE或HTTP时显示 -->
+        <div class="space-y-2" v-if="showBaseUrl">
+          <Label class="text-xs text-muted-foreground" for="server-custom-headers">{{
+            t('settings.mcp.serverForm.customHeaders')
+          }}</Label>
+          <Textarea
+            id="server-custom-headers"
+            v-model="customHeaders"
+            rows="5"
+            :placeholder="customHeadersPlaceholder"
+            :class="{ 'border-red-500': !isCustomHeadersFormatValid }"
+            :disabled="isFieldReadOnly"
+          />
+          <p v-if="!isCustomHeadersFormatValid" class="text-xs text-red-500">
+            {{ t('settings.mcp.serverForm.invalidKeyValueFormat') }}
+          </p>
         </div>
       </div>
     </ScrollArea>
