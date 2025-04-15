@@ -356,7 +356,7 @@ export const defaultModelsSettings = [
     maxTokens: 32_000,
     contextLength: 1_000_000,
     match: ['gpt-4.1-nano'],
-    vision: false,
+    vision: true,
     functionCall: true,
     reasoning: false
   },
@@ -367,7 +367,7 @@ export const defaultModelsSettings = [
     maxTokens: 32_000,
     contextLength: 1_000_000,
     match: ['gpt-4.1-mini'],
-    vision: false,
+    vision: true,
     functionCall: true,
     reasoning: false
   },
@@ -378,7 +378,7 @@ export const defaultModelsSettings = [
     maxTokens: 32_000,
     contextLength: 1_000_000,
     match: ['gpt-4.1'],
-    vision: false,
+    vision: true,
     functionCall: true,
     reasoning: false
   },
