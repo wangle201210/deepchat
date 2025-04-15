@@ -5,6 +5,7 @@ import { proxyConfig } from '@/presenter/proxyConfig'
 import { eventBus } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { getErrorMessageLabels } from '@shared/i18n'
+import { MCP_EVENTS } from '@/events'
 
 const NPM_REGISTRY_LIST = [
   'https://registry.npmjs.org/',
@@ -186,6 +187,8 @@ export class ServerManager {
       this.sendMcpConnectionError(name, error)
 
       throw error
+    } finally {
+      eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
     }
   }
 
@@ -229,6 +232,7 @@ export class ServerManager {
       this.clients.delete(name)
 
       console.info(`MCP服务器 ${name} 已停止`)
+      eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
     } catch (error) {
       console.error(`停止MCP服务器 ${name} 失败:`, error)
       throw error

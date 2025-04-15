@@ -1,5 +1,5 @@
 import { eventBus } from '@/eventbus'
-import { MCP_EVENTS } from '@/events'
+import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events'
 import {
   MCPToolCall,
   MCPToolDefinition,
@@ -15,10 +15,17 @@ import { jsonrepair } from 'jsonrepair'
 export class ToolManager {
   private configPresenter: IConfigPresenter
   private serverManager: ServerManager
+  private cachedToolDefinitions: MCPToolDefinition[] | null = null
 
   constructor(configPresenter: IConfigPresenter, serverManager: ServerManager) {
     this.configPresenter = configPresenter
     this.serverManager = serverManager
+    eventBus.on(MCP_EVENTS.CLIENT_LIST_UPDATED, this.handleServerListUpdate)
+  }
+
+  private handleServerListUpdate = (): void => {
+    console.info('MCP client list updated, clearing tool definitions cache.')
+    this.cachedToolDefinitions = null
   }
 
   public async getRunningClients(): Promise<McpClient[]> {
@@ -27,19 +34,24 @@ export class ToolManager {
 
   // 获取所有工具定义
   public async getAllToolDefinitions(): Promise<MCPToolDefinition[]> {
-    // 获取运行中的默认客户端
-    const clients = await this.serverManager.getRunningClients()
+    if (this.cachedToolDefinitions !== null && this.cachedToolDefinitions.length > 0) {
+      console.info('Returning cached tool definitions.')
+      return this.cachedToolDefinitions
+    }
 
-    if (!clients) {
+    console.info('Fetching fresh tool definitions.')
+    const clients = await this.serverManager.getRunningClients()
+    const results: MCPToolDefinition[] = []
+
+    if (!clients || clients.length === 0) {
       console.error('未找到正在运行的MCP客户端')
+      this.cachedToolDefinitions = []
       return []
     }
 
-    try {
-      // 转换为MCPToolDefinition格式
-      const results: MCPToolDefinition[] = []
-      // 获取工具列表
-      for (const client of clients) {
+    // 获取工具列表
+    for (const client of clients) {
+      try {
         const clientTools = await client.listTools()
         if (clientTools) {
           for (const tool of clientTools) {
@@ -71,12 +83,27 @@ export class ToolManager {
             })
           }
         }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        const serverName = client.serverName || '未知服务器'
+        console.error(`获取服务器 '${serverName}' 的工具定义失败:`, errorMessage)
+
+        // 向上层抛出异常通知
+        const formattedMessage = `无法从服务器 '${serverName}' 获取工具列表: ${errorMessage}`
+        eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+          title: '获取工具定义失败',
+          message: formattedMessage,
+          id: `mcp-error-${serverName}-${Date.now()}`,
+          type: 'error'
+        })
+        // 继续处理下一个客户端，而不是中断整个过程
+        continue
       }
-      return results
-    } catch (error) {
-      console.error('获取工具定义失败:', error)
-      return []
     }
+    // 即使有部分失败，也返回成功获取到的结果
+    this.cachedToolDefinitions = results
+    console.info(`Cached ${results.length} tool definitions.`)
+    return results
   }
 
   // 检查工具调用权限
@@ -233,5 +260,9 @@ export class ToolManager {
         content: `Error: ${errorMessage}`
       }
     }
+  }
+
+  public destroy(): void {
+    eventBus.off(MCP_EVENTS.CLIENT_LIST_UPDATED, this.handleServerListUpdate)
   }
 }
