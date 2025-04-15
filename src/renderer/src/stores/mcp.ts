@@ -169,14 +169,13 @@ export const useMcpStore = defineStore('mcp', () => {
 
   // 添加服务器
   const addServer = async (serverName: string, serverConfig: MCPServerConfig) => {
-    try {
-      await mcpPresenter.addMcpServer(serverName, serverConfig)
+    const success = await mcpPresenter.addMcpServer(serverName, serverConfig)
+    if (success) {
       await loadConfig()
-      return true
-    } catch (error) {
-      console.error('Failed to add MCP server:', error)
-      return false
+      return { success: true, message: '' }
     }
+    // 如果返回false，理论上不会发生，因为presenter会抛出错误
+    return { success: false, message: 'Failed to add server for unknown reason.' }
   }
 
   // 更新服务器

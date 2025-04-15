@@ -9,8 +9,9 @@ import {
 import { ServerManager } from './serverManager'
 import { ToolManager } from './toolManager'
 import { eventBus } from '@/eventbus'
-import { MCP_EVENTS } from '@/events'
+import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events'
 import { IConfigPresenter } from '@shared/presenter'
+import { getErrorMessageLabels } from '@shared/i18n'
 
 // 定义MCP工具接口
 interface MCPTool {
@@ -224,8 +225,25 @@ export class McpPresenter implements IMCPPresenter {
   }
 
   // 添加MCP服务器
-  async addMcpServer(serverName: string, config: MCPServerConfig): Promise<void> {
+  async addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean> {
+    const existingServers = await this.getMcpServers()
+    if (existingServers[serverName]) {
+      console.error(`[MCP] 添加服务器失败: 服务器名称 "${serverName}" 已存在。`)
+      // 获取当前语言并发送通知
+      const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
+      const errorMessages = getErrorMessageLabels(locale)
+      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+        title: errorMessages.addMcpServerErrorTitle || '添加服务器失败',
+        message:
+          errorMessages.addMcpServerDuplicateMessage?.replace('{serverName}', serverName) ||
+          `服务器名称 "${serverName}" 已存在。请选择一个不同的名称。`,
+        id: `mcp-error-add-server-${serverName}-${Date.now()}`,
+        type: 'error'
+      })
+      return false
+    }
     await this.configPresenter.addMcpServer(serverName, config)
+    return true
   }
 
   // 更新MCP服务器配置
