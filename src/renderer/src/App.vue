@@ -45,7 +45,7 @@ const displayError = (error: { id: string; title: string; message: string; type:
   currentErrorId.value = error.id
 
   // 显示错误通知
-  toast({
+  const { dismiss } = toast({
     title: error.title,
     description: error.message,
     variant: 'destructive',
@@ -63,7 +63,9 @@ const displayError = (error: { id: string; title: string; message: string; type:
   }
 
   errorDisplayTimer.value = window.setTimeout(() => {
+    console.log('errorDisplayTimer.value', errorDisplayTimer.value)
     // 处理错误关闭后的逻辑
+    dismiss()
     handleErrorClosed()
   }, 3000)
 }

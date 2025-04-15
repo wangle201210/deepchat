@@ -95,48 +95,92 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
   'zh-CN': {
     mcpConnectionErrorTitle: 'MCP 连接错误',
     mcpConnectionErrorMessage: '连接到 MCP 服务器失败',
+    addMcpServerErrorTitle: '添加服务器失败',
+    addMcpServerDuplicateMessage: '服务器名称 "{serverName}" 已存在。请选择一个不同的名称。',
+    getMcpToolListErrorTitle: '获取工具定义失败',
+    getMcpToolListErrorMessage: "无法从服务器 '{serverName}' 获取工具列表: {errorMessage}",
     genericErrorTitle: '错误',
     genericErrorMessage: '发生了一个错误'
   },
   'zh-TW': {
     mcpConnectionErrorTitle: 'MCP 連接錯誤',
     mcpConnectionErrorMessage: '連接到 MCP 服務器失敗',
+    addMcpServerErrorTitle: '添加服務器失敗',
+    addMcpServerDuplicateMessage: '服務器名稱 "{serverName}" 已存在。請選擇一個不同的名稱。',
+    getMcpToolListErrorTitle: '獲取工具定義失敗',
+    getMcpToolListErrorMessage: "無法從服務器 '{serverName}' 獲取工具列表: {errorMessage}",
     genericErrorTitle: '錯誤',
     genericErrorMessage: '發生了一個錯誤'
   },
   'en-US': {
     mcpConnectionErrorTitle: 'MCP Connection Error',
     mcpConnectionErrorMessage: 'Failed to connect to MCP server',
+    addMcpServerErrorTitle: 'Failed to Add Server',
+    addMcpServerDuplicateMessage:
+      'Server name "{serverName}" already exists. Please choose a different name.',
+    getMcpToolListErrorTitle: 'Failed to Get Tool Definitions',
+    getMcpToolListErrorMessage:
+      "Unable to retrieve tool list from server '{serverName}': {errorMessage}",
     genericErrorTitle: 'Error',
     genericErrorMessage: 'An error occurred'
   },
   ja: {
     mcpConnectionErrorTitle: 'MCP 接続エラー',
     mcpConnectionErrorMessage: 'MCP サーバーへの接続に失敗しました',
+    addMcpServerErrorTitle: 'サーバーの追加に失敗しました',
+    addMcpServerDuplicateMessage:
+      'サーバー名「{serverName}」はすでに存在します。別の名前を選択してください。',
+    getMcpToolListErrorTitle: 'ツール定義の取得に失敗しました',
+    getMcpToolListErrorMessage:
+      "サーバー '{serverName}' からツールリストを取得できません: {errorMessage}",
     genericErrorTitle: 'エラー',
     genericErrorMessage: 'エラーが発生しました'
   },
   ko: {
     mcpConnectionErrorTitle: 'MCP 연결 오류',
     mcpConnectionErrorMessage: 'MCP 서버에 연결하지 못했습니다',
+    addMcpServerErrorTitle: '서버 추가 실패',
+    addMcpServerDuplicateMessage:
+      '서버 이름 "{serverName}"이(가) 이미 존재합니다. 다른 이름을 선택하십시오.',
+    getMcpToolListErrorTitle: '도구 정의 가져오기 실패',
+    getMcpToolListErrorMessage:
+      "서버 '{serverName}'에서 도구 목록을 검색할 수 없습니다: {errorMessage}",
     genericErrorTitle: '오류',
     genericErrorMessage: '오류가 발생했습니다'
   },
   fr: {
     mcpConnectionErrorTitle: 'Erreur de connexion MCP',
     mcpConnectionErrorMessage: 'Échec de la connexion au serveur MCP',
+    addMcpServerErrorTitle: "L'ajout du serveur a échoué",
+    addMcpServerDuplicateMessage:
+      'Le nom du serveur "{serverName}" existe déjà. Veuillez choisir un nom différent.',
+    getMcpToolListErrorTitle: "Échec de la récupération des définitions d'outils",
+    getMcpToolListErrorMessage:
+      "Impossible de récupérer la liste d'outils du serveur '{serverName}': {errorMessage}",
     genericErrorTitle: 'Erreur',
     genericErrorMessage: "Une erreur s'est produite"
   },
   de: {
     mcpConnectionErrorTitle: 'MCP-Verbindungsfehler',
     mcpConnectionErrorMessage: 'Verbindung zum MCP-Server fehlgeschlagen',
+    addMcpServerErrorTitle: 'Server hinzufügen fehlgeschlagen',
+    addMcpServerDuplicateMessage:
+      'Servername "{serverName}" existiert bereits. Bitte wählen Sie einen anderen Namen.',
+    getMcpToolListErrorTitle: 'Tooldefinitionen konnten nicht abgerufen werden',
+    getMcpToolListErrorMessage:
+      "Die Toolliste konnte nicht vom Server '{serverName}' abgerufen werden: {errorMessage}",
     genericErrorTitle: 'Fehler',
     genericErrorMessage: 'Ein Fehler ist aufgetreten'
   },
   es: {
     mcpConnectionErrorTitle: 'Error de conexión MCP',
     mcpConnectionErrorMessage: 'Error al conectar con el servidor MCP',
+    addMcpServerErrorTitle: 'Error al agregar el servidor',
+    addMcpServerDuplicateMessage:
+      'El nombre del servidor "{serverName}" ya existe. Por favor, elija un nombre diferente.',
+    getMcpToolListErrorTitle: 'Error al obtener las definiciones de herramientas',
+    getMcpToolListErrorMessage:
+      "No se puede recuperar la lista de herramientas del servidor '{serverName}': {errorMessage}",
     genericErrorTitle: 'Error',
     genericErrorMessage: 'Se ha producido un error'
   }

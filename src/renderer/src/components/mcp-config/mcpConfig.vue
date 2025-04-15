@@ -77,8 +77,8 @@ const selectTool = (tool: MCPToolDefinition) => {
 
 // 添加服务器
 const handleAddServer = async (serverName: string, serverConfig: MCPServerConfig) => {
-  const success = await mcpStore.addServer(serverName, serverConfig)
-  if (success) {
+  const result = await mcpStore.addServer(serverName, serverConfig)
+  if (result.success) {
     isAddServerDialogOpen.value = false
   }
 }

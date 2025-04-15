@@ -11,6 +11,7 @@ import {
 import { ServerManager } from './serverManager'
 import { McpClient } from './mcpClient'
 import { jsonrepair } from 'jsonrepair'
+import { getErrorMessageLabels } from '@shared/i18n'
 
 export class ToolManager {
   private configPresenter: IConfigPresenter
@@ -96,9 +97,15 @@ export class ToolManager {
         const serverName = client.serverName || '未知服务器'
         console.error(`Pass 1 Error: 获取服务器 '${serverName}' 的工具列表失败:`, errorMessage)
         // Send notification (existing logic from previous commit)
-        const formattedMessage = `无法从服务器 '${serverName}' 获取工具列表: ${errorMessage}`
+        const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
+        const errorMessages = getErrorMessageLabels(locale)
+        const formattedMessage =
+          errorMessages.getMcpToolListErrorMessage
+            ?.replace('{serverName}', serverName)
+            .replace('{errorMessage}', errorMessage) ||
+          `无法从服务器 '${serverName}' 获取工具列表: ${errorMessage}`
         eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
-          title: '获取工具定义失败',
+          title: errorMessages.getMcpToolListErrorTitle || '获取工具定义失败',
           message: formattedMessage,
           id: `mcp-error-pass1-${serverName}-${Date.now()}`,
           type: 'error'
