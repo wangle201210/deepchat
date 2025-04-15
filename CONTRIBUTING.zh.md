@@ -56,7 +56,7 @@
      图形化安装:
      - 安装 [Visual Studio Community](https://visualstudio.microsoft.com/vs/community/)
      - 在安装时选择"使用 C++ 的桌面开发"工作负载
-     - 确保选中"Windows 10/11 SDK"和"MSVC v143 生成工具"组件
+     - 确保选中"Windows 10/11 SDK"和"MSVC v143 生成工具"组件（推荐使用最新版本 Vistual Studio 2022)
    - 安装 Git for Windows
 
    **macOS:**

@@ -56,8 +56,8 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
      GUI Installation:
      - Install [Visual Studio Community](https://visualstudio.microsoft.com/vs/community/)
      - Select "Desktop development with C++" workload during installation
-     - Ensure "Windows 10/11 SDK" and "MSVC v143 build tools" components are selected
-   - Install Git for Windows
+     - Ensure "Windows 10/11 SDK" and "MSVC v143 build tools" components are selected（Vistual Studio 2022 recommended)
+   - Install Git for Windowss
 
    **macOS:**
 
