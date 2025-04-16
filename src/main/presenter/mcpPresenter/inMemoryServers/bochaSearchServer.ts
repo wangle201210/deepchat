@@ -36,6 +36,7 @@ interface BochaSearchResponse {
         url: string
         displayUrl: string
         snippet: string
+        summary: string
         siteName: string
         siteIcon: string
         dateLastCrawled: string
@@ -153,7 +154,7 @@ export class BochaSearchServer {
                 title: item.name,
                 url: item.url,
                 rank: index + 1,
-                content: item.snippet,
+                content: item.summary,
                 icon: item.siteIcon
               }
 
