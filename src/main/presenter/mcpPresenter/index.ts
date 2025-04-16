@@ -248,7 +248,22 @@ export class McpPresenter implements IMCPPresenter {
 
   // 更新MCP服务器配置
   async updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void> {
+    const wasRunning = this.serverManager.isServerRunning(serverName)
     await this.configPresenter.updateMcpServer(serverName, config)
+
+    // 如果服务器之前正在运行，则重启它以应用新配置
+    if (wasRunning) {
+      console.log(`[MCP] 配置已更新，正在重启服务器: ${serverName}`)
+      try {
+        await this.stopServer(serverName) // stopServer 会发出 SERVER_STOPPED 事件
+        await this.startServer(serverName) // startServer 会发出 SERVER_STARTED 事件
+        console.log(`[MCP] 服务器 ${serverName} 重启成功`)
+      } catch (error) {
+        console.error(`[MCP] 重启服务器 ${serverName} 失败:`, error)
+        // 即使重启失败，也要确保状态正确，标记为未运行
+        eventBus.emit(MCP_EVENTS.SERVER_STOPPED, serverName)
+      }
+    }
   }
 
   // 移除MCP服务器
