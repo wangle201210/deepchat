@@ -7,7 +7,7 @@
 <p align="center">Dolphins are good friends of whales, and DeepChat is your good assistant</p>
 
 <div align="center">
-  <a href="./README.zh.md">中文</a> / English
+  <a href="./README.zh.md">中文</a> / English / <a href="./README.jp.md">日本語</a>
 </div>
 
 ### Reasoning
@@ -36,12 +36,33 @@
 
 ## Main Features
 
-- 🌐 Supports multiple model cloud services: DeepSeek, OpenAI, Silicon Flow, etc.
-- 🏠 Supports local model deployment: Ollama
-- 🚀 Multi-channel chat concurrency support, switch to other conversations without waiting for the model to finish generating, efficiency Max
-- 💻 Supports multiple platforms: Windows, macOS, Linux
-- 📄 Complete Markdown rendering, excellent code module rendering
-- 🌟 Easy to use, with a complete guide page, you can get started immediately without understanding complex concepts
+- 🌐 Supports multiple cloud LLM providers: DeepSeek, OpenAI, Silicon Flow, Grok, Gemini, Anthropic, etc.
+- 🏠 Supports local model deployment: Ollama, with comprehensive management capabilities, allowing control and management of Ollama model downloads, deployments, and runs without command-line operations.
+- 🚀 Rich and easy-to-use chatbot capabilities
+  - Complete Markdown rendering with excellent code block display.
+  - Native support for simultaneous multi-session conversations; start new sessions without waiting for model generation to finish, maximizing efficiency.
+  - Supports Artifacts rendering for diverse result presentation, significantly saving token consumption after MCP integration.
+  - Messages support retry to generate multiple variations; conversations can be forked freely, ensuring there's always a suitable line of thought.
+  - Supports rendering images, Mermaid diagrams, and other multi-modal content; includes Gemini's text-to-image capabilities.
+  - Supports highlighting external information sources like search results within the content.
+- 🔍 Robust search extension capabilities
+  - Built-in integration with leading search APIs like Brave Search via MCP mode, allowing the model to intelligently decide when to search.
+  - Supports mainstream search engines like Google, Bing, Baidu, and Sogou Official Accounts search by simulating user web browsing, enabling the LLM to read search engines like a human.
+  - Supports reading any search engine; simply configure a search assistant model to connect various search sources, whether internal networks, API-less engines, or vertical domain search engines, as information sources for the model.
+- 🔧 Excellent MCP (Model Controller Platform) support
+  - Extremely user-friendly configuration interface.
+  - Aesthetically pleasing and clear tool call display.
+  - Detailed tool call debugging window with automatic formatting of tool parameters and return data.
+  - Built-in Node.js runtime environment; npx-like services require no extra configuration.
+  - Supports StreamableHTTP/SSE/Stdio protocols.
+  - Supports inMemory services with built-in utilities like code execution, web information retrieval, and file operations; ready for most common use cases out-of-the-box without secondary installation.
+  - Converts visual model capabilities into universally usable functions for any model via the built-in MCP service.
+- 💻 Multi-platform support: Windows, macOS, Linux.
+- 🎨 Beautiful and user-friendly interface, user-oriented design, meticulously themed light and dark modes.
+- 🔗 Rich DeepLink support: Initiate conversations via links for seamless integration with other applications. Also supports one-click installation of MCP services for simplicity and speed.
+- 🚑 Security-first design: Chat data and configuration data have reserved encryption interfaces and code obfuscation capabilities.
+- 🛡️ Privacy protection: Supports screen projection hiding, network proxies, and other privacy protection methods to reduce the risk of information leakage.
+- 💰 Business-friendly, embraces open source, based on the Apache License 2.0 protocol.
 
 ## Currently Supported Model Providers
 
