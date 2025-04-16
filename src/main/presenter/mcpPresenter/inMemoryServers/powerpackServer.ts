@@ -203,7 +203,7 @@ export class PowerpackServer {
           description:
             'Get detailed content information from a specified webpage. Extract title, description, main content, and other information. ' +
             'This tool is useful for analyzing webpage content, obtaining article summaries or details. ' +
-            'Just provide a valid URL to get complete webpage content analysis.',
+            'Just provide a valid HTTP or HTTPS URL to get complete webpage content analysis.',
           inputSchema: zodToJsonSchema(GetWebInfoArgsSchema) as ToolInput
         }
       ]

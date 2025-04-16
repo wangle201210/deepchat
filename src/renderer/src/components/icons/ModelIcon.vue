@@ -49,9 +49,10 @@ import anthropicColorIcon from '@/assets/llm-icons/anthropic.svg?url'
 import googleColorIcon from '@/assets/llm-icons/google-color.svg?url'
 import qiniuIcon from '@/assets/llm-icons/qiniu.svg?url'
 import grokColorIcon from '@/assets/llm-icons/grok.svg?url'
-
+import hunyuanColorIcon from '@/assets/llm-icons/hunyuan-color.svg?url'
 // 导入所有图标
 const icons = {
+  hunyuan: hunyuanColorIcon,
   grok: grokColorIcon,
   qiniu: qiniuIcon,
   gemma: googleColorIcon,
