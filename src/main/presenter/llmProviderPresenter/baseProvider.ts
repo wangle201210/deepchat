@@ -6,6 +6,7 @@ import {
   MCPToolDefinition
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
+import { DevicePresenter } from '../devicePresenter'
 
 // 定义ChatMessage接口用于统一消息格式
 export interface ChatMessage {
@@ -52,6 +53,7 @@ export abstract class BaseLLMProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     this.provider = provider
     this.configPresenter = configPresenter
+    this.defaultHeaders = DevicePresenter.getDefaultHeaders()
   }
 
   /**

@@ -8,6 +8,12 @@ import { app, dialog } from 'electron'
 const execAsync = promisify(exec)
 
 export class DevicePresenter implements IDevicePresenter {
+  static getDefaultHeaders() {
+    return {
+      'HTTP-Referer': 'https://deepchatai.cn',
+      'X-Title': 'DeepChat'
+    }
+  }
   async getAppVersion(): Promise<string> {
     return app.getVersion()
   }

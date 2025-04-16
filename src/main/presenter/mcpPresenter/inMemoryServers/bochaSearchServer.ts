@@ -11,16 +11,34 @@ import axios from 'axios'
 
 // Schema definitions
 const BochaWebSearchArgsSchema = z.object({
-  query: z.string().describe('Search query (max 400 chars, 50 words)'),
-  count: z.number().optional().default(10).describe('Number of results (1-50, default 10)'),
-  page: z.number().optional().default(1).describe('Page number (default 1)')
+  query: z.string().describe('Search query (required)'),
+  freshness: z
+    .string()
+    .optional()
+    .default('noLimit')
+    .describe(
+      'The time range for the search results. (Available options YYYY-MM-DD, YYYY-MM-DD..YYYY-MM-DD, noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)'
+    ),
+  count: z.number().optional().default(10).describe('Number of results (1-50, default 10)')
+})
+
+const BochaAiSearchArgsSchema = z.object({
+  query: z.string().describe('Search query (required)'),
+  freshness: z
+    .string()
+    .optional()
+    .default('noLimit')
+    .describe(
+      'The time range for the search results. (Available options noLimit, oneYear, oneMonth, oneWeek, oneDay. Default is noLimit)'
+    ),
+  count: z.number().optional().default(10).describe('Number of results (1-50, default 10)')
 })
 
 const ToolInputSchema = ToolSchema.shape.inputSchema
 type ToolInput = z.infer<typeof ToolInputSchema>
 
-// 定义Bocha API返回的数据结构
-interface BochaSearchResponse {
+// 定义Bocha API返回的数据结构 - Web Search
+interface BochaWebSearchResponse {
   msg: string | null
   data: {
     _type: string
@@ -36,7 +54,7 @@ interface BochaSearchResponse {
         url: string
         displayUrl: string
         snippet: string
-        summary: string
+        summary: string // 使用 summary 作为描述
         siteName: string
         siteIcon: string
         dateLastCrawled: string
@@ -44,11 +62,38 @@ interface BochaSearchResponse {
         language: string | null
         isFamilyFriendly: boolean | null
         isNavigational: boolean | null
+        datePublished?: string // Python版本似乎有这个
       }>
       isFamilyFriendly: boolean | null
     }
     videos: unknown | null
   }
+}
+
+// 定义Bocha API返回的数据结构 - AI Search
+interface BochaAiSearchResponse {
+  messages?: Array<{
+    content_type: string
+    content: string // 可能需要 JSON.parse
+  }>
+  // 可能还有其他字段，根据需要添加
+}
+
+// AI Search content 解析后的结构 (webpage 类型)
+interface AiSearchWebPageItem {
+  name: string
+  url: string
+  summary: string
+  datePublished?: string
+  siteName?: string
+  // 添加其他可能的字段
+}
+
+// 定义 MCP 资源对象结构
+interface McpResource {
+  uri: string
+  mimeType: string
+  text: string
 }
 
 export class BochaSearchServer {
@@ -65,7 +110,7 @@ export class BochaSearchServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/bocha-search-server',
-        version: '0.1.0'
+        version: '0.1.2' // 版本更新
       },
       {
         capabilities: {
@@ -92,11 +137,14 @@ export class BochaSearchServer {
           {
             name: 'bocha_web_search',
             description:
-              'Performs a web search using the Bocha AI Search API, ideal for general queries, news, articles, and online content.。' +
-              'Use this for broad information gathering, recent events, or when you need diverse web sources.' +
-              'Supports pagination, content filtering, and freshness controls. ' +
-              'Maximum 50 results per request, with page for pagination.',
+              'Search with Bocha Web Search and get enhanced search details from billions of web documents, including page titles, urls, summaries, site names, site icons, publication dates, image links, and more.', // 官方描述
             inputSchema: zodToJsonSchema(BochaWebSearchArgsSchema) as ToolInput
+          },
+          {
+            name: 'bocha_ai_search',
+            description:
+              'Search with Bocha AI Search, recognizes the semantics of search terms and additionally returns structured modal cards with content from vertical domains.', // 官方描述
+            inputSchema: zodToJsonSchema(BochaAiSearchArgsSchema) as ToolInput
           }
         ]
       }
@@ -111,18 +159,18 @@ export class BochaSearchServer {
           case 'bocha_web_search': {
             const parsed = BochaWebSearchArgsSchema.safeParse(args)
             if (!parsed.success) {
-              throw new Error(`无效的搜索参数: ${parsed.error}`)
+              throw new Error(`Invalid search parameters: ${parsed.error}`)
             }
 
-            const { query, count } = parsed.data
+            const { query, count, freshness } = parsed.data
 
             // 调用Bocha API
             const response = await axios.post(
-              'https://api.bochaai.com/v1/web-search',
+              'https://api.bochaai.com/v1/web-search', // 保持原始端点，若官方建议修改可调整
               {
                 query,
                 summary: true,
-                freshness: 'noLimit',
+                freshness, // 添加 freshness
                 count
               },
               {
@@ -134,14 +182,17 @@ export class BochaSearchServer {
             )
 
             // 处理响应数据
-            const searchResponse = response.data as BochaSearchResponse
+            const searchResponse = response.data as BochaWebSearchResponse
 
-            if (!searchResponse.data?.webPages?.value) {
+            if (
+              !searchResponse.data?.webPages?.value ||
+              searchResponse.data.webPages.value.length === 0
+            ) {
               return {
                 content: [
                   {
                     type: 'text',
-                    text: '搜索未返回任何结果。'
+                    text: 'No results found.' // 统一提示信息
                   }
                 ]
               }
@@ -154,24 +205,27 @@ export class BochaSearchServer {
                 title: item.name,
                 url: item.url,
                 rank: index + 1,
-                content: item.summary,
-                icon: item.siteIcon
+                content: item.summary, // 使用 summary
+                icon: item.siteIcon,
+                publishedDate: item.datePublished, // 添加发布日期
+                siteName: item.siteName // 添加站点名称
               }
 
               return {
                 type: 'resource',
                 resource: {
                   uri: item.url,
-                  mimeType: 'application/deepchat-webpage',
+                  mimeType: 'application/deepchat-webpage', // 保持你的类型
                   text: JSON.stringify(blobContent)
                 }
               }
             })
 
             // 添加搜索摘要
+            const summaryText = `Found ${results.length} results for "${query}"`
             const summary = {
               type: 'text',
-              text: `为您找到关于"${query}"的${results.length}个结果`
+              text: summaryText
             }
 
             return {
@@ -179,13 +233,129 @@ export class BochaSearchServer {
             }
           }
 
+          case 'bocha_ai_search': {
+            const parsed = BochaAiSearchArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`Invalid search parameters: ${parsed.error}`)
+            }
+
+            const { query, count, freshness } = parsed.data
+
+            // 调用Bocha AI Search API
+            const response = await axios.post(
+              'https://api.bochaai.com/v1/ai-search', // 使用 AI Search 端点
+              {
+                query,
+                freshness,
+                count,
+                answer: false, // 根据Python版本
+                stream: false // 根据Python版本
+              },
+              {
+                headers: {
+                  Authorization: `Bearer ${this.apiKey}`,
+                  'Content-Type': 'application/json'
+                },
+                timeout: 10000 // 设置超时，同Python版本
+              }
+            )
+
+            const aiSearchResponse = response.data as BochaAiSearchResponse
+            const contentResults: Array<{ type: string; text?: string; resource?: McpResource }> =
+              []
+
+            if (aiSearchResponse.messages && aiSearchResponse.messages.length > 0) {
+              aiSearchResponse.messages.forEach((message) => {
+                try {
+                  if (message.content_type === 'webpage') {
+                    const webData = JSON.parse(message.content) as { value: AiSearchWebPageItem[] }
+                    if (webData.value && Array.isArray(webData.value)) {
+                      webData.value.forEach((item, index) => {
+                        const blobContent = {
+                          title: item.name,
+                          url: item.url,
+                          rank: index + 1, // Rank might need adjustment based on overall results
+                          content: item.summary,
+                          publishedDate: item.datePublished,
+                          siteName: item.siteName
+                          // icon is not available in AI search response apparently
+                        }
+                        contentResults.push({
+                          type: 'resource',
+                          resource: {
+                            uri: item.url,
+                            mimeType: 'application/deepchat-webpage', // 保持你的类型
+                            text: JSON.stringify(blobContent)
+                          }
+                        })
+                      })
+                    }
+                  } else if (message.content_type !== 'image' && message.content !== '{}') {
+                    // 其他非空、非图片的内容视为文本
+                    contentResults.push({
+                      type: 'text',
+                      text: message.content
+                    })
+                  }
+                } catch (e) {
+                  console.error('Error parsing AI search message content:', e)
+                  // Optionally add an error message to results
+                  contentResults.push({
+                    type: 'text',
+                    text: `Error processing result: ${message.content}`
+                  })
+                }
+              })
+            }
+
+            if (contentResults.length === 0) {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: 'No results found.'
+                  }
+                ]
+              }
+            }
+
+            // 添加摘要
+            const summaryText = `Found ${contentResults.filter((r) => r.type === 'resource').length} web results and ${contentResults.filter((r) => r.type === 'text').length} other content for "${query}" via AI Search.`
+            const summary = {
+              type: 'text',
+              text: summaryText
+            }
+
+            return {
+              content: [summary, ...contentResults]
+            }
+          }
+
           default:
-            throw new Error(`未知工具: ${name}`)
+            throw new Error(`Unknown tool: ${name}`)
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('Error calling tool:', error) // Log the error server-side
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'An unknown error occurred'
+
+        // Check for specific Axios errors
+        if (axios.isAxiosError(error)) {
+          const status = error.response?.status
+          const details = error.response?.data ? JSON.stringify(error.response.data) : error.message
+          const finalMessage = `Bocha API request failed: ${status ? `Status ${status}` : ''} - ${details}`
+          return {
+            content: [{ type: 'text', text: `Error: ${finalMessage}` }],
+            isError: true
+          }
+        }
+
         return {
-          content: [{ type: 'text', text: `错误: ${errorMessage}` }],
+          content: [{ type: 'text', text: `Error: ${errorMessage}` }],
           isError: true
         }
       }
