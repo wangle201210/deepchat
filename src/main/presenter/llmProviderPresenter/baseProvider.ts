@@ -7,7 +7,7 @@ import {
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
-
+import { jsonrepair } from 'jsonrepair'
 // 定义ChatMessage接口用于统一消息格式
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
@@ -268,7 +268,7 @@ export abstract class BaseLLMProvider {
         .map((match) => {
           const content = match.replace(/<function_call>|<\/function_call>/g, '').trim()
           try {
-            const parsedCall = JSON.parse(content)
+            const parsedCall = JSON.parse(jsonrepair(content))
             return {
               id: parsedCall.function_call.name,
               type: 'function',
@@ -278,7 +278,7 @@ export abstract class BaseLLMProvider {
               }
             }
           } catch (parseError) {
-            console.error('Error parsing function call JSON:', parseError)
+            console.error('Error parsing function call JSON:', parseError, match, content)
             return null
           }
         })
