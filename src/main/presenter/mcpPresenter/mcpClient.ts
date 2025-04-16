@@ -269,10 +269,19 @@ export class McpClient {
           stderr: 'pipe'
         })
       } else if (this.serverConfig.baseUrl && this.serverConfig.type === 'sse') {
-        this.transport = new SSEClientTransport(new URL(this.serverConfig.baseUrl as string))
+        const customHeaders = this.serverConfig.customHeaders
+          ? (this.serverConfig.customHeaders as Record<string, string>)
+          : {}
+        this.transport = new SSEClientTransport(new URL(this.serverConfig.baseUrl as string), {
+          requestInit: { headers: customHeaders }
+        })
       } else if (this.serverConfig.baseUrl && this.serverConfig.type === 'http') {
+        const customHeaders = this.serverConfig.customHeaders
+          ? (this.serverConfig.customHeaders as Record<string, string>)
+          : {}
         this.transport = new StreamableHTTPClientTransport(
-          new URL(this.serverConfig.baseUrl as string)
+          new URL(this.serverConfig.baseUrl as string),
+          { requestInit: { headers: customHeaders } }
         )
       } else {
         throw new Error(`不支持的传输类型: ${this.serverConfig.type}`)

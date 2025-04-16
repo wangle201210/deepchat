@@ -623,6 +623,7 @@ export interface MCPServerConfig {
   autoApprove: string[]
   disable?: boolean
   baseUrl?: string
+  customHeaders?: Record<string, string>
   type: 'sse' | 'stdio' | 'inmemory' | 'http'
 }
 

@@ -36,6 +36,15 @@ export class ShortcutPresenter {
       }
     })
 
+    globalShortcut.register(process.platform === 'darwin' ? 'Command+=' : 'Control+=', () => {
+      // 禁用缩放功能
+      console.log('Command+=')
+    })
+    globalShortcut.register(process.platform === 'darwin' ? 'Command+-' : 'Control+-', () => {
+      // 禁用缩放功能
+      console.log('Command+-')
+    })
+
     this.isActive = true
   }
 

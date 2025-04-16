@@ -250,7 +250,10 @@
       "parseAndContinue": "解析并继续",
       "jsonParseError": "JSON解析失败",
       "browseMarketplace": "浏览MCP服务市场",
-      "imageModel": "选择视觉模型"
+      "imageModel": "选择视觉模型",
+      "customHeadersParseError": "自定义Header解析失败",
+      "customHeaders": "自定义请求头",
+      "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",

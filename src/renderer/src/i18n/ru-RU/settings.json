@@ -249,7 +249,10 @@
       "jsonParseError": "JSON SAINING не удалось",
       "typeHttp": "Потоковые http -запросы (http)",
       "browseMarketplace": "Просмотреть рынок услуг MCP",
-      "imageModel": "Выберите визуальную модель"
+      "imageModel": "Выберите визуальную модель",
+      "customHeadersParseError": "Пользовательский диапазон заголовка не удалось",
+      "customHeaders": "Пользовательский заголовок запроса",
+      "invalidKeyValueFormat": "Неправильный формат заголовка запроса, пожалуйста, проверьте, является ли вход правильным."
     },
     "deleteServer": "Удалить сервер",
     "editServer": "Редактировать сервер",
