@@ -31,7 +31,7 @@
 ### Artifacts 特性
 
 <p align='center'>
-<img src='./build/screen.artifacts.zh.jpg'/>
+<img src='./build/screen.artifacts.jpg'/>
 </p>
 
 ## 主な特徴
