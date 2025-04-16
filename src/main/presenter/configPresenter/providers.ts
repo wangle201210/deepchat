@@ -454,21 +454,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.360.cn'
   //   }
   // },
-  // {
-  //   id: 'hunyuan',
-  //   name: 'Hunyuan',
-  //   apiType: 'hunyuan',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.hunyuan.cloud.tencent.com',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://cloud.tencent.com/product/hunyuan',
-  //     apiKey: 'https://console.cloud.tencent.com/hunyuan/api-key',
-  //     docs: 'https://cloud.tencent.com/document/product/1729/111007',
-  //     models: 'https://cloud.tencent.com/document/product/1729/104753',
-  //     defaultBaseUrl: 'https://api.hunyuan.cloud.tencent.com'
-  //   }
-  // },
+  {
+    id: 'hunyuan',
+    name: 'Hunyuan',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.hunyuan.cloud.tencent.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://cloud.tencent.com/product/hunyuan',
+      apiKey: 'https://console.cloud.tencent.com/hunyuan/api-key',
+      docs: 'https://cloud.tencent.com/document/product/1729/111007',
+      models: 'https://cloud.tencent.com/document/product/1729/104753',
+      defaultBaseUrl: 'https://api.hunyuan.cloud.tencent.com/v1'
+    }
+  },
   // {
   //   id: 'nvidia',
   //   name: 'NVIDIA',

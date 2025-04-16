@@ -12,7 +12,7 @@ import fs from 'fs'
 import { proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from './streamableHttp'
-
+// TODO: resources 和 prompts 的类型,Notifactions 的类型 https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/client/simpleStreamableHttp.ts
 // 简单的 OAuth 提供者，用于处理 Bearer Token
 class SimpleOAuthProvider {
   private token: string | null = null
