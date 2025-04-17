@@ -284,9 +284,6 @@ export abstract class BaseLLMProvider {
               }
             }
 
-            // 调试日志
-            console.log('Parsed function call:', parsedCall)
-
             // 支持不同格式：
             // 1. { "function_call": { "name": "...", "arguments": {...} } }
             // 2. { "name": "...", "arguments": {...} }
