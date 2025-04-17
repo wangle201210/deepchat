@@ -9,7 +9,7 @@ import path from 'path'
 import { presenter } from '@/presenter'
 import { app } from 'electron'
 import fs from 'fs'
-import { proxyConfig } from '@/presenter/proxyConfig'
+import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from './streamableHttp'
 // TODO: resources 和 prompts 的类型,Notifactions 的类型 https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/client/simpleStreamableHttp.ts
@@ -246,6 +246,7 @@ export class McpClient {
           env.http_proxy = proxyUrl
           env.https_proxy = proxyUrl
           env.grpc_proxy = proxyUrl
+          env.no_proxy = NO_PROXY
         }
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry

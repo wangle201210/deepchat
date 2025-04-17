@@ -9,7 +9,8 @@ export enum ProxyMode {
   NONE = 'none',
   CUSTOM = 'custom'
 }
-const NO_PROXY = 'localhost, 127.0.0.1, ::1, 192.168.*.*, 10.*.*.*, *.local, host.docker.internal'
+export const NO_PROXY =
+  'localhost, 127.0.0.1, ::1, 192.168.*.*, 10.*.*.*, *.local, host.docker.internal'
 // const NO_PROXY = ''
 
 // 合并系统和自定义的 no_proxy 设置
