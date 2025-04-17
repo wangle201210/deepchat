@@ -69,7 +69,7 @@ classDiagram
     }
 
     class ServerManager {
-        -clients: Map~string, McpClient~
+        -clients: Map<string, McpClient>
         -configPresenter: IConfigPresenter
         -npmRegistry: string | null
         +testNpmRegistrySpeed()
@@ -87,7 +87,7 @@ classDiagram
         -configPresenter: IConfigPresenter
         -serverManager: ServerManager
         -cachedToolDefinitions: MCPToolDefinition[] | null
-        -toolNameToTargetMap: Map~string, { client: McpClient; originalName: string }~ | null
+        -toolNameToTargetMap: Map<string, object> | null
         +getAllToolDefinitions()
         +callTool()
         +checkToolPermission()
@@ -97,7 +97,7 @@ classDiagram
 
     class McpClient {
         +serverName: string
-        +serverConfig: Record~string, unknown~
+        +serverConfig: Record<string, unknown>
         -client: Client | null
         -transport: Transport | null
         -isConnected: boolean
@@ -111,7 +111,7 @@ classDiagram
     }
 
     class McpConfHelper {
-        -mcpStore: ElectronStore~IMcpSettings~
+        -mcpStore: ElectronStore<IMcpSettings>
         +getMcpServers()
         +setMcpServers()
         +getMcpDefaultServers()

@@ -605,6 +605,39 @@ export const defaultModelsSettings = [
 
   // OpenAI GPT系列模型配置
   {
+    id: 'o4-mini-high',
+    name: 'OpenAI o4 Mini High',
+    temperature: 0.7,
+    maxTokens: 100_000,
+    contextLength: 100_000,
+    match: ['o4-mini-high'],
+    vision: false,
+    functionCall: true,
+    reasoning: true
+  },
+  {
+    id: 'o3',
+    name: 'OpenAI o3',
+    temperature: 0.7,
+    maxTokens: 100_000,
+    contextLength: 100_000,
+    match: ['o3'],
+    vision: false,
+    functionCall: true,
+    reasoning: true
+  },
+  {
+    id: 'o4-mini',
+    name: 'OpenAI o4 Mini',
+    temperature: 0.7,
+    maxTokens: 100_000,
+    contextLength: 100_000,
+    match: ['o4-mini'],
+    vision: false,
+    functionCall: true,
+    reasoning: true
+  },
+  {
     id: 'gpt-4.1-nano',
     name: 'GPT-4.1-Nano',
     temperature: 0.7,

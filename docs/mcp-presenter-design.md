@@ -78,35 +78,35 @@
 
 ```mermaid
 sequenceDiagram
-    participant LLM Provider (e.g., OpenAICompatibleProvider)
+    participant LLM as "LLM Provider (e.g., OpenAICompatibleProvider)"
     participant McpPresenter
     participant ToolManager
     participant McpClient
     participant MCP Server
 
-    Note over LLM Provider, McpPresenter: 初始化/获取工具定义
-    LLM Provider->>McpPresenter: getAllToolDefinitions()
+    Note over LLM, McpPresenter: 初始化/获取工具定义
+    LLM->>McpPresenter: getAllToolDefinitions()
     McpPresenter->>ToolManager: getAllToolDefinitions()
     ToolManager->>McpClient: listTools() (对所有运行中的Client)
     McpClient-->>ToolManager: 原始工具列表
     ToolManager->>ToolManager: 处理冲突, 缓存定义和映射
     ToolManager-->>McpPresenter: 处理后的工具定义列表
-    McpPresenter->>LLM Provider: mcpToolsToOpenAITools(definitions)
-    LLM Provider-->>McpPresenter: OpenAI 格式工具
+    McpPresenter->>LLM: mcpToolsToOpenAITools(definitions)
+    LLM-->>McpPresenter: OpenAI 格式工具
 
-    Note over LLM Provider, McpPresenter: 用户请求，LLM决定调用工具
-    LLM Provider->>LLM Provider: LLM 生成工具调用请求 (OpenAI 格式)
-    LLM Provider->>McpPresenter: openAIToolsToMcpTool(tool_call)
-    McpPresenter-->>LLM Provider: 标准化 MCPToolCall
+    Note over LLM, McpPresenter: 用户请求，LLM决定调用工具
+    LLM->>LLM: LLM 生成工具调用请求 (OpenAI 格式)
+    LLM->>McpPresenter: openAIToolsToMcpTool(tool_call)
+    McpPresenter-->>LLM: 标准化 MCPToolCall
 
-    Note over LLM Provider, McpPresenter: 执行工具调用
-    LLM Provider->>McpPresenter: callTool(mcpToolCall)
+    Note over LLM, McpPresenter: 执行工具调用
+    LLM->>McpPresenter: callTool(mcpToolCall)
     McpPresenter->>ToolManager: callTool(mcpToolCall)
     ToolManager->>ToolManager: 查找映射 (toolNameToTargetMap)
     ToolManager->>ToolManager: 检查权限 (checkToolPermission)
     alt 权限不足
         ToolManager-->>McpPresenter: 错误响应
-        McpPresenter-->>LLM Provider: 错误响应 (包装后)
+        McpPresenter-->>LLM: 错误响应 (包装后)
     else 权限通过
         ToolManager->>McpClient: callTool(originalToolName, args)
         McpClient->>MCP Server: 执行工具调用
@@ -114,9 +114,9 @@ sequenceDiagram
         McpClient-->>ToolManager: 工具调用结果 (ToolCallResult)
         ToolManager->>ToolManager: 格式化结果
         ToolManager-->>McpPresenter: 格式化响应 (MCPToolResponse)
-        McpPresenter-->>LLM Provider: 最终响应 (包装后)
+        McpPresenter-->>LLM: 最终响应 (包装后)
     end
-    LLM Provider->>LLM Provider: 处理响应, 可能继续对话或返回用户
+    LLM->>LLM: 处理响应, 可能继续对话或返回用户
 ```
 
 **流程说明**:
