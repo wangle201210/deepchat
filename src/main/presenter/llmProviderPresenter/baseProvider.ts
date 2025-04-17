@@ -268,13 +268,79 @@ export abstract class BaseLLMProvider {
         .map((match) => {
           const content = match.replace(/<function_call>|<\/function_call>/g, '').trim()
           try {
-            const parsedCall = JSON.parse(jsonrepair(content))
+            // 尝试解析多种可能的格式
+            let parsedCall
+            try {
+              // 首先尝试直接解析JSON
+              parsedCall = JSON.parse(content)
+            } catch (initialParseError) {
+              try {
+                // 如果直接解析失败，尝试使用jsonrepair修复
+                parsedCall = JSON.parse(jsonrepair(content))
+              } catch (repairError) {
+                // 记录错误日志但不中断处理
+                console.error('Failed to parse with jsonrepair:', repairError)
+                return null
+              }
+            }
+
+            // 调试日志
+            console.log('Parsed function call:', parsedCall)
+
+            // 支持不同格式：
+            // 1. { "function_call": { "name": "...", "arguments": {...} } }
+            // 2. { "name": "...", "arguments": {...} }
+            // 3. { "function": { "name": "...", "arguments": {...} } }
+            // 4. { "function_call": { "name": "...", "arguments": "..." } }
+            let functionName, functionArgs
+
+            if (parsedCall.function_call) {
+              // 格式1,4
+              functionName = parsedCall.function_call.name
+              functionArgs = parsedCall.function_call.arguments
+            } else if (parsedCall.name && parsedCall.arguments !== undefined) {
+              // 格式2
+              functionName = parsedCall.name
+              functionArgs = parsedCall.arguments
+            } else if (parsedCall.function && parsedCall.function.name) {
+              // 格式3
+              functionName = parsedCall.function.name
+              functionArgs = parsedCall.function.arguments
+            } else {
+              // 当没有明确匹配时，尝试从对象中推断
+              const keys = Object.keys(parsedCall)
+              // 如果对象只有一个键，可能是嵌套的自定义格式
+              if (keys.length === 1) {
+                const firstKey = keys[0]
+                const innerObject = parsedCall[firstKey]
+
+                if (innerObject && typeof innerObject === 'object') {
+                  // 可能是一个嵌套对象，查找name和arguments字段
+                  if (innerObject.name && innerObject.arguments !== undefined) {
+                    functionName = innerObject.name
+                    functionArgs = innerObject.arguments
+                  }
+                }
+              }
+
+              // 如果仍未找到格式，记录错误
+              if (!functionName || functionArgs === undefined) {
+                console.error('Unknown function call format:', parsedCall)
+                return null
+              }
+            }
+
+            // 确保arguments是字符串形式的JSON
+            if (typeof functionArgs !== 'string') {
+              functionArgs = JSON.stringify(functionArgs)
+            }
+
             return {
-              id: parsedCall.function_call.name,
+              id: functionName,
               type: 'function',
               function: {
-                name: parsedCall.function_call.name,
-                arguments: JSON.stringify(parsedCall.function_call.arguments)
+                name: functionName,
+                arguments: functionArgs
               }
             }
           } catch (parseError) {

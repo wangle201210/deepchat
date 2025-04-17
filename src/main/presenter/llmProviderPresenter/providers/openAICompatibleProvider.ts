@@ -830,7 +830,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
       if (tagEndIndex !== -1) {
         // 找到完整的function call
-        result.completeFunctionCall = `<function_call>${result.functionCallBuffer.substring(0, tagEndIndex)}</function_call>`
+        const fullContent = result.functionCallBuffer.substring(0, tagEndIndex)
+        result.completeFunctionCall = `<function_call>${fullContent}</function_call>`
 
         // 保存标签后的内容作为普通内容
         result.pendingContent = result.functionCallBuffer.substring(
@@ -840,6 +841,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         // 重置状态
         result.isInFunctionCallTag = false
         result.functionCallBuffer = ''
+
         return result
       }
 
@@ -914,6 +916,25 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         // 确认是function_call标签
         result.isInFunctionCallTag = true
         result.functionCallBuffer = remainingContent.substring(functionCallTag.length)
+
+        // 检查是否在同一块内容中包含了完整的标签
+        const endTagPos = result.functionCallBuffer.indexOf('</function_call>')
+        if (endTagPos !== -1) {
+          // 找到完整的标签，直接处理
+          const fullContent = result.functionCallBuffer.substring(0, endTagPos)
+          result.completeFunctionCall = `<function_call>${fullContent}</function_call>`
+          result.pendingContent += result.functionCallBuffer.substring(
+            endTagPos + '</function_call>'.length
+          )
+          result.isInFunctionCallTag = false
+          result.functionCallBuffer = ''
+
+          // 调试日志
+          console.log('Complete function call found in single chunk:', result.completeFunctionCall)
+
+          return result
+        }
+
         currentPos = contentLength // 已处理完整个内容
         break
       }
@@ -949,7 +970,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         for (let i = 0; i < Math.min(functionCallTag.length, remainingContent.length); i++) {
           if (functionCallTag[i] !== remainingContent[i]) {
             isPotentialMatch = false
-
             break
           }
         }
