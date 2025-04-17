@@ -11,17 +11,35 @@ import { useChatStore } from '@/stores/chat'
 import { NOTIFICATION_EVENTS } from './events'
 import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
+import { useSettingsStore } from '@/stores/settings'
 
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
 const artifactStore = useArtifactStore()
 const chatStore = useChatStore()
 const { toast } = useToast()
+const settingsStore = useSettingsStore()
 
 // 错误通知队列及当前正在显示的错误
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
 const currentErrorId = ref<string | null>(null)
 const errorDisplayTimer = ref<number | null>(null)
+
+// 监听主题和字体大小变化，直接更新 body class
+watch(
+  [() => settingsStore.theme, () => settingsStore.fontSizeClass],
+  ([newTheme, newFontSizeClass], [oldTheme, oldFontSizeClass]) => {
+    if (oldTheme) {
+      document.documentElement.classList.remove(oldTheme)
+    }
+    if (oldFontSizeClass) {
+      document.documentElement.classList.remove(oldFontSizeClass)
+    }
+    document.documentElement.classList.add(newTheme)
+    document.documentElement.classList.add(newFontSizeClass)
+  },
+  { immediate: false } // 初始化在 onMounted 中处理
+)
 
 // 处理错误通知
 const showErrorToast = (error: { id: string; title: string; message: string; type: string }) => {
@@ -103,6 +121,10 @@ const getInitComplete = async () => {
 getInitComplete()
 
 onMounted(() => {
+  // 设置初始 body class
+  document.body.classList.add(settingsStore.theme)
+  document.body.classList.add(settingsStore.fontSizeClass)
+
   // 监听全局错误通知事件
   window.electron.ipcRenderer.on(NOTIFICATION_EVENTS.SHOW_ERROR, (_event, error) => {
     showErrorToast(error)

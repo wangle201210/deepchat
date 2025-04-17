@@ -9,6 +9,10 @@ import type { OllamaModel } from '@shared/presenter'
 import { useRouter } from 'vue-router'
 import { useMcpStore } from '@/stores/mcp'
 
+// 定义字体大小级别对应的 Tailwind 类
+const FONT_SIZE_CLASSES = ['text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl']
+const DEFAULT_FONT_SIZE_LEVEL = 1 // 对应 'text-base'
+
 export const useSettingsStore = defineStore('settings', () => {
   const configP = usePresenter('configPresenter')
   const llmP = usePresenter('llmproviderPresenter')
@@ -39,6 +43,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const searchPreviewEnabled = ref<boolean>(true) // 搜索预览是否启用，默认启用
   const contentProtectionEnabled = ref<boolean>(true) // 投屏保护是否启用，默认启用
   const isRefreshingModels = ref<boolean>(false) // 是否正在刷新模型列表
+  const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
   // Ollama 相关状态
   const ollamaRunningModels = ref<OllamaModel[]>([])
   const ollamaLocalModels = ref<OllamaModel[]>([])
@@ -223,6 +228,11 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   })
 
+  // 字体大小对应的 CSS 类
+  const fontSizeClass = computed(
+    () => FONT_SIZE_CLASSES[fontSizeLevel.value] || FONT_SIZE_CLASSES[DEFAULT_FONT_SIZE_LEVEL]
+  )
+
   // 初始化设置
   const initSettings = async () => {
     try {
@@ -237,6 +247,14 @@ export const useSettingsStore = defineStore('settings', () => {
       language.value = (await configP.getSetting('language')) || 'system'
       // 设置语言
       locale.value = await configP.getLanguage()
+
+      // 获取字体大小级别
+      fontSizeLevel.value =
+        (await configP.getSetting<number>('fontSizeLevel')) ?? DEFAULT_FONT_SIZE_LEVEL
+      // 确保级别在有效范围内
+      if (fontSizeLevel.value < 0 || fontSizeLevel.value >= FONT_SIZE_CLASSES.length) {
+        fontSizeLevel.value = DEFAULT_FONT_SIZE_LEVEL
+      }
 
       // 获取搜索预览设置
       searchPreviewEnabled.value = await configP.getSearchPreviewEnabled()
@@ -544,6 +562,15 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // 更新当前语言
     locale.value = await configP.getLanguage()
+  }
+
+  // 更新字体大小级别
+  const updateFontSizeLevel = async (level: number) => {
+    const validLevel = Math.max(0, Math.min(level, FONT_SIZE_CLASSES.length - 1))
+    if (fontSizeLevel.value !== validLevel) {
+      fontSizeLevel.value = validLevel
+      await configP.setSetting('fontSizeLevel', validLevel)
+    }
   }
 
   // 监听 provider 设置变化
@@ -1459,6 +1486,8 @@ export const useSettingsStore = defineStore('settings', () => {
     providers,
     theme,
     language,
+    fontSizeLevel, // Expose font size level
+    fontSizeClass, // Expose font size class
     enabledModels,
     allProviderModels,
     customModels,
@@ -1474,6 +1503,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateProvider,
     updateTheme,
     updateLanguage,
+    updateFontSizeLevel, // Expose update function
     initSettings,
     searchModels,
     refreshAllModels,

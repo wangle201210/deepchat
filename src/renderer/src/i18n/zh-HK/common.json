@@ -54,5 +54,6 @@
   "searchEngineSelect": "選擇搜索引擎",
   "searchPreview": "搜索預覽",
   "selectModel": "選擇模型",
-  "title": "通用設置"
+  "title": "通用設置",
+  "languageSystem": "跟隨系統"
 }

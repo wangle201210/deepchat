@@ -54,5 +54,6 @@
   "proxyModeCustom": "自訂代理伺服器",
   "customProxyUrl": "自訂代理伺服器位址",
   "customProxyUrlPlaceholder": "例如：http://127.0.0.1:7890",
-  "invalidProxyUrl": "無效的代理伺服器位址，請輸入有效的 http/https URL"
+  "invalidProxyUrl": "無效的代理伺服器位址，請輸入有效的 http/https URL",
+  "languageSystem": "跟隨系統"
 }

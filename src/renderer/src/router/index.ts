@@ -40,6 +40,15 @@ const router = createRouter({
           }
         },
         {
+          path: 'display',
+          name: 'settings-display',
+          component: () => import('@/components/settings/DisplaySettings.vue'),
+          meta: {
+            titleKey: 'routes.settings-display',
+            icon: 'lucide:monitor'
+          }
+        },
+        {
           path: 'provider/:providerId?',
           name: 'settings-provider',
           component: () => import('@/components/settings/ModelProviderSettings.vue'),

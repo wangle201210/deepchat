@@ -54,5 +54,6 @@
   "language": "language",
   "languageSelect": "Select a language",
   "selectModel": "Select a model",
-  "title": "General settings"
+  "title": "General settings",
+  "languageSystem": "Follow the system"
 }

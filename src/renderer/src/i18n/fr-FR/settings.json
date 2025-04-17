@@ -291,5 +291,13 @@
     "latestVersion": "C'est la dernière version",
     "title": "à propos de nous",
     "version": "Version"
+  },
+  "display": {
+    "fontSize": "Taille de texte",
+    "text-2xl": "Extrêmement grand",
+    "text-base": "Petit",
+    "text-lg": "défaut",
+    "text-sm": "Extrêmement petit",
+    "text-xl": "grand"
   }
 }

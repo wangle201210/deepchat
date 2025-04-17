@@ -54,5 +54,6 @@
   "proxyModeCustom": "自定义代理",
   "customProxyUrl": "自定义代理地址",
   "customProxyUrlPlaceholder": "例如: http://127.0.0.1:7890",
-  "invalidProxyUrl": "无效的代理地址，请输入有效的 http/https URL"
+  "invalidProxyUrl": "无效的代理地址，请输入有效的 http/https URL",
+  "languageSystem": "跟随系统"
 }
