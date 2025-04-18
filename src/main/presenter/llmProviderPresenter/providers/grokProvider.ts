@@ -107,7 +107,6 @@ export class GrokProvider extends OpenAICompatibleProvider {
     temperature?: number,
     maxTokens?: number
   ): AsyncGenerator<LLMResponseStream> {
-    console.log('streamCompletions in grok', messages, modelId, temperature, maxTokens)
     // 图像生成模型需要特殊处理
     if (this.isImageModel(modelId)) {
       const result = await this.handleImageGeneration(messages)
