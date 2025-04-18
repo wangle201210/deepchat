@@ -31,7 +31,7 @@
           <Slider
             :default-value="[fontSizeLevel]"
             :model-value="[fontSizeLevel]"
-            @update:model-value="(val) => (fontSizeLevel = val[0])"
+            @update:model-value="(val) => (fontSizeLevel = val?.[0] ?? 1)"
             :min="0"
             :max="4"
             :step="1"
