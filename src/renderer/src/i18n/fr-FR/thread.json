@@ -15,5 +15,10 @@
     "fork": "Fourche à une nouvelle session",
     "edit": "Modifier le message",
     "delete": "Supprimer le message"
+  },
+  "message": {
+    "toolbar": {
+      "save": "sauvegarder"
+    }
   }
 }

@@ -113,6 +113,8 @@ export class GrokProvider extends OpenAICompatibleProvider {
       yield {
         content: result.content
       }
+      // 添加短暂延迟，确保所有 RESPONSE 事件已处理完毕
+      await new Promise((resolve) => setTimeout(resolve, 300))
     } else {
       yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens)
     }

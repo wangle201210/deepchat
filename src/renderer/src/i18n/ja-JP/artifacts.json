@@ -26,5 +26,7 @@
   "unknownDocument": "不明なドキュメント",
   "preview": "プレビュー",
   "code": "コード",
-  "export": "エクスポート"
+  "export": "エクスポート",
+  "htmlPreviewTitle": "HTMLプレビュー",
+  "svgPreviewTitle": "SVGプレビュー"
 }

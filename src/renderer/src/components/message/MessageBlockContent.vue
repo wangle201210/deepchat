@@ -68,7 +68,7 @@ const props = defineProps<{
 
 const id = ref(`editor-${uuidv4()}`)
 
-const { initCodeEditors, cleanupEditors } = useCodeEditor(id.value)
+const { initCodeEditors, cleanupEditors } = useCodeEditor(id.value, props.messageId, props.threadId)
 
 const loadingCursor = ref<InstanceType<typeof LoadingCursor> | null>(null)
 const messageBlock = ref<HTMLDivElement>()

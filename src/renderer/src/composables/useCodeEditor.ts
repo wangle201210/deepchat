@@ -27,6 +27,9 @@ import { EditorState, Extension } from '@codemirror/state'
 import { anysphereThemeDark, anysphereThemeLight } from '@/lib/code.theme'
 import { useDark } from '@vueuse/core'
 import { watch } from 'vue'
+import { useArtifactStore } from '@/stores/artifact'
+import { useI18n } from 'vue-i18n'
+import { nanoid } from 'nanoid'
 
 export const editorInstances: Map<string, EditorView> = new Map()
 // 收集当前可见的编辑器ID
@@ -103,8 +106,14 @@ const getLanguageExtension = (lang: string): Extension => {
   }
 }
 
-export const useCodeEditor = (id: string) => {
+export const useCodeEditor = (
+  id: string,
+  messageId: string | undefined,
+  threadId: string | undefined
+) => {
   const isDark = useDark()
+  const artifactStore = useArtifactStore()
+  const { t } = useI18n()
 
   // 创建编辑器实例的函数
   const createEditor = (
@@ -147,6 +156,8 @@ export const useCodeEditor = (id: string) => {
   }
 
   const initCodeEditors = (status?: 'loading' | 'success' | 'error') => {
+    // Clear current editor IDs at the beginning of initialization
+    currentEditorIds.clear()
     const codeBlocks = document.querySelectorAll(`#${id} .code-block`)
 
     codeBlocks.forEach((block) => {
@@ -154,8 +165,9 @@ export const useCodeEditor = (id: string) => {
       const editorContainer = block.querySelector('.code-editor')
       const code = block.getAttribute('data-code')
       const lang = block.getAttribute('data-lang')
+      const codeHeader = block.querySelector<HTMLElement>('.code-header')
 
-      if (!editorId || !editorContainer || !code || !lang) {
+      if (!editorId || !editorContainer || !code || !lang || !codeHeader) {
         return
       }
 
@@ -167,7 +179,103 @@ export const useCodeEditor = (id: string) => {
       // 如果是 mermaid 代码块，渲染图表
       if (lang.toLowerCase() === 'mermaid' && status === 'success') {
         renderMermaidDiagram(editorContainer as HTMLElement, decodedCode, editorId)
+        // Clean up potential preview buttons if language changed to mermaid
+        const existingPreviewButton = codeHeader.querySelector(
+          'button.html-preview-btn, button.svg-preview-btn'
+        )
+        if (existingPreviewButton) {
+          removePreviewButtonAndCleanupWrapper(existingPreviewButton, codeHeader)
+        }
         return
+      }
+
+      // --- Artifact Preview Button (HTML/SVG) ---
+      // Check if it's an HTML or SVG block and rendering is complete
+      const lowerLang = lang.toLowerCase()
+      const isPreviewable = lowerLang === 'html' || lowerLang === 'svg'
+
+      if (isPreviewable && status === 'success') {
+        if (codeHeader) {
+          // Check if *any* preview button already exists
+          const existingPreviewButton = codeHeader.querySelector(
+            'button.html-preview-btn, button.svg-preview-btn'
+          )
+          if (!existingPreviewButton) {
+            // Find or create the button wrapper span
+            let buttonWrapper = codeHeader.querySelector<HTMLElement>('span.code-header-buttons')
+            if (!buttonWrapper) {
+              buttonWrapper = document.createElement('span')
+              buttonWrapper.className = 'code-header-buttons'
+              buttonWrapper.style.display = 'flex'
+              buttonWrapper.style.alignItems = 'center'
+              buttonWrapper.style.gap = '0.5rem' // 8px gap
+
+              // Move existing copy button (if direct child) into the wrapper
+              const existingCopyButton = codeHeader.querySelector<HTMLElement>(
+                ':scope > button.copy-button:not(.html-preview-btn)'
+              )
+              if (existingCopyButton) {
+                buttonWrapper.appendChild(existingCopyButton)
+              }
+              codeHeader.appendChild(buttonWrapper)
+            }
+
+            // Determine artifact type, button class, and title based on language
+            let artifactType: 'text/html' | 'image/svg+xml'
+            let buttonClass: string
+            let artifactTitle: string
+
+            if (lowerLang === 'html') {
+              artifactType = 'text/html'
+              buttonClass = 'html-preview-btn copy-button'
+              artifactTitle = t('artifacts.htmlPreviewTitle') || 'HTML Preview'
+            } else {
+              // svg
+              artifactType = 'image/svg+xml'
+              buttonClass = 'svg-preview-btn copy-button'
+              artifactTitle = t('artifacts.svgPreviewTitle') || 'SVG Preview'
+            }
+
+            // Create the preview button
+            const previewButton = document.createElement('button')
+            previewButton.className = buttonClass
+            previewButton.textContent = t('artifacts.preview')
+
+            // Add click listener
+            previewButton.onclick = () => {
+              if (messageId && threadId) {
+                artifactStore.showArtifact(
+                  {
+                    id: `temp-${lowerLang}-${nanoid()}`,
+                    type: artifactType,
+                    title: artifactTitle,
+                    content: decodedCode,
+                    status: 'loaded'
+                  },
+                  messageId,
+                  threadId
+                )
+              } else {
+                console.warn('Cannot open HTML artifact preview: messageId or threadId is missing.')
+              }
+            }
+
+            // Append the preview button to the wrapper
+            buttonWrapper.appendChild(previewButton)
+          }
+        } else {
+          console.warn('Could not find .code-header to append preview button.')
+        }
+      } else {
+        // Remove preview button if language is not previewable or status is not success
+        if (codeHeader) {
+          const existingButton = codeHeader.querySelector(
+            'button.html-preview-btn, button.svg-preview-btn'
+          )
+          if (existingButton) {
+            removePreviewButtonAndCleanupWrapper(existingButton, codeHeader)
+          }
+        }
       }
 
       // 检查是否内容与缓存相同
@@ -217,6 +325,37 @@ export const useCodeEditor = (id: string) => {
     })
     editorInstances.clear()
     codeCache.clear()
+    // Also clean up any remaining preview buttons (though should be handled by initCodeEditors)
+    document
+      .querySelectorAll(
+        `#${id} .code-header button.html-preview-btn, #${id} .code-header button.svg-preview-btn`
+      )
+      .forEach((btn) => {
+        const codeHeader = btn.closest('.code-header')
+        if (codeHeader instanceof HTMLElement) {
+          removePreviewButtonAndCleanupWrapper(btn, codeHeader)
+        }
+      })
+  }
+
+  // Helper function to remove preview button and clean up wrapper
+  const removePreviewButtonAndCleanupWrapper = (
+    buttonElement: Element,
+    headerElement: HTMLElement
+  ) => {
+    const wrapper = buttonElement.parentElement
+    buttonElement.remove()
+    if (wrapper && wrapper.classList.contains('code-header-buttons')) {
+      const remainingButtons = wrapper.querySelectorAll('button')
+      if (remainingButtons.length === 1 && remainingButtons[0].classList.contains('copy-button')) {
+        // Move copy button back and remove wrapper
+        headerElement.appendChild(remainingButtons[0])
+        wrapper.remove()
+      } else if (remainingButtons.length === 0) {
+        // Remove empty wrapper
+        wrapper.remove()
+      }
+    }
   }
 
   // 监听主题变化

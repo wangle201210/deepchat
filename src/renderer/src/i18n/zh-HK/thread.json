@@ -15,5 +15,10 @@
     "fork": "分叉到新會話",
     "edit": "編輯消息",
     "delete": "刪除消息"
+  },
+  "message": {
+    "toolbar": {
+      "save": "保存"
+    }
   }
 }

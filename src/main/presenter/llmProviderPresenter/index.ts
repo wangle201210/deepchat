@@ -346,8 +346,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       }
 
       if (!abortController.signal.aborted) {
-        // 添加短暂延迟，确保所有 RESPONSE 事件已处理完毕
-        await new Promise((resolve) => setTimeout(resolve, 100))
         eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: false })
       }
     } catch (error) {

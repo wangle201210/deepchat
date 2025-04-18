@@ -26,5 +26,7 @@
   "unknownDocument": "未知文件",
   "preview": "預覽",
   "code": "程式碼",
-  "export": "匯出"
+  "export": "匯出",
+  "htmlPreviewTitle": "HTML 預覽",
+  "svgPreviewTitle": "SVG 預覽"
 }

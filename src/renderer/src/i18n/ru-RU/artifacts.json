@@ -26,5 +26,7 @@
   "unknownDocument": "Неизвестный документ",
   "preview": "Предпросмотр",
   "code": "Код",
-  "export": "Экспорт"
+  "export": "Экспорт",
+  "htmlPreviewTitle": "HTML Предварительный просмотр",
+  "svgPreviewTitle": "Предварительный просмотр SVG"
 }

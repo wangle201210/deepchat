@@ -26,5 +26,7 @@
   "unknownDocument": "Unknown Document",
   "preview": "Preview",
   "code": "Code",
-  "export": "Export"
+  "export": "Export",
+  "htmlPreviewTitle": "HTML Preview",
+  "svgPreviewTitle": "SVG Preview"
 }
