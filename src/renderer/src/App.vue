@@ -31,6 +31,9 @@ const showErrorToast = (error: { id: string; title: string; message: string; typ
   if (existingErrorIndex === -1) {
     // 如果当前有错误正在展示，将新错误放入队列
     if (currentErrorId.value) {
+      if (errorQueue.value.length > 5) {
+        errorQueue.value.shift()
+      }
       errorQueue.value.push(error)
     } else {
       // 否则直接展示这个错误
