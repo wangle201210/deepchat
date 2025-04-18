@@ -295,9 +295,9 @@
   "display": {
     "fontSize": "Taille de texte",
     "text-2xl": "Extrêmement grand",
-    "text-base": "Petit",
-    "text-lg": "défaut",
-    "text-sm": "Extrêmement petit",
-    "text-xl": "grand"
+    "text-base": "défaut",
+    "text-lg": "grand",
+    "text-sm": "Petit",
+    "text-xl": "Extrêmement grand"
   }
 }

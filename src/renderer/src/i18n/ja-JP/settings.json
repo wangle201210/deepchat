@@ -295,9 +295,9 @@
   "display": {
     "fontSize": "テキストサイズ",
     "text-2xl": "非常に大きい",
-    "text-base": "小さい",
-    "text-lg": "デフォルト",
-    "text-sm": "非常に小さい",
-    "text-xl": "大きい"
+    "text-base": "デフォルト",
+    "text-lg": "大きい",
+    "text-sm": "小さい",
+    "text-xl": "非常に大きい"
   }
 }
