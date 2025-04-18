@@ -28,8 +28,22 @@ export class GeminiProvider extends BaseLLMProvider {
     // Gemini没有获取模型的API，返回硬编码的模型列表
     return [
       {
-        id: 'gemini-2.5-pro-exp-03-25',
-        name: 'Gemini 2.5 Pro Exp 03-05',
+        id: 'models/gemini-2.5-flash-preview-04-17',
+        name: 'Gemini 2.5 Flash Preview',
+        group: 'default',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 1048576,
+        maxTokens: 65536,
+        vision: true,
+        functionCall: true,
+        reasoning: true,
+        description:
+          'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 04-17）'
+      },
+      {
+        id: 'gemini-2.5-pro-preview-03-25',
+        name: 'Gemini 2.5 Pro Preview 03-25',
         group: 'default',
         providerId: this.provider.id,
         isCustom: false,
@@ -38,7 +52,20 @@ export class GeminiProvider extends BaseLLMProvider {
         vision: true,
         functionCall: true,
         reasoning: false,
-        description: 'Gemini 2.5 Pro Exp 03-05 模型'
+        description: 'Gemini 2.5 Pro Preview 03-25 模型（付费）'
+      },
+      {
+        id: 'gemini-2.5-pro-exp-03-25',
+        name: 'Gemini 2.5 Pro Exp 03-25',
+        group: 'default',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 2048576,
+        maxTokens: 8192,
+        vision: true,
+        functionCall: true,
+        reasoning: false,
+        description: 'Gemini 2.5 Pro Exp 03-25 模型'
       },
       {
         id: 'models/gemini-2.0-flash',
@@ -174,8 +201,22 @@ export class GeminiProvider extends BaseLLMProvider {
         // 更新 Gemini 模型列表为最新版本
         this.models = [
           {
-            id: 'gemini-2.5-pro-exp-03-25',
-            name: 'Gemini 2.5 Pro Exp 03-05',
+            id: 'models/gemini-2.5-flash-preview-04-17',
+            name: 'Gemini 2.5 Flash Preview 0417',
+            group: 'default',
+            providerId: this.provider.id,
+            isCustom: false,
+            contextLength: 1048576,
+            maxTokens: 65536,
+            vision: true,
+            functionCall: true,
+            reasoning: true,
+            description:
+              'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 04-17）'
+          },
+          {
+            id: 'gemini-2.5-pro-preview-03-25',
+            name: 'Gemini 2.5 Pro Preview 03-25',
             group: 'default',
             providerId: this.provider.id,
             isCustom: false,
@@ -184,7 +225,20 @@ export class GeminiProvider extends BaseLLMProvider {
             vision: true,
             functionCall: true,
             reasoning: false,
-            description: 'Gemini 2.5 Pro Exp 03-05 模型'
+            description: 'Gemini 2.5 Pro Preview 03-25 模型（付费)'
+          },
+          {
+            id: 'gemini-2.5-pro-exp-03-25',
+            name: 'Gemini 2.5 Pro Exp 03-25',
+            group: 'default',
+            providerId: this.provider.id,
+            isCustom: false,
+            contextLength: 2048576,
+            maxTokens: 8192,
+            vision: true,
+            functionCall: true,
+            reasoning: false,
+            description: 'Gemini 2.5 Pro Exp 03-25 模型'
           },
           {
             id: 'models/gemini-2.0-flash',
