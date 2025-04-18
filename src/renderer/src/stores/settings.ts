@@ -1482,15 +1482,7 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  // 添加重启应用方法
-  const appVersion = async () => {
-    return await upgradeP.appVersion()
-  }
-
-
-
   return {
-    appVersion,
     providers,
     theme,
     language,
