@@ -22,6 +22,7 @@ import { AnthropicProvider } from './providers/anthropicProvider'
 import { DoubaoProvider } from './providers/doubaoProvider'
 import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS } from '@/events'
+import { GrokProvider } from './providers/grokProvider'
 // 导入其他provider...
 
 // 流的状态
@@ -68,15 +69,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       this.providers.set(provider.id, provider)
       if (provider.enable) {
         try {
+          console.log('init provider', provider.id, provider.apiType)
           let instance: BaseLLMProvider
-          if (provider.apiType === 'openai') {
-            instance = new OpenAIProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'deepseek') {
+          if (provider.apiType === 'deepseek') {
             instance = new DeepseekProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'silicon' || provider.apiType === 'siliconcloud') {
             instance = new SiliconcloudProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'openai-compatible') {
-            instance = new OpenAICompatibleProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'ppio') {
             instance = new PPIOProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'gemini') {
@@ -89,6 +87,13 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
             instance = new AnthropicProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'doubao') {
             instance = new DoubaoProvider(provider, this.configPresenter)
+          } else if (provider.apiType === 'grok' || provider.id === 'grok') {
+            console.log('match grok')
+            instance = new GrokProvider(provider, this.configPresenter)
+          } else if (provider.apiType === 'openai') {
+            instance = new OpenAIProvider(provider, this.configPresenter)
+          } else if (provider.apiType === 'openai-compatible') {
+            instance = new OpenAICompatibleProvider(provider, this.configPresenter)
           } else {
             console.warn(`Unknown provider type: ${provider.apiType}`)
             continue
@@ -158,6 +163,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     if (!instance) {
       const provider = this.getProviderById(providerId)
       switch (provider.id) {
+        case 'grok':
+          instance = new GrokProvider(provider, this.configPresenter)
+          break
         case 'openai':
           instance = new OpenAIProvider(provider, this.configPresenter)
           break
@@ -282,7 +290,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
     try {
       await operation()
-      eventBus.emit(STREAM_EVENTS.END, { eventId })
+      eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: false })
     } catch (error) {
       eventBus.emit(STREAM_EVENTS.ERROR, { error: String(error), eventId })
       throw error
@@ -338,7 +346,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       }
 
       if (!abortController.signal.aborted) {
-        eventBus.emit(STREAM_EVENTS.END, { eventId })
+        // 添加短暂延迟，确保所有 RESPONSE 事件已处理完毕
+        await new Promise((resolve) => setTimeout(resolve, 100))
+        eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: false })
       }
     } catch (error) {
       console.error('Stream error:', error)

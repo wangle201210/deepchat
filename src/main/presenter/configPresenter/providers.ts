@@ -352,7 +352,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   {
     id: 'grok',
     name: 'Grok',
-    apiType: 'openai',
+    apiType: 'grok',
     apiKey: '',
     baseUrl: 'https://api.x.ai/v1',
     enable: false,

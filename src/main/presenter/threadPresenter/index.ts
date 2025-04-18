@@ -289,9 +289,7 @@ export class ThreadPresenter implements IThreadPresenter {
               }
             }
           }
-        }
-        // 处理内容
-        else if (content) {
+        } else if (content) {
           // 处理普通内容
           if (lastBlock && lastBlock.type === 'content') {
             lastBlock.content += content
@@ -330,16 +328,14 @@ export class ThreadPresenter implements IThreadPresenter {
       }
     })
     eventBus.on(STREAM_EVENTS.END, async (msg) => {
-      const { eventId } = msg
+      const { eventId, userStop } = msg
       const state = this.generatingMessages.get(eventId)
       if (state) {
         state.message.content.forEach((block) => {
           block.status = 'success'
         })
-
         // 计算completion tokens
         let completionTokens = 0
-        console.log('state.totalUsage', state.totalUsage)
         if (state.totalUsage) {
           completionTokens = state.totalUsage.completion_tokens
         } else {
@@ -363,7 +359,7 @@ export class ThreadPresenter implements IThreadPresenter {
         )
 
         // 如果没有内容块，添加错误信息
-        if (!hasContentBlock) {
+        if (!hasContentBlock && !userStop) {
           state.message.content.push({
             type: 'error',
             content: 'common.error.noModelResponse',
