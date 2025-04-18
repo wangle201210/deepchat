@@ -55,5 +55,6 @@
   "searchPreview": "Поиск предварительного просмотра",
   "selectModel": "Выберите модель",
   "title": "Общие настройки",
-  "languageSystem": "Следуйте системе"
+  "languageSystem": "Следуйте системе",
+  "watermarkTip": "Сгенерировано AI"
 }

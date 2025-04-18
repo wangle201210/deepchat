@@ -55,5 +55,6 @@
   "customProxyUrl": "사용자 정의 프록시 URL",
   "customProxyUrlPlaceholder": "예: http://127.0.0.1:7890",
   "invalidProxyUrl": "잘못된 프록시 URL, 유효한 http/https URL을 입력하세요",
-  "languageSystem": "시스템을 따르십시오"
+  "languageSystem": "시스템을 따르십시오",
+  "watermarkTip": "AI 에서 생성됨"
 }

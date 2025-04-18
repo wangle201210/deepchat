@@ -55,5 +55,6 @@
   "searchPreview": "Aperçu de la recherche",
   "selectModel": "Sélectionner un modèle",
   "title": "Paramètres généraux",
-  "languageSystem": "Suivez le système"
+  "languageSystem": "Suivez le système",
+  "watermarkTip": "Généré par AI"
 }

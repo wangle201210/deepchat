@@ -104,10 +104,12 @@ import MessageInfo from './MessageInfo.vue'
 import { useChatStore } from '@/stores/chat'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
-import { toBlob } from 'html-to-image'
+import { toCanvas } from 'html-to-image'
 import { useDark } from '@vueuse/core'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
+import { addWatermark } from '@/lib/watermark'
+
 import {
   Dialog,
   DialogContent,
@@ -117,6 +119,11 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { usePresenter } from '@/composables/usePresenter'
+
+const devicePresenter = usePresenter('devicePresenter')
+
+const appVersion = ref('')
 
 const props = defineProps<{
   message: AssistantMessage
@@ -180,10 +187,11 @@ const isSearchResult = computed(() => {
   )
 })
 
-onMounted(() => {
-  // 默认显示最后一个变体
+onMounted(async () => {
   currentVariantIndex.value = allVariants.value.length
+  appVersion.value = await devicePresenter.getAppVersion()
 })
+
 const filterDom = (node: HTMLElement) => {
   return !node.classList?.contains('message-toolbar')
 }
@@ -240,19 +248,32 @@ const handleAction = (
     }
   } else if (action === 'copyImage') {
     if (messageNode.value) {
-      toBlob(messageNode.value, {
-        quality: 1,
+      toCanvas(messageNode.value, {
         backgroundColor: isDark.value ? '#000000' : '#FFFFFF',
         filter: filterDom
-      }).then((blob) => {
-        if (blob) {
-          const rd = new FileReader()
-          rd.onloadend = () => {
-            const url = rd.result as string
-            window.api.copyImage(url)
-          }
-          rd.readAsDataURL(blob)
-        }
+      }).then((canvas) => {
+        // 添加水印
+        const canvasWithWatermark = addWatermark(
+          canvas,
+          isDark.value,
+          appVersion.value, // 添加版本号水印
+          t
+        )
+        // 转换为Blob
+        canvasWithWatermark.toBlob(
+          (blob) => {
+            if (blob) {
+              const rd = new FileReader()
+              rd.onloadend = () => {
+                const url = rd.result as string
+                window.api.copyImage(url)
+              }
+              rd.readAsDataURL(blob)
+            }
+          },
+          'image/png',
+          1
+        )
       })
     }
   } else if (action === 'fork') {
