@@ -293,6 +293,11 @@
     "latestVersion": "최신 버전"
   },
   "display": {
-    "fontSize": "텍스트 크기"
+    "fontSize": "텍스트 크기",
+    "text-2xl": "매우 큽니다",
+    "text-base": "기본",
+    "text-lg": "큰",
+    "text-sm": "작은",
+    "text-xl": "매우 큽니다"
   }
 }
