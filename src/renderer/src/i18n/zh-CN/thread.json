@@ -3,5 +3,22 @@
     "rename": "重命名",
     "delete": "删除",
     "cleanMessages": "清空消息"
+  },
+  "message": {
+    "toolbar": {
+      "save": "保存"
+    }
+  },
+  "toolbar": {
+    "save": "保存",
+    "cancel": "取消",
+    "previousVariant": "切换到上一个版本",
+    "nextVariant": "切换到下一个版本",
+    "copy": "复制回答为Markdown",
+    "copyImage": "复制为图片",
+    "retry": "重新生成",
+    "fork": "分叉到新会话",
+    "edit": "编辑消息",
+    "delete": "删除消息"
   }
 }

@@ -3,5 +3,17 @@
     "rename": "名前を変更",
     "delete": "削除",
     "cleanMessages": "メッセージをクリアします"
+  },
+  "toolbar": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "previousVariant": "前のバージョンに切り替えます",
+    "nextVariant": "次のバージョンに切り替えます",
+    "copy": "答えをマークダウンにコピーします",
+    "copyImage": "画像としてコピーします",
+    "retry": "再生",
+    "fork": "新しいセッションへのフォーク",
+    "edit": "メッセージを編集します",
+    "delete": "メッセージを削除します"
   }
 }

@@ -3,5 +3,17 @@
     "rename": "重命名",
     "delete": "刪除",
     "cleanMessages": "清空消息"
+  },
+  "toolbar": {
+    "save": "保存",
+    "cancel": "取消",
+    "previousVariant": "切換到上一個版本",
+    "nextVariant": "切換到下一個版本",
+    "copy": "複製回答為Markdown",
+    "copyImage": "複製為圖片",
+    "retry": "重新生成",
+    "fork": "分叉到新會話",
+    "edit": "編輯消息",
+    "delete": "刪除消息"
   }
 }
