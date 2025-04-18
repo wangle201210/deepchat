@@ -221,19 +221,12 @@ export class FileSystemServer {
     pattern: string,
     excludePatterns: string[] = []
   ): Promise<string[]> {
-    console.log(
-      `[searchFiles] Starting search in root: ${rootPath}, pattern: ${pattern}, exclude: ${JSON.stringify(excludePatterns)}`
-    )
     const results: string[] = []
 
     const search = async (currentPath: string) => {
-      console.log(`[searchFiles] Searching directory: ${currentPath}`)
       let entries
       try {
         entries = await fs.readdir(currentPath, { withFileTypes: true })
-        console.log(
-          `[searchFiles] Found entries in ${currentPath}: ${entries.map((e) => e.name).join(', ')}`
-        )
       } catch (error) {
         console.error(`[searchFiles] Error reading directory ${currentPath}:`, error)
         return // Skip this directory if unreadable
@@ -241,31 +234,23 @@ export class FileSystemServer {
 
       for (const entry of entries) {
         const fullPath = path.join(currentPath, entry.name)
-        console.log(`[searchFiles] Processing entry: ${fullPath}`)
 
         try {
           // 验证每个路径是否合法
           await this.validatePath(fullPath)
-          console.log(`[searchFiles] Path validated: ${fullPath}`)
 
           // 检查路径是否匹配排除模式
           const relativePath = path.relative(rootPath, fullPath)
-          console.log(`[searchFiles] Relative path: ${relativePath}`)
           const shouldExclude = excludePatterns.some((excludePattern) => {
             // 修正: 使用更适合文件和目录的 glob 模式
             const globPattern = excludePattern.includes('/')
               ? excludePattern
               : `**/${excludePattern}`
             const isMatch = minimatch(relativePath, globPattern, { dot: true, matchBase: true })
-            console.log(
-              `[searchFiles] Checking exclude pattern: "${excludePattern}" against "${relativePath}", match: ${isMatch}`
-            )
             return isMatch
           })
-          console.log(`[searchFiles] Should exclude "${fullPath}"? ${shouldExclude}`)
 
           if (shouldExclude) {
-            console.log(`[searchFiles] Excluding: ${fullPath}`)
             continue
           }
 
@@ -278,26 +263,16 @@ export class FileSystemServer {
           if (pattern.includes('*') || pattern.includes('?')) {
             // 使用 minimatch 进行通配符匹配
             isPatternMatch = minimatch(entry.name, pattern, { dot: true, nocase: true })
-            console.log(
-              `[searchFiles] Glob pattern match for "${entry.name}" with "${pattern}": ${isPatternMatch}`
-            )
           } else {
             // 否则，执行包含检查（不区分大小写）
             isPatternMatch = lowerCaseEntryName.includes(lowerCasePattern)
-            console.log(
-              `[searchFiles] Includes pattern match for "${entry.name}" with "${pattern}": ${isPatternMatch}`
-            )
           }
 
           if (isPatternMatch) {
-            console.log(`[searchFiles] Pattern matched: ${fullPath}`)
             results.push(fullPath)
-          } else {
-            console.log(`[searchFiles] Pattern not matched for: ${fullPath}`)
           }
 
           if (entry.isDirectory()) {
-            console.log(`[searchFiles] Recursing into directory: ${fullPath}`)
             await search(fullPath)
           }
         } catch (error) {
@@ -313,7 +288,6 @@ export class FileSystemServer {
     } catch (error) {
       console.error(`[searchFiles] Error during search execution starting from ${rootPath}:`, error)
     }
-    console.log(`[searchFiles] Search finished. Found results: ${JSON.stringify(results)}`)
     return results
   }
 
