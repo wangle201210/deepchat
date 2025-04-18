@@ -335,8 +335,30 @@ export const defaultModelsSettings = [
 
   // Gemini 系列模型
   {
+    id: 'models/gemini-2.5-flash-preview-04-17',
+    name: 'Gemini 2.5 Flash Preview',
+    temperature: 0.7,
+    maxTokens: 65536,
+    contextLength: 1048576,
+    match: ['models/gemini-2.5-flash-preview-04-17', 'gemini-2.5-flash-preview-04-17'],
+    vision: true,
+    functionCall: true,
+    reasoning: true
+  },
+  {
+    id: 'gemini-2.5-pro-preview-03-25',
+    name: 'Gemini 2.5 Pro Preview 03-25',
+    temperature: 0.7,
+    maxTokens: 8192,
+    contextLength: 2048576,
+    match: ['gemini-2.5-pro-preview-03-25'],
+    vision: true,
+    functionCall: true,
+    reasoning: false
+  },
+  {
     id: 'gemini-2.5-pro-exp-03-25',
-    name: 'Gemini 2.5 Pro Exp 03-05',
+    name: 'Gemini 2.5 Pro Exp 03-25',
     temperature: 0.7,
     maxTokens: 65536,
     contextLength: 2048576,
