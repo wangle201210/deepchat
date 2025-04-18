@@ -291,5 +291,13 @@
     "checkUpdate": "更新を確認",
     "checking": "確認中...",
     "latestVersion": "最新バージョン"
+  },
+  "display": {
+    "fontSize": "テキストサイズ",
+    "text-2xl": "非常に大きい",
+    "text-base": "デフォルト",
+    "text-lg": "大きい",
+    "text-sm": "小さい",
+    "text-xl": "非常に大きい"
   }
 }

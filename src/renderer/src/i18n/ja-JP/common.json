@@ -54,5 +54,6 @@
   "searchEngineSelect": "検索エンジンを選択します",
   "searchPreview": "プレビューを検索します",
   "selectModel": "モデルを選択します",
-  "title": "一般的な設定"
+  "title": "一般的な設定",
+  "languageSystem": "システムに従ってください"
 }

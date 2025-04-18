@@ -291,5 +291,13 @@
     "checkUpdate": "检查更新",
     "checking": "检查中...",
     "latestVersion": "已是最新版本"
+  },
+  "display": {
+    "fontSize": "文字大小",
+    "text-sm": "小",
+    "text-base": "默认",
+    "text-lg": "大",
+    "text-xl": "特大",
+    "text-2xl": "超大"
   }
 }

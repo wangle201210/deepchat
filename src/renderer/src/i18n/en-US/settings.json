@@ -291,5 +291,13 @@
     "checkUpdate": "Check Update",
     "checking": "Checking...",
     "latestVersion": "Latest Version"
+  },
+  "display": {
+    "fontSize": "Text size",
+    "text-2xl": "Extremely large",
+    "text-base": "Default",
+    "text-lg": "Big",
+    "text-sm": "Small",
+    "text-xl": "Large"
   }
 }
