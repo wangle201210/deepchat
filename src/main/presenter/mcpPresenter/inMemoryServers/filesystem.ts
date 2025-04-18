@@ -224,7 +224,13 @@ export class FileSystemServer {
     const results: string[] = []
 
     const search = async (currentPath: string) => {
-      const entries = await fs.readdir(currentPath, { withFileTypes: true })
+      let entries
+      try {
+        entries = await fs.readdir(currentPath, { withFileTypes: true })
+      } catch (error) {
+        console.error(`[searchFiles] Error reading directory ${currentPath}:`, error)
+        return // Skip this directory if unreadable
+      }
 
       for (const entry of entries) {
         const fullPath = path.join(currentPath, entry.name)
@@ -235,16 +241,34 @@ export class FileSystemServer {
 
           // 检查路径是否匹配排除模式
           const relativePath = path.relative(rootPath, fullPath)
-          const shouldExclude = excludePatterns.some((pattern) => {
-            const globPattern = pattern.includes('*') ? pattern : `**/${pattern}/**`
-            return minimatch(relativePath, globPattern, { dot: true })
+          const shouldExclude = excludePatterns.some((excludePattern) => {
+            // 修正: 使用更适合文件和目录的 glob 模式
+            const globPattern = excludePattern.includes('/')
+              ? excludePattern
+              : `**/${excludePattern}`
+            const isMatch = minimatch(relativePath, globPattern, { dot: true, matchBase: true })
+            return isMatch
           })
 
           if (shouldExclude) {
             continue
           }
 
-          if (entry.name.toLowerCase().includes(pattern.toLowerCase())) {
+          // 修改匹配逻辑: 检查文件名是否 *包含* 模式（不区分大小写）
+          // 或者，如果模式包含通配符，则使用 minimatch 进行匹配
+          let isPatternMatch = false
+          const lowerCaseEntryName = entry.name.toLowerCase()
+          const lowerCasePattern = pattern.toLowerCase()
+
+          if (pattern.includes('*') || pattern.includes('?')) {
+            // 使用 minimatch 进行通配符匹配
+            isPatternMatch = minimatch(entry.name, pattern, { dot: true, nocase: true })
+          } else {
+            // 否则，执行包含检查（不区分大小写）
+            isPatternMatch = lowerCaseEntryName.includes(lowerCasePattern)
+          }
+
+          if (isPatternMatch) {
             results.push(fullPath)
           }
 
@@ -253,12 +277,17 @@ export class FileSystemServer {
           }
         } catch (error) {
           // 搜索过程中跳过无效路径
+          console.error(`[searchFiles] Error processing path ${fullPath}:`, error)
           continue
         }
       }
     }
 
-    await search(rootPath)
+    try {
+      await search(rootPath)
+    } catch (error) {
+      console.error(`[searchFiles] Error during search execution starting from ${rootPath}:`, error)
+    }
     return results
   }
 

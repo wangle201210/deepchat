@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import MarkdownIt from 'markdown-it'
 import mathjax3 from 'markdown-it-mathjax3'
-
 // export const initReference = ({
 //   onClick,
 //   onHover
@@ -108,6 +107,22 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
       </div>
       <div class="code-editor"></div>
     </div>`
+  }
+
+  // Custom image rendering
+  // const defaultImageRenderer = md.renderer.rules.image; // Keep the default renderer if needed later
+  md.renderer.rules.image = (tokens, idx /*, options, env, self */) => {
+    const token = tokens[idx]
+    const src = token.attrGet('src')
+    const alt = token.content
+    const title = token.attrGet('title')
+
+    // Add the max-width style
+    let attrs = token.attrs ? token.attrs.map(([key, value]) => `${key}="${value}"`).join(' ') : ''
+    // Prepend the style attribute
+    attrs = `style="max-width: 400px;" ${attrs}`.trim()
+
+    return `<img src="${src || ''}" alt="${alt}" ${title ? `title="${title}"` : ''} ${attrs} />`
   }
 
   // Custom reference inline rule

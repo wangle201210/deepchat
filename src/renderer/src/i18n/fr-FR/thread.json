@@ -3,5 +3,17 @@
     "rename": "Renommer",
     "delete": "Supprimer",
     "cleanMessages": "Nettoyer les messages"
+  },
+  "toolbar": {
+    "save": "sauvegarder",
+    "cancel": "Annuler",
+    "previousVariant": "Passez à la version précédente",
+    "nextVariant": "Passez à la version suivante",
+    "copy": "Copiez la réponse à Markdown",
+    "copyImage": "Copier en tant qu'image",
+    "retry": "Régénérer",
+    "fork": "Fourche à une nouvelle session",
+    "edit": "Modifier le message",
+    "delete": "Supprimer le message"
   }
 }

@@ -3,5 +3,17 @@
     "rename": "이름 변경",
     "delete": "삭제",
     "cleanMessages": "메시지 정리"
+  },
+  "toolbar": {
+    "save": "구하다",
+    "cancel": "취소",
+    "previousVariant": "이전 버전으로 전환하십시오",
+    "nextVariant": "다음 버전으로 전환하십시오",
+    "copy": "Markdown에 답을 복사하십시오",
+    "copyImage": "이미지로 복사하십시오",
+    "retry": "재생",
+    "fork": "새로운 세션에 포크",
+    "edit": "메시지 편집",
+    "delete": "메시지 삭제"
   }
 }
