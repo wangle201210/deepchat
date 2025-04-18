@@ -55,5 +55,6 @@
   "searchPreview": "搜索預覽",
   "selectModel": "選擇模型",
   "title": "通用設置",
-  "languageSystem": "跟隨系統"
+  "languageSystem": "跟隨系統",
+  "watermarkTip": "AI生成內容，請謹慎參考"
 }
