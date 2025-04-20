@@ -49,6 +49,12 @@
             :conversation-id="currentThreadId"
             :block="block"
           />
+          <MessageBlockImage
+            v-else-if="block.type === 'image'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </div>
       </div>
@@ -101,6 +107,7 @@ import MessageBlockToolCall from './MessageBlockToolCall.vue'
 import MessageBlockError from './MessageBlockError.vue'
 import MessageToolbar from './MessageToolbar.vue'
 import MessageInfo from './MessageInfo.vue'
+import MessageBlockImage from './MessageBlockImage.vue'
 import { useChatStore } from '@/stores/chat'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'

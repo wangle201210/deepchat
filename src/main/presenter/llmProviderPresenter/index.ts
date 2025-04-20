@@ -263,45 +263,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return this.activeStreams.size < this.config.maxConcurrentStreams
   }
 
-  private async handleStreamOperation(
-    operation: () => Promise<void>,
-    eventId: string,
-    providerId: string,
-    modelId: string
-  ) {
-    if (!this.canStartNewStream()) {
-      throw new Error('已达到最大并发流数量限制')
-    }
-
-    if (this.activeStreams.has(eventId)) {
-      throw new Error('该事件ID已存在正在生成的流')
-    }
-
-    const provider = this.getProviderInstance(providerId)
-    const abortController = new AbortController()
-
-    // 创建新的流状态
-    const streamState: StreamState = {
-      isGenerating: true,
-      providerId,
-      modelId,
-      abortController,
-      provider
-    }
-
-    this.activeStreams.set(eventId, streamState)
-
-    try {
-      await operation()
-      eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: false })
-    } catch (error) {
-      eventBus.emit(STREAM_EVENTS.ERROR, { error: String(error), eventId })
-      throw error
-    } finally {
-      this.activeStreams.delete(eventId)
-    }
-  }
-
   async startStreamCompletion(
     providerId: string,
     initialMessages: ChatMessage[],

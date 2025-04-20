@@ -17,7 +17,6 @@ import { ConfigPresenter } from '../../configPresenter'
 import { proxyConfig } from '../../proxyConfig'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { presenter } from '@/presenter'
-import { getModelConfig } from '../modelConfigs'
 import { eventBus } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
@@ -208,6 +207,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
       const choice = chunk.choices[0]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any
       const currentContent = delta?.content || ''
 

@@ -107,7 +107,6 @@ export class GrokProvider extends OpenAICompatibleProvider {
         prompt,
         response_format: 'b64_json'
       })
-
       // 处理响应
       if (response.data && response.data.length > 0) {
         const imageData = response.data[0]
