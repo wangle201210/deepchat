@@ -1,9 +1,9 @@
 import {
   LLM_PROVIDER,
   LLMResponse,
-  LLMResponseStream,
   MODEL_META,
-  MCPToolDefinition
+  MCPToolDefinition,
+  LLMCoreStreamEvent
 } from '@shared/presenter'
 import { BaseLLMProvider, ChatMessage } from '../baseProvider'
 import OpenAI from 'openai'
@@ -19,8 +19,10 @@ import { presenter } from '@/presenter'
 import { getModelConfig } from '../modelConfigs'
 import { eventBus } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
+import { jsonrepair } from 'jsonrepair'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
+
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
   private isNoModelsApi: boolean = false
@@ -151,681 +153,633 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     return resultResp
   }
 
-  // OpenAI流式完成方法
-  protected async *openAIStreamCompletion(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    messages: any[],
-    modelId?: string,
+  // [NEW] Core stream method implementation
+  async *coreStream(
+    messages: ChatMessage[],
+    modelId: string,
     temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    if (!this.isInitialized) {
-      throw new Error('Provider not initialized')
-    }
+    maxTokens?: number,
+    mcpTools?: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
 
-    if (!modelId) {
-      throw new Error('Model ID is required')
-    }
-
-    // 获取MCP工具定义
-    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
-
-    // 获取模型配置，判断是否支持functionCall
+    const tools = mcpTools || []
     const modelConfig = getModelConfig(modelId)
-
     const supportsFunctionCall = modelConfig?.functionCall || false
-
-    // 根据是否支持functionCall处理messages
     let processedMessages = [...messages] as ChatCompletionMessageParam[]
-    if (mcpTools.length > 0 && !supportsFunctionCall) {
-      // 不支持functionCall，需要在system prompt中添加工具调用说明
-      processedMessages = this.prepareFunctionCallPrompt(processedMessages, mcpTools)
+    if (tools.length > 0 && !supportsFunctionCall) {
+      processedMessages = this.prepareFunctionCallPrompt(processedMessages, tools)
     }
-
-    const tools =
-      mcpTools.length > 0 && supportsFunctionCall
-        ? await presenter.mcpPresenter.mcpToolsToOpenAITools(mcpTools, this.provider.id)
+    const apiTools =
+      tools.length > 0 && supportsFunctionCall
+        ? await presenter.mcpPresenter.mcpToolsToOpenAITools(tools, this.provider.id)
         : undefined
-
-    // 记录已处理的工具响应ID
-    const processedToolCallIds = new Set<string>()
-
-    // 维护消息上下文
-    const conversationMessages = [...processedMessages]
-
-    // 记录是否需要继续对话
-    let needContinueConversation = false
-
-    // 添加工具调用计数
-    let toolCallCount = 0
-    const MAX_TOOL_CALLS = BaseLLMProvider.MAX_TOOL_CALLS // 最大工具调用次数限制
-
-    // 创建基本请求参数
     const requestParams: OpenAI.Chat.ChatCompletionCreateParams = {
-      messages: conversationMessages,
+      messages: processedMessages,
       model: modelId,
       stream: true,
-      temperature: temperature,
+      temperature,
       max_tokens: maxTokens
     }
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
-      if (modelId.startsWith(noTempId)) {
-        delete requestParams.temperature
-      }
+      if (modelId.startsWith(noTempId)) delete requestParams.temperature
     })
-    if (tools && tools.length > 0 && supportsFunctionCall) {
-      requestParams.tools = tools
-    }
-    // console.log('requestParams', requestParams)
-    // 启动初始流
-    let stream = await this.openai.chat.completions.create(requestParams)
+    if (apiTools && apiTools.length > 0 && supportsFunctionCall) requestParams.tools = apiTools
 
-    let hasCheckedFirstChunk = false
-    let hasReasoningContent = false
-    let buffer = '' //最终需要发送上去的buffer
+    const stream = await this.openai.chat.completions.create(requestParams)
+
+    // --- State Variables ---
+    let mainBuffer = '' // Single buffer for all text/tag content
     let isInThinkTag = false
-    let initialBuffer = '' // 用于累积开头的内容
-    const WINDOW_SIZE = 10 // 滑动窗口大小
+    let isInFunctionCallTag = false // For non-native calls
+    let functionCallBuffer = '' // 用于函数调用标签的缓冲区
 
-    // 处理不支持functionCall模型的相关变量
-    let isInFunctionCallTag = false
-    let functionCallBuffer = '' // 用于累积function_call标签内的内容
+    const tagStartMarker = '<function_call>'
+    const tagEndMarker = '</function_call>'
+    const thinkStartMarker = '<think>'
+    const thinkEndMarker = '</think>'
 
-    // 辅助函数：清理标签并返回清理后的位置
-    const cleanTag = (text: string, tag: string): { cleanedPosition: number; found: boolean } => {
-      const tagIndex = text.indexOf(tag)
-      if (tagIndex === -1) return { cleanedPosition: 0, found: false }
+    const nativeToolCalls: Record<string, { name: string; arguments: string }> = {}
+    let stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
+    let toolUseDetected = false
 
-      // 查找标签结束位置（跳过可能的空白字符）
-      let endPosition = tagIndex + tag.length
-      while (endPosition < text.length && /\s/.test(text[endPosition])) {
-        endPosition++
+    // --- Stream Processing Loop ---
+    for await (const chunk of stream) {
+      const choice = chunk.choices[0]
+      const delta = choice?.delta as any
+      const currentContent = delta?.content || ''
+
+      // 1. Handle Non-Content Events First
+      if (chunk.usage) yield { type: 'usage', usage: chunk.usage }
+      if (delta?.reasoning_content || delta?.reasoning) {
+        yield { type: 'reasoning', reasoning_content: delta.reasoning_content || delta.reasoning }
+        continue
       }
-      return { cleanedPosition: endPosition, found: true }
-    }
-
-    // 收集完整的助手响应
-    let fullAssistantResponse = ''
-    let pendingToolCalls: Array<{
-      id: string
-      function: { name: string; arguments: string }
-      type: 'function'
-      index: number
-    }> = []
-
-    const totalUsage:
-      | {
-          prompt_tokens: number
-          completion_tokens: number
-          total_tokens: number
-        }
-      | undefined = {
-      prompt_tokens: 0,
-      completion_tokens: 0,
-      total_tokens: 0
-    }
-
-    while (true) {
-      const currentUsage = {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0
-      }
-      for await (const chunk of stream) {
-        const choice = chunk.choices[0]
-        if (chunk.usage) {
-          currentUsage.prompt_tokens = chunk.usage.prompt_tokens
-          currentUsage.completion_tokens = chunk.usage.completion_tokens
-          currentUsage.total_tokens = chunk.usage.total_tokens
-        }
-        // console.log('openai chunk', choice)
-        // 原生支持function call的模型处理
-        if (
-          supportsFunctionCall &&
-          choice?.delta?.tool_calls &&
-          choice.delta.tool_calls.length > 0
-        ) {
-          // 处理原生工具调用
-          yield* this.processNativeFunctionCallChunk(choice, pendingToolCalls)
-          if (pendingToolCalls.length > 0) {
-            needContinueConversation = true
-          }
-          continue
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const delta = choice?.delta as any
-        // 处理原生 reasoning_content 格式
-        if (delta?.reasoning_content) {
-          yield {
-            reasoning_content: delta.reasoning_content
-          }
-          continue
-        }
-
-        if (delta?.reasoning) {
-          yield {
-            reasoning_content: delta.reasoning
-          }
-          continue
-        }
-
-        let content = delta?.content || ''
-
-        if (!content) continue
-
-        // 累积完整响应
-        fullAssistantResponse += content
-        // 如果模型不支持function call，检查<function_call>标签
-        if (!supportsFunctionCall && mcpTools.length > 0) {
-          const result = this.processFunctionCallTagInContent(
-            content,
-            isInFunctionCallTag,
-            functionCallBuffer
-          )
-
-          isInFunctionCallTag = result.isInFunctionCallTag
-          functionCallBuffer = result.functionCallBuffer
-
-          // 如果有需要作为普通内容发出的缓存
-          if (result.pendingContent) {
-            // console.log('check func', result.pendingContent, functionCallBuffer)
-            content = result.pendingContent
-          }
-
-          // 如果找到了完整的function call
-          if (result.completeFunctionCall) {
-            // 解析function call
-            const toolCalls = this.parseFunctionCalls(result.completeFunctionCall)
-            if (toolCalls.length > 0) {
-              // 将解析出的工具调用转换为pendingToolCalls格式
-              for (let i = 0; i < toolCalls.length; i++) {
-                const toolCall = toolCalls[i]
-                pendingToolCalls.push({
-                  id: `manual-${Date.now()}-${i}`,
-                  type: 'function',
-                  index: i,
-                  function: {
-                    name: toolCall.function.name || '',
-                    arguments: toolCall.function.arguments || '{}'
-                  }
-                })
+      if (supportsFunctionCall && delta?.tool_calls?.length > 0) {
+        toolUseDetected = true
+        for (const toolCallDelta of delta.tool_calls) {
+          const id = toolCallDelta.id
+          if (id && !nativeToolCalls[id]) {
+            nativeToolCalls[id] = { name: '', arguments: '' }
+            if (toolCallDelta.function?.name) {
+              nativeToolCalls[id].name = toolCallDelta.function.name
+              yield {
+                type: 'tool_call_start',
+                tool_call_id: id,
+                tool_call_name: toolCallDelta.function.name
               }
-
-              // 标记需要继续对话，但不中断当前流处理
-              // 从fullAssistantResponse中移除function call部分以保持响应干净
-              const functionCallContent = result.completeFunctionCall.replace(
-                /<function_call>|<\/function_call>/g,
-                ''
-              )
-              // 创建一个更安全的正则表达式来匹配完整的function call标签及其内容
-              const functionCallPattern = new RegExp(
-                `<function_call>${functionCallContent}</function_call>`,
-                'gs'
-              )
-              // 先尝试精确匹配
-              let cleanedResponse = fullAssistantResponse.replace(functionCallPattern, '')
-
-              // 如果还有残留的标签，使用更通用的模式清理
-              const openTagPattern = /<function_call>/g
-              const closeTagPattern = /<\/function_call>/g
-              cleanedResponse = cleanedResponse.replace(openTagPattern, '')
-              cleanedResponse = cleanedResponse.replace(closeTagPattern, '')
-
-              fullAssistantResponse = cleanedResponse
-
-              needContinueConversation = true
-              // 不要break，继续处理当前流
             }
           }
-          // 如果在function call标签内，不输出内容
-          if (isInFunctionCallTag) {
-            continue
-          }
-        }
-
-        // 检查是否包含 <think> 标签，这部分逻辑保持不变
-        if (!hasCheckedFirstChunk) {
-          initialBuffer += content
-          // 如果积累的内容包含了完整的 <think> 或者已经可以确定不是以 <think> 开头
           if (
-            initialBuffer.includes('<think>') ||
-            (initialBuffer.length >= 6 && !'<think>'.startsWith(initialBuffer.trimStart()))
+            id &&
+            nativeToolCalls[id] &&
+            toolCallDelta.function?.name &&
+            !nativeToolCalls[id].name
           ) {
-            hasCheckedFirstChunk = true
-            const trimmedContent = initialBuffer.trimStart()
-            hasReasoningContent = trimmedContent.includes('<think>')
-
-            // 如果不包含 <think>，直接输出累积的内容
-            if (!hasReasoningContent) {
-              yield {
-                content: initialBuffer
-              }
-              initialBuffer = ''
-            } else {
-              // 如果包含 <think>，将内容转移到主 buffer 继续处理
-              buffer = initialBuffer
-              initialBuffer = ''
-              // 立即处理 buffer 中的 think 标签
-              if (buffer.includes('<think>')) {
-                isInThinkTag = true
-                const thinkStart = buffer.indexOf('<think>')
-                if (thinkStart > 0) {
-                  yield {
-                    content: buffer.substring(0, thinkStart)
-                  }
-                }
-                const { cleanedPosition } = cleanTag(buffer, '<think>')
-                buffer = buffer.substring(cleanedPosition)
-              }
-            }
-            continue
-          } else {
-            // 继续累积内容
-            continue
-          }
-        }
-
-        // 如果没有 reasoning_content，直接返回普通内容
-        if (!hasReasoningContent) {
-          yield {
-            content: content
-          }
-          continue
-        }
-
-        // 已经在处理 reasoning_content 模式
-        if (!isInThinkTag && buffer.includes('<think>')) {
-          isInThinkTag = true
-          const thinkStart = buffer.indexOf('<think>')
-          if (thinkStart > 0) {
+            nativeToolCalls[id].name = toolCallDelta.function.name
             yield {
-              content: buffer.substring(0, thinkStart)
+              type: 'tool_call_start',
+              tool_call_id: id,
+              tool_call_name: toolCallDelta.function.name
             }
           }
-          const { cleanedPosition } = cleanTag(buffer, '<think>')
-          buffer = buffer.substring(cleanedPosition)
-        } else if (isInThinkTag) {
-          buffer += content
-          const { found: hasEndTag, cleanedPosition } = cleanTag(buffer, '</think>')
-          if (hasEndTag) {
-            const thinkEnd = buffer.indexOf('</think>')
-            if (thinkEnd > 0) {
-              yield {
-                reasoning_content: buffer.substring(0, thinkEnd)
-              }
-            }
-            buffer = buffer.substring(cleanedPosition)
-            isInThinkTag = false
-            hasReasoningContent = false
-
-            // 输出剩余的普通内容
-            if (buffer) {
-              yield {
-                content: buffer
-              }
-              buffer = ''
-            }
-          } else {
-            // 保持滑动窗口大小的 buffer 来检测结束标签
-            if (buffer.length > WINDOW_SIZE) {
-              const contentToYield = buffer.slice(0, -WINDOW_SIZE)
-              yield {
-                reasoning_content: contentToYield
-              }
-              buffer = buffer.slice(-WINDOW_SIZE)
+          if (id && nativeToolCalls[id] && toolCallDelta.function?.arguments) {
+            const argumentChunk = toolCallDelta.function.arguments
+            nativeToolCalls[id].arguments += argumentChunk
+            yield {
+              type: 'tool_call_chunk',
+              tool_call_id: id,
+              tool_call_arguments_chunk: argumentChunk
             }
           }
+        }
+        continue
+      }
+      if (choice?.finish_reason) {
+        const reasonFromAPI = choice.finish_reason
+        console.log('Finish Reason from API:', reasonFromAPI)
+        if (toolUseDetected) {
+          stopReason = 'tool_use' /* finalize native calls if needed */
+        } else if (reasonFromAPI === 'stop') stopReason = 'complete'
+        else if (reasonFromAPI === 'length') stopReason = 'max_tokens'
+        else if (reasonFromAPI === 'tool_calls') {
+          console.warn("API finish 'tool_calls', but toolUseDetected false.")
+          stopReason = 'tool_use' /* finalize native calls */
         } else {
-          // 不在任何标签中，累积内容
-          buffer += content
-          yield {
-            content: buffer
-          }
-          buffer = ''
+          console.warn(`Unhandled finish reason: ${reasonFromAPI}`)
+          stopReason = 'error'
         }
-      }
-      totalUsage.prompt_tokens += currentUsage.prompt_tokens
-      totalUsage.completion_tokens += currentUsage.completion_tokens
-      totalUsage.total_tokens += currentUsage.total_tokens
-
-      // 如果达到最大工具调用次数，则跳出循环
-      if (toolCallCount >= MAX_TOOL_CALLS) {
+        console.log('Final Stop Reason Set:', stopReason)
         break
       }
+      if (!currentContent) continue
 
-      // 如果需要处理工具调用
-      if (needContinueConversation) {
-        needContinueConversation = false
-
-        // 添加助手消息到上下文
-        conversationMessages.push({
-          role: 'assistant',
-          content: fullAssistantResponse,
-          ...(supportsFunctionCall && {
-            tool_calls: pendingToolCalls.map((tool) => ({
-              id: tool.id,
-              type: tool.type,
-              function: {
-                name: tool.function.name,
-                arguments: tool.function.arguments
-              }
-            }))
-          })
-        })
-
-        // 处理工具调用
-        for (const toolCall of pendingToolCalls) {
-          const toolCallRenderId = toolCall.id || `manual-${Date.now()}-${toolCall.index}`
-          if (processedToolCallIds.has(toolCall.id)) {
-            continue
-          }
-
-          processedToolCallIds.add(toolCall.id)
-          const mcpTool = await presenter.mcpPresenter.openAIToolsToMcpTool(
-            {
-              function: {
-                name: toolCall.function.name,
-                arguments: toolCall.function.arguments
-              }
-            },
-            this.provider.id
-          )
-          try {
-            if (!mcpTool) {
-              console.warn(`Tool not found: ${toolCall.function.name}`)
-              continue
-            }
-            // 增加工具调用计数
-            toolCallCount++
-
-            // 检查是否达到最大工具调用次数
-            if (toolCallCount >= MAX_TOOL_CALLS) {
-              yield {
-                maximum_tool_calls_reached: true,
-                tool_call_id: mcpTool.id,
-                tool_call_name: mcpTool.function.name,
-                tool_call_params: mcpTool.function.arguments,
-                tool_call_server_name: mcpTool.server.name,
-                tool_call_server_icons: mcpTool.server.icons,
-                tool_call_server_description: mcpTool.server.description
-              }
-              needContinueConversation = false
-              break
-            }
-            yield {
-              content: '',
-              tool_call: 'start',
-              tool_call_id: toolCallRenderId,
-              tool_call_name: toolCall.function.name,
-              tool_call_params: toolCall.function.arguments,
-              tool_call_server_name: mcpTool.server.name,
-              tool_call_server_icons: mcpTool.server.icons,
-              tool_call_server_description: mcpTool.server.description
-            }
-            // 调用工具
-            const toolCallResponse = await presenter.mcpPresenter.callTool(mcpTool)
-            yield {
-              content: '',
-              tool_call: 'end',
-              tool_call_id: toolCallRenderId,
-              tool_call_response: toolCallResponse.content,
-              tool_call_name: toolCall.function.name,
-              tool_call_params: toolCall.function.arguments,
-              tool_call_server_name: mcpTool.server.name,
-              tool_call_server_icons: mcpTool.server.icons,
-              tool_call_server_description: mcpTool.server.description,
-              tool_call_response_raw: toolCallResponse.rawData
-            }
-            // 将工具响应添加到消息中
-            if (supportsFunctionCall) {
-              conversationMessages.push({
-                role: 'tool',
-                content:
-                  typeof toolCallResponse.content === 'string'
-                    ? toolCallResponse.content
-                    : JSON.stringify(toolCallResponse.content),
-                tool_call_id: toolCall.id
-              })
-            } else {
-              // 获取最后一条assistant消息并将工具调用信息添加进去
-              const lastAssistantMessage = conversationMessages.findLast(
-                (message) => message.role === 'assistant'
-              )
-              if (lastAssistantMessage) {
-                // 为assistant消息添加工具调用标记
-                const toolCallInfo = `\n<function_call>
-                {
-                  "function_call":  ${JSON.stringify(
-                    {
-                      id: toolCallRenderId,
-                      name: toolCall.function.name,
-                      arguments: toolCall.function.arguments
-                    },
-                    null,
-                    2
-                  )}
-                }\n</function_call>\n`
-                if (typeof lastAssistantMessage.content === 'string') {
-                  lastAssistantMessage.content += toolCallInfo
-                }
-              }
-
-              // 检查最后一条消息是否是user角色
-              const lastMessage = conversationMessages[conversationMessages.length - 1]
-              const toolResponseContent =
-                '以下是刚刚执行的工具调用响应，请根据响应内容更新你的回答：\n' +
-                JSON.stringify({
-                  role: 'tool',
-                  content:
-                    typeof toolCallResponse.content === 'string'
-                      ? toolCallResponse.content
-                      : JSON.stringify(toolCallResponse.content),
-                  tool_call_id: toolCallRenderId
-                })
-
-              if (lastMessage && lastMessage.role === 'user') {
-                // 如果是，则将工具调用响应附加到最后一条消息
-                lastMessage.content += toolResponseContent
-              } else {
-                // 如果不是，则创建新的用户消息
-                conversationMessages.push({
-                  role: 'user',
-                  content: toolResponseContent
-                })
-              }
-            }
-          } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : '未知错误'
-            console.error(`Error calling tool ${toolCall.function.name}:`, error)
-
-            // 通知工具调用失败 - 扩展LLMResponseStream类型
-            yield {
-              content: '',
-              tool_call: 'error',
-              tool_call_id: toolCallRenderId,
-              tool_call_name: toolCall.function.name,
-              tool_call_params: toolCall.function.arguments,
-              tool_call_response: errorMessage,
-              tool_call_server_name: mcpTool?.server.name,
-              tool_call_server_icons: mcpTool?.server.icons,
-              tool_call_server_description: mcpTool?.server.description
-            }
-
-            // 添加错误响应到消息中
-            if (supportsFunctionCall) {
-              conversationMessages.push({
-                role: 'tool',
-                content: `Error: ${errorMessage}`,
-                tool_call_id: toolCall.id
-              })
-            } else {
-              conversationMessages.push({
-                role: 'user',
-                content: `tool call Error: ${errorMessage}`
-              })
-            }
-          }
-        }
-
-        // 如果达到最大工具调用次数，则跳出循环
-        if (toolCallCount >= MAX_TOOL_CALLS) {
-          break
-        }
-
-        // 重置变量，准备继续对话
-        pendingToolCalls = []
-        fullAssistantResponse = ''
-        functionCallBuffer = ''
-        isInFunctionCallTag = false
-
-        // 由于systemprompt已经处理过了，这里不需要重新处理消息
-        requestParams.messages = conversationMessages
-        // console.log('requestParams new', requestParams)
-        // 创建新的流
-        stream = await this.openai.chat.completions.create(requestParams)
-      } else {
-        // 对话结束
-        break
-      }
-    }
-
-    // 处理剩余的 buffer
-    if (initialBuffer) {
-      yield {
-        content: initialBuffer
-      }
-    }
-    if (buffer) {
-      if (isInThinkTag) {
-        yield {
-          reasoning_content: buffer
-        }
-      } else {
-        yield {
-          content: buffer
-        }
-      }
-    }
-    // 如果结束时还有未完成的function_call缓存，将其作为普通内容输出
-    if (functionCallBuffer && isInFunctionCallTag) {
-      yield {
-        content: functionCallBuffer.startsWith('<') ? functionCallBuffer : `<${functionCallBuffer}`
-      }
-    }
-    yield {
-      totalUsage: totalUsage
-    }
-  }
-
-  // 处理原生function call的chunk
-  private *processNativeFunctionCallChunk(
-    choice: {
-      delta?: {
-        tool_calls?: Array<{
-          index?: number
-          id?: string
-          type?: string
-          function?: {
-            name?: string
-            arguments?: string
-          }
-        }>
-      }
-    },
-    pendingToolCalls: Array<{
-      id: string
-      function: { name: string; arguments: string }
-      type: 'function'
-      index: number
-    }>
-  ): Generator<LLMResponseStream> {
-    // 初始化tool_calls数组（如果尚未初始化）
-    if (!pendingToolCalls) {
-      pendingToolCalls = []
-    }
-    // console.log('toolCallDelta', pendingToolCalls, choice.delta?.tool_calls)
-
-    // 更新工具调用
-    if (choice.delta?.tool_calls) {
-      for (const toolCallDelta of choice.delta.tool_calls) {
-        // 使用索引作为主要标识符
-        const indexKey = toolCallDelta.index !== undefined ? toolCallDelta.index : 0
-        const existingToolCall = pendingToolCalls.find(
-          (tc) => tc.index === indexKey || (tc.id && tc.id === toolCallDelta.id)
+      // 2. 处理不支持function call的模型
+      if (!supportsFunctionCall && tools.length > 0) {
+        // 解析function call标签
+        const tagResult = this.processFunctionCallTagInContent(
+          currentContent,
+          isInFunctionCallTag,
+          functionCallBuffer
         )
 
-        if (existingToolCall) {
-          // 更新现有工具调用
-          if (toolCallDelta.id && !existingToolCall.id) {
-            existingToolCall.id = toolCallDelta.id
-          }
+        // 更新状态
+        isInFunctionCallTag = tagResult.isInFunctionCallTag
+        functionCallBuffer = tagResult.functionCallBuffer
 
-          if (toolCallDelta.type && !existingToolCall.type) {
-            existingToolCall.type = 'function'
-          }
+        // 如果有完整的function call
+        if (tagResult.completeFunctionCall) {
+          const handleResult = this.handleCompletedFunctionCall(
+            tagResult.completeFunctionCall,
+            'non-native'
+          )
 
-          if (toolCallDelta.function) {
-            if (toolCallDelta.function.name && !existingToolCall.function.name) {
-              existingToolCall.function.name = toolCallDelta.function.name
+          if (handleResult.modified) {
+            toolUseDetected = true
+            for (const parsedCall of handleResult.toolCalls) {
+              yield {
+                type: 'tool_call_start',
+                tool_call_id: parsedCall.id,
+                tool_call_name: parsedCall.function.name
+              }
+              yield {
+                type: 'tool_call_chunk',
+                tool_call_id: parsedCall.id,
+                tool_call_arguments_chunk: parsedCall.function.arguments
+              }
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: parsedCall.id,
+                tool_call_arguments_complete: parsedCall.function.arguments
+              }
+            }
+          }
+        }
+
+        // 如果有普通内容需要输出
+        if (tagResult.pendingContent) {
+          mainBuffer += tagResult.pendingContent
+        }
+
+        // 如果在函数调用标签内，继续等待更多内容
+        if (isInFunctionCallTag) {
+          continue
+        }
+      } else {
+        // 3. 默认情况，直接添加到主缓冲区
+        mainBuffer += currentContent
+      }
+
+      // 4. Process Buffer Iteratively for Tags and Text
+      let bufferChanged = true
+      while (bufferChanged) {
+        bufferChanged = false // Assume no changes in this pass
+
+        if (isInFunctionCallTag) {
+          // --- Currently INSIDE a function call tag ---
+          const endTagIndex = mainBuffer.indexOf(tagEndMarker)
+          if (endTagIndex !== -1) {
+            // Found the end!
+            const callContent = mainBuffer.substring(0, endTagIndex)
+            const remainingAfterTag = mainBuffer.substring(endTagIndex + tagEndMarker.length)
+
+            console.log('>>> Function call completed. Content:', callContent)
+            toolUseDetected = true
+            console.log('>>> Set toolUseDetected = true')
+
+            const fullTagForParsing = `${tagStartMarker}${callContent}${tagEndMarker}`
+            const parsedCalls = this.parseFunctionCalls(
+              fullTagForParsing,
+              `non-native-${this.provider.id}`
+            )
+            for (const parsedCall of parsedCalls) {
+              yield {
+                type: 'tool_call_start',
+                tool_call_id: parsedCall.id,
+                tool_call_name: parsedCall.function.name
+              }
+              yield {
+                type: 'tool_call_chunk',
+                tool_call_id: parsedCall.id,
+                tool_call_arguments_chunk: parsedCall.function.arguments
+              }
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: parsedCall.id,
+                tool_call_arguments_complete: parsedCall.function.arguments
+              }
             }
 
-            if (toolCallDelta.function.arguments) {
-              existingToolCall.function.arguments += toolCallDelta.function.arguments
+            isInFunctionCallTag = false // Exit tag state
+            mainBuffer = remainingAfterTag // Update buffer with remaining content
+            bufferChanged = true // Buffer was modified, loop again
+          } else {
+            // End tag not found yet, buffer contains only partial tag content.
+            // Do nothing, wait for more chunks. Loop will naturally end.
+          }
+        } else if (isInThinkTag) {
+          // --- Currently INSIDE a think tag ---
+          const thinkEndIndex = mainBuffer.indexOf(thinkEndMarker)
+          if (thinkEndIndex !== -1) {
+            // Found the end!
+            const reasoningContent = mainBuffer.substring(0, thinkEndIndex)
+            const remainingAfterTag = mainBuffer.substring(thinkEndIndex + thinkEndMarker.length)
+
+            if (reasoningContent) {
+              yield { type: 'reasoning', reasoning_content: reasoningContent }
             }
+            isInThinkTag = false // Exit tag state
+            mainBuffer = remainingAfterTag // Update buffer
+            bufferChanged = true // Loop again
+          } else {
+            // End tag not found yet.
+            // Do nothing, wait for more chunks.
           }
         } else {
-          // 添加新的工具调用
-          pendingToolCalls.push({
-            id: toolCallDelta.id || '',
-            type: 'function',
-            index: indexKey,
-            function: {
-              name: toolCallDelta.function?.name || '',
-              arguments: toolCallDelta.function?.arguments || ''
+          // --- Currently OUTSIDE any known tag ---
+          // Find the *first* occurrence of any start tag
+          const funcStartIndex =
+            !supportsFunctionCall && tools.length > 0 ? mainBuffer.indexOf(tagStartMarker) : -1
+          const thinkStartIndex = mainBuffer.indexOf(thinkStartMarker)
+
+          let firstTagIndex = -1
+          let isFuncTag = false
+          let isThinkTag = false
+
+          if (
+            funcStartIndex !== -1 &&
+            (thinkStartIndex === -1 || funcStartIndex < thinkStartIndex)
+          ) {
+            firstTagIndex = funcStartIndex
+            isFuncTag = true
+          } else if (thinkStartIndex !== -1) {
+            firstTagIndex = thinkStartIndex
+            isThinkTag = true
+          }
+
+          if (firstTagIndex !== -1) {
+            // Found a start tag
+            const textBefore = mainBuffer.substring(0, firstTagIndex)
+            if (textBefore) {
+              yield { type: 'text', content: textBefore } // Yield text before the tag
             }
-          })
-        }
+
+            if (isFuncTag) {
+              isInFunctionCallTag = true
+              mainBuffer = mainBuffer.substring(firstTagIndex + tagStartMarker.length) // Keep content after start tag
+            } else if (isThinkTag) {
+              isInThinkTag = true
+              const { cleanedPosition } = this.cleanTag(mainBuffer, thinkStartMarker) // Use cleanTag to handle potential whitespace
+              mainBuffer = mainBuffer.substring(cleanedPosition) // Keep content after clean start tag
+            }
+            bufferChanged = true // State changed, loop again
+          } else {
+            // No start tags found in the current buffer. Yield the entire buffer as text.
+            if (mainBuffer) {
+              yield { type: 'text', content: mainBuffer }
+              mainBuffer = '' // Clear buffer after yielding
+              // bufferChanged remains false, loop will end.
+            }
+          }
+        } // End of state check (inFunc, inThink, outside)
+      } // End while(bufferChanged)
+    } // End for await...of stream
+
+    // --- Finalization ---
+    // Yield any remaining buffer content (could be partial tags or text)
+    if (mainBuffer) {
+      console.warn('Finalizing with non-empty buffer:', mainBuffer)
+      if (isInFunctionCallTag) {
+        console.warn('Buffer likely contains partial function call content.')
+        yield { type: 'text', content: mainBuffer } // Yield as text
+      } else if (isInThinkTag) {
+        yield { type: 'reasoning', reasoning_content: mainBuffer } // Yield remaining reasoning
+      } else {
+        yield { type: 'text', content: mainBuffer } // Yield remaining text
       }
     }
 
-    // 通知工具调用更新
-    yield {
-      content: '' // 提供一个空内容以符合LLMResponseStream类型
+    // Handle unterminated function call buffer
+    if (functionCallBuffer) {
+      console.warn('Finalizing with non-empty function call buffer:', functionCallBuffer)
+      yield { type: 'text', content: functionCallBuffer }
     }
+
+    // Log state warnings
+    if (isInFunctionCallTag)
+      console.warn('Stream ended while still inside <function_call> tag state.')
+    if (isInThinkTag) console.warn('Stream ended while still inside <think> tag state.')
+
+    yield { type: 'stop', stop_reason: stopReason }
   }
 
-  // 在消息中添加function call提示
+  // ... [prepareFunctionCallPrompt remains unchanged] ...
   private prepareFunctionCallPrompt(
     messages: ChatCompletionMessageParam[],
     mcpTools: MCPToolDefinition[]
   ): ChatCompletionMessageParam[] {
-    // 创建新的消息数组
-    const result = [...messages]
+    // 创建消息副本而不是直接修改原始消息
+    const result = messages.map((message) => ({ ...message }))
 
-    // 获取function call的提示
     const functionCallPrompt = this.getFunctionCallWrapPrompt(mcpTools)
-
     const userMessage = result.findLast((message) => message.role === 'user')
+
     if (userMessage?.role === 'user') {
-      // result.push(userMessage)
       if (Array.isArray(userMessage.content)) {
+        // 创建content数组的深拷贝
+        userMessage.content = [...userMessage.content]
         const firstTextIndex = userMessage.content.findIndex((content) => content.type === 'text')
         if (firstTextIndex !== -1) {
-          userMessage.content[firstTextIndex] = {
-            text: `${functionCallPrompt}\n\n${(userMessage.content[firstTextIndex] as ChatCompletionContentPartText).text}`,
-            type: 'text'
-          }
+          // 创建文本内容的副本
+          const textContent = {
+            ...userMessage.content[firstTextIndex]
+          } as ChatCompletionContentPartText
+          textContent.text = `${functionCallPrompt}\n\n${(userMessage.content[firstTextIndex] as ChatCompletionContentPartText).text}`
+          userMessage.content[firstTextIndex] = textContent
         }
       } else {
         userMessage.content = `${functionCallPrompt}\n\n${userMessage.content}`
       }
     }
-
     return result
   }
 
-  // 处理内容中的function call标签
+  // Updated parseFunctionCalls signature and implementation
+  protected parseFunctionCalls(
+    response: string,
+    // Pass a prefix for creating fallback IDs
+    fallbackIdPrefix: string = 'tool-call'
+  ): Array<{ id: string; type: string; function: { name: string; arguments: string } }> {
+    try {
+      // 使用非贪婪模式匹配function_call标签对，能够处理多行内容
+      const functionCallMatches = response.match(/<function_call>([\s\S]*?)<\/function_call>/gs)
+      if (!functionCallMatches) {
+        return []
+      }
+      const toolCalls = functionCallMatches
+        .map((match, index) => {
+          // Add index for unique fallback ID generation
+          const content = match.replace(/<\/?function_call>/g, '').trim() // Fixed regex escaping
+          try {
+            let parsedCall
+            try {
+              // Attempt standard JSON parse first
+              parsedCall = JSON.parse(content)
+            } catch (initialParseError) {
+              console.warn('Standard JSON parse failed, attempting jsonrepair for:', content)
+              try {
+                // Fallback to jsonrepair for robustness
+                parsedCall = JSON.parse(jsonrepair(content))
+              } catch (repairError) {
+                console.error(
+                  'Failed to parse function call content even with jsonrepair:',
+                  repairError,
+                  content
+                )
+                return null // Skip this malformed call
+              }
+            }
+
+            // Extract name and arguments, handling various potential structures
+            let functionName, functionArgs
+            if (parsedCall.function_call && typeof parsedCall.function_call === 'object') {
+              functionName = parsedCall.function_call.name
+              functionArgs = parsedCall.function_call.arguments
+            } else if (parsedCall.name && parsedCall.arguments !== undefined) {
+              functionName = parsedCall.name
+              functionArgs = parsedCall.arguments
+            } else if (
+              parsedCall.function &&
+              typeof parsedCall.function === 'object' &&
+              parsedCall.function.name
+            ) {
+              functionName = parsedCall.function.name
+              functionArgs = parsedCall.function.arguments
+            } else {
+              // Attempt to find the function call structure if nested under a single key
+              // (e.g., Groq Llama3 tool use format)
+              const keys = Object.keys(parsedCall)
+              if (keys.length === 1) {
+                const potentialToolCall = parsedCall[keys[0]]
+                if (potentialToolCall && typeof potentialToolCall === 'object') {
+                  if (potentialToolCall.name && potentialToolCall.arguments !== undefined) {
+                    functionName = potentialToolCall.name
+                    functionArgs = potentialToolCall.arguments
+                  } else if (
+                    potentialToolCall.function &&
+                    typeof potentialToolCall.function === 'object' &&
+                    potentialToolCall.function.name
+                  ) {
+                    // Handle nested function object like { "tool_name": { function: { name: "...", args: "..." } } }
+                    functionName = potentialToolCall.function.name
+                    functionArgs = potentialToolCall.function.arguments
+                  }
+                }
+              }
+
+              // If still not found, log an error
+              if (!functionName) {
+                console.error('Could not determine function name from parsed call:', parsedCall)
+                return null
+              }
+            }
+
+            // Ensure arguments are stringified if they are not already
+            if (typeof functionArgs !== 'string') {
+              try {
+                functionArgs = JSON.stringify(functionArgs)
+              } catch (stringifyError) {
+                console.error(
+                  'Failed to stringify function arguments:',
+                  stringifyError,
+                  functionArgs
+                )
+                // Decide how to handle: return null, or use a placeholder? Using placeholder for now.
+                functionArgs = '{"error": "failed to stringify arguments"}' // Corrected unnecessary escapes
+              }
+            }
+
+            // Generate a unique ID if not provided in the parsed content
+            const id = parsedCall.id || functionName || `${fallbackIdPrefix}-${index}-${Date.now()}`
+
+            return {
+              id: String(id), // Ensure ID is string
+              type: 'function', // Standardize type
+              function: {
+                name: String(functionName), // Ensure name is string
+                arguments: functionArgs // Already ensured string
+              }
+            }
+          } catch (processingError) {
+            // Catch errors during the extraction/validation logic
+            console.error('Error processing parsed function call JSON:', processingError, content)
+            return null // Skip this call on error
+          }
+        })
+        .filter(
+          (
+            call
+          ): call is { id: string; type: string; function: { name: string; arguments: string } } => // Type guard ensures correct structure
+            call !== null &&
+            typeof call.id === 'string' &&
+            typeof call.function === 'object' &&
+            call.function !== null &&
+            typeof call.function.name === 'string' &&
+            typeof call.function.arguments === 'string'
+        )
+
+      return toolCalls
+    } catch (error) {
+      console.error('Unexpected error during parseFunctionCalls execution:', error)
+      return [] // Return empty array on unexpected errors
+    }
+  }
+
+  // ... [cleanTag remains unchanged] ...
+  private cleanTag(text: string, tag: string): { cleanedPosition: number; found: boolean } {
+    const tagIndex = text.indexOf(tag)
+    if (tagIndex === -1) return { cleanedPosition: 0, found: false }
+    let endPosition = tagIndex + tag.length
+    while (endPosition < text.length && /\s/.test(text[endPosition])) {
+      endPosition++
+    }
+    return { cleanedPosition: endPosition, found: true }
+  }
+
+  // ... [check, summaryTitles, completions, summaries, generateText, suggestions remain unchanged] ...
+  public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
+    try {
+      if (!this.isNoModelsApi) {
+        // Use a reasonable timeout
+        const models = await this.fetchOpenAIModels({ timeout: 5000 }) // Increased timeout slightly
+        this.models = models // Store fetched models
+      }
+      // Potentially add a simple API call test here if needed, e.g., list models even for no-API list to check key/endpoint
+      return { isOk: true, errorMsg: null }
+    } catch (error: unknown) {
+      // Use unknown for type safety
+      let errorMessage = 'An unknown error occurred during provider check.'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      // Optionally log the full error object for debugging
+      console.error('OpenAICompatibleProvider check failed:', error)
+
+      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+        title: 'API Check Failed', // More specific title
+        message: errorMessage,
+        id: `openai-check-error-${Date.now()}`,
+        type: 'error'
+      })
+      return { isOk: false, errorMsg: errorMessage }
+    }
+  }
+  public async summaryTitles(messages: ChatMessage[], modelId: string): Promise<string> {
+    const systemPrompt = `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols`
+    const fullMessage: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: messages.map((m) => `${m.role}: ${m.content}`).join('\n') }
+    ]
+    const response = await this.openAICompletion(fullMessage, modelId, 0.5)
+    return response.content.replace(/["']/g, '').trim()
+  }
+  async completions(
+    messages: ChatMessage[],
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number
+  ): Promise<LLMResponse> {
+    // Simple completion, no specific system prompt needed unless required by base class or future design
+    return this.openAICompletion(this.formatMessages(messages), modelId, temperature, maxTokens)
+  }
+  async summaries(
+    text: string,
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number
+  ): Promise<LLMResponse> {
+    const systemPrompt = `Summarize the following text concisely:`
+    // Create messages based on the input text
+    const requestMessages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: text } // Use the input text directly
+    ]
+    return this.openAICompletion(requestMessages, modelId, temperature, maxTokens)
+  }
+  async generateText(
+    prompt: string,
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number
+  ): Promise<LLMResponse> {
+    // Use the prompt directly as the user message content
+    const requestMessages: ChatMessage[] = [{ role: 'user', content: prompt }]
+    // Note: formatMessages might not be needed here if it's just a single prompt string,
+    // but keeping it for consistency in case formatMessages adds system prompts or other logic.
+    return this.openAICompletion(
+      this.formatMessages(requestMessages),
+      modelId,
+      temperature,
+      maxTokens
+    )
+  }
+  async suggestions(
+    messages: ChatMessage[],
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number
+  ): Promise<string[]> {
+    const systemPrompt = `Based on the last user message in the conversation history, provide 3 brief, relevant follow-up suggestions or questions. Output ONLY the suggestions, each on a new line. Do not include numbering, bullet points, or introductory text like "Here are some suggestions:".`
+    const lastUserMessage = messages.filter((m) => m.role === 'user').pop() // Get the most recent user message
+
+    if (!lastUserMessage) {
+      console.warn('suggestions called without user messages.')
+      return [] // Return empty array if no user message found
+    }
+
+    // Provide some context if possible, e.g., last few messages
+    const contextMessages = messages.slice(-5) // Last 5 messages as context
+
+    const requestMessages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      // Include context leading up to the last user message
+      ...this.formatMessages(contextMessages)
+    ]
+
+    try {
+      const response = await this.openAICompletion(
+        requestMessages,
+        modelId,
+        temperature ?? 0.7,
+        maxTokens ?? 60
+      ) // Adjusted temp/tokens
+      // Split, trim, and filter results robustly
+      return response.content
+        .split('\n')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.match(/^[0-9.\-*\s]*/)) // Fixed regex range
+    } catch (error) {
+      console.error('Failed to get suggestions:', error)
+      return [] // Return empty on error
+    }
+  }
+
+  // Implement streamCompletions using coreStream
+  async *streamCompletions(
+    messages: ChatMessage[],
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number,
+    mcpTools?: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    // Ensure messages are formatted if needed by coreStream or the API call within it
+    const formattedMessages = this.formatMessages(messages)
+    yield* this.coreStream(formattedMessages, modelId, temperature, maxTokens, mcpTools)
+  }
+
   private processFunctionCallTagInContent(
     content: string,
     isInFunctionCallTag: boolean,
@@ -848,11 +802,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // 已经在标签内，继续累积内容
       result.functionCallBuffer += content
 
-      // 检查buffer中是否包含有效的<function_call>开始
-      const tagPrefix = '<function_call>'
-      const lastLessThanIndex = result.functionCallBuffer.lastIndexOf('<')
-
-      // 检查结束标签
+      // 检查结束标签 - 使用[\s\S]*?匹配多行内容
       const tagEndIndex = result.functionCallBuffer.indexOf('</function_call>')
 
       if (tagEndIndex !== -1) {
@@ -872,305 +822,103 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         return result
       }
 
-      // 如果没有结束标签，检查是否是有效的开始标签内容
-      // 如果没有<字符，或者<字符后面没有内容，则继续等待
-      if (lastLessThanIndex === -1 || lastLessThanIndex === result.functionCallBuffer.length - 1) {
-        return result
-      }
-
-      // 检查<字符后面的内容是否匹配function_call标签，需要排除结束标签的可能
-      const afterLessThan = result.functionCallBuffer.substring(lastLessThanIndex)
-
-      // 如果是结束标签格式，即 </function_call>，则继续等待更多内容
-      if (afterLessThan.startsWith('</')) {
-        return result
-      }
-
-      // 检查是否完全匹配<function_call>标签开头部分
-      let isValidStart = true
-      // 只比较共同存在的字符数，避免越界
-      const compareLength = Math.min(afterLessThan.length, tagPrefix.length)
-
-      for (let i = 0; i < compareLength; i++) {
-        if (afterLessThan[i] !== tagPrefix[i]) {
-          isValidStart = false
-          break
-        }
-      }
-
-      // 即使当前字符都匹配，但如果afterLessThan比tagPrefix长，且包含了非标签部分，也需要判断
-      // 例如"<function_call>xyz"，此时应该继续保持在标签内，因为标签已经完整匹配了
-      if (isValidStart && afterLessThan.length > tagPrefix.length) {
-        // 如果已经完整匹配了标签开头，保持标签模式
-        isValidStart = true
-      }
-
-      // 如果不是有效开始，将内容作为普通文本处理
-      if (!isValidStart) {
-        result.pendingContent = result.functionCallBuffer
-        result.isInFunctionCallTag = false
-        result.functionCallBuffer = ''
-        return result
-      }
-
-      // 我们这里已经检查过结束标签了，不需要再次检查
+      // 如果没有结束标签，继续等待更多内容
       return result
     }
 
-    // 不在标签内，首先检查是否有"<"字符
-    let currentPos = 0
-    const contentLength = content.length
+    // 不在标签内，检查是否有开始标签
+    const tagStartIndex = content.indexOf('<function_call>')
 
-    while (currentPos < contentLength) {
-      // 查找下一个"<"字符
-      const lessThanPos = content.indexOf('<', currentPos)
+    if (tagStartIndex !== -1) {
+      // 找到开始标签
+      // 将标签前的内容作为普通文本
+      result.pendingContent = content.substring(0, tagStartIndex)
 
-      // 如果没有找到"<"，将剩余内容作为普通内容
-      if (lessThanPos === -1) {
-        result.pendingContent += content.substring(currentPos)
-        break
-      }
+      // 提取标签开始后的内容
+      const afterTagStart = content.substring(tagStartIndex + '<function_call>'.length)
 
-      // 将"<"之前的内容作为普通内容
-      result.pendingContent += content.substring(currentPos, lessThanPos)
+      // 检查是否在同一块内容中就包含了结束标签
+      const tagEndIndex = afterTagStart.indexOf('</function_call>')
 
-      // 检查是否可能是<function_call>标签的开始
-      const remainingContent = content.substring(lessThanPos)
-      const functionCallTag = '<function_call>'
+      if (tagEndIndex !== -1) {
+        // 找到完整的function call
+        const callContent = afterTagStart.substring(0, tagEndIndex)
+        result.completeFunctionCall = `<function_call>${callContent}</function_call>`
 
-      // 如果剩余内容以<function_call>开头
-      if (remainingContent.startsWith(functionCallTag)) {
-        // 确认是function_call标签
+        // 添加标签后的内容到普通文本
+        result.pendingContent += afterTagStart.substring(tagEndIndex + '</function_call>'.length)
+
+        // 不需要更新标签状态，因为完整处理了
+        return result
+      } else {
+        // 只有开始标签，没有结束标签
         result.isInFunctionCallTag = true
-        result.functionCallBuffer = remainingContent.substring(functionCallTag.length)
-
-        // 检查是否在同一块内容中包含了完整的标签
-        const endTagPos = result.functionCallBuffer.indexOf('</function_call>')
-        if (endTagPos !== -1) {
-          // 找到完整的标签，直接处理
-          const fullContent = result.functionCallBuffer.substring(0, endTagPos)
-          result.completeFunctionCall = `<function_call>${fullContent}</function_call>`
-          result.pendingContent += result.functionCallBuffer.substring(
-            endTagPos + '</function_call>'.length
-          )
-          result.isInFunctionCallTag = false
-          result.functionCallBuffer = ''
-
-          // 调试日志
-          console.log('Complete function call found in single chunk:', result.completeFunctionCall)
-
-          return result
-        }
-
-        currentPos = contentLength // 已处理完整个内容
-        break
-      }
-      // 如果剩余内容可能是<function_call>的一部分（比如只有"<func"）
-      else if (functionCallTag.startsWith(remainingContent)) {
-        // 可能是不完整的函数调用标签开始，缓存起来等待下一个chunk
-        result.functionCallBuffer = remainingContent
-        result.isInFunctionCallTag = true
-        currentPos = contentLength // 已处理完整个内容
-        break
-      }
-      // 如果部分匹配<function_call>的开头
-      else if (remainingContent.length < functionCallTag.length) {
-        const partialTag = remainingContent
-
-        if (functionCallTag.startsWith(partialTag)) {
-          // 可能是不完整的标签开始，缓存起来等待下一个chunk
-          result.functionCallBuffer = partialTag
-          result.isInFunctionCallTag = true
-          currentPos = contentLength // 已处理完整个内容
-          break
-        } else {
-          // 不是标签开始，作为普通内容处理
-          result.pendingContent += partialTag
-          currentPos = contentLength
-          break
-        }
-      }
-      // 如果以<开头但不是<function_call>
-      else {
-        // 检查是否部分匹配
-        let isPotentialMatch = true
-        for (let i = 0; i < Math.min(functionCallTag.length, remainingContent.length); i++) {
-          if (functionCallTag[i] !== remainingContent[i]) {
-            isPotentialMatch = false
-            break
-          }
-        }
-
-        if (isPotentialMatch && remainingContent.length < functionCallTag.length) {
-          // 可能是不完整的标签，缓存并等待
-          result.functionCallBuffer = remainingContent
-          result.isInFunctionCallTag = true
-          currentPos = contentLength
-          break
-        } else {
-          // 不是标签，继续处理
-          result.pendingContent += '<'
-          currentPos = lessThanPos + 1
-        }
+        result.functionCallBuffer = afterTagStart
+        return result
       }
     }
 
+    // 检查是否包含不完整的开始标签（例如只包含"<func"）
+    const lessThanIndex = content.lastIndexOf('<')
+    if (lessThanIndex !== -1 && lessThanIndex <= content.length - 1) {
+      // 确保有字符跟在<后面
+      const afterLessThan = content.substring(lessThanIndex)
+      const tagPrefix = '<function_call>'
+      console.log('afterLessThan', afterLessThan, tagPrefix)
+      // 检查是否是function_call标签的部分开始
+      if (tagPrefix.startsWith(afterLessThan)) {
+        // 将前面部分作为普通内容输出
+        result.pendingContent = content.substring(0, lessThanIndex)
+
+        // 将不完整标签保存到buffer等待下一个chunk
+        result.functionCallBuffer = afterLessThan
+        result.isInFunctionCallTag = true
+        return result
+      }
+    }
+
+    // 如果没有找到任何相关标签，整个内容作为普通文本
+    result.pendingContent = content
     return result
   }
 
-  // 实现BaseLLMProvider的抽象方法
-  public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
-    try {
-      if (!this.isNoModelsApi) {
-        const models = await this.fetchOpenAIModels({
-          timeout: 3000
-        })
-        this.models = models
-        // 避免在这里触发事件，而是通过ConfigPresenter来管理模型更新
-      }
-      return {
-        isOk: true,
-        errorMsg: null
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
-        title: 'API错误',
-        message: error?.message,
-        id: `openai-error-${Date.now()}`,
-        type: 'error'
-      })
-      return {
-        isOk: false,
-        errorMsg: error?.message
-      }
+  // 处理function call完成事件
+  private handleCompletedFunctionCall(
+    functionCallContent: string,
+    fallbackIdPrefix: string = 'non-native'
+  ): {
+    toolCalls: Array<{ id: string; type: string; function: { name: string; arguments: string } }>
+    modified: boolean
+  } {
+    const result = {
+      toolCalls: [] as Array<{
+        id: string
+        type: string
+        function: { name: string; arguments: string }
+      }>,
+      modified: false
     }
-  }
 
-  public async summaryTitles(messages: ChatMessage[], modelId: string): Promise<string> {
-    const systemPrompt = `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols`
-    const fullMessage: ChatMessage[] = [
-      {
-        role: 'system',
-        content: systemPrompt
-      },
-      { role: 'user', content: messages.map((m) => `${m.role}: ${m.content}`).join('\n') }
-    ]
-    const response = await this.openAICompletion(fullMessage, modelId, 0.5)
-    return response.content
-  }
+    if (!functionCallContent) {
+      return result
+    }
 
-  async completions(
-    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<LLMResponse> {
-    return this.openAICompletion(messages, modelId, temperature, maxTokens)
-  }
+    try {
+      // 解析function calls
+      const parsedCalls = this.parseFunctionCalls(
+        functionCallContent,
+        `${fallbackIdPrefix}-${this.provider.id}`
+      )
 
-  async summaries(
-    text: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<LLMResponse> {
-    return this.openAICompletion(
-      [
-        {
-          role: 'user',
-          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-  }
+      if (parsedCalls && parsedCalls.length > 0) {
+        result.toolCalls = parsedCalls
+        result.modified = true
+      }
 
-  async generateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<LLMResponse> {
-    return this.openAICompletion(
-      [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-  }
-
-  async suggestions(
-    context: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<string[]> {
-    const response = await this.openAICompletion(
-      [
-        {
-          role: 'user',
-          content: `基于以下上下文，给出3个可能的回复建议，每个建议一行：\n${context}`
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-    return response.content.split('\n').filter((line) => line.trim().length > 0)
-  }
-
-  async *streamCompletions(
-    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens)
-  }
-
-  async *streamSummaries(
-    text: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    yield* this.openAIStreamCompletion(
-      [
-        {
-          role: 'user',
-          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-  }
-
-  async *streamGenerateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    yield* this.openAIStreamCompletion(
-      [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
+      return result
+    } catch (error) {
+      console.error('Error handling completed function call:', error)
+      return result
+    }
   }
 }
