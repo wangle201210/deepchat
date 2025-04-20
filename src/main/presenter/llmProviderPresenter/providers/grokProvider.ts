@@ -1,7 +1,8 @@
-import { LLM_PROVIDER, LLMResponse, LLMResponseStream } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import { ChatMessage } from '../baseProvider'
+import { ModelConfig, MCPToolDefinition, LLMCoreStreamEvent } from '@shared/presenter'
 
 export class GrokProvider extends OpenAICompatibleProvider {
   // 图像生成模型ID
@@ -77,101 +78,10 @@ export class GrokProvider extends OpenAICompatibleProvider {
     )
   }
 
-  async suggestions(
-    context: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<string[]> {
-    // 图像生成模型不支持建议
-    if (this.isImageModel(modelId)) {
-      throw new Error('Image generation model does not support suggestions')
-    }
-    const response = await this.openAICompletion(
-      [
-        {
-          role: 'user',
-          content: `基于以下上下文，给出3个可能的回复建议，每个建议一行：\n${context}`
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-    return response.content.split('\n').filter((line) => line.trim().length > 0)
-  }
-
-  async *streamCompletions(
-    messages: ChatMessage[],
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    // 图像生成模型需要特殊处理
-    if (this.isImageModel(modelId)) {
-      const result = await this.handleImageGeneration(messages)
-      yield {
-        content: result.content
-      }
-      // 添加短暂延迟，确保所有 RESPONSE 事件已处理完毕
-      await new Promise((resolve) => setTimeout(resolve, 300))
-    } else {
-      yield* this.openAIStreamCompletion(messages, modelId, temperature, maxTokens)
-    }
-  }
-
-  async *streamSummaries(
-    text: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    // 图像生成模型不支持摘要
-    if (this.isImageModel(modelId)) {
-      throw new Error('Image generation model does not support summaries')
-    }
-    yield* this.openAIStreamCompletion(
-      [
-        {
-          role: 'user',
-          content: `请总结以下内容，使用简洁的语言，突出重点：\n${text}`
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-  }
-
-  async *streamGenerateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    // 图像生成模型使用特殊处理
-    if (this.isImageModel(modelId)) {
-      const result = await this.handleImageGeneration([{ role: 'user', content: prompt }])
-      yield {
-        content: result.content
-      }
-      return
-    }
-    yield* this.openAIStreamCompletion(
-      [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-  }
-
   // 处理图像生成请求的特殊方法
-  private async handleImageGeneration(messages: ChatMessage[]): Promise<LLMResponse> {
+  private async handleImageGeneration(
+    messages: ChatMessage[]
+  ): Promise<LLMResponse & { imageData?: string; mimeType?: string }> {
     if (!this.isInitialized) {
       throw new Error('Provider not initialized')
     }
@@ -202,9 +112,11 @@ export class GrokProvider extends OpenAICompatibleProvider {
       if (response.data && response.data.length > 0) {
         const imageData = response.data[0]
         if (imageData.b64_json) {
-          // 返回base64编码的图像
+          // 返回base64编码的图像数据，同时保存原始数据
           return {
-            content: `![生成的图像](data:image/png;base64,${imageData.b64_json})`
+            content: `![生成的图像](data:image/png;base64,${imageData.b64_json})`,
+            imageData: imageData.b64_json,
+            mimeType: 'image/png'
           }
         } else if (imageData.url) {
           // 返回图像URL
@@ -217,6 +129,39 @@ export class GrokProvider extends OpenAICompatibleProvider {
     } catch (error: unknown) {
       console.error('Image generation failed:', error)
       throw new Error(`图像生成失败: ${error instanceof Error ? error.message : '未知错误'}`)
+    }
+  }
+
+  async *coreStream(
+    messages: ChatMessage[],
+    modelId: string,
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    tools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    if (this.isImageModel(modelId)) {
+      const result = await this.handleImageGeneration(messages)
+      // 直接使用额外字段
+      if (result.imageData && result.mimeType) {
+        yield {
+          type: 'image_data',
+          image_data: {
+            data: result.imageData,
+            mimeType: result.mimeType
+          }
+        }
+      } else {
+        // 如果没有imageData字段，回退到文本形式
+        yield {
+          type: 'text',
+          content: result.content
+        }
+      }
+      // 添加短暂延迟，确保所有 RESPONSE 事件已处理完毕
+      await new Promise((resolve) => setTimeout(resolve, 300))
+    } else {
+      yield* super.coreStream(messages, modelId, modelConfig, temperature, maxTokens, tools)
     }
   }
 }

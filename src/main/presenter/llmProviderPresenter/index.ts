@@ -307,8 +307,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     initialMessages: ChatMessage[],
     modelId: string,
     eventId: string,
-    temperature?: number,
-    maxTokens?: number
+    temperature: number = 0.6,
+    maxTokens: number = 4096
   ): Promise<void> {
     console.log('Starting agent loop for event:', eventId, 'with model:', modelId)
 
@@ -318,6 +318,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
     const provider = this.getProviderInstance(providerId)
     const abortController = new AbortController()
+    const modelConfig = getModelConfig(modelId)
 
     this.activeStreams.set(eventId, {
       isGenerating: true,
@@ -378,6 +379,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         const stream = provider.coreStream(
           conversationMessages,
           modelId,
+          modelConfig,
           temperature,
           maxTokens,
           mcpTools
@@ -575,7 +577,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
               const toolResponse = await presenter.mcpPresenter.callTool(mcpToolInput)
 
               // 检查模型是否支持原生函数调用
-              const modelConfig = getModelConfig(modelId)
               const supportsFunctionCall = modelConfig?.functionCall || false
 
               if (supportsFunctionCall) {
@@ -765,8 +766,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string> {
-    // 记录输入到大模型的消息内容
-    console.log('streamCompletionStandalone', messages)
     const provider = this.getProviderInstance(providerId)
     let response = ''
     try {

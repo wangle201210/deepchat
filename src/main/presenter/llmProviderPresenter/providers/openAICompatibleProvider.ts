@@ -3,7 +3,8 @@ import {
   LLMResponse,
   MODEL_META,
   MCPToolDefinition,
-  LLMCoreStreamEvent
+  LLMCoreStreamEvent,
+  ModelConfig
 } from '@shared/presenter'
 import { BaseLLMProvider, ChatMessage } from '../baseProvider'
 import OpenAI from 'openai'
@@ -157,15 +158,15 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   async *coreStream(
     messages: ChatMessage[],
     modelId: string,
-    temperature?: number,
-    maxTokens?: number,
-    mcpTools?: MCPToolDefinition[]
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    mcpTools: MCPToolDefinition[]
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
 
     const tools = mcpTools || []
-    const modelConfig = getModelConfig(modelId)
     const supportsFunctionCall = modelConfig?.functionCall || false
     let processedMessages = [...messages] as ChatCompletionMessageParam[]
     if (tools.length > 0 && !supportsFunctionCall) {
@@ -765,19 +766,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       console.error('Failed to get suggestions:', error)
       return [] // Return empty on error
     }
-  }
-
-  // Implement streamCompletions using coreStream
-  async *streamCompletions(
-    messages: ChatMessage[],
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number,
-    mcpTools?: MCPToolDefinition[]
-  ): AsyncGenerator<LLMCoreStreamEvent> {
-    // Ensure messages are formatted if needed by coreStream or the API call within it
-    const formattedMessages = this.formatMessages(messages)
-    yield* this.coreStream(formattedMessages, modelId, temperature, maxTokens, mcpTools)
   }
 
   private processFunctionCallTagInContent(
