@@ -269,7 +269,7 @@ export class ToolManager {
         try {
           args = JSON.parse(jsonrepair(argsString))
         } catch (e: unknown) {
-          console.error('Error parsing tool call arguments even after jsonrepair:', e)
+          console.error('Error parsing tool call arguments even after jsonrepair:', argsString, e)
           // Decide how to handle: return error or proceed with empty args?
           // Let's proceed with empty args for now, mirroring previous behavior.
           args = {}

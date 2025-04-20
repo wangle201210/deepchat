@@ -2,8 +2,6 @@ import {
   ILlmProviderPresenter,
   LLM_PROVIDER,
   LLMResponse,
-  LLMResponseStream,
-  MCPToolDefinition,
   MCPToolCall,
   MODEL_META,
   OllamaModel
@@ -324,7 +322,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
       // Prepare for LLM call
       let currentContent = ''
-      let currentReasoning = ''
+      // let currentReasoning = ''
       const currentToolCalls: Array<{
         id: string
         name: string
@@ -366,7 +364,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
               break
             case 'reasoning':
               if (chunk.reasoning_content) {
-                currentReasoning += chunk.reasoning_content
+                // currentReasoning += chunk.reasoning_content
                 eventBus.emit(STREAM_EVENTS.RESPONSE, {
                   eventId,
                   reasoning_content: chunk.reasoning_content
@@ -541,7 +539,22 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
               const supportsFunctionCall = modelConfig?.functionCall || false
 
               if (supportsFunctionCall) {
-                // 对于支持原生函数调用的模型，添加tool角色消息
+                // 对于支持原生函数调用的模型，添加原始tool调用消息
+                conversationMessages.push({
+                  role: 'assistant',
+                  tool_calls: [
+                    {
+                      function: {
+                        arguments: toolCall.arguments,
+                        name: toolCall.name
+                      },
+                      id: toolCall.id,
+                      type: 'function'
+                    }
+                  ]
+                })
+
+                // 添加tool角色消息
                 conversationMessages.push({
                   role: 'tool',
                   content:

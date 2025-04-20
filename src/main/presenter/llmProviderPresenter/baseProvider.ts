@@ -2,7 +2,6 @@ import {
   LLM_PROVIDER,
   MODEL_META,
   LLMResponse,
-  LLMResponseStream,
   MCPToolDefinition,
   LLMCoreStreamEvent,
   ModelConfig
@@ -13,7 +12,15 @@ import { jsonrepair } from 'jsonrepair'
 // 定义ChatMessage接口用于统一消息格式
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
-  content: string | ChatMessageContent[]
+  content?: string | ChatMessageContent[]
+  tool_calls?: Array<{
+    function: {
+      arguments: string
+      name: string
+    }
+    id: string
+    type: 'function'
+  }>
 }
 
 export interface ChatMessageContent {
@@ -22,10 +29,6 @@ export interface ChatMessageContent {
   image_url?: {
     url: string
     detail?: 'auto' | 'low' | 'high'
-  }
-  tool_call?: {
-    name: string
-    arguments: string
   }
 }
 
