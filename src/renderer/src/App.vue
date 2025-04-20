@@ -124,17 +124,19 @@ const getInitComplete = async () => {
 // 处理字体缩放
 const handleZoomIn = () => {
   // 字体大小增加逻辑
-  console.log('字体放大功能触发')
+  const currentLevel = settingsStore.fontSizeLevel
+  settingsStore.updateFontSizeLevel(currentLevel + 1)
 }
 
 const handleZoomOut = () => {
   // 字体大小减小逻辑
-  console.log('字体缩小功能触发')
+  const currentLevel = settingsStore.fontSizeLevel
+  settingsStore.updateFontSizeLevel(currentLevel - 1)
 }
 
 const handleZoomResume = () => {
   // 重置字体大小
-  console.log('字体大小重置功能触发')
+  settingsStore.updateFontSizeLevel(1) // 1 对应 'text-base'，默认字体大小
 }
 
 // 处理创建新会话

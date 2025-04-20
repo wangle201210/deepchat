@@ -299,5 +299,14 @@
     "text-lg": "큰",
     "text-sm": "작은",
     "text-xl": "매우 큽니다"
+  },
+  "shortcuts": {
+    "cleanHistory": "명확한 채팅 기록",
+    "goSettings": "열기 설정",
+    "hideWindow": "창을 숨기십시오",
+    "quitApp": "프로그램을 종료하십시오",
+    "zoomIn": "글꼴을 확대하십시오",
+    "zoomOut": "글꼴을 줄입니다",
+    "zoomReset": "글꼴을 재설정하십시오"
   }
 }

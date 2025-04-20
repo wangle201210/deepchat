@@ -299,5 +299,14 @@
     "text-lg": "大",
     "text-sm": "小",
     "text-xl": "特大"
+  },
+  "shortcuts": {
+    "cleanHistory": "清除聊天歷史",
+    "goSettings": "打開設置",
+    "hideWindow": "隱藏窗口",
+    "quitApp": "退出程序",
+    "zoomIn": "放大字體",
+    "zoomOut": "縮小字體",
+    "zoomReset": "重置字體"
   }
 }

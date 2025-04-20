@@ -299,5 +299,14 @@
     "text-lg": "Big",
     "text-sm": "Small",
     "text-xl": "Large"
+  },
+  "shortcuts": {
+    "cleanHistory": "Clear chat history",
+    "goSettings": "Open Settings",
+    "hideWindow": "Hide window",
+    "quitApp": "Quit app",
+    "zoomIn": "Zoom in ",
+    "zoomOut": "Zoom out ",
+    "zoomReset": "Reset zoom"
   }
 }
