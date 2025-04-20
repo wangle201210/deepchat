@@ -1,4 +1,12 @@
-import { LLM_PROVIDER, MODEL_META, LLMResponse, LLMResponseStream } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  MODEL_META,
+  LLMResponse,
+  LLMResponseStream,
+  LLMCoreStreamEvent,
+  ModelConfig,
+  MCPToolDefinition
+} from '@shared/presenter'
 import { BaseLLMProvider, ChatMessage, ChatMessageContent } from '../baseProvider'
 import {
   GoogleGenerativeAI,
@@ -1171,6 +1179,293 @@ export class GeminiProvider extends BaseLLMProvider {
     } catch (error) {
       console.error('Gemini streamGenerateText error:', error)
       throw error
+    }
+  }
+
+  /**
+   * 核心流式处理方法
+   * 实现BaseLLMProvider中的抽象方法
+   */
+  async *coreStream(
+    messages: ChatMessage[],
+    modelId: string,
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    mcpTools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
+    console.log('modelConfig', modelConfig, modelId)
+    // 检查是否是图片生成模型
+    const isImageGenerationModel = modelId === 'gemini-2.0-flash-exp-image-generation'
+
+    // 如果是图片生成模型，使用特殊处理
+    if (isImageGenerationModel) {
+      yield* this.handleImageGenerationStream(messages, modelId, temperature, maxTokens)
+      return
+    }
+
+    // 创建Gemini模型实例
+    const model = this.getModel(modelId, temperature, maxTokens)
+
+    // 将MCP工具转换为Gemini格式的工具（所有Gemini模型都支持原生工具调用）
+    const geminiTools =
+      mcpTools.length > 0
+        ? await presenter.mcpPresenter.mcpToolsToGeminiTools(mcpTools, this.provider.id)
+        : undefined
+
+    // 格式化消息为Gemini格式
+    const formattedParts = this.formatGeminiMessages(messages)
+
+    // 创建请求参数
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const requestParams: any = {
+      contents: formattedParts.contents
+    }
+
+    if (formattedParts.systemInstruction) {
+      requestParams.systemInstruction = formattedParts.systemInstruction
+    }
+
+    // 添加工具配置
+    if (geminiTools && geminiTools.length > 0) {
+      requestParams.tools = geminiTools
+      requestParams.toolConfig = {
+        functionCallingConfig: {
+          mode: 'AUTO' // 允许模型自动决定是否调用工具
+        }
+      }
+    }
+
+    // 发送流式请求
+    // @ts-ignore - Gemini SDK类型定义与实际API有差异
+    const result = await model.generateContentStream(requestParams)
+
+    // 状态变量
+    let buffer = ''
+    let isInThinkTag = false
+    let toolUseDetected = false
+
+    // 流处理循环
+    for await (const chunk of result.stream) {
+      // 处理用量统计
+      if (chunk.usageMetadata) {
+        yield {
+          type: 'usage',
+          usage: {
+            prompt_tokens: chunk.usageMetadata.promptTokenCount,
+            completion_tokens: chunk.usageMetadata.candidatesTokenCount,
+            total_tokens: chunk.usageMetadata.totalTokenCount
+          }
+        }
+      }
+
+      // 检查是否包含函数调用
+      // @ts-ignore - SDK类型定义不完整
+      if (chunk.candidates && chunk.candidates[0]?.content?.parts?.[0]?.functionCall) {
+        // @ts-ignore - SDK类型定义不完整
+        const functionCall = chunk.candidates[0].content.parts[0].functionCall
+        const functionName = functionCall.name
+        const functionArgs = functionCall.args || {}
+        const toolCallId = `gemini-tool-${Date.now()}`
+
+        toolUseDetected = true
+
+        // 发送工具调用开始事件
+        yield {
+          type: 'tool_call_start',
+          tool_call_id: toolCallId,
+          tool_call_name: functionName
+        }
+
+        // 发送工具调用参数
+        const argsString = JSON.stringify(functionArgs)
+        yield {
+          type: 'tool_call_chunk',
+          tool_call_id: toolCallId,
+          tool_call_arguments_chunk: argsString
+        }
+
+        // 发送工具调用结束事件
+        yield {
+          type: 'tool_call_end',
+          tool_call_id: toolCallId,
+          tool_call_arguments_complete: argsString
+        }
+
+        // 设置停止原因为工具使用
+        break
+      }
+
+      // 处理内容块
+      let content = ''
+
+      // 处理文本和图像内容
+      if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
+        for (const part of chunk.candidates[0].content.parts) {
+          if (part.text) {
+            content += part.text
+          } else if (part.inlineData) {
+            // 处理图像数据
+            yield {
+              type: 'image_data',
+              image_data: {
+                data: part.inlineData.data,
+                mimeType: part.inlineData.mimeType
+              }
+            }
+          }
+        }
+      } else {
+        // 兼容处理
+        content = chunk.text() || ''
+      }
+
+      if (!content) continue
+
+      buffer += content
+
+      // 处理思考标签
+      if (buffer.includes('<think>') && !isInThinkTag) {
+        const thinkStart = buffer.indexOf('<think>')
+
+        // 发送<think>标签前的文本
+        if (thinkStart > 0) {
+          yield {
+            type: 'text',
+            content: buffer.substring(0, thinkStart)
+          }
+        }
+
+        buffer = buffer.substring(thinkStart + 7)
+        isInThinkTag = true
+        continue
+      }
+
+      // 处理思考标签结束
+      if (isInThinkTag && buffer.includes('</think>')) {
+        const thinkEnd = buffer.indexOf('</think>')
+        const reasoningContent = buffer.substring(0, thinkEnd)
+
+        // 发送推理内容
+        if (reasoningContent) {
+          yield {
+            type: 'reasoning',
+            reasoning_content: reasoningContent
+          }
+        }
+
+        buffer = buffer.substring(thinkEnd + 8)
+        isInThinkTag = false
+
+        // 如果还有剩余内容，继续处理
+        if (buffer) {
+          yield {
+            type: 'text',
+            content: buffer
+          }
+          buffer = ''
+        }
+
+        continue
+      }
+
+      // 如果在思考标签内，不输出内容
+      if (isInThinkTag) {
+        continue
+      }
+
+      // 正常输出文本内容
+      yield {
+        type: 'text',
+        content: content
+      }
+    }
+
+    // 处理剩余缓冲区内容
+    if (buffer) {
+      if (isInThinkTag) {
+        yield {
+          type: 'reasoning',
+          reasoning_content: buffer
+        }
+      } else {
+        yield {
+          type: 'text',
+          content: buffer
+        }
+      }
+    }
+
+    // 发送停止事件
+    yield { type: 'stop', stop_reason: toolUseDetected ? 'tool_use' : 'complete' }
+  }
+
+  /**
+   * 处理图片生成模型的流式输出
+   */
+  private async *handleImageGenerationStream(
+    messages: ChatMessage[],
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    try {
+      // 创建模型实例
+      const model = this.getModel(modelId, temperature, maxTokens)
+      // 提取用户提示词
+      const userMessage = messages.findLast((msg) => msg.role === 'user')
+      if (!userMessage) {
+        throw new Error('No user message found for image generation')
+      }
+
+      const prompt =
+        typeof userMessage.content === 'string'
+          ? userMessage.content
+          : userMessage.content
+              .filter((c) => c.type === 'text')
+              .map((c) => c.text)
+              .join('\n')
+
+      // 发送生成请求
+      const result = await model.generateContentStream({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }]
+      })
+
+      // 处理流式响应
+      for await (const chunk of result.stream) {
+        if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
+          for (const part of chunk.candidates[0].content.parts) {
+            if (part.text) {
+              // 输出文本内容
+              yield {
+                type: 'text',
+                content: part.text
+              }
+            } else if (part.inlineData) {
+              // 输出图像数据
+              yield {
+                type: 'image_data',
+                image_data: {
+                  data: part.inlineData.data,
+                  mimeType: part.inlineData.mimeType
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 发送停止事件
+      yield { type: 'stop', stop_reason: 'complete' }
+    } catch (error) {
+      console.error('Image generation stream error:', error)
+      yield {
+        type: 'error',
+        error_message: error instanceof Error ? error.message : '图像生成失败'
+      }
+      yield { type: 'stop', stop_reason: 'error' }
     }
   }
 }
