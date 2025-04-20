@@ -299,5 +299,14 @@
     "text-lg": "grand",
     "text-sm": "Petit",
     "text-xl": "Extrêmement grand"
+  },
+  "shortcuts": {
+    "cleanHistory": "Historique de chat clair",
+    "goSettings": "Paramètres ouvrir",
+    "hideWindow": "Cache-fenêtre",
+    "quitApp": "Quitter l'application",
+    "zoomIn": "Zoomer",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Réinitialiser le zoom"
   }
 }

@@ -24,7 +24,6 @@ export const CONFIG_EVENTS = {
 
 // 会话相关事件
 export const CONVERSATION_EVENTS = {
-  CREATED: 'conversation:created',
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
   MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited
@@ -86,4 +85,12 @@ export const DEEPLINK_EVENTS = {
 // 全局通知相关事件
 export const NOTIFICATION_EVENTS = {
   SHOW_ERROR: 'notification:show-error' // 显示错误通知
+}
+export const SHORTCUT_EVENTS = {
+  ZOOM_IN: 'shortcut:zoom-in',
+  ZOOM_OUT: 'shortcut:zoom-out',
+  ZOOM_RESUME: 'shortcut:zoom-resume',
+  CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
+  GO_SETTINGS: 'shortcut:go-settings',
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
 }

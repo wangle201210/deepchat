@@ -13,13 +13,8 @@
             <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
           </span>
           <div class="flex-shrink-0 min-w-32">
-            <Button
-              variant="outline"
-              class="w-full justify-between"
-            >
-              <span class="text-sm">{{
-                  formatShortcut(shortcut.key)
-              }}</span>
+            <Button variant="outline" class="w-full justify-between">
+              <span class="text-sm">{{ formatShortcut(shortcut.key) }}</span>
             </Button>
           </div>
         </div>
@@ -43,17 +38,61 @@ const shortcuts = ref([
     icon: 'lucide:plus',
     label: 'common.newChat',
     key: 'CommandOrControl+N'
+  },
+  {
+    id: 'zoom_in',
+    icon: 'lucide:zoom-in',
+    label: 'settings.shortcuts.zoomIn',
+    key: 'CommandOrControl+='
+  },
+  {
+    id: 'zoom_out',
+    icon: 'lucide:zoom-out',
+    label: 'settings.shortcuts.zoomOut',
+    key: 'CommandOrControl+-'
+  },
+  {
+    id: 'zoom_reset',
+    icon: 'lucide:rotate-ccw',
+    label: 'settings.shortcuts.zoomReset',
+    key: 'CommandOrControl+0'
+  },
+  {
+    id: 'go_settings',
+    icon: 'lucide:settings',
+    label: 'settings.shortcuts.goSettings',
+    key: 'CommandOrControl+,'
+  },
+  {
+    id: 'clean_history',
+    icon: 'lucide:trash-2',
+    label: 'settings.shortcuts.cleanHistory',
+    key: 'CommandOrControl+L'
+  },
+  {
+    id: 'hide_window',
+    icon: 'lucide:minimize-2',
+    label: 'settings.shortcuts.hideWindow',
+    key: 'CommandOrControl+W'
+  },
+  {
+    id: 'quit_app',
+    icon: 'lucide:log-out',
+    label: 'settings.shortcuts.quitApp',
+    key: 'CommandOrControl+Q'
   }
 ])
 
 const formatShortcut = (shortcut: string) => {
   return shortcut
-    .replace('CommandOrControl', /Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ? '⌘' : 'Ctrl')
+    .replace(
+      'CommandOrControl',
+      /Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ? '⌘' : 'Ctrl'
+    )
     .replace('Command', '⌘')
     .replace('Control', 'Ctrl')
     .replace('Alt', '⌥')
     .replace('Shift', '⇧')
     .replace(/\+/g, ' + ')
 }
-
 </script>

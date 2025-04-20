@@ -299,5 +299,14 @@
     "text-lg": "大きい",
     "text-sm": "小さい",
     "text-xl": "非常に大きい"
+  },
+  "shortcuts": {
+    "cleanHistory": "明確なチャット履歴",
+    "goSettings": "設定を開く",
+    "hideWindow": "ウィンドウを非表示にします",
+    "quitApp": "プログラムを終了します",
+    "zoomIn": "フォントにズームインします",
+    "zoomOut": "フォントを削減します",
+    "zoomReset": "フォントをリセットします"
   }
 }
