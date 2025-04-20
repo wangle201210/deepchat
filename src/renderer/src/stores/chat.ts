@@ -272,6 +272,16 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const createNewEmptyThread = async () => {
+    try {
+      await clearActiveThread()
+      await loadThreads(1)
+    } catch (error) {
+      console.error('清空活动会话并加载第一页失败:', error)
+      throw error
+    }
+  }
+
   const createThread = async (title: string, settings: Partial<CONVERSATION_SETTINGS>) => {
     try {
       const threadId = await threadP.createConversation(title, settings)
@@ -912,6 +922,7 @@ export const useChatStore = defineStore('chat', () => {
   return {
     renameThread,
     // 状态
+    createNewEmptyThread,
     isSidebarOpen,
     activeThreadId,
     threads,

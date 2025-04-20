@@ -1884,7 +1884,6 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 5. 触发会话创建事件
-      eventBus.emit(CONVERSATION_EVENTS.CREATED, { conversationId: newConversationId })
 
       return newConversationId
     } catch (error) {

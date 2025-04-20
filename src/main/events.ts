@@ -92,3 +92,12 @@ export const DEEPLINK_EVENTS = {
 export const NOTIFICATION_EVENTS = {
   SHOW_ERROR: 'notification:show-error' // 显示错误通知
 }
+
+export const SHORTCUT_EVENTS = {
+  ZOOM_IN: 'shortcut:zoom-in',
+  ZOOM_OUT: 'shortcut:zoom-out',
+  ZOOM_RESUME: 'shortcut:zoom-resume',
+  CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
+  GO_SETTINGS: 'shortcut:go-settings',
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+}
