@@ -219,7 +219,7 @@ export abstract class BaseLLMProvider {
    * @returns 格式化的提示词
    */
   protected getFunctionCallWrapPrompt(tools: MCPToolDefinition[]): string {
-    return `你具备调用外部工具的能力来协助解决用户的问题。可用的工具列表定义在 <tool_list> 标签中，格式为 JSON 数组：
+    return `你具备调用外部工具的能力来协助解决用户的问题,可用的工具列表定义在 <tool_list> 标签中，格式为 JSON 数组：
 <tool_list>
 ${JSON.stringify(tools)}
 </tool_list>
@@ -258,6 +258,7 @@ ${JSON.stringify(tools)}
   }
 }
 </function_call>
+
 `
   }
 

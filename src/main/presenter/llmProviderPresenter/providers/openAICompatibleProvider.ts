@@ -588,14 +588,41 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 tool_call_id: toolCall.id
               })
             } else {
+              // 获取最后一条assistant消息并将工具调用信息添加进去
+              const lastAssistantMessage = conversationMessages.findLast(
+                (message) => message.role === 'assistant'
+              )
+              if (lastAssistantMessage) {
+                // 为assistant消息添加工具调用标记
+                const toolCallInfo = `\n<function_call>
+                {
+                  "function_call":  ${JSON.stringify(
+                    {
+                      id: toolCallRenderId,
+                      name: toolCall.function.name,
+                      arguments: toolCall.function.arguments
+                    },
+                    null,
+                    2
+                  )}
+                }\n</function_call>\n`
+                if (typeof lastAssistantMessage.content === 'string') {
+                  lastAssistantMessage.content += toolCallInfo
+                }
+              }
+
               // 检查最后一条消息是否是user角色
               const lastMessage = conversationMessages[conversationMessages.length - 1]
               const toolResponseContent =
-                `\n<tool_call_response name="${toolCall.function.name}" id="${toolCallRenderId}">\n` +
-                (typeof toolCallResponse.content === 'string'
-                  ? toolCallResponse.content
-                  : JSON.stringify(toolCallResponse.content)) +
-                `\n</tool_call_response>\n`
+                '以下是刚刚执行的工具调用响应，请根据响应内容更新你的回答：\n' +
+                JSON.stringify({
+                  role: 'tool',
+                  content:
+                    typeof toolCallResponse.content === 'string'
+                      ? toolCallResponse.content
+                      : JSON.stringify(toolCallResponse.content),
+                  tool_call_id: toolCallRenderId
+                })
 
               if (lastMessage && lastMessage.role === 'user') {
                 // 如果是，则将工具调用响应附加到最后一条消息

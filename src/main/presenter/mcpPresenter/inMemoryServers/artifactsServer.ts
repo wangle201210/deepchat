@@ -582,11 +582,11 @@ export class ArtifactsServer {
           {
             name: 'get_artifact_instructions',
             description:
-              'The assistant can create and reference artifacts during conversations. Artifacts are used for substantial, self-contained content—such as code, documents, HTML, SVG, Mermaid diagrams, or React components—and are displayed in a dedicated UI window for clarity.' +
-              'Only call this function once per session or task, and only if the assistant does not already have instructions or definitions for the requested artifact type in the current context.' +
-              'Use this function to retrieve complete information about artifacts, including what makes a good artifact, how to generate one, and format examples for each artifact type.' +
-              'Pass the type parameter to specify the desired artifact category: code, documents, html, svg, mermaid, or react.' +
-              'Avoid repeated calls if the necessary instructions or artifact definitions are already available in context.',
+              'Only call this function when you need instructions for a specific artifact type, and call it only once per type. ' +
+              'This tool provides guidance on creating and referencing artifacts, including code, documents, HTML, SVG, Mermaid diagrams, or React components. ' +
+              'Do not call this function repeatedly if instructions or definitions for the requested artifact type are already available in the current context. ' +
+              'Specify the desired artifact category through the type parameter: code, documents, html, svg, mermaid, or react. ' +
+              'After obtaining the instructions, use them appropriately and avoid duplicate calls for the same type.',
             inputSchema: zodToJsonSchema(GetArtifactInstructionsArgsSchema) as ToolInput
           }
         ]
@@ -601,7 +601,7 @@ export class ArtifactsServer {
         if (name === 'get_artifact_instructions') {
           const parsed = GetArtifactInstructionsArgsSchema.safeParse(args)
           if (!parsed.success) {
-            throw new Error(`无效的参数: ${parsed.error}`)
+            throw new Error(`Invalid parameters: ${parsed.error}`)
           }
 
           // 组合返回所有必要信息
@@ -609,17 +609,17 @@ export class ArtifactsServer {
             content: [
               {
                 type: 'text',
-                text: `${ARTIFACTS_INFO}\n\n${EXAMPLE_TEMPLATES[parsed.data.type]}`
+                text: `[IMPORTANT NOTE: You have received instructions for artifact type '${parsed.data.type}'. DO NOT call this again for the same type.]\n\n${ARTIFACTS_INFO}\n\n${EXAMPLE_TEMPLATES[parsed.data.type]}`
               }
             ]
           }
         }
 
-        throw new Error(`未知工具: ${name}`)
+        throw new Error(`Unknown tool: ${name}`)
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error)
         return {
-          content: [{ type: 'text', text: `错误: ${errorMessage}` }],
+          content: [{ type: 'text', text: `Error: ${errorMessage}` }],
           isError: true
         }
       }
