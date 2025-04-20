@@ -364,9 +364,10 @@ export class AnthropicProvider extends BaseLLMProvider {
           const toolInput = toolUseContent.input || {}
 
           // 先添加常规内容
-          const textContent = msg.content
-            .filter((c) => c.type === 'text')
-            .map((c) => ({ type: 'text', text: c.text || '' }))
+          const textContent: Anthropic.TextBlockParam[] =
+            msg.content
+              ?.filter((c) => c.type === 'text')
+              .map((c) => ({ type: 'text', text: c.text || '' })) || []
 
           if (textContent.length > 0) {
             formattedMessages.push({

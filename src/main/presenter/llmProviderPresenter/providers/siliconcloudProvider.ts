@@ -1,4 +1,4 @@
-import { LLM_PROVIDER, LLMResponse, LLMResponseStream, MODEL_META } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, MODEL_META } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import { ChatMessage } from '../baseProvider'

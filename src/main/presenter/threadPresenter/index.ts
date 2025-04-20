@@ -1357,7 +1357,7 @@ export class ThreadPresenter implements IThreadPresenter {
         promptTokens += approximateTokenSize(msg.content)
       } else {
         promptTokens +=
-          approximateTokenSize(msg.content.map((item) => item.text).join('')) +
+          approximateTokenSize(msg.content?.map((item) => item.text).join('') || '') +
           imageFiles.reduce((acc, file) => acc + file.token, 0)
       }
     }
@@ -1502,8 +1502,8 @@ export class ThreadPresenter implements IThreadPresenter {
         mergedMessages[mergedMessages.length - 1].role === currentMessage.role
       ) {
         mergedMessages[mergedMessages.length - 1].content = this.mergeMessageContent(
-          currentMessage.content,
-          mergedMessages[mergedMessages.length - 1].content
+          currentMessage.content || '',
+          mergedMessages[mergedMessages.length - 1].content || ''
         )
       } else {
         mergedMessages.push({ ...currentMessage })

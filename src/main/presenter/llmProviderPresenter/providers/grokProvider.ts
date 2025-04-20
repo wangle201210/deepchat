@@ -96,9 +96,9 @@ export class GrokProvider extends OpenAICompatibleProvider {
       typeof userMessage.content === 'string'
         ? userMessage.content
         : userMessage.content
-            .filter((c) => c.type === 'text')
+            ?.filter((c) => c.type === 'text')
             .map((c) => c.text)
-            .join('\n')
+            .join('\n') || ''
 
     // 创建图像生成请求
     try {

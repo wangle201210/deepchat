@@ -1,7 +1,6 @@
-import { LLM_PROVIDER, LLMResponse, LLMResponseStream } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
-import { ChatMessage } from '../baseProvider'
 export class OpenAIProvider extends OpenAICompatibleProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
@@ -52,25 +51,5 @@ export class OpenAIProvider extends OpenAICompatibleProvider {
       temperature,
       maxTokens
     )
-  }
-
-  async suggestions(
-    context: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<string[]> {
-    const response = await this.openAICompletion(
-      [
-        {
-          role: 'user',
-          content: `基于以下上下文，给出3个可能的回复建议，每个建议一行：\n${context}`
-        }
-      ],
-      modelId,
-      temperature,
-      maxTokens
-    )
-    return response.content.split('\n').filter((line) => line.trim().length > 0)
   }
 }
