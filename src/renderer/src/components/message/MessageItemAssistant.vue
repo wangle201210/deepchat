@@ -107,7 +107,6 @@ import MessageBlockToolCall from './MessageBlockToolCall.vue'
 import MessageBlockError from './MessageBlockError.vue'
 import MessageToolbar from './MessageToolbar.vue'
 import MessageInfo from './MessageInfo.vue'
-import MessageBlockImage from './MessageBlockImage.vue'
 import { useChatStore } from '@/stores/chat'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
@@ -116,6 +115,7 @@ import { useDark } from '@vueuse/core'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
 import { addWatermark } from '@/lib/watermark'
+import MessageBlockImage from './MessageBlockImage.vue'
 
 import {
   Dialog,

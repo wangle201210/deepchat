@@ -2,12 +2,6 @@
   <div class="my-1">
     <div class="rounded-lg border bg-card text-card-foreground p-4">
       <div class="flex flex-col space-y-2">
-        <h4
-          class="text-xs font-medium leading-none text-accent-foreground flex flex-row gap-2 items-center"
-        >
-          <Icon icon="lucide:image" class="w-4 h-4 text-muted-foreground" />
-        </h4>
-
         <!-- 图片加载区域 -->
         <div class="flex justify-center">
           <img
@@ -18,7 +12,7 @@
             @error="handleImageError"
           />
           <div v-else-if="imageError" class="text-sm text-red-500 p-4">
-            {{ t('image.loadError') }}
+            {{ t('common.error.requestFailed') }}
           </div>
           <div v-else class="flex items-center justify-center h-40 w-full">
             <Icon icon="lucide:loader-2" class="w-6 h-6 animate-spin text-muted-foreground" />
@@ -31,14 +25,6 @@
     <Dialog :open="showFullImage" @update:open="showFullImage = $event">
       <DialogContent class="sm:max-w-[800px] p-0 bg-transparent border-0 shadow-none">
         <div class="relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            class="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-full"
-            @click="showFullImage = false"
-          >
-            <Icon icon="lucide:x" class="h-5 w-5" />
-          </Button>
           <img
             v-if="block.image_data"
             :src="`data:${block.image_data.mimeType};base64,${block.image_data.data}`"
@@ -56,7 +42,6 @@ import { Icon } from '@iconify/vue'
 import { AssistantMessageBlock } from '@shared/chat'
 import { useI18n } from 'vue-i18n'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 
 // 创建一个安全的翻译函数
 const t = (() => {
