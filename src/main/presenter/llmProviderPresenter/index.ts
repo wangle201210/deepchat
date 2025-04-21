@@ -349,7 +349,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           if (abortController.signal.aborted) {
             break
           }
-          console.log('presenter chunk', JSON.stringify(chunk))
+          // console.log('presenter chunk', JSON.stringify(chunk))
 
           // --- Event Handling (using LLMCoreStreamEvent structure) ---
           switch (chunk.type) {
@@ -472,10 +472,10 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
         // 2. Execute Tool Calls if needed
         if (needContinueConversation && currentToolCalls.length > 0) {
-          console.log(
-            `Executing ${currentToolCalls.length} tools for event ${eventId}`,
-            JSON.stringify(currentToolCalls)
-          )
+          // console.log(
+          //   `Executing ${currentToolCalls.length} tools for event ${eventId}`,
+          //   JSON.stringify(currentToolCalls)
+          // )
           for (const toolCall of currentToolCalls) {
             if (toolCallCount >= MAX_TOOL_CALLS) {
               console.warn('Max tool calls reached during execution phase for event:', eventId)

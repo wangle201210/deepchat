@@ -59,7 +59,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected async fetchProviderModels(options?: { timeout: number }): Promise<MODEL_META[]> {
     // 检查供应商是否在黑名单中
     if (this.isNoModelsApi) {
-      console.log(`Provider ${this.provider.name} does not support OpenAI models API`)
+      // console.log(`Provider ${this.provider.name} does not support OpenAI models API`)
       return this.models
     }
     return this.fetchOpenAIModels(options)
@@ -201,6 +201,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const thinkEndMarker = '</think>'
 
     const nativeToolCalls: Record<string, { name: string; arguments: string }> = {}
+    // [NEW] Map to associate index with tool call ID
+    const indexToIdMap: Record<number, string> = {}
     let stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
     let toolUseDetected = false
 
@@ -210,7 +212,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any
       const currentContent = delta?.content || ''
-      console.log('currentContent', JSON.stringify(choice.delta))
       // 1. Handle Non-Content Events First
       if (chunk.usage) yield { type: 'usage', usage: chunk.usage }
       if (delta?.reasoning_content || delta?.reasoning) {
@@ -219,91 +220,93 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
       if (supportsFunctionCall && delta?.tool_calls?.length > 0) {
         toolUseDetected = true
-        console.log('处理tool_calls', delta.tool_calls)
+        // console.log('处理tool_calls', delta.tool_calls)
         for (const toolCallDelta of delta.tool_calls) {
           const id = toolCallDelta.id
-          const index = toolCallDelta.index
+          const index = toolCallDelta.index // Index within the current delta's tool_calls array
+          const functionName = toolCallDelta.function?.name
+          const argumentChunk = toolCallDelta.function?.arguments
 
-          // 使用id作为首选标识符，如果没有id则使用index
-          const toolCallId = id || (index !== undefined ? `index_${index}` : `tool_${Date.now()}`)
+          let currentToolCallId: string | undefined = undefined
 
-          // 如果是新的工具调用，初始化它
-          if (!nativeToolCalls[toolCallId]) {
-            nativeToolCalls[toolCallId] = { name: '', arguments: '' }
+          // Determine the correct tool call ID
+          if (id) {
+            currentToolCallId = id
+            if (index !== undefined) {
+              // Store the mapping if we have both id and index
+              indexToIdMap[index] = id
+              // console.log(`Mapping index ${index} to id ${id}`)
+            }
+          } else if (index !== undefined && indexToIdMap[index]) {
+            // Use mapped ID if id is missing but index is known
+            currentToolCallId = indexToIdMap[index]
+            // console.log(`Found mapped id ${currentToolCallId} for index ${index}`)
+          } else {
+            // Cannot reliably identify the tool call for this delta chunk
+            console.warn(
+              'Received tool call delta chunk without id and without a known mapping for index:',
+              toolCallDelta
+            )
+            continue // Skip this problematic chunk
+          }
 
-            // 如果工具调用有名称，发送开始事件
-            if (toolCallDelta.function?.name) {
-              nativeToolCalls[toolCallId].name = toolCallDelta.function.name
+          // Ensure the entry exists in nativeToolCalls
+          // Check if currentToolCallId is defined before using it as an index
+          if (currentToolCallId) {
+            if (!nativeToolCalls[currentToolCallId]) {
+              nativeToolCalls[currentToolCallId] = { name: '', arguments: '' }
+              // console.log(`Initialized nativeToolCalls entry for id ${currentToolCallId}`)
+            }
+
+            // Process name (only once) and send start event
+            if (functionName && !nativeToolCalls[currentToolCallId].name) {
+              nativeToolCalls[currentToolCallId].name = functionName
+              // console.log(`Received name '${functionName}' for id ${currentToolCallId}`)
               yield {
                 type: 'tool_call_start',
-                tool_call_id: toolCallId, // 使用统一的 toolCallId
-                tool_call_name: toolCallDelta.function.name
+                tool_call_id: currentToolCallId,
+                tool_call_name: functionName
               }
             }
-          }
 
-          // 如果现有工具调用没有名称但收到了名称，更新并发送开始事件
-          if (toolCallDelta.function?.name && !nativeToolCalls[toolCallId].name) {
-            nativeToolCalls[toolCallId].name = toolCallDelta.function.name
-            yield {
-              type: 'tool_call_start',
-              tool_call_id: toolCallId, // 使用统一的 toolCallId
-              tool_call_name: toolCallDelta.function.name
+            // Process arguments chunk and send chunk event
+            if (argumentChunk) {
+              nativeToolCalls[currentToolCallId].arguments += argumentChunk
+              // console.log(`Received args chunk for id ${currentToolCallId}: '${argumentChunk}'`)
+              yield {
+                type: 'tool_call_chunk',
+                tool_call_id: currentToolCallId,
+                tool_call_arguments_chunk: argumentChunk
+              }
             }
-          }
-
-          // 处理参数片段
-          if (toolCallDelta.function?.arguments) {
-            const argumentChunk = toolCallDelta.function.arguments
-            nativeToolCalls[toolCallId].arguments += argumentChunk
-            yield {
-              type: 'tool_call_chunk',
-              tool_call_id: toolCallId, // 使用统一的 toolCallId
-              tool_call_arguments_chunk: argumentChunk
-            }
+          } else {
+             // This case should logically not be reached due to the checks above,
+             // but adding a log here for safety.
+             console.error('currentToolCallId was unexpectedly undefined after checks')
           }
         }
         continue
       }
       if (choice?.finish_reason) {
         const reasonFromAPI = choice.finish_reason
-        console.log('Finish Reason from API:', reasonFromAPI)
+        // console.log('Finish Reason from API:', reasonFromAPI)
 
-        // 优先处理 tool_calls 完成的情况
+        // Determine the stop reason based on the API finish reason
         if (reasonFromAPI === 'tool_calls') {
-          // 确保所有累积的参数都已处理，并发送end事件
-          for (const toolId in nativeToolCalls) {
-            const tool = nativeToolCalls[toolId]
-            if (tool.name && tool.arguments) {
-              // 确保工具调用是完整的
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: toolId,
-                tool_call_arguments_complete: tool.arguments
-              }
-            }
-          }
+          // Don't send end events here, just set the reason
           stopReason = 'tool_use'
-          toolUseDetected = true // 确保toolUseDetected为true
+          toolUseDetected = true // Ensure flag is set
+          // console.log('Tool use detected, stream continues to ensure args complete.')
         } else if (toolUseDetected) {
-          // 如果之前检测到工具使用，但finish_reason不是tool_calls (可能是stop或length)
-          // 也需要结束所有工具调用
-          for (const toolId in nativeToolCalls) {
-            const tool = nativeToolCalls[toolId]
-            if (tool.name && tool.arguments) {
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: toolId,
-                tool_call_arguments_complete: tool.arguments
-              }
-            }
-          }
+          // If tool use was detected previously, but API stopped for other reasons (e.g., stop, length)
+          // Set stop reason accordingly, but still rely on the post-loop logic to send end events
           stopReason =
             reasonFromAPI === 'stop'
               ? 'complete'
               : reasonFromAPI === 'length'
                 ? 'max_tokens'
                 : 'error'
+          // console.log(`Tool use was detected, but API finished with ${reasonFromAPI}. Stop reason set to: ${stopReason}`)
         } else if (reasonFromAPI === 'stop') {
           stopReason = 'complete'
         } else if (reasonFromAPI === 'length') {
@@ -313,8 +316,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           stopReason = 'error'
         }
 
-        console.log('Final Stop Reason Set:', stopReason)
-        break // 跳出主循环，后续会发送 stop 事件
+        // console.log('Intermediate Stop Reason Set (will be finalized after loop):', stopReason)
+        // REMOVED break; // Continue processing remaining chunks even after finish_reason
+        continue // Continue to potentially process content in the same chunk
       }
       if (!currentContent) continue
 
@@ -387,9 +391,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             const callContent = mainBuffer.substring(0, endTagIndex)
             const remainingAfterTag = mainBuffer.substring(endTagIndex + tagEndMarker.length)
 
-            console.log('>>> Function call completed. Content:', callContent)
+            // console.log('>>> Function call completed. Content:', callContent)
             toolUseDetected = true
-            console.log('>>> Set toolUseDetected = true')
+            // console.log('>>> Set toolUseDetected = true')
 
             const fullTagForParsing = `${tagStartMarker}${callContent}${tagEndMarker}`
             const parsedCalls = this.parseFunctionCalls(
@@ -490,6 +494,39 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     } // End for await...of stream
 
     // --- Finalization ---
+
+    // Final check and emission for native tool calls
+    if (supportsFunctionCall && toolUseDetected) {
+      // console.log('Stream finished. Finalizing native tool calls:', nativeToolCalls)
+      for (const toolId in nativeToolCalls) {
+        const tool = nativeToolCalls[toolId]
+        if (tool.name && tool.arguments) {
+          // console.log(`Sending tool_call_end for ${toolId}`)
+          // Ensure arguments are valid JSON before emitting (optional but good practice)
+          try {
+             // Attempt to parse to check validity, but send the original string
+             JSON.parse(tool.arguments)
+             yield {
+                type: 'tool_call_end',
+                tool_call_id: toolId,
+                tool_call_arguments_complete: tool.arguments
+             }
+          } catch (e) {
+             console.error(`Error parsing arguments for tool ${toolId}, arguments: ${tool.arguments}`, e)
+             // Decide how to handle invalid JSON - perhaps send an error event or log?
+             // Sending end event with potentially problematic arguments for now.
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: toolId,
+                tool_call_arguments_complete: tool.arguments // Send as received
+              }
+          }
+        } else {
+           console.warn(`Tool call ${toolId} is incomplete (missing name or arguments) and will not have an end event. Name: ${tool.name}, Args: ${tool.arguments}`)
+        }
+      }
+    }
+
     // Yield any remaining buffer content (could be partial tags or text)
     if (mainBuffer) {
       console.warn('Finalizing with non-empty buffer:', mainBuffer)
@@ -894,7 +931,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // 确保有字符跟在<后面
       const afterLessThan = content.substring(lessThanIndex)
       const tagPrefix = '<function_call>'
-      console.log('afterLessThan', afterLessThan, tagPrefix)
+      // console.log('afterLessThan', afterLessThan, tagPrefix)
       // 检查是否是function_call标签的部分开始
       if (tagPrefix.startsWith(afterLessThan)) {
         // 将前面部分作为普通内容输出
