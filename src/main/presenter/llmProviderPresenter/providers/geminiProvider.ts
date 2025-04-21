@@ -164,7 +164,7 @@ export class GeminiProvider extends BaseLLMProvider {
     try {
       const model = this.getModel('models/gemini-1.5-flash-8b', 0.4)
       const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join('\n')
-      const prompt = `请为以下对话生成一个简洁的标题，不超过10个字，不使用标点符号或其他特殊符号，语言应该匹配用户的主要语言：\n\n${conversationText}`
+      const prompt = `请为以下对话生成一个简洁的标题，不超过10个字，不使用标点符号或其他特殊符号，标题语言应该匹配对话的语言：\n\n${conversationText}`
 
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }]
