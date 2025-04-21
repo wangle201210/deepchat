@@ -1,0 +1,244 @@
+import { Server } from '@modelcontextprotocol/sdk/server/index.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ToolSchema
+} from '@modelcontextprotocol/sdk/types.js'
+import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema'
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
+import axios from 'axios'
+
+// Schema definitions
+const DifyKnowledgeSearchArgsSchema = z.object({
+  query: z.string().describe('搜索查询内容 (必填)'),
+  topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
+  scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)')
+})
+
+const ToolInputSchema = ToolSchema.shape.inputSchema
+type ToolInput = z.infer<typeof ToolInputSchema>
+
+// 定义Dify API返回的数据结构
+interface DifySearchResponse {
+  query: {
+    content: string
+  }
+  records: Array<{
+    segment: {
+      id: string
+      position: number
+      document_id: string
+      content: string
+      word_count: number
+      tokens: number
+      keywords: string[]
+      index_node_id: string
+      index_node_hash: string
+      hit_count: number
+      enabled: boolean
+      status: string
+      created_by: string
+      created_at: number
+      indexing_at: number
+      completed_at: number
+      document?: {
+        id: string
+        data_source_type: string
+        name: string
+      }
+    }
+    score: number
+  }>
+}
+
+// 导入MCPTextContent接口
+import { MCPTextContent } from '@shared/presenter'
+
+export class DifyKnowledgeServer {
+  private server: Server
+  private apiKey: string
+  private endpoint: string
+  private datasetId: string
+
+  constructor(env?: Record<string, string>) {
+    if (!env?.apiKey) {
+      throw new Error('需要提供Dify API Key')
+    }
+    if (!env?.datasetId) {
+      throw new Error('需要提供Dify Dataset ID')
+    }
+
+    this.apiKey = env.apiKey
+    this.datasetId = env.datasetId
+    this.endpoint = env.endpoint || 'https://api.dify.ai/v1'
+
+    // 创建服务器实例
+    this.server = new Server(
+      {
+        name: 'deepchat-inmemory/dify-knowledge-server',
+        version: '0.1.0'
+      },
+      {
+        capabilities: {
+          tools: {}
+        }
+      }
+    )
+
+    // 设置请求处理器
+    this.setupRequestHandlers()
+  }
+
+  // 启动服务器
+  public startServer(transport: Transport): void {
+    this.server.connect(transport)
+  }
+
+  // 设置请求处理器
+  private setupRequestHandlers(): void {
+    // 设置工具列表处理器
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
+      console.log('setRequestHandler', zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput)
+      return {
+        tools: [
+          {
+            name: 'dify_knowledge_search',
+            description:
+              '使用Dify知识库搜索功能，根据查询内容检索相关的知识库文档，返回文档内容、来源和相关度评分。',
+            inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput
+          }
+        ]
+      }
+    })
+
+    // 设置工具调用处理器
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const { name, arguments: parameters } = request.params
+      if (name === 'dify_knowledge_search') {
+        try {
+          return await this.performDifyKnowledgeSearch(parameters)
+        } catch (error) {
+          console.error('Dify知识库搜索失败:', error)
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`
+              }
+            ]
+          }
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `未知工具: ${name}`
+          }
+        ]
+      }
+    })
+  }
+
+  // 执行Dify知识库搜索
+  private async performDifyKnowledgeSearch(
+    parameters: Record<string, unknown> | undefined
+  ): Promise<{ content: MCPTextContent[] }> {
+    const {
+      query,
+      topK = 5,
+      scoreThreshold = 0.5
+    } = parameters as {
+      query: string
+      topK?: number
+      scoreThreshold?: number
+    }
+
+    if (!query) {
+      throw new Error('查询内容不能为空')
+    }
+
+    try {
+      const url = `${this.endpoint.replace(/\/$/, '')}/datasets/${this.datasetId}/retrieve`
+      console.log('performDifyKnowledgeSearch request', url, {
+        query,
+        retrieval_model: {
+          top_k: topK,
+          score_threshold: scoreThreshold
+        }
+      })
+
+      const response = await axios.post<DifySearchResponse>(
+        url,
+        {
+          query,
+          retrieval_model: {
+            top_k: topK,
+            score_threshold: scoreThreshold,
+            reranking_enable: null, // 下面这两个字段即使为空也必须要有，否则接口无法请求
+            score_threshold_enabled: null
+          }
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiKey}`
+          }
+        }
+      )
+
+      // 处理响应数据
+      const results = response.data.records.map((record) => {
+        const docName = record.segment.document?.name || '未知文档'
+        const docId = record.segment.document_id
+        const content = record.segment.content
+        const score = record.score
+
+        return {
+          title: docName,
+          documentId: docId,
+          content: content,
+          score: score,
+          keywords: record.segment.keywords || []
+        }
+      })
+
+      // 构建响应
+      let resultText = `### 查询: ${query}\n\n`
+
+      if (results.length === 0) {
+        resultText += '未找到相关结果。'
+      } else {
+        resultText += `找到 ${results.length} 条相关结果:\n\n`
+
+        results.forEach((result, index) => {
+          resultText += `#### ${index + 1}. ${result.title} (相关度: ${(result.score * 100).toFixed(2)}%)\n`
+          resultText += `${result.content}\n\n`
+
+          if (result.keywords && result.keywords.length > 0) {
+            resultText += `关键词: ${result.keywords.join(', ')}\n\n`
+          }
+        })
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: resultText
+          }
+        ]
+      }
+    } catch (error) {
+      console.error('Dify API请求失败:', error)
+      if (axios.isAxiosError(error) && error.response) {
+        throw new Error(
+          `Dify API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`
+        )
+      }
+      throw error
+    }
+  }
+}

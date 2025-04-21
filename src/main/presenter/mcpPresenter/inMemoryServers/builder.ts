@@ -4,6 +4,7 @@ import { BochaSearchServer } from './bochaSearchServer'
 import { BraveSearchServer } from './braveSearchServer'
 import { ImageServer } from './imageServer'
 import { PowerpackServer } from './powerpackServer'
+import { DifyKnowledgeServer } from './difyKnowledgeServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -23,6 +24,8 @@ export function getInMemoryServer(
       return new ImageServer(args[0], args[1])
     case 'powerpack':
       return new PowerpackServer()
+    case 'difyKnowledge':
+      return new DifyKnowledgeServer(env)
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

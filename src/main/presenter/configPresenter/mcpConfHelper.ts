@@ -63,6 +63,20 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     },
     disable: false
   },
+  difyKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置Dify知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'difyKnowledge',
+    env: {
+      apiKey: 'YOUR_DIFY_API_KEY', // 需要用户提供实际的API Key
+      datasetId: 'YOUR_DATASET_ID', // 需要用户提供实际的Dataset ID
+      endpoint: 'https://api.dify.ai/v1' // 可选，默认为https://api.dify.ai/v1
+    },
+    disable: false
+  },
   imageServer: {
     args: [],
     descriptions: 'Image processing MCP service',
