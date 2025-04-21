@@ -9,11 +9,26 @@
           <p class="text-sm text-muted-foreground px-8">
             {{ t('about.description') }}
           </p>
-          <a
-            class="text-xs text-muted-foreground hover:text-primary"
-            href="https://deepchat.thinkinai.xyz/"
-            >{{ t('about.website') }}</a
-          >
+          <div class="flex gap-2">
+            <a
+              class="text-xs text-muted-foreground hover:text-primary flex items-center"
+              href="https://deepchat.thinkinai.xyz/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon icon="lucide:globe" class="mr-1 h-3 w-3" />
+              {{ t('about.website') }}</a
+            >
+            <a
+              class="text-xs text-muted-foreground hover:text-primary flex items-center"
+              href="https://github.com/ThinkInAIXYZ/deepchat"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon icon="lucide:github" class="mr-1 h-3 w-3" />
+              GitHub
+            </a>
+          </div>
         </div>
 
         <!-- 操作按钮区域 -->
