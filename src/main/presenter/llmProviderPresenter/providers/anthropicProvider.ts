@@ -1,4 +1,11 @@
-import { LLM_PROVIDER, LLMResponse, LLMResponseStream, MODEL_META } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  MODEL_META,
+  LLMCoreStreamEvent,
+  ModelConfig,
+  MCPToolDefinition
+} from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import Anthropic from '@anthropic-ai/sdk'
@@ -189,53 +196,269 @@ export class AnthropicProvider extends BaseLLMProvider {
     system?: string
     messages: Anthropic.MessageParam[]
   } {
-    const formattedMessages: Anthropic.MessageParam[] = []
-    let systemContent = ''
+    // console.log('开始格式化消息，总消息数:', messages.length)
 
-    // 收集所有系统消息
+    // 提取系统消息
+    let systemContent = ''
     for (const msg of messages) {
       if (msg.role === 'system') {
         systemContent +=
           (typeof msg.content === 'string'
             ? msg.content
-            : msg.content
-                .filter((c) => c.type === 'text')
-                .map((c) => c.text)
-                .join('\n')) + '\n'
-      } else {
-        // 处理消息内容
-        let formattedContent: Anthropic.ContentBlockParam[] = []
+            : msg.content && Array.isArray(msg.content)
+              ? msg.content
+                  .filter((c) => c.type === 'text')
+                  .map((c) => c.text || '')
+                  .join('\n')
+              : '') + '\n'
+      }
+    }
+
+    // 定义消息组和内容块的类型
+    type ContentBlock = Anthropic.ContentBlockParam
+    type ToolCall = { id: string; function: { name: string; arguments?: string } }
+    type MessageGroup = {
+      role: string
+      contents: ContentBlock[]
+      toolCalls?: string[]
+      hasToolUse?: boolean
+    }
+
+    // 预处理：对消息进行分组
+    // 新的逻辑：每个assistant消息如果包含tool_calls，就单独成组
+    const messageGroups: MessageGroup[] = []
+    let currentGroup: MessageGroup | null = null
+
+    // 用于跟踪tool_calls和tool响应的匹配
+    const toolResponseMap = new Map<string, ContentBlock>()
+
+    // 第一阶段：建立初始分组和收集工具响应
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i]
+      if (msg.role === 'system') continue // 系统消息已处理
+
+      // console.log(
+      //   `处理第${i + 1}条消息, 角色:${msg.role}`,
+      //   msg.content
+      //     ? typeof msg.content === 'string'
+      //       ? '内容长度:' + msg.content.length
+      //       : '数组内容长度:' + (Array.isArray(msg.content) ? msg.content.length : 0)
+      //     : '无内容'
+      // )
+
+      // 处理工具响应，将其与对应的工具调用关联
+      if (msg.role === 'tool' && 'tool_call_id' in msg) {
+        const toolCallId = msg.tool_call_id as string
+        const responseContent =
+          typeof msg.content === 'string'
+            ? msg.content
+            : Array.isArray(msg.content)
+              ? JSON.stringify(msg.content)
+              : ''
+
+        toolResponseMap.set(toolCallId, {
+          type: 'tool_result',
+          tool_use_id: toolCallId,
+          content: responseContent
+        } as ContentBlock)
+
+        // console.log('记录tool响应，tool_call_id:', toolCallId)
+        continue
+      }
+
+      // 处理用户消息 - 开始新组
+      if (msg.role === 'user') {
+        if (currentGroup) {
+          messageGroups.push(currentGroup)
+        }
+
+        let formattedContent: ContentBlock[] = []
         if (typeof msg.content === 'string') {
           formattedContent = [{ type: 'text', text: msg.content }]
-        } else {
-          formattedContent = msg.content.map((content) => {
-            if (content.type === 'image_url') {
+        } else if (msg.content && Array.isArray(msg.content)) {
+          formattedContent = msg.content.map((c) => {
+            if (c.type === 'image_url' && c.image_url) {
               return {
                 type: 'image',
-                source: content.image_url?.url?.startsWith('data:image')
+                source: c.image_url.url.startsWith('data:image')
                   ? {
                       type: 'base64',
-                      data: content.image_url.url.split(',')[1],
-                      media_type: content.image_url.url.split(';')[0].split(':')[1] as
+                      data: c.image_url.url.split(',')[1],
+                      media_type: c.image_url.url.split(';')[0].split(':')[1] as
                         | 'image/jpeg'
                         | 'image/png'
                         | 'image/gif'
                         | 'image/webp'
                     }
-                  : { type: 'url', url: content.image_url!.url }
-              }
+                  : { type: 'url', url: c.image_url.url }
+              } as ContentBlock
             } else {
-              return { type: 'text', text: content.text || '' }
+              return { type: 'text', text: c.text || '' } as ContentBlock
             }
           })
         }
 
-        formattedMessages.push({
-          role: msg.role as 'user' | 'assistant',
-          content: formattedContent
-        })
+        currentGroup = {
+          role: 'user',
+          contents: formattedContent
+        }
+
+        // console.log('开始新的用户消息组')
+        continue
+      }
+
+      // 处理assistant消息 - 添加到当前组或开始新组
+      if (msg.role === 'assistant') {
+        // 检查是否需要新建一个组：
+        // 1. 当前还没有组
+        // 2. 当前组不是assistant
+        // 3. 当前组是assistant但包含了工具调用
+        const shouldCreateNewGroup =
+          !currentGroup || currentGroup.role !== 'assistant' || currentGroup.hasToolUse === true
+
+        if (shouldCreateNewGroup) {
+          if (currentGroup) {
+            messageGroups.push(currentGroup)
+          }
+
+          currentGroup = {
+            role: 'assistant',
+            contents: [],
+            toolCalls: [],
+            hasToolUse: false
+          }
+        }
+
+        // 确保currentGroup已初始化
+        if (!currentGroup) {
+          currentGroup = {
+            role: 'assistant',
+            contents: [],
+            toolCalls: [],
+            hasToolUse: false
+          }
+        }
+
+        // 处理常规内容
+        if (msg.content) {
+          let assistantContent: ContentBlock[] = []
+          if (typeof msg.content === 'string') {
+            if (msg.content.trim()) {
+              assistantContent = [{ type: 'text', text: msg.content }]
+            }
+          } else if (Array.isArray(msg.content)) {
+            // 处理各种内容类型
+            for (const content of msg.content) {
+              if (content.type === 'text') {
+                currentGroup.contents.push({
+                  type: 'text',
+                  text: content.text || ''
+                } as ContentBlock)
+              } else if (content.type === 'image_url' && content.image_url) {
+                currentGroup.contents.push({
+                  type: 'image',
+                  source: content.image_url.url.startsWith('data:image')
+                    ? {
+                        type: 'base64',
+                        data: content.image_url.url.split(',')[1],
+                        media_type: content.image_url.url.split(';')[0].split(':')[1] as
+                          | 'image/jpeg'
+                          | 'image/png'
+                          | 'image/gif'
+                          | 'image/webp'
+                      }
+                    : { type: 'url', url: content.image_url.url }
+                } as ContentBlock)
+              }
+            }
+
+            continue
+          }
+
+          currentGroup.contents.push(...assistantContent)
+          // console.log('添加文本内容到当前assistant组, 项数:', assistantContent.length)
+        }
+
+        // 处理tool_calls
+        if ('tool_calls' in msg && Array.isArray(msg.tool_calls)) {
+          // console.log('处理assistant消息中的tool_calls', msg.tool_calls.length)
+
+          // 标记当前组包含工具调用
+          if (currentGroup) {
+            currentGroup.hasToolUse = true
+          }
+
+          for (const toolCall of msg.tool_calls as ToolCall[]) {
+            try {
+              // @ts-ignore - 转换为Anthropic格式
+              currentGroup.contents.push({
+                type: 'tool_use',
+                id: toolCall.id,
+                name: toolCall.function.name,
+                input: JSON.parse(toolCall.function.arguments || '{}')
+              } as ContentBlock)
+
+              // console.log('添加tool_call到当前assistant组:', toolCall.function.name)
+
+              // 记录工具调用，稍后查找响应
+              if (!currentGroup.toolCalls) currentGroup.toolCalls = []
+              currentGroup.toolCalls.push(toolCall.id)
+            } catch (e) {
+              console.error('Error processing tool_call:', e)
+            }
+          }
+        }
       }
     }
+
+    // 添加最后一个组
+    if (currentGroup) {
+      messageGroups.push(currentGroup)
+    }
+
+    // console.log('预处理完成，消息组数量:', messageGroups.length)
+
+    // 第二阶段：生成最终的格式化消息
+    const formattedMessages: Anthropic.MessageParam[] = []
+
+    for (const group of messageGroups) {
+      if (group.contents.length === 0) continue
+
+      // 添加组的主要内容
+      formattedMessages.push({
+        role: group.role as 'user' | 'assistant',
+        content: group.contents as Anthropic.ContentBlockParam[]
+      })
+
+      // console.log(`添加${group.role}组，内容项数:${group.contents.length}`)
+
+      // 如果是assistant组且有工具调用，添加对应的工具响应
+      if (group.role === 'assistant' && group.toolCalls && group.toolCalls.length > 0) {
+        for (const toolCallId of group.toolCalls) {
+          const toolResponse = toolResponseMap.get(toolCallId)
+          if (toolResponse) {
+            formattedMessages.push({
+              role: 'user',
+              content: [toolResponse]
+            })
+
+            // console.log('添加工具响应，tool_call_id:', toolCallId)
+          }
+        }
+      }
+    }
+
+    // console.log('格式化完成, 最终消息数:', formattedMessages.length)
+    // 为调试目的，打印前3条消息的结构
+    // formattedMessages.slice(0, Math.min(3, formattedMessages.length)).forEach((msg, i) => {
+    //   console.log(`最终消息#${i + 1}:`, {
+    //     role: msg.role,
+    //     contentLength: Array.isArray(msg.content) ? msg.content.length : 0,
+    //     contentTypes: Array.isArray(msg.content)
+    //       ? msg.content.map((c) => c.type).join(',')
+    //       : typeof msg.content
+    //   })
+    // })
 
     return {
       system: systemContent || undefined,
@@ -430,15 +653,21 @@ ${context}
     }
   }
 
-  async *streamCompletions(
+  // 添加coreStream方法
+  async *coreStream(
     messages: ChatMessage[],
     modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    mcpTools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    if (!this.anthropic) throw new Error('Anthropic client is not initialized')
+    if (!modelId) throw new Error('Model ID is required')
+    console.log('modelConfig', modelConfig, modelId)
     try {
-      // 获取MCP工具定义
-      const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+      // 格式化消息
+      const formattedMessagesObject = this.formatMessages(messages)
 
       // 将MCP工具转换为Anthropic工具格式
       const anthropicTools =
@@ -446,603 +675,248 @@ ${context}
           ? await presenter.mcpPresenter.mcpToolsToAnthropicTools(mcpTools, this.provider.id)
           : undefined
 
-      // 添加工具调用计数
-      let toolCallCount = 0
-      const MAX_TOOL_CALLS = BaseLLMProvider.MAX_TOOL_CALLS // 最大工具调用次数限制
-
-      // 维护消息上下文
-      const currentMessages = [...messages]
-      const formattedMessagesObject = this.formatMessages(currentMessages)
-
-      // 记录是否需要继续对话
-      let needContinueConversation = false
-
-      // 存储思考内容
-      let totalReasoningContent = ''
-      const totalUsage: {
-        prompt_tokens: number
-        completion_tokens: number
-        total_tokens: number
-      } = {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0
-      }
-      // 主循环，支持多轮工具调用
-      while (true) {
-        // 创建流参数
-        const streamParams = {
-          model: modelId,
-          max_tokens: maxTokens || 1024,
-          temperature: temperature || 0.7,
-          messages: formattedMessagesObject.messages,
-          stream: true
-        } as Anthropic.Messages.MessageCreateParamsStreaming
-        // Claude 3.7 添加思考功能
-        if (modelId.includes('claude-3-7')) {
-          streamParams.thinking = { budget_tokens: 1024, type: 'enabled' }
-          streamParams.temperature = 1
-        }
-        // 如果有系统消息，添加到请求参数中
-        if (formattedMessagesObject.system) {
-          // @ts-ignore - system 属性在类型定义中可能不存在，但API已支持
-          streamParams.system = formattedMessagesObject.system
-        }
-
-        // 只有在有工具且工具列表不为空时才添加工具参数
-        if (anthropicTools && anthropicTools.length > 0) {
-          // @ts-ignore - 类型不匹配，但格式是正确的
-          streamParams.tools = anthropicTools
-        }
-
-        // 收集工具调用
-        const toolCalls: Array<{
-          id: string
-          name: string
-          input: Record<string, unknown>
-        }> = []
-        let currentContent = ''
-        // 存储当前响应的思考内容
-        let currentReasoningContent = ''
-        // 存储当前正在处理的工具调用索引
-        let currentToolIndex = -1
-        // 是否在等待工具返回
-        let waitingForToolResponse = false
-        // 存储累积的 JSON 字符串
-        let accumulatedJson = ''
-
-        // 重置继续对话标志
-        needContinueConversation = false
-
-        // 创建Anthropic流
-        const stream = await this.anthropic.messages.create(streamParams)
-        const currentUsage: {
-          prompt_tokens: number
-          completion_tokens: number
-          total_tokens: number
-        } = {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-        // 处理流中的各种事件
-        for await (const chunk of stream) {
-          // 处理消息开始
-          if (chunk.type === 'message_start') {
-            // 可以记录消息ID等信息，如果需要的话
-            if (chunk.message.usage) {
-              currentUsage.completion_tokens = chunk.message.usage.output_tokens
-              currentUsage.prompt_tokens = chunk.message.usage.input_tokens
-              currentUsage.total_tokens =
-                chunk.message.usage.input_tokens + chunk.message.usage.output_tokens
-            }
-            continue
-          }
-
-          // 处理内容块开始
-          if (chunk.type === 'content_block_start') {
-            // 重置累积的 JSON 字符串
-            accumulatedJson = ''
-
-            // 处理工具使用开始
-            // @ts-ignore - Anthropic SDK 类型定义不完整
-            if (chunk.content_block?.type === 'tool_use') {
-              // @ts-ignore - content_block 不在类型定义中
-              const toolId = chunk.content_block.id
-              // @ts-ignore - content_block 不在类型定义中
-              const toolName = chunk.content_block.name || ''
-
-              toolCalls.push({
-                id: toolId,
-                name: toolName,
-                input: {}
-              })
-
-              currentToolIndex = toolCalls.length - 1
-              waitingForToolResponse = true
-
-              continue
-            }
-            continue
-          }
-
-          // 处理内容块结束
-          if (chunk.type === 'content_block_stop') {
-            // 如果有累积的JSON字符串且当前有正在处理的工具调用
-            if (accumulatedJson && currentToolIndex >= 0 && currentToolIndex < toolCalls.length) {
-              try {
-                // 尝试解析完整的JSON字符串
-                // console.log('解析完整JSON:', accumulatedJson)
-
-                // 移除可能的前导/尾随空格并检查是否是有效的JSON格式
-                const jsonStr = accumulatedJson.trim()
-                if (jsonStr && (jsonStr.startsWith('{') || jsonStr.startsWith('['))) {
-                  try {
-                    const jsonObject = JSON.parse(jsonStr)
-                    if (jsonObject && typeof jsonObject === 'object') {
-                      toolCalls[currentToolIndex].input = {
-                        ...toolCalls[currentToolIndex].input,
-                        ...jsonObject
-                      }
-                    }
-                  } catch (e) {
-                    console.error('解析完整JSON失败:', e)
-
-                    // 尝试提取部分键值对
-                    // 例如 {"path": "src/main"} 格式的提取
-                    const keyValuePairs = jsonStr.match(/"([^"]+)":\s*"([^"]+)"/g)
-                    if (keyValuePairs) {
-                      for (const pair of keyValuePairs) {
-                        const match = pair.match(/"([^"]+)":\s*"([^"]+)"/)
-                        if (match && match.length >= 3) {
-                          const key = match[1]
-                          const value = match[2]
-                          toolCalls[currentToolIndex].input[key] = value
-                        }
-                      }
-                    }
-                  }
-                }
-              } catch (e) {
-                console.error('处理累积JSON失败:', e)
-              }
-
-              // 重置累积的JSON
-              accumulatedJson = ''
-            }
-            continue
-          }
-
-          // 处理消息状态更新
-          if (chunk.type === 'message_delta') {
-            if (chunk.usage) {
-              currentUsage.completion_tokens = chunk.usage.output_tokens
-            }
-            // 检查是否因为工具调用而停止
-            if (chunk.delta?.stop_reason === 'tool_use') {
-              // 工具调用导致停止，需要处理工具调用
-              if (waitingForToolResponse && toolCalls.length > 0) {
-                needContinueConversation = true
-
-                // 添加助手消息到上下文
-                const assistantMessage: Anthropic.MessageParam = {
-                  role: 'assistant',
-                  content: [{ type: 'text', text: currentContent }]
-                }
-                formattedMessagesObject.messages.push(assistantMessage)
-
-                // 处理所有等待的工具调用
-                for (const toolCall of toolCalls) {
-                  if (!toolCall.name) continue
-
-                  // 将Anthropic工具使用转换为MCP工具调用
-                  console.log('执行工具调用:', toolCall)
-
-                  const mcpToolCall = await presenter.mcpPresenter.anthropicToolUseToMcpTool(
-                    { name: toolCall.name, input: toolCall.input },
-                    this.provider.id
-                  )
-
-                  if (mcpToolCall) {
-                    // 增加工具调用计数
-                    toolCallCount++
-
-                    // 检查是否达到最大工具调用次数
-                    if (toolCallCount >= MAX_TOOL_CALLS) {
-                      yield {
-                        maximum_tool_calls_reached: true,
-                        tool_call_id: mcpToolCall.id,
-                        tool_call_name: mcpToolCall.function.name,
-                        tool_call_params: mcpToolCall.function.arguments,
-                        tool_call_server_name: mcpToolCall.server.name,
-                        tool_call_server_icons: mcpToolCall.server.icons,
-                        tool_call_server_description: mcpToolCall.server.description
-                      }
-                      needContinueConversation = false
-                      break
-                    }
-                    yield {
-                      content: '',
-                      tool_call: 'start',
-                      tool_call_name: toolCall.name,
-                      tool_call_params: JSON.stringify(toolCall.input),
-                      tool_call_id: `anthropic-${toolCall.id}`,
-                      tool_call_server_name: mcpToolCall.server.name,
-                      tool_call_server_icons: mcpToolCall.server.icons,
-                      tool_call_server_description: mcpToolCall.server.description
-                    }
-
-                    try {
-                      // 调用工具并获取响应
-                      const toolResponse = await presenter.mcpPresenter.callTool(mcpToolCall)
-
-                      // 处理响应内容，为多模态内容做特殊处理
-                      let responseContent = ''
-                      const contentBlocks: Anthropic.ContentBlockParam[] = []
-
-                      // 根据内容类型进行不同处理
-                      if (typeof toolResponse.rawData.content === 'string') {
-                        // 字符串类型直接使用
-                        responseContent = toolResponse.rawData.content
-                        contentBlocks.push({
-                          type: 'text',
-                          text: `Tool response: ${responseContent}`
-                        })
-                      } else if (Array.isArray(toolResponse.rawData.content)) {
-                        // 处理结构化内容数组
-                        const contentParts: string[] = []
-
-                        for (const item of toolResponse.rawData.content) {
-                          if (item.type === 'text') {
-                            // 处理文本内容
-                            contentParts.push(item.text)
-                            contentBlocks.push({ type: 'text', text: item.text })
-                          } else if (item.type === 'image') {
-                            // 处理图片内容
-                            contentParts.push(`[图片内容]`)
-
-                            // Anthropic需要特殊格式的图片数据
-                            if (item.data && item.mimeType) {
-                              // 处理可能的data:image格式
-                              let imageData = item.data
-                              let mediaType = item.mimeType
-
-                              // 检查是否是data:image开头的URL格式
-                              if (
-                                typeof imageData === 'string' &&
-                                imageData.startsWith('data:image')
-                              ) {
-                                // 从URL中提取base64数据
-                                imageData = imageData.split(',')[1]
-                                // 从URL中提取media_type
-                                mediaType = item.data.split(';')[0].split(':')[1]
-                              }
-
-                              contentBlocks.push({
-                                type: 'image',
-                                source: {
-                                  type: 'base64',
-                                  data: imageData,
-                                  media_type: mediaType as
-                                    | 'image/jpeg'
-                                    | 'image/png'
-                                    | 'image/gif'
-                                    | 'image/webp'
-                                }
-                              })
-                            }
-                          } else if (item.type === 'resource') {
-                            // 处理资源内容
-                            if ('text' in item.resource && item.resource.text) {
-                              // 文本资源
-                              contentParts.push(
-                                `[资源: ${item.resource.uri}]\n${item.resource.text}`
-                              )
-                              contentBlocks.push({
-                                type: 'text',
-                                text: `[资源: ${item.resource.uri}]\n${item.resource.text}`
-                              })
-                            } else if (
-                              'blob' in item.resource &&
-                              item.resource.mimeType?.startsWith('image/')
-                            ) {
-                              // 图片类型的二进制资源
-                              contentParts.push(`[图片资源: ${item.resource.uri}]`)
-
-                              // 处理资源blob，确保它不是undefined
-                              if (item.resource.blob) {
-                                // 处理可能的data:image格式
-                                let imageData = item.resource.blob
-                                let mediaType = item.resource.mimeType || 'image/jpeg'
-
-                                // 检查是否是data:image开头的URL格式
-                                if (
-                                  typeof imageData === 'string' &&
-                                  imageData.startsWith('data:image')
-                                ) {
-                                  // 从URL中提取base64数据
-                                  imageData = imageData.split(',')[1]
-                                  // 从URL中提取media_type
-                                  mediaType = item.resource.blob.split(';')[0].split(':')[1]
-                                }
-
-                                contentBlocks.push({
-                                  type: 'image',
-                                  source: {
-                                    type: 'base64',
-                                    data: imageData,
-                                    media_type: mediaType as
-                                      | 'image/jpeg'
-                                      | 'image/png'
-                                      | 'image/gif'
-                                      | 'image/webp'
-                                  }
-                                })
-                              }
-                            } else {
-                              // 其他资源类型
-                              contentParts.push(`[资源: ${item.resource.uri}]`)
-                              contentBlocks.push({
-                                type: 'text',
-                                text: `[资源: ${item.resource.uri}]`
-                              })
-                            }
-                          } else {
-                            // 处理其他未知类型
-                            const itemStr = JSON.stringify(item)
-                            contentParts.push(itemStr)
-                            contentBlocks.push({ type: 'text', text: itemStr })
-                          }
-                        }
-
-                        // 合并所有文本内容用于显示
-                        responseContent = contentParts.join('\n\n')
-                      } else {
-                        // 其他情况转为字符串
-                        responseContent = JSON.stringify(toolResponse.content)
-                        contentBlocks.push({
-                          type: 'text',
-                          text: `Tool response: ${responseContent}`
-                        })
-                      }
-
-                      // 如果没有成功提取任何内容块，添加默认文本块
-                      if (contentBlocks.length === 0) {
-                        contentBlocks.push({
-                          type: 'text',
-                          text: `Tool response: ${responseContent || '未获取到响应内容'}`
-                        })
-                      }
-
-                      // 添加工具结果到消息列表
-                      formattedMessagesObject.messages.push({
-                        role: 'user',
-                        content: contentBlocks
-                      })
-                      yield {
-                        content: '',
-                        tool_call: 'end',
-                        tool_call_name: toolCall.name,
-                        tool_call_params: JSON.stringify(toolCall.input),
-                        tool_call_response: responseContent,
-                        tool_call_id: `anthropic-${toolCall.id}`,
-                        tool_call_server_name: mcpToolCall.server.name,
-                        tool_call_server_icons: mcpToolCall.server.icons,
-                        tool_call_server_description: mcpToolCall.server.description,
-                        tool_call_response_raw: toolResponse.rawData
-                      }
-                    } catch (error) {
-                      console.error('工具调用失败:', error)
-                      const errorMessage = error instanceof Error ? error.message : String(error)
-
-                      yield {
-                        content: '',
-                        tool_call: 'error',
-                        tool_call_name: toolCall.name,
-                        tool_call_params: JSON.stringify(toolCall.input),
-                        tool_call_response: errorMessage,
-                        tool_call_id: `anthropic-${toolCall.id}`,
-                        tool_call_server_name: mcpToolCall.server.name,
-                        tool_call_server_icons: mcpToolCall.server.icons,
-                        tool_call_server_description: mcpToolCall.server.description
-                      }
-
-                      // 添加错误响应到消息中
-                      formattedMessagesObject.messages.push({
-                        role: 'user',
-                        content: [
-                          {
-                            type: 'text',
-                            text: `Tool response error: ${errorMessage}`
-                          }
-                        ]
-                      })
-                    }
-                  }
-                }
-
-                // 如果达到最大工具调用次数，停止对话
-                if (toolCallCount >= MAX_TOOL_CALLS) {
-                  break
-                }
-
-                // 重置工具调用状态
-                waitingForToolResponse = false
-                toolCalls.length = 0
-                currentToolIndex = -1
-                accumulatedJson = ''
-                break
-              }
-            }
-            continue
-          }
-
-          // 处理消息结束
-          if (chunk.type === 'message_stop') {
-            // 消息完全结束
-            needContinueConversation = false
-            continue
-          }
-
-          // 处理工具使用更新 - input_json_delta
-          // @ts-ignore - 类型定义中没有工具相关字段
-          if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'input_json_delta') {
-            if (currentToolIndex >= 0 && currentToolIndex < toolCalls.length) {
-              // @ts-ignore - partial_json 不在类型定义中
-              const partialJson = chunk.delta.partial_json
-
-              if (partialJson) {
-                // 累积JSON片段
-                accumulatedJson += partialJson
-              }
-            }
-            continue
-          }
-
-          // 处理工具使用更新 - tool_use_delta
-          // @ts-ignore - 类型定义中没有工具相关字段
-          if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'tool_use_delta') {
-            if (currentToolIndex >= 0) {
-              const toolCall = toolCalls[currentToolIndex]
-              // @ts-ignore - delta 不在类型定义中
-              if (chunk.delta.name) {
-                // @ts-ignore - 访问 delta.name
-                toolCall.name = chunk.delta.name
-              }
-
-              // @ts-ignore - delta.input 不在类型定义中
-              if (chunk.delta.input) {
-                toolCall.input = {
-                  ...toolCall.input,
-                  // @ts-ignore - 访问 delta.input
-                  ...chunk.delta.input
-                }
-              }
-            }
-            continue
-          }
-
-          // 处理常规文本内容
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            currentContent += chunk.delta.text
-            yield {
-              content: chunk.delta.text,
-              reasoning_content: undefined
-            }
-          }
-
-          // 处理思考内容（如果有）
-          // @ts-ignore - 类型定义中没有thinking相关字段
-          if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'thinking_delta') {
-            // @ts-ignore - delta.thinking不在类型定义中
-            const thinkingText = chunk.delta.thinking
-            currentReasoningContent += thinkingText
-            yield {
-              content: undefined,
-              reasoning_content: thinkingText
-            }
-          }
-        }
-        totalUsage.prompt_tokens += currentUsage.prompt_tokens
-        totalUsage.completion_tokens += currentUsage.completion_tokens
-        totalUsage.total_tokens += currentUsage.total_tokens
-        // 累积总的思考内容
-        if (currentReasoningContent) {
-          totalReasoningContent += currentReasoningContent
-        }
-
-        // 如果没有工具调用或不需要继续对话，结束循环
-        if (!needContinueConversation || toolCallCount >= MAX_TOOL_CALLS) {
-          break
-        }
-      }
-      yield {
-        totalUsage: totalUsage
-      }
-
-      // 输出累积的思考内容（如果有）
-      if (totalReasoningContent) {
-        yield {
-          content: undefined,
-          reasoning_content: totalReasoningContent
-        }
-      }
-
-      // 流结束标记
-      yield {
-        content: undefined,
-        reasoning_content: undefined
-      }
-    } catch (error) {
-      console.error('Anthropic stream completions error:', error)
-      yield {
-        content: `错误: ${error instanceof Error ? error.message : String(error)}`,
-        reasoning_content: undefined
-      }
-
-      yield {
-        content: undefined,
-        reasoning_content: undefined
-      }
-    }
-  }
-
-  async *streamSummaries(
-    text: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number,
-    systemPrompt?: string
-  ): AsyncGenerator<LLMResponseStream> {
-    const prompt = `请对以下内容进行摘要:
-
-${text}
-
-请提供一个简洁明了的摘要。`
-
-    yield* this.streamGenerateText(prompt, modelId, temperature, maxTokens, systemPrompt)
-  }
-
-  async *streamGenerateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number,
-    systemPrompt?: string
-  ): AsyncGenerator<LLMResponseStream> {
-    try {
-      const streamParams: Anthropic.Messages.MessageCreateParamsStreaming = {
+      // 创建基本请求参数
+      const streamParams = {
         model: modelId,
         max_tokens: maxTokens || 1024,
         temperature: temperature || 0.7,
-        messages: [{ role: 'user' as const, content: [{ type: 'text' as const, text: prompt }] }],
+        messages: formattedMessagesObject.messages,
         stream: true
+      } as Anthropic.Messages.MessageCreateParamsStreaming
+
+      // 启用Claude 3.7模型的思考功能
+      if (modelId.includes('claude-3-7')) {
+        streamParams.thinking = { budget_tokens: 1024, type: 'enabled' }
       }
 
-      // 如果提供了系统提示，添加到请求中
-      if (systemPrompt) {
-        // @ts-ignore - system 属性在类型定义中可能不存在，但API已支持
-        streamParams.system = systemPrompt
+      // 如果有系统消息，添加到请求参数中
+      if (formattedMessagesObject.system) {
+        // @ts-ignore - system属性在类型定义中可能不存在，但API已支持
+        streamParams.system = formattedMessagesObject.system
       }
 
+      // 添加工具参数
+      if (anthropicTools && anthropicTools.length > 0) {
+        // @ts-ignore - 类型不匹配，但格式是正确的
+        streamParams.tools = anthropicTools
+      }
+      // console.log('streamParams', JSON.stringify(streamParams.messages))
+      // 创建Anthropic流
       const stream = await this.anthropic.messages.create(streamParams)
 
+      // 状态变量
+      let accumulatedJson = ''
+      let toolUseDetected = false
+      let currentToolId = ''
+      let currentToolName = ''
+      let currentToolInputs: Record<string, unknown> = {}
+
+      // 处理流中的各种事件
       for await (const chunk of stream) {
-        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+        // 处理使用统计
+        if (chunk.type === 'message_start' && chunk.message.usage) {
           yield {
-            content: chunk.delta.text,
-            reasoning_content: undefined
+            type: 'usage',
+            usage: {
+              prompt_tokens: chunk.message.usage.input_tokens,
+              completion_tokens: chunk.message.usage.output_tokens,
+              total_tokens: chunk.message.usage.input_tokens + chunk.message.usage.output_tokens
+            }
           }
+        }
+
+        // 处理工具调用开始
+        // @ts-ignore - Anthropic SDK类型定义不完整
+        if (chunk.type === 'content_block_start' && chunk.content_block?.type === 'tool_use') {
+          toolUseDetected = true
+          // @ts-ignore - content_block不在类型定义中
+          currentToolId = chunk.content_block.id || `anthropic-tool-${Date.now()}`
+          // @ts-ignore - content_block不在类型定义中
+          currentToolName = chunk.content_block.name || ''
+          currentToolInputs = {}
+          accumulatedJson = ''
+
+          // 发送工具调用开始事件
+          if (currentToolName) {
+            yield {
+              type: 'tool_call_start',
+              tool_call_id: currentToolId,
+              tool_call_name: currentToolName
+            }
+          }
+          continue
+        }
+
+        // 处理工具调用参数更新 - input_json_delta
+        // @ts-ignore - 类型定义中没有工具相关字段
+        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'input_json_delta') {
+          // @ts-ignore - partial_json不在类型定义中
+          const partialJson = chunk.delta.partial_json
+          if (partialJson) {
+            accumulatedJson += partialJson
+
+            // 发送工具调用参数块事件
+            yield {
+              type: 'tool_call_chunk',
+              tool_call_id: currentToolId,
+              tool_call_arguments_chunk: partialJson
+            }
+          }
+          continue
+        }
+
+        // 处理工具使用更新 - tool_use_delta
+        // @ts-ignore - 类型定义中没有工具相关字段
+        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'tool_use_delta') {
+          // @ts-ignore - delta.name不在类型定义中
+          if (chunk.delta.name && !currentToolName) {
+            // @ts-ignore - 访问delta.name
+            currentToolName = chunk.delta.name
+            yield {
+              type: 'tool_call_start',
+              tool_call_id: currentToolId,
+              tool_call_name: currentToolName
+            }
+          }
+
+          // @ts-ignore - delta.input不在类型定义中
+          if (chunk.delta.input) {
+            currentToolInputs = {
+              ...currentToolInputs,
+              // @ts-ignore - 访问delta.input
+              ...chunk.delta.input
+            }
+          }
+          continue
+        }
+
+        // 处理内容块结束
+        if (chunk.type === 'content_block_stop') {
+          // 处理工具调用完成
+          if (toolUseDetected && currentToolName && accumulatedJson) {
+            try {
+              // 尝试解析完整的JSON
+              const jsonStr = accumulatedJson.trim()
+              if (jsonStr && (jsonStr.startsWith('{') || jsonStr.startsWith('['))) {
+                try {
+                  const jsonObject = JSON.parse(jsonStr)
+                  if (jsonObject && typeof jsonObject === 'object') {
+                    currentToolInputs = { ...currentToolInputs, ...jsonObject }
+                  }
+                } catch (e) {
+                  console.error('解析完整JSON失败:', e)
+                }
+              }
+            } catch (e) {
+              console.error('处理累积JSON失败:', e)
+            }
+
+            // 发送工具调用结束事件
+            const argsString = JSON.stringify(currentToolInputs)
+            yield {
+              type: 'tool_call_end',
+              tool_call_id: currentToolId,
+              tool_call_arguments_complete: argsString
+            }
+
+            // 重置工具调用状态
+            accumulatedJson = ''
+          }
+          continue
+        }
+
+        // 检查消息是否因为工具调用而停止
+        if (chunk.type === 'message_delta' && chunk.delta?.stop_reason === 'tool_use') {
+          // 设置为工具使用停止，主循环会处理工具调用
+          continue
+        }
+
+        // 处理思考内容（如果有）
+        // @ts-ignore - 类型定义中没有thinking相关字段
+        if (chunk.type === 'content_block_delta' && chunk.delta?.type === 'thinking_delta') {
+          // @ts-ignore - delta.thinking不在类型定义中
+          const thinkingText = chunk.delta.thinking
+          if (thinkingText) {
+            yield {
+              type: 'reasoning',
+              reasoning_content: thinkingText
+            }
+          }
+          continue
+        }
+
+        // 处理常规文本内容
+        if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+          const text = chunk.delta.text
+          if (text) {
+            // 处理<think>标签
+            if (text.includes('<think>')) {
+              const parts = text.split('<think>')
+              if (parts[0]) {
+                yield {
+                  type: 'text',
+                  content: parts[0]
+                }
+              }
+
+              if (parts[1]) {
+                // 检查是否包含</think>
+                const thinkParts = parts[1].split('</think>')
+                if (thinkParts.length > 1) {
+                  yield {
+                    type: 'reasoning',
+                    reasoning_content: thinkParts[0]
+                  }
+
+                  if (thinkParts[1]) {
+                    yield {
+                      type: 'text',
+                      content: thinkParts[1]
+                    }
+                  }
+                } else {
+                  yield {
+                    type: 'reasoning',
+                    reasoning_content: parts[1]
+                  }
+                }
+              }
+            } else if (text.includes('</think>')) {
+              const parts = text.split('</think>')
+              yield {
+                type: 'reasoning',
+                reasoning_content: parts[0]
+              }
+
+              if (parts[1]) {
+                yield {
+                  type: 'text',
+                  content: parts[1]
+                }
+              }
+            } else {
+              yield {
+                type: 'text',
+                content: text
+              }
+            }
+          }
+          continue
         }
       }
 
+      // 发送停止事件
       yield {
-        content: undefined,
-        reasoning_content: undefined
+        type: 'stop',
+        stop_reason: toolUseDetected ? 'tool_use' : 'complete'
       }
     } catch (error) {
-      console.error('Anthropic stream generate text error:', error)
-      throw error
+      console.error('Anthropic coreStream error:', error)
+      yield {
+        type: 'error',
+        error_message: error instanceof Error ? error.message : '未知错误'
+      }
+      yield { type: 'stop', stop_reason: 'error' }
     }
   }
 }

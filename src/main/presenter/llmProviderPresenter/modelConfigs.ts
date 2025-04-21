@@ -10,7 +10,7 @@ export interface ProviderModelConfigs {
  * @param modelId 模型ID
  * @returns ModelConfig | undefined 如果找到配置则返回，否则返回undefined
  */
-export function getModelConfig(modelId: string): ModelConfig | undefined {
+export function getModelConfig(modelId: string): ModelConfig {
   // 首先查找完全匹配的配置
   for (const config of defaultModelsSettings) {
     // 将modelId转为小写以进行不区分大小写的匹配
@@ -29,6 +29,13 @@ export function getModelConfig(modelId: string): ModelConfig | undefined {
     }
   }
 
-  // 如果没有找到匹配的配置，返回undefined
-  return undefined
+  // 如果没有找到匹配的配置，返回默认的安全配置
+  return {
+    maxTokens: 4096,
+    contextLength: 8192,
+    temperature: 0.6,
+    vision: false,
+    functionCall: false,
+    reasoning: false
+  }
 }

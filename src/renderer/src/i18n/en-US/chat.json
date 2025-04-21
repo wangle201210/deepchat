@@ -21,5 +21,8 @@
     "optimizing": "Optimizing search query...",
     "reading": "Searching and reading web pages...",
     "error": "Search failed"
+  },
+  "messages": {
+    "thinking": "Thinking..."
   }
 }

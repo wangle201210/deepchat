@@ -21,5 +21,8 @@
     "optimizing": "検索意図の抽出中...",
     "reading": "ウェブページの検索中...",
     "error": "検索に失敗しました"
+  },
+  "messages": {
+    "thinking": "考え..."
   }
 }

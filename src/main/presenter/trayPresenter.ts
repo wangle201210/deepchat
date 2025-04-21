@@ -1,6 +1,8 @@
 import { Tray, Menu, app, nativeImage, NativeImage } from 'electron'
 import path from 'path'
 import { WindowPresenter } from './windowPresenter'
+import { getContextMenuLabels } from '@shared/i18n'
+import { presenter } from '.'
 
 export class TrayPresenter {
   private tray: Tray | null = null
@@ -26,15 +28,18 @@ export class TrayPresenter {
     this.tray = new Tray(image)
     this.tray.setToolTip('DeepChat')
 
+    // 获取当前系统语言
+    const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN'
+    const labels = getContextMenuLabels(locale)
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: '打开',
+        label: labels.open || '打开',
         click: () => {
           this.windowPresenter.show()
         }
       },
       {
-        label: '退出',
+        label: labels.quit || '退出',
         click: () => {
           app.quit()
         }

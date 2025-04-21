@@ -2,16 +2,25 @@ import {
   LLM_PROVIDER,
   MODEL_META,
   LLMResponse,
-  LLMResponseStream,
-  MCPToolDefinition
+  MCPToolDefinition,
+  LLMCoreStreamEvent,
+  ModelConfig
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
 import { jsonrepair } from 'jsonrepair'
 // 定义ChatMessage接口用于统一消息格式
 export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string | ChatMessageContent[]
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content?: string | ChatMessageContent[]
+  tool_calls?: Array<{
+    function: {
+      arguments: string
+      name: string
+    }
+    id: string
+    type: 'function'
+  }>
 }
 
 export interface ChatMessageContent {
@@ -446,79 +455,21 @@ ${JSON.stringify(tools)}
   ): Promise<LLMResponse>
 
   /**
-   * 生成对话建议
-   *
-   * @param context 对话上下文
+   * [新] 核心流式处理方法
+   * 此方法由具体的提供商子类实现，负责单次API调用和事件标准化。
+   * @param messages 对话消息
    * @param modelId 模型ID
    * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 建议列表
+   * @param maxTokens 最大Token数
+   * @param tools 可选的 MCP 工具定义
+   * @returns 标准化流事件的异步生成器 (LLMCoreStreamEvent)
    */
-  abstract suggestions(
-    context: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<string[]>
-
-  /**
-   * 流式对话生成
-   *
-   * 该方法以流的形式实时返回生成内容，适用于交互式对话和需要实时反馈的场景。
-   * 特点：
-   * 1. 实时流式返回部分响应
-   * 2. 支持工具调用（通过function calling）
-   * 3. 支持思考过程的实时展示
-   * 4. 支持多轮工具调用的连续对话
-   *
-   * 流式响应包含：
-   * - content: 当前生成的内容片段
-   * - reasoning_content: 当前生成的思考过程片段
-   * - tool_call相关信息: 工具调用的各种状态和数据
-   * - totalUsage: 最终的token使用统计（仅在流结束时）
-   *
-   * @param messages 对话历史消息
-   * @param modelId 模型ID
-   * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 生成内容的异步迭代器
-   */
-  abstract streamCompletions(
+  abstract coreStream(
     messages: ChatMessage[],
     modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream>
-
-  /**
-   * 流式总结文本
-   *
-   * @param text 需要总结的文本
-   * @param modelId 模型ID
-   * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 总结内容的异步迭代器
-   */
-  abstract streamSummaries(
-    text: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream>
-
-  /**
-   * 流式生成文本
-   *
-   * @param prompt 文本提示
-   * @param modelId 模型ID
-   * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 生成内容的异步迭代器
-   */
-  abstract streamGenerateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream>
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    tools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent>
 }

@@ -487,6 +487,16 @@ export const useChatStore = defineStore('chat', () => {
     tool_call_server_icons?: string
     tool_call_server_description?: string
     tool_call?: 'start' | 'end' | 'error'
+    totalUsage?: {
+      prompt_tokens: number
+      completion_tokens: number
+      total_tokens: number
+    }
+    tool_call_response_raw?: unknown
+    image_data?: {
+      data: string
+      mimeType: string
+    }
   }) => {
     // 从缓存中查找消息
     const cached = generatingMessagesCache.value.get(msg.eventId)
@@ -561,6 +571,24 @@ export const useChatStore = defineStore('chat', () => {
             }
           }
         }
+        // 处理图像数据
+        else if (msg.image_data) {
+          const lastBlock = curMsg.content[curMsg.content.length - 1]
+          if (lastBlock) {
+            lastBlock.status = 'success'
+          }
+
+          curMsg.content.push({
+            type: 'image',
+            content: 'image',
+            status: 'success',
+            timestamp: Date.now(),
+            image_data: {
+              data: msg.image_data.data,
+              mimeType: msg.image_data.mimeType
+            }
+          })
+        }
         // 处理普通内容
         else if (msg.content) {
           const lastContentBlock = curMsg.content[curMsg.content.length - 1]
@@ -595,6 +623,16 @@ export const useChatStore = defineStore('chat', () => {
               timestamp: Date.now()
             })
           }
+        }
+      }
+
+      // 处理使用情况统计
+      if (msg.totalUsage) {
+        curMsg.usage = {
+          ...curMsg.usage,
+          total_tokens: msg.totalUsage.total_tokens,
+          input_tokens: msg.totalUsage.prompt_tokens,
+          output_tokens: msg.totalUsage.completion_tokens
         }
       }
 

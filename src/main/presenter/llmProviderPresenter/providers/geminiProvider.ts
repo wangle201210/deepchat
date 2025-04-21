@@ -1,5 +1,12 @@
-import { LLM_PROVIDER, MODEL_META, LLMResponse, LLMResponseStream } from '@shared/presenter'
-import { BaseLLMProvider, ChatMessage, ChatMessageContent } from '../baseProvider'
+import {
+  LLM_PROVIDER,
+  MODEL_META,
+  LLMResponse,
+  LLMCoreStreamEvent,
+  ModelConfig,
+  MCPToolDefinition
+} from '@shared/presenter'
+import { BaseLLMProvider, ChatMessage } from '../baseProvider'
 import {
   GoogleGenerativeAI,
   GenerativeModel,
@@ -157,7 +164,7 @@ export class GeminiProvider extends BaseLLMProvider {
     try {
       const model = this.getModel('models/gemini-1.5-flash-8b', 0.4)
       const conversationText = messages.map((m) => `${m.role}: ${m.content}`).join('\n')
-      const prompt = `请为以下对话生成一个简洁的标题，不超过10个字，不使用标点符号或其他特殊符号，语言应该匹配用户的主要语言：\n\n${conversationText}`
+      const prompt = `请为以下对话生成一个简洁的标题，不超过10个字，不使用标点符号或其他特殊符号，标题语言应该匹配对话的语言：\n\n${conversationText}`
 
       const result = await model.generateContent({
         contents: [{ role: 'user', parts: [{ text: prompt }] }]
@@ -364,19 +371,100 @@ export class GeminiProvider extends BaseLLMProvider {
 
     // 处理非系统消息
     const nonSystemMessages = messages.filter((msg) => msg.role !== 'system')
-    for (const message of nonSystemMessages) {
+    for (let i = 0; i < nonSystemMessages.length; i++) {
+      const message = nonSystemMessages[i]
+
+      // 检查是否是带有tool_calls的assistant消息
+      if (message.role === 'assistant' && 'tool_calls' in message) {
+        // 处理tool_calls消息
+        for (const toolCall of message.tool_calls || []) {
+          // 添加模型发出的函数调用
+          formattedContents.push({
+            role: 'model',
+            parts: [
+              {
+                functionCall: {
+                  name: toolCall.function.name,
+                  args: JSON.parse(toolCall.function.arguments || '{}')
+                }
+              }
+            ]
+          })
+
+          // 查找对应的工具响应消息
+          const nextMessage = i + 1 < nonSystemMessages.length ? nonSystemMessages[i + 1] : null
+          if (
+            nextMessage &&
+            nextMessage.role === 'tool' &&
+            'tool_call_id' in nextMessage &&
+            nextMessage.tool_call_id === toolCall.id
+          ) {
+            // 添加用户角色的函数响应
+            formattedContents.push({
+              role: 'user',
+              parts: [
+                {
+                  functionResponse: {
+                    name: toolCall.function.name,
+                    response: {
+                      result:
+                        typeof nextMessage.content === 'string'
+                          ? nextMessage.content
+                          : JSON.stringify(nextMessage.content)
+                    }
+                  }
+                }
+              ]
+            })
+
+            // 跳过下一条消息，因为已经处理过了
+            i++
+          }
+        }
+        continue
+      }
+
       // 为每条消息创建parts数组
       const parts: Part[] = []
 
-      // 处理消息内容 - 可能是字符串或包含图片的数组
-      if (typeof message.content === 'string') {
+      // 检查消息是否包含工具调用或工具响应
+      if (message.role === 'tool' && Array.isArray(message.content)) {
+        // 处理工具消息
+        for (const part of message.content) {
+          // @ts-ignore - 处理类型兼容性
+          if (part.type === 'function_call' && part.function_call) {
+            // 处理函数调用
+            parts.push({
+              // @ts-ignore - 处理类型兼容性
+              functionCall: {
+                // @ts-ignore - 处理类型兼容性
+                name: part.function_call.name || '',
+                // @ts-ignore - 处理类型兼容性
+                args: part.function_call.arguments ? JSON.parse(part.function_call.arguments) : {}
+              }
+            })
+            // @ts-ignore - 处理类型兼容性
+          } else if (part.type === 'function_response') {
+            // 处理函数响应
+            // @ts-ignore - 处理类型兼容性
+            parts.push({ text: part.function_response || '' })
+          }
+        }
+      } else if (typeof message.content === 'string') {
+        // 处理消息内容 - 可能是字符串或包含图片的数组
         // 处理纯文本消息
-        parts.push({ text: message.content })
+        // 只添加非空文本
+        if (message.content.trim() !== '') {
+          parts.push({ text: message.content })
+        }
       } else if (Array.isArray(message.content)) {
         // 处理多模态消息（带图片等）
         for (const part of message.content) {
           if (part.type === 'text') {
-            parts.push({ text: part.text || '' })
+            // 只添加非空文本
+            if (part.text && part.text.trim() !== '') {
+              parts.push({ text: part.text })
+            }
           } else if (part.type === 'image_url' && part.image_url) {
             // 处理图片（假设是 base64 格式）
             const matches = part.image_url.url.match(/^data:([^;]+);base64,(.+)$/)
@@ -400,6 +488,9 @@ export class GeminiProvider extends BaseLLMProvider {
         let role: 'user' | 'model' = 'user'
         if (message.role === 'assistant') {
           role = 'model'
+        } else if (message.role === 'tool') {
+          // 工具消息作为用户消息处理
+          role = 'user'
         }
 
         formattedContents.push({
@@ -652,440 +743,277 @@ export class GeminiProvider extends BaseLLMProvider {
       return ['发生错误，无法获取建议']
     }
   }
-
-  async *streamCompletions(
-    messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
+  /**
+   * 核心流式处理方法
+   * 实现BaseLLMProvider中的抽象方法
+   */
+  async *coreStream(
+    messages: ChatMessage[],
     modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    if (!this.isInitialized) {
-      throw new Error('Provider not initialized')
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    mcpTools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
+    console.log('modelConfig', modelConfig, modelId)
+    // 检查是否是图片生成模型
+    const isImageGenerationModel = modelId === 'gemini-2.0-flash-exp-image-generation'
+
+    // 如果是图片生成模型，使用特殊处理
+    if (isImageGenerationModel) {
+      yield* this.handleImageGenerationStream(messages, modelId, temperature, maxTokens)
+      return
     }
 
-    if (!modelId) {
-      throw new Error('Model ID is required')
+    // 创建Gemini模型实例
+    const model = this.getModel(modelId, temperature, maxTokens)
+
+    // 将MCP工具转换为Gemini格式的工具（所有Gemini模型都支持原生工具调用）
+    const geminiTools =
+      mcpTools.length > 0
+        ? await presenter.mcpPresenter.mcpToolsToGeminiTools(mcpTools, this.provider.id)
+        : undefined
+
+    // 格式化消息为Gemini格式
+    const formattedParts = this.formatGeminiMessages(messages)
+
+    // 创建请求参数
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const requestParams: any = {
+      contents: formattedParts.contents
     }
 
-    try {
-      // 获取MCP工具定义
-      const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+    if (formattedParts.systemInstruction) {
+      requestParams.systemInstruction = formattedParts.systemInstruction
+    }
 
-      // 将MCP工具转换为Gemini格式的工具
-      const geminiTools =
-        mcpTools.length > 0
-          ? await presenter.mcpPresenter.mcpToolsToGeminiTools(mcpTools, this.provider.id)
-          : undefined
-
-      // 添加工具调用计数
-      let toolCallCount = 0
-      const MAX_TOOL_CALLS = BaseLLMProvider.MAX_TOOL_CALLS // 最大工具调用次数限制
-
-      // 维护消息上下文
-      const conversationMessages: ChatMessage[] = [...messages]
-
-      // 记录是否需要继续对话
-      let needContinueConversation = false
-
-      // 每次创建新的模型实例，并传入生成配置
-      const model = this.getModel(modelId, temperature, maxTokens)
-      const totalUsage: {
-        prompt_tokens: number
-        completion_tokens: number
-        total_tokens: number
-      } = {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0
+    // 添加工具配置
+    if (geminiTools && geminiTools.length > 0) {
+      requestParams.tools = geminiTools
+      requestParams.toolConfig = {
+        functionCallingConfig: {
+          mode: 'AUTO' // 允许模型自动决定是否调用工具
+        }
       }
-      // 主循环，支持多轮工具调用
-      while (true) {
-        const currentUsage = {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-        const formattedParts = this.formatGeminiMessages(conversationMessages)
+    }
+    // console.log('requestParams', JSON.stringify(requestParams))
+    // 发送流式请求
+    // @ts-ignore - Gemini SDK类型定义与实际API有差异
+    const result = await model.generateContentStream(requestParams)
 
-        // 创建流式生成请求
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const requestParams: any = {
-          contents: formattedParts.contents
-        }
-        if (formattedParts.systemInstruction) {
-          requestParams.systemInstruction = formattedParts.systemInstruction
-        }
+    // 状态变量
+    let buffer = ''
+    let isInThinkTag = false
+    let toolUseDetected = false
 
-        // 只有在有工具且工具列表不为空时才添加工具参数
-        if (geminiTools && geminiTools.length > 0) {
-          requestParams.tools = geminiTools
-          requestParams.toolConfig = {
-            functionCallingConfig: {
-              mode: 'AUTO' // 允许模型自动决定是否调用工具
-            }
+    // 流处理循环
+    for await (const chunk of result.stream) {
+      // 处理用量统计
+      if (chunk.usageMetadata) {
+        yield {
+          type: 'usage',
+          usage: {
+            prompt_tokens: chunk.usageMetadata.promptTokenCount,
+            completion_tokens: chunk.usageMetadata.candidatesTokenCount,
+            total_tokens: chunk.usageMetadata.totalTokenCount
           }
         }
+      }
 
-        // @ts-ignore - Gemini SDK类型定义与实际API有差异
-        const result = await model.generateContentStream(requestParams)
+      // 检查是否包含函数调用
+      // @ts-ignore - SDK类型定义不完整
+      if (chunk.candidates && chunk.candidates[0]?.content?.parts?.[0]?.functionCall) {
+        // @ts-ignore - SDK类型定义不完整
+        const functionCall = chunk.candidates[0].content.parts[0].functionCall
+        const functionName = functionCall.name
+        const functionArgs = functionCall.args || {}
+        const toolCallId = `gemini-tool-${Date.now()}`
 
-        // 处理流式响应
-        let buffer = ''
-        let isInThinkTag = false
-        let thinkContent = ''
-        let hasThinkTag = false
-        // 用于存储函数调用信息
-        let functionCallDetected = false
-        let functionName = ''
-        let functionArgs = {}
-        let currentContent = ''
+        toolUseDetected = true
 
-        // 重置继续对话标志
-        needContinueConversation = false
-        for await (const chunk of result.stream) {
-          if (chunk.usageMetadata) {
-            currentUsage.prompt_tokens = chunk.usageMetadata.promptTokenCount
-            currentUsage.completion_tokens = chunk.usageMetadata.candidatesTokenCount
-            currentUsage.total_tokens = chunk.usageMetadata.totalTokenCount
-          }
-          // console.log('gchunk', chunk)
-          // 检查是否包含函数调用
-          // @ts-ignore - SDK类型定义不完整
-          if (chunk.candidates && chunk.candidates[0]?.content?.parts?.[0]?.functionCall) {
-            // @ts-ignore - SDK类型定义不完整
-            const functionCall = chunk.candidates[0].content.parts[0].functionCall
-            functionCallDetected = true
-            functionName = functionCall.name
-            functionArgs = functionCall.args || {}
+        // 发送工具调用开始事件
+        yield {
+          type: 'tool_call_start',
+          tool_call_id: toolCallId,
+          tool_call_name: functionName
+        }
 
-            // 停止继续处理流，转为处理工具调用
-            break
-          }
+        // 发送工具调用参数
+        const argsString = JSON.stringify(functionArgs)
+        yield {
+          type: 'tool_call_chunk',
+          tool_call_id: toolCallId,
+          tool_call_arguments_chunk: argsString
+        }
 
-          // 使用官方文档解析方式解析chunk
-          let content = ''
-          if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
-            for (const part of chunk.candidates[0].content.parts) {
-              if (part.text) {
-                content += part.text
-              } else if (part.inlineData) {
-                // 如果有图像数据，转换为markdown图像格式
-                const imageBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-                const markdownImage = `\n![geminiPic](${imageBase64})\n`
-                // 将markdown格式的图片添加到内容中
-                content += markdownImage
+        // 发送工具调用结束事件
+        yield {
+          type: 'tool_call_end',
+          tool_call_id: toolCallId,
+          tool_call_arguments_complete: argsString
+        }
 
-                // 同时保留原始图像数据，以便渲染层可以使用
-                yield {
-                  content: '',
-                  image_data: {
-                    data: part.inlineData.data,
-                    mimeType: part.inlineData.mimeType
-                  }
-                }
-              }
-            }
-          } else {
-            // 兼容处理，如果没有按预期结构，尝试使用text()方法
-            content = chunk.text() || ''
-          }
+        // 设置停止原因为工具使用
+        break
+      }
 
-          if (!content) continue
+      // 处理内容块
+      let content = ''
 
-          currentContent += content
-          buffer += content
-
-          // 检查是否包含 <think> 标签
-          if (buffer.includes('<think>') && !hasThinkTag) {
-            hasThinkTag = true
-            const thinkStart = buffer.indexOf('<think>')
-
-            // 发送 <think> 前的内容
-            if (thinkStart > 0) {
-              yield {
-                content: buffer.substring(0, thinkStart)
-              }
-            }
-
-            buffer = buffer.substring(thinkStart + 7)
-            isInThinkTag = true
-            continue
-          }
-
-          // 检查是否有结束标签 </think>
-          if (isInThinkTag && buffer.includes('</think>')) {
-            const thinkEnd = buffer.indexOf('</think>')
-            thinkContent += buffer.substring(0, thinkEnd)
-
-            // 发送推理内容
+      // 处理文本和图像内容
+      if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
+        for (const part of chunk.candidates[0].content.parts) {
+          if (part.text) {
+            content += part.text
+          } else if (part.inlineData) {
+            // 处理图像数据
             yield {
-              reasoning_content: thinkContent
+              type: 'image_data',
+              image_data: {
+                data: part.inlineData.data,
+                mimeType: part.inlineData.mimeType
+              }
             }
-
-            // 重置并准备处理 </think> 后的内容
-            buffer = buffer.substring(thinkEnd + 8)
-            isInThinkTag = false
-            continue
           }
+        }
+      } else {
+        // 兼容处理
+        content = chunk.text() || ''
+      }
 
-          // 如果我们在 <think> 标签内，累积推理内容
-          if (isInThinkTag) {
-            thinkContent += content
-            continue
-          }
-          // 否则，正常发送内容
+      if (!content) continue
+
+      buffer += content
+
+      // 处理思考标签
+      if (buffer.includes('<think>') && !isInThinkTag) {
+        const thinkStart = buffer.indexOf('<think>')
+
+        // 发送<think>标签前的文本
+        if (thinkStart > 0) {
           yield {
-            content
+            type: 'text',
+            content: buffer.substring(0, thinkStart)
           }
         }
-        totalUsage.prompt_tokens += currentUsage.prompt_tokens
-        totalUsage.completion_tokens += currentUsage.completion_tokens
-        totalUsage.total_tokens += currentUsage.total_tokens
 
-        // 处理函数调用
-        if (functionCallDetected && functionName) {
-          // 将Gemini函数调用转换为MCP工具调用
-          const geminiFunctionCall = {
-            name: functionName,
-            args: functionArgs
-          }
-
-          const mcpToolCall = await presenter.mcpPresenter.geminiFunctionCallToMcpTool(
-            geminiFunctionCall,
-            this.provider.id
-          )
-
-          if (mcpToolCall) {
-            // 增加工具调用计数
-            toolCallCount++
-
-            // 检查是否达到最大工具调用次数
-            if (toolCallCount >= MAX_TOOL_CALLS) {
-              // 这里要用mcptool 格式化后的字段，因为continue的时候模型可能会变，其他地方要方便调试要用native 的tool描述
-              yield {
-                maximum_tool_calls_reached: true,
-                tool_call_id: mcpToolCall.id,
-                tool_call_name: mcpToolCall.function.name,
-                tool_call_params: mcpToolCall.function.arguments,
-                tool_call_server_name: mcpToolCall.server.name,
-                tool_call_server_icons: mcpToolCall.server.icons,
-                tool_call_server_description: mcpToolCall.server.description
-              }
-              needContinueConversation = false
-              break
-            }
-            try {
-              // 通知正在调用工具
-              const toolCallId = `gemini-${Date.now()}`
-              yield {
-                content: '',
-                tool_call: 'start',
-                tool_call_name: functionName,
-                tool_call_params: JSON.stringify(functionArgs),
-                tool_call_id: toolCallId,
-                tool_call_server_name: mcpToolCall.server.name,
-                tool_call_server_icons: mcpToolCall.server.icons,
-                tool_call_server_description: mcpToolCall.server.description
-              }
-
-              // 调用工具并获取响应
-              const toolResponse = await presenter.mcpPresenter.callTool(mcpToolCall)
-
-              // 处理响应内容，为多模态内容做特殊处理
-              let responseContent = ''
-              const messageParts: ChatMessageContent[] = []
-
-              // 根据内容类型进行不同处理
-              if (typeof toolResponse.rawData.content === 'string') {
-                // 字符串类型直接使用
-                responseContent = toolResponse.rawData.content
-                messageParts.push({ type: 'text', text: responseContent })
-              } else if (Array.isArray(toolResponse.rawData.content)) {
-                // 处理结构化内容数组
-                const contentParts: string[] = []
-
-                for (const item of toolResponse.rawData.content) {
-                  if (item.type === 'text') {
-                    contentParts.push(item.text)
-                    messageParts.push({ type: 'text', text: item.text })
-                  } else if (item.type === 'image') {
-                    // 为Gemini处理图片
-                    contentParts.push(`[图片内容]`)
-                    // 添加图片到消息部分，Gemini可以理解这种格式
-                    messageParts.push({
-                      type: 'image_url',
-                      image_url: {
-                        url: `data:${item.mimeType};base64,${item.data}`
-                      }
-                    })
-                  } else if (item.type === 'resource') {
-                    if ('text' in item.resource && item.resource.text) {
-                      contentParts.push(`[资源: ${item.resource.uri}]\n${item.resource.text}`)
-                      messageParts.push({
-                        type: 'text',
-                        text: `[资源: ${item.resource.uri}]\n${item.resource.text}`
-                      })
-                    } else if (
-                      'blob' in item.resource &&
-                      item.resource.mimeType?.startsWith('image/')
-                    ) {
-                      // 处理图片类型的二进制资源
-                      contentParts.push(`[图片资源: ${item.resource.uri}]`)
-                      messageParts.push({
-                        type: 'image_url',
-                        image_url: {
-                          url: `data:${item.resource.mimeType};base64,${item.resource.blob}`
-                        }
-                      })
-                    } else {
-                      contentParts.push(`[资源: ${item.resource.uri}]`)
-                      messageParts.push({ type: 'text', text: `[资源: ${item.resource.uri}]` })
-                    }
-                  } else {
-                    // 处理其他未知类型
-                    const itemStr = JSON.stringify(item)
-                    contentParts.push(itemStr)
-                    messageParts.push({ type: 'text', text: itemStr })
-                  }
-                }
-
-                // 合并所有文本内容用于显示
-                responseContent = contentParts.join('\n\n')
-              } else {
-                // 其他情况转为字符串
-                responseContent = JSON.stringify(toolResponse.content)
-                messageParts.push({ type: 'text', text: responseContent })
-              }
-
-              // 添加助手消息到上下文
-              conversationMessages.push({
-                role: 'assistant',
-                content: currentContent || `我将使用${functionName}工具来回答你的问题。`
-              } as ChatMessage)
-
-              // 添加工具结果到上下文，使用多模态格式
-              conversationMessages.push({
-                role: 'user',
-                content:
-                  messageParts.length > 1
-                    ? messageParts
-                    : `工具 ${functionName} 的调用结果：${responseContent}`
-              } as ChatMessage)
-
-              // 通知工具调用结束
-              yield {
-                content: '',
-                tool_call: 'end',
-                tool_call_name: functionName,
-                tool_call_params: JSON.stringify(functionArgs),
-                tool_call_response: responseContent,
-                tool_call_id: toolCallId,
-                tool_call_server_name: mcpToolCall.server.name,
-                tool_call_server_icons: mcpToolCall.server.icons,
-                tool_call_server_description: mcpToolCall.server.description,
-                tool_call_response_raw: toolResponse.rawData
-              }
-
-              // 设置需要继续对话的标志
-              needContinueConversation = true
-            } catch (error) {
-              console.error('工具调用失败:', error)
-              const errorMessage = error instanceof Error ? error.message : String(error)
-
-              yield {
-                content: '',
-                tool_call: 'error',
-                tool_call_name: functionName,
-                tool_call_params: JSON.stringify(functionArgs),
-                tool_call_response: errorMessage,
-                tool_call_id: `gemini-${Date.now()}`,
-                tool_call_server_name: mcpToolCall.server.name,
-                tool_call_server_icons: mcpToolCall.server.icons,
-                tool_call_server_description: mcpToolCall.server.description
-              }
-
-              // 添加错误消息到上下文
-              conversationMessages.push({
-                role: 'assistant',
-                content: currentContent || `我尝试使用${functionName}工具，但出现了错误。`
-              } as ChatMessage)
-
-              conversationMessages.push({
-                role: 'user',
-                content: `工具 ${functionName} 调用失败：${errorMessage}`
-              } as ChatMessage)
-
-              // 设置需要继续对话的标志，即使工具调用失败也继续
-              needContinueConversation = true
-            }
-          }
-        } else {
-          // 如果没有工具调用，添加助手消息到上下文并结束对话
-          if (currentContent) {
-            conversationMessages.push({
-              role: 'assistant',
-              content: currentContent
-            } as ChatMessage)
-          }
-          needContinueConversation = false
-        }
-
-        // 如果不需要继续对话或已达到最大工具调用次数，则结束循环
-        if (!needContinueConversation || toolCallCount >= MAX_TOOL_CALLS) {
-          break
-        }
+        buffer = buffer.substring(thinkStart + 7)
+        isInThinkTag = true
+        continue
       }
+
+      // 处理思考标签结束
+      if (isInThinkTag && buffer.includes('</think>')) {
+        const thinkEnd = buffer.indexOf('</think>')
+        const reasoningContent = buffer.substring(0, thinkEnd)
+
+        // 发送推理内容
+        if (reasoningContent) {
+          yield {
+            type: 'reasoning',
+            reasoning_content: reasoningContent
+          }
+        }
+
+        buffer = buffer.substring(thinkEnd + 8)
+        isInThinkTag = false
+
+        // 如果还有剩余内容，继续处理
+        if (buffer) {
+          yield {
+            type: 'text',
+            content: buffer
+          }
+          buffer = ''
+        }
+
+        continue
+      }
+
+      // 如果在思考标签内，不输出内容
+      if (isInThinkTag) {
+        continue
+      }
+
+      // 正常输出文本内容 - 不需要重复发送内容，直接使用buffer
+      // 之前的问题是每次chunk到达时都会直接发送content，现在只发送buffer，并清空buffer
       yield {
-        totalUsage: totalUsage
+        type: 'text',
+        content: content
       }
-    } catch (error) {
-      console.error('Gemini stream completions error:', error)
-      throw error
+
+      // 内容已经发送，清空buffer避免重复
+      buffer = ''
     }
+
+    // 处理剩余缓冲区内容
+    if (buffer) {
+      if (isInThinkTag) {
+        yield {
+          type: 'reasoning',
+          reasoning_content: buffer
+        }
+      } else {
+        yield {
+          type: 'text',
+          content: buffer
+        }
+      }
+    }
+
+    // 发送停止事件
+    yield { type: 'stop', stop_reason: toolUseDetected ? 'tool_use' : 'complete' }
   }
 
-  async *streamSummaries(
-    text: string,
+  /**
+   * 处理图片生成模型的流式输出
+   */
+  private async *handleImageGenerationStream(
+    messages: ChatMessage[],
     modelId: string,
     temperature?: number,
     maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    if (!this.isInitialized) {
-      throw new Error('Provider not initialized')
-    }
-
-    if (!modelId) {
-      throw new Error('Model ID is required')
-    }
-
+  ): AsyncGenerator<LLMCoreStreamEvent> {
     try {
-      // 每次创建新的模型实例，并传入生成配置
+      // 创建模型实例
       const model = this.getModel(modelId, temperature, maxTokens)
+      // 提取用户提示词
+      const userMessage = messages.findLast((msg) => msg.role === 'user')
+      if (!userMessage) {
+        throw new Error('No user message found for image generation')
+      }
 
-      const prompt = `请为以下内容生成一个简洁的摘要：\n\n${text}`
+      const prompt =
+        typeof userMessage.content === 'string'
+          ? userMessage.content
+          : userMessage.content && Array.isArray(userMessage.content)
+            ? userMessage.content
+                .filter((c) => c.type === 'text')
+                .map((c) => c.text)
+                .join('\n')
+            : ''
 
+      // 发送生成请求
       const result = await model.generateContentStream({
         contents: [{ role: 'user', parts: [{ text: prompt }] }]
       })
 
+      // 处理流式响应
       for await (const chunk of result.stream) {
-        // 使用官方文档解析方式解析chunk
-        let content = ''
         if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
           for (const part of chunk.candidates[0].content.parts) {
             if (part.text) {
-              content += part.text
-            } else if (part.inlineData) {
-              // 如果有图像数据，转换为markdown图像格式
-              const imageBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-              const markdownImage = `\n![geminiPic](${imageBase64})\n`
-
-              // 将markdown格式的图片添加到内容中
-              content += markdownImage
-
-              // 同时保留原始图像数据，以便渲染层可以使用
+              // 输出文本内容
               yield {
-                content: markdownImage,
+                type: 'text',
+                content: part.text
+              }
+            } else if (part.inlineData) {
+              // 输出图像数据
+              yield {
+                type: 'image_data',
                 image_data: {
                   data: part.inlineData.data,
                   mimeType: part.inlineData.mimeType
@@ -1093,84 +1021,18 @@ export class GeminiProvider extends BaseLLMProvider {
               }
             }
           }
-        } else {
-          // 兼容处理，如果没有按预期结构，尝试使用text()方法
-          content = chunk.text() || ''
-        }
-
-        if (!content) continue
-
-        yield {
-          content
         }
       }
+
+      // 发送停止事件
+      yield { type: 'stop', stop_reason: 'complete' }
     } catch (error) {
-      console.error('Gemini streamSummaries error:', error)
-      throw error
-    }
-  }
-
-  async *streamGenerateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream> {
-    if (!this.isInitialized) {
-      throw new Error('Provider not initialized')
-    }
-
-    if (!modelId) {
-      throw new Error('Model ID is required')
-    }
-
-    try {
-      // 每次创建新的模型实例，并传入生成配置
-      const model = this.getModel(modelId, temperature, maxTokens)
-
-      const result = await model.generateContentStream({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }]
-      })
-
-      for await (const chunk of result.stream) {
-        // 使用官方文档解析方式解析chunk
-        let content = ''
-        if (chunk.candidates && chunk.candidates[0]?.content?.parts) {
-          for (const part of chunk.candidates[0].content.parts) {
-            if (part.text) {
-              content += part.text
-            } else if (part.inlineData) {
-              // 如果有图像数据，转换为markdown图像格式
-              const imageBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
-              const markdownImage = `\n![geminiPic](${imageBase64})\n`
-
-              // 将markdown格式的图片添加到内容中
-              content += markdownImage
-
-              // 同时保留原始图像数据，以便渲染层可以使用
-              yield {
-                content: markdownImage,
-                image_data: {
-                  data: part.inlineData.data,
-                  mimeType: part.inlineData.mimeType
-                }
-              }
-            }
-          }
-        } else {
-          // 兼容处理，如果没有按预期结构，尝试使用text()方法
-          content = chunk.text() || ''
-        }
-
-        if (!content) continue
-
-        yield {
-          content
-        }
+      console.error('Image generation stream error:', error)
+      yield {
+        type: 'error',
+        error_message: error instanceof Error ? error.message : '图像生成失败'
       }
-    } catch (error) {
-      console.error('Gemini streamGenerateText error:', error)
-      throw error
+      yield { type: 'stop', stop_reason: 'error' }
     }
   }
 }

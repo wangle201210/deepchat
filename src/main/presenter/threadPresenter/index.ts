@@ -91,7 +91,8 @@ export class ThreadPresenter implements IThreadPresenter {
         tool_call_server_description,
         tool_call_response_raw,
         tool_call,
-        totalUsage
+        totalUsage,
+        image_data
       } = msg
       const state = this.generatingMessages.get(eventId)
       if (state) {
@@ -289,6 +290,18 @@ export class ThreadPresenter implements IThreadPresenter {
               }
             }
           }
+        } else if (image_data) {
+          // 处理图像数据
+          if (lastBlock) {
+            lastBlock.status = 'success'
+          }
+          state.message.content.push({
+            type: 'image',
+            content: 'image',
+            status: 'success',
+            timestamp: Date.now(),
+            image_data: image_data
+          })
         } else if (content) {
           // 处理普通内容
           if (lastBlock && lastBlock.type === 'content') {
@@ -355,7 +368,8 @@ export class ThreadPresenter implements IThreadPresenter {
           (block) =>
             block.type === 'content' ||
             block.type === 'reasoning_content' ||
-            block.type === 'tool_call'
+            block.type === 'tool_call' ||
+            block.type === 'image'
         )
 
         // 如果没有内容块，添加错误信息
@@ -1343,11 +1357,11 @@ export class ThreadPresenter implements IThreadPresenter {
         promptTokens += approximateTokenSize(msg.content)
       } else {
         promptTokens +=
-          approximateTokenSize(msg.content.map((item) => item.text).join('')) +
+          approximateTokenSize(msg.content?.map((item) => item.text).join('') || '') +
           imageFiles.reduce((acc, file) => acc + file.token, 0)
       }
     }
-    console.log('preparePromptContent', mergedMessages, promptTokens)
+    // console.log('preparePromptContent', mergedMessages, promptTokens)
 
     return { finalContent: mergedMessages, promptTokens }
   }
@@ -1488,8 +1502,8 @@ export class ThreadPresenter implements IThreadPresenter {
         mergedMessages[mergedMessages.length - 1].role === currentMessage.role
       ) {
         mergedMessages[mergedMessages.length - 1].content = this.mergeMessageContent(
-          currentMessage.content,
-          mergedMessages[mergedMessages.length - 1].content
+          currentMessage.content || '',
+          mergedMessages[mergedMessages.length - 1].content || ''
         )
       } else {
         mergedMessages.push({ ...currentMessage })

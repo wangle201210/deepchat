@@ -16,7 +16,7 @@
         class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
       >
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
-        正在思考...
+        {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <div v-for="block in currentContent" :key="block.id" class="w-full">
@@ -48,6 +48,12 @@
             :message-id="message.id"
             :conversation-id="currentThreadId"
             :block="block"
+          />
+          <MessageBlockImage
+            v-else-if="block.type === 'image'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
           />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </div>
@@ -109,6 +115,7 @@ import { useDark } from '@vueuse/core'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
 import { addWatermark } from '@/lib/watermark'
+import MessageBlockImage from './MessageBlockImage.vue'
 
 import {
   Dialog,

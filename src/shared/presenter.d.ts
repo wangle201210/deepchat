@@ -278,22 +278,6 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string>
-  startStreamSummary(
-    providerId: string,
-    text: string,
-    modelId: string,
-    eventId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<void>
-  startStreamText(
-    providerId: string,
-    prompt: string,
-    modelId: string,
-    eventId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<void>
   stopStream(eventId: string): Promise<void>
   check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }>
   summaryTitles(
@@ -780,4 +764,37 @@ export interface ISyncPresenter {
   // 初始化和销毁
   init(): void
   destroy(): void
+}
+
+// 从 LLM Provider 的 coreStream 返回的标准化事件
+export interface LLMCoreStreamEvent {
+  type:
+    | 'text'
+    | 'reasoning'
+    | 'tool_call_start'
+    | 'tool_call_chunk'
+    | 'tool_call_end'
+    | 'error'
+    | 'usage'
+    | 'stop'
+    | 'image_data'
+  content?: string // 用于 type 'text'
+  reasoning_content?: string // 用于 type 'reasoning'
+  tool_call_id?: string // 用于 tool_call_* 类型
+  tool_call_name?: string // 用于 tool_call_start
+  tool_call_arguments_chunk?: string // 用于 tool_call_chunk (流式参数)
+  tool_call_arguments_complete?: string // 用于 tool_call_end (可选，如果一次性可用)
+  error_message?: string // 用于 type 'error'
+  usage?: {
+    // 用于 type 'usage'
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+  stop_reason?: 'tool_use' | 'max_tokens' | 'stop_sequence' | 'error' | 'complete' // 用于 type 'stop'
+  image_data?: {
+    // 用于 type 'image_data'
+    data: string // Base64 编码的图像数据
+    mimeType: string
+  }
 }

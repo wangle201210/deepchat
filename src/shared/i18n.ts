@@ -16,7 +16,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: '撤销',
     redo: '重做',
     saveImage: '图片另存为...',
-    copyImage: '复制图片'
+    copyImage: '复制图片',
+    open: '打开',
+    quit: '退出'
   },
   'zh-TW': {
     copy: '複製',
@@ -26,7 +28,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: '復原',
     redo: '重做',
     saveImage: '圖片另存為...',
-    copyImage: '複製圖片'
+    copyImage: '複製圖片',
+    open: '打開',
+    quit: '退出'
   },
   'en-US': {
     copy: 'Copy',
@@ -36,7 +40,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: 'Undo',
     redo: 'Redo',
     saveImage: 'Save Image...',
-    copyImage: 'Copy Image'
+    copyImage: 'Copy Image',
+    open: 'Open',
+    quit: 'Quit'
   },
   ja: {
     copy: 'コピー',
@@ -46,7 +52,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: '元に戻す',
     redo: 'やり直し',
     saveImage: '画像を保存...',
-    copyImage: '画像をコピー'
+    copyImage: '画像をコピー',
+    open: '開く',
+    quit: '終了'
   },
   ko: {
     copy: '복사',
@@ -56,7 +64,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: '실행 취소',
     redo: '다시 실행',
     saveImage: '이미지 저장...',
-    copyImage: '이미지 복사'
+    copyImage: '이미지 복사',
+    open: '열기',
+    quit: '종료'
   },
   fr: {
     copy: 'Copier',
@@ -66,7 +76,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: 'Annuler',
     redo: 'Rétablir',
     saveImage: "Enregistrer l'image...",
-    copyImage: "Copier l'image"
+    copyImage: "Copier l'image",
+    open: 'Ouvrir',
+    quit: 'Quitter'
   },
   de: {
     copy: 'Kopieren',
@@ -76,7 +88,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: 'Rückgängig',
     redo: 'Wiederholen',
     saveImage: 'Bild speichern...',
-    copyImage: 'Bild kopieren'
+    copyImage: 'Bild kopieren',
+    open: 'Öffnen',
+    quit: 'Beenden'
   },
   es: {
     copy: 'Copiar',
@@ -86,7 +100,9 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     undo: 'Deshacer',
     redo: 'Rehacer',
     saveImage: 'Guardar imagen...',
-    copyImage: 'Copiar imagen'
+    copyImage: 'Copiar imagen',
+    open: 'Abrir',
+    quit: 'Salir'
   }
 }
 
