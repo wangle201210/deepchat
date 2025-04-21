@@ -21,5 +21,8 @@
     "optimizing": "Optimisation de la requête de recherche...",
     "reading": "Recherche et lecture des pages web...",
     "error": "La recherche a échoué"
+  },
+  "messages": {
+    "thinking": "Pensée..."
   }
 }

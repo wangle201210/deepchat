@@ -21,5 +21,8 @@
     "optimizing": "正在萃取搜尋意圖...",
     "reading": "正在搜尋並閱讀網頁...",
     "error": "搜尋失敗"
+  },
+  "messages": {
+    "thinking": "正在思考..."
   }
 }

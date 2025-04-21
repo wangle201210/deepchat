@@ -16,7 +16,7 @@
         class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
       >
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
-        正在思考...
+        {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <div v-for="block in currentContent" :key="block.id" class="w-full">
