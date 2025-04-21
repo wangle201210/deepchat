@@ -370,6 +370,13 @@ export const useSettingsStore = defineStore('settings', () => {
         const standardModels = currentModels.filter((model) => !model.isCustom)
         const enabledCustomModels = customModelsWithStatus.filter((model) => model.enabled)
         enabledModels.value[enabledIndex].models = [...standardModels, ...enabledCustomModels]
+      } else {
+        const enabledCustomModels = customModelsWithStatus.filter((model) => model.enabled)
+        console.log('enabledCustomModels', enabledCustomModels, customModelsWithStatus)
+        enabledModels.value.push({
+          providerId,
+          models: enabledCustomModels
+        })
       }
 
       // 检查并更新搜索助手模型
