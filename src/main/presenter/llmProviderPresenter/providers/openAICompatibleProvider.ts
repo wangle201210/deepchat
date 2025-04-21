@@ -210,7 +210,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any
       const currentContent = delta?.content || ''
-
+      console.log('currentContent', JSON.stringify(choice.delta))
       // 1. Handle Non-Content Events First
       if (chunk.usage) yield { type: 'usage', usage: chunk.usage }
       if (delta?.reasoning_content || delta?.reasoning) {
@@ -219,38 +219,46 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
       if (supportsFunctionCall && delta?.tool_calls?.length > 0) {
         toolUseDetected = true
+        console.log('处理tool_calls', delta.tool_calls)
         for (const toolCallDelta of delta.tool_calls) {
           const id = toolCallDelta.id
-          if (id && !nativeToolCalls[id]) {
-            nativeToolCalls[id] = { name: '', arguments: '' }
+          const index = toolCallDelta.index
+
+          // 使用id作为首选标识符，如果没有id则使用index
+          const toolCallId = id || (index !== undefined ? `index_${index}` : `tool_${Date.now()}`)
+
+          // 如果是新的工具调用，初始化它
+          if (!nativeToolCalls[toolCallId]) {
+            nativeToolCalls[toolCallId] = { name: '', arguments: '' }
+
+            // 如果工具调用有名称，发送开始事件
             if (toolCallDelta.function?.name) {
-              nativeToolCalls[id].name = toolCallDelta.function.name
+              nativeToolCalls[toolCallId].name = toolCallDelta.function.name
               yield {
                 type: 'tool_call_start',
-                tool_call_id: id,
+                tool_call_id: toolCallId, // 使用统一的 toolCallId
                 tool_call_name: toolCallDelta.function.name
               }
             }
           }
-          if (
-            id &&
-            nativeToolCalls[id] &&
-            toolCallDelta.function?.name &&
-            !nativeToolCalls[id].name
-          ) {
-            nativeToolCalls[id].name = toolCallDelta.function.name
+
+          // 如果现有工具调用没有名称但收到了名称，更新并发送开始事件
+          if (toolCallDelta.function?.name && !nativeToolCalls[toolCallId].name) {
+            nativeToolCalls[toolCallId].name = toolCallDelta.function.name
             yield {
               type: 'tool_call_start',
-              tool_call_id: id,
+              tool_call_id: toolCallId, // 使用统一的 toolCallId
               tool_call_name: toolCallDelta.function.name
             }
           }
-          if (id && nativeToolCalls[id] && toolCallDelta.function?.arguments) {
+
+          // 处理参数片段
+          if (toolCallDelta.function?.arguments) {
             const argumentChunk = toolCallDelta.function.arguments
-            nativeToolCalls[id].arguments += argumentChunk
+            nativeToolCalls[toolCallId].arguments += argumentChunk
             yield {
               type: 'tool_call_chunk',
-              tool_call_id: id,
+              tool_call_id: toolCallId, // 使用统一的 toolCallId
               tool_call_arguments_chunk: argumentChunk
             }
           }
@@ -260,19 +268,53 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       if (choice?.finish_reason) {
         const reasonFromAPI = choice.finish_reason
         console.log('Finish Reason from API:', reasonFromAPI)
-        if (toolUseDetected) {
-          stopReason = 'tool_use' /* finalize native calls if needed */
-        } else if (reasonFromAPI === 'stop') stopReason = 'complete'
-        else if (reasonFromAPI === 'length') stopReason = 'max_tokens'
-        else if (reasonFromAPI === 'tool_calls') {
-          console.warn("API finish 'tool_calls', but toolUseDetected false.")
-          stopReason = 'tool_use' /* finalize native calls */
+
+        // 优先处理 tool_calls 完成的情况
+        if (reasonFromAPI === 'tool_calls') {
+          // 确保所有累积的参数都已处理，并发送end事件
+          for (const toolId in nativeToolCalls) {
+            const tool = nativeToolCalls[toolId]
+            if (tool.name && tool.arguments) {
+              // 确保工具调用是完整的
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: toolId,
+                tool_call_arguments_complete: tool.arguments
+              }
+            }
+          }
+          stopReason = 'tool_use'
+          toolUseDetected = true // 确保toolUseDetected为true
+        } else if (toolUseDetected) {
+          // 如果之前检测到工具使用，但finish_reason不是tool_calls (可能是stop或length)
+          // 也需要结束所有工具调用
+          for (const toolId in nativeToolCalls) {
+            const tool = nativeToolCalls[toolId]
+            if (tool.name && tool.arguments) {
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: toolId,
+                tool_call_arguments_complete: tool.arguments
+              }
+            }
+          }
+          stopReason =
+            reasonFromAPI === 'stop'
+              ? 'complete'
+              : reasonFromAPI === 'length'
+                ? 'max_tokens'
+                : 'error'
+        } else if (reasonFromAPI === 'stop') {
+          stopReason = 'complete'
+        } else if (reasonFromAPI === 'length') {
+          stopReason = 'max_tokens'
         } else {
           console.warn(`Unhandled finish reason: ${reasonFromAPI}`)
           stopReason = 'error'
         }
+
         console.log('Final Stop Reason Set:', stopReason)
-        break
+        break // 跳出主循环，后续会发送 stop 事件
       }
       if (!currentContent) continue
 
