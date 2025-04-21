@@ -73,7 +73,8 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     env: {
       apiKey: 'YOUR_DIFY_API_KEY', // 需要用户提供实际的API Key
       datasetId: 'YOUR_DATASET_ID', // 需要用户提供实际的Dataset ID
-      endpoint: 'https://api.dify.ai/v1' // 可选，默认为https://api.dify.ai/v1
+      endpoint: 'https://api.dify.ai/v1', // 可选，默认为https://api.dify.ai/v1
+      description: 'this is a description for the current knowledge base' // 对当前知识库进行描述
     },
     disable: false
   },

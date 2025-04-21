@@ -60,6 +60,7 @@ export class DifyKnowledgeServer {
   private apiKey: string
   private endpoint: string
   private datasetId: string
+  private description: string
 
   constructor(env?: Record<string, string>) {
     if (!env?.apiKey) {
@@ -68,11 +69,13 @@ export class DifyKnowledgeServer {
     if (!env?.datasetId) {
       throw new Error('需要提供Dify Dataset ID')
     }
-
+    if (!env?.description) {
+      throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
+    }
     this.apiKey = env.apiKey
     this.datasetId = env.datasetId
     this.endpoint = env.endpoint || 'https://api.dify.ai/v1'
-
+    this.description = env.description
     // 创建服务器实例
     this.server = new Server(
       {
@@ -99,13 +102,11 @@ export class DifyKnowledgeServer {
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      console.log('setRequestHandler', zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput)
       return {
         tools: [
           {
             name: 'dify_knowledge_search',
-            description:
-              '使用Dify知识库搜索功能，根据查询内容检索相关的知识库文档，返回文档内容、来源和相关度评分。',
+            description: this.description,
             inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput
           }
         ]
