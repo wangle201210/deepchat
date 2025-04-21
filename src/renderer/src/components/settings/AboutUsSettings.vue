@@ -28,6 +28,15 @@
               <Icon icon="lucide:github" class="mr-1 h-3 w-3" />
               GitHub
             </a>
+            <a
+              class="text-xs text-muted-foreground hover:text-primary flex items-center"
+              href="https://github.com/ThinkInAIXYZ/deepchat/blob/dev/LICENSE"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon icon="lucide:scale" class="mr-1 h-3 w-3" />
+              Apache License 2.0
+            </a>
           </div>
         </div>
 
