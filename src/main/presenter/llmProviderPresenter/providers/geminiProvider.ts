@@ -453,12 +453,18 @@ export class GeminiProvider extends BaseLLMProvider {
       } else if (typeof message.content === 'string') {
         // 处理消息内容 - 可能是字符串或包含图片的数组
         // 处理纯文本消息
-        parts.push({ text: message.content })
+        // 只添加非空文本
+        if (message.content.trim() !== '') {
+          parts.push({ text: message.content })
+        }
       } else if (Array.isArray(message.content)) {
         // 处理多模态消息（带图片等）
         for (const part of message.content) {
           if (part.type === 'text') {
-            parts.push({ text: part.text || '' })
+            // 只添加非空文本
+            if (part.text && part.text.trim() !== '') {
+              parts.push({ text: part.text })
+            }
           } else if (part.type === 'image_url' && part.image_url) {
             // 处理图片（假设是 base64 格式）
             const matches = part.image_url.url.match(/^data:([^;]+);base64,(.+)$/)
@@ -792,7 +798,7 @@ export class GeminiProvider extends BaseLLMProvider {
         }
       }
     }
-
+    // console.log('requestParams', JSON.stringify(requestParams))
     // 发送流式请求
     // @ts-ignore - Gemini SDK类型定义与实际API有差异
     const result = await model.generateContentStream(requestParams)
