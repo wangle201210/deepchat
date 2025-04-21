@@ -200,7 +200,11 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const thinkStartMarker = '<think>'
     const thinkEndMarker = '</think>'
 
-    const nativeToolCalls: Record<string, { name: string; arguments: string }> = {}
+    // Update nativeToolCalls structure to include a completed flag
+    const nativeToolCalls: Record<
+      string,
+      { name: string; arguments: string; completed?: boolean }
+    > = {}
     // [NEW] Map to associate index with tool call ID
     const indexToIdMap: Record<number, string> = {}
     let stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
@@ -212,6 +216,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any
       const currentContent = delta?.content || ''
+      // console.log('currentContent', choice)
       // 1. Handle Non-Content Events First
       if (chunk.usage) yield { type: 'usage', usage: chunk.usage }
       if (delta?.reasoning_content || delta?.reasoning) {
@@ -220,7 +225,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
       if (supportsFunctionCall && delta?.tool_calls?.length > 0) {
         toolUseDetected = true
-        // console.log('处理tool_calls', delta.tool_calls)
+        // console.log('处理tool_calls', JSON.stringify(delta.tool_calls))
         for (const toolCallDelta of delta.tool_calls) {
           const id = toolCallDelta.id
           const index = toolCallDelta.index // Index within the current delta's tool_calls array
@@ -244,48 +249,119 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           } else {
             // Cannot reliably identify the tool call for this delta chunk
             console.warn(
-              'Received tool call delta chunk without id and without a known mapping for index:',
+              '[coreStream] Received tool call delta chunk without id and without a known mapping for index:',
               toolCallDelta
             )
             continue // Skip this problematic chunk
           }
 
-          // Ensure the entry exists in nativeToolCalls
-          // Check if currentToolCallId is defined before using it as an index
+          // Process only if we have a valid ID
           if (currentToolCallId) {
+            // console.log(
+            //   `[coreStream] Processing toolCallDelta for ID: ${currentToolCallId}`,
+            //   JSON.stringify(toolCallDelta)
+            // )
+            // Initialize entry if it doesn't exist
             if (!nativeToolCalls[currentToolCallId]) {
-              nativeToolCalls[currentToolCallId] = { name: '', arguments: '' }
-              // console.log(`Initialized nativeToolCalls entry for id ${currentToolCallId}`)
+              nativeToolCalls[currentToolCallId] = { name: '', arguments: '', completed: false }
+              console.log(
+                `[coreStream] Initialized nativeToolCalls entry for id ${currentToolCallId}`
+              )
             }
 
+            const currentCallState = nativeToolCalls[currentToolCallId]
+            // console.log(
+            //   `[coreStream] Current state for ${currentToolCallId}:`,
+            //   JSON.stringify(currentCallState)
+            // )
+
+            // --- Handle Complete Tool Call in One Chunk ---
+            if (functionName && argumentChunk && !currentCallState.completed) {
+              console.log(
+                `[coreStream] Handling complete tool call ${currentToolCallId} in one chunk.`
+              )
+              // If we receive name and arguments together, and haven't completed it yet
+              // console.log(`Handling complete tool call ${currentToolCallId} in one chunk`)
+
+              // Ensure name is updated if it wasn't already (e.g., first time seeing it)
+              if (!currentCallState.name) {
+                currentCallState.name = functionName
+                const startEvent = {
+                  type: 'tool_call_start' as const,
+                  tool_call_id: currentToolCallId,
+                  tool_call_name: functionName
+                }
+                // console.log('[coreStream] Yielding:', JSON.stringify(startEvent))
+                yield startEvent
+              } else if (currentCallState.name !== functionName) {
+                console.warn(
+                  `Received conflicting name for tool call ${currentToolCallId}. Using existing: ${currentCallState.name}`
+                )
+              }
+
+              // Append argument chunk (though likely contains the full arguments here)
+              currentCallState.arguments += argumentChunk
+              const chunkEvent = {
+                type: 'tool_call_chunk' as const,
+                tool_call_id: currentToolCallId,
+                tool_call_arguments_chunk: argumentChunk
+              }
+              // console.log('[coreStream] Yielding:', JSON.stringify(chunkEvent))
+              yield chunkEvent
+
+              // Emit end event immediately and mark as completed
+              currentCallState.completed = true
+              const endEvent = {
+                type: 'tool_call_end' as const,
+                tool_call_id: currentToolCallId,
+                tool_call_arguments_complete: currentCallState.arguments
+              }
+              // console.log('[coreStream] Yielding and marking completed:', JSON.stringify(endEvent))
+              yield endEvent
+              continue // Move to the next toolCallDelta in this chunk
+            }
+
+            // --- Handle Incremental Updates ---
+            console.log(
+              `[coreStream] Handling incremental update for ${currentToolCallId}. Name received: ${!!functionName}, Args received: ${!!argumentChunk}`
+            )
+
             // Process name (only once) and send start event
-            if (functionName && !nativeToolCalls[currentToolCallId].name) {
-              nativeToolCalls[currentToolCallId].name = functionName
-              // console.log(`Received name '${functionName}' for id ${currentToolCallId}`)
-              yield {
-                type: 'tool_call_start',
+            if (functionName && !currentCallState.name) {
+              currentCallState.name = functionName
+              console.log(
+                `[coreStream] Received name '${functionName}' for id ${currentToolCallId}`
+              )
+              const startEvent = {
+                type: 'tool_call_start' as const,
                 tool_call_id: currentToolCallId,
                 tool_call_name: functionName
               }
+              // console.log('[coreStream] Yielding:', JSON.stringify(startEvent))
+              yield startEvent
             }
 
             // Process arguments chunk and send chunk event
             if (argumentChunk) {
-              nativeToolCalls[currentToolCallId].arguments += argumentChunk
-              // console.log(`Received args chunk for id ${currentToolCallId}: '${argumentChunk}'`)
-              yield {
-                type: 'tool_call_chunk',
+              currentCallState.arguments += argumentChunk
+              console.log(
+                `[coreStream] Received args chunk for id ${currentToolCallId}: '${argumentChunk}'`
+              )
+              const chunkEvent = {
+                type: 'tool_call_chunk' as const,
                 tool_call_id: currentToolCallId,
                 tool_call_arguments_chunk: argumentChunk
               }
+              // console.log('[coreStream] Yielding:', JSON.stringify(chunkEvent))
+              yield chunkEvent
             }
           } else {
-             // This case should logically not be reached due to the checks above,
-             // but adding a log here for safety.
-             console.error('currentToolCallId was unexpectedly undefined after checks')
+            // This case should logically not be reached due to the checks above,
+            // but adding a log here for safety.
+            console.error('[coreStream] currentToolCallId was unexpectedly undefined after checks')
           }
         }
-        continue
+        continue // Continue to next chunk after processing all tool calls in this one
       }
       if (choice?.finish_reason) {
         const reasonFromAPI = choice.finish_reason
@@ -497,32 +573,47 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
     // Final check and emission for native tool calls
     if (supportsFunctionCall && toolUseDetected) {
-      // console.log('Stream finished. Finalizing native tool calls:', nativeToolCalls)
+      // console.log(
+      //   '[coreStream] Stream finished. Finalizing native tool calls:',
+      //   JSON.stringify(nativeToolCalls)
+      // )
       for (const toolId in nativeToolCalls) {
         const tool = nativeToolCalls[toolId]
-        if (tool.name && tool.arguments) {
-          // console.log(`Sending tool_call_end for ${toolId}`)
+        console.log(
+          `[coreStream] Finalizing tool ${toolId}: Name='${tool.name}', Args='${tool.arguments}', Completed=${tool.completed}`
+        )
+        // Only send 'end' if it's complete (has name and args) AND wasn't already marked completed (sent inline)
+        if (tool.name && tool.arguments && !tool.completed) {
+          console.log(`[coreStream] Sending tool_call_end for ${toolId} during finalization.`)
           // Ensure arguments are valid JSON before emitting (optional but good practice)
           try {
-             // Attempt to parse to check validity, but send the original string
-             JSON.parse(tool.arguments)
-             yield {
-                type: 'tool_call_end',
-                tool_call_id: toolId,
-                tool_call_arguments_complete: tool.arguments
-             }
+            // Attempt to parse to check validity, but send the original string
+            JSON.parse(tool.arguments)
+            yield {
+              type: 'tool_call_end',
+              tool_call_id: toolId,
+              tool_call_arguments_complete: tool.arguments
+            }
           } catch (e) {
-             console.error(`Error parsing arguments for tool ${toolId}, arguments: ${tool.arguments}`, e)
-             // Decide how to handle invalid JSON - perhaps send an error event or log?
-             // Sending end event with potentially problematic arguments for now.
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: toolId,
-                tool_call_arguments_complete: tool.arguments // Send as received
-              }
+            console.error(
+              `Error parsing arguments for tool ${toolId}, arguments: ${tool.arguments}`,
+              e
+            )
+            // Decide how to handle invalid JSON - perhaps send an error event or log?
+            // Sending end event with potentially problematic arguments for now.
+            yield {
+              type: 'tool_call_end',
+              tool_call_id: toolId,
+              tool_call_arguments_complete: tool.arguments // Send as received
+            }
           }
-        } else {
-           console.warn(`Tool call ${toolId} is incomplete (missing name or arguments) and will not have an end event. Name: ${tool.name}, Args: ${tool.arguments}`)
+        } else if (!tool.completed) {
+          console.log(
+            `[coreStream] Tool call ${toolId} is incomplete or already completed, skipping final end event.`
+          )
+          console.warn(
+            `Tool call ${toolId} is incomplete (missing name or arguments) and will not have an end event during finalization. Name: ${tool.name}, Args: ${tool.arguments}`
+          )
         }
       }
     }
@@ -551,7 +642,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       console.warn('Stream ended while still inside <function_call> tag state.')
     if (isInThinkTag) console.warn('Stream ended while still inside <think> tag state.')
 
-    yield { type: 'stop', stop_reason: stopReason }
+    // Override stop reason if tool use was detected, regardless of API finish reason
+    const finalStopReason = toolUseDetected ? 'tool_use' : stopReason
+    console.log(
+      `[coreStream] Final Stop Reason Calculation: toolUseDetected=${toolUseDetected}, apiStopReason=${stopReason}, finalStopReason=${finalStopReason}`
+    )
+
+    yield { type: 'stop', stop_reason: finalStopReason }
   }
 
   // ... [prepareFunctionCallPrompt remains unchanged] ...
