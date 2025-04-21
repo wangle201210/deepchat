@@ -263,7 +263,7 @@ export const defaultModelsSettings = [
     maxTokens: 100_000,
     match: ['grok-3-mini-fast', 'grok-3-mini-fast-latest', 'grok-3-mini-fast-beta'],
     vision: false,
-    functionCall: false,
+    functionCall: true,
     reasoning: true
   },
   {
@@ -274,7 +274,7 @@ export const defaultModelsSettings = [
     maxTokens: 100_000,
     match: ['grok-3-mini', 'grok-3-mini-latest', 'grok-3-mini-beta'],
     vision: false,
-    functionCall: false,
+    functionCall: true,
     reasoning: true
   },
   {
