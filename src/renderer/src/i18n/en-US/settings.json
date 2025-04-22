@@ -175,6 +175,22 @@
     "noLocalModels": "No Local Models",
     "localModels": "Local Models"
   },
+  "knowledgeBase": {
+    "title": "Knowledge Base Settings",
+    "addKnowledgeBase": "Add Knowledge Base",
+    "selectKnowledgeBaseType": "Please select the type of knowledge base to add",
+    "difyDescription": "Dify knowledge base helps you manage and use document data",
+    "comingSoon": "Coming Soon",
+    "featureNotAvailable": "This feature is not yet available",
+    "addDifyConfig": "Add Dify Configuration",
+    "apiKey": "API Key",
+    "datasetId": "Dataset ID",
+    "endpoint": "API Endpoint",
+    "configAdded": "Configuration Added",
+    "configAddedDesc": "Dify knowledge base configuration has been successfully added",
+    "addConfig": "Add Configuration",
+    "moreComingSoon": "More knowledge base types coming soon"
+  },
   "mcp": {
     "title": "MCP Settings",
     "description": "Manage and configure MCP (Model Control Protocol) servers and tools",

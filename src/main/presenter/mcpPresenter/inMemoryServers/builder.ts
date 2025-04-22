@@ -9,7 +9,7 @@ import { DifyKnowledgeServer } from './difyKnowledgeServer'
 export function getInMemoryServer(
   serverName: string,
   args: string[],
-  env?: Record<string, string>
+  env?: Record<string, string> | string
 ) {
   switch (serverName) {
     case 'buildInFileSystem':
