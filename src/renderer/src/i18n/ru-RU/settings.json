@@ -175,6 +175,25 @@
     "localModels": "Локальные модели",
     "urlFormat": "Образец API: {defaultUrl}"
   },
+  "knowledgeBase": {
+    "title": "Настройки базы знаний",
+    "addKnowledgeBase": "Добавить базу знаний",
+    "selectKnowledgeBaseType": "Пожалуйста, выберите тип базы знаний для добавления",
+    "difyDescription": "База знаний Dify помогает управлять и использовать данные документов",
+    "comingSoon": "Скоро",
+    "featureNotAvailable": "Эта функция пока недоступна",
+    "addDifyConfig": "Добавить конфигурацию Dify",
+    "apiKey": "API ключ",
+    "datasetId": "ID набора данных",
+    "endpoint": "API эндпоинт",
+    "configAdded": "Конфигурация добавлена",
+    "configAddedDesc": "Конфигурация базы знаний Dify успешно добавлена",
+    "addConfig": "Добавить конфигурацию",
+    "moreComingSoon": "Больше типов баз знаний появится в ближайшее время",
+    "configUpdated": "Конфигурация обновлена",
+    "configUpdatedDesc": "Конфигурация базы знаний Dify успешно обновлена",
+    "descriptionPlaceholder": "Например: база знаний документации продуктов компании"
+  },
   "mcp": {
     "title": "Настройки MCP",
     "description": "Управление и настройка серверов и инструментов MCP (Model Control Protocol)",

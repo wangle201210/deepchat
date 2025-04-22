@@ -175,6 +175,25 @@
     "localModels": "本機模型",
     "noLocalModels": "沒有本機模型"
   },
+  "knowledgeBase": {
+    "title": "知識庫設置",
+    "addKnowledgeBase": "添加知識庫",
+    "selectKnowledgeBaseType": "請選擇要添加的知識庫類型",
+    "difyDescription": "Dify知識庫可以幫助您管理和使用文檔數據",
+    "comingSoon": "即將推出",
+    "featureNotAvailable": "該功能暫未開放，敬請期待",
+    "addDifyConfig": "添加Dify配置",
+    "apiKey": "API密鑰",
+    "datasetId": "數據集ID",
+    "endpoint": "API地址",
+    "configAdded": "配置已添加",
+    "configAddedDesc": "Dify知識庫配置已成功添加",
+    "addConfig": "添加配置",
+    "moreComingSoon": "更多知識庫類型即將推出",
+    "configUpdated": "配置已更新",
+    "configUpdatedDesc": "Dify知識庫配置已成功更新",
+    "descriptionPlaceholder": "例如：公司產品文檔知識庫"
+  },
   "mcp": {
     "title": "MCP設定",
     "description": "管理和配置MCP（模型控制協議）伺服器和工具",

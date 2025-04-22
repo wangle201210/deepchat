@@ -175,6 +175,25 @@
     "noLocalModels": "ローカルモデルはありません",
     "localModels": "ローカルモデル"
   },
+  "knowledgeBase": {
+    "title": "ナレッジベース設定",
+    "addKnowledgeBase": "ナレッジベースを追加",
+    "selectKnowledgeBaseType": "追加するナレッジベースの種類を選択してください",
+    "difyDescription": "Difyナレッジベースはドキュメントデータの管理と利用をサポートします",
+    "comingSoon": "近日公開",
+    "featureNotAvailable": "この機能はまだ利用できません",
+    "addDifyConfig": "Dify設定を追加",
+    "apiKey": "APIキー",
+    "datasetId": "データセットID",
+    "endpoint": "APIエンドポイント",
+    "configAdded": "設定が追加されました",
+    "configAddedDesc": "Difyナレッジベースの設定が正常に追加されました",
+    "addConfig": "設定を追加",
+    "moreComingSoon": "より多くのナレッジベースタイプが近日公開予定",
+    "configUpdated": "設定が更新されました",
+    "configUpdatedDesc": "Difyナレッジベースの設定が正常に更新されました",
+    "descriptionPlaceholder": "例：会社の製品ドキュメントナレッジベース"
+  },
   "mcp": {
     "title": "MCP設定",
     "description": "MCP（Model Control Protocol）サーバーとツールを管理および構成します",

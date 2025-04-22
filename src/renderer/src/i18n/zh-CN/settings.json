@@ -189,7 +189,10 @@
     "configAdded": "配置已添加",
     "configAddedDesc": "Dify知识库配置已成功添加",
     "addConfig": "添加配置",
-    "moreComingSoon": "更多知识库类型即将推出"
+    "moreComingSoon": "更多知识库类型即将推出",
+    "configUpdated": "配置已更新",
+    "configUpdatedDesc": "Dify知识库配置已成功更新",
+    "descriptionPlaceholder": "例如：公司产品文档知识库"
   },
   "mcp": {
     "title": "MCP设置",

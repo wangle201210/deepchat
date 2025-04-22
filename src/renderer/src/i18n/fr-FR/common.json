@@ -56,5 +56,6 @@
   "selectModel": "Sélectionner un modèle",
   "title": "Paramètres généraux",
   "languageSystem": "Suivez le système",
-  "watermarkTip": "Généré par AI"
+  "watermarkTip": "Généré par AI",
+  "knowledgeBase": "Base de connaissances"
 }

@@ -175,6 +175,25 @@
     "localModels": "로컬 모델",
     "urlFormat": "API 샘플 : {defaultUrl}"
   },
+  "knowledgeBase": {
+    "title": "지식 베이스 설정",
+    "addKnowledgeBase": "지식 베이스 추가",
+    "selectKnowledgeBaseType": "추가할 지식 베이스 유형을 선택하세요",
+    "difyDescription": "Dify 지식 베이스는 문서 데이터를 관리하고 사용하는 데 도움이 됩니다",
+    "comingSoon": "출시 예정",
+    "featureNotAvailable": "이 기능은 아직 사용할 수 없습니다",
+    "addDifyConfig": "Dify 구성 추가",
+    "apiKey": "API 키",
+    "datasetId": "데이터셋 ID",
+    "endpoint": "API 엔드포인트",
+    "configAdded": "구성 추가됨",
+    "configAddedDesc": "Dify 지식 베이스 구성이 성공적으로 추가되었습니다",
+    "addConfig": "구성 추가",
+    "moreComingSoon": "더 많은 지식 베이스 유형이 곧 제공될 예정입니다",
+    "configUpdated": "구성 업데이트됨",
+    "configUpdatedDesc": "Dify 지식 베이스 구성이 성공적으로 업데이트되었습니다",
+    "descriptionPlaceholder": "예: 회사 제품 문서 지식 베이스"
+  },
   "mcp": {
     "title": "MCP 설정",
     "description": "MCP(Model Control Protocol) 서버 및 도구 관리 및 구성",

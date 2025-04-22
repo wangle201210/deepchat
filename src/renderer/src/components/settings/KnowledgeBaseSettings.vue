@@ -35,6 +35,12 @@
               </p>
             </div>
             <div class="flex items-center gap-2">
+              <!-- MCP开关 -->
+              <Switch
+                :checked="isDifyMcpEnabled"
+                :disabled="!mcpStore.mcpEnabled"
+                @update:checked="toggleDifyMcpServer"
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -61,13 +67,22 @@
                     :key="index"
                     class="p-3 border rounded-md relative"
                   >
-                    <button
-                      type="button"
-                      class="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
-                      @click="removeDifyConfig(index)"
-                    >
-                      <Icon icon="lucide:trash-2" class="h-4 w-4" />
-                    </button>
+                    <div class="absolute top-2 right-2 flex gap-2">
+                      <button
+                        type="button"
+                        class="text-muted-foreground hover:text-primary"
+                        @click="editDifyConfig(index)"
+                      >
+                        <Icon icon="lucide:edit" class="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        class="text-muted-foreground hover:text-destructive"
+                        @click="removeDifyConfig(index)"
+                      >
+                        <Icon icon="lucide:trash-2" class="h-4 w-4" />
+                      </button>
+                    </div>
 
                     <div class="grid gap-2">
                       <div class="flex items-center">
@@ -76,7 +91,7 @@
                       <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                         <div>
                           <span class="font-medium">API Key:</span>
-                          <span>{{ config.apiKey.substring(0, 4) + '****' }}</span>
+                          <span>{{ config.apiKey.substring(0, 8) + '****' }}</span>
                         </div>
                         <div>
                           <span class="font-medium">Dataset ID:</span>
@@ -104,7 +119,7 @@
                     <Input
                       id="dify-description"
                       v-model="currentDifyConfig.description"
-                      placeholder="例如：公司产品文档知识库"
+                      :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
                     />
                   </div>
 
@@ -166,6 +181,71 @@
         </div>
       </div>
 
+      <!-- 编辑Dify配置对话框 -->
+      <Dialog v-model:open="isEditDifyConfigDialogOpen">
+        <DialogContent>
+          <DialogHeader>
+<!--            <DialogTitle>{{ // t('settings.knowledgeBase.editDifyConfig') }}</DialogTitle>-->
+          </DialogHeader>
+          <div class="space-y-4 py-4">
+            <div class="space-y-2">
+              <Label class="text-xs text-muted-foreground" for="edit-dify-description">
+                {{ t('settings.knowledgeBase.difyDescription') }}
+              </Label>
+              <Input
+                id="edit-dify-description"
+                v-model="editingDifyConfig.description"
+                :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label class="text-xs text-muted-foreground" for="edit-dify-api-key">
+                {{ t('settings.knowledgeBase.apiKey') }}
+              </Label>
+              <Input
+                id="edit-dify-api-key"
+                v-model="editingDifyConfig.apiKey"
+                type="password"
+                placeholder="Dify API Key"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label class="text-xs text-muted-foreground" for="edit-dify-dataset-id">
+                {{ t('settings.knowledgeBase.datasetId') }}
+              </Label>
+              <Input
+                id="edit-dify-dataset-id"
+                v-model="editingDifyConfig.datasetId"
+                placeholder="Dify Dataset ID"
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label class="text-xs text-muted-foreground" for="edit-dify-endpoint">
+                {{ t('settings.knowledgeBase.endpoint') }}
+              </Label>
+              <Input
+                id="edit-dify-endpoint"
+                v-model="editingDifyConfig.endpoint"
+                placeholder="https://api.dify.ai/v1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" @click="closeEditDifyConfigDialog">{{ t('common.cancel') }}</Button>
+            <Button
+              type="button"
+              :disabled="!isEditingDifyConfigValid"
+              @click="saveEditDifyConfig"
+            >
+              {{ t('common.confirm') }}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <!-- 添加知识库对话框 -->
       <Dialog v-model:open="isAddKnowledgeBaseDialogOpen">
         <DialogContent>
@@ -223,13 +303,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Dialog,
   DialogContent,
@@ -249,6 +330,25 @@ const { toast } = useToast()
 // 对话框状态
 const isAddKnowledgeBaseDialogOpen = ref(false)
 const isDifyConfigPanelOpen = ref(true)
+const isEditDifyConfigDialogOpen = ref(false)
+
+// 编辑配置状态
+const editingDifyConfig = ref<DifyConfig>({
+  description: '',
+  apiKey: '',
+  datasetId: '',
+  endpoint: 'https://api.dify.ai/v1'
+})
+const editingConfigIndex = ref<number>(-1)
+
+// 验证编辑配置是否有效
+const isEditingDifyConfigValid = computed(() => {
+  return (
+    editingDifyConfig.value.apiKey.trim() !== '' &&
+    editingDifyConfig.value.datasetId.trim() !== '' &&
+    editingDifyConfig.value.description.trim() !== ''
+  )
+})
 
 // Dify知识库配置
 interface DifyConfig {
@@ -364,6 +464,45 @@ const closeAddKnowledgeBaseDialog = () => {
   isAddKnowledgeBaseDialogOpen.value = false
 }
 
+// 打开编辑配置对话框
+const editDifyConfig = (index: number) => {
+  editingConfigIndex.value = index
+  const config = difyConfigs.value[index]
+  editingDifyConfig.value = { ...config }
+  isEditDifyConfigDialogOpen.value = true
+}
+
+// 关闭编辑配置对话框
+const closeEditDifyConfigDialog = () => {
+  isEditDifyConfigDialogOpen.value = false
+  editingConfigIndex.value = -1
+  editingDifyConfig.value = {
+    description: '',
+    apiKey: '',
+    datasetId: '',
+    endpoint: 'https://api.dify.ai/v1'
+  }
+}
+
+// 保存编辑的配置
+const saveEditDifyConfig = async () => {
+  if (!isEditingDifyConfigValid.value || editingConfigIndex.value === -1) return
+
+  // 更新配置
+  difyConfigs.value[editingConfigIndex.value] = { ...editingDifyConfig.value }
+
+  // 更新到MCP
+  await updateDifyConfigToMcp()
+
+  // 关闭对话框
+  closeEditDifyConfigDialog()
+
+  toast({
+    title: t('settings.knowledgeBase.configUpdated'),
+    description: t('settings.knowledgeBase.configUpdatedDesc')
+  })
+}
+
 // 选择知识库类型
 const selectKnowledgeBaseType = (type: string) => {
   if (type === 'dify') {
@@ -381,6 +520,27 @@ const selectKnowledgeBaseType = (type: string) => {
 const toggleDifyConfigPanel = () => {
   isDifyConfigPanelOpen.value = !isDifyConfigPanelOpen.value
 }
+
+// 计算Dify MCP服务器是否启用
+const isDifyMcpEnabled = computed(() => {
+  return mcpStore.serverStatuses['difyKnowledge'] || false
+})
+
+// 切换Dify MCP服务器状态
+const toggleDifyMcpServer = async () => {
+  if (!mcpStore.mcpEnabled) return
+  await mcpStore.toggleServer('difyKnowledge')
+}
+
+// 监听MCP全局状态变化
+watch(
+  () => mcpStore.mcpEnabled,
+  async (enabled) => {
+    if (!enabled && isDifyMcpEnabled.value) {
+      await mcpStore.toggleServer('difyKnowledge')
+    }
+  }
+)
 
 // 组件挂载时加载配置
 onMounted(async () => {

@@ -189,7 +189,10 @@
     "configAdded": "Configuration Added",
     "configAddedDesc": "Dify knowledge base configuration has been successfully added",
     "addConfig": "Add Configuration",
-    "moreComingSoon": "More knowledge base types coming soon"
+    "moreComingSoon": "More knowledge base types coming soon",
+    "configUpdated": "Configuration Updated",
+    "configUpdatedDesc": "Dify knowledge base configuration has been successfully updated",
+    "descriptionPlaceholder": "Example: Company product documentation knowledge base"
   },
   "mcp": {
     "title": "MCP Settings",
