@@ -29,7 +29,7 @@ export function processTokens(tokens: MarkdownToken[]): ParsedNode[] {
 
   while (i < tokens.length) {
     const token = tokens[i]
-    console.log('token', token)
+
     switch (token.type) {
       case 'heading_open':
         result.push(parseHeading(tokens, i))

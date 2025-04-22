@@ -11,7 +11,6 @@ export function parseStrongToken(
 
   // Process tokens between strong_open and strong_close
   while (i < tokens.length && tokens[i].type !== 'strong_close') {
-    console.log('tokens[i]', tokens[i])
     if (tokens[i].type === 'text') {
       strongText += tokens[i].content || ''
       children.push(parseTextToken(tokens[i]))
