@@ -17,15 +17,15 @@ export function getInMemoryServer(
     case 'Artifacts':
       return new ArtifactsServer()
     case 'bochaSearch':
-      return new BochaSearchServer(env)
+      return new BochaSearchServer(typeof env === 'object' ? env : undefined)
     case 'braveSearch':
-      return new BraveSearchServer(env)
+      return new BraveSearchServer(typeof env === 'object' ? env : undefined)
     case 'imageServer':
       return new ImageServer(args[0], args[1])
     case 'powerpack':
       return new PowerpackServer()
     case 'difyKnowledge':
-      return new DifyKnowledgeServer(env)
+      return new DifyKnowledgeServer(typeof env === 'string' ? env : undefined)
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

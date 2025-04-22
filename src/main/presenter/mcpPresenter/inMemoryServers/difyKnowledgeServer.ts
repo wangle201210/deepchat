@@ -65,11 +65,14 @@ export class DifyKnowledgeServer {
   }> = []
 
   constructor(envStr?: string) {
-    let envs = Array<Record<string, string>>
-    const envObj = JSON.parse(envStr)
-    envs = envObj.configs
+    if (!envStr) {
+      throw new Error('需要提供Dify知识库配置')
+    }
 
-    if (!envs || envs.length === 0) {
+    const envObj = JSON.parse(envStr)
+    const envs = envObj.configs
+
+    if (!Array.isArray(envs) || envs.length === 0) {
       throw new Error('需要提供至少一个Dify知识库配置')
     }
 
