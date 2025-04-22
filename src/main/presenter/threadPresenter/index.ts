@@ -10,7 +10,10 @@ import {
   ISQLitePresenter,
   IConfigPresenter,
   ILlmProviderPresenter,
-  MCPToolResponse
+  MCPToolResponse,
+  ChatMessage,
+  ChatMessageContent,
+  LLMAgentEventData
 } from '../../../shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './messageManager'
@@ -29,7 +32,6 @@ import { generateSearchPrompt, SearchManager } from './searchManager'
 import { getFileContext } from './fileContext'
 import { ContentEnricher } from './contentEnricher'
 import { CONVERSATION_EVENTS, STREAM_EVENTS } from '@/events'
-import { ChatMessage, ChatMessageContent } from '../llmProviderPresenter/baseProvider'
 import { DEFAULT_SETTINGS } from './const'
 
 interface GeneratingMessageState {
@@ -75,348 +77,347 @@ export class ThreadPresenter implements IThreadPresenter {
 
     // 初始化时处理所有未完成的消息
     this.messageManager.initializeUnfinishedMessages()
+  }
+  async handleLLMAgentError(msg: LLMAgentEventData) {
+    const { eventId, error } = msg
+    const state = this.generatingMessages.get(eventId)
+    if (state) {
+      await this.messageManager.handleMessageError(eventId, String(error))
+      this.generatingMessages.delete(eventId)
+    }
+    eventBus.emit(STREAM_EVENTS.ERROR, msg)
+  }
+  async handleLLMAgentEnd(msg: LLMAgentEventData) {
+    const { eventId, userStop } = msg
+    const state = this.generatingMessages.get(eventId)
+    if (state) {
+      state.message.content.forEach((block) => {
+        block.status = 'success'
+      })
+      // 计算completion tokens
+      let completionTokens = 0
+      if (state.totalUsage) {
+        completionTokens = state.totalUsage.completion_tokens
+      } else {
+        for (const block of state.message.content) {
+          if (
+            block.type === 'content' ||
+            block.type === 'reasoning_content' ||
+            block.type === 'tool_call'
+          ) {
+            completionTokens += approximateTokenSize(block.content)
+          }
+        }
+      }
 
-    eventBus.on(STREAM_EVENTS.RESPONSE, async (msg) => {
-      const {
-        eventId,
-        content,
-        reasoning_content,
-        tool_call_id,
-        tool_call_name,
-        tool_call_params,
-        tool_call_response,
-        maximum_tool_calls_reached,
-        tool_call_server_name,
-        tool_call_server_icons,
-        tool_call_server_description,
-        tool_call_response_raw,
-        tool_call,
-        totalUsage,
-        image_data
-      } = msg
-      const state = this.generatingMessages.get(eventId)
-      if (state) {
-        // 记录第一个token的时间
-        if (state.firstTokenTime === null && (content || reasoning_content)) {
-          state.firstTokenTime = Date.now()
+      // 检查是否有内容块
+      const hasContentBlock = state.message.content.some(
+        (block) =>
+          block.type === 'content' ||
+          block.type === 'reasoning_content' ||
+          block.type === 'tool_call' ||
+          block.type === 'image'
+      )
+
+      // 如果没有内容块，添加错误信息
+      if (!hasContentBlock && !userStop) {
+        state.message.content.push({
+          type: 'error',
+          content: 'common.error.noModelResponse',
+          status: 'error',
+          timestamp: Date.now()
+        })
+      }
+
+      const totalTokens = state.promptTokens + completionTokens
+      const generationTime = Date.now() - (state.firstTokenTime ?? state.startTime)
+      const tokensPerSecond = completionTokens / (generationTime / 1000)
+
+      // 如果有reasoning_content，记录结束时间
+      const metadata: Partial<MESSAGE_METADATA> = {
+        totalTokens,
+        inputTokens: state.promptTokens,
+        outputTokens: completionTokens,
+        generationTime,
+        firstTokenTime: state.firstTokenTime ? state.firstTokenTime - state.startTime : 0,
+        tokensPerSecond
+      }
+
+      if (state.reasoningStartTime !== null && state.lastReasoningTime !== null) {
+        metadata.reasoningStartTime = state.reasoningStartTime - state.startTime
+        metadata.reasoningEndTime = state.lastReasoningTime - state.startTime
+      }
+
+      // 更新消息的usage信息
+      await this.messageManager.updateMessageMetadata(eventId, metadata)
+
+      await this.messageManager.updateMessageStatus(eventId, 'sent')
+      await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+      this.generatingMessages.delete(eventId)
+    }
+    eventBus.emit(STREAM_EVENTS.END, msg)
+  }
+  async handleLLMAgentResponse(msg: LLMAgentEventData) {
+    const {
+      eventId,
+      content,
+      reasoning_content,
+      tool_call_id,
+      tool_call_name,
+      tool_call_params,
+      tool_call_response,
+      maximum_tool_calls_reached,
+      tool_call_server_name,
+      tool_call_server_icons,
+      tool_call_server_description,
+      tool_call_response_raw,
+      tool_call,
+      totalUsage,
+      image_data
+    } = msg
+    const state = this.generatingMessages.get(eventId)
+    if (state) {
+      // 记录第一个token的时间
+      if (state.firstTokenTime === null && (content || reasoning_content)) {
+        state.firstTokenTime = Date.now()
+        await this.messageManager.updateMessageMetadata(eventId, {
+          firstTokenTime: Date.now() - state.startTime
+        })
+      }
+      if (totalUsage) {
+        state.totalUsage = totalUsage
+        state.promptTokens = totalUsage.prompt_tokens
+      }
+
+      // 处理工具调用达到最大次数的情况
+      if (maximum_tool_calls_reached) {
+        const lastBlock = state.message.content[state.message.content.length - 1]
+        if (lastBlock) {
+          lastBlock.status = 'success'
+        }
+        state.message.content.push({
+          type: 'action',
+          content: 'common.error.maximumToolCallsReached',
+          status: 'success',
+          timestamp: Date.now(),
+          action_type: 'maximum_tool_calls_reached',
+          tool_call: {
+            id: tool_call_id,
+            name: tool_call_name,
+            params: tool_call_params,
+            server_name: tool_call_server_name,
+            server_icons: tool_call_server_icons,
+            server_description: tool_call_server_description
+          },
+          extra: {
+            needContinue: true
+          }
+        })
+        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+        return
+      }
+
+      // 处理reasoning_content的时间戳
+      if (reasoning_content) {
+        if (state.reasoningStartTime === null) {
+          state.reasoningStartTime = Date.now()
           await this.messageManager.updateMessageMetadata(eventId, {
-            firstTokenTime: Date.now() - state.startTime
+            reasoningStartTime: Date.now() - state.startTime
           })
         }
-        if (totalUsage) {
-          state.totalUsage = totalUsage
-          state.promptTokens = totalUsage.prompt_tokens
-        }
+        state.lastReasoningTime = Date.now()
+      }
 
-        // 处理工具调用达到最大次数的情况
-        if (maximum_tool_calls_reached) {
-          const lastBlock = state.message.content[state.message.content.length - 1]
+      const lastBlock = state.message.content[state.message.content.length - 1]
+
+      // 检查tool_call_response_raw中是否包含搜索结果
+      if (tool_call_response_raw && tool_call === 'end') {
+        try {
+          // 检查返回的内容中是否有deepchat-webpage类型的资源
+          const hasSearchResults = tool_call_response_raw.content?.some(
+            (item: { type: string; resource?: { mimeType: string } }) =>
+              item?.type === 'resource' &&
+              item?.resource?.mimeType === 'application/deepchat-webpage'
+          )
+
+          if (hasSearchResults) {
+            // 解析搜索结果
+            const searchResults = tool_call_response_raw.content
+              .filter(
+                (item: {
+                  type: string
+                  resource?: { mimeType: string; text: string; uri?: string }
+                }) =>
+                  item.type === 'resource' &&
+                  item.resource?.mimeType === 'application/deepchat-webpage'
+              )
+              .map((item: { resource: { text: string; uri?: string } }) => {
+                try {
+                  const blobContent = JSON.parse(item.resource.text) as {
+                    title?: string
+                    url?: string
+                    content?: string
+                    icon?: string
+                  }
+                  return {
+                    title: blobContent.title || '',
+                    url: blobContent.url || item.resource.uri || '',
+                    content: blobContent.content || '',
+                    description: blobContent.content || '',
+                    icon: blobContent.icon || ''
+                  }
+                } catch (e) {
+                  console.error('解析搜索结果失败:', e)
+                  return null
+                }
+              })
+              .filter(Boolean)
+
+            if (searchResults.length > 0) {
+              // 检查是否已经存在搜索块
+              const existingSearchBlock =
+                state.message.content.length > 0 && state.message.content[0].type === 'search'
+                  ? state.message.content[0]
+                  : null
+
+              if (existingSearchBlock) {
+                // 如果已经存在搜索块，更新其状态和总数
+                existingSearchBlock.status = 'success'
+                existingSearchBlock.timestamp = Date.now()
+                if (existingSearchBlock.extra) {
+                  // 累加搜索结果数量
+                  existingSearchBlock.extra.total =
+                    (existingSearchBlock.extra.total || 0) + searchResults.length
+                } else {
+                  existingSearchBlock.extra = {
+                    total: searchResults.length
+                  }
+                }
+              } else {
+                // 如果不存在搜索块，创建新的并添加到内容的最前面
+                const searchBlock: AssistantMessageBlock = {
+                  type: 'search',
+                  content: '',
+                  status: 'success',
+                  timestamp: Date.now(),
+                  extra: {
+                    total: searchResults.length
+                  }
+                }
+                state.message.content.unshift(searchBlock)
+              }
+
+              // 保存搜索结果
+              for (const result of searchResults) {
+                await this.sqlitePresenter.addMessageAttachment(
+                  eventId,
+                  'search_result',
+                  JSON.stringify(result)
+                )
+              }
+
+              await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+            }
+          }
+        } catch (error) {
+          console.error('处理搜索结果时出错:', error)
+        }
+      }
+
+      // 处理工具调用
+      if (tool_call) {
+        if (tool_call === 'start') {
+          // 创建新的工具调用块
           if (lastBlock) {
             lastBlock.status = 'success'
           }
+
           state.message.content.push({
-            type: 'action',
-            content: 'common.error.maximumToolCallsReached',
-            status: 'success',
+            type: 'tool_call',
+            content: '',
+            status: 'loading',
             timestamp: Date.now(),
-            action_type: 'maximum_tool_calls_reached',
             tool_call: {
               id: tool_call_id,
               name: tool_call_name,
-              params: tool_call_params,
+              params: tool_call_params || '',
               server_name: tool_call_server_name,
               server_icons: tool_call_server_icons,
               server_description: tool_call_server_description
-            },
-            extra: {
-              needContinue: true
             }
           })
-          await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-          return
-        }
+        } else if (tool_call === 'end' || tool_call === 'error') {
+          // 查找对应的工具调用块
+          const toolCallBlock = state.message.content.find(
+            (block) =>
+              block.type === 'tool_call' &&
+              ((tool_call_id && block.tool_call?.id === tool_call_id) ||
+                block.tool_call?.name === tool_call_name) &&
+              block.status === 'loading'
+          )
 
-        // 处理reasoning_content的时间戳
-        if (reasoning_content) {
-          if (state.reasoningStartTime === null) {
-            state.reasoningStartTime = Date.now()
-            await this.messageManager.updateMessageMetadata(eventId, {
-              reasoningStartTime: Date.now() - state.startTime
-            })
-          }
-          state.lastReasoningTime = Date.now()
-        }
-
-        const lastBlock = state.message.content[state.message.content.length - 1]
-
-        // 检查tool_call_response_raw中是否包含搜索结果
-        if (tool_call_response_raw && tool_call === 'end') {
-          try {
-            // 检查返回的内容中是否有deepchat-webpage类型的资源
-            const hasSearchResults = tool_call_response_raw.content?.some(
-              (item: { type: string; resource?: { mimeType: string } }) =>
-                item?.type === 'resource' &&
-                item?.resource?.mimeType === 'application/deepchat-webpage'
-            )
-
-            if (hasSearchResults) {
-              // 解析搜索结果
-              const searchResults = tool_call_response_raw.content
-                .filter(
-                  (item: {
-                    type: string
-                    resource?: { mimeType: string; text: string; uri?: string }
-                  }) =>
-                    item.type === 'resource' &&
-                    item.resource?.mimeType === 'application/deepchat-webpage'
-                )
-                .map((item: { resource: { text: string; uri?: string } }) => {
-                  try {
-                    const blobContent = JSON.parse(item.resource.text) as {
-                      title?: string
-                      url?: string
-                      content?: string
-                      icon?: string
-                    }
-                    return {
-                      title: blobContent.title || '',
-                      url: blobContent.url || item.resource.uri || '',
-                      content: blobContent.content || '',
-                      description: blobContent.content || '',
-                      icon: blobContent.icon || ''
-                    }
-                  } catch (e) {
-                    console.error('解析搜索结果失败:', e)
-                    return null
-                  }
-                })
-                .filter(Boolean)
-
-              if (searchResults.length > 0) {
-                // 检查是否已经存在搜索块
-                const existingSearchBlock =
-                  state.message.content.length > 0 && state.message.content[0].type === 'search'
-                    ? state.message.content[0]
-                    : null
-
-                if (existingSearchBlock) {
-                  // 如果已经存在搜索块，更新其状态和总数
-                  existingSearchBlock.status = 'success'
-                  existingSearchBlock.timestamp = Date.now()
-                  if (existingSearchBlock.extra) {
-                    // 累加搜索结果数量
-                    existingSearchBlock.extra.total =
-                      (existingSearchBlock.extra.total || 0) + searchResults.length
-                  } else {
-                    existingSearchBlock.extra = {
-                      total: searchResults.length
-                    }
-                  }
-                } else {
-                  // 如果不存在搜索块，创建新的并添加到内容的最前面
-                  const searchBlock: AssistantMessageBlock = {
-                    type: 'search',
-                    content: '',
-                    status: 'success',
-                    timestamp: Date.now(),
-                    extra: {
-                      total: searchResults.length
-                    }
-                  }
-                  state.message.content.unshift(searchBlock)
-                }
-
-                // 保存搜索结果
-                for (const result of searchResults) {
-                  await this.sqlitePresenter.addMessageAttachment(
-                    eventId,
-                    'search_result',
-                    JSON.stringify(result)
-                  )
-                }
-
-                await this.messageManager.editMessage(
-                  eventId,
-                  JSON.stringify(state.message.content)
-                )
-              }
-            }
-          } catch (error) {
-            console.error('处理搜索结果时出错:', error)
-          }
-        }
-
-        // 处理工具调用
-        if (tool_call) {
-          if (tool_call === 'start') {
-            // 创建新的工具调用块
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
-
-            state.message.content.push({
-              type: 'tool_call',
-              content: '',
-              status: 'loading',
-              timestamp: Date.now(),
-              tool_call: {
-                id: tool_call_id,
-                name: tool_call_name,
-                params: tool_call_params || '',
-                server_name: tool_call_server_name,
-                server_icons: tool_call_server_icons,
-                server_description: tool_call_server_description
-              }
-            })
-          } else if (tool_call === 'end' || tool_call === 'error') {
-            // 查找对应的工具调用块
-            const toolCallBlock = state.message.content.find(
-              (block) =>
-                block.type === 'tool_call' &&
-                ((tool_call_id && block.tool_call?.id === tool_call_id) ||
-                  block.tool_call?.name === tool_call_name) &&
-                block.status === 'loading'
-            )
-
-            if (toolCallBlock && toolCallBlock.type === 'tool_call') {
-              if (tool_call === 'error') {
-                toolCallBlock.status = 'error'
-                toolCallBlock.tool_call.response = tool_call_response || '执行失败'
-              } else {
-                toolCallBlock.status = 'success'
-                if (tool_call_response) {
-                  toolCallBlock.tool_call.response = tool_call_response
-                }
+          if (toolCallBlock && toolCallBlock.type === 'tool_call') {
+            if (tool_call === 'error') {
+              toolCallBlock.status = 'error'
+              toolCallBlock.tool_call.response = tool_call_response || '执行失败'
+            } else {
+              toolCallBlock.status = 'success'
+              if (tool_call_response) {
+                toolCallBlock.tool_call.response = tool_call_response
               }
             }
           }
-        } else if (image_data) {
-          // 处理图像数据
+        }
+      } else if (image_data) {
+        // 处理图像数据
+        if (lastBlock) {
+          lastBlock.status = 'success'
+        }
+        state.message.content.push({
+          type: 'image',
+          content: 'image',
+          status: 'success',
+          timestamp: Date.now(),
+          image_data: image_data
+        })
+      } else if (content) {
+        // 处理普通内容
+        if (lastBlock && lastBlock.type === 'content') {
+          lastBlock.content += content
+        } else {
           if (lastBlock) {
             lastBlock.status = 'success'
           }
           state.message.content.push({
-            type: 'image',
-            content: 'image',
-            status: 'success',
-            timestamp: Date.now(),
-            image_data: image_data
-          })
-        } else if (content) {
-          // 处理普通内容
-          if (lastBlock && lastBlock.type === 'content') {
-            lastBlock.content += content
-          } else {
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
-            state.message.content.push({
-              type: 'content',
-              content: content,
-              status: 'loading',
-              timestamp: Date.now()
-            })
-          }
-        }
-
-        // 处理推理内容
-        if (reasoning_content) {
-          if (lastBlock && lastBlock.type === 'reasoning_content') {
-            lastBlock.content += reasoning_content
-          } else {
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
-            state.message.content.push({
-              type: 'reasoning_content',
-              content: reasoning_content,
-              status: 'loading',
-              timestamp: Date.now()
-            })
-          }
-        }
-
-        // 更新消息内容
-        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-      }
-    })
-    eventBus.on(STREAM_EVENTS.END, async (msg) => {
-      const { eventId, userStop } = msg
-      const state = this.generatingMessages.get(eventId)
-      if (state) {
-        state.message.content.forEach((block) => {
-          block.status = 'success'
-        })
-        // 计算completion tokens
-        let completionTokens = 0
-        if (state.totalUsage) {
-          completionTokens = state.totalUsage.completion_tokens
-        } else {
-          for (const block of state.message.content) {
-            if (
-              block.type === 'content' ||
-              block.type === 'reasoning_content' ||
-              block.type === 'tool_call'
-            ) {
-              completionTokens += approximateTokenSize(block.content)
-            }
-          }
-        }
-
-        // 检查是否有内容块
-        const hasContentBlock = state.message.content.some(
-          (block) =>
-            block.type === 'content' ||
-            block.type === 'reasoning_content' ||
-            block.type === 'tool_call' ||
-            block.type === 'image'
-        )
-
-        // 如果没有内容块，添加错误信息
-        if (!hasContentBlock && !userStop) {
-          state.message.content.push({
-            type: 'error',
-            content: 'common.error.noModelResponse',
-            status: 'error',
+            type: 'content',
+            content: content,
+            status: 'loading',
             timestamp: Date.now()
           })
         }
-
-        const totalTokens = state.promptTokens + completionTokens
-        const generationTime = Date.now() - (state.firstTokenTime ?? state.startTime)
-        const tokensPerSecond = completionTokens / (generationTime / 1000)
-
-        // 如果有reasoning_content，记录结束时间
-        const metadata: Partial<MESSAGE_METADATA> = {
-          totalTokens,
-          inputTokens: state.promptTokens,
-          outputTokens: completionTokens,
-          generationTime,
-          firstTokenTime: state.firstTokenTime ? state.firstTokenTime - state.startTime : 0,
-          tokensPerSecond
-        }
-
-        if (state.reasoningStartTime !== null && state.lastReasoningTime !== null) {
-          metadata.reasoningStartTime = state.reasoningStartTime - state.startTime
-          metadata.reasoningEndTime = state.lastReasoningTime - state.startTime
-        }
-
-        // 更新消息的usage信息
-        await this.messageManager.updateMessageMetadata(eventId, metadata)
-
-        await this.messageManager.updateMessageStatus(eventId, 'sent')
-        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-        this.generatingMessages.delete(eventId)
       }
-    })
-    eventBus.on(STREAM_EVENTS.ERROR, async (msg) => {
-      const { eventId, error } = msg
-      const state = this.generatingMessages.get(eventId)
-      if (state) {
-        await this.messageManager.handleMessageError(eventId, String(error))
-        this.generatingMessages.delete(eventId)
+
+      // 处理推理内容
+      if (reasoning_content) {
+        if (lastBlock && lastBlock.type === 'reasoning_content') {
+          lastBlock.content += reasoning_content
+        } else {
+          if (lastBlock) {
+            lastBlock.status = 'success'
+          }
+          state.message.content.push({
+            type: 'reasoning_content',
+            content: reasoning_content,
+            status: 'loading',
+            timestamp: Date.now()
+          })
+        }
       }
-    })
+
+      // 更新消息内容
+      await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+    }
+    eventBus.emit(STREAM_EVENTS.RESPONSE, msg)
   }
 
   setSearchAssistantModel(model: MODEL_META, providerId: string) {
@@ -1059,7 +1060,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 6. 启动流式生成
 
-      await this.llmProviderPresenter.startStreamCompletion(
+      const stream = this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
         modelId,
@@ -1067,6 +1068,16 @@ export class ThreadPresenter implements IThreadPresenter {
         temperature,
         maxTokens
       )
+      for await (const event of stream) {
+        const msg = event.data
+        if (event.type === 'response') {
+          await this.handleLLMAgentResponse(msg)
+        } else if (event.type === 'error') {
+          await this.handleLLMAgentError(msg)
+        } else if (event.type === 'end') {
+          await this.handleLLMAgentEnd(msg)
+        }
+      }
     } catch (error) {
       // 检查是否是取消错误
       if (String(error).includes('userCanceledGeneration')) {
@@ -1198,7 +1209,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 10. 启动流式生成
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
-      await this.llmProviderPresenter.startStreamCompletion(
+      const stream = this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
         modelId,
@@ -1206,6 +1217,16 @@ export class ThreadPresenter implements IThreadPresenter {
         temperature,
         maxTokens
       )
+      for await (const event of stream) {
+        const msg = event.data
+        if (event.type === 'response') {
+          await this.handleLLMAgentResponse(msg)
+        } else if (event.type === 'error') {
+          await this.handleLLMAgentError(msg)
+        } else if (event.type === 'end') {
+          await this.handleLLMAgentEnd(msg)
+        }
+      }
     } catch (error) {
       // 检查是否是取消错误
       if (String(error).includes('userCanceledGeneration')) {

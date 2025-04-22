@@ -1,7 +1,7 @@
-import { LLM_PROVIDER, LLMResponse } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, ChatMessage } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
-import { ChatMessage } from '../baseProvider'
+
 export class PPIOProvider extends OpenAICompatibleProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)

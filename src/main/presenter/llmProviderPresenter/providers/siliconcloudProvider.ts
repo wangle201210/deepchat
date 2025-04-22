@@ -1,7 +1,6 @@
-import { LLM_PROVIDER, LLMResponse, MODEL_META } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, MODEL_META, ChatMessage } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
-import { ChatMessage } from '../baseProvider'
 
 export class SiliconcloudProvider extends OpenAICompatibleProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {

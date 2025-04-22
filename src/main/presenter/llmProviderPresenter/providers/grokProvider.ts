@@ -1,7 +1,6 @@
-import { LLM_PROVIDER, LLMResponse } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, ChatMessage } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
-import { ChatMessage } from '../baseProvider'
 import { ModelConfig, MCPToolDefinition, LLMCoreStreamEvent } from '@shared/presenter'
 
 export class GrokProvider extends OpenAICompatibleProvider {

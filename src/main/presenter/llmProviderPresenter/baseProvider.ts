@@ -4,33 +4,12 @@ import {
   LLMResponse,
   MCPToolDefinition,
   LLMCoreStreamEvent,
-  ModelConfig
+  ModelConfig,
+  ChatMessage
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
 import { jsonrepair } from 'jsonrepair'
-// 定义ChatMessage接口用于统一消息格式
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool'
-  content?: string | ChatMessageContent[]
-  tool_calls?: Array<{
-    function: {
-      arguments: string
-      name: string
-    }
-    id: string
-    type: 'function'
-  }>
-}
-
-export interface ChatMessageContent {
-  type: 'text' | 'image_url'
-  text?: string
-  image_url?: {
-    url: string
-    detail?: 'auto' | 'low' | 'high'
-  }
-}
 
 /**
  * 基础LLM提供商抽象类

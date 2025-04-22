@@ -270,7 +270,7 @@ export interface ILlmProviderPresenter {
     eventId: string,
     temperature?: number,
     maxTokens?: number
-  ): Promise<void>
+  ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
@@ -798,3 +798,54 @@ export interface LLMCoreStreamEvent {
     mimeType: string
   }
 }
+
+// 定义ChatMessage接口用于统一消息格式
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content?: string | ChatMessageContent[]
+  tool_calls?: Array<{
+    function: {
+      arguments: string
+      name: string
+    }
+    id: string
+    type: 'function'
+  }>
+}
+
+export interface ChatMessageContent {
+  type: 'text' | 'image_url'
+  text?: string
+  image_url?: {
+    url: string
+    detail?: 'auto' | 'low' | 'high'
+  }
+}
+export interface LLMAgentEventData {
+  eventId: string
+  content?: string
+  reasoning_content?: string
+  tool_call_id?: string
+  tool_call_name?: string
+  tool_call_params?: string
+  tool_call_response?: string | MCPToolResponse['content'] // Allow complex tool response content
+  maximum_tool_calls_reached?: boolean
+  tool_call_server_name?: string
+  tool_call_server_icons?: string
+  tool_call_server_description?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tool_call_response_raw?: any
+  tool_call?: 'start' | 'end' | 'error'
+  totalUsage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+  image_data?: { data: string; mimeType: string }
+  error?: string // For error event
+  userStop?: boolean // For end event
+}
+export type LLMAgentEvent =
+  | { type: 'response'; data: LLMAgentEventData }
+  | { type: 'error'; data: { eventId: string; error: string } }
+  | { type: 'end'; data: { eventId: string; userStop: boolean } }

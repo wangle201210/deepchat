@@ -10,8 +10,8 @@ import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { presenter } from '@/presenter'
-import { ChatMessage, ChatMessageContent } from '../../llmProviderPresenter/baseProvider' // Corrected Import Path
 import { getModelConfig } from '@/presenter/llmProviderPresenter/modelConfigs'
+import { ChatMessage, ChatMessageContent } from '@shared/presenter'
 // import { GenerateCompletionOptions } from '@/presenter/llmProviderPresenter' // Assuming this path and type exist - using any for now
 
 // --- Zod Schemas for Tool Arguments ---

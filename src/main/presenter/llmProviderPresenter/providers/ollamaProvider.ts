@@ -6,9 +6,10 @@ import {
   ProgressResponse,
   MCPToolDefinition,
   ModelConfig,
-  LLMCoreStreamEvent
+  LLMCoreStreamEvent,
+  ChatMessage
 } from '@shared/presenter'
-import { BaseLLMProvider, ChatMessage } from '../baseProvider'
+import { BaseLLMProvider } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import { Ollama, Message, ShowResponse } from 'ollama'
 import { presenter } from '@/presenter'

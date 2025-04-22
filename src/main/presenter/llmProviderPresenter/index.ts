@@ -4,9 +4,11 @@ import {
   LLMResponse,
   MCPToolCall,
   MODEL_META,
-  OllamaModel
+  OllamaModel,
+  ChatMessage,
+  LLMAgentEvent
 } from '@shared/presenter'
-import { BaseLLMProvider, ChatMessage, ChatMessageContent } from './baseProvider'
+import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
 import { DeepseekProvider } from './providers/deepseekProvider'
 import { SiliconcloudProvider } from './providers/siliconcloudProvider'
@@ -14,7 +16,7 @@ import { eventBus } from '@/eventbus'
 import { OpenAICompatibleProvider } from './providers/openAICompatibleProvider'
 import { PPIOProvider } from './providers/ppioProvider'
 import { getModelConfig } from './modelConfigs'
-import { OLLAMA_EVENTS, STREAM_EVENTS } from '@/events'
+import { OLLAMA_EVENTS } from '@/events'
 import { ConfigPresenter } from '../configPresenter'
 import { GeminiProvider } from './providers/geminiProvider'
 import { GithubProvider } from './providers/githubProvider'
@@ -251,8 +253,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const stream = this.activeStreams.get(eventId)
     if (stream) {
       stream.abortController.abort()
-      this.activeStreams.delete(eventId)
-      eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: true })
+      // Deletion is handled by the consuming loop in threadPresenter upon receiving the 'end' event or abortion signal
     }
   }
 
@@ -267,18 +268,21 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return this.activeStreams.size < this.config.maxConcurrentStreams
   }
 
-  async startStreamCompletion(
+  async *startStreamCompletion(
     providerId: string,
     initialMessages: ChatMessage[],
     modelId: string,
     eventId: string,
     temperature: number = 0.6,
     maxTokens: number = 4096
-  ): Promise<void> {
+  ): AsyncGenerator<LLMAgentEvent, void, unknown> {
     console.log('Starting agent loop for event:', eventId, 'with model:', modelId)
 
     if (!this.canStartNewStream()) {
-      throw new Error('已达到最大并发流数量限制')
+      // Instead of throwing, yield an error event
+      yield { type: 'error', data: { eventId, error: '已达到最大并发流数量限制' } }
+      return
+      // throw new Error('已达到最大并发流数量限制')
     }
 
     const provider = this.getProviderInstance(providerId)
@@ -308,401 +312,510 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       total_tokens: 0
     }
 
-    // --- Agent Loop ---
-    while (needContinueConversation) {
-      if (abortController.signal.aborted) {
-        console.log('Agent loop aborted for event:', eventId)
-        break
-      }
+    try {
+      // --- Agent Loop ---
+      while (needContinueConversation) {
+        if (abortController.signal.aborted) {
+          console.log('Agent loop aborted for event:', eventId)
+          break
+        }
 
-      if (toolCallCount >= MAX_TOOL_CALLS) {
-        console.warn('Maximum tool call limit reached for event:', eventId)
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
-          eventId,
-          maximum_tool_calls_reached: true
-        })
-        break
-      }
-
-      needContinueConversation = false
-
-      // Prepare for LLM call
-      let currentContent = ''
-      // let currentReasoning = ''
-      const currentToolCalls: Array<{
-        id: string
-        name: string
-        arguments: string
-      }> = []
-      const currentToolChunks: Record<string, { name: string; arguments_chunk: string }> = {}
-
-      try {
-        console.log(`Loop iteration ${toolCallCount + 1} for event ${eventId}`)
-        const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
-
-        // Call the provider's core stream method, expecting LLMCoreStreamEvent
-        const stream = provider.coreStream(
-          conversationMessages,
-          modelId,
-          modelConfig,
-          temperature,
-          maxTokens,
-          mcpTools
-        )
-
-        // Process the standardized stream events
-        for await (const chunk of stream) {
-          if (abortController.signal.aborted) {
-            break
+        if (toolCallCount >= MAX_TOOL_CALLS) {
+          console.warn('Maximum tool call limit reached for event:', eventId)
+          yield {
+            type: 'response',
+            data: {
+              eventId,
+              maximum_tool_calls_reached: true
+            }
           }
-          // console.log('presenter chunk', JSON.stringify(chunk))
 
-          // --- Event Handling (using LLMCoreStreamEvent structure) ---
-          switch (chunk.type) {
-            case 'text':
-              if (chunk.content) {
-                currentContent += chunk.content
-                eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                  eventId,
-                  content: chunk.content
-                })
-              }
+          break
+        }
+
+        needContinueConversation = false
+
+        // Prepare for LLM call
+        let currentContent = ''
+        // let currentReasoning = ''
+        const currentToolCalls: Array<{
+          id: string
+          name: string
+          arguments: string
+        }> = []
+        const currentToolChunks: Record<string, { name: string; arguments_chunk: string }> = {}
+
+        try {
+          console.log(`Loop iteration ${toolCallCount + 1} for event ${eventId}`)
+          const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+
+          // Call the provider's core stream method, expecting LLMCoreStreamEvent
+          const stream = provider.coreStream(
+            conversationMessages,
+            modelId,
+            modelConfig,
+            temperature,
+            maxTokens,
+            mcpTools
+          )
+
+          // Process the standardized stream events
+          for await (const chunk of stream) {
+            if (abortController.signal.aborted) {
               break
-            case 'reasoning':
-              if (chunk.reasoning_content) {
-                // currentReasoning += chunk.reasoning_content
-                eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                  eventId,
-                  reasoning_content: chunk.reasoning_content
-                })
-              }
-              break
-            case 'tool_call_start':
-              if (chunk.tool_call_id && chunk.tool_call_name) {
-                currentToolChunks[chunk.tool_call_id] = {
-                  name: chunk.tool_call_name,
-                  arguments_chunk: ''
+            }
+            // console.log('presenter chunk', JSON.stringify(chunk), currentContent)
+
+            // --- Event Handling (using LLMCoreStreamEvent structure) ---
+            switch (chunk.type) {
+              case 'text':
+                if (chunk.content) {
+                  currentContent += chunk.content
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      content: chunk.content
+                    }
+                  }
                 }
-              }
-              break
-            case 'tool_call_chunk':
-              if (
-                chunk.tool_call_id &&
-                currentToolChunks[chunk.tool_call_id] &&
-                chunk.tool_call_arguments_chunk
-              ) {
-                currentToolChunks[chunk.tool_call_id].arguments_chunk +=
+                break
+              case 'reasoning':
+                if (chunk.reasoning_content) {
+                  // currentReasoning += chunk.reasoning_content
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      reasoning_content: chunk.reasoning_content
+                    }
+                  }
+                }
+                break
+              case 'tool_call_start':
+                if (chunk.tool_call_id && chunk.tool_call_name) {
+                  currentToolChunks[chunk.tool_call_id] = {
+                    name: chunk.tool_call_name,
+                    arguments_chunk: ''
+                  }
+                  // Yielding start event might be less useful here if handled during execution
+                }
+                break
+              case 'tool_call_chunk':
+                if (
+                  chunk.tool_call_id &&
+                  currentToolChunks[chunk.tool_call_id] &&
                   chunk.tool_call_arguments_chunk
-              }
-              break
-            case 'tool_call_end':
-              if (chunk.tool_call_id && currentToolChunks[chunk.tool_call_id]) {
-                const completeArgs =
-                  chunk.tool_call_arguments_complete ??
-                  currentToolChunks[chunk.tool_call_id].arguments_chunk
-                currentToolCalls.push({
-                  id: chunk.tool_call_id,
-                  name: currentToolChunks[chunk.tool_call_id].name,
-                  arguments: completeArgs
-                })
-                delete currentToolChunks[chunk.tool_call_id]
-              }
-              break
-            case 'usage':
-              if (chunk.usage) {
-                totalUsage.prompt_tokens += chunk.usage.prompt_tokens
-                totalUsage.completion_tokens += chunk.usage.completion_tokens
-                totalUsage.total_tokens += chunk.usage.total_tokens
-                eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                  eventId,
-                  totalUsage: { ...totalUsage }
-                })
-              }
-              break
-            case 'image_data':
-              if (chunk.image_data) {
-                eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                  eventId,
-                  image_data: chunk.image_data
-                })
-                currentContent += `\n[Image data received: ${chunk.image_data.mimeType}]\n`
-              }
-              break
-            case 'error':
-              console.error(`Provider stream error for event ${eventId}:`, chunk.error_message)
-              eventBus.emit(STREAM_EVENTS.ERROR, {
-                eventId,
-                error: chunk.error_message || 'Provider stream error'
-              })
-              needContinueConversation = false
-              break
-            case 'stop':
-              console.log(
-                `Provider stream stopped for event ${eventId}. Reason: ${chunk.stop_reason}`
-              )
-              if (chunk.stop_reason === 'tool_use') {
-                // Consolidate any remaining tool call chunks
-                for (const id in currentToolChunks) {
+                ) {
+                  currentToolChunks[chunk.tool_call_id].arguments_chunk +=
+                    chunk.tool_call_arguments_chunk
+                  // Yielding chunks might be too granular for the agent loop consumer
+                }
+                break
+              case 'tool_call_end':
+                if (chunk.tool_call_id && currentToolChunks[chunk.tool_call_id]) {
+                  const completeArgs =
+                    chunk.tool_call_arguments_complete ??
+                    currentToolChunks[chunk.tool_call_id].arguments_chunk
                   currentToolCalls.push({
-                    id: id,
-                    name: currentToolChunks[id].name,
-                    arguments: currentToolChunks[id].arguments_chunk
+                    id: chunk.tool_call_id,
+                    name: currentToolChunks[chunk.tool_call_id].name,
+                    arguments: completeArgs
                   })
+                  delete currentToolChunks[chunk.tool_call_id]
+                }
+                break
+              case 'usage':
+                if (chunk.usage) {
+                  // console.log('usage', chunk.usage, totalUsage)
+                  totalUsage.prompt_tokens += chunk.usage.prompt_tokens
+                  totalUsage.completion_tokens += chunk.usage.completion_tokens
+                  totalUsage.total_tokens += chunk.usage.total_tokens
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      totalUsage: { ...totalUsage } // Yield accumulated usage
+                    }
+                  }
+                }
+                break
+              case 'image_data':
+                if (chunk.image_data) {
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      image_data: chunk.image_data
+                    }
+                  }
+
+                  currentContent += `\n[Image data received: ${chunk.image_data.mimeType}]\n`
+                }
+                break
+              case 'error':
+                console.error(`Provider stream error for event ${eventId}:`, chunk.error_message)
+                yield {
+                  type: 'error',
+                  data: {
+                    eventId,
+                    error: chunk.error_message || 'Provider stream error'
+                  }
                 }
 
-                if (currentToolCalls.length > 0) {
-                  needContinueConversation = true
+                needContinueConversation = false
+                break // Break inner loop on provider error
+              case 'stop':
+                console.log(
+                  `Provider stream stopped for event ${eventId}. Reason: ${chunk.stop_reason}`
+                )
+                if (chunk.stop_reason === 'tool_use') {
+                  // Consolidate any remaining tool call chunks
+                  for (const id in currentToolChunks) {
+                    currentToolCalls.push({
+                      id: id,
+                      name: currentToolChunks[id].name,
+                      arguments: currentToolChunks[id].arguments_chunk
+                    })
+                  }
+
+                  if (currentToolCalls.length > 0) {
+                    needContinueConversation = true
+                  } else {
+                    console.warn(
+                      `Stop reason was 'tool_use' but no tool calls were fully parsed for event ${eventId}.`
+                    )
+                    needContinueConversation = false // Don't continue if no tools parsed
+                  }
                 } else {
-                  console.warn(
-                    `Stop reason was 'tool_use' but no tool calls were fully parsed for event ${eventId}.`
-                  )
                   needContinueConversation = false
                 }
-              } else {
-                needContinueConversation = false
-              }
-              break
+                // Stop event itself doesn't need to be yielded here, handled by loop logic
+                break
+            }
+          } // End of inner loop (for await...of stream)
+
+          if (abortController.signal.aborted) break // Break outer loop if aborted
+
+          // --- Post-Stream Processing ---
+
+          // 1. Add Assistant Message
+          const assistantMessage: ChatMessage = {
+            role: 'assistant',
+            content: currentContent
           }
-        } // End of inner loop (for await...of stream)
+          // Only add if there's content or tool calls are expected
+          if (currentContent || (needContinueConversation && currentToolCalls.length > 0)) {
+            conversationMessages.push(assistantMessage)
+          }
 
-        if (abortController.signal.aborted) break // Break outer loop if aborted
+          // 2. Execute Tool Calls if needed
+          if (needContinueConversation && currentToolCalls.length > 0) {
+            for (const toolCall of currentToolCalls) {
+              if (abortController.signal.aborted) break // Check before each tool call
 
-        // --- Post-Stream Processing ---
+              if (toolCallCount >= MAX_TOOL_CALLS) {
+                console.warn('Max tool calls reached during execution phase for event:', eventId)
+                yield {
+                  type: 'response',
+                  data: {
+                    eventId,
+                    maximum_tool_calls_reached: true,
+                    tool_call_id: toolCall.id,
+                    tool_call_name: toolCall.name
+                  }
+                }
 
-        // 1. Add Assistant Message
-        const assistantMessage: ChatMessage = {
-          role: 'assistant',
-          content: currentContent
-        }
-        conversationMessages.push(assistantMessage)
+                needContinueConversation = false
+                break
+              }
 
-        // 2. Execute Tool Calls if needed
-        if (needContinueConversation && currentToolCalls.length > 0) {
-          // console.log(
-          //   `Executing ${currentToolCalls.length} tools for event ${eventId}`,
-          //   JSON.stringify(currentToolCalls)
-          // )
-          for (const toolCall of currentToolCalls) {
-            if (toolCallCount >= MAX_TOOL_CALLS) {
-              console.warn('Max tool calls reached during execution phase for event:', eventId)
-              eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                eventId,
-                maximum_tool_calls_reached: true,
-                tool_call_id: toolCall.id,
-                tool_call_name: toolCall.name
-              })
-              needContinueConversation = false
-              break
-            }
+              toolCallCount++
 
-            toolCallCount++
+              // Find the tool definition to get server info
+              const toolDef = (await presenter.mcpPresenter.getAllToolDefinitions()).find(
+                (t) => t.function.name === toolCall.name
+              )
 
-            // Find the tool definition to get server info
-            const toolDef = (await presenter.mcpPresenter.getAllToolDefinitions()).find(
-              (t) => t.function.name === toolCall.name
-            )
+              if (!toolDef) {
+                console.error(`Tool definition not found for ${toolCall.name}. Skipping execution.`)
+                const errorMsg = `Tool definition for ${toolCall.name} not found.`
+                yield {
+                  type: 'response',
+                  data: {
+                    eventId,
+                    tool_call: 'error',
+                    tool_call_id: toolCall.id,
+                    tool_call_name: toolCall.name,
+                    tool_call_response: errorMsg
+                  }
+                }
 
-            if (!toolDef) {
-              console.error(`Tool definition not found for ${toolCall.name}. Skipping execution.`)
-              eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                eventId,
-                tool_call: 'error',
-                tool_call_id: toolCall.id,
-                tool_call_name: toolCall.name,
-                tool_call_response: 'Tool definition not found'
-              })
-              conversationMessages.push({
-                role: 'user',
-                content: `Error: Tool definition for ${toolCall.name} not found.`
-              })
-              continue // Skip to next tool call
-            }
-
-            // Prepare MCPToolCall object for callTool
-            const mcpToolInput: MCPToolCall = {
-              id: toolCall.id,
-              type: 'function',
-              function: {
-                name: toolCall.name,
-                arguments: toolCall.arguments
-              },
-              server: toolDef.server
-            }
-
-            eventBus.emit(STREAM_EVENTS.RESPONSE, {
-              eventId,
-              tool_call: 'start',
-              tool_call_id: toolCall.id,
-              tool_call_name: toolCall.name,
-              tool_call_params: toolCall.arguments,
-              tool_call_server_name: toolDef.server.name,
-              tool_call_server_icons: toolDef.server.icons,
-              tool_call_server_description: toolDef.server.description
-            })
-
-            try {
-              // Execute the tool via McpPresenter
-              const toolResponse = await presenter.mcpPresenter.callTool(mcpToolInput)
-
-              // 检查模型是否支持原生函数调用
-              const supportsFunctionCall = modelConfig?.functionCall || false
-
-              if (supportsFunctionCall) {
-                // 对于支持原生函数调用的模型，添加原始tool调用消息
+                // Add error message to conversation history for the LLM
                 conversationMessages.push({
-                  role: 'assistant',
-                  tool_calls: [
-                    {
+                  role: 'user', // or 'tool' with error content? Let's use user for now.
+                  content: `Error: ${errorMsg}`
+                })
+                continue // Skip to next tool call
+              }
+
+              // Prepare MCPToolCall object for callTool
+              const mcpToolInput: MCPToolCall = {
+                id: toolCall.id,
+                type: 'function',
+                function: {
+                  name: toolCall.name,
+                  arguments: toolCall.arguments
+                },
+                server: toolDef.server
+              }
+
+              // Yield tool start event
+              yield {
+                type: 'response',
+                data: {
+                  eventId,
+                  tool_call: 'start',
+                  tool_call_id: toolCall.id,
+                  tool_call_name: toolCall.name,
+                  tool_call_params: toolCall.arguments,
+                  tool_call_server_name: toolDef.server.name,
+                  tool_call_server_icons: toolDef.server.icons,
+                  tool_call_server_description: toolDef.server.description
+                }
+              }
+
+              try {
+                // Execute the tool via McpPresenter
+                const toolResponse = await presenter.mcpPresenter.callTool(mcpToolInput)
+
+                if (abortController.signal.aborted) break // Check after tool call returns
+
+                // Add tool call and response to conversation history for the next LLM iteration
+                const supportsFunctionCall = modelConfig?.functionCall || false
+
+                if (supportsFunctionCall) {
+                  // Add original tool call message from assistant
+                  const lastAssistantMsg = conversationMessages.findLast(
+                    (m) => m.role === 'assistant'
+                  )
+                  if (lastAssistantMsg) {
+                    if (!lastAssistantMsg.tool_calls) lastAssistantMsg.tool_calls = []
+                    lastAssistantMsg.tool_calls.push({
                       function: {
                         arguments: toolCall.arguments,
                         name: toolCall.name
                       },
                       id: toolCall.id,
                       type: 'function'
-                    }
-                  ]
-                })
-
-                // 添加tool角色消息
-                conversationMessages.push({
-                  role: 'tool',
-                  content:
-                    typeof toolResponse.content === 'string'
-                      ? toolResponse.content
-                      : JSON.stringify(toolResponse.content),
-                  tool_call_id: toolCall.id
-                } as ChatMessage)
-              } else {
-                // 对于不支持原生函数调用的模型，使用更复杂的处理方式
-
-                // 1. 为最后一条assistant消息添加工具调用标记
-                const lastAssistantMessage = conversationMessages.findLast(
-                  (message) => message.role === 'assistant'
-                )
-                if (lastAssistantMessage) {
-                  const toolCallInfo = `\n<function_call>
-                  {
-                    "function_call": ${JSON.stringify(
-                      {
-                        id: toolCall.id,
-                        name: toolCall.name,
-                        arguments: toolCall.arguments
-                      },
-                      null,
-                      2
-                    )}
+                    })
+                  } else {
+                    // Should not happen if we added assistant message earlier, but as fallback:
+                    conversationMessages.push({
+                      role: 'assistant',
+                      tool_calls: [
+                        {
+                          function: {
+                            arguments: toolCall.arguments,
+                            name: toolCall.name
+                          },
+                          id: toolCall.id,
+                          type: 'function'
+                        }
+                      ]
+                    })
                   }
-                  </function_call>\n`
 
-                  if (typeof lastAssistantMessage.content === 'string') {
-                    lastAssistantMessage.content += toolCallInfo
-                  }
-                }
-
-                // 2. 创建包含工具响应的用户消息
-                const toolResponseContent =
-                  '以下是刚刚执行的工具调用响应，请根据响应内容更新你的回答：\n' +
-                  JSON.stringify({
+                  // Add tool role message with result
+                  conversationMessages.push({
                     role: 'tool',
                     content:
                       typeof toolResponse.content === 'string'
                         ? toolResponse.content
                         : JSON.stringify(toolResponse.content),
                     tool_call_id: toolCall.id
-                  })
+                  } as ChatMessage)
+                } else {
+                  // Non-native function calling: Append call and response differently
 
-                // 检查最后一条消息是否是user角色
-                const lastMessage = conversationMessages[conversationMessages.length - 1]
+                  // 1. Append tool call info to the last assistant message
+                  const lastAssistantMessage = conversationMessages.findLast(
+                    (message) => message.role === 'assistant'
+                  )
+                  if (lastAssistantMessage) {
+                    const toolCallInfo = `\n<function_call>
+                    {
+                      "function_call": ${JSON.stringify(
+                        {
+                          id: toolCall.id,
+                          name: toolCall.name,
+                          arguments: toolCall.arguments // Keep original args here
+                        },
+                        null,
+                        2
+                      )}
+                    }
+                    </function_call>\n`
 
-                if (lastMessage && lastMessage.role === 'user') {
-                  // 如果是，则将工具调用响应附加到最后一条消息
-                  if (typeof lastMessage.content === 'string') {
-                    lastMessage.content += '\n' + toolResponseContent
+                    if (typeof lastAssistantMessage.content === 'string') {
+                      lastAssistantMessage.content += toolCallInfo
+                    } else if (Array.isArray(lastAssistantMessage.content)) {
+                      // Find the last text part or add a new one
+                      const lastTextPart = lastAssistantMessage.content.findLast(
+                        (part) => part.type === 'text'
+                      )
+                      if (lastTextPart) {
+                        lastTextPart.text += toolCallInfo
+                      } else {
+                        lastAssistantMessage.content.push({ type: 'text', text: toolCallInfo })
+                      }
+                    }
+                  }
+
+                  // 2. Create a user message containing the tool response
+                  const toolResponseContent =
+                    '以下是刚刚执行的工具调用响应，请根据响应内容更新你的回答：\n' +
+                    JSON.stringify({
+                      role: 'tool', // Indicate it's a tool response
+                      content:
+                        typeof toolResponse.content === 'string'
+                          ? toolResponse.content
+                          : JSON.stringify(toolResponse.content), // Stringify complex content
+                      tool_call_id: toolCall.id
+                    })
+
+                  // Append to last user message or create new one
+                  const lastMessage = conversationMessages[conversationMessages.length - 1]
+                  if (lastMessage && lastMessage.role === 'user') {
+                    if (typeof lastMessage.content === 'string') {
+                      lastMessage.content += '\n' + toolResponseContent
+                    } else if (Array.isArray(lastMessage.content)) {
+                      lastMessage.content.push({
+                        type: 'text',
+                        text: toolResponseContent
+                      })
+                    }
                   } else {
-                    // 如果是数组，添加新的文本部分
-                    ;(lastMessage.content as ChatMessageContent[]).push({
-                      type: 'text',
-                      text: toolResponseContent
+                    conversationMessages.push({
+                      role: 'user',
+                      content: toolResponseContent
                     })
                   }
-                } else {
-                  // 如果不是，则创建新的用户消息
-                  conversationMessages.push({
-                    role: 'user',
-                    content: toolResponseContent
-                  })
                 }
+
+                // Yield tool end event with response
+                yield {
+                  type: 'response',
+                  data: {
+                    eventId,
+                    tool_call: 'end',
+                    tool_call_id: toolCall.id,
+                    tool_call_response: toolResponse.content, // Simplified content for UI
+                    tool_call_name: toolCall.name,
+                    tool_call_params: toolCall.arguments, // Original params
+                    tool_call_server_name: toolDef.server.name,
+                    tool_call_server_icons: toolDef.server.icons,
+                    tool_call_server_description: toolDef.server.description,
+                    tool_call_response_raw: toolResponse.rawData // Full raw data
+                  }
+                }
+              } catch (toolError) {
+                if (abortController.signal.aborted) break // Check after tool error
+
+                console.error(
+                  `Tool execution error for ${toolCall.name} (event ${eventId}):`,
+                  toolError
+                )
+                const errorMessage =
+                  toolError instanceof Error ? toolError.message : String(toolError)
+
+                // Yield tool error event
+                yield {
+                  type: 'response', // Still a response event, but indicates tool error
+                  data: {
+                    eventId,
+                    tool_call: 'error',
+                    tool_call_id: toolCall.id,
+                    tool_call_name: toolCall.name,
+                    tool_call_params: toolCall.arguments,
+                    tool_call_response: errorMessage, // Error message as response
+                    tool_call_server_name: toolDef.server.name,
+                    tool_call_server_icons: toolDef.server.icons,
+                    tool_call_server_description: toolDef.server.description
+                  }
+                }
+
+                // Add error message to conversation history for the LLM
+                conversationMessages.push({
+                  role: 'user', // Or 'tool' with error? Use user for now.
+                  content: `Error executing tool ${toolCall.name}: ${errorMessage}`
+                })
+                // Decide if the loop should continue after a tool error.
+                // For now, let's assume it should try to continue if possible.
+                // needContinueConversation might need adjustment based on error type.
               }
+            } // End of tool execution loop
 
-              eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                eventId,
-                tool_call: 'end',
-                tool_call_id: toolCall.id,
-                tool_call_response: toolResponse.content,
-                tool_call_name: toolCall.name,
-                tool_call_params: toolCall.arguments,
-                tool_call_server_name: toolDef.server.name,
-                tool_call_server_icons: toolDef.server.icons,
-                tool_call_server_description: toolDef.server.description,
-                tool_call_response_raw: toolResponse.rawData
-              })
-            } catch (toolError) {
-              console.error(
-                `Tool execution error for ${toolCall.name} (event ${eventId}):`,
-                toolError
-              )
-              const errorMessage =
-                toolError instanceof Error ? toolError.message : String(toolError)
+            if (abortController.signal.aborted) break // Check after tool loop
 
-              eventBus.emit(STREAM_EVENTS.RESPONSE, {
-                eventId,
-                tool_call: 'error',
-                tool_call_id: toolCall.id,
-                tool_call_name: toolCall.name,
-                tool_call_params: toolCall.arguments,
-                tool_call_response: errorMessage,
-                tool_call_server_name: toolDef.server.name,
-                tool_call_server_icons: toolDef.server.icons,
-                tool_call_server_description: toolDef.server.description
-              })
-
-              conversationMessages.push({
-                role: 'user',
-                content: `Error executing tool ${toolCall.name}: ${errorMessage}`
-              })
+            if (!needContinueConversation) {
+              // If max tool calls reached or explicit stop, break outer loop
+              break
             }
-          } // End of tool execution loop
-
-          if (!needContinueConversation) {
-            break
+          } else {
+            // No tool calls needed or requested, end the loop
+            needContinueConversation = false
           }
-        } else {
-          needContinueConversation = false
+        } catch (error) {
+          if (abortController.signal.aborted) {
+            console.log(`Agent loop aborted during inner try-catch for event ${eventId}`)
+            break // Break outer loop if aborted here
+          }
+          console.error(`Agent loop inner error for event ${eventId}:`, error)
+          yield {
+            type: 'error',
+            data: {
+              eventId,
+              error: error instanceof Error ? error.message : String(error)
+            }
+          }
+
+          needContinueConversation = false // Stop loop on inner error
         }
-      } catch (error) {
-        console.error(`Agent loop error for event ${eventId}:`, error)
-        eventBus.emit(STREAM_EVENTS.ERROR, {
-          eventId,
-          error: error instanceof Error ? error.message : String(error)
-        })
-        needContinueConversation = false
+      } // --- End of Agent Loop (while) ---
+    } catch (error) {
+      // Catch errors from the generator setup phase (before the loop)
+      if (abortController.signal.aborted) {
+        console.log(`Agent loop aborted during outer try-catch for event ${eventId}`)
+      } else {
+        console.error(`Agent loop outer error for event ${eventId}:`, error)
+        yield {
+          type: 'error',
+          data: {
+            eventId,
+            error: error instanceof Error ? error.message : String(error)
+          }
+        }
       }
-    } // --- End of Agent Loop (while) ---
+    } finally {
+      // Finalize stream regardless of how the loop ended (completion, error, abort)
+      const userStop = abortController.signal.aborted
+      if (!userStop) {
+        // Yield final aggregated usage if not aborted
+        yield {
+          type: 'response',
+          data: {
+            eventId,
+            totalUsage
+          }
+        }
+      }
+      // Yield the final END event
+      yield { type: 'end', data: { eventId, userStop } }
 
-    // Finalize stream
-    if (!abortController.signal.aborted) {
-      // Emit final aggregated usage
-      eventBus.emit(STREAM_EVENTS.RESPONSE, {
-        eventId,
-        totalUsage
-      })
-      eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: false })
-    } else {
-      eventBus.emit(STREAM_EVENTS.END, { eventId, userStop: true })
+      this.activeStreams.delete(eventId)
+      console.log('Agent loop finished for event:', eventId, 'User stopped:', userStop)
     }
-
-    this.activeStreams.delete(eventId)
-    console.log('Agent loop finished for event:', eventId)
   }
 
   // 非流式方法

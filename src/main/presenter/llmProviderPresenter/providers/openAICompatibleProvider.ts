@@ -4,9 +4,10 @@ import {
   MODEL_META,
   MCPToolDefinition,
   LLMCoreStreamEvent,
-  ModelConfig
+  ModelConfig,
+  ChatMessage
 } from '@shared/presenter'
-import { BaseLLMProvider, ChatMessage } from '../baseProvider'
+import { BaseLLMProvider } from '../baseProvider'
 import OpenAI from 'openai'
 import {
   ChatCompletionContentPartText,
@@ -210,7 +211,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const indexToIdMap: Record<number, string> = {}
     let stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
     let toolUseDetected = false
-
+    let usage:
+      | {
+          prompt_tokens: number
+          completion_tokens: number
+          total_tokens: number
+        }
+      | undefined = undefined
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
       const choice = chunk.choices[0]
@@ -219,7 +226,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       const currentContent = delta?.content || ''
 
       // 1. Handle Non-Content Events First
-      if (chunk.usage) yield { type: 'usage', usage: chunk.usage }
+      if (chunk.usage) {
+        usage = chunk.usage
+      }
       if (delta?.reasoning_content || delta?.reasoning) {
         // Yield native reasoning content directly
         yield { type: 'reasoning', reasoning_content: delta.reasoning_content || delta.reasoning }
@@ -671,7 +680,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     // Log state warnings
     if (thinkState !== 'none') console.warn(`Stream ended while in thinkState: ${thinkState}`)
     if (funcState !== 'none') console.warn(`Stream ended while in funcState: ${funcState}`)
-
+    if (usage) {
+      yield { type: 'usage', usage: usage }
+    }
     // Override stop reason if tool use was detected
     const finalStopReason = toolUseDetected ? 'tool_use' : stopReason
     // console.log(`[coreStream] Final Stop Reason Calculation: toolUseDetected=${toolUseDetected}, apiStopReason=${stopReason}, finalStopReason=${finalStopReason}`)
