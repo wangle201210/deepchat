@@ -57,25 +57,38 @@ import { MCPTextContent } from '@shared/presenter'
 
 export class DifyKnowledgeServer {
   private server: Server
-  private apiKey: string
-  private endpoint: string
-  private datasetId: string
-  private description: string
+  private configs: Array<{
+    apiKey: string
+    endpoint: string
+    datasetId: string
+    description: string
+  }> = []
 
-  constructor(env?: Record<string, string>) {
-    if (!env?.apiKey) {
-      throw new Error('需要提供Dify API Key')
+  constructor(envs?: Array<Record<string, string>>) {
+    if (!envs || envs.length === 0) {
+      throw new Error('需要提供至少一个Dify知识库配置')
     }
-    if (!env?.datasetId) {
-      throw new Error('需要提供Dify Dataset ID')
+
+    // 处理每个配置
+    for (const env of envs) {
+      if (!env.apiKey) {
+        throw new Error('需要提供Dify API Key')
+      }
+      if (!env.datasetId) {
+        throw new Error('需要提供Dify Dataset ID')
+      }
+      if (!env.description) {
+        throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
+      }
+
+      this.configs.push({
+        apiKey: env.apiKey,
+        datasetId: env.datasetId,
+        endpoint: env.endpoint || 'https://api.dify.ai/v1',
+        description: env.description
+      })
     }
-    if (!env?.description) {
-      throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
-    }
-    this.apiKey = env.apiKey
-    this.datasetId = env.datasetId
-    this.endpoint = env.endpoint || 'https://api.dify.ai/v1'
-    this.description = env.description
+
     // 创建服务器实例
     this.server = new Server(
       {
@@ -102,23 +115,38 @@ export class DifyKnowledgeServer {
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: [
-          {
-            name: 'dify_knowledge_search',
-            description: this.description,
-            inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput
-          }
-        ]
-      }
+      const tools = this.configs.map((config, index) => {
+        const suffix = this.configs.length > 1 ? `_${index + 1}` : ''
+        return {
+          name: `dify_knowledge_search${suffix}`,
+          description: config.description,
+          inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput
+        }
+      })
+
+      return { tools }
     })
 
     // 设置工具调用处理器
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: parameters } = request.params
-      if (name === 'dify_knowledge_search') {
+
+      // 检查是否是Dify知识库搜索工具
+      if (name.startsWith('dify_knowledge_search')) {
         try {
-          return await this.performDifyKnowledgeSearch(parameters)
+          // 提取索引
+          let configIndex = 0
+          const match = name.match(/_([0-9]+)$/)
+          if (match) {
+            configIndex = parseInt(match[1], 10) - 1
+          }
+
+          // 确保索引有效
+          if (configIndex < 0 || configIndex >= this.configs.length) {
+            throw new Error(`无效的知识库索引: ${configIndex}`)
+          }
+
+          return await this.performDifyKnowledgeSearch(parameters, configIndex)
         } catch (error) {
           console.error('Dify知识库搜索失败:', error)
           return {
@@ -145,7 +173,8 @@ export class DifyKnowledgeServer {
 
   // 执行Dify知识库搜索
   private async performDifyKnowledgeSearch(
-    parameters: Record<string, unknown> | undefined
+    parameters: Record<string, unknown> | undefined,
+    configIndex: number = 0
   ): Promise<{ content: MCPTextContent[] }> {
     const {
       query,
@@ -161,8 +190,11 @@ export class DifyKnowledgeServer {
       throw new Error('查询内容不能为空')
     }
 
+    // 获取当前配置
+    const config = this.configs[configIndex]
+
     try {
-      const url = `${this.endpoint.replace(/\/$/, '')}/datasets/${this.datasetId}/retrieve`
+      const url = `${config.endpoint.replace(/\/$/, '')}/datasets/${config.datasetId}/retrieve`
       console.log('performDifyKnowledgeSearch request', url, {
         query,
         retrieval_model: {
@@ -185,7 +217,7 @@ export class DifyKnowledgeServer {
         {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`
+            Authorization: `Bearer ${config.apiKey}`
           }
         }
       )
