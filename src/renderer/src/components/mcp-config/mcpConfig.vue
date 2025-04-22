@@ -20,7 +20,7 @@ import type { MCPServerConfig, MCPToolDefinition } from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import McpServerForm from './mcpServerForm.vue'
 import { useToast } from '@/components/ui/toast'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 // 使用MCP Store
 const mcpStore = useMcpStore()
@@ -32,6 +32,8 @@ const { t } = useI18n()
 const { toast } = useToast()
 // 使用路由
 const route = useRoute()
+
+const router = useRouter()
 
 // 本地UI状态
 const activeTab = ref<'servers' | 'tools'>('servers')
@@ -168,6 +170,14 @@ const handleResetToDefaultServers = async () => {
 
 // 打开编辑服务器对话框
 const openEditServerDialog = (serverName: string) => {
+  // 如果是Dify知识库检索服务器，则跳转到知识库设置页面
+  if (serverName === 'difyKnowledge') {
+    router.push({
+      name: 'settings-knowledge-base',
+      query: { subtab: 'dify' } // 确保激活服务器子标签
+    })
+    return
+  }
   selectedServer.value = serverName
   isEditServerDialogOpen.value = true
 }
@@ -335,8 +345,8 @@ watch(
                   <DialogTitle>{{ t('settings.mcp.addServerDialog.title') }}</DialogTitle>
                 </DialogHeader>
                 <McpServerForm
-                  @submit="handleAddServer"
                   :default-json-config="settingsStore.mcpInstallCache || undefined"
+                  @submit="handleAddServer"
                 />
               </DialogContent>
             </Dialog>
@@ -392,7 +402,7 @@ watch(
                 <div class="flex items-center gap-2">
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <TooltipTrigger as-child>
                         <Button
                           variant="outline"
                           size="icon"
@@ -426,7 +436,7 @@ watch(
 
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <TooltipTrigger as-child>
                         <Button
                           variant="outline"
                           size="icon"
@@ -461,7 +471,7 @@ watch(
 
                   <TooltipProvider>
                     <Tooltip>
-                      <TooltipTrigger asChild>
+                      <TooltipTrigger as-child>
                         <Button
                           variant="outline"
                           size="icon"
@@ -539,7 +549,7 @@ watch(
               <div class="flex items-center gap-2">
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger as-child>
                       <Button
                         variant="outline"
                         size="icon"
@@ -573,7 +583,7 @@ watch(
 
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger as-child>
                       <Button
                         variant="outline"
                         size="icon"
@@ -604,7 +614,7 @@ watch(
 
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger as-child>
                       <Button
                         variant="outline"
                         size="icon"
@@ -623,7 +633,7 @@ watch(
 
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger as-child>
                       <Button
                         variant="outline"
                         size="icon"

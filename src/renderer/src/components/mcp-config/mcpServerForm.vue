@@ -61,8 +61,6 @@ const selectedImageModelProvider = ref('')
 const isInMemoryType = computed(() => type.value === 'inmemory')
 // 判断是否是imageServer
 const isImageServer = computed(() => isInMemoryType.value && name.value === 'imageServer')
-// 判断是否是difyKnowledge
-const isDifyKnowledge = computed(() => isInMemoryType.value && name.value === 'difyKnowledge')
 // 判断字段是否只读(inmemory类型除了args和env外都是只读的)
 const isFieldReadOnly = computed(() => props.editMode && isInMemoryType.value)
 
@@ -109,45 +107,6 @@ const autoApproveWrite = ref(
     props.initialConfig?.autoApprove?.includes('all') ||
     false
 )
-
-// difyKnowledge环境变量配置列表
-const difyConfigs = ref<
-  Array<{ apiKey: string; datasetId: string; endpoint: string; description: string }>
->([])
-
-// 当前编辑的dify配置
-const currentDifyConfig = ref<{
-  apiKey: string
-  datasetId: string
-  endpoint: string
-  description: string
-}>({ apiKey: '', datasetId: '', endpoint: 'https://api.dify.ai/v1', description: '' })
-
-// 解析difyKnowledge的环境变量
-const parseDifyEnv = () => {
-  try {
-    if (isDifyKnowledge.value && env.value.trim()) {
-      const parsedEnv = JSON.parse(env.value)
-      if (Array.isArray(parsedEnv)) {
-        difyConfigs.value = parsedEnv.map((item) => ({
-          apiKey: item.apiKey || '',
-          datasetId: item.datasetId || '',
-          endpoint: item.endpoint || 'https://api.dify.ai/v1',
-          description: item.description || ''
-        }))
-      }
-    }
-  } catch (error) {
-    console.error('解析Dify环境变量失败:', error)
-  }
-}
-
-// 更新difyKnowledge的环境变量到env
-const updateDifyEnvToJson = () => {
-  if (isDifyKnowledge.value) {
-    env.value = JSON.stringify(difyConfigs.value, null, 2)
-  }
-}
 
 // 简单表单状态
 const currentStep = ref(props.editMode ? 'detailed' : 'simple')
@@ -526,9 +485,6 @@ watch(
       type.value = newConfig.type || 'stdio'
       baseUrl.value = newConfig.baseUrl || ''
 
-      // 解析difyKnowledge的环境变量
-      parseDifyEnv()
-
       // Format customHeaders from initialConfig
       if (newConfig.customHeaders) {
         customHeaders.value = formatJsonHeaders(newConfig.customHeaders)
@@ -584,54 +540,6 @@ const parseKeyValueHeaders = (text: string): Record<string, string> => {
 // 定义 customHeaders 的 placeholder
 const customHeadersPlaceholder = `Authorization=Bearer your_token
 HTTP-Referer=deepchatai.cn`
-// 监听 defaultJsonConfig 变化
-watch(
-  () => props.defaultJsonConfig,
-  (newConfig) => {
-    if (newConfig) {
-      jsonConfig.value = newConfig
-      parseJsonConfig()
-    }
-  },
-  { immediate: true }
-)
-
-// 添加dify配置
-const addDifyConfig = () => {
-  if (
-    currentDifyConfig.value.apiKey &&
-    currentDifyConfig.value.datasetId &&
-    currentDifyConfig.value.description
-  ) {
-    difyConfigs.value.push({
-      ...currentDifyConfig.value
-    })
-    // 重置当前编辑的配置
-    currentDifyConfig.value = {
-      apiKey: '',
-      datasetId: '',
-      endpoint: 'https://api.dify.ai/v1',
-      description: ''
-    }
-    // 更新到env
-    updateDifyEnvToJson()
-  }
-}
-
-// 移除dify配置
-const removeDifyConfig = (index: number) => {
-  difyConfigs.value.splice(index, 1)
-  updateDifyEnvToJson()
-}
-
-// 验证dify配置是否有效
-const isDifyConfigValid = computed(() => {
-  return (
-    currentDifyConfig.value.apiKey.trim() !== '' &&
-    currentDifyConfig.value.datasetId.trim() !== '' &&
-    currentDifyConfig.value.description.trim() !== ''
-  )
-})
 </script>
 
 <template>
@@ -828,107 +736,7 @@ const isDifyConfigValid = computed(() => {
         </div>
 
         <!-- 环境变量 -->
-        <!-- Dify知识库配置界面 -->
-        <div v-if="isDifyKnowledge" class="space-y-4">
-          <Label class="text-xs text-muted-foreground">{{ t('settings.mcp.serverForm.difyConfigs') || 'Dify知识库配置' }}</Label>
-
-          <!-- 已添加的配置列表 -->
-          <div v-if="difyConfigs.length > 0" class="space-y-3">
-            <div v-for="(config, index) in difyConfigs" :key="index" class="p-3 border rounded-md relative">
-              <button
-                type="button"
-                class="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
-                @click="removeDifyConfig(index)"
-              >
-                <X class="h-4 w-4" />
-              </button>
-
-              <div class="grid gap-2">
-                <div class="flex items-center">
-                  <span class="font-medium text-sm">{{ config.description }}</span>
-                </div>
-                <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                  <div>
-                    <span class="font-medium">API Key:</span>
-                    <span>{{ config.apiKey.substring(0, 4) + '****' }}</span>
-                  </div>
-                  <div>
-                    <span class="font-medium">Dataset ID:</span>
-                    <span>{{ config.datasetId }}</span>
-                  </div>
-                  <div class="col-span-2">
-                    <span class="font-medium">Endpoint:</span>
-                    <span>{{ config.endpoint }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 添加新配置表单 -->
-          <div class="space-y-3 p-3 border rounded-md border-dashed">
-            <h4 class="text-sm font-medium">{{ t('settings.mcp.serverForm.addDifyConfig') || '添加知识库配置' }}</h4>
-
-            <div class="space-y-2">
-              <Label class="text-xs text-muted-foreground" for="dify-description">{{ t('settings.mcp.serverForm.difyDescription') || '知识库描述' }}</Label>
-              <Input
-                id="dify-description"
-                v-model="currentDifyConfig.description"
-                placeholder="例如：公司产品文档知识库"
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label class="text-xs text-muted-foreground" for="dify-api-key">{{ t('settings.mcp.serverForm.difyApiKey') || 'API Key' }}</Label>
-              <Input
-                id="dify-api-key"
-                v-model="currentDifyConfig.apiKey"
-                type="password"
-                placeholder="Dify API Key"
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label class="text-xs text-muted-foreground" for="dify-dataset-id">{{ t('settings.mcp.serverForm.difyDatasetId') || '数据集ID' }}</Label>
-              <Input
-                id="dify-dataset-id"
-                v-model="currentDifyConfig.datasetId"
-                placeholder="Dify Dataset ID"
-              />
-            </div>
-
-            <div class="space-y-2">
-              <Label class="text-xs text-muted-foreground" for="dify-endpoint">{{ t('settings.mcp.serverForm.difyEndpoint') || 'API端点' }}</Label>
-              <Input
-                id="dify-endpoint"
-                v-model="currentDifyConfig.endpoint"
-                placeholder="https://api.dify.ai/v1"
-              />
-            </div>
-
-            <Button
-              type="button"
-              size="sm"
-              class="w-full mt-2"
-              variant="outline"
-              :disabled="!isDifyConfigValid"
-              @click="addDifyConfig"
-            >
-              {{ t('settings.mcp.serverForm.addConfig') || '添加配置' }}
-            </Button>
-          </div>
-
-          <!-- 隐藏原始env输入框，但保留v-model绑定 -->
-          <Textarea
-            id="server-env"
-            v-model="env"
-            class="hidden"
-            :class="{ 'border-red-500': !isEnvValid }"
-          />
-        </div>
-
-        <!-- 标准环境变量输入框 (非Dify知识库) -->
-        <div v-else-if="showCommandFields || isInMemoryType" class="space-y-2">
+        <div v-if="showCommandFields || isInMemoryType" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-env">{{
             t('settings.mcp.serverForm.env')
           }}</Label>

@@ -275,10 +275,12 @@ import {
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'
 import { useToast } from '@/components/ui/toast'
+import { useRoute } from 'vue-router'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
 const { toast } = useToast()
+const route = useRoute()
 
 // 对话框状态
 const isAddKnowledgeBaseDialogOpen = ref(false)
@@ -361,12 +363,11 @@ const saveDifyConfig = async () => {
     })
   } else {
     // 添加配置
-    // difyConfigs.value.push({ ...editingDifyConfig.value })
-    // toast({
-    //   title: t('settings.knowledgeBase.configAdded'),
-    //   description: t('settings.knowledgeBase.configAddedDesc')
-    // })
-    await saveEditDifyConfig()
+    difyConfigs.value.push({ ...editingDifyConfig.value })
+    toast({
+      title: t('settings.knowledgeBase.configAdded'),
+      description: t('settings.knowledgeBase.configAddedDesc')
+    })
   }
 
   // 更新到MCP配置
@@ -453,25 +454,6 @@ const closeEditDifyConfigDialog = () => {
   }
 }
 
-// 保存编辑的配置
-const saveEditDifyConfig = async () => {
-  if (!isEditingDifyConfigValid.value || editingConfigIndex.value === -1) return
-
-  // 更新配置
-  difyConfigs.value[editingConfigIndex.value] = { ...editingDifyConfig.value }
-
-  // 更新到MCP
-  await updateDifyConfigToMcp()
-
-  // 关闭对话框
-  closeEditDifyConfigDialog()
-
-  toast({
-    title: t('settings.knowledgeBase.configUpdated'),
-    description: t('settings.knowledgeBase.configUpdatedDesc')
-  })
-}
-
 // 选择知识库类型
 const selectKnowledgeBaseType = (type: string) => {
   if (type === 'dify') {
@@ -511,7 +493,16 @@ watch(
     }
   }
 )
-
+// 监听URL查询参数，设置活动标签页
+watch(
+  () => route.query.subtab,
+  (newSubtab) => {
+    if (newSubtab === 'dify') {
+      isDifyConfigPanelOpen.value = true
+    }
+  },
+  { immediate: true }
+)
 // 组件挂载时加载配置
 onMounted(async () => {
   await loadDifyConfigFromMcp()
