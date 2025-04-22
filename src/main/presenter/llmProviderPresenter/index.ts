@@ -355,7 +355,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           if (abortController.signal.aborted) {
             break
           }
-          // console.log('presenter chunk', JSON.stringify(chunk))
+          // console.log('presenter chunk', JSON.stringify(chunk), currentContent)
 
           // --- Event Handling (using LLMCoreStreamEvent structure) ---
           switch (chunk.type) {
@@ -410,6 +410,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
               break
             case 'usage':
               if (chunk.usage) {
+                // console.log('usage', chunk.usage, totalUsage)
                 totalUsage.prompt_tokens += chunk.usage.prompt_tokens
                 totalUsage.completion_tokens += chunk.usage.completion_tokens
                 totalUsage.total_tokens += chunk.usage.total_tokens
