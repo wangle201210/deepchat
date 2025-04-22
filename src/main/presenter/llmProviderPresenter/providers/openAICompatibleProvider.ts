@@ -716,24 +716,24 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     // Pass a prefix for creating fallback IDs
     fallbackIdPrefix: string = 'tool-call'
   ): Array<{ id: string; type: string; function: { name: string; arguments: string } }> {
-    console.log('[parseFunctionCalls] Received raw response:', response) // Log raw input
+    // console.log('[parseFunctionCalls] Received raw response:', response) // Log raw input
     try {
       // 使用非贪婪模式匹配function_call标签对，能够处理多行内容
       const functionCallMatches = response.match(/<function_call>([\s\S]*?)<\/function_call>/gs)
       if (!functionCallMatches) {
-        console.log('[parseFunctionCalls] No <function_call> tags found.') // Log no match
+        // console.log('[parseFunctionCalls] No <function_call> tags found.') // Log no match
         return []
       }
-      console.log(`[parseFunctionCalls] Found ${functionCallMatches.length} potential matches.`) // Log match count
+      // console.log(`[parseFunctionCalls] Found ${functionCallMatches.length} potential matches.`) // Log match count
 
       const toolCalls = functionCallMatches
         .map((match, index) => {
-          console.log(`[parseFunctionCalls] Processing match ${index}:`, match) // Log each match
+          // console.log(`[parseFunctionCalls] Processing match ${index}:`, match) // Log each match
           // Add index for unique fallback ID generation
           const content = match.replace(/<\/?function_call>/g, '').trim() // Fixed regex escaping
-          console.log(`[parseFunctionCalls] Extracted content for match ${index}:`, content) // Log extracted content
+          // console.log(`[parseFunctionCalls] Extracted content for match ${index}:`, content) // Log extracted content
           if (!content) {
-            console.log(`[parseFunctionCalls] Match ${index} has empty content, skipping.`)
+            // console.log(`[parseFunctionCalls] Match ${index} has empty content, skipping.`)
             return null // Skip empty content between tags
           }
 
@@ -743,23 +743,23 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             try {
               // Attempt standard JSON parse first
               parsedCall = JSON.parse(content)
-              console.log(`[parseFunctionCalls] Standard JSON.parse successful for match ${index}.`) // Log success
+              // console.log(`[parseFunctionCalls] Standard JSON.parse successful for match ${index}.`) // Log success
             } catch (initialParseError) {
-              console.warn(
-                `[parseFunctionCalls] Standard JSON.parse failed for match ${index}, attempting jsonrepair. Error:`,
-                (initialParseError as Error).message
-              ) // Log failure and attempt repair
+              // console.warn(
+              //   `[parseFunctionCalls] Standard JSON.parse failed for match ${index}, attempting jsonrepair. Error:`,
+              //   (initialParseError as Error).message
+              // ) // Log failure and attempt repair
               try {
                 // Fallback to jsonrepair for robustness
                 repairedJson = jsonrepair(content)
-                console.log(
-                  `[parseFunctionCalls] jsonrepair result for match ${index}:`,
-                  repairedJson
-                ) // Log repaired JSON
+                // console.log(
+                //   `[parseFunctionCalls] jsonrepair result for match ${index}:`,
+                //   repairedJson
+                // ) // Log repaired JSON
                 parsedCall = JSON.parse(repairedJson)
-                console.log(
-                  `[parseFunctionCalls] JSON.parse successful after jsonrepair for match ${index}.`
-                ) // Log repair success
+                // console.log(
+                //   `[parseFunctionCalls] JSON.parse successful after jsonrepair for match ${index}.`
+                // ) // Log repair success
               } catch (repairError) {
                 console.error(
                   `[parseFunctionCalls] Failed to parse content for match ${index} even with jsonrepair:`,
@@ -772,7 +772,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 return null // Skip this malformed call
               }
             }
-            console.log(`[parseFunctionCalls] Parsed object for match ${index}:`, parsedCall) // Log parsed object
+            // console.log(`[parseFunctionCalls] Parsed object for match ${index}:`, parsedCall) // Log parsed object
 
             // Extract name and arguments, handling various potential structures
             let functionName, functionArgs
@@ -818,16 +818,16 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 return null
               }
             }
-            console.log(
-              `[parseFunctionCalls] Extracted for match ${index}: Name='${functionName}', Args=`,
-              functionArgs
-            ) // Log extracted name/args
+            // console.log(
+            //   `[parseFunctionCalls] Extracted for match ${index}: Name='${functionName}', Args=`,
+            //   functionArgs
+            // ) // Log extracted name/args
 
             // Ensure arguments are stringified if they are not already
             if (typeof functionArgs !== 'string') {
-              console.log(
-                `[parseFunctionCalls] Arguments for match ${index} are not a string, stringifying.`
-              ) // Log stringify attempt
+              // console.log(
+              //   `[parseFunctionCalls] Arguments for match ${index} are not a string, stringifying.`
+              // ) // Log stringify attempt
               try {
                 functionArgs = JSON.stringify(functionArgs)
               } catch (stringifyError) {
@@ -842,9 +842,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
             // Generate a unique ID if not provided in the parsed content
             const id = parsedCall.id || functionName || `${fallbackIdPrefix}-${index}-${Date.now()}`
-            console.log(
-              `[parseFunctionCalls] Finalizing tool call for match ${index}: ID='${id}', Name='${functionName}', Args='${functionArgs}'`
-            ) // Log final object details
+            // console.log(
+            //   `[parseFunctionCalls] Finalizing tool call for match ${index}: ID='${id}', Name='${functionName}', Args='${functionArgs}'`
+            // ) // Log final object details
 
             return {
               id: String(id), // Ensure ID is string
@@ -887,17 +887,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       ) // Log unexpected error
       return [] // Return empty array on unexpected errors
     }
-  }
-
-  // ... [cleanTag remains unchanged, though not used by new coreStream] ...
-  private cleanTag(text: string, tag: string): { cleanedPosition: number; found: boolean } {
-    const tagIndex = text.indexOf(tag)
-    if (tagIndex === -1) return { cleanedPosition: 0, found: false }
-    let endPosition = tagIndex + tag.length
-    while (endPosition < text.length && /\s/.test(text[endPosition])) {
-      endPosition++
-    }
-    return { cleanedPosition: endPosition, found: true }
   }
 
   // ... [check, summaryTitles, completions, summaries, generateText, suggestions remain unchanged] ...
@@ -1017,45 +1006,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     } catch (error) {
       console.error('Failed to get suggestions:', error)
       return [] // Return empty on error
-    }
-  }
-  // 处理function call完成事件
-  private handleCompletedFunctionCall(
-    functionCallContent: string,
-    fallbackIdPrefix: string = 'non-native'
-  ): {
-    toolCalls: Array<{ id: string; type: string; function: { name: string; arguments: string } }>
-    modified: boolean
-  } {
-    const result = {
-      toolCalls: [] as Array<{
-        id: string
-        type: string
-        function: { name: string; arguments: string }
-      }>,
-      modified: false
-    }
-
-    if (!functionCallContent) {
-      return result
-    }
-
-    try {
-      // 解析function calls
-      const parsedCalls = this.parseFunctionCalls(
-        functionCallContent,
-        `${fallbackIdPrefix}-${this.provider.id}`
-      )
-
-      if (parsedCalls && parsedCalls.length > 0) {
-        result.toolCalls = parsedCalls
-        result.modified = true
-      }
-
-      return result
-    } catch (error) {
-      console.error('Error handling completed function call:', error)
-      return result
     }
   }
 }
