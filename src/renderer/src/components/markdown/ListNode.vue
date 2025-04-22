@@ -30,6 +30,7 @@ import CheckboxNode from './CheckboxNode.vue'
 import FootnoteReferenceNode from './FootnoteReferenceNode.vue'
 import HardBreakNode from './HardBreakNode.vue'
 import CodeBlockNode from './CodeBlockNode.vue'
+import ListNode from './ListNode.vue'
 // 节点子元素类型
 interface NodeChild {
   type: string
@@ -72,7 +73,8 @@ const nodeComponents = {
   checkbox: CheckboxNode,
   footnote_reference: FootnoteReferenceNode,
   hardbreak: HardBreakNode,
-  code_block: CodeBlockNode
+  code_block: CodeBlockNode,
+  list: ListNode
   // 其他节点类型
 }
 </script>

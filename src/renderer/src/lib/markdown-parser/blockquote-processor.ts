@@ -5,7 +5,7 @@ export function processNestedBlocks(
   startIndex: number
 ): [ParsedNode | null, number] {
   // This is a simplified version to break circular dependencies
-  // It will be replaced by proper list processing in actual implementation
+  // Nested lists are now properly handled in list-parser.ts with an enhanced parseNestedList function
   let i = startIndex
   let depth = 1
 

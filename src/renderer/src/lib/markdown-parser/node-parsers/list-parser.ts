@@ -117,7 +117,71 @@ export function parseList(tokens: MarkdownToken[], index: number): [ListNode, nu
   return [listNode, j + 1] // Move past list_close
 }
 
-// Helper function to parse nested lists without circular dependency
+// Enhanced function to handle nested lists properly
 function parseNestedList(tokens: MarkdownToken[], index: number): [ListNode, number] {
-  return parseList(tokens, index)
+  // We can directly use parseList since we're in the same file
+  // This avoids circular dependency issues
+  const nestedToken = tokens[index]
+  const nestedItems: ListItemNode[] = []
+  let j = index + 1
+
+  while (
+    j < tokens.length &&
+    tokens[j].type !== 'bullet_list_close' &&
+    tokens[j].type !== 'ordered_list_close'
+  ) {
+    if (tokens[j].type === 'list_item_open') {
+      const itemChildren: ParsedNode[] = []
+      let k = j + 1
+
+      while (k < tokens.length && tokens[k].type !== 'list_item_close') {
+        // Handle different block types inside list items
+        if (tokens[k].type === 'paragraph_open') {
+          const contentToken = tokens[k + 1]
+          itemChildren.push({
+            type: 'paragraph',
+            children: parseInlineTokens(contentToken.children || []),
+            raw: contentToken.content || ''
+          })
+          k += 3 // Skip paragraph_open, inline, paragraph_close
+        } else if (
+          tokens[k].type === 'bullet_list_open' ||
+          tokens[k].type === 'ordered_list_open'
+        ) {
+          // Handle deeper nested lists
+          const [deeperNestedListNode, newIndex] = parseNestedList(tokens, k)
+          itemChildren.push(deeperNestedListNode)
+          k = newIndex
+        } else if (tokens[k].type === 'code_block') {
+          itemChildren.push(parseCodeBlock(tokens[k]))
+          k += 1
+        } else if (tokens[k].type === 'fence') {
+          itemChildren.push(parseFence(tokens[k]))
+          k += 1
+        } else {
+          // Skip other token types in nested lists for simplicity
+          k += 1
+        }
+      }
+
+      nestedItems.push({
+        type: 'list_item',
+        children: itemChildren,
+        raw: itemChildren.map((child) => child.raw).join('')
+      })
+
+      j = k + 1 // Move past list_item_close
+    } else {
+      j += 1
+    }
+  }
+
+  const nestedListNode: ListNode = {
+    type: 'list',
+    ordered: nestedToken.type === 'ordered_list_open',
+    items: nestedItems,
+    raw: nestedItems.map((item) => item.raw).join('\n')
+  }
+
+  return [nestedListNode, j + 1] // Move past list_close
 }
