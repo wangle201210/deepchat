@@ -1,5 +1,5 @@
 <template>
-  <span>{{ props.node.raw }}</span>
+  {{ props.node.content }}
 </template>
 
 <script setup lang="ts">
@@ -10,7 +10,10 @@ const props = defineProps<{
     raw: string
   }
   messageId: string
+  threadId?: string
 }>()
+
+defineEmits(['copy'])
 </script>
 
 <style scoped></style>

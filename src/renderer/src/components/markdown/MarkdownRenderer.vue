@@ -27,7 +27,7 @@ const props = defineProps<{
 
 defineEmits(['copy'])
 
-const md = getMarkdown(props.messageId)
+const md = getMarkdown()
 
 // Parse markdown into structured nodes
 const parsedNodes = computed<ParsedNode[]>(() => {

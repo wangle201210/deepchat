@@ -19,10 +19,9 @@ import { parseMarkdownToStructure, processTokens, parseInlineTokens } from './ma
 // Re-export the parser functions
 export { parseMarkdownToStructure, processTokens, parseInlineTokens }
 
-export const getMarkdown = (msgId: string) => {
+export const getMarkdown = () => {
   // import footnote from 'markdown-it-footnote'
   // Create markdown-it instance with configuration
-  console.log('getmarkdown', msgId)
   const md = new MarkdownIt({
     html: true,
     linkify: true,
@@ -172,14 +171,6 @@ export const getCommonMarkdown = () => {
     typographer: true,
     breaks: false
   })
-
-  // Apply additional plugins
-  md.use(markdownItSub)
-  md.use(markdownItSup)
-  md.use(markdownItMark)
-  md.use(markdownItEmoji)
-  md.use(markdownItCheckbox)
-  md.use(markdownItIns)
 
   return md
 }

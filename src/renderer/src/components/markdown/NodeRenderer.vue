@@ -19,7 +19,13 @@ import ListNode from './ListNode.vue'
 import BlockquoteNode from './BlockquoteNode.vue'
 import TableNode from './TableNode.vue'
 import { BaseNode } from '@/lib/markdown.helper'
-
+import DefinitionListNode from './DefinitionListNode.vue'
+import FootnoteNode from './FootnoteNode.vue'
+import FootnoteReferenceNode from './FootnoteReferenceNode.vue'
+import AdmonitionNode from './AdmonitionNode.vue'
+import HardBreakNode from './HardBreakNode.vue'
+import LinkNode from './LinkNode.vue'
+import ImageNode from './ImageNode.vue'
 // 组件接收的 props
 defineProps<{
   nodes: BaseNode[]
@@ -39,13 +45,13 @@ const nodeComponents = {
   list: ListNode,
   blockquote: BlockquoteNode,
   table: TableNode,
-  definition_list: () => import('./DefinitionListNode.vue'),
-  footnote: () => import('./FootnoteNode.vue'),
-  footnote_reference: () => import('./FootnoteReferenceNode.vue'),
-  admonition: () => import('./AdmonitionNode.vue'),
-  hardbreak: () => import('./HardBreakNode.vue'),
-  link: () => import('./LinkNode.vue'),
-  image: () => import('./ImageNode.vue')
+  definition_list: DefinitionListNode,
+  footnote: FootnoteNode,
+  footnote_reference: FootnoteReferenceNode,
+  admonition: AdmonitionNode,
+  hardbreak: HardBreakNode,
+  link: LinkNode,
+  image: ImageNode
   // 可以添加更多节点类型
 }
 

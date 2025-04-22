@@ -10,7 +10,6 @@
     />
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
-      <!-- 消息内容 -->
       <div
         v-if="currentContent.length === 0"
         class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
@@ -19,7 +18,7 @@
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full">
-        <div v-for="block in currentContent" :key="block.id" class="w-full">
+        <template v-for="block in currentContent" :key="block.id">
           <MessageBlockContent
             v-if="block.type === 'content'"
             :block="block"
@@ -56,7 +55,7 @@
             :thread-id="currentThreadId"
           />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
-        </div>
+        </template>
       </div>
       <MessageToolbar
         :loading="message.status === 'pending'"
@@ -111,7 +110,6 @@ import { useChatStore } from '@/stores/chat'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
 import { toCanvas } from 'html-to-image'
-import { useDark } from '@vueuse/core'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
 import { addWatermark } from '@/lib/watermark'
@@ -134,9 +132,9 @@ const appVersion = ref('')
 
 const props = defineProps<{
   message: AssistantMessage
+  isDark: boolean
 }>()
 
-const isDark = useDark()
 const chatStore = useChatStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
@@ -256,13 +254,13 @@ const handleAction = (
   } else if (action === 'copyImage') {
     if (messageNode.value) {
       toCanvas(messageNode.value, {
-        backgroundColor: isDark.value ? '#000000' : '#FFFFFF',
+        backgroundColor: props.isDark ? '#000000' : '#FFFFFF',
         filter: filterDom
       }).then((canvas) => {
         // 添加水印
         const canvasWithWatermark = addWatermark(
           canvas,
-          isDark.value,
+          props.isDark,
           appVersion.value, // 添加版本号水印
           t
         )

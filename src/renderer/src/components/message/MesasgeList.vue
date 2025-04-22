@@ -10,12 +10,13 @@
         class="w-full max-w-full break-all xl:max-w-4xl mx-auto transition-opacity duration-300"
         :class="{ 'opacity-0': !visible }"
       >
-        <template v-for="(msg, index) in messages" :key="index">
+        <template v-for="(msg, index) in messages" :key="msg.id">
           <MessageItemAssistant
             v-if="msg.role === 'assistant'"
             :key="index"
-            :message="msg"
             :ref="setAssistantRef(index)"
+            :is-dark="isDark"
+            :message="msg"
           />
           <MessageItemUser
             v-if="msg.role === 'user'"
@@ -81,7 +82,7 @@ import { ref, onMounted, nextTick, watch, computed, reactive } from 'vue'
 import MessageItemAssistant from './MessageItemAssistant.vue'
 import MessageItemUser from './MessageItemUser.vue'
 import { AssistantMessage, UserMessage } from '@shared/chat'
-import { useElementBounding, useDebounceFn } from '@vueuse/core'
+import { useElementBounding, useDebounceFn, useDark } from '@vueuse/core'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import { useChatStore } from '@/stores/chat'
@@ -92,6 +93,8 @@ const { t } = useI18n()
 const props = defineProps<{
   messages: UserMessage[] | AssistantMessage[]
 }>()
+
+const isDark = useDark()
 
 const referenceStore = useReferenceStore()
 

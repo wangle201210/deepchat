@@ -1,7 +1,10 @@
 <template>
-  <div class="my-4 rounded-lg border border-border overflow-hidden shadow-sm">
-    <div class="flex justify-between items-center px-4 py-2 bg-gray-100 dark:bg-zinc-800 text-sm">
-      <span class="text-gray-600 dark:text-gray-400">{{ displayLanguage }}</span>
+  <MermaidBlockNode v-if="isMermaid" :node="node" />
+  <div v-else class="my-4 rounded-lg border border-border overflow-hidden shadow-sm">
+    <div class="flex justify-between items-center p-2 bg-gray-100 dark:bg-zinc-800 text-xs">
+      <span class="text-gray-600 dark:text-gray-400 font-mono font-bold">{{
+        displayLanguage
+      }}</span>
       <div v-if="isPreviewable" class="flex items-center space-x-2">
         <button
           class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
@@ -34,13 +37,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'
 import { useDark } from '@vueuse/core'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, Extension } from '@codemirror/state'
 import { StreamLanguage } from '@codemirror/language'
-import { renderMermaidDiagram } from '@/lib/mermaid.helper'
+import MermaidBlockNode from './MermaidBlockNode.vue'
 
 // Language imports
 import { javascript } from '@codemirror/lang-javascript'
@@ -85,7 +87,6 @@ const props = defineProps<{
 const { t } = useI18n()
 const isDark = useDark()
 const artifactStore = useArtifactStore()
-const editorId = ref(`editor-${uuidv4()}`)
 const codeEditor = ref<HTMLElement | null>(null)
 const copyText = ref(t('common.copy'))
 const editorInstance = ref<EditorView | null>(null)
@@ -95,6 +96,9 @@ const isPreviewable = computed(() => {
   const lang = props.node.language.trim().toLowerCase()
   return lang === 'html' || lang === 'svg'
 })
+
+// Check if the code block is a Mermaid diagram
+const isMermaid = computed(() => props.node.language.toLowerCase() === 'mermaid')
 
 // 计算用于显示的语言名称
 const displayLanguage = computed(() => {
@@ -246,12 +250,6 @@ const createEditor = () => {
     editorInstance.value = null
   }
 
-  // Handle mermaid diagrams
-  if (props.node.language.toLowerCase() === 'mermaid') {
-    renderMermaidDiagram(codeEditor.value, props.node.code, editorId.value)
-    return
-  }
-
   // Set up CodeMirror extensions
   const extensions = [
     basicSetup,
@@ -297,7 +295,6 @@ watch(
 
     // If it's a mermaid diagram, re-render it
     if (props.node.language.toLowerCase() === 'mermaid' && codeEditor.value) {
-      renderMermaidDiagram(codeEditor.value, newCode, editorId.value)
       return
     }
 

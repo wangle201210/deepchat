@@ -8,6 +8,7 @@
         :content="part.content"
         :message-id="messageId"
         :thread-id="threadId"
+        :loading="part.loading"
         @copy="handleCopyClick"
       />
 
@@ -27,7 +28,6 @@
         <ToolCallPreview :block="part" :block-status="props.block.status" />
       </div>
     </template>
-    <LoadingCursor v-show="block.status === 'loading'" ref="loadingCursor" />
   </div>
 </template>
 
@@ -36,7 +36,6 @@ import { ref, nextTick, watch, onMounted } from 'vue'
 
 import { usePresenter } from '@/composables/usePresenter'
 import { SearchResult } from '@shared/presenter'
-import LoadingCursor from '@/components/LoadingCursor.vue'
 
 const threadPresenter = usePresenter('threadPresenter')
 const searchResults = ref<SearchResult[]>([])
@@ -60,21 +59,13 @@ const props = defineProps<{
   isSearchResult?: boolean
 }>()
 
-const loadingCursor = ref<InstanceType<typeof LoadingCursor> | null>(null)
 const messageBlock = ref<HTMLDivElement>()
 
 const { processedContent } = useBlockContent(props)
 
-const refreshLoadingCursor = () => {
-  if (messageBlock.value) {
-    loadingCursor.value?.updateCursorPosition(messageBlock.value)
-  }
-}
-
 // Handle copy functionality
 const handleCopyClick = () => {
   // 现在复制功能在组件内部处理
-  refreshLoadingCursor()
 }
 
 // 修改 watch 函数
@@ -82,7 +73,6 @@ watch(
   processedContent,
   () => {
     nextTick(() => {
-      refreshLoadingCursor()
       for (const part of processedContent.value) {
         if (part.type === 'artifact' && part.artifact) {
           if (props.block.status === 'loading') {

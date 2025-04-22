@@ -1,11 +1,12 @@
 <template>
-  <p class="paragraph-node">
+  <p>
     <component
       v-for="(child, index) in node.children"
       :key="index"
       :is="nodeComponents[child.type]"
       :node="child"
       :message-id="messageId"
+      :thread-id="threadId"
     />
   </p>
 </template>
@@ -39,6 +40,7 @@ defineProps<{
     raw: string
   }
   messageId: string
+  threadId?: string
 }>()
 
 const nodeComponents = {
@@ -59,9 +61,3 @@ const nodeComponents = {
   // 添加其他内联元素组件
 }
 </script>
-
-<style scoped>
-.paragraph-node {
-  margin: 1rem 0;
-}
-</style>
