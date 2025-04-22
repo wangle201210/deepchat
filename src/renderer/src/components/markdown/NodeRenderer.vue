@@ -1,0 +1,65 @@
+<template>
+  <component
+    v-for="(node, index) in nodes"
+    :key="index"
+    :is="nodeComponents[node.type] || fallbackComponent"
+    :node="node"
+    :message-id="messageId"
+    :thread-id="threadId"
+    @copy="$emit('copy', $event)"
+  />
+</template>
+
+<script setup lang="ts">
+import TextNode from './TextNode.vue'
+import ParagraphNode from './ParagraphNode.vue'
+import HeadingNode from './HeadingNode.vue'
+import CodeBlockNode from './CodeBlockNode.vue'
+import ListNode from './ListNode.vue'
+import BlockquoteNode from './BlockquoteNode.vue'
+import TableNode from './TableNode.vue'
+import { BaseNode } from '@/lib/markdown.helper'
+
+// 组件接收的 props
+defineProps<{
+  nodes: BaseNode[]
+  messageId?: string
+  threadId?: string
+}>()
+
+// 定义事件
+defineEmits(['copy'])
+
+// 组件映射表
+const nodeComponents = {
+  text: TextNode,
+  paragraph: ParagraphNode,
+  heading: HeadingNode,
+  code_block: CodeBlockNode,
+  list: ListNode,
+  blockquote: BlockquoteNode,
+  table: TableNode,
+  definition_list: () => import('./DefinitionListNode.vue'),
+  footnote: () => import('./FootnoteNode.vue'),
+  footnote_reference: () => import('./FootnoteReferenceNode.vue'),
+  admonition: () => import('./AdmonitionNode.vue'),
+  hardbreak: () => import('./HardBreakNode.vue'),
+  link: () => import('./LinkNode.vue'),
+  image: () => import('./ImageNode.vue')
+  // 可以添加更多节点类型
+}
+
+// 备用组件用于处理未知节点类型
+const fallbackComponent = {
+  props: ['node'],
+  template: `<div class="unknown-node">{{ node.raw }}</div>`
+}
+</script>
+
+<style scoped>
+.unknown-node {
+  color: #6a737d;
+  font-style: italic;
+  margin: 1rem 0;
+}
+</style>

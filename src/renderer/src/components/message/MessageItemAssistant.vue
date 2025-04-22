@@ -18,7 +18,7 @@
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
         {{ t('chat.messages.thinking') }}
       </div>
-      <div v-else class="flex flex-col w-full space-y-2">
+      <div v-else class="flex flex-col w-full">
         <div v-for="block in currentContent" :key="block.id" class="w-full">
           <MessageBlockContent
             v-if="block.type === 'content'"

@@ -1,33 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import MarkdownIt from 'markdown-it'
 import mathjax3 from 'markdown-it-mathjax3'
-// export const initReference = ({
-//   onClick,
-//   onHover
-// }: {
-//   msgId: string;
-//   onClick: (id: string, rect: DOMRect) => void;
-//   onHover: (id: string, isHover: boolean, rect: DOMRect) => void;
-//   }) => {
-//   if (!(window as any).handleReferenceClick) {
-//         (window as any).handleReferenceClick = (id: string, event: MouseEvent) => {
-//           const rect = (event.target as HTMLElement).getBoundingClientRect();
-//           onClick(id, rect);
-//         };
-//   }
-//   if (!(window as any).handleReferenceHover) {
-//   (window as any).handleReferenceHover = (
-//     id: string,
-//     isHover: boolean,
-//     event: MouseEvent
-//   ) => {
-//     const rect = (event.target as HTMLElement).getBoundingClientRect();
-//       onHover(id, isHover, rect);
-//     };
-//   }
-// };
+import markdownItSub from 'markdown-it-sub'
+import markdownItSup from 'markdown-it-sup'
+import markdownItMark from 'markdown-it-mark'
+import { full as markdownItEmoji } from 'markdown-it-emoji'
+import markdownItIns from 'markdown-it-ins'
+import markdownItCheckbox from 'markdown-it-task-checkbox'
+import markdownItFootnote from 'markdown-it-footnote'
+import markdownItContainer from 'markdown-it-container'
 
-export const getMarkdown = (msgId: string, t: (key: string) => string) => {
+// Re-export the node types for backward compatibility
+export * from './markdown-parser/types'
+
+// Import the parser functions
+import { parseMarkdownToStructure, processTokens, parseInlineTokens } from './markdown-parser'
+
+// Re-export the parser functions
+export { parseMarkdownToStructure, processTokens, parseInlineTokens }
+
+export const getMarkdown = (msgId: string) => {
   // import footnote from 'markdown-it-footnote'
   // Create markdown-it instance with configuration
   console.log('getmarkdown', msgId)
@@ -36,6 +28,21 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
     linkify: true,
     typographer: true,
     breaks: false
+  })
+
+  // Apply additional plugins
+  md.use(markdownItSub) // H~2~O -> subscript
+  md.use(markdownItSup) // 2^10 -> superscript
+  md.use(markdownItMark) // ==marked== -> highlighted text
+  md.use(markdownItEmoji) // :smile: -> emoji
+  md.use(markdownItCheckbox) // [ ] and [x] -> checkboxes
+  md.use(markdownItIns) // ++inserted++ -> inserted text
+  md.use(markdownItFootnote) // 添加脚注支持
+
+  // 添加警告块支持
+  const containers = ['note', 'tip', 'warning', 'danger', 'info', 'caution']
+  containers.forEach((name) => {
+    md.use(markdownItContainer, name)
   })
 
   // Custom math inline rule
@@ -92,38 +99,38 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
   md.options.highlight = null
 
   // Custom code block rendering
-  md.renderer.rules.fence = (tokens, idx) => {
-    const token = tokens[idx]
-    const info = token.info ? token.info.trim() : ''
-    const str = token.content
-    const encodedCode = btoa(unescape(encodeURIComponent(str)))
-    const language = info || 'text'
-    const uniqueId = `editor-${msgId}-${idx}-${language}`
+  // md.renderer.rules.fence = (tokens, idx) => {
+  //   const token = tokens[idx]
+  //   const info = token.info ? token.info.trim() : ''
+  //   const str = token.content
+  //   const encodedCode = btoa(unescape(encodeURIComponent(str)))
+  //   const language = info || 'text'
+  //   const uniqueId = `editor-${msgId}-${idx}-${language}`
 
-    return `<div class="code-block" data-code="${encodedCode}" data-lang="${language}" id="${uniqueId}">
-      <div class="code-header">
-        <span class="code-lang">${language.toUpperCase()}</span>
-        <button class="copy-button" data-code="${encodedCode}">${t('common.copyCode')}</button>
-      </div>
-      <div class="code-editor"></div>
-    </div>`
-  }
+  //   return `<div class="code-block" data-code="${encodedCode}" data-lang="${language}" id="${uniqueId}">
+  //     <div class="code-header">
+  //       <span class="code-lang">${language.toUpperCase()}</span>
+  //       <button class="copy-button" data-code="${encodedCode}">${t('common.copyCode')}</button>
+  //     </div>
+  //     <div class="code-editor"></div>
+  //   </div>`
+  // }
 
-  // Custom image rendering
-  // const defaultImageRenderer = md.renderer.rules.image; // Keep the default renderer if needed later
-  md.renderer.rules.image = (tokens, idx /*, options, env, self */) => {
-    const token = tokens[idx]
-    const src = token.attrGet('src')
-    const alt = token.content
-    const title = token.attrGet('title')
+  // // Custom image rendering
+  // // const defaultImageRenderer = md.renderer.rules.image; // Keep the default renderer if needed later
+  // md.renderer.rules.image = (tokens, idx /*, options, env, self */) => {
+  //   const token = tokens[idx]
+  //   const src = token.attrGet('src')
+  //   const alt = token.content
+  //   const title = token.attrGet('title')
 
-    // Add the max-width style
-    let attrs = token.attrs ? token.attrs.map(([key, value]) => `${key}="${value}"`).join(' ') : ''
-    // Prepend the style attribute
-    attrs = `style="max-width: 400px;" ${attrs}`.trim()
+  //   // Add the max-width style
+  //   let attrs = token.attrs ? token.attrs.map(([key, value]) => `${key}="${value}"`).join(' ') : ''
+  //   // Prepend the style attribute
+  //   attrs = `style="max-width: 400px;" ${attrs}`.trim()
 
-    return `<img src="${src || ''}" alt="${alt}" ${title ? `title="${title}"` : ''} ${attrs} />`
-  }
+  //   return `<img src="${src || ''}" alt="${alt}" ${title ? `title="${title}"` : ''} ${attrs} />`
+  // }
 
   // Custom reference inline rule
   const referenceInline = (state: any, silent: boolean) => {
@@ -165,6 +172,15 @@ export const getCommonMarkdown = () => {
     typographer: true,
     breaks: false
   })
+
+  // Apply additional plugins
+  md.use(markdownItSub)
+  md.use(markdownItSup)
+  md.use(markdownItMark)
+  md.use(markdownItEmoji)
+  md.use(markdownItCheckbox)
+  md.use(markdownItIns)
+
   return md
 }
 
