@@ -106,66 +106,17 @@
                   </div>
                 </div>
 
-                <!-- 添加新配置表单 -->
-                <div class="space-y-3 p-3 border rounded-md border-dashed">
-                  <h4 class="text-sm font-medium">
-                    {{ t('settings.knowledgeBase.addDifyConfig') }}
-                  </h4>
-
-                  <div class="space-y-2">
-                    <Label class="text-xs text-muted-foreground" for="dify-description">{{
-                      t('settings.knowledgeBase.difyDescription')
-                    }}</Label>
-                    <Input
-                      id="dify-description"
-                      v-model="currentDifyConfig.description"
-                      :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <Label class="text-xs text-muted-foreground" for="dify-api-key">{{
-                      t('settings.knowledgeBase.apiKey')
-                    }}</Label>
-                    <Input
-                      id="dify-api-key"
-                      v-model="currentDifyConfig.apiKey"
-                      type="password"
-                      placeholder="Dify API Key"
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <Label class="text-xs text-muted-foreground" for="dify-dataset-id">{{
-                      t('settings.knowledgeBase.datasetId')
-                    }}</Label>
-                    <Input
-                      id="dify-dataset-id"
-                      v-model="currentDifyConfig.datasetId"
-                      placeholder="Dify Dataset ID"
-                    />
-                  </div>
-
-                  <div class="space-y-2">
-                    <Label class="text-xs text-muted-foreground" for="dify-endpoint">{{
-                      t('settings.knowledgeBase.endpoint')
-                    }}</Label>
-                    <Input
-                      id="dify-endpoint"
-                      v-model="currentDifyConfig.endpoint"
-                      placeholder="https://api.dify.ai/v1"
-                    />
-                  </div>
-
+                <!-- 添加配置按钮 -->
+                <div class="flex justify-center">
                   <Button
                     type="button"
                     size="sm"
-                    class="w-full mt-2"
+                    class="w-full flex items-center justify-center gap-2"
                     variant="outline"
-                    :disabled="!isDifyConfigValid"
-                    @click="addDifyConfig"
+                    @click="openAddDifyConfig"
                   >
-                    {{ t('settings.knowledgeBase.addConfig') }}
+                    <Icon icon="lucide:plus" class="w-8 h-4" />
+                    {{ t('settings.knowledgeBase.addDifyConfig') }}
                   </Button>
                 </div>
               </div>
@@ -181,11 +132,15 @@
         </div>
       </div>
 
-      <!-- 编辑Dify配置对话框 -->
-      <Dialog v-model:open="isEditDifyConfigDialogOpen">
+      <!-- Dify配置对话框 -->
+      <Dialog v-model:open="isDifyConfigDialogOpen">
         <DialogContent>
           <DialogHeader>
-<!--            <DialogTitle>{{ // t('settings.knowledgeBase.editDifyConfig') }}</DialogTitle>-->
+            <DialogTitle>{{
+              isEditing
+                ? t('settings.knowledgeBase.editDifyConfig')
+                : t('settings.knowledgeBase.addDifyConfig')
+            }}</DialogTitle>
           </DialogHeader>
           <div class="space-y-4 py-4">
             <div class="space-y-2">
@@ -234,13 +189,11 @@
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" @click="closeEditDifyConfigDialog">{{ t('common.cancel') }}</Button>
-            <Button
-              type="button"
-              :disabled="!isEditingDifyConfigValid"
-              @click="saveEditDifyConfig"
-            >
-              {{ t('common.confirm') }}
+            <Button variant="outline" @click="closeEditDifyConfigDialog">{{
+              t('common.cancel')
+            }}</Button>
+            <Button type="button" :disabled="!isEditingDifyConfigValid" @click="saveDifyConfig">
+              {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -330,27 +283,10 @@ const { toast } = useToast()
 // 对话框状态
 const isAddKnowledgeBaseDialogOpen = ref(false)
 const isDifyConfigPanelOpen = ref(true)
-const isEditDifyConfigDialogOpen = ref(false)
+const isDifyConfigDialogOpen = ref(false)
+const isEditing = ref(false)
 
-// 编辑配置状态
-const editingDifyConfig = ref<DifyConfig>({
-  description: '',
-  apiKey: '',
-  datasetId: '',
-  endpoint: 'https://api.dify.ai/v1'
-})
-const editingConfigIndex = ref<number>(-1)
-
-// 验证编辑配置是否有效
-const isEditingDifyConfigValid = computed(() => {
-  return (
-    editingDifyConfig.value.apiKey.trim() !== '' &&
-    editingDifyConfig.value.datasetId.trim() !== '' &&
-    editingDifyConfig.value.description.trim() !== ''
-  )
-})
-
-// Dify知识库配置
+// Dify配置状态
 interface DifyConfig {
   description: string
   apiKey: string
@@ -359,44 +295,85 @@ interface DifyConfig {
 }
 
 const difyConfigs = ref<DifyConfig[]>([])
-const currentDifyConfig = ref<DifyConfig>({
+const editingDifyConfig = ref<DifyConfig>({
   description: '',
   apiKey: '',
   datasetId: '',
   endpoint: 'https://api.dify.ai/v1'
 })
+const editingConfigIndex = ref<number>(-1)
 
-// 验证Dify配置是否有效
-const isDifyConfigValid = computed(() => {
+// 验证配置是否有效
+const isEditingDifyConfigValid = computed(() => {
   return (
-    currentDifyConfig.value.apiKey.trim() !== '' &&
-    currentDifyConfig.value.datasetId.trim() !== '' &&
-    currentDifyConfig.value.description.trim() !== ''
+    editingDifyConfig.value.apiKey.trim() !== '' &&
+    editingDifyConfig.value.datasetId.trim() !== '' &&
+    editingDifyConfig.value.description.trim() !== ''
   )
 })
 
-// 添加Dify配置
-const addDifyConfig = async () => {
-  if (!isDifyConfigValid.value) return
-
-  // 添加到配置列表
-  difyConfigs.value.push({ ...currentDifyConfig.value })
-
-  // 更新到MCP配置
-  await updateDifyConfigToMcp()
-
-  // 重置表单
-  currentDifyConfig.value = {
+// 打开添加配置对话框
+const openAddDifyConfig = () => {
+  isEditing.value = false
+  editingConfigIndex.value = -1
+  editingDifyConfig.value = {
     description: '',
     apiKey: '',
     datasetId: '',
     endpoint: 'https://api.dify.ai/v1'
   }
+  isDifyConfigDialogOpen.value = true
+}
 
-  toast({
-    title: t('settings.knowledgeBase.configAdded'),
-    description: t('settings.knowledgeBase.configAddedDesc')
-  })
+// 打开编辑配置对话框
+const editDifyConfig = (index: number) => {
+  isEditing.value = true
+  editingConfigIndex.value = index
+  const config = difyConfigs.value[index]
+  editingDifyConfig.value = { ...config }
+  isDifyConfigDialogOpen.value = true
+}
+
+// 关闭配置对话框
+const closeDifyConfigDialog = () => {
+  isDifyConfigDialogOpen.value = false
+  editingConfigIndex.value = -1
+  editingDifyConfig.value = {
+    description: '',
+    apiKey: '',
+    datasetId: '',
+    endpoint: 'https://api.dify.ai/v1'
+  }
+}
+
+// 保存配置
+const saveDifyConfig = async () => {
+  if (!isEditingDifyConfigValid.value) return
+
+  if (isEditing.value) {
+    // 更新配置
+    if (editingConfigIndex.value !== -1) {
+      difyConfigs.value[editingConfigIndex.value] = { ...editingDifyConfig.value }
+    }
+    toast({
+      title: t('settings.knowledgeBase.configUpdated'),
+      description: t('settings.knowledgeBase.configUpdatedDesc')
+    })
+  } else {
+    // 添加配置
+    // difyConfigs.value.push({ ...editingDifyConfig.value })
+    // toast({
+    //   title: t('settings.knowledgeBase.configAdded'),
+    //   description: t('settings.knowledgeBase.configAddedDesc')
+    // })
+    await saveEditDifyConfig()
+  }
+
+  // 更新到MCP配置
+  await updateDifyConfigToMcp()
+
+  // 关闭对话框
+  closeDifyConfigDialog()
 }
 
 // 移除Dify配置
@@ -464,17 +441,9 @@ const closeAddKnowledgeBaseDialog = () => {
   isAddKnowledgeBaseDialogOpen.value = false
 }
 
-// 打开编辑配置对话框
-const editDifyConfig = (index: number) => {
-  editingConfigIndex.value = index
-  const config = difyConfigs.value[index]
-  editingDifyConfig.value = { ...config }
-  isEditDifyConfigDialogOpen.value = true
-}
-
 // 关闭编辑配置对话框
 const closeEditDifyConfigDialog = () => {
-  isEditDifyConfigDialogOpen.value = false
+  isDifyConfigDialogOpen.value = false
   editingConfigIndex.value = -1
   editingDifyConfig.value = {
     description: '',
@@ -508,6 +477,7 @@ const selectKnowledgeBaseType = (type: string) => {
   if (type === 'dify') {
     isDifyConfigPanelOpen.value = true
     closeAddKnowledgeBaseDialog()
+    openAddDifyConfig()
   } else {
     toast({
       title: t('settings.knowledgeBase.comingSoon'),
