@@ -227,21 +227,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.lingyiwanwu.com'
   //   }
   // },
-  // {
-  //   id: 'zhipu',
-  //   name: 'Zhipu',
-  //   apiType: 'zhipu',
-  //   apiKey: '',
-  //   baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://open.bigmodel.cn/',
-  //     apiKey: 'https://open.bigmodel.cn/usercenter/apikeys',
-  //     docs: 'https://open.bigmodel.cn/dev/howuse/introduction',
-  //     models: 'https://open.bigmodel.cn/modelcenter/square',
-  //     defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4/'
-  //   }
-  // },
+  {
+    id: 'zhipu',
+    name: 'Zhipu',
+    apiType: 'zhipu',
+    apiKey: '',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
+    enable: false,
+    websites: {
+      official: 'https://open.bigmodel.cn/',
+      apiKey: 'https://open.bigmodel.cn/usercenter/apikeys',
+      docs: 'https://open.bigmodel.cn/dev/howuse/introduction',
+      models: 'https://open.bigmodel.cn/modelcenter/square',
+      defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4/'
+    }
+  },
   {
     id: 'moonshot',
     name: 'Moonshot',

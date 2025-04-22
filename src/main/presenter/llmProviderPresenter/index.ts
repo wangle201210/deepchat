@@ -25,6 +25,7 @@ import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS } from '@/events'
 import { GrokProvider } from './providers/grokProvider'
 import { presenter } from '@/presenter'
+import { ZhipuProvider } from './providers/zhipuProvider'
 
 // 流的状态
 interface StreamState {
@@ -80,6 +81,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
             instance = new PPIOProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'gemini') {
             instance = new GeminiProvider(provider, this.configPresenter)
+          } else if (provider.apiType === 'zhipu') {
+            instance = new ZhipuProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'github') {
             instance = new GithubProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'ollama') {
@@ -184,6 +187,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           break
         case 'github':
           instance = new GithubProvider(provider, this.configPresenter)
+          break
+        case 'zhipu':
+          instance = new ZhipuProvider(provider, this.configPresenter)
           break
         // 添加其他provider的实例化逻辑
         case 'ollama':

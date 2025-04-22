@@ -1237,46 +1237,136 @@ export const defaultModelsSettings = [
   },
   {
     id: 'glm-4-plus',
-    name: 'GLM-4 Plus',
-    temperature: 0.7,
-    maxTokens: 8192,
-    contextLength: 1048576,
-    match: ['glm-4-plus', 'glm-4-air'],
-    vision: false,
-    functionCall: false,
-    reasoning: false
-  },
-  {
-    id: 'step-2-16k',
-    name: 'Step-2 16K',
+    name: 'GLM-4-Plus',
     temperature: 0.7,
     maxTokens: 4096,
-    contextLength: 16384,
-    match: ['step-2-16k-exp', 'step-2-16k'],
-    vision: false,
-    functionCall: false,
-    reasoning: false
-  },
-  {
-    id: 'step-2-mini',
-    name: 'Step-2 Mini',
-    temperature: 0.7,
-    maxTokens: 4096,
-    contextLength: 32768,
-    match: ['step-2-mini'],
-    vision: false,
-    functionCall: false,
-    reasoning: false
-  },
-  {
-    id: 'minimax',
-    name: 'MiniMax',
-    temperature: 0.7,
-    maxTokens: 4096,
-    contextLength: 32768,
-    match: ['minimax'],
+    contextLength: 128000,
+    match: ['glm-4-plus'],
     vision: false,
     functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'glm-4-air-250414',
+    name: 'GLM-4-Air-250414',
+    temperature: 0.7,
+    maxTokens: 16000,
+    contextLength: 128000,
+    match: ['glm-4-air-250414'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'glm-4-long',
+    name: 'GLM-4-Long',
+    temperature: 0.7,
+    maxTokens: 4096,
+    contextLength: 1000000,
+    match: ['glm-4-long'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'glm-4-airx',
+    name: 'GLM-4-AirX',
+    temperature: 0.7,
+    maxTokens: 4096,
+    contextLength: 8000,
+    match: ['glm-4-airx'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'glm-4-flashx',
+    name: 'GLM-4-FlashX',
+    temperature: 0.7,
+    maxTokens: 4096,
+    contextLength: 128000,
+    match: ['glm-4-flashx'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
+    id: 'glm-4-flash-250414',
+    name: 'GLM-4-Flash-250414',
+    temperature: 0.7,
+    maxTokens: 16000,
+    contextLength: 128000,
+    match: ['glm-4-flash-250414'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  // 智谱AI 推理模型
+  {
+    id: 'glm-z1-air',
+    name: 'GLM-Z1-Air',
+    temperature: 0.7,
+    maxTokens: 32000,
+    contextLength: 32000,
+    match: ['glm-z1-air'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'glm-z1-airx',
+    name: 'GLM-Z1-AirX',
+    temperature: 0.7,
+    maxTokens: 30000,
+    contextLength: 32000,
+    match: ['glm-z1-airx'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'glm-z1-flash',
+    name: 'GLM-Z1-Flash',
+    temperature: 0.7,
+    maxTokens: 32000,
+    contextLength: 32000,
+    match: ['glm-z1-flash'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  // 智谱AI 多模态模型
+  {
+    id: 'glm-4v-plus-0111',
+    name: 'GLM-4V-Plus-0111',
+    temperature: 0.7,
+    maxTokens: 4096,
+    contextLength: 16000,
+    match: ['glm-4v-plus-0111'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
+    id: 'glm-4v',
+    name: 'GLM-4V',
+    temperature: 0.7,
+    maxTokens: 4096,
+    contextLength: 4000,
+    match: ['glm-4v'],
+    vision: true,
+    functionCall: false,
+    reasoning: false
+  },
+  {
+    id: 'glm-4v-flash',
+    name: 'GLM-4V-Flash',
+    temperature: 0.7,
+    maxTokens: 4096,
+    contextLength: 4000,
+    match: ['glm-4v-flash'],
+    vision: true,
+    functionCall: false,
     reasoning: false
   },
 
