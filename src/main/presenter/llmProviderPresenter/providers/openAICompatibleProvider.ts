@@ -153,7 +153,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     return resultResp
   }
 
-  // [NEW] Core stream method implementation
+  // [NEW] Core stream method implementation based on character processing
   async *coreStream(
     messages: ChatMessage[],
     modelId: string,
@@ -190,22 +190,23 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const stream = await this.openai.chat.completions.create(requestParams)
 
     // --- State Variables ---
-    let mainBuffer = '' // Single buffer for all text/tag content
-    let isInThinkTag = false
-    let isInFunctionCallTag = false // For non-native calls
-    let functionCallBuffer = '' // 用于函数调用标签的缓冲区
+    type TagState = 'none' | 'start' | 'inside' | 'end'
+    let thinkState: TagState = 'none'
+    let funcState: TagState = 'none' // Only relevant if !supportsFunctionCall
 
-    const tagStartMarker = '<function_call>'
-    const tagEndMarker = '</function_call>'
+    let pendingBuffer = '' // Buffer for tag matching and potential text output
+    let thinkBuffer = '' // Buffer for reasoning content
+    let funcCallBuffer = '' // Buffer for non-native function call content
+
     const thinkStartMarker = '<think>'
     const thinkEndMarker = '</think>'
+    const funcStartMarker = '<function_call>'
+    const funcEndMarker = '</function_call>'
 
-    // Update nativeToolCalls structure to include a completed flag
     const nativeToolCalls: Record<
       string,
       { name: string; arguments: string; completed?: boolean }
     > = {}
-    // [NEW] Map to associate index with tool call ID
     const indexToIdMap: Record<number, string> = {}
     let stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
     let toolUseDetected = false
@@ -216,173 +217,107 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any
       const currentContent = delta?.content || ''
-      // console.log('currentContent', choice)
+
       // 1. Handle Non-Content Events First
       if (chunk.usage) yield { type: 'usage', usage: chunk.usage }
       if (delta?.reasoning_content || delta?.reasoning) {
+        // Yield native reasoning content directly
         yield { type: 'reasoning', reasoning_content: delta.reasoning_content || delta.reasoning }
         continue
       }
       if (supportsFunctionCall && delta?.tool_calls?.length > 0) {
         toolUseDetected = true
-        // console.log('处理tool_calls', JSON.stringify(delta.tool_calls))
+        // console.log('Handling native tool_calls', JSON.stringify(delta.tool_calls))
         for (const toolCallDelta of delta.tool_calls) {
           const id = toolCallDelta.id
-          const index = toolCallDelta.index // Index within the current delta's tool_calls array
+          const index = toolCallDelta.index
           const functionName = toolCallDelta.function?.name
           const argumentChunk = toolCallDelta.function?.arguments
 
           let currentToolCallId: string | undefined = undefined
 
-          // Determine the correct tool call ID
           if (id) {
             currentToolCallId = id
-            if (index !== undefined) {
-              // Store the mapping if we have both id and index
-              indexToIdMap[index] = id
-              // console.log(`Mapping index ${index} to id ${id}`)
-            }
+            if (index !== undefined) indexToIdMap[index] = id
           } else if (index !== undefined && indexToIdMap[index]) {
-            // Use mapped ID if id is missing but index is known
             currentToolCallId = indexToIdMap[index]
-            // console.log(`Found mapped id ${currentToolCallId} for index ${index}`)
           } else {
-            // Cannot reliably identify the tool call for this delta chunk
             console.warn(
-              '[coreStream] Received tool call delta chunk without id and without a known mapping for index:',
+              '[coreStream] Received tool call delta chunk without id/mapping:',
               toolCallDelta
             )
-            continue // Skip this problematic chunk
+            continue
           }
 
-          // Process only if we have a valid ID
           if (currentToolCallId) {
-            // console.log(
-            //   `[coreStream] Processing toolCallDelta for ID: ${currentToolCallId}`,
-            //   JSON.stringify(toolCallDelta)
-            // )
-            // Initialize entry if it doesn't exist
             if (!nativeToolCalls[currentToolCallId]) {
               nativeToolCalls[currentToolCallId] = { name: '', arguments: '', completed: false }
-              console.log(
-                `[coreStream] Initialized nativeToolCalls entry for id ${currentToolCallId}`
-              )
+              // console.log(`[coreStream] Initialized nativeToolCalls entry for id ${currentToolCallId}`)
             }
 
             const currentCallState = nativeToolCalls[currentToolCallId]
-            // console.log(
-            //   `[coreStream] Current state for ${currentToolCallId}:`,
-            //   JSON.stringify(currentCallState)
-            // )
 
-            // --- Handle Complete Tool Call in One Chunk ---
+            // Handle complete tool call in one chunk
             if (functionName && argumentChunk && !currentCallState.completed) {
-              console.log(
-                `[coreStream] Handling complete tool call ${currentToolCallId} in one chunk.`
-              )
-              // If we receive name and arguments together, and haven't completed it yet
-              // console.log(`Handling complete tool call ${currentToolCallId} in one chunk`)
-
-              // Ensure name is updated if it wasn't already (e.g., first time seeing it)
+              // console.log(`[coreStream] Handling complete tool call ${currentToolCallId} in one chunk.`)
               if (!currentCallState.name) {
                 currentCallState.name = functionName
-                const startEvent = {
-                  type: 'tool_call_start' as const,
+                yield {
+                  type: 'tool_call_start',
                   tool_call_id: currentToolCallId,
                   tool_call_name: functionName
                 }
-                // console.log('[coreStream] Yielding:', JSON.stringify(startEvent))
-                yield startEvent
-              } else if (currentCallState.name !== functionName) {
-                console.warn(
-                  `Received conflicting name for tool call ${currentToolCallId}. Using existing: ${currentCallState.name}`
-                )
               }
-
-              // Append argument chunk (though likely contains the full arguments here)
               currentCallState.arguments += argumentChunk
-              const chunkEvent = {
-                type: 'tool_call_chunk' as const,
+              yield {
+                type: 'tool_call_chunk',
                 tool_call_id: currentToolCallId,
                 tool_call_arguments_chunk: argumentChunk
               }
-              // console.log('[coreStream] Yielding:', JSON.stringify(chunkEvent))
-              yield chunkEvent
-
-              // Emit end event immediately and mark as completed
               currentCallState.completed = true
-              const endEvent = {
-                type: 'tool_call_end' as const,
+              yield {
+                type: 'tool_call_end',
                 tool_call_id: currentToolCallId,
                 tool_call_arguments_complete: currentCallState.arguments
               }
-              // console.log('[coreStream] Yielding and marking completed:', JSON.stringify(endEvent))
-              yield endEvent
-              continue // Move to the next toolCallDelta in this chunk
+              continue
             }
 
-            // --- Handle Incremental Updates ---
-            console.log(
-              `[coreStream] Handling incremental update for ${currentToolCallId}. Name received: ${!!functionName}, Args received: ${!!argumentChunk}`
-            )
-
-            // Process name (only once) and send start event
+            // Handle incremental updates
+            // console.log(`[coreStream] Handling incremental update for ${currentToolCallId}.`)
             if (functionName && !currentCallState.name) {
               currentCallState.name = functionName
-              console.log(
-                `[coreStream] Received name '${functionName}' for id ${currentToolCallId}`
-              )
-              const startEvent = {
-                type: 'tool_call_start' as const,
+              yield {
+                type: 'tool_call_start',
                 tool_call_id: currentToolCallId,
                 tool_call_name: functionName
               }
-              // console.log('[coreStream] Yielding:', JSON.stringify(startEvent))
-              yield startEvent
             }
-
-            // Process arguments chunk and send chunk event
             if (argumentChunk) {
               currentCallState.arguments += argumentChunk
-              console.log(
-                `[coreStream] Received args chunk for id ${currentToolCallId}: '${argumentChunk}'`
-              )
-              const chunkEvent = {
-                type: 'tool_call_chunk' as const,
+              yield {
+                type: 'tool_call_chunk',
                 tool_call_id: currentToolCallId,
                 tool_call_arguments_chunk: argumentChunk
               }
-              // console.log('[coreStream] Yielding:', JSON.stringify(chunkEvent))
-              yield chunkEvent
             }
-          } else {
-            // This case should logically not be reached due to the checks above,
-            // but adding a log here for safety.
-            console.error('[coreStream] currentToolCallId was unexpectedly undefined after checks')
           }
         }
-        continue // Continue to next chunk after processing all tool calls in this one
+        continue // Continue to next chunk after processing tool calls
       }
       if (choice?.finish_reason) {
         const reasonFromAPI = choice.finish_reason
         // console.log('Finish Reason from API:', reasonFromAPI)
-
-        // Determine the stop reason based on the API finish reason
         if (reasonFromAPI === 'tool_calls') {
-          // Don't send end events here, just set the reason
           stopReason = 'tool_use'
-          toolUseDetected = true // Ensure flag is set
-          // console.log('Tool use detected, stream continues to ensure args complete.')
+          toolUseDetected = true
         } else if (toolUseDetected) {
-          // If tool use was detected previously, but API stopped for other reasons (e.g., stop, length)
-          // Set stop reason accordingly, but still rely on the post-loop logic to send end events
           stopReason =
             reasonFromAPI === 'stop'
               ? 'complete'
               : reasonFromAPI === 'length'
                 ? 'max_tokens'
                 : 'error'
-          // console.log(`Tool use was detected, but API finished with ${reasonFromAPI}. Stop reason set to: ${stopReason}`)
         } else if (reasonFromAPI === 'stop') {
           stopReason = 'complete'
         } else if (reasonFromAPI === 'length') {
@@ -391,204 +326,324 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           console.warn(`Unhandled finish reason: ${reasonFromAPI}`)
           stopReason = 'error'
         }
-
-        // console.log('Intermediate Stop Reason Set (will be finalized after loop):', stopReason)
-        // REMOVED break; // Continue processing remaining chunks even after finish_reason
-        continue // Continue to potentially process content in the same chunk
+        continue // Process content within the same chunk if any
       }
       if (!currentContent) continue
 
-      // 2. 处理不支持function call的模型
-      if (!supportsFunctionCall && tools.length > 0) {
-        // 解析function call标签
-        const tagResult = this.processFunctionCallTagInContent(
-          currentContent,
-          isInFunctionCallTag,
-          functionCallBuffer
-        )
+      // 2. Process content character by character
+      for (const char of currentContent) {
+        pendingBuffer += char
+        let processedChar = false // Flag if character was handled by state logic
+        // console.log('currentStatus', pendingBuffer, thinkState, funcState, char)
+        // --- State Machine Logic ---
 
-        // 更新状态
-        isInFunctionCallTag = tagResult.isInFunctionCallTag
-        functionCallBuffer = tagResult.functionCallBuffer
-
-        // 如果有完整的function call
-        if (tagResult.completeFunctionCall) {
-          const handleResult = this.handleCompletedFunctionCall(
-            tagResult.completeFunctionCall,
-            'non-native'
-          )
-
-          if (handleResult.modified) {
-            toolUseDetected = true
-            for (const parsedCall of handleResult.toolCalls) {
-              yield {
-                type: 'tool_call_start',
-                tool_call_id: parsedCall.id,
-                tool_call_name: parsedCall.function.name
-              }
-              yield {
-                type: 'tool_call_chunk',
-                tool_call_id: parsedCall.id,
-                tool_call_arguments_chunk: parsedCall.function.arguments
-              }
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: parsedCall.id,
-                tool_call_arguments_complete: parsedCall.function.arguments
-              }
+        // --- Thinking Tag Processing (Inside or End states) ---
+        if (thinkState === 'inside') {
+          if (pendingBuffer.endsWith(thinkEndMarker)) {
+            thinkState = 'none'
+            if (thinkBuffer) {
+              yield { type: 'reasoning', reasoning_content: thinkBuffer }
+              thinkBuffer = ''
             }
-          }
-        }
-
-        // 如果有普通内容需要输出
-        if (tagResult.pendingContent) {
-          mainBuffer += tagResult.pendingContent
-        }
-
-        // 如果在函数调用标签内，继续等待更多内容
-        if (isInFunctionCallTag) {
-          continue
-        }
-      } else {
-        // 3. 默认情况，直接添加到主缓冲区
-        mainBuffer += currentContent
-      }
-
-      // 4. Process Buffer Iteratively for Tags and Text
-      let bufferChanged = true
-      while (bufferChanged) {
-        bufferChanged = false // Assume no changes in this pass
-
-        if (isInFunctionCallTag) {
-          // --- Currently INSIDE a function call tag ---
-          const endTagIndex = mainBuffer.indexOf(tagEndMarker)
-          if (endTagIndex !== -1) {
-            // Found the end!
-            const callContent = mainBuffer.substring(0, endTagIndex)
-            const remainingAfterTag = mainBuffer.substring(endTagIndex + tagEndMarker.length)
-
-            // console.log('>>> Function call completed. Content:', callContent)
-            toolUseDetected = true
-            // console.log('>>> Set toolUseDetected = true')
-
-            const fullTagForParsing = `${tagStartMarker}${callContent}${tagEndMarker}`
-            const parsedCalls = this.parseFunctionCalls(
-              fullTagForParsing,
-              `non-native-${this.provider.id}`
-            )
-            for (const parsedCall of parsedCalls) {
-              yield {
-                type: 'tool_call_start',
-                tool_call_id: parsedCall.id,
-                tool_call_name: parsedCall.function.name
-              }
-              yield {
-                type: 'tool_call_chunk',
-                tool_call_id: parsedCall.id,
-                tool_call_arguments_chunk: parsedCall.function.arguments
-              }
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: parsedCall.id,
-                tool_call_arguments_complete: parsedCall.function.arguments
-              }
+            pendingBuffer = ''
+            processedChar = true
+          } else if (thinkEndMarker.startsWith(pendingBuffer)) {
+            thinkState = 'end'
+            processedChar = true
+          } else if (pendingBuffer.length >= thinkEndMarker.length) {
+            const charsToYield = pendingBuffer.slice(0, -thinkEndMarker.length + 1)
+            if (charsToYield) {
+              thinkBuffer += charsToYield
+              yield { type: 'reasoning', reasoning_content: charsToYield }
             }
-
-            isInFunctionCallTag = false // Exit tag state
-            mainBuffer = remainingAfterTag // Update buffer with remaining content
-            bufferChanged = true // Buffer was modified, loop again
+            pendingBuffer = pendingBuffer.slice(-thinkEndMarker.length + 1)
+            if (thinkEndMarker.startsWith(pendingBuffer)) {
+              thinkState = 'end'
+            } else {
+              thinkBuffer += pendingBuffer
+              yield { type: 'reasoning', reasoning_content: pendingBuffer }
+              pendingBuffer = ''
+              thinkState = 'inside'
+            }
+            processedChar = true
           } else {
-            // End tag not found yet, buffer contains only partial tag content.
-            // Do nothing, wait for more chunks. Loop will naturally end.
+            thinkBuffer += char
+            yield { type: 'reasoning', reasoning_content: char }
+            pendingBuffer = ''
+            processedChar = true
           }
-        } else if (isInThinkTag) {
-          // --- Currently INSIDE a think tag ---
-          const thinkEndIndex = mainBuffer.indexOf(thinkEndMarker)
-          if (thinkEndIndex !== -1) {
-            // Found the end!
-            const reasoningContent = mainBuffer.substring(0, thinkEndIndex)
-            const remainingAfterTag = mainBuffer.substring(thinkEndIndex + thinkEndMarker.length)
-
-            if (reasoningContent) {
-              yield { type: 'reasoning', reasoning_content: reasoningContent }
+        } else if (thinkState === 'end') {
+          if (pendingBuffer.endsWith(thinkEndMarker)) {
+            thinkState = 'none'
+            if (thinkBuffer) {
+              yield { type: 'reasoning', reasoning_content: thinkBuffer }
+              thinkBuffer = ''
             }
-            isInThinkTag = false // Exit tag state
-            mainBuffer = remainingAfterTag // Update buffer
-            bufferChanged = true // Loop again
+            pendingBuffer = ''
+            processedChar = true
+          } else if (!thinkEndMarker.startsWith(pendingBuffer)) {
+            const failedTagChars = pendingBuffer
+            thinkBuffer += failedTagChars
+            yield { type: 'reasoning', reasoning_content: failedTagChars }
+            pendingBuffer = ''
+            thinkState = 'inside'
+            processedChar = true
           } else {
-            // End tag not found yet.
-            // Do nothing, wait for more chunks.
+            processedChar = true
           }
-        } else {
-          // --- Currently OUTSIDE any known tag ---
-          // Find the *first* occurrence of any start tag
-          const funcStartIndex =
-            !supportsFunctionCall && tools.length > 0 ? mainBuffer.indexOf(tagStartMarker) : -1
-          const thinkStartIndex = mainBuffer.indexOf(thinkStartMarker)
-
-          let firstTagIndex = -1
-          let isFuncTag = false
-          let isThinkTag = false
-
-          if (
-            funcStartIndex !== -1 &&
-            (thinkStartIndex === -1 || funcStartIndex < thinkStartIndex)
-          ) {
-            firstTagIndex = funcStartIndex
-            isFuncTag = true
-          } else if (thinkStartIndex !== -1) {
-            firstTagIndex = thinkStartIndex
-            isThinkTag = true
+        }
+        // --- Function Call Tag Processing (Inside or End states, if applicable) ---
+        else if (
+          !supportsFunctionCall &&
+          tools.length > 0 &&
+          (funcState === 'inside' || funcState === 'end')
+        ) {
+          processedChar = true // Assume processed unless logic below changes state back
+          if (funcState === 'inside') {
+            if (pendingBuffer.endsWith(funcEndMarker)) {
+              funcState = 'none'
+              funcCallBuffer += pendingBuffer.slice(0, -funcEndMarker.length)
+              pendingBuffer = ''
+              toolUseDetected = true
+              console.log(
+                `[coreStream] Non-native <function_call> end tag detected. Buffer to parse:`,
+                funcCallBuffer
+              )
+              const parsedCalls = this.parseFunctionCalls(
+                `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
+                `non-native-${this.provider.id}`
+              )
+              for (const parsedCall of parsedCalls) {
+                yield {
+                  type: 'tool_call_start',
+                  tool_call_id: parsedCall.id,
+                  tool_call_name: parsedCall.function.name
+                }
+                yield {
+                  type: 'tool_call_chunk',
+                  tool_call_id: parsedCall.id,
+                  tool_call_arguments_chunk: parsedCall.function.arguments
+                }
+                yield {
+                  type: 'tool_call_end',
+                  tool_call_id: parsedCall.id,
+                  tool_call_arguments_complete: parsedCall.function.arguments
+                }
+              }
+              funcCallBuffer = ''
+            } else if (funcEndMarker.startsWith(pendingBuffer)) {
+              funcState = 'end'
+            } else if (pendingBuffer.length >= funcEndMarker.length) {
+              const charsToAdd = pendingBuffer.slice(0, -funcEndMarker.length + 1)
+              funcCallBuffer += charsToAdd
+              pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1)
+              if (funcEndMarker.startsWith(pendingBuffer)) {
+                funcState = 'end'
+              } else {
+                funcCallBuffer += pendingBuffer
+                pendingBuffer = ''
+                funcState = 'inside'
+              }
+            } else {
+              funcCallBuffer += char
+              pendingBuffer = ''
+            }
+          } else {
+            // funcState === 'end'
+            if (pendingBuffer.endsWith(funcEndMarker)) {
+              funcState = 'none'
+              pendingBuffer = ''
+              toolUseDetected = true
+              console.log(
+                `[coreStream] Non-native <function_call> end tag detected (from end state). Buffer to parse:`,
+                funcCallBuffer
+              )
+              const parsedCalls = this.parseFunctionCalls(
+                `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
+                `non-native-${this.provider.id}`
+              )
+              for (const parsedCall of parsedCalls) {
+                yield {
+                  type: 'tool_call_start',
+                  tool_call_id: parsedCall.id,
+                  tool_call_name: parsedCall.function.name
+                }
+                yield {
+                  type: 'tool_call_chunk',
+                  tool_call_id: parsedCall.id,
+                  tool_call_arguments_chunk: parsedCall.function.arguments
+                }
+                yield {
+                  type: 'tool_call_end',
+                  tool_call_id: parsedCall.id,
+                  tool_call_arguments_complete: parsedCall.function.arguments
+                }
+              }
+              funcCallBuffer = ''
+            } else if (!funcEndMarker.startsWith(pendingBuffer)) {
+              funcCallBuffer += pendingBuffer
+              pendingBuffer = ''
+              funcState = 'inside'
+            }
           }
+        }
 
-          if (firstTagIndex !== -1) {
-            // Found a start tag
-            const textBefore = mainBuffer.substring(0, firstTagIndex)
+        // --- General Text / Start Tag Detection (When not inside any tag) ---
+        // This block handles thinkState/funcState being 'none' or 'start'
+        if (!processedChar) {
+          let potentialThink = thinkStartMarker.startsWith(pendingBuffer)
+          let potentialFunc =
+            !supportsFunctionCall && tools.length > 0 && funcStartMarker.startsWith(pendingBuffer)
+          const matchedThink = pendingBuffer.endsWith(thinkStartMarker)
+          const matchedFunc =
+            !supportsFunctionCall && tools.length > 0 && pendingBuffer.endsWith(funcStartMarker)
+
+          // --- Handle Full Matches First ---
+          if (matchedThink) {
+            const textBefore = pendingBuffer.slice(0, -thinkStartMarker.length)
             if (textBefore) {
-              yield { type: 'text', content: textBefore } // Yield text before the tag
+              yield { type: 'text', content: textBefore }
             }
-
-            if (isFuncTag) {
-              isInFunctionCallTag = true
-              mainBuffer = mainBuffer.substring(firstTagIndex + tagStartMarker.length) // Keep content after start tag
-            } else if (isThinkTag) {
-              isInThinkTag = true
-              const { cleanedPosition } = this.cleanTag(mainBuffer, thinkStartMarker) // Use cleanTag to handle potential whitespace
-              mainBuffer = mainBuffer.substring(cleanedPosition) // Keep content after clean start tag
+            console.log('[coreStream] <think> start tag matched. Entering inside state.')
+            thinkState = 'inside'
+            funcState = 'none' // Reset other state
+            pendingBuffer = ''
+            // Don't set processedChar = true, let loop continue naturally
+          } else if (matchedFunc) {
+            const textBefore = pendingBuffer.slice(0, -funcStartMarker.length)
+            if (textBefore) {
+              yield { type: 'text', content: textBefore }
             }
-            bufferChanged = true // State changed, loop again
-          } else {
-            // No start tags found in the current buffer. Yield the entire buffer as text.
-            if (mainBuffer) {
-              yield { type: 'text', content: mainBuffer }
-              mainBuffer = '' // Clear buffer after yielding
-              // bufferChanged remains false, loop will end.
-            }
+            console.log(
+              '[coreStream] Non-native <function_call> start tag detected. Entering inside state.'
+            )
+            funcState = 'inside'
+            thinkState = 'none' // Reset other state
+            pendingBuffer = ''
+            // Don't set processedChar = true, let loop continue naturally
           }
-        } // End of state check (inFunc, inThink, outside)
-      } // End while(bufferChanged)
-    } // End for await...of stream
+          // --- Handle Partial Matches (Keep Accumulating) ---
+          else if (potentialThink || potentialFunc) {
+            // If potentially matching either, just keep the buffer and wait for more chars
+            // Update state but don't yield anything
+            thinkState = potentialThink ? 'start' : 'none'
+            funcState = potentialFunc ? 'start' : 'none'
+            // Character processed by accumulating into buffer for potential tag match
+            // processedChar = true; // No need to set this, we want loop to naturally continue adding chars
+          }
+          // --- Handle No Match / Failure ---
+          else if (pendingBuffer.length > 0) {
+            // Buffer doesn't start with '<', or starts with '<' but doesn't match start of either tag anymore
+            const charToYield = pendingBuffer[0]
+            yield { type: 'text', content: charToYield }
+            pendingBuffer = pendingBuffer.slice(1)
+            // Re-evaluate potential matches with the shortened buffer immediately
+            potentialThink = pendingBuffer.length > 0 && thinkStartMarker.startsWith(pendingBuffer)
+            potentialFunc =
+              pendingBuffer.length > 0 &&
+              !supportsFunctionCall &&
+              tools.length > 0 &&
+              funcStartMarker.startsWith(pendingBuffer)
+            thinkState = potentialThink ? 'start' : 'none'
+            funcState = potentialFunc ? 'start' : 'none'
+            // Yielded a char, buffer changed, loop continues
+          }
+          // If pendingBuffer became empty after slice, states will be none, next char starts fresh.
+        }
+
+        // Note: Removed the separate logic blocks for thinkState === 'start' and funcState === 'start'
+        // as their logic is now integrated into the block above.
+
+        // --- Yield and Clear Pending Buffer (This was part of old logic, likely not needed now) ---
+        // if (yieldBufferAs && pendingBuffer) { ... }
+        // if (clearPendingBuffer) { pendingBuffer = ''; }
+      } // End character loop
+    } // End chunk loop
 
     // --- Finalization ---
 
+    // Yield any remaining text in the buffer
+    if (pendingBuffer) {
+      console.warn('[coreStream] Finalizing with non-empty pendingBuffer:', pendingBuffer)
+      // Decide how to yield based on final state
+      if (thinkState === 'inside' || thinkState === 'end') {
+        yield { type: 'reasoning', reasoning_content: pendingBuffer }
+        thinkBuffer += pendingBuffer
+      } else if (funcState === 'inside' || funcState === 'end') {
+        // Add remaining to func buffer - it will be handled below
+        funcCallBuffer += pendingBuffer
+      } else {
+        yield { type: 'text', content: pendingBuffer }
+      }
+      pendingBuffer = ''
+    }
+
+    // Yield remaining reasoning content
+    if (thinkBuffer) {
+      // console.log('[coreStream] Yielding remaining reasoning buffer:', thinkBuffer)
+      // No yield here, reasoning is yielded char by char or on tag close
+      console.warn(
+        '[coreStream] Finalizing with non-empty thinkBuffer (should have been yielded):',
+        thinkBuffer
+      )
+    }
+
+    // Handle incomplete non-native function call
+    if (funcCallBuffer) {
+      console.warn(
+        '[coreStream] Finalizing with non-empty function call buffer (likely incomplete tag):',
+        funcCallBuffer // Log incomplete buffer
+      )
+      // Attempt to parse what we have, might fail
+      const potentialContent = `${funcStartMarker}${funcCallBuffer}` // Assume tag started
+      try {
+        const parsedCalls = this.parseFunctionCalls(
+          potentialContent, // Parse potentially incomplete content
+          `non-native-incomplete-${this.provider.id}`
+        )
+        if (parsedCalls.length > 0) {
+          toolUseDetected = true // Mark tool use even if incomplete parse
+          for (const parsedCall of parsedCalls) {
+            yield {
+              type: 'tool_call_start',
+              tool_call_id: parsedCall.id + '-incomplete', // Mark ID
+              tool_call_name: parsedCall.function.name
+            }
+            yield {
+              type: 'tool_call_chunk',
+              tool_call_id: parsedCall.id + '-incomplete',
+              tool_call_arguments_chunk: parsedCall.function.arguments
+            }
+            yield {
+              type: 'tool_call_end',
+              tool_call_id: parsedCall.id + '-incomplete',
+              tool_call_arguments_complete: parsedCall.function.arguments // Send potentially partial args
+            }
+          }
+        } else {
+          console.log(
+            '[coreStream] Incomplete function call buffer parsing yielded no calls. Emitting as text.'
+          )
+          // If parsing failed or yielded nothing, output buffer as text
+          yield { type: 'text', content: potentialContent }
+        }
+      } catch (e) {
+        console.error('Error parsing incomplete function call buffer:', e)
+        yield { type: 'text', content: potentialContent } // Yield as text on error
+      }
+      funcCallBuffer = ''
+    }
+
     // Final check and emission for native tool calls
     if (supportsFunctionCall && toolUseDetected) {
-      // console.log(
-      //   '[coreStream] Stream finished. Finalizing native tool calls:',
-      //   JSON.stringify(nativeToolCalls)
-      // )
+      // console.log('[coreStream] Stream finished. Finalizing native tool calls:', JSON.stringify(nativeToolCalls))
       for (const toolId in nativeToolCalls) {
         const tool = nativeToolCalls[toolId]
-        console.log(
-          `[coreStream] Finalizing tool ${toolId}: Name='${tool.name}', Args='${tool.arguments}', Completed=${tool.completed}`
-        )
-        // Only send 'end' if it's complete (has name and args) AND wasn't already marked completed (sent inline)
+        // console.log(`[coreStream] Finalizing tool ${toolId}: Name='${tool.name}', Args='${tool.arguments}', Completed=${tool.completed}`)
         if (tool.name && tool.arguments && !tool.completed) {
-          console.log(`[coreStream] Sending tool_call_end for ${toolId} during finalization.`)
-          // Ensure arguments are valid JSON before emitting (optional but good practice)
+          // console.log(`[coreStream] Sending tool_call_end for ${toolId} during finalization.`)
           try {
-            // Attempt to parse to check validity, but send the original string
-            JSON.parse(tool.arguments)
+            JSON.parse(tool.arguments) // Check validity
             yield {
               type: 'tool_call_end',
               tool_call_id: toolId,
@@ -596,11 +651,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
           } catch (e) {
             console.error(
-              `Error parsing arguments for tool ${toolId}, arguments: ${tool.arguments}`,
+              `[coreStream] Error parsing arguments for tool ${toolId} during finalization: ${tool.arguments}`,
               e
             )
-            // Decide how to handle invalid JSON - perhaps send an error event or log?
-            // Sending end event with potentially problematic arguments for now.
             yield {
               type: 'tool_call_end',
               tool_call_id: toolId,
@@ -608,45 +661,20 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
           }
         } else if (!tool.completed) {
-          console.log(
-            `[coreStream] Tool call ${toolId} is incomplete or already completed, skipping final end event.`
-          )
           console.warn(
-            `Tool call ${toolId} is incomplete (missing name or arguments) and will not have an end event during finalization. Name: ${tool.name}, Args: ${tool.arguments}`
+            `[coreStream] Tool call ${toolId} is incomplete and will not have an end event during finalization. Name: ${tool.name}, Args: ${tool.arguments}`
           )
         }
       }
     }
 
-    // Yield any remaining buffer content (could be partial tags or text)
-    if (mainBuffer) {
-      console.warn('Finalizing with non-empty buffer:', mainBuffer)
-      if (isInFunctionCallTag) {
-        console.warn('Buffer likely contains partial function call content.')
-        yield { type: 'text', content: mainBuffer } // Yield as text
-      } else if (isInThinkTag) {
-        yield { type: 'reasoning', reasoning_content: mainBuffer } // Yield remaining reasoning
-      } else {
-        yield { type: 'text', content: mainBuffer } // Yield remaining text
-      }
-    }
-
-    // Handle unterminated function call buffer
-    if (functionCallBuffer) {
-      console.warn('Finalizing with non-empty function call buffer:', functionCallBuffer)
-      yield { type: 'text', content: functionCallBuffer }
-    }
-
     // Log state warnings
-    if (isInFunctionCallTag)
-      console.warn('Stream ended while still inside <function_call> tag state.')
-    if (isInThinkTag) console.warn('Stream ended while still inside <think> tag state.')
+    if (thinkState !== 'none') console.warn(`Stream ended while in thinkState: ${thinkState}`)
+    if (funcState !== 'none') console.warn(`Stream ended while in funcState: ${funcState}`)
 
-    // Override stop reason if tool use was detected, regardless of API finish reason
+    // Override stop reason if tool use was detected
     const finalStopReason = toolUseDetected ? 'tool_use' : stopReason
-    console.log(
-      `[coreStream] Final Stop Reason Calculation: toolUseDetected=${toolUseDetected}, apiStopReason=${stopReason}, finalStopReason=${finalStopReason}`
-    )
+    // console.log(`[coreStream] Final Stop Reason Calculation: toolUseDetected=${toolUseDetected}, apiStopReason=${stopReason}, finalStopReason=${finalStopReason}`)
 
     yield { type: 'stop', stop_reason: finalStopReason }
   }
@@ -688,35 +716,63 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     // Pass a prefix for creating fallback IDs
     fallbackIdPrefix: string = 'tool-call'
   ): Array<{ id: string; type: string; function: { name: string; arguments: string } }> {
+    console.log('[parseFunctionCalls] Received raw response:', response) // Log raw input
     try {
       // 使用非贪婪模式匹配function_call标签对，能够处理多行内容
       const functionCallMatches = response.match(/<function_call>([\s\S]*?)<\/function_call>/gs)
       if (!functionCallMatches) {
+        console.log('[parseFunctionCalls] No <function_call> tags found.') // Log no match
         return []
       }
+      console.log(`[parseFunctionCalls] Found ${functionCallMatches.length} potential matches.`) // Log match count
+
       const toolCalls = functionCallMatches
         .map((match, index) => {
+          console.log(`[parseFunctionCalls] Processing match ${index}:`, match) // Log each match
           // Add index for unique fallback ID generation
           const content = match.replace(/<\/?function_call>/g, '').trim() // Fixed regex escaping
+          console.log(`[parseFunctionCalls] Extracted content for match ${index}:`, content) // Log extracted content
+          if (!content) {
+            console.log(`[parseFunctionCalls] Match ${index} has empty content, skipping.`)
+            return null // Skip empty content between tags
+          }
+
           try {
             let parsedCall
+            let repairedJson: string | undefined
             try {
               // Attempt standard JSON parse first
               parsedCall = JSON.parse(content)
+              console.log(`[parseFunctionCalls] Standard JSON.parse successful for match ${index}.`) // Log success
             } catch (initialParseError) {
-              console.warn('Standard JSON parse failed, attempting jsonrepair for:', content)
+              console.warn(
+                `[parseFunctionCalls] Standard JSON.parse failed for match ${index}, attempting jsonrepair. Error:`,
+                (initialParseError as Error).message
+              ) // Log failure and attempt repair
               try {
                 // Fallback to jsonrepair for robustness
-                parsedCall = JSON.parse(jsonrepair(content))
+                repairedJson = jsonrepair(content)
+                console.log(
+                  `[parseFunctionCalls] jsonrepair result for match ${index}:`,
+                  repairedJson
+                ) // Log repaired JSON
+                parsedCall = JSON.parse(repairedJson)
+                console.log(
+                  `[parseFunctionCalls] JSON.parse successful after jsonrepair for match ${index}.`
+                ) // Log repair success
               } catch (repairError) {
                 console.error(
-                  'Failed to parse function call content even with jsonrepair:',
+                  `[parseFunctionCalls] Failed to parse content for match ${index} even with jsonrepair:`,
                   repairError,
-                  content
-                )
+                  'Original content:',
+                  content,
+                  'Repaired content attempt:',
+                  repairedJson ?? 'N/A'
+                ) // Log final failure
                 return null // Skip this malformed call
               }
             }
+            console.log(`[parseFunctionCalls] Parsed object for match ${index}:`, parsedCall) // Log parsed object
 
             // Extract name and arguments, handling various potential structures
             let functionName, functionArgs
@@ -735,7 +791,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
               functionArgs = parsedCall.function.arguments
             } else {
               // Attempt to find the function call structure if nested under a single key
-              // (e.g., Groq Llama3 tool use format)
               const keys = Object.keys(parsedCall)
               if (keys.length === 1) {
                 const potentialToolCall = parsedCall[keys[0]]
@@ -748,7 +803,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                     typeof potentialToolCall.function === 'object' &&
                     potentialToolCall.function.name
                   ) {
-                    // Handle nested function object like { "tool_name": { function: { name: "...", args: "..." } } }
                     functionName = potentialToolCall.function.name
                     functionArgs = potentialToolCall.function.arguments
                   }
@@ -757,28 +811,40 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
               // If still not found, log an error
               if (!functionName) {
-                console.error('Could not determine function name from parsed call:', parsedCall)
+                console.error(
+                  '[parseFunctionCalls] Could not determine function name from parsed call:',
+                  parsedCall
+                ) // Log name extraction failure
                 return null
               }
             }
+            console.log(
+              `[parseFunctionCalls] Extracted for match ${index}: Name='${functionName}', Args=`,
+              functionArgs
+            ) // Log extracted name/args
 
             // Ensure arguments are stringified if they are not already
             if (typeof functionArgs !== 'string') {
+              console.log(
+                `[parseFunctionCalls] Arguments for match ${index} are not a string, stringifying.`
+              ) // Log stringify attempt
               try {
                 functionArgs = JSON.stringify(functionArgs)
               } catch (stringifyError) {
                 console.error(
-                  'Failed to stringify function arguments:',
+                  '[parseFunctionCalls] Failed to stringify function arguments:',
                   stringifyError,
                   functionArgs
-                )
-                // Decide how to handle: return null, or use a placeholder? Using placeholder for now.
-                functionArgs = '{"error": "failed to stringify arguments"}' // Corrected unnecessary escapes
+                ) // Log stringify failure
+                functionArgs = '{"error": "failed to stringify arguments"}'
               }
             }
 
             // Generate a unique ID if not provided in the parsed content
             const id = parsedCall.id || functionName || `${fallbackIdPrefix}-${index}-${Date.now()}`
+            console.log(
+              `[parseFunctionCalls] Finalizing tool call for match ${index}: ID='${id}', Name='${functionName}', Args='${functionArgs}'`
+            ) // Log final object details
 
             return {
               id: String(id), // Ensure ID is string
@@ -790,7 +856,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
           } catch (processingError) {
             // Catch errors during the extraction/validation logic
-            console.error('Error processing parsed function call JSON:', processingError, content)
+            console.error(
+              '[parseFunctionCalls] Error processing parsed function call JSON:',
+              processingError,
+              'Content:',
+              content
+            ) // Log processing error
             return null // Skip this call on error
           }
         })
@@ -805,15 +876,20 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             typeof call.function.name === 'string' &&
             typeof call.function.arguments === 'string'
         )
-
+      console.log(`[parseFunctionCalls] Returning ${toolCalls.length} parsed tool calls.`) // Log final count
       return toolCalls
     } catch (error) {
-      console.error('Unexpected error during parseFunctionCalls execution:', error)
+      console.error(
+        '[parseFunctionCalls] Unexpected error during execution:',
+        error,
+        'Input:',
+        response
+      ) // Log unexpected error
       return [] // Return empty array on unexpected errors
     }
   }
 
-  // ... [cleanTag remains unchanged] ...
+  // ... [cleanTag remains unchanged, though not used by new coreStream] ...
   private cleanTag(text: string, tag: string): { cleanedPosition: number; found: boolean } {
     const tagIndex = text.indexOf(tag)
     if (tagIndex === -1) return { cleanedPosition: 0, found: false }
@@ -943,109 +1019,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       return [] // Return empty on error
     }
   }
-
-  private processFunctionCallTagInContent(
-    content: string,
-    isInFunctionCallTag: boolean,
-    functionCallBuffer: string
-  ): {
-    isInFunctionCallTag: boolean
-    functionCallBuffer: string
-    completeFunctionCall: string | null
-    pendingContent: string // 需要作为普通内容发出的缓存
-  } {
-    const result = {
-      isInFunctionCallTag,
-      functionCallBuffer,
-      completeFunctionCall: null as string | null,
-      pendingContent: '' // 非function_call标签的内容
-    }
-
-    // 检查结束标签，如果已经在标签内
-    if (isInFunctionCallTag) {
-      // 已经在标签内，继续累积内容
-      result.functionCallBuffer += content
-
-      // 检查结束标签 - 使用[\s\S]*?匹配多行内容
-      const tagEndIndex = result.functionCallBuffer.indexOf('</function_call>')
-
-      if (tagEndIndex !== -1) {
-        // 找到完整的function call
-        const fullContent = result.functionCallBuffer.substring(0, tagEndIndex)
-        result.completeFunctionCall = `<function_call>${fullContent}</function_call>`
-
-        // 保存标签后的内容作为普通内容
-        result.pendingContent = result.functionCallBuffer.substring(
-          tagEndIndex + '</function_call>'.length
-        )
-
-        // 重置状态
-        result.isInFunctionCallTag = false
-        result.functionCallBuffer = ''
-
-        return result
-      }
-
-      // 如果没有结束标签，继续等待更多内容
-      return result
-    }
-
-    // 不在标签内，检查是否有开始标签
-    const tagStartIndex = content.indexOf('<function_call>')
-
-    if (tagStartIndex !== -1) {
-      // 找到开始标签
-      // 将标签前的内容作为普通文本
-      result.pendingContent = content.substring(0, tagStartIndex)
-
-      // 提取标签开始后的内容
-      const afterTagStart = content.substring(tagStartIndex + '<function_call>'.length)
-
-      // 检查是否在同一块内容中就包含了结束标签
-      const tagEndIndex = afterTagStart.indexOf('</function_call>')
-
-      if (tagEndIndex !== -1) {
-        // 找到完整的function call
-        const callContent = afterTagStart.substring(0, tagEndIndex)
-        result.completeFunctionCall = `<function_call>${callContent}</function_call>`
-
-        // 添加标签后的内容到普通文本
-        result.pendingContent += afterTagStart.substring(tagEndIndex + '</function_call>'.length)
-
-        // 不需要更新标签状态，因为完整处理了
-        return result
-      } else {
-        // 只有开始标签，没有结束标签
-        result.isInFunctionCallTag = true
-        result.functionCallBuffer = afterTagStart
-        return result
-      }
-    }
-
-    // 检查是否包含不完整的开始标签（例如只包含"<func"）
-    const lessThanIndex = content.lastIndexOf('<')
-    if (lessThanIndex !== -1 && lessThanIndex <= content.length - 1) {
-      // 确保有字符跟在<后面
-      const afterLessThan = content.substring(lessThanIndex)
-      const tagPrefix = '<function_call>'
-      // console.log('afterLessThan', afterLessThan, tagPrefix)
-      // 检查是否是function_call标签的部分开始
-      if (tagPrefix.startsWith(afterLessThan)) {
-        // 将前面部分作为普通内容输出
-        result.pendingContent = content.substring(0, lessThanIndex)
-
-        // 将不完整标签保存到buffer等待下一个chunk
-        result.functionCallBuffer = afterLessThan
-        result.isInFunctionCallTag = true
-        return result
-      }
-    }
-
-    // 如果没有找到任何相关标签，整个内容作为普通文本
-    result.pendingContent = content
-    return result
-  }
-
   // 处理function call完成事件
   private handleCompletedFunctionCall(
     functionCallContent: string,
