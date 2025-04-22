@@ -68,7 +68,7 @@
       >
         <Icon icon="lucide:user" class="h-5 w-5" />
         <span
-          v-if="settings.hasUpdate"
+          v-if="upgrade.hasUpdate"
           class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"
         ></span>
         <span class="sr-only">User Profile</span>
@@ -80,10 +80,9 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
-import { useSettingsStore } from '@/stores/settings'
 import { onMounted, watch } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
-
+import { useUpgradeStore } from '@/stores/upgrade'
 defineProps<{
   modelValue: string
 }>()
@@ -92,15 +91,17 @@ const emits = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const settings = useSettingsStore()
+const upgrade = useUpgradeStore()
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
 
 const handleProfileClick = async () => {
-  if (!settings.hasUpdate) {
-    await settings.checkUpdate()
+  if (!upgrade.hasUpdate) {
+    await upgrade.checkUpdate()
   } else {
-    settings.openUpdateDialog()
+    if (upgrade.isReadyToInstall) {
+      upgrade.openUpdateDialog()
+    }
   }
 
   emits('update:modelValue', 'settings')
@@ -108,15 +109,15 @@ const handleProfileClick = async () => {
 
 // 监听更新状态变化，当有新更新时自动显示更新弹窗
 watch(
-  () => settings.hasUpdate,
+  () => upgrade.isReadyToInstall,
   (newVal, oldVal) => {
     if (newVal && !oldVal) {
-      settings.openUpdateDialog()
+      upgrade.openUpdateDialog()
     }
   }
 )
 
 onMounted(() => {
-  settings.checkUpdate()
+  upgrade.checkUpdate()
 })
 </script>

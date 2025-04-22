@@ -59,19 +59,22 @@
             size="sm"
             class="mb-2 text-xs text-muted-foreground"
             @click="handleCheckUpdate"
-            :disabled="settings.isChecking || settings.isDownloading || settings.isRestarting"
+            :disabled="upgrade.isChecking || upgrade.isDownloading || upgrade.isRestarting"
           >
             <Icon
               icon="lucide:refresh-cw"
               class="mr-1 h-3 w-3"
               :class="{
-                'animate-spin': settings.isChecking || settings.isDownloading
+                'animate-spin': upgrade.isChecking || upgrade.isDownloading
               }"
             />
-            <span v-if="settings.isDownloading && settings.updateProgress">
-              {{ t('update.downloading') }}: {{ Math.round(settings.updateProgress.percent) }}%
+            <span v-if="upgrade.isDownloading">
+              <template v-if="upgrade.updateProgress">
+                {{ t('update.downloading') }}: {{ Math.round(upgrade.updateProgress.percent) }}%
+              </template>
+              <template v-else> {{ t('update.downloading') }}</template>
             </span>
-            <span v-else-if="settings.isReadyToInstall">
+            <span v-else-if="upgrade.isReadyToInstall">
               {{ t('update.installNow') }}
             </span>
             <span v-else>
@@ -150,7 +153,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { renderMarkdown, getCommonMarkdown } from '@/lib/markdown.helper'
-import { useSettingsStore } from '@/stores/settings'
+import { useUpgradeStore } from '@/stores/upgrade'
 
 const { t } = useI18n()
 const devicePresenter = usePresenter('devicePresenter')
@@ -168,7 +171,7 @@ const deviceInfo = ref<{
   osVersion: ''
 })
 const appVersion = ref('')
-const settings = useSettingsStore()
+const upgrade = useUpgradeStore()
 
 // 免责声明对话框状态
 const isDisclaimerOpen = ref(false)
@@ -181,13 +184,13 @@ const openDisclaimerDialog = () => {
 // 检查更新
 const handleCheckUpdate = async () => {
   // 如果已下载完成，直接打开更新对话框
-  if (settings.isReadyToInstall) {
-    settings.openUpdateDialog()
+  if (upgrade.isReadyToInstall) {
+    upgrade.openUpdateDialog()
     return
   }
 
   // 正常检查更新流程
-  await settings.checkUpdate()
+  await upgrade.checkUpdate()
 
   // 不再自动打开对话框，而是由下载完成后自动弹出
 }

@@ -84,8 +84,8 @@ export class UpgradePresenter implements IUpgradePresenter {
     // 检查更新状态
     autoUpdater.on('checking-for-update', () => {
       console.log('正在检查更新')
-      this._status = 'checking'
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, { status: this._status })
+      // this._status = 'checking'
+      // eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, { status: this._status })
     })
 
     // 无可用更新
@@ -124,6 +124,10 @@ export class UpgradePresenter implements IUpgradePresenter {
         transferred: progressObj.transferred,
         total: progressObj.total
       }
+      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+        status: this._status,
+        info: this._versionInfo // 使用已保存的版本信息
+      })
       eventBus.emit(UPDATE_EVENTS.PROGRESS, this._progress)
     })
 
@@ -353,6 +357,11 @@ export class UpgradePresenter implements IUpgradePresenter {
       return false
     }
     try {
+      this._status = 'downloading'
+      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+        status: this._status,
+        info: this._versionInfo // 使用已保存的版本信息
+      })
       autoUpdater.downloadUpdate()
       return true
     } catch (error: Error | unknown) {
