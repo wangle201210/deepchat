@@ -4,12 +4,12 @@ import {
   MODEL_META,
   LLMCoreStreamEvent,
   ModelConfig,
-  MCPToolDefinition
+  MCPToolDefinition,
+  ChatMessage
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import Anthropic from '@anthropic-ai/sdk'
-import { ChatMessage } from '../baseProvider'
 import { presenter } from '@/presenter'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { proxyConfig } from '../../proxyConfig'

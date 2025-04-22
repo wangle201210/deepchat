@@ -4,9 +4,10 @@ import {
   MODEL_META,
   MCPToolDefinition,
   LLMCoreStreamEvent,
-  ModelConfig
+  ModelConfig,
+  ChatMessage
 } from '@shared/presenter'
-import { BaseLLMProvider, ChatMessage } from '../baseProvider'
+import { BaseLLMProvider } from '../baseProvider'
 import OpenAI from 'openai'
 import {
   ChatCompletionContentPartText,

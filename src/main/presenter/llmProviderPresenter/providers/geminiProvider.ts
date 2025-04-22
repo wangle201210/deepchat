@@ -4,9 +4,10 @@ import {
   LLMResponse,
   LLMCoreStreamEvent,
   ModelConfig,
-  MCPToolDefinition
+  MCPToolDefinition,
+  ChatMessage
 } from '@shared/presenter'
-import { BaseLLMProvider, ChatMessage } from '../baseProvider'
+import { BaseLLMProvider } from '../baseProvider'
 import {
   GoogleGenerativeAI,
   GenerativeModel,
