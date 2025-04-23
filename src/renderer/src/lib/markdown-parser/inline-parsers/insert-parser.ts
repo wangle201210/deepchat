@@ -1,5 +1,5 @@
 import { MarkdownToken, InsertNode, ParsedNode } from '../types'
-import { parseTextToken } from './text-parser'
+import { parseInlineTokens } from '../index'
 
 export function parseInsertToken(
   tokens: MarkdownToken[],
@@ -8,15 +8,17 @@ export function parseInsertToken(
   const children: ParsedNode[] = []
   let insText = ''
   let i = startIndex + 1
+  const innerTokens: MarkdownToken[] = []
 
   // Process tokens between ins_open and ins_close
   while (i < tokens.length && tokens[i].type !== 'ins_close') {
-    if (tokens[i].type === 'text') {
-      insText += tokens[i].content || ''
-      children.push(parseTextToken(tokens[i]))
-    }
+    insText += tokens[i].content || ''
+    innerTokens.push(tokens[i])
     i++
   }
+
+  // Parse inner tokens to handle nested elements
+  children.push(...parseInlineTokens(innerTokens))
 
   const node: InsertNode = {
     type: 'insert',

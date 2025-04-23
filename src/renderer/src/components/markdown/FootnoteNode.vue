@@ -1,7 +1,10 @@
 <template>
-  <div class="footnote" :id="`footnote-${node.id}`">
-    <span class="footnote-id">[{{ node.id }}]</span>
-    <div class="footnote-content">
+  <div
+    :id="`footnote-${node.id}`"
+    class="flex mt-2 mb-2 text-sm leading-relaxed border-t border-[#eaecef] pt-2"
+  >
+    <span class="font-semibold mr-2 text-[#0366d6]">[{{ node.id }}]</span>
+    <div class="flex-1">
       <NodeRenderer
         :nodes="node.children"
         :message-id="messageId"
@@ -33,24 +36,3 @@ defineProps<{
 // 定义事件
 defineEmits(['copy'])
 </script>
-
-<style scoped>
-.footnote {
-  display: flex;
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  border-top: 1px solid #eaecef;
-  padding-top: 0.5rem;
-}
-
-.footnote-id {
-  font-weight: 600;
-  margin-right: 0.5rem;
-  color: #0366d6;
-}
-
-.footnote-content {
-  flex: 1;
-}
-</style>

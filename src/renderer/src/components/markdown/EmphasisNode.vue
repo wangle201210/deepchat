@@ -22,6 +22,8 @@ import SubscriptNode from './SubscriptNode.vue'
 import SuperscriptNode from './SuperscriptNode.vue'
 import EmojiNode from './EmojiNode.vue'
 import FootnoteReferenceNode from './FootnoteReferenceNode.vue'
+import MathInlineNode from './MathInlineNode.vue'
+import ReferenceNode from './ReferenceNode.vue'
 
 interface NodeChild {
   type: string
@@ -50,7 +52,9 @@ const nodeComponents = {
   subscript: SubscriptNode,
   superscript: SuperscriptNode,
   emoji: EmojiNode,
-  footnote_reference: FootnoteReferenceNode
+  footnote_reference: FootnoteReferenceNode,
+  math_inline: MathInlineNode,
+  reference: ReferenceNode
 }
 </script>
 

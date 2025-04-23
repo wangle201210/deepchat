@@ -11,6 +11,7 @@ import { parseFootnote } from './node-parsers/footnote-parser'
 import { parseAdmonition } from './node-parsers/admonition-parser'
 import { parseHardBreak } from './node-parsers/hardbreak-parser'
 import { parseInlineTokens } from './inline-parsers'
+import { parseMathBlock } from './node-parsers/math-block-parser'
 import MarkdownIt from 'markdown-it'
 
 // Function to parse markdown into a structured representation
@@ -107,6 +108,11 @@ export function processTokens(tokens: MarkdownToken[]): ParsedNode[] {
       case 'hardbreak':
         result.push(parseHardBreak())
         i++
+        break
+
+      case 'math_block':
+        result.push(parseMathBlock(tokens[i]))
+        i += 1
         break
 
       default:

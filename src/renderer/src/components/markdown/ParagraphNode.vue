@@ -26,6 +26,8 @@ import SubscriptNode from './SubscriptNode.vue'
 import SuperscriptNode from './SuperscriptNode.vue'
 import EmojiNode from './EmojiNode.vue'
 import CheckboxNode from './CheckboxNode.vue'
+import MathInlineNode from './MathInlineNode.vue'
+import ReferenceNode from './ReferenceNode.vue'
 // Define the type for the node children
 interface NodeChild {
   type: string
@@ -57,7 +59,9 @@ const nodeComponents = {
   subscript: SubscriptNode,
   superscript: SuperscriptNode,
   emoji: EmojiNode,
-  checkbox: CheckboxNode
+  checkbox: CheckboxNode,
+  math_inline: MathInlineNode,
+  reference: ReferenceNode
   // 添加其他内联元素组件
 }
 </script>
