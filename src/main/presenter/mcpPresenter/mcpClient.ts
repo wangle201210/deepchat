@@ -52,6 +52,20 @@ export interface Tool {
   inputSchema: Record<string, unknown>
 }
 
+// 定义 Prompt 的接口
+export interface Prompt {
+  name: string
+  description?: string
+  inputSchema?: Record<string, unknown>
+  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
+}
+
+// 定义 ResourceListEntry 的接口 (用于 listResources)
+export interface ResourceListEntry {
+  uri: string
+  name?: string
+}
+
 // 定义资源的接口
 interface Resource {
   uri: string
@@ -492,8 +506,140 @@ export class McpClient {
       }
       throw new Error('无效的工具响应格式')
     } catch (error) {
-      console.error(`列出MCP工具失败:`, error)
+      // 尝试从错误对象中提取更多信息
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      // 如果错误表明不支持，则返回空数组
+      if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
+        console.warn(`服务器 ${this.serverName} 不支持 listTools`)
+        return []
+      } else {
+        console.error(`列出MCP工具失败:`, error)
+        throw error
+      }
+    }
+  }
+
+  // 列出可用提示
+  async listPrompts(): Promise<Prompt[]> {
+    if (!this.isConnected) {
+      await this.connect()
+    }
+
+    if (!this.client) {
+      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+    }
+
+    try {
+      // SDK可能没有 listPrompts 方法，需要使用通用的 request
+      const response = await this.client.listPrompts()
+
+      // 检查响应格式
+      if (response && typeof response === 'object' && 'prompts' in response) {
+        const promptsArray = (response as { prompts: unknown }).prompts
+        if (Array.isArray(promptsArray)) {
+          // 需要确保每个元素都符合 Prompt 接口
+          return promptsArray.map((p) => ({
+            name: typeof p === 'object' && p !== null && 'name' in p ? String(p.name) : 'unknown',
+            description:
+              typeof p === 'object' && p !== null && 'description' in p
+                ? String(p.description)
+                : undefined,
+            inputSchema:
+              typeof p === 'object' && p !== null && 'inputSchema' in p
+                ? (p.inputSchema as Record<string, unknown>)
+                : undefined
+          })) as Prompt[]
+        }
+      }
+      throw new Error('无效的提示响应格式')
+    } catch (error) {
+      // 尝试从错误对象中提取更多信息
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      // 如果错误表明不支持，则返回空数组
+      if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
+        console.warn(`服务器 ${this.serverName} 不支持 listPrompts`)
+        return []
+      } else {
+        console.error(`列出MCP提示失败:`, error)
+        throw error
+      }
+    }
+  }
+
+  // 获取指定提示
+  async getPrompt(name: string, args?: Record<string, unknown>): Promise<Prompt> {
+    if (!this.isConnected) {
+      await this.connect()
+    }
+
+    if (!this.client) {
+      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+    }
+
+    try {
+      // SDK可能没有 getPrompt 方法，需要使用通用的 request
+      const response = await this.client.getPrompt({
+        name,
+        arguments: (args as Record<string, string>) || {}
+      })
+
+      // 检查响应格式并转换为 Prompt 类型
+      if (
+        response &&
+        typeof response === 'object' &&
+        'messages' in response &&
+        Array.isArray(response.messages)
+      ) {
+        return {
+          name: name, // 从请求参数中获取 name
+          messages: response.messages as Array<{ role: string; content: { text: string } }>
+          // description 和 inputSchema 在 getPrompt 的响应中通常不返回
+        }
+      }
+      throw new Error('无效的获取提示响应格式')
+    } catch (error) {
+      console.error(`获取MCP提示 ${name} 失败:`, error)
       throw error
+    }
+  }
+
+  // 列出可用资源
+  async listResources(): Promise<ResourceListEntry[]> {
+    if (!this.isConnected) {
+      await this.connect()
+    }
+
+    if (!this.client) {
+      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+    }
+
+    try {
+      // SDK可能没有 listResources 方法，需要使用通用的 request
+      const response = await this.client.listResources()
+
+      // 检查响应格式
+      if (response && typeof response === 'object' && 'resources' in response) {
+        const resourcesArray = (response as { resources: unknown }).resources
+        if (Array.isArray(resourcesArray)) {
+          // 需要确保每个元素都符合 ResourceListEntry 接口
+          return resourcesArray.map((r) => ({
+            uri: typeof r === 'object' && r !== null && 'uri' in r ? String(r.uri) : 'unknown',
+            name: typeof r === 'object' && r !== null && 'name' in r ? String(r.name) : undefined
+          })) as ResourceListEntry[]
+        }
+      }
+      throw new Error('无效的资源列表响应格式')
+    } catch (error) {
+      // 尝试从错误对象中提取更多信息
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      // 如果错误表明不支持，则返回空数组
+      if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
+        console.warn(`服务器 ${this.serverName} 不支持 listResources`)
+        return []
+      } else {
+        console.error(`列出MCP资源失败:`, error)
+        throw error
+      }
     }
   }
 
@@ -509,7 +655,7 @@ export class McpClient {
 
     try {
       // 使用 unknown 作为中间类型进行转换
-      const rawResource = (await this.client.readResource({ uri: resourceUri })) as unknown
+      const rawResource = await this.client.readResource({ uri: resourceUri })
 
       // 手动构造 Resource 对象
       const resource: Resource = {

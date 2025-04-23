@@ -175,8 +175,6 @@ export class ServerManager {
 
       // 连接到服务器，这将启动服务
       await client.connect()
-
-      console.info(`MCP服务器 ${name} 启动成功`)
     } catch (error) {
       console.error(`启动MCP服务器 ${name} 失败:`, error)
 
