@@ -10,7 +10,7 @@ import { RagflowKnowledgeServer } from './ragflowKnowledgeServer'
 export function getInMemoryServer(
   serverName: string,
   args: string[],
-  env?: Record<string, string> | string
+  env?: Record<string, unknown>
 ) {
   switch (serverName) {
     case 'buildInFileSystem':
@@ -18,9 +18,9 @@ export function getInMemoryServer(
     case 'Artifacts':
       return new ArtifactsServer()
     case 'bochaSearch':
-      return new BochaSearchServer(typeof env === 'object' ? env : undefined)
+      return new BochaSearchServer(env)
     case 'braveSearch':
-      return new BraveSearchServer(typeof env === 'object' ? env : undefined)
+      return new BraveSearchServer(env)
     case 'imageServer':
       return new ImageServer(args[0], args[1])
     case 'powerpack':

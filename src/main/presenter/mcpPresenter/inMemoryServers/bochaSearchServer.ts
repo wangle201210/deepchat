@@ -100,11 +100,11 @@ export class BochaSearchServer {
   private server: Server
   private apiKey: string
 
-  constructor(env?: Record<string, string>) {
+  constructor(env?: Record<string, unknown>) {
     if (!env?.apiKey) {
       throw new Error('需要提供Bocha API Key')
     }
-    this.apiKey = env.apiKey
+    this.apiKey = env.apiKey as string
 
     // 创建服务器实例
     this.server = new Server(

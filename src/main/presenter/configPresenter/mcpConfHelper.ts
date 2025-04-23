@@ -70,7 +70,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     autoApprove: ['all'],
     type: 'inmemory' as MCPServerType,
     command: 'difyKnowledge',
-    env: '{"configs":[{"description":"this is a description for the current knowledge base","apiKey":"YOUR_DIFY_API_KEY","datasetId":"YOUR_DATASET_ID","endpoint":"http://dify.y.sanrun.fun/v1"}]}',
+    env: {
+      configs: [
+        {
+          description: 'this is a description for the current knowledge base',
+          apiKey: 'YOUR_DIFY_API_KEY',
+          datasetId: 'YOUR_DATASET_ID',
+          endpoint: 'http://dify.y.sanrun.fun/v1'
+        }
+      ]
+    },
     disable: false
   },
   imageServer: {
@@ -100,7 +109,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     autoApprove: ['all'],
     type: 'inmemory' as MCPServerType,
     command: 'ragflowKnowledge',
-    env: '{"configs":[{"description":"默认RAGFlow知识库","apiKey":"YOUR_RAGFLOW_API_KEY","datasetIds":["YOUR_DATASET_ID"],"endpoint":"http://localhost:8000"}]}',
+    env: {
+      configs: [
+        {
+          description: '默认RAGFlow知识库',
+          apiKey: 'YOUR_RAGFLOW_API_KEY',
+          datasetIds: ['YOUR_DATASET_ID'],
+          endpoint: 'http://localhost:8000'
+        }
+      ]
+    },
     disable: false
   }
 }

@@ -90,11 +90,11 @@ export class BraveSearchServer {
     lastReset: Date.now()
   }
 
-  constructor(env?: Record<string, string>) {
+  constructor(env?: Record<string, unknown>) {
     if (!env?.apiKey) {
       throw new Error('需要提供Brave API Key')
     }
-    this.apiKey = env.apiKey
+    this.apiKey = env.apiKey as string
 
     // 创建服务器实例
     this.server = new Server(
