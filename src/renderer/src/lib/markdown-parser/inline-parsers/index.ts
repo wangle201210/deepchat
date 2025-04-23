@@ -15,6 +15,8 @@ import { parseCheckboxToken } from './checkbox-parser'
 import { parseFootnoteRefToken } from './footnote-ref-parser'
 import { parseHardbreakToken } from './hardbreak-parser'
 import { parseFenceToken } from './fence-parser'
+import { parseMathInlineToken } from './math-inline-parser'
+import { parseReferenceToken } from './reference-parser'
 
 // Process inline tokens (for text inside paragraphs, headings, etc.)
 export function parseInlineTokens(tokens: MarkdownToken[]): ParsedNode[] {
@@ -84,13 +86,35 @@ export function parseInlineTokens(tokens: MarkdownToken[]): ParsedNode[] {
         break
       }
 
+      case 'sub_open': {
+        const { node, nextIndex } = parseSubscriptToken(tokens, i)
+        result.push(node)
+        i = nextIndex
+        break
+      }
+
+      case 'sup_open': {
+        const { node, nextIndex } = parseSuperscriptToken(tokens, i)
+        result.push(node)
+        i = nextIndex
+        break
+      }
+
       case 'sub':
-        result.push(parseSubscriptToken(token))
+        result.push({
+          type: 'subscript',
+          children: [{ type: 'text', content: token.content || '', raw: token.content || '' }],
+          raw: `~${token.content || ''}~`
+        })
         i++
         break
 
       case 'sup':
-        result.push(parseSuperscriptToken(token))
+        result.push({
+          type: 'superscript',
+          children: [{ type: 'text', content: token.content || '', raw: token.content || '' }],
+          raw: `^${token.content || ''}^`
+        })
         i++
         break
 
@@ -117,6 +141,18 @@ export function parseInlineTokens(tokens: MarkdownToken[]): ParsedNode[] {
       case 'fence': {
         // Handle fenced code blocks with language specifications
         result.push(parseFenceToken(tokens[i]))
+        i++
+        break
+      }
+
+      case 'math_inline': {
+        result.push(parseMathInlineToken(token))
+        i++
+        break
+      }
+
+      case 'reference': {
+        result.push(parseReferenceToken(token))
         i++
         break
       }

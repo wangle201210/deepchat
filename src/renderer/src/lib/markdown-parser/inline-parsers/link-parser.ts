@@ -1,5 +1,5 @@
-import { MarkdownToken, LinkNode, ParsedNode } from '../types'
-import { parseTextToken } from './text-parser'
+import { MarkdownToken, LinkNode } from '../types'
+import { parseInlineTokens } from '../index'
 
 export function parseLinkToken(
   tokens: MarkdownToken[],
@@ -9,18 +9,27 @@ export function parseLinkToken(
   const href = openToken.attrs?.find((attr) => attr[0] === 'href')?.[1] || ''
   const title = openToken.attrs?.find((attr) => attr[0] === 'title')?.[1] || null
 
-  const children: ParsedNode[] = []
-  let linkText = ''
   let i = startIndex + 1
+  const linkTokens: MarkdownToken[] = []
 
-  // Process tokens between link_open and link_close
+  // Collect all tokens between link_open and link_close
   while (i < tokens.length && tokens[i].type !== 'link_close') {
-    if (tokens[i].type === 'text') {
-      linkText += tokens[i].content || ''
-      children.push(parseTextToken(tokens[i]))
-    }
+    // Validate: ensure no block-level elements inside link
+    // if (isBlockLevelToken(tokens[i].type)) {
+    //   throw new Error(`Block-level element "${tokens[i].type}" is not allowed inside a link`)
+    // }
+    linkTokens.push(tokens[i])
     i++
   }
+
+  // Parse the collected tokens as inline content
+  const children = parseInlineTokens(linkTokens)
+  const linkText = children
+    .map((node) => {
+      if ('content' in node) return node.content
+      return node.raw
+    })
+    .join('')
 
   const node: LinkNode = {
     type: 'link',
@@ -36,3 +45,17 @@ export function parseLinkToken(
 
   return { node, nextIndex }
 }
+
+// Helper function to identify block-level tokens
+// function isBlockLevelToken(type: string): boolean {
+//   return [
+//     'paragraph_open',
+//     'heading_open',
+//     'blockquote_open',
+//     'list_open',
+//     'table_open',
+//     'code_block',
+//     'fence',
+//     'hr'
+//   ].includes(type)
+// }

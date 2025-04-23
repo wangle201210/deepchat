@@ -1,5 +1,5 @@
 import { MarkdownToken, StrikethroughNode, ParsedNode } from '../types'
-import { parseTextToken } from './text-parser'
+import { parseInlineTokens } from '../index'
 
 export function parseStrikethroughToken(
   tokens: MarkdownToken[],
@@ -8,15 +8,17 @@ export function parseStrikethroughToken(
   const children: ParsedNode[] = []
   let sText = ''
   let i = startIndex + 1
+  const innerTokens: MarkdownToken[] = []
 
   // Process tokens between s_open and s_close
   while (i < tokens.length && tokens[i].type !== 's_close') {
-    if (tokens[i].type === 'text') {
-      sText += tokens[i].content || ''
-      children.push(parseTextToken(tokens[i]))
-    }
+    sText += tokens[i].content || ''
+    innerTokens.push(tokens[i])
     i++
   }
+
+  // Parse inner tokens to handle nested elements
+  children.push(...parseInlineTokens(innerTokens))
 
   const node: StrikethroughNode = {
     type: 'strikethrough',

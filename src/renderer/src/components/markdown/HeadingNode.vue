@@ -26,7 +26,8 @@ import EmojiNode from './EmojiNode.vue'
 import CheckboxNode from './CheckboxNode.vue'
 import FootnoteReferenceNode from './FootnoteReferenceNode.vue'
 import HardBreakNode from './HardBreakNode.vue'
-import CodeBlockNode from './CodeBlockNode.vue'
+import MathInlineNode from './MathInlineNode.vue'
+import ReferenceNode from './ReferenceNode.vue'
 
 // Define the type for the node children
 interface NodeChild {
@@ -62,51 +63,38 @@ const nodeComponents = {
   checkbox: CheckboxNode,
   footnote_reference: FootnoteReferenceNode,
   hardbreak: HardBreakNode,
-  code_block: CodeBlockNode
+  math_inline: MathInlineNode,
+  reference: ReferenceNode
   // 添加其他内联元素组件
 }
 </script>
 
 <style scoped>
 .heading-node {
-  font-weight: 600;
-  line-height: 1.25;
+  @apply font-semibold leading-tight;
 }
 
 .heading-1 {
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
-  font-size: 2em;
+  @apply mt-6 mb-2 text-4xl;
 }
 
 .heading-2 {
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
-  font-size: 1.5em;
+  @apply mt-5 mb-2 text-2xl;
 }
 
 .heading-3 {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-  font-size: 1.25em;
+  @apply mt-4 mb-2 text-xl;
 }
 
 .heading-4 {
-  margin-top: 1em;
-  margin-bottom: 0.5em;
-  font-size: 1em;
+  @apply mt-4 mb-2 text-base;
 }
 
 .heading-5 {
-  margin-top: 0.875em;
-  margin-bottom: 0.5em;
-  font-size: 0.875em;
+  @apply mt-3.5 mb-2 text-sm;
 }
 
 .heading-6 {
-  margin-top: 0.85em;
-  margin-bottom: 0.5em;
-  font-size: 0.85em;
-  color: #6a737d;
+  @apply mt-3.5 mb-2 text-sm text-gray-600;
 }
 </style>

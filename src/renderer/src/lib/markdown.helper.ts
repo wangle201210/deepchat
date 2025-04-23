@@ -46,13 +46,12 @@ export const getMarkdown = () => {
 
   // Custom math inline rule
   const mathInline = (state: any, silent: boolean) => {
-    const delimiters: [string, string, boolean][] = [
-      ['\\(', '\\)', true],
-      ['\\[', '\\]', false],
-      ['$$', '$$', true]
+    const delimiters: [string, string][] = [
+      ['\\(', '\\)'],
+      ['$$', '$$']
     ]
 
-    for (const [open, close, isInline] of delimiters) {
+    for (const [open, close] of delimiters) {
       const start = state.pos
       if (state.src.slice(start, start + open.length) !== open) continue
 
@@ -60,9 +59,9 @@ export const getMarkdown = () => {
       if (end === -1) continue
 
       if (!silent) {
-        const token = state.push(isInline ? 'math_inline' : 'math_block', 'math', 0)
+        const token = state.push('math_inline', 'math', 0)
         token.content = state.src.slice(start + open.length, end)
-        token.markup = isInline ? '\\(\\)' : open === '$$' ? '$$' : '\\[\\]'
+        token.markup = open === '$$' ? '$$' : '\\(\\)'
       }
 
       state.pos = end + close.length
@@ -71,8 +70,77 @@ export const getMarkdown = () => {
     return false
   }
 
+  // Custom math block rule
+  const mathBlock = (state: any, startLine: number, endLine: number, silent: boolean) => {
+    const delimiters: [string, string][] = [
+      ['\\[', '\\]'],
+      ['$$', '$$']
+    ]
+
+    // Check for math block at the current position
+    const startPos = state.bMarks[startLine] + state.tShift[startLine]
+    const lineText = state.src.slice(startPos, state.eMarks[startLine])
+
+    let matched = false
+    let openDelim = '',
+      closeDelim = ''
+
+    for (const [open, close] of delimiters) {
+      if (lineText.startsWith(open)) {
+        matched = true
+        openDelim = open
+        closeDelim = close
+        break
+      }
+    }
+
+    if (!matched) return false
+
+    // Skip if in silent mode
+    if (silent) return true
+
+    // Find the closing delimiter
+    let nextLine = startLine
+    let content = ''
+    let found = false
+
+    for (nextLine = startLine + 1; nextLine < endLine; nextLine++) {
+      const lineStart = state.bMarks[nextLine] + state.tShift[nextLine]
+      const lineEnd = state.eMarks[nextLine]
+      const currentLine = state.src.slice(lineStart, lineEnd)
+
+      // Check if this line has the closing delimiter
+      if (currentLine.includes(closeDelim)) {
+        found = true
+        content += state.src.slice(
+          state.bMarks[nextLine] + state.tShift[nextLine],
+          state.src.indexOf(closeDelim, state.bMarks[nextLine])
+        )
+        break
+      }
+
+      content += currentLine + '\n'
+    }
+
+    if (!found) return false
+
+    // Create the token
+    const token = state.push('math_block', 'math', 0)
+    token.content = content.trim()
+    token.markup = openDelim === '$$' ? '$$' : '\\[\\]'
+    token.map = [startLine, nextLine + 1]
+    token.block = true
+
+    // Update parser position
+    state.line = nextLine + 1
+    return true
+  }
+
   // Register custom rules
   md.inline.ruler.before('escape', 'math', mathInline)
+  md.block.ruler.before('code', 'math_block', mathBlock, {
+    alt: ['paragraph', 'reference', 'blockquote']
+  })
 
   // Add rendering rules
   md.renderer.rules.math_inline = (tokens, idx) => tokens[idx].content
@@ -150,14 +218,14 @@ export const getMarkdown = () => {
   }
 
   // Add rendering rule for references
-  md.renderer.rules.reference = (tokens, idx) => {
-    const id = tokens[idx].content
-    return `<span class="reference-link"
-    data-reference-id="${id}"
-    role="button"
-    tabindex="0"
-    title="Click to view reference">${id}</span>`
-  }
+  // md.renderer.rules.reference = (tokens, idx) => {
+  //   const id = tokens[idx].content
+  //   return `<span class="reference-link"
+  //   data-reference-id="${id}"
+  //   role="button"
+  //   tabindex="0"
+  //   title="Click to view reference">${id}</span>`
+  // }
 
   // Register custom rule
   md.inline.ruler.before('escape', 'reference', referenceInline)

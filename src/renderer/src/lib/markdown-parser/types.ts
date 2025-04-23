@@ -164,6 +164,21 @@ export interface HardBreakNode extends BaseNode {
   type: 'hardbreak'
 }
 
+export interface MathInlineNode extends BaseNode {
+  type: 'math_inline'
+  content: string
+}
+
+export interface MathBlockNode extends BaseNode {
+  type: 'math_block'
+  content: string
+}
+
+export interface ReferenceNode extends BaseNode {
+  type: 'reference'
+  id: string
+}
+
 // Define markdown-it token type
 export interface MarkdownToken {
   type: string
@@ -206,3 +221,6 @@ export type ParsedNode =
   | FootnoteReferenceNode
   | AdmonitionNode
   | HardBreakNode
+  | MathInlineNode
+  | MathBlockNode
+  | ReferenceNode

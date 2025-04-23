@@ -1,18 +1,16 @@
 <template>
-  <component :is="node.ordered ? 'ol' : 'ul'" class="list-node">
-    <ListItemNode
-      v-for="(item, index) in node.items"
-      :key="index"
-      :item="item"
+  <li class="list-item">
+    <NodeRenderer
+      :nodes="item.children"
       :message-id="messageId"
       :thread-id="threadId"
       @copy="$emit('copy', $event)"
     />
-  </component>
+  </li>
 </template>
 
 <script setup lang="ts">
-import ListItemNode from './ListItemNode.vue'
+import NodeRenderer from './NodeRenderer.vue'
 
 // 节点子元素类型
 interface NodeChild {
@@ -29,12 +27,7 @@ interface ListItem {
 }
 
 defineProps<{
-  node: {
-    type: 'list'
-    ordered: boolean
-    items: ListItem[]
-    raw: string
-  }
+  item: ListItem
   messageId: string
   threadId?: string
 }>()

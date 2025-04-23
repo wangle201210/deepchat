@@ -1,5 +1,5 @@
 import { MarkdownToken, StrongNode, ParsedNode } from '../types'
-import { parseTextToken } from './text-parser'
+import { parseInlineTokens } from '../index'
 
 export function parseStrongToken(
   tokens: MarkdownToken[],
@@ -8,15 +8,17 @@ export function parseStrongToken(
   const children: ParsedNode[] = []
   let strongText = ''
   let i = startIndex + 1
+  const innerTokens: MarkdownToken[] = []
 
   // Process tokens between strong_open and strong_close
   while (i < tokens.length && tokens[i].type !== 'strong_close') {
-    if (tokens[i].type === 'text') {
-      strongText += tokens[i].content || ''
-      children.push(parseTextToken(tokens[i]))
-    }
+    strongText += tokens[i].content || ''
+    innerTokens.push(tokens[i])
     i++
   }
+
+  // Parse inner tokens to handle nested elements
+  children.push(...parseInlineTokens(innerTokens))
 
   const node: StrongNode = {
     type: 'strong',

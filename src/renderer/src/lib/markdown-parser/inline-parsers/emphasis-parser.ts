@@ -1,5 +1,5 @@
 import { MarkdownToken, EmphasisNode, ParsedNode } from '../types'
-import { parseTextToken } from './text-parser'
+import { parseInlineTokens } from '../index'
 
 export function parseEmphasisToken(
   tokens: MarkdownToken[],
@@ -8,15 +8,17 @@ export function parseEmphasisToken(
   const children: ParsedNode[] = []
   let emText = ''
   let i = startIndex + 1
+  const innerTokens: MarkdownToken[] = []
 
   // Process tokens between em_open and em_close
   while (i < tokens.length && tokens[i].type !== 'em_close') {
-    if (tokens[i].type === 'text') {
-      emText += tokens[i].content || ''
-      children.push(parseTextToken(tokens[i]))
-    }
+    emText += tokens[i].content || ''
+    innerTokens.push(tokens[i])
     i++
   }
+
+  // Parse inner tokens to handle nested elements
+  children.push(...parseInlineTokens(innerTokens))
 
   const node: EmphasisNode = {
     type: 'emphasis',

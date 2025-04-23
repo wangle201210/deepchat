@@ -1,5 +1,5 @@
 import { MarkdownToken, HighlightNode, ParsedNode } from '../types'
-import { parseTextToken } from './text-parser'
+import { parseInlineTokens } from '../index'
 
 export function parseHighlightToken(
   tokens: MarkdownToken[],
@@ -8,15 +8,17 @@ export function parseHighlightToken(
   const children: ParsedNode[] = []
   let markText = ''
   let i = startIndex + 1
+  const innerTokens: MarkdownToken[] = []
 
   // Process tokens between mark_open and mark_close
   while (i < tokens.length && tokens[i].type !== 'mark_close') {
-    if (tokens[i].type === 'text') {
-      markText += tokens[i].content || ''
-      children.push(parseTextToken(tokens[i]))
-    }
+    markText += tokens[i].content || ''
+    innerTokens.push(tokens[i])
     i++
   }
+
+  // Parse inner tokens to handle nested elements
+  children.push(...parseInlineTokens(innerTokens))
 
   const node: HighlightNode = {
     type: 'highlight',

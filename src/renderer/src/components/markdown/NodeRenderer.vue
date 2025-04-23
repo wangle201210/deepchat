@@ -26,6 +26,11 @@ import AdmonitionNode from './AdmonitionNode.vue'
 import HardBreakNode from './HardBreakNode.vue'
 import LinkNode from './LinkNode.vue'
 import ImageNode from './ImageNode.vue'
+import ThematicBreakNode from './ThematicBreakNode.vue'
+import MathInlineNode from './MathInlineNode.vue'
+import MathBlockNode from './MathBlockNode.vue'
+import ReferenceNode from './ReferenceNode.vue'
+
 // 组件接收的 props
 defineProps<{
   nodes: BaseNode[]
@@ -51,7 +56,11 @@ const nodeComponents = {
   admonition: AdmonitionNode,
   hardbreak: HardBreakNode,
   link: LinkNode,
-  image: ImageNode
+  image: ImageNode,
+  thematic_break: ThematicBreakNode,
+  math_inline: MathInlineNode,
+  math_block: MathBlockNode,
+  reference: ReferenceNode
   // 可以添加更多节点类型
 }
 

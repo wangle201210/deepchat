@@ -17,7 +17,13 @@ import LinkNode from './LinkNode.vue'
 import StrongNode from './StrongNode.vue'
 import EmphasisNode from './EmphasisNode.vue'
 import FootnoteReferenceNode from './FootnoteReferenceNode.vue'
-
+import StrikethroughNode from './StrikethroughNode.vue'
+import HighlightNode from './HighlightNode.vue'
+import InsertNode from './InsertNode.vue'
+import SuperscriptNode from './SuperscriptNode.vue'
+import EmojiNode from './EmojiNode.vue'
+import MathInlineNode from './MathInlineNode.vue'
+import ReferenceNode from './ReferenceNode.vue'
 interface NodeChild {
   type: string
   raw: string
@@ -40,7 +46,14 @@ const nodeComponents = {
   link: LinkNode,
   strong: StrongNode,
   emphasis: EmphasisNode,
-  footnote_reference: FootnoteReferenceNode
+  footnote_reference: FootnoteReferenceNode,
+  strikethrough: StrikethroughNode,
+  highlight: HighlightNode,
+  insert: InsertNode,
+  superscript: SuperscriptNode,
+  emoji: EmojiNode,
+  math_inline: MathInlineNode,
+  reference: ReferenceNode
 }
 </script>
 
