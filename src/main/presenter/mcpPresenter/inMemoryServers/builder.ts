@@ -34,7 +34,7 @@ export function getInMemoryServer(
     case 'ragflowKnowledge':
       return new RagflowKnowledgeServer(
         env as {
-          configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+          configs: { apiKey: string; endpoint: string; datasetIds: string[]; description: string }[]
         }
       )
     default:

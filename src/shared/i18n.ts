@@ -116,7 +116,18 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorTitle: '获取工具定义失败',
     getMcpToolListErrorMessage: "无法从服务器 '{serverName}' 获取工具列表: {errorMessage}",
     genericErrorTitle: '错误',
-    genericErrorMessage: '发生了一个错误'
+    genericErrorMessage: '发生了一个错误',
+    needRagflowConfig: '需要提供RAGFlow知识库配置',
+    needDifyConfig: '需要提供Dify知识库配置',
+    needAtLeastOneRagflowConfig: '需要提供至少一个RAGFlow知识库配置',
+    needAtLeastOneDifyConfig: '需要提供至少一个Dify知识库配置',
+    needRagflowApiKey: '需要提供RAGFlow API Key',
+    needDifyApiKey: '需要提供Dify API Key',
+    needRagflowDatasetIds: '需要提供至少一个RAGFlow Dataset ID',
+    needDifyDatasetId: '需要提供Dify Dataset ID',
+    needRagflowEndpoint: '需要提供RAGFlow Endpoint',
+    needDifyEndpoint: '需要提供Dify Endpoint',
+    needKnowledgeBaseDescription: '需要提供对这个知识库的描述，以方便ai决定是否检索此知识库'
   },
   'zh-TW': {
     mcpConnectionErrorTitle: 'MCP 連接錯誤',
@@ -126,7 +137,18 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorTitle: '獲取工具定義失敗',
     getMcpToolListErrorMessage: "無法從服務器 '{serverName}' 獲取工具列表: {errorMessage}",
     genericErrorTitle: '錯誤',
-    genericErrorMessage: '發生了一個錯誤'
+    genericErrorMessage: '發生了一個錯誤',
+    needRagflowConfig: '需要提供RAGFlow知識庫配置',
+    needDifyConfig: '需要提供Dify知識庫配置',
+    needAtLeastOneRagflowConfig: '需要提供至少一個RAGFlow知識庫配置',
+    needAtLeastOneDifyConfig: '需要提供至少一個Dify知識庫配置',
+    needRagflowApiKey: '需要提供RAGFlow API Key',
+    needDifyApiKey: '需要提供Dify API Key',
+    needRagflowDatasetIds: '需要提供至少一個RAGFlow Dataset ID',
+    needDifyDatasetId: '需要提供Dify Dataset ID',
+    needRagflowEndpoint: '需要提供RAGFlow Endpoint',
+    needDifyEndpoint: '需要提供Dify Endpoint',
+    needKnowledgeBaseDescription: '需要提供對這個知識庫的描述，以方便ai決定是否檢索此知識庫'
   },
   'en-US': {
     mcpConnectionErrorTitle: 'MCP Connection Error',
@@ -138,7 +160,20 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorMessage:
       "Unable to retrieve tool list from server '{serverName}': {errorMessage}",
     genericErrorTitle: 'Error',
-    genericErrorMessage: 'An error occurred'
+    genericErrorMessage: 'An error occurred',
+    needRagflowConfig: 'Need to provide RAGFlow knowledge base configuration',
+    needDifyConfig: 'Need to provide Dify knowledge base configuration',
+    needAtLeastOneRagflowConfig:
+      'Need to provide at least one RAGFlow knowledge base configuration',
+    needAtLeastOneDifyConfig: 'Need to provide at least one Dify knowledge base configuration',
+    needRagflowApiKey: 'Need to provide RAGFlow API Key',
+    needDifyApiKey: 'Need to provide Dify API Key',
+    needRagflowDatasetIds: 'Need to provide at least one RAGFlow Dataset ID',
+    needDifyDatasetId: 'Need to provide Dify Dataset ID',
+    needRagflowEndpoint: 'Need to provide RAGFlow Endpoint',
+    needDifyEndpoint: 'Need to provide Dify Endpoint',
+    needKnowledgeBaseDescription:
+      'Need to provide a description for this knowledge base to help AI decide whether to retrieve this knowledge base'
   },
   ja: {
     mcpConnectionErrorTitle: 'MCP 接続エラー',
@@ -150,7 +185,19 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorMessage:
       "サーバー '{serverName}' からツールリストを取得できません: {errorMessage}",
     genericErrorTitle: 'エラー',
-    genericErrorMessage: 'エラーが発生しました'
+    genericErrorMessage: 'エラーが発生しました',
+    needRagflowConfig: 'RAGFlowの知識ベースの設定を提供する必要があります',
+    needDifyConfig: 'Difyの知識ベースの設定を提供する必要があります',
+    needAtLeastOneRagflowConfig: '少なくとも1つのRAGFlowの知識ベースの設定を提供する必要があります',
+    needAtLeastOneDifyConfig: '少なくとも1つのDifyの知識ベースの設定を提供する必要があります',
+    needRagflowApiKey: 'RAGFlowのAPIキーを提供する必要があります',
+    needDifyApiKey: 'DifyのAPIキーを提供する必要があります',
+    needRagflowDatasetIds: '少なくとも1つのRAGFlowのデータセットIDを提供する必要があります',
+    needDifyDatasetId: 'DifyのデータセットIDを提供する必要があります',
+    needRagflowEndpoint: 'RAGFlowのエンドポイントを提供する必要があります',
+    needDifyEndpoint: 'Difyのエンドポイントを提供する必要があります',
+    needKnowledgeBaseDescription:
+      'この知識ベースの説明を提供する必要があります。AIがこの知識ベースを取得するかどうかを判断するのに役立ちます'
   },
   ko: {
     mcpConnectionErrorTitle: 'MCP 연결 오류',
@@ -162,7 +209,19 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorMessage:
       "서버 '{serverName}'에서 도구 목록을 검색할 수 없습니다: {errorMessage}",
     genericErrorTitle: '오류',
-    genericErrorMessage: '오류가 발생했습니다'
+    genericErrorMessage: '오류가 발생했습니다',
+    needRagflowConfig: 'RAGFlow 지식 베이스 구성을 제공해야 합니다',
+    needDifyConfig: 'Dify 지식 베이스 구성을 제공해야 합니다',
+    needAtLeastOneRagflowConfig: '최소 하나의 RAGFlow 지식 베이스 구성을 제공해야 합니다',
+    needAtLeastOneDifyConfig: '최소 하나의 Dify 지식 베이스 구성을 제공해야 합니다',
+    needRagflowApiKey: 'RAGFlow API 키를 제공해야 합니다',
+    needDifyApiKey: 'Dify API 키를 제공해야 합니다',
+    needRagflowDatasetIds: '최소 하나의 RAGFlow 데이터셋 ID를 제공해야 합니다',
+    needDifyDatasetId: 'Dify 데이터셋 ID를 제공해야 합니다',
+    needRagflowEndpoint: 'RAGFlow 엔드포인트를 제공해야 합니다',
+    needDifyEndpoint: 'Dify 엔드포인트를 제공해야 합니다',
+    needKnowledgeBaseDescription:
+      'AI가 이 지식 베이스를 검색할지 여부를 결정하는 데 도움이 되는 설명을 제공해야 합니다'
   },
   fr: {
     mcpConnectionErrorTitle: 'Erreur de connexion MCP',
@@ -174,7 +233,21 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorMessage:
       "Impossible de récupérer la liste d'outils du serveur '{serverName}': {errorMessage}",
     genericErrorTitle: 'Erreur',
-    genericErrorMessage: "Une erreur s'est produite"
+    genericErrorMessage: "Une erreur s'est produite",
+    needRagflowConfig: 'Vous devez fournir la configuration de la base de connaissances RAGFlow',
+    needDifyConfig: 'Vous devez fournir la configuration de la base de connaissances Dify',
+    needAtLeastOneRagflowConfig:
+      'Vous devez fournir au moins une configuration de base de connaissances RAGFlow',
+    needAtLeastOneDifyConfig:
+      'Vous devez fournir au moins une configuration de base de connaissances Dify',
+    needRagflowApiKey: 'Vous devez fournir la clé API RAGFlow',
+    needDifyApiKey: 'Vous devez fournir la clé API Dify',
+    needRagflowDatasetIds: 'Vous devez fournir au moins un identifiant de jeu de données RAGFlow',
+    needDifyDatasetId: "Vous devez fournir l'identifiant de jeu de données Dify",
+    needRagflowEndpoint: 'Vous devez fournir le point de terminaison RAGFlow',
+    needDifyEndpoint: 'Vous devez fournir le point de terminaison Dify',
+    needKnowledgeBaseDescription:
+      "Vous devez fournir une description de cette base de connaissances pour aider l'IA à décider si elle doit récupérer cette base de connaissances"
   },
   de: {
     mcpConnectionErrorTitle: 'MCP-Verbindungsfehler',
@@ -186,7 +259,20 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorMessage:
       "Die Toolliste konnte nicht vom Server '{serverName}' abgerufen werden: {errorMessage}",
     genericErrorTitle: 'Fehler',
-    genericErrorMessage: 'Ein Fehler ist aufgetreten'
+    genericErrorMessage: 'Ein Fehler ist aufgetreten',
+    needRagflowConfig: 'RAGFlow-Konfigurationsdaten müssen bereitgestellt werden',
+    needDifyConfig: 'Dify-Konfigurationsdaten müssen bereitgestellt werden',
+    needAtLeastOneRagflowConfig:
+      'Es muss mindestens eine RAGFlow-Konfiguration bereitgestellt werden',
+    needAtLeastOneDifyConfig: 'Es muss mindestens eine Dify-Konfiguration bereitgestellt werden',
+    needRagflowApiKey: 'Es muss ein RAGFlow-API-Schlüssel bereitgestellt werden',
+    needDifyApiKey: 'Es muss ein Dify-API-Schlüssel bereitgestellt werden',
+    needRagflowDatasetIds: 'Es muss mindestens eine RAGFlow-Dataset-ID bereitgestellt werden',
+    needDifyDatasetId: 'Es muss eine Dify-Dataset-ID bereitgestellt werden',
+    needRagflowEndpoint: 'Es muss ein RAGFlow-Endpunkt bereitgestellt werden',
+    needDifyEndpoint: 'Es muss ein Dify-Endpunkt bereitgestellt werden',
+    needKnowledgeBaseDescription:
+      'Es muss eine Beschreibung dieser Wissensdatenbank bereitgestellt werden, um der KI zu helfen, zu entscheiden, ob sie diese Wissensdatenbank abrufen soll'
   },
   es: {
     mcpConnectionErrorTitle: 'Error de conexión MCP',
@@ -198,7 +284,20 @@ export const errorMessageTranslations: Record<string, TranslationMap> = {
     getMcpToolListErrorMessage:
       "No se puede recuperar la lista de herramientas del servidor '{serverName}': {errorMessage}",
     genericErrorTitle: 'Error',
-    genericErrorMessage: 'Se ha producido un error'
+    genericErrorMessage: 'Se ha producido un error',
+    needRagflowConfig: 'Se deben proporcionar los datos de configuración de RAGFlow',
+    needDifyConfig: 'Se deben proporcionar los datos de configuración de Dify',
+    needAtLeastOneRagflowConfig: 'Se debe proporcionar al menos una configuración de RAGFlow',
+    needAtLeastOneDifyConfig: 'Se debe proporcionar al menos una configuración de Dify',
+    needRagflowApiKey: 'Se debe proporcionar la clave API de RAGFlow',
+    needDifyApiKey: 'Se debe proporcionar la clave API de Dify',
+    needRagflowDatasetIds:
+      'Se debe proporcionar al menos un identificador de conjunto de datos de RAGFlow',
+    needDifyDatasetId: 'Se debe proporcionar el identificador de conjunto de datos de Dify',
+    needRagflowEndpoint: 'Se debe proporcionar el punto de acceso de RAGFlow',
+    needDifyEndpoint: 'Se debe proporcionar el punto de acceso de Dify',
+    needKnowledgeBaseDescription:
+      'Se debe proporcionar una descripción de esta base de conocimientos para ayudar a la IA a decidir si debe recuperar esta base de conocimientos'
   }
 }
 

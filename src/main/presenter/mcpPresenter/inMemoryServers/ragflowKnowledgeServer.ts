@@ -62,7 +62,7 @@ export class RagflowKnowledgeServer {
   }> = []
 
   constructor(env?: {
-    configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+    configs: { apiKey: string; endpoint: string; datasetIds: string[]; description: string }[]
   }) {
     if (!env) {
       throw new Error('需要提供RAGFlow知识库配置')
