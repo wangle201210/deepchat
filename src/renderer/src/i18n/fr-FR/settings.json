@@ -198,7 +198,11 @@
     "addRagflowConfig": "Ajouter une configuration RAGFlow",
     "editRagflowConfig": "Modifier la configuration RAGFlow",
     "dify": "Base de connaissances Dify",
-    "editDifyConfig": "Modifier la configuration dify"
+    "editDifyConfig": "Modifier la configuration dify",
+    "fastgptTitle": "Base de connaissances FastGPT",
+    "fastgptDescription": "FastGPT est un puissant système de gestion des connaissances prenant en charge plusieurs méthodes de recherche et des fonctionnalités de gestion de documents.",
+    "addFastGptConfig": "Ajouter la configuration FastGPT",
+    "editFastGptConfig": "Éditer la configuration FastGPT"
   },
   "mcp": {
     "title": "Paramètres MCP",
