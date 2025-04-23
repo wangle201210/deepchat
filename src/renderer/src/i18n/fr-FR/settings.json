@@ -196,7 +196,9 @@
     "ragflowTitle": "Base de connaissances RAGFlow",
     "ragflowDescription": "RAGFlow est un système puissant de gestion de base de connaissances qui prend en charge plusieurs méthodes de recherche et fonctionnalités de gestion de documents.",
     "addRagflowConfig": "Ajouter une configuration RAGFlow",
-    "editRagflowConfig": "Modifier la configuration RAGFlow"
+    "editRagflowConfig": "Modifier la configuration RAGFlow",
+    "dify": "Base de connaissances Dify",
+    "editDifyConfig": "Modifier la configuration dify"
   },
   "mcp": {
     "title": "Paramètres MCP",

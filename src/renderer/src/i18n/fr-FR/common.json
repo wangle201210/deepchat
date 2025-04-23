@@ -58,5 +58,6 @@
   "title": "Paramètres généraux",
   "languageSystem": "Suivez le système",
   "watermarkTip": "Généré par AI",
-  "knowledgeBase": "Base de connaissances"
+  "collapse": "Fermer",
+  "expand": "Développer"
 }

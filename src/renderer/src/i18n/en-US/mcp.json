@@ -147,7 +147,9 @@
       "desc": "Provide enhanced capabilities such as time query, web information acquisition and secure code execution for any large model, so that the model has more powerful and accurate information acquisition capabilities.",
       "name": "Enhancement Toolkit"
     },
-    "name": "Dify Knowledge Base Search",
-    "desc": "Dify Knowledge Base Search Service, which can search the content in the Dify Knowledge Base"
+    "difyKnowledge": {
+      "desc": "Dify Knowledge Base Search Service, which can retrieve content in Dify Knowledge Base",
+      "name": "Dify Knowledge Base Search"
+    }
   }
 }

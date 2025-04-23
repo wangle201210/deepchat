@@ -196,7 +196,9 @@
     "ragflowTitle": "База знаний RAGFlow",
     "ragflowDescription": "RAGFlow - это мощная система управления базами знаний, поддерживающая множество методов поиска и функций управления документами.",
     "addRagflowConfig": "Добавить конфигурацию RAGFlow",
-    "editRagflowConfig": "Редактировать конфигурацию RAGFlow"
+    "editRagflowConfig": "Редактировать конфигурацию RAGFlow",
+    "dify": "База знаний DIFY",
+    "editDifyConfig": "Изменить конфигурацию DIFY"
   },
   "mcp": {
     "title": "Настройки MCP",

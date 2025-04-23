@@ -24,6 +24,20 @@ export interface McpClient {
   icon: string
   isRunning: boolean
   tools: MCPToolDefinition[]
+  prompts?: Prompt[]
+  resources?: ResourceListEntry[]
+}
+
+export interface Prompt {
+  name: string
+  description?: string
+  inputSchema?: Record<string, unknown>
+  messages?: Array<{ role: string; content: { text: string } }>
+}
+
+export interface ResourceListEntry {
+  uri: string
+  name?: string
 }
 
 export interface ModelConfig {

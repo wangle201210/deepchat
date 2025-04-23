@@ -194,12 +194,40 @@ export class McpPresenter implements IMCPPresenter {
           }
         })
       }
-      clientsList.push({
+
+      // 创建客户端基本信息对象
+      const clientObj: McpClient = {
         name: client.serverName,
         icon: client.serverConfig['icons'] as string,
         isRunning: client.isServerRunning(),
         tools: results
-      })
+      }
+
+      // 检查并添加 prompts（如果支持）
+      if (typeof client.listPrompts === 'function') {
+        try {
+          const prompts = await client.listPrompts()
+          if (prompts && prompts.length > 0) {
+            clientObj.prompts = prompts
+          }
+        } catch (error) {
+          console.error(`[MCP] 获取客户端 ${client.serverName} 的提示模板失败:`, error)
+        }
+      }
+
+      // 检查并添加 resources（如果支持）
+      if (typeof client.listResources === 'function') {
+        try {
+          const resources = await client.listResources()
+          if (resources && resources.length > 0) {
+            clientObj.resources = resources
+          }
+        } catch (error) {
+          console.error(`[MCP] 获取客户端 ${client.serverName} 的资源失败:`, error)
+        }
+      }
+
+      clientsList.push(clientObj)
     }
     return clientsList
   }

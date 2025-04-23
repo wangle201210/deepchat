@@ -196,7 +196,9 @@
     "ragflowTitle": "RAGFlowナレッジベース",
     "ragflowDescription": "RAGFlowは、複数の検索方法とドキュメント管理機能をサポートする強力なナレッジベース管理システムです。",
     "addRagflowConfig": "RAGFlow設定を追加",
-    "editRagflowConfig": "RAGFlow設定を編集"
+    "editRagflowConfig": "RAGFlow設定を編集",
+    "dify": "dify知識ベース",
+    "editDifyConfig": "Dify構成を変更します"
   },
   "mcp": {
     "title": "MCP設定",

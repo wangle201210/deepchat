@@ -196,7 +196,9 @@
     "ragflowTitle": "RAGFlow 知識庫",
     "ragflowDescription": "RAGFlow 是一個強大的知識庫管理系統，支援多種檢索方式和文件管理功能。",
     "addRagflowConfig": "新增 RAGFlow 設定",
-    "editRagflowConfig": "編輯 RAGFlow 設定"
+    "editRagflowConfig": "編輯 RAGFlow 設定",
+    "dify": "Dify知識庫",
+    "editDifyConfig": "修改Dify配置"
   },
   "mcp": {
     "title": "MCP設置",
