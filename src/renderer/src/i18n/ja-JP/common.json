@@ -57,5 +57,7 @@
   "selectModel": "モデルを選択します",
   "title": "一般的な設定",
   "languageSystem": "システムに従ってください",
-  "watermarkTip": "AIで生成されました"
+  "watermarkTip": "AIで生成されました",
+  "collapse": "折りたたむ",
+  "expand": "展開する"
 }

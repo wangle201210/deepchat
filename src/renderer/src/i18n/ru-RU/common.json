@@ -57,5 +57,7 @@
   "selectModel": "Выберите модель",
   "title": "Общие настройки",
   "languageSystem": "Следуйте системе",
-  "watermarkTip": "Сгенерировано AI"
+  "watermarkTip": "Сгенерировано AI",
+  "collapse": "Свернуть",
+  "expand": "Развернуть"
 }

@@ -601,7 +601,7 @@ export interface ProgressResponse {
 export interface MCPServerConfig {
   command: string
   args: string[]
-  env: Record<string, string>
+  env: Record<string, string> | string
   descriptions: string
   icons: string
   autoApprove: string[]

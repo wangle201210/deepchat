@@ -63,6 +63,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     },
     disable: false
   },
+  difyKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置Dify知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'difyKnowledge',
+    env: '{"configs":[{"description":"this is a description for the current knowledge base","apiKey":"YOUR_DIFY_API_KEY","datasetId":"YOUR_DATASET_ID","endpoint":"http://dify.y.sanrun.fun/v1"}]}',
+    disable: false
+  },
   imageServer: {
     args: [],
     descriptions: 'Image processing MCP service',
@@ -81,6 +91,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     type: 'inmemory' as MCPServerType,
     command: 'powerpack',
     env: {},
+    disable: false
+  },
+  ragflowKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置RAGFlow知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'ragflowKnowledge',
+    env: '{"configs":[{"description":"默认RAGFlow知识库","apiKey":"YOUR_RAGFLOW_API_KEY","datasetIds":["YOUR_DATASET_ID"],"endpoint":"http://localhost:8000"}]}',
     disable: false
   }
 }
