@@ -26,7 +26,9 @@
         <RagflowKnowledgeSettings ref="ragflowSettingsRef" />
         <!-- Dify知识库 -->
         <DifyKnowledgeSettings ref="difySettingsRef" />
-        <!-- 未来可以添加更多知识库类型，如RAGFlow、FastGPT等 -->
+        <!-- FastGPT知识库 -->
+        <FastGptKnowledgeSettings ref="fastGptSettingsRef" />
+        <!-- 未来可以添加更多知识库类型 -->
         <div
           class="border rounded-lg p-4 border-dashed flex items-center justify-center text-muted-foreground"
         >
@@ -68,6 +70,18 @@
                 </p>
               </div>
             </div>
+            <div
+              class="flex items-center p-3 border rounded-md cursor-pointer hover:bg-accent"
+              @click="selectKnowledgeBaseType('fastgpt')"
+            >
+              <img src="@/assets/images/fastgpt.png" class="h-5 mr-3" />
+              <div class="flex-1">
+                <h3 class="text-sm font-medium">FastGPT</h3>
+                <p class="text-xs text-muted-foreground">
+                  {{ t('settings.knowledgeBase.fastgptDescription') }}
+                </p>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" @click="closeAddKnowledgeBaseDialog">{{
@@ -96,9 +110,11 @@ import {
 } from '@/components/ui/dialog'
 import RagflowKnowledgeSettings from './RagflowKnowledgeSettings.vue'
 import DifyKnowledgeSettings from './DifyKnowledgeSettings.vue'
+import FastGptKnowledgeSettings from './FastGptKnowledgeSettings.vue'
 
 const difySettingsRef = ref<InstanceType<typeof DifyKnowledgeSettings> | null>(null)
 const ragflowSettingsRef = ref<InstanceType<typeof RagflowKnowledgeSettings> | null>(null)
+const fastGptSettingsRef = ref<InstanceType<typeof FastGptKnowledgeSettings> | null>(null)
 
 const { t } = useI18n()
 
@@ -126,6 +142,11 @@ const selectKnowledgeBaseType = (type: string) => {
   if (type === 'ragflow') {
     if (ragflowSettingsRef.value) {
       ragflowSettingsRef.value.openAddConfig()
+    }
+  }
+  if (type === 'fastgpt') {
+    if (fastGptSettingsRef.value) {
+      fastGptSettingsRef.value.openAddConfig()
     }
   }
 }

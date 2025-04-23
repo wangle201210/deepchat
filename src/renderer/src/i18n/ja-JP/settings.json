@@ -198,7 +198,11 @@
     "addRagflowConfig": "RAGFlow設定を追加",
     "editRagflowConfig": "RAGFlow設定を編集",
     "dify": "dify知識ベース",
-    "editDifyConfig": "Dify構成を変更します"
+    "editDifyConfig": "Dify構成を変更します",
+    "fastgptTitle": "FastGPT知識ベース",
+    "fastgptDescription": "FastGPTは、複数の検索方法とドキュメント管理機能をサポートする強力な知識ベース管理システムです。",
+    "addFastGptConfig": "FastGPT設定を追加",
+    "editFastGptConfig": "FastGPT設定を編集"
   },
   "mcp": {
     "title": "MCP設定",

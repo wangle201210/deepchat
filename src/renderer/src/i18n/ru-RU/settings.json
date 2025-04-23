@@ -198,7 +198,11 @@
     "addRagflowConfig": "Добавить конфигурацию RAGFlow",
     "editRagflowConfig": "Редактировать конфигурацию RAGFlow",
     "dify": "База знаний DIFY",
-    "editDifyConfig": "Изменить конфигурацию DIFY"
+    "editDifyConfig": "Изменить конфигурацию DIFY",
+    "fastgptTitle": "База знаний FastGPT",
+    "fastgptDescription": "FastGPT - это мощная система управления базами знаний, поддерживающая несколько методов поиска и функции управления документами.",
+    "addFastGptConfig": "Добавить конфигурацию FastGPT",
+    "editFastGptConfig": "Редактировать конфигурацию FastGPT"
   },
   "mcp": {
     "title": "Настройки MCP",

@@ -185,6 +185,13 @@ const openEditServerDialog = (serverName: string) => {
     })
     return
   }
+  if (serverName === 'fastGptKnowledge') {
+    router.push({
+      name: 'settings-knowledge-base',
+      query: { subtab: 'fastgpt' } // 确保激活服务器子标签
+    })
+    return
+  }
   selectedServer.value = serverName
   isEditServerDialogOpen.value = true
 }

@@ -120,6 +120,25 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
       ]
     },
     disable: false
+  },
+  fastGptKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置FastGPT知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'fastGptKnowledge',
+    env: {
+      configs: [
+        {
+          description: 'this is a description for the current knowledge base',
+          apiKey: 'YOUR_FastGPT_API_KEY',
+          datasetId: 'YOUR_DATASET_ID',
+          endpoint: 'http://localhost:3000/api'
+        }
+      ]
+    },
+    disable: false
   }
 }
 
