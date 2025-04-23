@@ -726,6 +726,8 @@ export interface IMCPPresenter {
   startServer(serverName: string): Promise<void>
   stopServer(serverName: string): Promise<void>
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
+  getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
+  getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
   callTool(request: {
     id: string
     type: string
@@ -733,7 +735,7 @@ export interface IMCPPresenter {
       name: string
       arguments: string
     }
-  }): Promise<{ content: string }>
+  }): Promise<{ content: string; rawData: MCPToolResponse }>
   setMcpEnabled(enabled: boolean): Promise<void>
   getMcpEnabled(): Promise<boolean>
   resetToDefaultServers(): Promise<void>
