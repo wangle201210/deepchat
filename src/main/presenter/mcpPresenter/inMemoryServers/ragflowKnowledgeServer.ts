@@ -61,13 +61,14 @@ export class RagflowKnowledgeServer {
     description: string
   }> = []
 
-  constructor(envStr?: string) {
-    if (!envStr) {
+  constructor(env?: {
+    configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+  }) {
+    if (!env) {
       throw new Error('需要提供RAGFlow知识库配置')
     }
 
-    const envObj = JSON.parse(envStr)
-    const envs = envObj.configs
+    const envs = env.configs
 
     if (!Array.isArray(envs) || envs.length === 0) {
       throw new Error('需要提供至少一个RAGFlow知识库配置')

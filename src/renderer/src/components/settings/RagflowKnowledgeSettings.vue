@@ -16,11 +16,20 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- MCP开关 -->
-            <Switch
-              :checked="isRagflowMcpEnabled"
-              :disabled="!mcpStore.mcpEnabled"
-              @update:checked="toggleRagflowMcpServer"
-            />
+            <TooltipProvider>
+              <Tooltip :delay-duration="200">
+                <TooltipTrigger as-child>
+                  <Switch
+                    :checked="isRagflowMcpEnabled"
+                    :disabled="!mcpStore.mcpEnabled"
+                    @update:checked="toggleRagflowMcpServer"
+                  />
+                </TooltipTrigger>
+                <TooltipContent v-if="!mcpStore.mcpEnabled">
+                  <p>{{ t('settings.mcp.enableToAccess') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant="outline"
               size="sm"
@@ -192,12 +201,12 @@ import {
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'
 import { useToast } from '@/components/ui/toast'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useRoute } from 'vue-router'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
 const { toast } = useToast()
-import { useRoute } from 'vue-router'
-
 const route = useRoute()
 
 // 对话框状态

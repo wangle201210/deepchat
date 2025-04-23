@@ -26,9 +26,17 @@ export function getInMemoryServer(
     case 'powerpack':
       return new PowerpackServer()
     case 'difyKnowledge':
-      return new DifyKnowledgeServer(typeof env === 'string' ? env : undefined)
+      return new DifyKnowledgeServer(
+        env as {
+          configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+        }
+      )
     case 'ragflowKnowledge':
-      return new RagflowKnowledgeServer(typeof env === 'string' ? env : undefined)
+      return new RagflowKnowledgeServer(
+        env as {
+          configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+        }
+      )
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

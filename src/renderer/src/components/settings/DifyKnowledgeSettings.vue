@@ -12,11 +12,20 @@
       </div>
       <div class="flex items-center gap-2">
         <!-- MCP开关 -->
-        <Switch
-          :checked="isDifyMcpEnabled"
-          :disabled="!mcpStore.mcpEnabled"
-          @update:checked="toggleDifyMcpServer"
-        />
+        <TooltipProvider>
+          <Tooltip :delay-duration="200">
+            <TooltipTrigger as-child>
+              <Switch
+                :checked="isDifyMcpEnabled"
+                :disabled="!mcpStore.mcpEnabled"
+                @update:checked="toggleDifyMcpServer"
+              />
+            </TooltipTrigger>
+            <TooltipContent v-if="!mcpStore.mcpEnabled">
+              <p>{{ t('settings.mcp.enableToAccess') }}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <Button
           variant="outline"
           size="sm"
@@ -186,6 +195,7 @@ import {
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'
 import { useToast } from '@/components/ui/toast'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 // 对话框状态
 const isDifyConfigDialogOpen = ref(false)
