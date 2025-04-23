@@ -92,6 +92,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     command: 'powerpack',
     env: {},
     disable: false
+  },
+  ragflowKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置RAGFlow知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'ragflowKnowledge',
+    env: '{"configs":[{"description":"默认RAGFlow知识库","apiKey":"YOUR_RAGFLOW_API_KEY","datasetIds":["YOUR_DATASET_ID"],"endpoint":"http://localhost:8000"}]}',
+    disable: false
   }
 }
 

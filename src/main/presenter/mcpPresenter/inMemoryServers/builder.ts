@@ -5,6 +5,7 @@ import { BraveSearchServer } from './braveSearchServer'
 import { ImageServer } from './imageServer'
 import { PowerpackServer } from './powerpackServer'
 import { DifyKnowledgeServer } from './difyKnowledgeServer'
+import { RagflowKnowledgeServer } from './ragflowKnowledgeServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -26,6 +27,8 @@ export function getInMemoryServer(
       return new PowerpackServer()
     case 'difyKnowledge':
       return new DifyKnowledgeServer(typeof env === 'string' ? env : undefined)
+    case 'ragflowKnowledge':
+      return new RagflowKnowledgeServer(typeof env === 'string' ? env : undefined)
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

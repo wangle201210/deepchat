@@ -192,7 +192,11 @@
     "moreComingSoon": "更多知识库类型即将推出",
     "configUpdated": "配置已更新",
     "configUpdatedDesc": "Dify知识库配置已成功更新",
-    "descriptionPlaceholder": "例如：公司产品文档知识库"
+    "descriptionPlaceholder": "例如：公司产品文档知识库",
+    "ragflowTitle": "RAGFlow知识库",
+    "ragflowDescription": "RAGFlow是一个强大的知识库管理系统，支持多种检索方式和文档管理功能。",
+    "addRagflowConfig": "添加RAGFlow配置",
+    "editRagflowConfig": "编辑RAGFlow配置"
   },
   "mcp": {
     "title": "MCP设置",
