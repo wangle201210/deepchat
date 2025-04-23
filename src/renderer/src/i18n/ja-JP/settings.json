@@ -192,7 +192,11 @@
     "moreComingSoon": "より多くのナレッジベースタイプが近日公開予定",
     "configUpdated": "設定が更新されました",
     "configUpdatedDesc": "Difyナレッジベースの設定が正常に更新されました",
-    "descriptionPlaceholder": "例：会社の製品ドキュメントナレッジベース"
+    "descriptionPlaceholder": "例：会社の製品ドキュメントナレッジベース",
+    "ragflowTitle": "RAGFlowナレッジベース",
+    "ragflowDescription": "RAGFlowは、複数の検索方法とドキュメント管理機能をサポートする強力なナレッジベース管理システムです。",
+    "addRagflowConfig": "RAGFlow設定を追加",
+    "editRagflowConfig": "RAGFlow設定を編集"
   },
   "mcp": {
     "title": "MCP設定",

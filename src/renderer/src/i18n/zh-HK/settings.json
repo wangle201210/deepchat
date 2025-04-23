@@ -192,7 +192,11 @@
     "moreComingSoon": "更多知識庫類型即將推出",
     "configUpdated": "配置已更新",
     "configUpdatedDesc": "Dify知識庫配置已成功更新",
-    "descriptionPlaceholder": "例如：公司產品文檔知識庫"
+    "descriptionPlaceholder": "例如：公司產品文檔知識庫",
+    "ragflowTitle": "RAGFlow 知識庫",
+    "ragflowDescription": "RAGFlow 是一個強大的知識庫管理系統，支援多種檢索方式和文件管理功能。",
+    "addRagflowConfig": "新增 RAGFlow 設定",
+    "editRagflowConfig": "編輯 RAGFlow 設定"
   },
   "mcp": {
     "title": "MCP設置",

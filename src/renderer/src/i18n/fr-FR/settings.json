@@ -192,7 +192,11 @@
     "moreComingSoon": "Plus de types de bases de connaissances à venir",
     "configUpdated": "Configuration mise à jour",
     "configUpdatedDesc": "La configuration de la base de connaissances Dify a été mise à jour avec succès",
-    "descriptionPlaceholder": "Exemple : Base de connaissances des documents produits de l'entreprise"
+    "descriptionPlaceholder": "Exemple : Base de connaissances des documents produits de l'entreprise",
+    "ragflowTitle": "Base de connaissances RAGFlow",
+    "ragflowDescription": "RAGFlow est un système puissant de gestion de base de connaissances qui prend en charge plusieurs méthodes de recherche et fonctionnalités de gestion de documents.",
+    "addRagflowConfig": "Ajouter une configuration RAGFlow",
+    "editRagflowConfig": "Modifier la configuration RAGFlow"
   },
   "mcp": {
     "title": "Paramètres MCP",

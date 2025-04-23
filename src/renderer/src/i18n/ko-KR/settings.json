@@ -192,7 +192,11 @@
     "moreComingSoon": "더 많은 지식 베이스 유형이 곧 제공될 예정입니다",
     "configUpdated": "구성 업데이트됨",
     "configUpdatedDesc": "Dify 지식 베이스 구성이 성공적으로 업데이트되었습니다",
-    "descriptionPlaceholder": "예: 회사 제품 문서 지식 베이스"
+    "descriptionPlaceholder": "예: 회사 제품 문서 지식 베이스",
+    "ragflowTitle": "RAGFlow 지식 베이스",
+    "ragflowDescription": "RAGFlow는 다양한 검색 방법과 문서 관리 기능을 지원하는 강력한 지식 베이스 관리 시스템입니다.",
+    "addRagflowConfig": "RAGFlow 구성 추가",
+    "editRagflowConfig": "RAGFlow 구성 편집"
   },
   "mcp": {
     "title": "MCP 설정",
