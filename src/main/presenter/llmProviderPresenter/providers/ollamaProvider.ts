@@ -425,7 +425,7 @@ export class OllamaProvider extends BaseLLMProvider {
           ollamaTools = undefined
         }
       }
-      console.log('processedMessages', processedMessages)
+
       // Ollama聊天参数
       const chatParams = {
         model: modelId,
@@ -444,18 +444,21 @@ export class OllamaProvider extends BaseLLMProvider {
       const stream = await this.ollama.chat(chatParams)
 
       // --- 状态变量 ---
-      let mainBuffer = '' // 所有文本内容的单一缓冲区
-      let toolCodeBuffer = '' // 代码块缓冲区
-      let isInThinkTag = false
-      let isInFunctionCallTag = false
-      let isInToolCodeBlock = false // 新增: 是否在```tool_code块中
-      let hasStartedFunctionCallTag = false // 新增: 是否已开始检测到函数调用标签的一部分
+      type TagState = 'none' | 'start' | 'inside' | 'end'
+      let thinkState: TagState = 'none'
+      let funcState: TagState = 'none'
 
-      const tagStartMarker = '<function_call>'
-      const tagEndMarker = '</function_call>'
+      let pendingBuffer = '' // 用于标签匹配和潜在文本输出的缓冲区
+      let thinkBuffer = '' // 思考内容缓冲区
+      let funcCallBuffer = '' // 非原生函数调用内容的缓冲区
+      let codeBlockBuffer = '' // 代码块内容的缓冲区
+
       const thinkStartMarker = '<think>'
       const thinkEndMarker = '</think>'
-      // 使用数组定义可能的代码块标记变体
+      const funcStartMarker = '<function_call>'
+      const funcEndMarker = '</function_call>'
+
+      // 代码块标记变体
       const codeBlockMarkers = [
         '```tool_code',
         '```tool',
@@ -466,19 +469,28 @@ export class OllamaProvider extends BaseLLMProvider {
       ]
       const codeBlockEndMarker = '```'
 
-      // 用于检测不完整标签的前缀
-      const functionCallPrefix = '<function_call'
+      let isInCodeBlock = false
 
-      const nativeToolCalls: Record<string, { name: string; arguments: string }> = {}
+      // 用于跟踪原生工具调用
+      const nativeToolCalls: Record<
+        string,
+        { name: string; arguments: string; completed?: boolean }
+      > = {}
       let stopReason: LLMCoreStreamEvent['stop_reason'] = 'complete'
-      let accumulatingInitialContent = true // 前几个块应当累积而非立即输出
-      let accumulatedChunks = 0
+      let toolUseDetected = false
+      let usage:
+        | {
+            prompt_tokens: number
+            completion_tokens: number
+            total_tokens: number
+          }
+        | undefined = undefined
 
       // --- 流处理循环 ---
       for await (const chunk of stream) {
-        // 处理利用统计
-        if (chunk.eval_count || chunk.prompt_eval_count) {
-          const usage = {
+        // 处理使用统计
+        if (chunk.prompt_eval_count !== undefined || chunk.eval_count !== undefined) {
+          usage = {
             prompt_tokens: chunk.prompt_eval_count || 0,
             completion_tokens: chunk.eval_count || 0,
             total_tokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0)
@@ -492,6 +504,7 @@ export class OllamaProvider extends BaseLLMProvider {
           chunk.message?.tool_calls &&
           chunk.message.tool_calls.length > 0
         ) {
+          toolUseDetected = true
           for (const toolCall of chunk.message.tool_calls) {
             const toolId = toolCall.function?.name || `ollama-tool-${Date.now()}`
             if (!nativeToolCalls[toolId]) {
@@ -531,376 +544,432 @@ export class OllamaProvider extends BaseLLMProvider {
         const currentContent = chunk.message?.content || ''
         if (!currentContent) continue
 
-        // 追加到主缓冲区
-        mainBuffer += currentContent
+        // 逐字符处理
+        for (const char of currentContent) {
+          pendingBuffer += char
+          let processedChar = false // 标记字符是否被状态逻辑处理
 
-        // 在开始阶段持续累积一些内容，而不是立即输出
-        if (accumulatingInitialContent) {
-          accumulatedChunks++
+          // --- 处理代码块 ---
+          if (isInCodeBlock) {
+            codeBlockBuffer += char
 
-          // 检查此时的缓冲区是否有特殊标签的开始
-          if (mainBuffer.includes(tagStartMarker)) {
-            isInFunctionCallTag = true
-            hasStartedFunctionCallTag = false
-            accumulatingInitialContent = false
+            // 检查代码块结束
+            if (codeBlockBuffer.endsWith(codeBlockEndMarker)) {
+              isInCodeBlock = false
+              const codeContent = codeBlockBuffer
+                .substring(0, codeBlockBuffer.length - codeBlockEndMarker.length)
+                .trim()
 
-            // 截取标签前的内容，如果有的话
-            const tagIndex = mainBuffer.indexOf(tagStartMarker)
-            if (tagIndex > 0) {
-              const contentBeforeTag = mainBuffer.substring(0, tagIndex)
-              yield {
-                type: 'text',
-                content: contentBeforeTag
-              }
-            }
-
-            // 更新缓冲区，只保留标签开始及之后的内容
-            mainBuffer = mainBuffer.substring(tagIndex)
-            continue
-          }
-
-          // 检查是否已开始检测到函数调用标签但尚未完成
-          if (
-            !isInFunctionCallTag &&
-            mainBuffer.includes(functionCallPrefix) &&
-            !mainBuffer.includes(tagStartMarker)
-          ) {
-            hasStartedFunctionCallTag = true
-
-            // 继续累积更多内容
-            if (accumulatedChunks < 10) {
-              continue
-            }
-          }
-
-          // 检查是否开始了代码块
-          let hasCodeBlockStart = false
-          for (const marker of codeBlockMarkers) {
-            if (mainBuffer.includes(marker)) {
-              hasCodeBlockStart = true
-              break
-            }
-          }
-
-          if (hasCodeBlockStart) {
-            accumulatingInitialContent = false
-            continue
-          }
-
-          // 累积了几个块且没有检测到特殊标签的开始，可以停止累积
-          if (accumulatedChunks >= 5) {
-            accumulatingInitialContent = false
-          } else {
-            continue
-          }
-        }
-
-        // --- 处理特殊状态 ---
-
-        // 处理代码块
-        if (isInToolCodeBlock) {
-          // 这种情况下，继续在toolCodeBuffer中累积内容，直到找到结束标记
-          toolCodeBuffer += currentContent
-
-          if (toolCodeBuffer.endsWith(codeBlockEndMarker)) {
-            // 找到完整的代码块，处理它
-            const codeContent = toolCodeBuffer
-              .substring(0, toolCodeBuffer.length - codeBlockEndMarker.length)
-              .trim()
-
-            try {
-              // 尝试解析JSON
-              let parsedCall
               try {
-                // 移除可能的语言标识和开头的空白
-                const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
-                parsedCall = JSON.parse(cleanContent)
-              } catch (parseError: unknown) {
-                // 尝试修复通用JSON格式问题
-                const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
-                const repaired = cleanContent
-                  .replace(/,\s*}/g, '}') // 移除对象末尾的逗号
-                  .replace(/,\s*\]/g, ']') // 移除数组末尾的逗号
-                  .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":') // 确保所有键都有双引号
+                // 尝试解析JSON
+                let parsedCall
+                try {
+                  // 移除可能的语言标识和开头的空白
+                  const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
+                  parsedCall = JSON.parse(cleanContent)
+                } catch (parseError) {
+                  // 尝试修复通用JSON格式问题
+                  const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
+                  const repaired = cleanContent
+                    .replace(/,\s*}/g, '}') // 移除对象末尾的逗号
+                    .replace(/,\s*\]/g, ']') // 移除数组末尾的逗号
+                    .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":') // 确保所有键都有双引号
 
-                parsedCall = JSON.parse(repaired)
-              }
+                  parsedCall = JSON.parse(repaired)
+                }
 
-              // 提取函数名和参数
-              let functionName, functionArgs
+                // 提取函数名和参数
+                let functionName, functionArgs
 
-              if (parsedCall.function_call && typeof parsedCall.function_call === 'object') {
-                functionName = parsedCall.function_call.name
-                functionArgs = parsedCall.function_call.arguments
-              } else if (parsedCall.name && parsedCall.arguments !== undefined) {
-                functionName = parsedCall.name
-                functionArgs = parsedCall.arguments
-              } else if (
-                parsedCall.function &&
-                typeof parsedCall.function === 'object' &&
-                parsedCall.function.name
-              ) {
-                functionName = parsedCall.function.name
-                functionArgs = parsedCall.function.arguments
-              } else {
-                throw new Error('无法从代码块中识别函数调用格式')
-              }
+                if (parsedCall.function_call && typeof parsedCall.function_call === 'object') {
+                  functionName = parsedCall.function_call.name
+                  functionArgs = parsedCall.function_call.arguments
+                } else if (parsedCall.name && parsedCall.arguments !== undefined) {
+                  functionName = parsedCall.name
+                  functionArgs = parsedCall.arguments
+                } else if (
+                  parsedCall.function &&
+                  typeof parsedCall.function === 'object' &&
+                  parsedCall.function.name
+                ) {
+                  functionName = parsedCall.function.name
+                  functionArgs = parsedCall.function.arguments
+                } else {
+                  throw new Error('无法从代码块中识别函数调用格式')
+                }
 
-              // 确保参数是字符串
-              if (typeof functionArgs !== 'string') {
-                functionArgs = JSON.stringify(functionArgs)
-              }
+                // 确保参数是字符串
+                if (typeof functionArgs !== 'string') {
+                  functionArgs = JSON.stringify(functionArgs)
+                }
 
-              // 生成唯一ID
-              const id = parsedCall.id || `ollama-tool-${Date.now()}`
+                // 生成唯一ID
+                const id = parsedCall.id || `ollama-tool-${Date.now()}`
 
-              // 发送工具调用
-              yield {
-                type: 'tool_call_start',
-                tool_call_id: id,
-                tool_call_name: functionName
-              }
-
-              yield {
-                type: 'tool_call_chunk',
-                tool_call_id: id,
-                tool_call_arguments_chunk: functionArgs
-              }
-
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: id,
-                tool_call_arguments_complete: functionArgs
-              }
-
-              stopReason = 'tool_use'
-            } catch (error: unknown) {
-              // 解析失败，将内容作为普通文本输出
-              yield {
-                type: 'text',
-                content: '```tool_code\n' + codeContent + '\n```'
-              }
-            }
-
-            // 重置状态
-            isInToolCodeBlock = false
-            toolCodeBuffer = ''
-            mainBuffer = ''
-            continue
-          }
-
-          // 如果仍在代码块内，继续等待更多内容
-          continue
-        }
-
-        // 处理函数调用标签
-        if (isInFunctionCallTag) {
-          // 检查是否找到了结束标签
-          if (mainBuffer.includes(tagEndMarker)) {
-            // 找到完整的函数调用标签序列
-            const endIndex = mainBuffer.indexOf(tagEndMarker)
-            const fullTag = mainBuffer.substring(0, endIndex + tagEndMarker.length)
-            const remainingContent = mainBuffer.substring(endIndex + tagEndMarker.length)
-
-            // 解析函数调用
-            const parsedCalls = this.parseFunctionCalls(fullTag, 'ollama')
-
-            if (parsedCalls.length > 0) {
-              for (const parsedCall of parsedCalls) {
+                // 发送工具调用
+                toolUseDetected = true
                 yield {
                   type: 'tool_call_start',
-                  tool_call_id: parsedCall.id,
-                  tool_call_name: parsedCall.function.name
+                  tool_call_id: id,
+                  tool_call_name: functionName
                 }
 
                 yield {
                   type: 'tool_call_chunk',
-                  tool_call_id: parsedCall.id,
-                  tool_call_arguments_chunk: parsedCall.function.arguments
+                  tool_call_id: id,
+                  tool_call_arguments_chunk: functionArgs
                 }
 
                 yield {
                   type: 'tool_call_end',
-                  tool_call_id: parsedCall.id,
-                  tool_call_arguments_complete: parsedCall.function.arguments
+                  tool_call_id: id,
+                  tool_call_arguments_complete: functionArgs
+                }
+
+                stopReason = 'tool_use'
+              } catch (error) {
+                // 解析失败，将内容作为普通文本输出
+                yield {
+                  type: 'text',
+                  content: '```tool_code\n' + codeContent + '\n```'
                 }
               }
 
-              stopReason = 'tool_use'
-            } else {
-              // 没有成功解析出工具调用，将标签作为普通文本输出
-              yield {
-                type: 'text',
-                content: fullTag
-              }
-            }
-
-            // 重置状态
-            isInFunctionCallTag = false
-
-            // 处理剩余内容
-            if (remainingContent) {
-              mainBuffer = remainingContent
-            } else {
-              mainBuffer = ''
+              // 重置状态和缓冲区
+              codeBlockBuffer = ''
+              pendingBuffer = ''
+              processedChar = true
             }
 
             continue
           }
 
-          // 仍在标签中，等待更多内容
-          continue
-        }
-
-        // --- 检查新的特殊标签或代码块开始 ---
-
-        // 检查标签和代码块的开始
-        const functionCallTagIndex = mainBuffer.indexOf(tagStartMarker)
-
-        // 检查函数调用标签开始
-        if (functionCallTagIndex !== -1) {
-          // 截取标签前的内容，如果有的话
-          if (functionCallTagIndex > 0) {
-            const contentBeforeTag = mainBuffer.substring(0, functionCallTagIndex)
-            yield {
-              type: 'text',
-              content: contentBeforeTag
+          // --- 思考标签处理 ---
+          if (thinkState === 'inside') {
+            if (pendingBuffer.endsWith(thinkEndMarker)) {
+              thinkState = 'none'
+              if (thinkBuffer) {
+                yield { type: 'reasoning', reasoning_content: thinkBuffer }
+                thinkBuffer = ''
+              }
+              pendingBuffer = ''
+              processedChar = true
+            } else if (thinkEndMarker.startsWith(pendingBuffer)) {
+              thinkState = 'end'
+              processedChar = true
+            } else if (pendingBuffer.length >= thinkEndMarker.length) {
+              const charsToYield = pendingBuffer.slice(0, -thinkEndMarker.length + 1)
+              if (charsToYield) {
+                thinkBuffer += charsToYield
+                yield { type: 'reasoning', reasoning_content: charsToYield }
+              }
+              pendingBuffer = pendingBuffer.slice(-thinkEndMarker.length + 1)
+              if (thinkEndMarker.startsWith(pendingBuffer)) {
+                thinkState = 'end'
+              } else {
+                thinkBuffer += pendingBuffer
+                yield { type: 'reasoning', reasoning_content: pendingBuffer }
+                pendingBuffer = ''
+                thinkState = 'inside'
+              }
+              processedChar = true
+            } else {
+              thinkBuffer += char
+              yield { type: 'reasoning', reasoning_content: char }
+              pendingBuffer = ''
+              processedChar = true
+            }
+          } else if (thinkState === 'end') {
+            if (pendingBuffer.endsWith(thinkEndMarker)) {
+              thinkState = 'none'
+              if (thinkBuffer) {
+                yield { type: 'reasoning', reasoning_content: thinkBuffer }
+                thinkBuffer = ''
+              }
+              pendingBuffer = ''
+              processedChar = true
+            } else if (!thinkEndMarker.startsWith(pendingBuffer)) {
+              const failedTagChars = pendingBuffer
+              thinkBuffer += failedTagChars
+              yield { type: 'reasoning', reasoning_content: failedTagChars }
+              pendingBuffer = ''
+              thinkState = 'inside'
+              processedChar = true
+            } else {
+              processedChar = true
             }
           }
 
-          // 更新缓冲区，只保留标签及之后的内容
-          mainBuffer = mainBuffer.substring(functionCallTagIndex)
-          isInFunctionCallTag = true
-          continue
-        }
+          // --- 函数调用标签处理 ---
+          else if (
+            !supportsFunctionCall &&
+            tools.length > 0 &&
+            (funcState === 'inside' || funcState === 'end')
+          ) {
+            processedChar = true // 假设已处理，除非下面的逻辑改变状态
+            if (funcState === 'inside') {
+              if (pendingBuffer.endsWith(funcEndMarker)) {
+                funcState = 'none'
+                funcCallBuffer += pendingBuffer.slice(0, -funcEndMarker.length)
+                pendingBuffer = ''
+                toolUseDetected = true
 
-        // 检查可能不完整的函数调用标签开始
-        if (mainBuffer.includes(functionCallPrefix) && !mainBuffer.includes(tagStartMarker)) {
-          // 等待更多内容以确认是否为函数调用标签
-          continue
-        }
+                const parsedCalls = this.parseFunctionCalls(
+                  `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
+                  `non-native-${this.provider.id}`
+                )
+                for (const parsedCall of parsedCalls) {
+                  yield {
+                    type: 'tool_call_start',
+                    tool_call_id: parsedCall.id,
+                    tool_call_name: parsedCall.function.name
+                  }
+                  yield {
+                    type: 'tool_call_chunk',
+                    tool_call_id: parsedCall.id,
+                    tool_call_arguments_chunk: parsedCall.function.arguments
+                  }
+                  yield {
+                    type: 'tool_call_end',
+                    tool_call_id: parsedCall.id,
+                    tool_call_arguments_complete: parsedCall.function.arguments
+                  }
+                }
+                funcCallBuffer = ''
+              } else if (funcEndMarker.startsWith(pendingBuffer)) {
+                funcState = 'end'
+              } else if (pendingBuffer.length >= funcEndMarker.length) {
+                const charsToAdd = pendingBuffer.slice(0, -funcEndMarker.length + 1)
+                funcCallBuffer += charsToAdd
+                pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1)
+                if (funcEndMarker.startsWith(pendingBuffer)) {
+                  funcState = 'end'
+                } else {
+                  funcCallBuffer += pendingBuffer
+                  pendingBuffer = ''
+                  funcState = 'inside'
+                }
+              } else {
+                funcCallBuffer += char
+                pendingBuffer = ''
+              }
+            } else {
+              // funcState === 'end'
+              if (pendingBuffer.endsWith(funcEndMarker)) {
+                funcState = 'none'
+                pendingBuffer = ''
+                toolUseDetected = true
 
-        // 检查代码块开始
-        let codeBlockStart = false
-        let codeBlockMarker = ''
-
-        for (const marker of codeBlockMarkers) {
-          if (mainBuffer.includes(marker)) {
-            codeBlockStart = true
-            codeBlockMarker = marker
-            break
-          }
-        }
-
-        if (codeBlockStart) {
-          // 找到代码块开始标记
-          const markerIndex = mainBuffer.indexOf(codeBlockMarker)
-
-          // 截取标记前的内容，如果有的话
-          if (markerIndex > 0) {
-            const contentBeforeMarker = mainBuffer.substring(0, markerIndex)
-            yield {
-              type: 'text',
-              content: contentBeforeMarker
+                const parsedCalls = this.parseFunctionCalls(
+                  `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`,
+                  `non-native-${this.provider.id}`
+                )
+                for (const parsedCall of parsedCalls) {
+                  yield {
+                    type: 'tool_call_start',
+                    tool_call_id: parsedCall.id,
+                    tool_call_name: parsedCall.function.name
+                  }
+                  yield {
+                    type: 'tool_call_chunk',
+                    tool_call_id: parsedCall.id,
+                    tool_call_arguments_chunk: parsedCall.function.arguments
+                  }
+                  yield {
+                    type: 'tool_call_end',
+                    tool_call_id: parsedCall.id,
+                    tool_call_arguments_complete: parsedCall.function.arguments
+                  }
+                }
+                funcCallBuffer = ''
+              } else if (!funcEndMarker.startsWith(pendingBuffer)) {
+                funcCallBuffer += pendingBuffer
+                pendingBuffer = ''
+                funcState = 'inside'
+              }
             }
           }
 
-          // 初始化工具代码块缓冲区
-          isInToolCodeBlock = true
-          toolCodeBuffer = mainBuffer.substring(markerIndex + codeBlockMarker.length)
-          mainBuffer = ''
-          continue
-        }
+          // --- 处理一般文本/标签检测（当不在任何标签内时）---
+          if (!processedChar) {
+            let potentialThink = thinkStartMarker.startsWith(pendingBuffer)
+            let potentialFunc =
+              !supportsFunctionCall && tools.length > 0 && funcStartMarker.startsWith(pendingBuffer)
+            const matchedThink = pendingBuffer.endsWith(thinkStartMarker)
+            const matchedFunc =
+              !supportsFunctionCall && tools.length > 0 && pendingBuffer.endsWith(funcStartMarker)
 
-        // 处理思考标签
-        if (mainBuffer.includes(thinkStartMarker)) {
-          const thinkIndex = mainBuffer.indexOf(thinkStartMarker)
+            // 检查代码块标记
+            let codeBlockDetected = false
+            for (const marker of codeBlockMarkers) {
+              if (pendingBuffer.endsWith(marker)) {
+                codeBlockDetected = true
+                break
+              }
+            }
 
-          // 截取标签前的内容，如果有的话
-          if (thinkIndex > 0) {
-            const contentBeforeThink = mainBuffer.substring(0, thinkIndex)
-            yield {
-              type: 'text',
-              content: contentBeforeThink
+            // --- 首先处理完整匹配 ---
+            if (matchedThink) {
+              const textBefore = pendingBuffer.slice(0, -thinkStartMarker.length)
+              if (textBefore) {
+                yield { type: 'text', content: textBefore }
+              }
+              thinkState = 'inside'
+              funcState = 'none' // 重置其他状态
+              pendingBuffer = ''
+            } else if (matchedFunc) {
+              const textBefore = pendingBuffer.slice(0, -funcStartMarker.length)
+              if (textBefore) {
+                yield { type: 'text', content: textBefore }
+              }
+              funcState = 'inside'
+              thinkState = 'none' // 重置其他状态
+              pendingBuffer = ''
+            } else if (codeBlockDetected) {
+              // 找到代码块开始标记，提取前面的文本
+              let markerText = ''
+              for (const marker of codeBlockMarkers) {
+                if (pendingBuffer.endsWith(marker)) {
+                  markerText = marker
+                  break
+                }
+              }
+
+              const textBefore = pendingBuffer.slice(0, -markerText.length)
+              if (textBefore) {
+                yield { type: 'text', content: textBefore }
+              }
+
+              isInCodeBlock = true
+              codeBlockBuffer = ''
+              pendingBuffer = ''
+            }
+            // --- 处理部分匹配（继续累积）---
+            else if (potentialThink || potentialFunc) {
+              // 如果可能匹配任一标签，只保留缓冲区并等待更多字符
+              thinkState = potentialThink ? 'start' : 'none'
+              funcState = potentialFunc ? 'start' : 'none'
+            }
+            // --- 处理不匹配/失败 ---
+            else if (pendingBuffer.length > 0) {
+              // 缓冲区不以'<'开头，或以'<'开头但不再匹配任何标签的开始
+              const charToYield = pendingBuffer[0]
+              yield { type: 'text', content: charToYield }
+              pendingBuffer = pendingBuffer.slice(1)
+              // 使用缩短的缓冲区立即重新评估潜在匹配
+              potentialThink =
+                pendingBuffer.length > 0 && thinkStartMarker.startsWith(pendingBuffer)
+              potentialFunc =
+                pendingBuffer.length > 0 &&
+                !supportsFunctionCall &&
+                tools.length > 0 &&
+                funcStartMarker.startsWith(pendingBuffer)
+              thinkState = potentialThink ? 'start' : 'none'
+              funcState = potentialFunc ? 'start' : 'none'
             }
           }
+        } // 字符循环结束
+      } // 块循环结束
 
-          // 更新缓冲区，只保留标签后的内容
-          mainBuffer = mainBuffer.substring(thinkIndex + thinkStartMarker.length)
-          isInThinkTag = true
-          continue
+      // --- 完成处理 ---
+
+      // 输出缓冲区中剩余的文本
+      if (pendingBuffer) {
+        // 根据最终状态决定如何输出
+        if (thinkState === 'inside' || thinkState === 'end') {
+          yield { type: 'reasoning', reasoning_content: pendingBuffer }
+          thinkBuffer += pendingBuffer
+        } else if (funcState === 'inside' || funcState === 'end') {
+          // 将剩余内容添加到函数缓冲区 - 稍后处理
+          funcCallBuffer += pendingBuffer
+        } else {
+          yield { type: 'text', content: pendingBuffer }
         }
-
-        if (isInThinkTag && mainBuffer.includes(thinkEndMarker)) {
-          const endIndex = mainBuffer.indexOf(thinkEndMarker)
-          const thinkContent = mainBuffer.substring(0, endIndex)
-          const remainingContent = mainBuffer.substring(endIndex + thinkEndMarker.length)
-
-          // 输出思考内容
-          yield {
-            type: 'reasoning',
-            reasoning_content: thinkContent
-          }
-
-          // 更新状态和缓冲区
-          isInThinkTag = false
-          mainBuffer = remainingContent
-          continue
-        }
-
-        // 如果没有标签和不在特殊状态，输出普通文本
-        if (
-          !isInFunctionCallTag &&
-          !isInToolCodeBlock &&
-          !isInThinkTag &&
-          !hasStartedFunctionCallTag &&
-          mainBuffer
-        ) {
-          yield {
-            type: 'text',
-            content: mainBuffer
-          }
-          mainBuffer = ''
-        }
+        pendingBuffer = ''
       }
 
-      // --- 处理剩余内容 ---
+      // 处理不完整的非原生函数调用
+      if (funcCallBuffer) {
+        const potentialContent = `${funcStartMarker}${funcCallBuffer}`
+        try {
+          const parsedCalls = this.parseFunctionCalls(
+            potentialContent,
+            `non-native-incomplete-${this.provider.id}`
+          )
+          if (parsedCalls.length > 0) {
+            toolUseDetected = true
+            for (const parsedCall of parsedCalls) {
+              yield {
+                type: 'tool_call_start',
+                tool_call_id: parsedCall.id + '-incomplete',
+                tool_call_name: parsedCall.function.name
+              }
+              yield {
+                type: 'tool_call_chunk',
+                tool_call_id: parsedCall.id + '-incomplete',
+                tool_call_arguments_chunk: parsedCall.function.arguments
+              }
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: parsedCall.id + '-incomplete',
+                tool_call_arguments_complete: parsedCall.function.arguments
+              }
+            }
+          } else {
+            // 如果解析失败或没有结果，将缓冲区作为文本输出
+            yield { type: 'text', content: potentialContent }
+          }
+        } catch (e) {
+          console.error('解析不完整的函数调用缓冲区时出错:', e)
+          yield { type: 'text', content: potentialContent }
+        }
+        funcCallBuffer = ''
+      }
 
-      // 处理未完成的代码块
-      if (isInToolCodeBlock && toolCodeBuffer) {
+      // 处理不完整的代码块
+      if (isInCodeBlock && codeBlockBuffer) {
         yield {
           type: 'text',
-          content: '```tool_code\n' + toolCodeBuffer + '\n```'
+          content: '```' + codeBlockBuffer
         }
       }
 
-      // 处理未完成的函数调用标签或思考标签
-      if (mainBuffer) {
-        if (isInFunctionCallTag) {
-          yield {
-            type: 'text',
-            content: mainBuffer
-          }
-        } else if (isInThinkTag) {
-          yield {
-            type: 'reasoning',
-            reasoning_content: mainBuffer
-          }
-        } else if (hasStartedFunctionCallTag) {
-          yield {
-            type: 'text',
-            content: mainBuffer
-          }
-        } else {
-          yield {
-            type: 'text',
-            content: mainBuffer
+      // 最终检查和发出原生工具调用
+      if (supportsFunctionCall && toolUseDetected) {
+        for (const toolId in nativeToolCalls) {
+          const tool = nativeToolCalls[toolId]
+          if (tool.name && tool.arguments && !tool.completed) {
+            try {
+              JSON.parse(tool.arguments) // 检查有效性
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: toolId,
+                tool_call_arguments_complete: tool.arguments
+              }
+            } catch (e) {
+              console.error(`[coreStream] 工具 ${toolId} 参数解析错误: ${tool.arguments}`, e)
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: toolId,
+                tool_call_arguments_complete: tool.arguments
+              }
+            }
           }
         }
       }
 
-      // 发送停止事件
-      yield { type: 'stop', stop_reason: stopReason }
+      // 记录状态警告
+      if (thinkState !== 'none') console.warn(`流在thinkState: ${thinkState} 时结束`)
+      if (funcState !== 'none') console.warn(`流在funcState: ${funcState} 时结束`)
+
+      // 输出使用情况
+      if (usage) {
+        yield { type: 'usage', usage: usage }
+      }
+
+      // 如果检测到工具使用，则覆盖停止原因
+      const finalStopReason = toolUseDetected ? 'tool_use' : stopReason
+      yield { type: 'stop', stop_reason: finalStopReason }
     } catch (error: unknown) {
       yield {
         type: 'error',
