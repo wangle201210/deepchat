@@ -196,6 +196,9 @@ import { useToast } from '@/components/ui/toast'
 const { t } = useI18n()
 const mcpStore = useMcpStore()
 const { toast } = useToast()
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
 
 // 对话框状态
 const isRagflowConfigPanelOpen = ref(true)
@@ -393,9 +396,19 @@ watch(
   }
 )
 
+// 监听URL查询参数，设置活动标签页
+watch(
+  () => route.query.subtab,
+  (newSubtab) => {
+    if (newSubtab === 'ragflow') {
+      isRagflowConfigPanelOpen.value = true
+    }
+  },
+  { immediate: true }
+)
+
 // 组件挂载时加载配置
 onMounted(async () => {
   await loadRagflowConfigFromMcp()
 })
-
 </script>

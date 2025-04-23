@@ -215,7 +215,9 @@ const { toast } = useToast()
 // 对话框状态
 const isDifyConfigPanelOpen = ref(true)
 const isEditing = ref(false)
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 // Dify配置状态
 interface DifyConfig {
   description: string
@@ -327,7 +329,6 @@ const loadDifyConfigFromMcp = async () => {
   try {
     // 获取difyKnowledge服务器配置
     const serverConfig = mcpStore.config.mcpServers['difyKnowledge']
-    console.log('serverConfig', serverConfig)
     if (serverConfig && serverConfig.env) {
       // 解析配置 - env可能是JSON字符串
       try {
@@ -377,4 +378,15 @@ watch(
 onMounted(async () => {
   await loadDifyConfigFromMcp()
 })
+
+// 监听URL查询参数，设置活动标签页
+watch(
+  () => route.query.subtab,
+  (newSubtab) => {
+    if (newSubtab === 'dify') {
+      isDifyConfigPanelOpen.value = true
+    }
+  },
+  { immediate: true }
+)
 </script>

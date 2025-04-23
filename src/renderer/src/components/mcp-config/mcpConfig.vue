@@ -178,6 +178,13 @@ const openEditServerDialog = (serverName: string) => {
     })
     return
   }
+  if (serverName === 'ragflowKnowledge') {
+    router.push({
+      name: 'settings-knowledge-base',
+      query: { subtab: 'ragflow' } // 确保激活服务器子标签
+    })
+    return
+  }
   selectedServer.value = serverName
   isEditServerDialogOpen.value = true
 }
