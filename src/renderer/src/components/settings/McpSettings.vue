@@ -33,7 +33,7 @@
     <!-- MCP配置 -->
     <div class="flex-grow overflow-y-auto">
       <div v-if="mcpEnabled" class="border-t h-full">
-        <McpConfig class="h-full" />
+        <McpConfig />
       </div>
       <div v-else class="p-4 text-center text-secondary-foreground text-sm">
         {{ t('settings.mcp.enableToAccess') }}

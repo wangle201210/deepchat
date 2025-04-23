@@ -3,11 +3,11 @@
     <div class="flex items-center p-4 bg-card">
       <div class="flex-1">
         <div class="flex items-center">
-          <img src="@/assets/images/dify.png" class="h-5 mr-2" />
-          <span class="text-base font-medium">{{ $t('settings.knowledgeBase.dify') }}</span>
+          <img src="@/assets/images/fastgpt.png" class="h-5 mr-2" />
+          <span class="text-base font-medium">{{ t('settings.knowledgeBase.fastgptTitle') }}</span>
         </div>
         <p class="text-sm text-muted-foreground mt-1">
-          {{ t('settings.knowledgeBase.difyDescription') }}
+          {{ t('settings.knowledgeBase.fastgptDescription') }}
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -16,9 +16,9 @@
           <Tooltip :delay-duration="200">
             <TooltipTrigger as-child>
               <Switch
-                :checked="isDifyMcpEnabled"
+                :checked="isFastGptMcpEnabled"
                 :disabled="!mcpStore.mcpEnabled"
-                @update:checked="toggleDifyMcpServer"
+                @update:checked="toggleFastGptMcpServer"
               />
             </TooltipTrigger>
             <TooltipContent v-if="!mcpStore.mcpEnabled">
@@ -30,25 +30,25 @@
           variant="outline"
           size="sm"
           class="flex items-center gap-1"
-          @click="toggleDifyConfigPanel"
+          @click="toggleFastGptConfigPanel"
         >
           <Icon
-            :icon="isDifyConfigPanelOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+            :icon="isFastGptConfigPanelOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'"
             class="w-4 h-4"
           />
-          {{ isDifyConfigPanelOpen ? t('common.collapse') : t('common.expand') }}
+          {{ isFastGptConfigPanelOpen ? t('common.collapse') : t('common.expand') }}
         </Button>
       </div>
     </div>
 
-    <!-- Dify配置面板 -->
-    <Collapsible v-model:open="isDifyConfigPanelOpen">
+    <!-- FastGPT配置面板 -->
+    <Collapsible v-model:open="isFastGptConfigPanelOpen">
       <CollapsibleContent>
         <div class="p-4 border-t space-y-4">
           <!-- 已添加的配置列表 -->
-          <div v-if="difyConfigs.length > 0" class="space-y-3">
+          <div v-if="fastGptConfigs.length > 0" class="space-y-3">
             <div
-              v-for="(config, index) in difyConfigs"
+              v-for="(config, index) in fastGptConfigs"
               :key="index"
               class="p-3 border rounded-md relative"
             >
@@ -56,14 +56,14 @@
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-primary"
-                  @click="editDifyConfig(index)"
+                  @click="editFastGptConfig(index)"
                 >
                   <Icon icon="lucide:edit" class="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-destructive"
-                  @click="removeDifyConfig(index)"
+                  @click="removeFastGptConfig(index)"
                 >
                   <Icon icon="lucide:trash-2" class="h-4 w-4" />
                 </button>
@@ -101,74 +101,74 @@
               @click="openAddConfig"
             >
               <Icon icon="lucide:plus" class="w-8 h-4" />
-              {{ t('settings.knowledgeBase.addDifyConfig') }}
+              {{ t('settings.knowledgeBase.addFastGptConfig') }}
             </Button>
           </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
 
-    <!-- Dify配置对话框 -->
-    <Dialog v-model:open="isDifyConfigDialogOpen">
+    <!-- FastGPT配置对话框 -->
+    <Dialog v-model:open="isFastGptConfigDialogOpen">
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{{
             isEditing
-              ? t('settings.knowledgeBase.editDifyConfig')
-              : t('settings.knowledgeBase.addDifyConfig')
+              ? t('settings.knowledgeBase.editFastGptConfig')
+              : t('settings.knowledgeBase.addFastGptConfig')
           }}</DialogTitle>
         </DialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-dify-description">
-              {{ t('settings.knowledgeBase.difyDescription') }}
+            <Label class="text-xs text-muted-foreground" for="edit-fastgpt-description">
+              {{ t('settings.knowledgeBase.fastgptDescription') }}
             </Label>
             <Input
-              id="edit-dify-description"
-              v-model="editingDifyConfig.description"
+              id="edit-fastgpt-description"
+              v-model="editingFastGptConfig.description"
               :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
             />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-dify-api-key">
+            <Label class="text-xs text-muted-foreground" for="edit-fastgpt-api-key">
               {{ t('settings.knowledgeBase.apiKey') }}
             </Label>
             <Input
-              id="edit-dify-api-key"
-              v-model="editingDifyConfig.apiKey"
+              id="edit-fastgpt-api-key"
+              v-model="editingFastGptConfig.apiKey"
               type="password"
-              placeholder="Dify API Key"
+              placeholder="FastGPT API Key"
             />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-dify-dataset-id">
+            <Label class="text-xs text-muted-foreground" for="edit-fastgpt-dataset-id">
               {{ t('settings.knowledgeBase.datasetId') }}
             </Label>
             <Input
-              id="edit-dify-dataset-id"
-              v-model="editingDifyConfig.datasetId"
-              placeholder="Dify Dataset ID"
+              id="edit-fastgpt-dataset-id"
+              v-model="editingFastGptConfig.datasetId"
+              placeholder="FastGPT Dataset ID"
             />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-dify-endpoint">
+            <Label class="text-xs text-muted-foreground" for="edit-fastgpt-endpoint">
               {{ t('settings.knowledgeBase.endpoint') }}
             </Label>
             <Input
-              id="edit-dify-endpoint"
-              v-model="editingDifyConfig.endpoint"
-              placeholder="https://api.dify.ai/v1"
+              id="edit-fastgpt-endpoint"
+              v-model="editingFastGptConfig.endpoint"
+              placeholder="http://localhost:3000/api"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="closeEditDifyConfigDialog">{{
+          <Button variant="outline" @click="closeFastGptConfigDialog">{{
             t('common.cancel')
           }}</Button>
-          <Button type="button" :disabled="!isEditingDifyConfigValid" @click="saveDifyConfig">
+          <Button type="button" :disabled="!isEditingFastGptConfigValid" @click="saveFastGptConfig">
             {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
           </Button>
         </DialogFooter>
@@ -195,94 +195,91 @@ import {
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'
 import { useToast } from '@/components/ui/toast'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-
-// 对话框状态
-const isDifyConfigDialogOpen = ref(false)
-
-// 打开添加配置对话框
-const openAddConfig = () => {
-  console.log('openAddConfig')
-  isEditing.value = false
-  editingConfigIndex.value = -1
-  editingDifyConfig.value = {
-    description: '',
-    apiKey: '',
-    datasetId: '',
-    endpoint: 'https://api.dify.ai/v1'
-  }
-  isDifyConfigDialogOpen.value = true
-}
-
-defineExpose({
-  openAddConfig
-})
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
 const { toast } = useToast()
-
-// 对话框状态
-const isDifyConfigPanelOpen = ref(true)
-const isEditing = ref(false)
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-// Dify配置状态
-interface DifyConfig {
+
+// 对话框状态
+const isFastGptConfigPanelOpen = ref(true)
+const isFastGptConfigDialogOpen = ref(false)
+const isEditing = ref(false)
+
+// FastGPT配置状态
+interface FastGptConfig {
   description: string
   apiKey: string
   datasetId: string
   endpoint: string
 }
 
-const difyConfigs = ref<DifyConfig[]>([])
-const editingDifyConfig = ref<DifyConfig>({
+const fastGptConfigs = ref<FastGptConfig[]>([])
+const editingFastGptConfig = ref<FastGptConfig>({
   description: '',
   apiKey: '',
   datasetId: '',
-  endpoint: 'https://api.dify.ai/v1'
+  endpoint: 'http://localhost:3000/api'
 })
 const editingConfigIndex = ref<number>(-1)
 
 // 验证配置是否有效
-const isEditingDifyConfigValid = computed(() => {
+const isEditingFastGptConfigValid = computed(() => {
   return (
-    editingDifyConfig.value.apiKey.trim() !== '' &&
-    editingDifyConfig.value.datasetId.trim() !== '' &&
-    editingDifyConfig.value.description.trim() !== ''
+    editingFastGptConfig.value.apiKey.trim() !== '' &&
+    editingFastGptConfig.value.datasetId.trim() !== '' &&
+    editingFastGptConfig.value.description.trim() !== ''
   )
 })
 
-// 打开编辑配置对话框
-const editDifyConfig = (index: number) => {
-  isEditing.value = true
-  editingConfigIndex.value = index
-  const config = difyConfigs.value[index]
-  editingDifyConfig.value = { ...config }
-  isDifyConfigDialogOpen.value = true
-}
-
-// 关闭配置对话框
-const closeEditDifyConfigDialog = () => {
-  isDifyConfigDialogOpen.value = false
+// 打开添加配置对话框
+const openAddConfig = () => {
+  isEditing.value = false
   editingConfigIndex.value = -1
-  editingDifyConfig.value = {
+  editingFastGptConfig.value = {
     description: '',
     apiKey: '',
     datasetId: '',
-    endpoint: 'https://api.dify.ai/v1'
+    endpoint: 'http://localhost:3000/api'
+  }
+  isFastGptConfigDialogOpen.value = true
+}
+
+defineExpose({
+  openAddConfig
+})
+
+// 打开编辑配置对话框
+const editFastGptConfig = (index: number) => {
+  isEditing.value = true
+  editingConfigIndex.value = index
+  const config = fastGptConfigs.value[index]
+  editingFastGptConfig.value = { ...config }
+  isFastGptConfigDialogOpen.value = true
+}
+
+// 关闭配置对话框
+const closeFastGptConfigDialog = () => {
+  isFastGptConfigDialogOpen.value = false
+  editingConfigIndex.value = -1
+  editingFastGptConfig.value = {
+    description: '',
+    apiKey: '',
+    datasetId: '',
+    endpoint: 'http://localhost:3000/api'
   }
 }
 
 // 保存配置
-const saveDifyConfig = async () => {
-  if (!isEditingDifyConfigValid.value) return
+const saveFastGptConfig = async () => {
+  if (!isEditingFastGptConfigValid.value) return
 
   if (isEditing.value) {
     // 更新配置
     if (editingConfigIndex.value !== -1) {
-      difyConfigs.value[editingConfigIndex.value] = { ...editingDifyConfig.value }
+      fastGptConfigs.value[editingConfigIndex.value] = { ...editingFastGptConfig.value }
     }
     toast({
       title: t('settings.knowledgeBase.configUpdated'),
@@ -290,7 +287,7 @@ const saveDifyConfig = async () => {
     })
   } else {
     // 添加配置
-    difyConfigs.value.push({ ...editingDifyConfig.value })
+    fastGptConfigs.value.push({ ...editingFastGptConfig.value })
     toast({
       title: t('settings.knowledgeBase.configAdded'),
       description: t('settings.knowledgeBase.configAddedDesc')
@@ -298,33 +295,33 @@ const saveDifyConfig = async () => {
   }
 
   // 更新到MCP配置
-  await updateDifyConfigToMcp()
+  await updateFastGptConfigToMcp()
 
   // 关闭对话框
-  closeEditDifyConfigDialog()
+  closeFastGptConfigDialog()
 }
 
-// 移除Dify配置
-const removeDifyConfig = async (index: number) => {
-  difyConfigs.value.splice(index, 1)
-  await updateDifyConfigToMcp()
+// 移除FastGPT配置
+const removeFastGptConfig = async (index: number) => {
+  fastGptConfigs.value.splice(index, 1)
+  await updateFastGptConfigToMcp()
 }
 
-// 更新Dify配置到MCP
-const updateDifyConfigToMcp = async () => {
+// 更新FastGPT配置到MCP
+const updateFastGptConfigToMcp = async () => {
   try {
     // 将配置转换为MCP需要的格式 - 转换为JSON字符串
     const envJson = {
-      configs: toRaw(difyConfigs.value)
+      configs: toRaw(fastGptConfigs.value)
     }
     // 更新到MCP服务器
-    await mcpStore.updateServer('difyKnowledge', {
+    await mcpStore.updateServer('fastGptKnowledge', {
       env: envJson
     })
 
     return true
   } catch (error) {
-    console.error('更新Dify配置失败:', error)
+    console.error('更新FastGPT配置失败:', error)
     toast({
       title: t('common.error.operationFailed'),
       description: String(error),
@@ -334,69 +331,68 @@ const updateDifyConfigToMcp = async () => {
   }
 }
 
-// 从MCP加载Dify配置
-const loadDifyConfigFromMcp = async () => {
+// 从MCP加载FastGPT配置
+const loadFastGptConfigFromMcp = async () => {
   try {
-    // 获取difyKnowledge服务器配置
-    const serverConfig = mcpStore.config.mcpServers['difyKnowledge']
+    // 获取fastGptKnowledge服务器配置
+    const serverConfig = mcpStore.config.mcpServers['fastGptKnowledge']
     if (serverConfig && serverConfig.env) {
       // 解析配置 - env可能是JSON字符串
       try {
         // 尝试解析JSON字符串
         const envObj =
           typeof serverConfig.env === 'string' ? JSON.parse(serverConfig.env) : serverConfig.env
-        // const envObj = serverConfig.env
         if (envObj.configs && Array.isArray(envObj.configs)) {
-          difyConfigs.value = envObj.configs
+          fastGptConfigs.value = envObj.configs
         }
       } catch (parseError) {
-        console.error('解析Dify配置JSON失败:', parseError)
+        console.error('解析FastGPT配置JSON失败:', parseError)
       }
     }
   } catch (error) {
-    console.error('加载Dify配置失败:', error)
+    console.error('加载FastGPT配置失败:', error)
   }
 }
 
-// 切换Dify配置面板
-const toggleDifyConfigPanel = () => {
-  isDifyConfigPanelOpen.value = !isDifyConfigPanelOpen.value
+// 切换FastGPT配置面板
+const toggleFastGptConfigPanel = () => {
+  isFastGptConfigPanelOpen.value = !isFastGptConfigPanelOpen.value
 }
 
-// 计算Dify MCP服务器是否启用
-const isDifyMcpEnabled = computed(() => {
-  return mcpStore.serverStatuses['difyKnowledge'] || false
+// 计算FastGPT MCP服务器是否启用
+const isFastGptMcpEnabled = computed(() => {
+  return mcpStore.serverStatuses['fastGptKnowledge'] || false
 })
 
-// 切换Dify MCP服务器状态
-const toggleDifyMcpServer = async () => {
+// 切换FastGPT MCP服务器状态
+const toggleFastGptMcpServer = async () => {
   if (!mcpStore.mcpEnabled) return
-  await mcpStore.toggleServer('difyKnowledge')
+  await mcpStore.toggleServer('fastGptKnowledge')
 }
 
 // 监听MCP全局状态变化
 watch(
   () => mcpStore.mcpEnabled,
   async (enabled) => {
-    if (!enabled && isDifyMcpEnabled.value) {
-      await mcpStore.toggleServer('difyKnowledge')
+    if (!enabled && isFastGptMcpEnabled.value) {
+      await mcpStore.toggleServer('fastGptKnowledge')
     }
   }
 )
-
-// 组件挂载时加载配置
-onMounted(async () => {
-  await loadDifyConfigFromMcp()
-})
 
 // 监听URL查询参数，设置活动标签页
 watch(
   () => route.query.subtab,
   (newSubtab) => {
-    if (newSubtab === 'dify') {
-      isDifyConfigPanelOpen.value = true
+    if (newSubtab === 'fastgpt') {
+      isFastGptConfigPanelOpen.value = true
     }
   },
   { immediate: true }
 )
+
+// 组件挂载时加载配置
+onMounted(async () => {
+  await loadFastGptConfigFromMcp()
+})
 </script>

@@ -10,7 +10,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import axios from 'axios'
 
 // Schema definitions
-const DifyKnowledgeSearchArgsSchema = z.object({
+const FastGptKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
   scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)')
@@ -19,43 +19,32 @@ const DifyKnowledgeSearchArgsSchema = z.object({
 const ToolInputSchema = ToolSchema.shape.inputSchema
 type ToolInput = z.infer<typeof ToolInputSchema>
 
-// 定义Dify API返回的数据结构
-interface DifySearchResponse {
-  query: {
-    content: string
-  }
-  records: Array<{
-    segment: {
+// 定义FastGPT API返回的数据结构
+interface FastGptSearchResponse {
+  code: number
+  statusText: string
+  data: {
+    list: Array<{
       id: string
-      position: number
-      document_id: string
-      content: string
-      word_count: number
-      tokens: number
-      keywords: string[]
-      index_node_id: string
-      index_node_hash: string
-      hit_count: number
-      enabled: boolean
-      status: string
-      created_by: string
-      created_at: number
-      indexing_at: number
-      completed_at: number
-      document?: {
-        id: string
-        data_source_type: string
-        name: string
-      }
-    }
-    score: number
-  }>
+      q: string
+      a: string
+      datasetId: string
+      collectionId: string
+      sourceName: string
+      sourceId: string
+      score: Array<{
+        value: number
+        type: string
+        index: number
+      }>
+    }>
+  }
 }
 
 // 导入MCPTextContent接口
 import { MCPTextContent } from '@shared/presenter'
 
-export class DifyKnowledgeServer {
+export class FastGptKnowledgeServer {
   private server: Server
   private configs: Array<{
     apiKey: string
@@ -67,24 +56,24 @@ export class DifyKnowledgeServer {
   constructor(env?: {
     configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
   }) {
-    console.log('DifyKnowledgeServer constructor', env)
+    console.log('FastGptKnowledgeServer constructor', env)
     if (!env) {
-      throw new Error('需要提供Dify知识库配置')
+      throw new Error('需要提供FastGPT知识库配置')
     }
 
     const envs = env.configs
 
     if (!Array.isArray(envs) || envs.length === 0) {
-      throw new Error('需要提供至少一个Dify知识库配置')
+      throw new Error('需要提供至少一个FastGPT知识库配置')
     }
 
     // 处理每个配置
     for (const env of envs) {
       if (!env.apiKey) {
-        throw new Error('需要提供Dify API Key')
+        throw new Error('需要提供FastGPT API Key')
       }
       if (!env.datasetId) {
-        throw new Error('需要提供Dify Dataset ID')
+        throw new Error('需要提供FastGPT Dataset ID')
       }
       if (!env.description) {
         throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
@@ -93,7 +82,7 @@ export class DifyKnowledgeServer {
       this.configs.push({
         apiKey: env.apiKey,
         datasetId: env.datasetId,
-        endpoint: env.endpoint || 'https://api.dify.ai/v1',
+        endpoint: env.endpoint || 'http://localhost:3000/api',
         description: env.description
       })
     }
@@ -101,7 +90,7 @@ export class DifyKnowledgeServer {
     // 创建服务器实例
     this.server = new Server(
       {
-        name: 'deepchat-inmemory/dify-knowledge-server',
+        name: 'deepchat-inmemory/fastgpt-knowledge-server',
         version: '0.1.0'
       },
       {
@@ -127,9 +116,9 @@ export class DifyKnowledgeServer {
       const tools = this.configs.map((config, index) => {
         const suffix = this.configs.length > 1 ? `_${index + 1}` : ''
         return {
-          name: `dify_knowledge_search${suffix}`,
+          name: `fastgpt_knowledge_search${suffix}`,
           description: config.description,
-          inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(FastGptKnowledgeSearchArgsSchema) as ToolInput
         }
       })
 
@@ -140,8 +129,8 @@ export class DifyKnowledgeServer {
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: parameters } = request.params
 
-      // 检查是否是Dify知识库搜索工具
-      if (name.startsWith('dify_knowledge_search')) {
+      // 检查是否是FastGPT知识库搜索工具
+      if (name.startsWith('fastgpt_knowledge_search')) {
         try {
           // 提取索引
           let configIndex = 0
@@ -155,9 +144,9 @@ export class DifyKnowledgeServer {
             throw new Error(`无效的知识库索引: ${configIndex}`)
           }
 
-          return await this.performDifyKnowledgeSearch(parameters, configIndex)
+          return await this.performFastGptKnowledgeSearch(parameters, configIndex)
         } catch (error) {
-          console.error('Dify知识库搜索失败:', error)
+          console.error('FastGPT知识库搜索失败:', error)
           return {
             content: [
               {
@@ -180,8 +169,8 @@ export class DifyKnowledgeServer {
     })
   }
 
-  // 执行Dify知识库搜索
-  private async performDifyKnowledgeSearch(
+  // 执行FastGPT知识库搜索
+  private async performFastGptKnowledgeSearch(
     parameters: Record<string, unknown> | undefined,
     configIndex: number = 0
   ): Promise<{ content: MCPTextContent[] }> {
@@ -203,25 +192,17 @@ export class DifyKnowledgeServer {
     const config = this.configs[configIndex]
 
     try {
-      const url = `${config.endpoint.replace(/\/$/, '')}/datasets/${config.datasetId}/retrieve`
-      console.log('performDifyKnowledgeSearch request', url, {
-        query,
-        retrieval_model: {
-          top_k: topK,
-          score_threshold: scoreThreshold
-        }
-      })
+      const url = `${config.endpoint.replace(/\/$/, '')}/core/dataset/searchTest`
 
-      const response = await axios.post<DifySearchResponse>(
+      const response = await axios.post<FastGptSearchResponse>(
         url,
         {
-          query,
-          retrieval_model: {
-            top_k: topK,
-            score_threshold: scoreThreshold,
-            reranking_enable: null, // 下面这两个字段即使为空也必须要有，否则接口无法请求
-            score_threshold_enabled: null
-          }
+          datasetId: config.datasetId,
+          text: query,
+          limit: 20000,
+          similarity: scoreThreshold,
+          searchMode: 'embedding',
+          usingReRank: false
         },
         {
           headers: {
@@ -231,19 +212,17 @@ export class DifyKnowledgeServer {
         }
       )
 
-      // 处理响应数据
-      const results = response.data.records.map((record) => {
-        const docName = record.segment.document?.name || '未知文档'
-        const docId = record.segment.document_id
-        const content = record.segment.content
-        const score = record.score
+      if (response.data.code !== 200) {
+        throw new Error(`FastGPT API错误: ${response.data.statusText}`)
+      }
 
+      // 处理响应数据
+      const results = response.data.data.list.slice(0, topK).map((record) => {
         return {
-          title: docName,
-          documentId: docId,
-          content: content,
-          score: score,
-          keywords: record.segment.keywords || []
+          title: record.sourceName || '未知文档',
+          documentId: record.sourceId,
+          content: record.q,
+          score: record.score.length > 0 ? record.score[0].value : 0
         }
       })
 
@@ -258,10 +237,6 @@ export class DifyKnowledgeServer {
         results.forEach((result, index) => {
           resultText += `#### ${index + 1}. ${result.title} (相关度: ${(result.score * 100).toFixed(2)}%)\n`
           resultText += `${result.content}\n\n`
-
-          if (result.keywords && result.keywords.length > 0) {
-            resultText += `关键词: ${result.keywords.join(', ')}\n\n`
-          }
         })
       }
 
@@ -274,10 +249,10 @@ export class DifyKnowledgeServer {
         ]
       }
     } catch (error) {
-      console.error('Dify API请求失败:', error)
+      console.error('FastGPT API请求失败:', error)
       if (axios.isAxiosError(error) && error.response) {
         throw new Error(
-          `Dify API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`
+          `FastGPT API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`
         )
       }
       throw error

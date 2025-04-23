@@ -16,11 +16,20 @@
           </div>
           <div class="flex items-center gap-2">
             <!-- MCP开关 -->
-            <Switch
-              :checked="isRagflowMcpEnabled"
-              :disabled="!mcpStore.mcpEnabled"
-              @update:checked="toggleRagflowMcpServer"
-            />
+            <TooltipProvider>
+              <Tooltip :delay-duration="200">
+                <TooltipTrigger as-child>
+                  <Switch
+                    :checked="isRagflowMcpEnabled"
+                    :disabled="!mcpStore.mcpEnabled"
+                    @update:checked="toggleRagflowMcpServer"
+                  />
+                </TooltipTrigger>
+                <TooltipContent v-if="!mcpStore.mcpEnabled">
+                  <p>{{ t('settings.mcp.enableToAccess') }}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant="outline"
               size="sm"
@@ -175,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -192,12 +201,12 @@ import {
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'
 import { useToast } from '@/components/ui/toast'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useRoute } from 'vue-router'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
 const { toast } = useToast()
-import { useRoute } from 'vue-router'
-
 const route = useRoute()
 
 // 对话框状态
@@ -327,9 +336,9 @@ const removeRagflowConfig = async (index: number) => {
 const updateRagflowConfigToMcp = async () => {
   try {
     // 将配置转换为MCP需要的格式 - 转换为JSON字符串
-    const envJson = JSON.stringify({
-      configs: ragflowConfigs.value
-    })
+    const envJson = {
+      configs: toRaw(ragflowConfigs.value)
+    }
     // 更新到MCP服务器
     await mcpStore.updateServer('ragflowKnowledge', {
       env: envJson

@@ -198,7 +198,11 @@
     "addRagflowConfig": "Add RAGFlow Configuration",
     "editRagflowConfig": "Edit RAGFlow Configuration",
     "dify": "Dify Knowledge Base",
-    "editDifyConfig": "Modify the Dify configuration"
+    "editDifyConfig": "Modify the Dify configuration",
+    "fastgptTitle": "FastGPT Knowledge Base",
+    "fastgptDescription": "FastGPT is a powerful knowledge base management system that supports multiple retrieval methods and document management features.",
+    "addFastGptConfig": "Add FastGPT Configuration",
+    "editFastGptConfig": "Edit FastGPT Configuration"
   },
   "mcp": {
     "title": "MCP Settings",

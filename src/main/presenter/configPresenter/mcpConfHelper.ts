@@ -76,7 +76,7 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
           description: 'this is a description for the current knowledge base',
           apiKey: 'YOUR_DIFY_API_KEY',
           datasetId: 'YOUR_DATASET_ID',
-          endpoint: 'http://dify.y.sanrun.fun/v1'
+          endpoint: 'http://localhost:3000/v1'
         }
       ]
     },
@@ -116,6 +116,25 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
           apiKey: 'YOUR_RAGFLOW_API_KEY',
           datasetIds: ['YOUR_DATASET_ID'],
           endpoint: 'http://localhost:8000'
+        }
+      ]
+    },
+    disable: false
+  },
+  fastGptKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置FastGPT知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'fastGptKnowledge',
+    env: {
+      configs: [
+        {
+          description: 'this is a description for the current knowledge base',
+          apiKey: 'YOUR_FastGPT_API_KEY',
+          datasetId: 'YOUR_DATASET_ID',
+          endpoint: 'http://localhost:3000/api'
         }
       ]
     },
