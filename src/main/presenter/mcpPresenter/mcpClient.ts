@@ -83,6 +83,11 @@ export class McpClient {
   private nodeRuntimePath: string | null = null
   private npmRegistry: string | null = null
 
+  // 缓存
+  private cachedTools: Tool[] | null = null
+  private cachedPrompts: Prompt[] | null = null
+  private cachedResources: ResourceListEntry[] | null = null
+
   // 处理PATH环境变量的函数
   private normalizePathEnv(paths: string[]): { key: string; value: string } {
     const isWindows = process.platform === 'win32'
@@ -446,6 +451,11 @@ export class McpClient {
     this.client = null
     this.transport = null
     this.isConnected = false
+
+    // 清空缓存
+    this.cachedTools = null
+    this.cachedPrompts = null
+    this.cachedResources = null
   }
 
   // 检查服务器是否正在运行
@@ -473,6 +483,8 @@ export class McpClient {
       // 检查结果
       if (result.isError) {
         const errorText = result.content && result.content[0] ? result.content[0].text : '未知错误'
+        // 如果调用失败，清空工具缓存，以便下次重新获取
+        this.cachedTools = null
         return {
           isError: true,
           content: [{ type: 'error', text: errorText }]
@@ -481,12 +493,19 @@ export class McpClient {
       return result
     } catch (error) {
       console.error(`调用MCP工具 ${toolName} 失败:`, error)
+      // 调用失败，清空工具缓存
+      this.cachedTools = null
       throw error
     }
   }
 
   // 列出可用工具
   async listTools(): Promise<Tool[]> {
+    // 检查缓存
+    if (this.cachedTools !== null) {
+      return this.cachedTools
+    }
+
     if (!this.isConnected) {
       await this.connect()
     }
@@ -501,19 +520,23 @@ export class McpClient {
       if (response && typeof response === 'object' && 'tools' in response) {
         const toolsArray = response.tools
         if (Array.isArray(toolsArray)) {
-          return toolsArray as Tool[]
+          // 缓存结果
+          this.cachedTools = toolsArray as Tool[]
+          return this.cachedTools
         }
       }
       throw new Error('无效的工具响应格式')
     } catch (error) {
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
-      // 如果错误表明不支持，则返回空数组
+      // 如果错误表明不支持，则缓存空数组
       if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
         console.warn(`服务器 ${this.serverName} 不支持 listTools`)
-        return []
+        this.cachedTools = []
+        return this.cachedTools
       } else {
         console.error(`列出MCP工具失败:`, error)
+        // 发生其他错误，不清空缓存（保持null），以便下次重试
         throw error
       }
     }
@@ -521,6 +544,11 @@ export class McpClient {
 
   // 列出可用提示
   async listPrompts(): Promise<Prompt[]> {
+    // 检查缓存
+    if (this.cachedPrompts !== null) {
+      return this.cachedPrompts
+    }
+
     if (!this.isConnected) {
       await this.connect()
     }
@@ -538,7 +566,7 @@ export class McpClient {
         const promptsArray = (response as { prompts: unknown }).prompts
         if (Array.isArray(promptsArray)) {
           // 需要确保每个元素都符合 Prompt 接口
-          return promptsArray.map((p) => ({
+          const validPrompts = promptsArray.map((p) => ({
             name: typeof p === 'object' && p !== null && 'name' in p ? String(p.name) : 'unknown',
             description:
               typeof p === 'object' && p !== null && 'description' in p
@@ -549,18 +577,23 @@ export class McpClient {
                 ? (p.inputSchema as Record<string, unknown>)
                 : undefined
           })) as Prompt[]
+          // 缓存结果
+          this.cachedPrompts = validPrompts
+          return this.cachedPrompts
         }
       }
       throw new Error('无效的提示响应格式')
     } catch (error) {
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
-      // 如果错误表明不支持，则返回空数组
+      // 如果错误表明不支持，则缓存空数组
       if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
         console.warn(`服务器 ${this.serverName} 不支持 listPrompts`)
-        return []
+        this.cachedPrompts = []
+        return this.cachedPrompts
       } else {
         console.error(`列出MCP提示失败:`, error)
+        // 发生其他错误，不清空缓存（保持null），以便下次重试
         throw error
       }
     }
@@ -599,12 +632,19 @@ export class McpClient {
       throw new Error('无效的获取提示响应格式')
     } catch (error) {
       console.error(`获取MCP提示 ${name} 失败:`, error)
+      // 获取失败，清空提示缓存
+      this.cachedPrompts = null
       throw error
     }
   }
 
   // 列出可用资源
   async listResources(): Promise<ResourceListEntry[]> {
+    // 检查缓存
+    if (this.cachedResources !== null) {
+      return this.cachedResources
+    }
+
     if (!this.isConnected) {
       await this.connect()
     }
@@ -622,22 +662,27 @@ export class McpClient {
         const resourcesArray = (response as { resources: unknown }).resources
         if (Array.isArray(resourcesArray)) {
           // 需要确保每个元素都符合 ResourceListEntry 接口
-          return resourcesArray.map((r) => ({
+          const validResources = resourcesArray.map((r) => ({
             uri: typeof r === 'object' && r !== null && 'uri' in r ? String(r.uri) : 'unknown',
             name: typeof r === 'object' && r !== null && 'name' in r ? String(r.name) : undefined
           })) as ResourceListEntry[]
+          // 缓存结果
+          this.cachedResources = validResources
+          return this.cachedResources
         }
       }
       throw new Error('无效的资源列表响应格式')
     } catch (error) {
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
-      // 如果错误表明不支持，则返回空数组
+      // 如果错误表明不支持，则缓存空数组
       if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
         console.warn(`服务器 ${this.serverName} 不支持 listResources`)
-        return []
+        this.cachedResources = []
+        return this.cachedResources
       } else {
         console.error(`列出MCP资源失败:`, error)
+        // 发生其他错误，不清空缓存（保持null），以便下次重试
         throw error
       }
     }
@@ -669,6 +714,8 @@ export class McpClient {
       return resource
     } catch (error) {
       console.error(`读取MCP资源 ${resourceUri} 失败:`, error)
+      // 读取失败，清空资源缓存
+      this.cachedResources = null
       throw error
     }
   }
