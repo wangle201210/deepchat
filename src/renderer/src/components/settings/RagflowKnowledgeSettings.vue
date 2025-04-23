@@ -175,7 +175,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -327,9 +327,9 @@ const removeRagflowConfig = async (index: number) => {
 const updateRagflowConfigToMcp = async () => {
   try {
     // 将配置转换为MCP需要的格式 - 转换为JSON字符串
-    const envJson = JSON.stringify({
-      configs: ragflowConfigs.value
-    })
+    const envJson = {
+      configs: toRaw(ragflowConfigs.value)
+    }
     // 更新到MCP服务器
     await mcpStore.updateServer('ragflowKnowledge', {
       env: envJson

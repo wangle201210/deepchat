@@ -76,7 +76,7 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
           description: 'this is a description for the current knowledge base',
           apiKey: 'YOUR_DIFY_API_KEY',
           datasetId: 'YOUR_DATASET_ID',
-          endpoint: 'http://dify.y.sanrun.fun/v1'
+          endpoint: 'http://localhost:3000/v1'
         }
       ]
     },
