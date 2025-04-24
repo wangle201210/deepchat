@@ -23,6 +23,13 @@ import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
+const OPENAI_IMAGE_GENERATION_MODELS = [
+  'gpt-4o-all',
+  'gpt-4o-image',
+  'gpt-image-1',
+  'dall-e-3',
+  'dall-e-2'
+]
 
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
@@ -166,6 +173,71 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
 
+    // --- [NEW] Handle Image Generation Models ---
+    if (OPENAI_IMAGE_GENERATION_MODELS.includes(modelId)) {
+      // Extract prompt from the last user message
+      const lastUserMessage = messages.findLast((m) => m.role === 'user')
+      let prompt = ''
+      if (lastUserMessage?.content) {
+        if (typeof lastUserMessage.content === 'string') {
+          prompt = lastUserMessage.content
+        } else if (Array.isArray(lastUserMessage.content)) {
+          // Find the first text part for the prompt
+          const textPart = lastUserMessage.content.find((part) => part.type === 'text')
+          if (textPart?.text) {
+            prompt = textPart.text
+          }
+        }
+      }
+
+      if (!prompt) {
+        console.error('[coreStream] Could not extract prompt for image generation.')
+        yield { type: 'error', error_message: 'Could not extract prompt for image generation.' }
+        yield { type: 'stop', stop_reason: 'error' }
+        return
+      }
+
+      try {
+        // console.log(`[coreStream] Generating image with model ${modelId} and prompt: "${prompt}"`)
+        const result = await this.openai.images.generate(
+          {
+            model: modelId,
+            prompt: prompt,
+            output_format: 'png',
+            n: 1, // Generate one image
+            size: 'auto', // Default size, consider making configurable
+            response_format: 'url', // Need base64 data
+            quality: 'hd', // Default quality, adjust as needed
+            background: 'transparent' // Optional, based on model support/needs
+          },
+          {
+            timeout: 300_000
+          }
+        )
+        if (result.data && result.data[0]?.url) {
+          yield {
+            type: 'image_data',
+            image_data: {
+              data: result.data[0]?.url,
+              mimeType: 'deepchat/image-url'
+            }
+          }
+          yield { type: 'stop', stop_reason: 'complete' }
+        } else {
+          console.error('[coreStream] No image data received from API.')
+          yield { type: 'error', error_message: 'No image data received from API.' }
+          yield { type: 'stop', stop_reason: 'error' }
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('[coreStream] Error during image generation:', errorMessage)
+        yield { type: 'error', error_message: `Image generation failed: ${errorMessage}` }
+        yield { type: 'stop', stop_reason: 'error' }
+      }
+      return // Stop execution here for image models
+    }
+    // --- End Image Generation Handling ---
+
     const tools = mcpTools || []
     const supportsFunctionCall = modelConfig?.functionCall || false
     let processedMessages = [...messages] as ChatCompletionMessageParam[]
@@ -220,6 +292,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       | undefined = undefined
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
+      // console.log('chunk', JSON.stringify(chunk))
       const choice = chunk.choices[0]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any

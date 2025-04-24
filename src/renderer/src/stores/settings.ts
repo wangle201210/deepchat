@@ -935,6 +935,7 @@ export const useSettingsStore = defineStore('settings', () => {
           // 注意：不需要调用refreshAllModels，因为model-status-changed事件会更新UI
         }
       }
+      refreshProviderModels(providerId)
     } catch (error) {
       console.error(`Failed to enable all models for provider ${providerId}:`, error)
       throw error
@@ -971,6 +972,7 @@ export const useSettingsStore = defineStore('settings', () => {
           }
         }
       }
+      refreshProviderModels(providerId)
     } catch (error) {
       console.error(`Failed to disable all models for provider ${providerId}:`, error)
       throw error
