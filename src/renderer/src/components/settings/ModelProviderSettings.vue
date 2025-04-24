@@ -81,7 +81,7 @@ const isAddProviderDialogOpen = ref(false)
 
 // 创建一个计算属性来处理排序后的providers
 const sortedProviders = computed({
-  get: () => settingsStore.providers,
+  get: () => settingsStore.sortedProviders,
   set: (newProviders) => {
     // 更新 store 中的 providers 顺序
     settingsStore.updateProvidersOrder(newProviders)
