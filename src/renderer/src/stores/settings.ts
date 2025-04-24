@@ -8,6 +8,7 @@ import { CONFIG_EVENTS, OLLAMA_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import type { OllamaModel } from '@shared/presenter'
 import { useRouter } from 'vue-router'
 import { useMcpStore } from '@/stores/mcp'
+import { useUpgradeStore } from '@/stores/upgrade'
 
 // 定义字体大小级别对应的 Tailwind 类
 const FONT_SIZE_CLASSES = ['text-sm', 'text-base', 'text-lg', 'text-xl', 'text-2xl']
@@ -19,9 +20,11 @@ export const useSettingsStore = defineStore('settings', () => {
   const threadP = usePresenter('threadPresenter')
   const router = useRouter()
   const { locale } = useI18n({ useScope: 'global' })
+  const upgradeStore = useUpgradeStore()
   const providers = ref<LLM_PROVIDER[]>([])
   const theme = ref<string>('system')
   const language = ref<string>('system')
+  const providerOrder = ref<string[]>([])
   const enabledModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
   const allProviderModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
   const customModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
@@ -221,6 +224,23 @@ export const useSettingsStore = defineStore('settings', () => {
     () => FONT_SIZE_CLASSES[fontSizeLevel.value] || FONT_SIZE_CLASSES[DEFAULT_FONT_SIZE_LEVEL]
   )
 
+  // 计算排序后的 providers
+  const sortedProviders = computed(() => {
+    if (!providerOrder.value || providerOrder.value.length === 0) {
+      return providers.value
+    }
+    // 根据 providerOrder 对 providers 进行排序
+    const orderedProviders = [...providers.value].sort((a, b) => {
+      const aIndex = providerOrder.value.indexOf(a.id)
+      const bIndex = providerOrder.value.indexOf(b.id)
+      // 如果某个 provider 不在 order 中，将其放到最后
+      if (aIndex === -1) return 1
+      if (bIndex === -1) return -1
+      return aIndex - bIndex
+    })
+    return orderedProviders
+  })
+
   // 初始化设置
   const initSettings = async () => {
     try {
@@ -228,6 +248,9 @@ export const useSettingsStore = defineStore('settings', () => {
       // 获取全部 provider
       providers.value = await configP.getProviders()
       defaultProviders.value = await configP.getDefaultProviders()
+      // 加载保存的 provider 顺序
+      await loadSavedOrder()
+      
       // 获取主题
       theme.value = (await configP.getSetting('theme')) || 'system'
 
@@ -379,22 +402,38 @@ export const useSettingsStore = defineStore('settings', () => {
       // 获取在线模型
       let models = await configP.getProviderModels(providerId)
       if (!models || models.length === 0) {
-        const modelMetas = await llmP.getModelList(providerId)
-        if (modelMetas) {
-          models = modelMetas.map((meta) => ({
-            id: meta.id,
-            name: meta.name,
-            contextLength: meta.contextLength || 4096,
-            maxTokens: meta.maxTokens || 2048,
-            provider: providerId,
-            group: meta.group,
-            enabled: false,
-            isCustom: meta.isCustom || false,
-            providerId,
-            vision: meta.vision || false,
-            functionCall: meta.functionCall || false,
-            reasoning: meta.reasoning || false
-          }))
+        try {
+          const modelMetas = await llmP.getModelList(providerId)
+          if (modelMetas) {
+            models = modelMetas.map((meta) => ({
+              id: meta.id,
+              name: meta.name,
+              contextLength: meta.contextLength || 4096,
+              maxTokens: meta.maxTokens || 2048,
+              provider: providerId,
+              group: meta.group,
+              enabled: false,
+              isCustom: meta.isCustom || false,
+              providerId,
+              vision: meta.vision || false,
+              functionCall: meta.functionCall || false,
+              reasoning: meta.reasoning || false
+            }))
+          }
+        } catch (error) {
+          console.error(`Failed to fetch models for provider ${providerId}:`, error)
+          // 如果获取失败，使用空数组继续
+          models = []
+          // 如果是 OpenAI provider，可能需要检查配置
+          if (providerId === 'openai') {
+            const provider = providers.value.find(p => p.id === 'openai')
+            if (provider) {
+              // 禁用 provider
+              await updateProviderStatus('openai', false)
+              console.warn('Disabled OpenAI provider due to API error')
+            }
+          }
+          return
         }
       }
 
@@ -868,6 +907,11 @@ export const useSettingsStore = defineStore('settings', () => {
         })
       await configP.setProviders(filteredProviders)
       providers.value = filteredProviders
+      
+      // 从保存的顺序中移除此 provider 
+      providerOrder.value = providerOrder.value.filter(id => id !== providerId)
+      await configP.setSetting('providerOrder', providerOrder.value)
+      
       await refreshAllModels()
     } catch (error) {
       console.error('Failed to remove provider:', error)
@@ -1129,9 +1173,9 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // 在 store 创建时初始化
-  onMounted(() => {
-    initSettings()
-    setupProviderListener()
+  onMounted(async () => {
+    await initSettings()
+    await setupProviderListener()
   })
 
   // 清理可能的事件监听器
@@ -1259,6 +1303,46 @@ export const useSettingsStore = defineStore('settings', () => {
     return null
   }
 
+  // 初始化或加载保存的顺序
+  const loadSavedOrder = async () => {
+    try {
+      // 从配置中获取保存的顺序
+      const savedOrder = await configP.getSetting<string[]>('providerOrder')
+      if (savedOrder && Array.isArray(savedOrder)) {
+        providerOrder.value = savedOrder
+      } else {
+        // 如果没有保存的顺序，使用当前 providers 的顺序
+        providerOrder.value = providers.value.map(provider => provider.id)
+      }
+    } catch (error) {
+      console.error('Failed to load saved provider order:', error)
+      // 出错时使用当前 providers 的顺序
+      providerOrder.value = providers.value.map(provider => provider.id)
+    }
+  }
+
+  // 更新 provider 顺序
+  const updateProvidersOrder = async (newProviders: LLM_PROVIDER[]) => {
+    try {
+      // 从新的 provider 数组创建顺序数组
+      const newOrder = newProviders.map(provider => provider.id)
+      // 确保所有现有的 provider 都在顺序中
+      const existingIds = providers.value.map(p => p.id)
+      const missingIds = existingIds.filter(id => !newOrder.includes(id))
+      const finalOrder = [...newOrder, ...missingIds]
+      
+      // 更新顺序
+      providerOrder.value = finalOrder
+      // 保存新的顺序到配置中
+      await configP.setSetting('providerOrder', finalOrder)
+      
+      // 强制更新 providers 以触发视图更新
+      providers.value = [...providers.value]
+    } catch (error) {
+      console.error('Failed to update provider order:', error)
+    }
+  }
+
   return {
     providers,
     theme,
@@ -1323,6 +1407,10 @@ export const useSettingsStore = defineStore('settings', () => {
     refreshSearchEngines,
     findModelByIdOrName,
     mcpInstallCache,
-    clearMcpInstallCache
+    clearMcpInstallCache,
+    isUpdating: upgradeStore.isUpdating,
+    loadSavedOrder,
+    updateProvidersOrder,
+    sortedProviders
   }
 })
