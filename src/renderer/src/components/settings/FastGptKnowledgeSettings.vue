@@ -195,6 +195,7 @@ import {
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'
 import { useToast } from '@/components/ui/toast'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
