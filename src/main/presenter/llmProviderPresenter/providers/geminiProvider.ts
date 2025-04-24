@@ -13,7 +13,8 @@ import {
   GenerativeModel,
   Part,
   Content,
-  GenerationConfig
+  GenerationConfig,
+  UsageMetadata
 } from '@google/generative-ai'
 import { ConfigPresenter } from '../../configPresenter'
 import { presenter } from '@/presenter'
@@ -808,19 +809,12 @@ export class GeminiProvider extends BaseLLMProvider {
     let buffer = ''
     let isInThinkTag = false
     let toolUseDetected = false
-
+    let usageMetadata: UsageMetadata | undefined
     // 流处理循环
     for await (const chunk of result.stream) {
       // 处理用量统计
       if (chunk.usageMetadata) {
-        yield {
-          type: 'usage',
-          usage: {
-            prompt_tokens: chunk.usageMetadata.promptTokenCount,
-            completion_tokens: chunk.usageMetadata.candidatesTokenCount,
-            total_tokens: chunk.usageMetadata.totalTokenCount
-          }
-        }
+        usageMetadata = chunk.usageMetadata
       }
 
       // 检查是否包含函数调用
@@ -948,7 +942,16 @@ export class GeminiProvider extends BaseLLMProvider {
       // 内容已经发送，清空buffer避免重复
       buffer = ''
     }
-
+    if (usageMetadata) {
+      yield {
+        type: 'usage',
+        usage: {
+          prompt_tokens: usageMetadata.promptTokenCount,
+          completion_tokens: usageMetadata.candidatesTokenCount,
+          total_tokens: usageMetadata.totalTokenCount
+        }
+      }
+    }
     // 处理剩余缓冲区内容
     if (buffer) {
       if (isInThinkTag) {

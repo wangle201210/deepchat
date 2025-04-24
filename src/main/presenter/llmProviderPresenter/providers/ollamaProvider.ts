@@ -495,7 +495,6 @@ export class OllamaProvider extends BaseLLMProvider {
             completion_tokens: chunk.eval_count || 0,
             total_tokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0)
           }
-          yield { type: 'usage', usage }
         }
 
         // 处理原生工具调用
@@ -642,6 +641,9 @@ export class OllamaProvider extends BaseLLMProvider {
             }
 
             continue
+          }
+          if (usage) {
+            yield { type: 'usage', usage }
           }
 
           // --- 思考标签处理 ---
