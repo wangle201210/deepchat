@@ -1,15 +1,28 @@
 <template>
-  <div
-    class="h-9 flex-shrink-0 w-full flex items-center justify-between select-none bg-background border-b"
-  >
+  <div class="h-9 flex-shrink-0 w-full flex items-center justify-between select-none">
     <!-- App title/content in center -->
     <div
       :class="[
-        'flex-1 text-center text-sm font-medium window-drag-region',
-        isMacOS ? 'px-20' : 'px-4'
+        'flex-1 text-center text-sm font-medium h-full flex flex-row items-center justify-start',
+        isMacOS ? 'pl-20 pr-2' : 'px-4'
       ]"
     >
-      DeepChat
+      <div class="text-xs font-medium px-3 h-6 bg-card rounded-md flex items-center justify-center">
+        <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />DeepChat
+      </div>
+      <Button
+        variant="ghost"
+        class="text-xs ml-2 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center"
+      >
+        <Icon icon="lucide:plus" class="w-4 h-4" />
+      </Button>
+      <div class="flex-1 window-drag-region w-0 h-full">&nbsp;</div>
+      <Button
+        variant="ghost"
+        class="text-xs font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center"
+      >
+        <Icon icon="lucide:settings" class="w-4 h-4" />
+      </Button>
     </div>
 
     <!-- Windows/Linux window controls (only shown on Windows/Linux) -->
@@ -34,8 +47,6 @@
         <XIcon class="h-4 w-4" />
       </button>
     </div>
-    <!-- Spacer for macOS to maintain layout -->
-    <div v-else class="px-4"></div>
   </div>
 </template>
 
@@ -45,6 +56,8 @@ import { MinusIcon, XIcon } from 'lucide-vue-next'
 import MaximizeIcon from './icons/MaximizeIcon.vue'
 import RestoreIcon from './icons/RestoreIcon.vue'
 import { usePresenter } from '@/composables/usePresenter'
+import { Button } from './ui/button'
+import { Icon } from '@iconify/vue'
 
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
