@@ -250,7 +250,7 @@ export const useSettingsStore = defineStore('settings', () => {
       defaultProviders.value = await configP.getDefaultProviders()
       // 加载保存的 provider 顺序
       await loadSavedOrder()
-      
+
       // 获取主题
       theme.value = (await configP.getSetting('theme')) || 'system'
 
@@ -426,7 +426,7 @@ export const useSettingsStore = defineStore('settings', () => {
           models = []
           // 如果是 OpenAI provider，可能需要检查配置
           if (providerId === 'openai') {
-            const provider = providers.value.find(p => p.id === 'openai')
+            const provider = providers.value.find((p) => p.id === 'openai')
             if (provider) {
               // 禁用 provider
               await updateProviderStatus('openai', false)
@@ -713,7 +713,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const updateModelStatus = async (providerId: string, modelId: string, enabled: boolean) => {
     try {
       await llmP.updateModelStatus(providerId, modelId, enabled)
-      // 注意：这里不再调用refreshAllModels，因为会通过model-status-changed事件更新本地状态
+      // 调用成功后，刷新该 provider 的模型列表
+      await refreshProviderModels(providerId)
     } catch (error) {
       console.error('Failed to update model status:', error)
     }
@@ -907,11 +908,11 @@ export const useSettingsStore = defineStore('settings', () => {
         })
       await configP.setProviders(filteredProviders)
       providers.value = filteredProviders
-      
-      // 从保存的顺序中移除此 provider 
-      providerOrder.value = providerOrder.value.filter(id => id !== providerId)
+
+      // 从保存的顺序中移除此 provider
+      providerOrder.value = providerOrder.value.filter((id) => id !== providerId)
       await configP.setSetting('providerOrder', providerOrder.value)
-      
+
       await refreshAllModels()
     } catch (error) {
       console.error('Failed to remove provider:', error)
@@ -1312,12 +1313,12 @@ export const useSettingsStore = defineStore('settings', () => {
         providerOrder.value = savedOrder
       } else {
         // 如果没有保存的顺序，使用当前 providers 的顺序
-        providerOrder.value = providers.value.map(provider => provider.id)
+        providerOrder.value = providers.value.map((provider) => provider.id)
       }
     } catch (error) {
       console.error('Failed to load saved provider order:', error)
       // 出错时使用当前 providers 的顺序
-      providerOrder.value = providers.value.map(provider => provider.id)
+      providerOrder.value = providers.value.map((provider) => provider.id)
     }
   }
 
@@ -1325,17 +1326,17 @@ export const useSettingsStore = defineStore('settings', () => {
   const updateProvidersOrder = async (newProviders: LLM_PROVIDER[]) => {
     try {
       // 从新的 provider 数组创建顺序数组
-      const newOrder = newProviders.map(provider => provider.id)
+      const newOrder = newProviders.map((provider) => provider.id)
       // 确保所有现有的 provider 都在顺序中
-      const existingIds = providers.value.map(p => p.id)
-      const missingIds = existingIds.filter(id => !newOrder.includes(id))
+      const existingIds = providers.value.map((p) => p.id)
+      const missingIds = existingIds.filter((id) => !newOrder.includes(id))
       const finalOrder = [...newOrder, ...missingIds]
-      
+
       // 更新顺序
       providerOrder.value = finalOrder
       // 保存新的顺序到配置中
       await configP.setSetting('providerOrder', finalOrder)
-      
+
       // 强制更新 providers 以触发视图更新
       providers.value = [...providers.value]
     } catch (error) {
