@@ -1,6 +1,6 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
-  <div class="prose prose-sm dark:prose-invert max-w-full break-all">
+  <div class="prose prose-sm dark:prose-invert w-full max-w-none break-all">
     <pre v-if="debug">{{ JSON.stringify(parsedNodes, null, 2) }}</pre>
 
     <!-- 使用结构化节点渲染 -->

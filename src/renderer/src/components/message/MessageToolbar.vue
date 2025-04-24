@@ -1,7 +1,8 @@
 <template>
   <TooltipProvider>
     <div
-      class="w-full h-5 text-xs text-secondary-foreground items-start justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
+      class="w-full h-8 text-xs text-secondary-foreground items-center justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
+      :class="[isAssistant ? '' : 'flex-row-reverse']"
     >
       <span v-show="!loading" class="flex flex-row gap-3">
         <!-- Edit mode buttons (save/cancel) -->
@@ -14,7 +15,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('save')"
               >
-                <Icon icon="lucide:check" class="w-4 h-4" />
+                <Icon icon="lucide:check" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.save') }}</TooltipContent>
@@ -27,7 +28,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('cancel')"
               >
-                <Icon icon="lucide:x" class="w-4 h-4" />
+                <Icon icon="lucide:x" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.cancel') }}</TooltipContent>
@@ -45,7 +46,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('prev')"
               >
-                <Icon icon="lucide:chevron-left" class="w-4 h-4" />
+                <Icon icon="lucide:chevron-left" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.previousVariant') }}</TooltipContent>
@@ -63,7 +64,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('next')"
               >
-                <Icon icon="lucide:chevron-right" class="w-4 h-4" />
+                <Icon icon="lucide:chevron-right" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.nextVariant') }}</TooltipContent>
@@ -76,7 +77,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('copy')"
               >
-                <Icon icon="lucide:copy" class="w-4 h-4" />
+                <Icon icon="lucide:copy" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.copy') }}</TooltipContent>
@@ -90,7 +91,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('copyImage')"
               >
-                <Icon icon="lucide:images" class="w-4 h-4" />
+                <Icon icon="lucide:images" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.copyImage') }}</TooltipContent>
@@ -104,7 +105,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('retry')"
               >
-                <Icon icon="lucide:refresh-cw" class="w-4 h-4" />
+                <Icon icon="lucide:refresh-cw" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.retry') }}</TooltipContent>
@@ -118,7 +119,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('fork')"
               >
-                <Icon icon="lucide:git-branch" class="w-4 h-4" />
+                <Icon icon="lucide:git-branch" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.fork') }}</TooltipContent>
@@ -132,7 +133,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('edit')"
               >
-                <Icon icon="lucide:edit" class="w-4 h-4" />
+                <Icon icon="lucide:edit" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.edit') }}</TooltipContent>
@@ -145,7 +146,7 @@
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
                 @click="emit('delete')"
               >
-                <Icon icon="lucide:trash-2" class="w-4 h-4" />
+                <Icon icon="lucide:trash-2" class="w-3 h-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.delete') }}</TooltipContent>
@@ -155,10 +156,10 @@
       <span class="flex flex-row gap-2">
         <template v-if="usage.input_tokens > 0 || usage.output_tokens > 0">
           <span class="text-xs flex flex-row items-center">
-            <Icon icon="lucide:arrow-up" class="w-4 h-4" />{{ usage.input_tokens }}
+            <Icon icon="lucide:arrow-up" class="w-3 h-3" />{{ usage.input_tokens }}
           </span>
           <span class="text-xs flex flex-row items-center">
-            <Icon icon="lucide:arrow-down" class="w-4 h-4" />{{ usage.output_tokens }}
+            <Icon icon="lucide:arrow-down" class="w-3 h-3" />{{ usage.output_tokens }}
           </span>
         </template>
         <template v-if="hasTokensPerSecond">{{ usage.tokens_per_second?.toFixed(2) }}/s</template>

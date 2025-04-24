@@ -38,7 +38,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useDark } from '@vueuse/core'
+import { useThrottleFn } from '@vueuse/core'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState, Extension } from '@codemirror/state'
 import { StreamLanguage } from '@codemirror/language'
@@ -72,6 +72,8 @@ import { anysphereThemeDark, anysphereThemeLight } from '@/lib/code.theme'
 // Optional: Import artifact store if needed
 import { useArtifactStore } from '@/stores/artifact'
 import { nanoid } from 'nanoid'
+import { detectLanguage } from '@/lib/code.detect'
+import { useThemeStore } from '@/stores/theme'
 
 const props = defineProps<{
   node: {
@@ -85,24 +87,46 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const isDark = useDark()
+const themeStore = useThemeStore()
 const artifactStore = useArtifactStore()
 const codeEditor = ref<HTMLElement | null>(null)
 const copyText = ref(t('common.copy'))
 const editorInstance = ref<EditorView | null>(null)
+const codeLanguage = ref('')
+
+// 创建节流版本的语言检测函数，1秒内最多执行一次
+const throttledDetectLanguage = useThrottleFn(
+  (code: string) => {
+    codeLanguage.value = detectLanguage(code)
+    console.log(codeLanguage.value)
+  },
+  1000,
+  true
+)
 
 // Check if the language is previewable (HTML or SVG)
 const isPreviewable = computed(() => {
-  const lang = props.node.language.trim().toLowerCase()
+  const lang = codeLanguage.value.trim().toLowerCase()
   return lang === 'html' || lang === 'svg'
 })
 
 // Check if the code block is a Mermaid diagram
-const isMermaid = computed(() => props.node.language.toLowerCase() === 'mermaid')
+const isMermaid = computed(() => codeLanguage.value.trim().toLowerCase() === 'mermaid')
+
+watch(
+  () => props.node.language,
+  (newLanguage) => {
+    if (newLanguage === '') {
+      throttledDetectLanguage(props.node.code)
+    } else {
+      codeLanguage.value = newLanguage
+    }
+  }
+)
 
 // 计算用于显示的语言名称
 const displayLanguage = computed(() => {
-  const lang = props.node.language.trim().toLowerCase()
+  const lang = codeLanguage.value.trim().toLowerCase()
 
   // 映射一些常见语言的显示名称
   const languageMap = {
@@ -128,7 +152,8 @@ const displayLanguage = computed(() => {
     sql: 'SQL',
     yaml: 'YAML',
     md: 'Markdown',
-    '': 'Plain Text'
+    '': 'Plain Text',
+    plain: 'Plain Text'
   }
 
   return languageMap[lang] || lang.charAt(0).toUpperCase() + lang.slice(1)
@@ -253,7 +278,7 @@ const createEditor = () => {
   // Set up CodeMirror extensions
   const extensions = [
     basicSetup,
-    isDark.value ? anysphereThemeDark : anysphereThemeLight,
+    themeStore.isDark ? anysphereThemeDark : anysphereThemeLight,
     EditorView.lineWrapping,
     EditorState.tabSize.of(2),
     getLanguageExtension(props.node.language),
@@ -283,9 +308,12 @@ const createEditor = () => {
 }
 
 // 监听主题变化
-watch(isDark, () => {
-  createEditor()
-})
+watch(
+  () => themeStore.isDark,
+  () => {
+    createEditor()
+  }
+)
 
 // 监听代码变化
 watch(
@@ -296,6 +324,11 @@ watch(
     // If it's a mermaid diagram, re-render it
     if (props.node.language.toLowerCase() === 'mermaid' && codeEditor.value) {
       return
+    }
+
+    // Check if we need to detect language
+    if (props.node.language === '') {
+      throttledDetectLanguage(newCode)
     }
 
     // For normal code blocks, update the editor content
@@ -325,6 +358,11 @@ watch(
 // 初始化代码编辑器
 onMounted(() => {
   // Initial editor setup is handled by the immediate watch on code
+  if (props.node.language === '') {
+    throttledDetectLanguage(props.node.code)
+  } else {
+    codeLanguage.value = props.node.language
+  }
   createEditor()
 })
 

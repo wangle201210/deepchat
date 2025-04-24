@@ -15,7 +15,7 @@
             v-if="msg.role === 'assistant'"
             :key="index"
             :ref="setAssistantRef(index)"
-            :is-dark="isDark"
+            :is-dark="themeStore.isDark"
             :message="msg"
           />
           <MessageItemUser
@@ -82,19 +82,19 @@ import { ref, onMounted, nextTick, watch, computed, reactive } from 'vue'
 import MessageItemAssistant from './MessageItemAssistant.vue'
 import MessageItemUser from './MessageItemUser.vue'
 import { AssistantMessage, UserMessage } from '@shared/chat'
-import { useElementBounding, useDebounceFn, useDark } from '@vueuse/core'
+import { useElementBounding, useDebounceFn } from '@vueuse/core'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import { useChatStore } from '@/stores/chat'
 import { useI18n } from 'vue-i18n'
 import { useReferenceStore } from '@/stores/reference'
 import ReferencePreview from './ReferencePreview.vue'
+import { useThemeStore } from '@/stores/theme'
 const { t } = useI18n()
 const props = defineProps<{
   messages: UserMessage[] | AssistantMessage[]
 }>()
-
-const isDark = useDark()
+const themeStore = useThemeStore()
 
 const referenceStore = useReferenceStore()
 

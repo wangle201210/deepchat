@@ -56,9 +56,9 @@
         variant="ghost"
         size="icon"
         class="w-9 h-9 rounded-lg text-muted-foreground"
-        @click="toggleDark()"
+        @click="themeStore.toggleDark()"
       >
-        <Icon :icon="isDark ? 'lucide:sun' : 'lucide:moon'" class="w-4 h-4" />
+        <Icon :icon="themeStore.isDark ? 'lucide:sun' : 'lucide:moon'" class="w-4 h-4" />
       </Button>
       <Button
         variant="ghost"
@@ -81,19 +81,19 @@
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { onMounted, watch } from 'vue'
-import { useDark, useToggle } from '@vueuse/core'
 import { useUpgradeStore } from '@/stores/upgrade'
+import { useThemeStore } from '@/stores/theme'
 defineProps<{
   modelValue: string
 }>()
+
+const themeStore = useThemeStore()
 
 const emits = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
 const upgrade = useUpgradeStore()
-const isDark = useDark()
-const toggleDark = useToggle(isDark)
 
 const handleProfileClick = async () => {
   if (!upgrade.hasUpdate) {
