@@ -1,5 +1,8 @@
 <template>
-  <div class="h-9 flex-shrink-0 w-full flex items-center justify-between select-none">
+  <div
+    class="h-9 flex-shrink-0 w-full flex items-center justify-between select-none"
+    :class="[isMacOS ? '' : 'bg-secondary']"
+  >
     <!-- App title/content in center -->
     <div
       :class="[
