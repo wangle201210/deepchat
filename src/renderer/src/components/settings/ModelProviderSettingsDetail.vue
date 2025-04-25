@@ -40,11 +40,6 @@
           @blur="handleAzureApiVersionChange(String($event.target.value))"
           @keyup.enter="handleAzureApiVersionChange(azureApiVersion)"
         />
-        <div class="text-xs text-secondary-foreground">
-          {{
-            t('settings.provider.azureApiVersionHint', 'Enter the API version for Azure OpenAI.')
-          }}
-        </div>
       </div>
       <div class="flex flex-col items-start p-2 gap-2">
         <Label :for="`${provider.id}-apikey`" class="flex-1 cursor-pointer">API Key</Label>

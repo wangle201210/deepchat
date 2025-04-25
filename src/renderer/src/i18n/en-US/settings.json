@@ -173,7 +173,11 @@
     "deleteModel": "Delete Model",
     "deleteModelConfirm": "Are you sure you want to delete model \"{name}\"? This action cannot be undone.",
     "noLocalModels": "No Local Models",
-    "localModels": "Local Models"
+    "localModels": "Local Models",
+    "azureApiVersion": "API Version",
+    "safety": {
+      "title": "Safety settings"
+    }
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",

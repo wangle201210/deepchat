@@ -14,10 +14,32 @@ import {
   Part,
   Content,
   GenerationConfig,
-  UsageMetadata
+  UsageMetadata,
+  HarmCategory,
+  HarmBlockThreshold,
+  SafetySetting
 } from '@google/generative-ai'
 import { ConfigPresenter } from '../../configPresenter'
 import { presenter } from '@/presenter'
+
+// Mapping from simple keys to API HarmCategory constants
+const keyToHarmCategoryMap: Record<string, HarmCategory> = {
+  harassment: HarmCategory.HARM_CATEGORY_HARASSMENT,
+  hateSpeech: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+  sexuallyExplicit: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+  dangerousContent: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT
+}
+
+// Value mapping from config storage to API HarmBlockThreshold constants
+// Assuming config stores 'BLOCK_NONE', 'BLOCK_LOW_AND_ABOVE', etc. directly
+const valueToHarmBlockThresholdMap: Record<string, HarmBlockThreshold> = {
+  BLOCK_NONE: HarmBlockThreshold.BLOCK_NONE,
+  BLOCK_LOW_AND_ABOVE: HarmBlockThreshold.BLOCK_LOW_AND_ABOVE,
+  BLOCK_MEDIUM_AND_ABOVE: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+  BLOCK_ONLY_HIGH: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+  HARM_BLOCK_THRESHOLD_UNSPECIFIED: HarmBlockThreshold.HARM_BLOCK_THRESHOLD_UNSPECIFIED
+}
+const safetySettingKeys = Object.keys(keyToHarmCategoryMap)
 
 export class GeminiProvider extends BaseLLMProvider {
   private genAI: GoogleGenerativeAI
@@ -336,8 +358,46 @@ export class GeminiProvider extends BaseLLMProvider {
     }
   }
 
+  // Helper function to get and format safety settings
+  private async getFormattedSafetySettings(): Promise<SafetySetting[] | undefined> {
+    const safetySettings: SafetySetting[] = []
+
+    for (const key of safetySettingKeys) {
+      try {
+        // Use configPresenter to get the setting value for the 'gemini' provider
+        // Assuming getSetting returns the string value like 'BLOCK_MEDIUM_AND_ABOVE'
+        const settingValue =
+          (await this.configPresenter.getSetting<string>(
+            `geminiSafety_${key}` // Match the key used in settings store
+          )) || 'HARM_BLOCK_THRESHOLD_UNSPECIFIED' // Default if not set
+
+        const threshold = valueToHarmBlockThresholdMap[settingValue]
+        const category = keyToHarmCategoryMap[key]
+
+        // Only add if threshold is defined, category is defined, and threshold is not BLOCK_NONE
+        if (
+          threshold &&
+          category &&
+          threshold !== 'BLOCK_NONE' &&
+          threshold !== 'HARM_BLOCK_THRESHOLD_UNSPECIFIED'
+        ) {
+          safetySettings.push({ category, threshold })
+        }
+      } catch (error) {
+        console.warn(`Failed to retrieve or map safety setting for ${key}:`, error)
+      }
+    }
+
+    return safetySettings.length > 0 ? safetySettings : undefined
+  }
+
   // 创建模型实例，每次都创建新的实例，不再缓存
-  private getModel(modelId: string, temperature?: number, maxTokens?: number): GenerativeModel {
+  private getModel(
+    modelId: string,
+    temperature?: number,
+    maxTokens?: number,
+    safetySettings?: SafetySetting[]
+  ): GenerativeModel {
     const generationConfig = {
       temperature,
       maxOutputTokens: maxTokens
@@ -345,15 +405,26 @@ export class GeminiProvider extends BaseLLMProvider {
     if (modelId == 'gemini-2.0-flash-exp-image-generation') {
       generationConfig.responseModalities = ['Text', 'Image']
     }
-    return this.genAI.getGenerativeModel(
-      {
-        model: modelId,
-        generationConfig
-      },
-      {
-        baseUrl: this.provider.baseUrl
-      }
-    )
+    if (safetySettings) {
+      return this.genAI.getGenerativeModel(
+        {
+          model: modelId,
+          generationConfig,
+          safetySettings
+        },
+        {
+          baseUrl: this.provider.baseUrl
+        }
+      )
+    } else {
+      return this.genAI.getGenerativeModel(
+        {
+          model: modelId,
+          generationConfig
+        },
+        { baseUrl: this.provider.baseUrl }
+      )
+    }
   }
 
   // 将 ChatMessage 转换为 Gemini 格式的消息
@@ -768,9 +839,10 @@ export class GeminiProvider extends BaseLLMProvider {
       yield* this.handleImageGenerationStream(messages, modelId, temperature, maxTokens)
       return
     }
-
+    const safetySettings = await this.getFormattedSafetySettings()
+    console.log('safetySettings', safetySettings)
     // 创建Gemini模型实例
-    const model = this.getModel(modelId, temperature, maxTokens)
+    const model = this.getModel(modelId, temperature, maxTokens, safetySettings)
 
     // 将MCP工具转换为Gemini格式的工具（所有Gemini模型都支持原生工具调用）
     const geminiTools =

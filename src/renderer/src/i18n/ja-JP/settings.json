@@ -173,7 +173,11 @@
     "deleteModel": "モデルを削除",
     "deleteModelConfirm": "モデル \"{name}\" を削除してもよろしいですか？この操作は元に戻せません。",
     "noLocalModels": "ローカルモデルはありません",
-    "localModels": "ローカルモデル"
+    "localModels": "ローカルモデル",
+    "azureApiVersion": "APIバージョン",
+    "safety": {
+      "title": "セキュリティ設定"
+    }
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",

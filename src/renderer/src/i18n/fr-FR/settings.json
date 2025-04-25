@@ -173,7 +173,11 @@
     "deleteModel": "Supprimer le modèle",
     "deleteModelConfirm": "Êtes-vous sûr de vouloir supprimer le modèle \"{name}\" ? Cette action ne peut pas être annulée.",
     "noLocalModels": "Aucun modèle local",
-    "localModels": "Modèles locaux"
+    "localModels": "Modèles locaux",
+    "azureApiVersion": "Version API",
+    "safety": {
+      "title": "Paramètres de sécurité"
+    }
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",

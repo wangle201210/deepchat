@@ -173,13 +173,17 @@
     "deleteModelConfirm": "是否確認刪除模型 \"{name}\"？此操作不可恢復。",
     "noLocalModels": "沒有本地模型",
     "localModels": "本地模型",
-    "modelsEnabled": "模型已經啟用"
+    "modelsEnabled": "模型已經啟用",
+    "azureApiVersion": "API 版本",
+    "safety": {
+      "title": "安全設置"
+    }
   },
   "knowledgeBase": {
-      "fastgptTitle": "FastGPT知識庫",
-      "fastgptDescription": "FastGPT是一個強大的知識庫管理系統，支援多種檢索方式和文件管理功能。",
-      "addFastGptConfig": "新增FastGPT設定",
-      "editFastGptConfig": "編輯FastGPT設定",
+    "fastgptTitle": "FastGPT知識庫",
+    "fastgptDescription": "FastGPT是一個強大的知識庫管理系統，支援多種檢索方式和文件管理功能。",
+    "addFastGptConfig": "新增FastGPT設定",
+    "editFastGptConfig": "編輯FastGPT設定",
     "title": "知識庫設置",
     "addKnowledgeBase": "添加知識庫",
     "selectKnowledgeBaseType": "請選擇要添加的知識庫類型",
