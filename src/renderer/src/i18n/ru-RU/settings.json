@@ -173,7 +173,11 @@
     "deleteModelConfirm": "Вы уверены, что хотите удалить модель \"{name}\"? Это действие нельзя отменить.",
     "noLocalModels": "Нет локальных моделей",
     "localModels": "Локальные модели",
-    "urlFormat": "Образец API: {defaultUrl}"
+    "urlFormat": "Образец API: {defaultUrl}",
+    "azureApiVersion": "Версия API",
+    "safety": {
+      "title": "Настройки безопасности"
+    }
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",

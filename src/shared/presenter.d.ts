@@ -233,7 +233,6 @@ export type MODEL_META = {
   functionCall?: boolean
   reasoning?: boolean
 }
-
 export type LLM_PROVIDER = {
   id: string
   name: string

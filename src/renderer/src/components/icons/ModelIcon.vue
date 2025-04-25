@@ -50,6 +50,7 @@ import googleColorIcon from '@/assets/llm-icons/google-color.svg?url'
 import qiniuIcon from '@/assets/llm-icons/qiniu.svg?url'
 import grokColorIcon from '@/assets/llm-icons/grok.svg?url'
 import hunyuanColorIcon from '@/assets/llm-icons/hunyuan-color.svg?url'
+import defaultIcon from '@/assets/logo.png?url'
 // 导入所有图标
 const icons = {
   hunyuan: hunyuanColorIcon,
@@ -102,7 +103,8 @@ const icons = {
   openrouter: openrouterColorIcon,
   gemini: geminiColorIcon,
   github: githubColorIcon,
-  anthropic: anthropicColorIcon
+  anthropic: anthropicColorIcon,
+  default: defaultIcon
 }
 
 interface Props {
@@ -122,7 +124,7 @@ const iconKey = computed(() => {
   const matchedIcon = iconEntries.find((key) => {
     return modelIdLower.includes(key)
   })
-  return matchedIcon ? matchedIcon : 'openai'
+  return matchedIcon ? matchedIcon : 'default'
 })
 </script>
 

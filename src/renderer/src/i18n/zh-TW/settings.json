@@ -173,7 +173,11 @@
     "deleteModel": "刪除模型",
     "deleteModelConfirm": "是否確認刪除模型「{name}」？此操作無法復原。",
     "localModels": "本機模型",
-    "noLocalModels": "沒有本機模型"
+    "noLocalModels": "沒有本機模型",
+    "azureApiVersion": "API 版本",
+    "safety": {
+      "title": "安全設置"
+    }
   },
   "knowledgeBase": {
     "title": "知識庫設置",

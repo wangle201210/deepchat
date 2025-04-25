@@ -29,6 +29,18 @@
           }}
         </div>
       </div>
+      <div v-if="provider.id === 'azure-openai'" class="flex flex-col items-start p-2 gap-2">
+        <Label :for="`${provider.id}-azure-api-version`" class="flex-1 cursor-pointer">{{
+          t('settings.provider.azureApiVersion', 'API Version')
+        }}</Label>
+        <Input
+          :id="`${provider.id}-azure-api-version`"
+          v-model="azureApiVersion"
+          placeholder="e.g., 2024-02-01"
+          @blur="handleAzureApiVersionChange(String($event.target.value))"
+          @keyup.enter="handleAzureApiVersionChange(azureApiVersion)"
+        />
+      </div>
       <div class="flex flex-col items-start p-2 gap-2">
         <Label :for="`${provider.id}-apikey`" class="flex-1 cursor-pointer">API Key</Label>
         <Input
@@ -69,6 +81,53 @@
           }}</a>
           {{ t('settings.provider.getKeyTipEnd') }}
         </div>
+      </div>
+      <div
+        v-if="provider.id === 'gemini'"
+        class="flex flex-col items-start p-2 gap-2 border rounded-lg"
+      >
+        <Accordion type="single" collapsible class="w-full">
+          <AccordionItem value="safety-settings">
+            <AccordionTrigger class="text-sm font-medium">{{
+              t('settings.provider.safety.title', 'Safety Settings')
+            }}</AccordionTrigger>
+            <AccordionContent class="pt-4 px-1">
+              <div class="flex flex-col gap-4">
+                <div
+                  v-for="(setting, key) in safetyCategories"
+                  :key="key"
+                  class="flex flex-col gap-2"
+                >
+                  <div class="flex justify-between items-center">
+                    <Label :for="`${provider.id}-safety-${key}`" class="text-sm cursor-pointer">{{
+                      t(setting.label, key.charAt(0).toUpperCase() + key.slice(1))
+                    }}</Label>
+                    <span class="text-sm text-muted-foreground">{{
+                      t(
+                        levelLabels[geminiSafetyLevels[key]],
+                        `${levelToValueMap[geminiSafetyLevels[key]]}`
+                      )
+                    }}</span>
+                  </div>
+                  <Slider
+                    :id="`${provider.id}-safety-${key}`"
+                    :model-value="[geminiSafetyLevels[key]]"
+                    :min="0"
+                    :max="3"
+                    :step="1"
+                    class="w-full"
+                    @update:model-value="
+                      (event) =>
+                        event &&
+                        event[0] !== undefined &&
+                        handleSafetySettingChange(key as SafetyCategoryKey, event[0])
+                    "
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
       <div class="flex flex-col items-start p-2 gap-2">
         <Label :for="`${provider.id}-model`" class="flex-1 cursor-pointer">{{
@@ -215,7 +274,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, reactive } from 'vue'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -231,6 +290,13 @@ import ProviderModelList from './ProviderModelList.vue'
 import { useSettingsStore } from '@/stores/settings'
 import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
 import ModelConfigItem from './ModelConfigItem.vue'
+import { Slider } from '@/components/ui/slider'
+import {
+  Accordion,
+  AccordionItem,
+  AccordionContent,
+  AccordionTrigger
+} from '@/components/ui/accordion'
 
 interface ProviderWebsites {
   official: string
@@ -238,6 +304,63 @@ interface ProviderWebsites {
   docs: string
   models: string
   defaultBaseUrl: string
+}
+
+// Define safety categories and mapping
+type SafetyCategoryKey = 'harassment' | 'hateSpeech' | 'sexuallyExplicit' | 'dangerousContent'
+type SafetySettingValue =
+  | 'BLOCK_NONE'
+  | 'BLOCK_LOW_AND_ABOVE'
+  | 'BLOCK_MEDIUM_AND_ABOVE'
+  | 'BLOCK_ONLY_HIGH'
+  | 'HARM_BLOCK_THRESHOLD_UNSPECIFIED'
+
+const safetyCategories: Record<
+  SafetyCategoryKey,
+  { label: string; harmCategory: string; defaultLevel: number }
+> = {
+  harassment: {
+    label: 'settings.provider.safety.harassment',
+    harmCategory: 'HARM_CATEGORY_HARASSMENT',
+    defaultLevel: 0
+  },
+  hateSpeech: {
+    label: 'settings.provider.safety.hateSpeech',
+    harmCategory: 'HARM_CATEGORY_HATE_SPEECH',
+    defaultLevel: 0
+  },
+  sexuallyExplicit: {
+    label: 'settings.provider.safety.sexuallyExplicit',
+    harmCategory: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+    defaultLevel: 0
+  },
+  dangerousContent: {
+    label: 'settings.provider.safety.dangerousContent',
+    harmCategory: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+    defaultLevel: 0
+  }
+}
+
+const levelToValueMap: Record<number, SafetySettingValue> = {
+  0: 'BLOCK_NONE',
+  1: 'BLOCK_LOW_AND_ABOVE',
+  2: 'BLOCK_MEDIUM_AND_ABOVE',
+  3: 'BLOCK_ONLY_HIGH'
+}
+
+const valueToLevelMap: Record<SafetySettingValue, number> = {
+  BLOCK_NONE: 0,
+  BLOCK_LOW_AND_ABOVE: 1,
+  BLOCK_MEDIUM_AND_ABOVE: 2,
+  BLOCK_ONLY_HIGH: 3,
+  HARM_BLOCK_THRESHOLD_UNSPECIFIED: 2 // Default to level 2 if unspecified
+}
+
+const levelLabels: Record<number, string> = {
+  0: 'settings.provider.safety.blockNone',
+  1: 'settings.provider.safety.blockSome', // BLOCK_LOW_AND_ABOVE
+  2: 'settings.provider.safety.blockMost', // BLOCK_MEDIUM_AND_ABOVE
+  3: 'settings.provider.safety.blockHighest' // BLOCK_ONLY_HIGH
 }
 
 const { t } = useI18n()
@@ -249,6 +372,8 @@ const props = defineProps<{
 const settingsStore = useSettingsStore()
 const apiKey = ref(props.provider.apiKey || '')
 const apiHost = ref(props.provider.baseUrl || '')
+const azureApiVersion = ref('')
+const geminiSafetyLevels = reactive<Record<string, number>>({})
 
 const providerModels = ref<RENDERER_MODEL_META[]>([])
 const customModels = ref<RENDERER_MODEL_META[]>([])
@@ -308,27 +433,63 @@ const validateApiKey = async () => {
 }
 
 const initData = async () => {
-  console.log('initData', settingsStore.allProviderModels)
+  console.log('initData for provider:', props.provider.id)
   const providerData = settingsStore.allProviderModels.find(
     (p) => p.providerId === props.provider.id
   )
   if (providerData) {
     providerModels.value = providerData.models
+  } else {
+    providerModels.value = [] // Reset if provider data not found
   }
   const customModelData = settingsStore.customModels.find((p) => p.providerId === props.provider.id)
   if (customModelData) {
     customModels.value = customModelData.models
+  } else {
+    customModels.value = [] // Reset if custom data not found
+  }
+
+  // Fetch Azure API Version if applicable
+  if (props.provider.id === 'azure-openai') {
+    try {
+      azureApiVersion.value = await settingsStore.getAzureApiVersion()
+      console.log('Azure API Version fetched:', azureApiVersion.value)
+    } catch (error) {
+      console.error('Failed to fetch Azure API Version:', error)
+      azureApiVersion.value = '2024-02-01' // Default value on error
+    }
+  }
+
+  // Fetch Gemini Safety Settings if applicable
+  if (props.provider.id === 'gemini') {
+    console.log('Fetching Gemini safety settings...')
+    for (const key in safetyCategories) {
+      console.log('key:', key)
+      const categoryKey = key as string
+      try {
+        const savedValue = (await settingsStore.getGeminiSafety(categoryKey)) as
+          | string
+          | 'HARM_BLOCK_THRESHOLD_UNSPECIFIED'
+        console.log(`Fetched Gemini safety for ${categoryKey}:`, savedValue)
+        geminiSafetyLevels[categoryKey] =
+          valueToLevelMap[savedValue] ?? safetyCategories[categoryKey].defaultLevel
+        console.log(`Set Gemini level for ${categoryKey}:`, geminiSafetyLevels[categoryKey])
+      } catch (error) {
+        console.error(`Failed to fetch Gemini safety setting for ${categoryKey}:`, error)
+        geminiSafetyLevels[categoryKey] = safetyCategories[categoryKey].defaultLevel // Default on error
+      }
+    }
   }
 }
 
 watch(
   () => props.provider,
-  () => {
+  async () => {
     apiKey.value = props.provider.apiKey || ''
     apiHost.value = props.provider.baseUrl || ''
-    initData()
+    await initData() // Ensure initData completes
   },
-  { immediate: true }
+  { immediate: true } // Removed deep: true as provider object itself changes
 )
 
 const handleApiKeyEnter = async (value: string) => {
@@ -419,4 +580,24 @@ watch(
   },
   { deep: true }
 )
+
+// Handler for Azure API Version change
+const handleAzureApiVersionChange = async (value: string) => {
+  const trimmedValue = value.trim()
+  if (trimmedValue) {
+    azureApiVersion.value = trimmedValue // Update local ref immediately
+    await settingsStore.setAzureApiVersion(trimmedValue)
+    console.log('Azure API Version updated:', trimmedValue)
+  }
+}
+
+// Handler for Gemini Safety Settings change
+const handleSafetySettingChange = async (key: SafetyCategoryKey, level: number) => {
+  const value = levelToValueMap[level]
+  if (value) {
+    geminiSafetyLevels[key] = level // Update local state immediately when slider changes
+    await settingsStore.setGeminiSafety(key, value)
+    console.log(`Gemini safety setting for ${key} updated to level ${level} (${value})`)
+  }
+}
 </script>

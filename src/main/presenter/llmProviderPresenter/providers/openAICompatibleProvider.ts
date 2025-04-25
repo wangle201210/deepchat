@@ -8,7 +8,7 @@ import {
   ChatMessage
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
-import OpenAI from 'openai'
+import OpenAI, { AzureOpenAI } from 'openai'
 import {
   ChatCompletionContentPartText,
   ChatCompletionMessage,
@@ -40,14 +40,31 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
     const proxyUrl = proxyConfig.getProxyUrl()
-    this.openai = new OpenAI({
-      apiKey: this.provider.apiKey,
-      baseURL: this.provider.baseUrl,
-      httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
-      defaultHeaders: {
-        ...this.defaultHeaders
+    if (provider.id === 'azure-openai') {
+      try {
+        const apiVersion = this.configPresenter.getSetting<string>('azureApiVersion')
+        this.openai = new AzureOpenAI({
+          apiKey: this.provider.apiKey,
+          baseURL: this.provider.baseUrl,
+          apiVersion: apiVersion || '2024-02-01',
+          httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
+          defaultHeaders: {
+            ...this.defaultHeaders
+          }
+        })
+      } catch (e) {
+        console.warn('create azue openai failed', e)
       }
-    })
+    } else {
+      this.openai = new OpenAI({
+        apiKey: this.provider.apiKey,
+        baseURL: this.provider.baseUrl,
+        httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
+        defaultHeaders: {
+          ...this.defaultHeaders
+        }
+      })
+    }
     if (OpenAICompatibleProvider.NO_MODELS_API_LIST.includes(this.provider.id.toLowerCase())) {
       this.isNoModelsApi = true
     }
