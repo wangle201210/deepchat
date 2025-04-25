@@ -3,8 +3,8 @@
     <!-- App title/content in center -->
     <div
       :class="[
-        'flex-1 text-center text-sm font-medium h-full flex flex-row items-center justify-start',
-        isMacOS ? 'pl-20 pr-2' : 'px-4'
+        'flex-1 text-center text-sm font-medium h-full flex flex-row items-center justify-start gap-1',
+        isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2'
       ]"
     >
       <AppBarTabItem
@@ -26,6 +26,16 @@
       <Button
         variant="ghost"
         class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+        @click="onThemeClick"
+      >
+        <Icon v-if="themeStore.themeMode === 'dark'" icon="lucide:moon" class="w-4 h-4" />
+        <Icon v-else-if="themeStore.themeMode === 'light'" icon="lucide:sun" class="w-4 h-4" />
+        <Icon v-else icon="lucide:monitor" class="w-4 h-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+        @click="openSettings"
       >
         <Icon icon="lucide:settings" class="w-4 h-4" />
       </Button>
@@ -66,14 +76,23 @@ import { Button } from './ui/button'
 import { Icon } from '@iconify/vue'
 import AppBarTabItem from './app-bar/AppBarTabItem.vue'
 import { useTabStore } from '@/stores/tab'
+import { useThemeStore } from '@/stores/theme'
 const tabStore = useTabStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
 
 const isMacOS = ref(false)
 const isMaximized = ref(false)
+const isFullscreened = ref(false)
 
 const { ipcRenderer } = window.electron
+
+const themeStore = useThemeStore()
+
+const onThemeClick = () => {
+  console.log('onThemeClick')
+  themeStore.cycleTheme()
+}
 
 onMounted(() => {
   // Listen for window maximize/unmaximize events
@@ -83,8 +102,14 @@ onMounted(() => {
   ipcRenderer?.on('window-maximized', () => {
     isMaximized.value = true
   })
+  ipcRenderer?.on('window-fullscreened', () => {
+    isFullscreened.value = true
+  })
   ipcRenderer?.on('window-unmaximized', () => {
     isMaximized.value = false
+  })
+  ipcRenderer?.on('window-unfullscreened', () => {
+    isFullscreened.value = false
   })
 })
 
@@ -106,6 +131,14 @@ const toggleMaximize = () => {
 
 const closeWindow = () => {
   windowPresenter.close()
+}
+
+const openSettings = () => {
+  tabStore.addTab({
+    name: 'Settings',
+    icon: 'lucide:settings',
+    viewType: 'settings'
+  })
 }
 </script>
 

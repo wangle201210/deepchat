@@ -249,7 +249,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex flex-col h-screen">
     <AppBar />
-    <div class="flex flex-row h-0 flex-grow relative overflow-hidden">
+    <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-1 pb-1">
       <!-- 侧边导航栏 -->
       <!-- <SideBar
         v-show="route.name !== 'welcome'"

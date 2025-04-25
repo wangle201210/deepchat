@@ -1,4 +1,4 @@
-import { BrowserWindow, shell, app, nativeImage } from 'electron'
+import { BrowserWindow, shell, app, nativeImage, nativeTheme } from 'electron'
 import { join } from 'path'
 import icon from '../../../resources/icon.png?asset'
 import iconWin from '../../../resources/icon.ico?asset'
@@ -57,6 +57,14 @@ export class WindowPresenter implements IWindowPresenter {
         setTimeout(() => {
           presenter.devicePresenter.restartApp()
         }, 1000)
+      }
+    })
+
+    // 监听系统主题变化
+    nativeTheme.on('updated', () => {
+      // 只有当主题设置为 system 时，才需要通知渲染进程
+      if (nativeTheme.themeSource === 'system' && this.mainWindow) {
+        this.mainWindow.webContents.send('system-theme-updated', nativeTheme.shouldUseDarkColors)
       }
     })
   }
@@ -138,6 +146,30 @@ export class WindowPresenter implements IWindowPresenter {
       if (mainWindow.isMinimized()) {
         mainWindow.restore()
       }
+    })
+
+    mainWindow.on('maximize', () => {
+      mainWindow.webContents.send('window-maximized')
+    })
+
+    mainWindow.on('unmaximize', () => {
+      mainWindow.webContents.send('window-unmaximized')
+    })
+
+    mainWindow.on('enter-full-screen', () => {
+      mainWindow.webContents.send('window-fullscreened')
+    })
+
+    mainWindow.on('leave-full-screen', () => {
+      mainWindow.webContents.send('window-unfullscreened')
+    })
+
+    mainWindow.on('minimize', () => {
+      mainWindow.webContents.send('window-minimized')
+    })
+
+    mainWindow.on('restore', () => {
+      mainWindow.webContents.send('window-restored')
     })
 
     if (is.dev) {
@@ -240,6 +272,19 @@ export class WindowPresenter implements IWindowPresenter {
   isMaximized(): boolean {
     const window = this.mainWindow
     return window ? window.isMaximized() : false
+  }
+
+  async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
+    nativeTheme.themeSource = theme
+    return nativeTheme.shouldUseDarkColors
+  }
+
+  async getTheme(): Promise<string> {
+    return nativeTheme.themeSource
+  }
+
+  async getSystemTheme(): Promise<'dark' | 'light'> {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
   }
 
   async resetContextMenu(lang: string): Promise<void> {

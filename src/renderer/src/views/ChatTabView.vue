@@ -6,7 +6,7 @@
         'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'tab'
       }"
     >
-      <div class="flex h-full bg-background/80">
+      <div class="flex h-full bg-white/80 dark:bg-black/80">
         <!-- 左侧会话列表 -->
         <Transition
           enter-active-class="transition-all duration-300 ease-out"

@@ -60,6 +60,9 @@ export interface IWindowPresenter {
   hide(): void
   show(): void
   isMaximized(): boolean
+  toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
+  getTheme(): Promise<string>
+  getSystemTheme(): Promise<'dark' | 'light'>
 }
 
 export interface ILlamaCppPresenter {

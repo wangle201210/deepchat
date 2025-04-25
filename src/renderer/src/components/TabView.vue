@@ -1,5 +1,7 @@
 <template>
-  <div class="flex flex-col overflow-hidden w-full h-full">
+  <div
+    class="flex flex-col overflow-hidden w-full h-full rounded-t-lg rounded-b-md border border-zinc-500/10 dark:border-zinc-100/10"
+  >
     <keep-alive>
       <component
         :is="nodeComponents[currentTab?.viewType ?? ''] || fallbackComponent"
@@ -12,6 +14,7 @@
 import { useTabStore } from '@/stores/tab'
 import { computed, h } from 'vue'
 import ChatTabView from '@/views/ChatTabView.vue'
+import SettingsTabView from '@/views/SettingsTabView.vue'
 
 const tabStore = useTabStore()
 
@@ -20,7 +23,8 @@ const currentTab = computed(() => {
 })
 
 const nodeComponents = {
-  chat: ChatTabView
+  chat: ChatTabView,
+  settings: SettingsTabView
 }
 
 const fallbackComponent = () => {
