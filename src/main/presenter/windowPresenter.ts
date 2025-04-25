@@ -71,12 +71,12 @@ export class WindowPresenter implements IWindowPresenter {
       icon: iconFile,
       titleBarStyle: 'hiddenInset',
       transparent: true,
-      vibrancy: 'under-window',
+      vibrancy: 'titlebar',
       backgroundColor: '#00000000',
       frame: false,
       trafficLightPosition: {
-        x: 8,
-        y: 10
+        x: 12,
+        y: 12
       },
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
