@@ -11,6 +11,25 @@ import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
 import contextMenu from '../contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
+import os from 'os'
+
+// 检查 Windows 版本
+function isWindows10OrLater(): boolean {
+  if (process.platform !== 'win32') return false
+  const release = os.release().split('.')
+  const major = parseInt(release[0])
+  return major >= 10
+}
+
+// 检查是否为 Windows 11
+function isWindows11OrLater(): boolean {
+  if (process.platform !== 'win32') return false
+  const release = os.release().split('.')
+  const major = parseInt(release[0])
+  const build = parseInt(release[2])
+  // Windows 11 的内部版本号从 22000 开始
+  return major >= 10 && build >= 22000
+}
 
 export const MAIN_WIN = 'main'
 export class WindowPresenter implements IWindowPresenter {
@@ -78,10 +97,18 @@ export class WindowPresenter implements IWindowPresenter {
       autoHideMenuBar: true,
       icon: iconFile,
       titleBarStyle: 'hiddenInset',
+<<<<<<< HEAD
+      transparent: process.platform === 'darwin',
+      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+      backgroundColor: process.platform === 'darwin' ? '#00000000' : '#00ffffff',
+      frame: process.platform === 'darwin',
+      hasShadow: true,
+=======
       transparent: true,
       vibrancy: 'titlebar',
       backgroundColor: '#00000000',
       frame: false,
+>>>>>>> 9f322c721d18cdbf3e16b15b4fbdd9344154874d
       trafficLightPosition: {
         x: 12,
         y: 12
@@ -90,7 +117,8 @@ export class WindowPresenter implements IWindowPresenter {
         preload: join(__dirname, '../preload/index.mjs'),
         sandbox: false,
         devTools: is.dev
-      }
+      },
+      roundedCorners: true
     })
 
     // 获取内容保护设置的值
