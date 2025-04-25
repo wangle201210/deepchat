@@ -1346,6 +1346,32 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
+  const setAzureApiVersion = async (version: string) => {
+    await configP.setSetting('azureApiVersion', version)
+  }
+
+  const getAzureApiVersion = async (): Promise<string> => {
+    return (await configP.getSetting<string>('azureApiVersion')) || '2024-02-01'
+  }
+  const setGeminiSafety = async (
+    key: string,
+    value:
+      | 'BLOCK_NONE'
+      | 'BLOCK_ONLY_HIGH'
+      | 'BLOCK_MEDIUM_AND_ABOVE'
+      | 'BLOCK_LOW_AND_ABOVE'
+      | 'HARM_BLOCK_THRESHOLD_UNSPECIFIED'
+  ) => {
+    await configP.setSetting(`geminiSafety_${key}`, value)
+  }
+
+  const getGeminiSafety = async (key: string): Promise<string> => {
+    return (
+      (await configP.getSetting<string>(`geminiSafety_${key}`)) ||
+      'HARM_BLOCK_THRESHOLD_UNSPECIFIED'
+    )
+  }
+
   return {
     providers,
     theme,
@@ -1414,6 +1440,10 @@ export const useSettingsStore = defineStore('settings', () => {
     isUpdating: upgradeStore.isUpdating,
     loadSavedOrder,
     updateProvidersOrder,
-    sortedProviders
+    sortedProviders,
+    setAzureApiVersion,
+    getAzureApiVersion,
+    setGeminiSafety,
+    getGeminiSafety
   }
 })
