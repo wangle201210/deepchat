@@ -1,27 +1,38 @@
 <template>
-  <div class="flex h-full bg-background">
-    <!-- 左侧会话列表 -->
-    <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      leave-active-class="transition-all duration-300 ease-in"
-      enter-from-class="-translate-x-full opacity-0"
-      leave-to-class="-translate-x-full opacity-0"
+  <div class="w-full h-full flex-row flex">
+    <div
+      :class="{
+        'flex-1 w-0 h-full transition-all duration-200': true,
+        'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'tab'
+      }"
     >
-      <ThreadsView v-show="chatStore.isSidebarOpen" class="transform" />
-    </Transition>
+      <div class="flex h-full bg-background/80">
+        <!-- 左侧会话列表 -->
+        <Transition
+          enter-active-class="transition-all duration-300 ease-out"
+          leave-active-class="transition-all duration-300 ease-in"
+          enter-from-class="-translate-x-full opacity-0"
+          leave-to-class="-translate-x-full opacity-0"
+        >
+          <ThreadsView v-show="chatStore.isSidebarOpen" class="transform" />
+        </Transition>
 
-    <!-- 主聊天区域 -->
-    <div class="flex-1 flex flex-col w-0">
-      <!-- 新会话 -->
-      <NewThread v-if="!chatStore.activeThreadId" />
-      <template v-else>
-        <!-- 标题栏 -->
-        <TitleView :model="activeModel" />
+        <!-- 主聊天区域 -->
+        <div class="flex-1 flex flex-col w-0">
+          <!-- 新会话 -->
+          <NewThread v-if="!chatStore.activeThreadId" />
+          <template v-else>
+            <!-- 标题栏 -->
+            <TitleView :model="activeModel" />
 
-        <!-- 聊天内容区域 -->
-        <ChatView />
-      </template>
+            <!-- 聊天内容区域 -->
+            <ChatView />
+          </template>
+        </div>
+      </div>
     </div>
+    <!-- Artifacts 预览区域 -->
+    <ArtifactDialog />
   </div>
 </template>
 
@@ -31,14 +42,16 @@ import { useChatStore } from '@/stores/chat'
 import { computed } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { RENDERER_MODEL_META } from '@shared/presenter'
-
+import { useArtifactStore } from '@/stores/artifact'
+import ArtifactDialog from '@/components/artifacts/ArtifactDialog.vue'
+import { useRoute } from 'vue-router'
 const ThreadsView = defineAsyncComponent(() => import('@/components/ThreadsView.vue'))
 const TitleView = defineAsyncComponent(() => import('@/components/TitleView.vue'))
 const ChatView = defineAsyncComponent(() => import('@/components/ChatView.vue'))
 const NewThread = defineAsyncComponent(() => import('@/components/NewThread.vue'))
-
+const artifactStore = useArtifactStore()
 const settingsStore = useSettingsStore()
-
+const route = useRoute()
 const chatStore = useChatStore()
 const activeModel = computed(() => {
   let model: RENDERER_MODEL_META | undefined

@@ -89,14 +89,21 @@ export class WindowPresenter implements IWindowPresenter {
       autoHideMenuBar: true,
       icon: iconFile,
       titleBarStyle: 'hiddenInset',
+<<<<<<< HEAD
       transparent: process.platform === 'darwin',
       vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
       backgroundColor: process.platform === 'darwin' ? '#00000000' : '#00ffffff',
       frame: process.platform === 'darwin',
       hasShadow: true,
+=======
+      transparent: true,
+      vibrancy: 'titlebar',
+      backgroundColor: '#00000000',
+      frame: false,
+>>>>>>> 9f322c721d18cdbf3e16b15b4fbdd9344154874d
       trafficLightPosition: {
-        x: 8,
-        y: 10
+        x: 12,
+        y: 12
       },
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),

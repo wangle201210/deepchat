@@ -4,7 +4,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 import AppBar from './components/AppBar.vue'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
-import ArtifactDialog from './components/artifacts/ArtifactDialog.vue'
+
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
 import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
@@ -258,17 +258,8 @@ onBeforeUnmount(() => {
       /> -->
 
       <!-- 主内容区域 -->
-      <div
-        :class="{
-          'flex-1 w-0 h-full transition-all duration-200': true,
-          'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'chat'
-        }"
-      >
-        <RouterView />
-      </div>
 
-      <!-- Artifacts 预览区域 -->
-      <ArtifactDialog />
+      <RouterView />
     </div>
     <!-- 全局更新弹窗 -->
     <UpdateDialog />
