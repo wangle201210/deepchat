@@ -36,17 +36,11 @@
           </TransitionGroup>
         </div>
         <!-- {{ t('chat.input.inputArea') }} -->
-        <Textarea
-          ref="textareaRef"
-          v-model="inputText"
-          :auto-focus="true"
-          :rows="rows"
-          :max-rows="maxRows"
-          :placeholder="t('chat.input.placeholder')"
-          class="textarea-selector border-none max-h-[10rem] shadow-none p-2 focus-visible:ring-0 focus-within:ring-0 ring-0 outline-none focus-within:outline-none text-sm resize-none overflow-y-auto"
-          @keydown.enter.exact.prevent="handleEnterKey"
-          @input="adjustHeight"
-        ></Textarea>
+        <editor-content
+          :editor="editor"
+          class="p-2 text-sm"
+          @keydown.enter.exact="handleEditorEnter"
+        />
 
         <div class="flex items-center justify-between">
           <!-- {{ t('chat.input.functionSwitch') }} -->
@@ -194,7 +188,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { computed, onMounted, ref, watch } from 'vue'
-import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
@@ -214,8 +207,57 @@ import { useSettingsStore } from '@/stores/settings'
 import McpToolsList from './mcpToolsList.vue'
 import { useEventListener } from '@vueuse/core'
 import { calculateImageTokens, getClipboardImageInfo, imageFileToBase64 } from '@/lib/image'
+import { Editor, EditorContent } from '@tiptap/vue-3'
+import Document from '@tiptap/extension-document'
+import Paragraph from '@tiptap/extension-paragraph'
+import Text from '@tiptap/extension-text'
+import Mention from '@tiptap/extension-mention'
+import suggestion from './editor/suggestion'
+import { mentionSelected } from './editor/suggestion'
+import Placeholder from '@tiptap/extension-placeholder'
+import HardBreak from '@tiptap/extension-hard-break'
 
 const { t } = useI18n()
+const editor = new Editor({
+  editorProps: {
+    attributes: {
+      class:
+        'outline-none focus:outline-none focus-within:outline-none min-h-[3rem] max-h-[7rem] overflow-y-auto'
+    }
+  },
+  autofocus: true,
+  extensions: [
+    Document,
+    Paragraph,
+    Text,
+    Mention.configure({
+      HTMLAttributes: {
+        class: 'mention'
+      },
+      suggestion
+    }),
+    Placeholder.configure({
+      placeholder: () => t('chat.input.placeholder')
+    }),
+    HardBreak.extend({
+      addKeyboardShortcuts() {
+        return {
+          'Shift-Enter': () => this.editor.commands.setHardBreak()
+        }
+      }
+    }).configure({
+      keepMarks: true,
+      HTMLAttributes: {
+        class: 'line-break'
+      }
+    })
+  ],
+  onUpdate: ({ editor }) => {
+    console.log(editor.getText(), editor.getJSON())
+    inputText.value = editor.getText()
+  }
+})
+
 const configPresenter = usePresenter('configPresenter')
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
@@ -238,7 +280,6 @@ const currentContextLength = computed(() => {
   )
 })
 
-const textareaRef = ref<HTMLTextAreaElement>()
 const isDragging = ref(false)
 const dragCounter = ref(0)
 let dragLeaveTimer: number | null = null
@@ -344,6 +385,7 @@ const emitSend = () => {
 
     emit('send', messageContent)
     inputText.value = ''
+    editor.chain().clearContent().blur().run()
 
     // 清理已上传的文件
     if (selectedFiles.value.length > 0) {
@@ -355,12 +397,6 @@ const emitSend = () => {
       }
     }
   }
-}
-
-const adjustHeight = (e: Event) => {
-  const target = e.target as HTMLTextAreaElement
-  target.style.height = 'auto'
-  target.style.height = `${target.scrollHeight}px`
 }
 
 const deleteFile = (idx: number) => {
@@ -378,10 +414,25 @@ const disabledSend = computed(() => {
   )
 })
 
-const handleEnterKey = (e: KeyboardEvent) => {
+const handleEditorEnter = (e: KeyboardEvent) => {
+  // If a mention was just selected, don't do anything
+  if (mentionSelected.value) {
+    return
+  }
+
+  // Only handle enter if there's no active suggestion popup
+  if (editor.isActive('mention') || document.querySelector('.tippy-box')) {
+    // Don't prevent default - let the mention suggestion handle it
+    return
+  }
+
+  // For normal enter behavior (no mention suggestion active)
+  e.preventDefault()
+
   if (disabledSend.value) {
     return
   }
+
   if (!e.isComposing) {
     emitSend()
   }
@@ -515,5 +566,14 @@ defineExpose({
 
 .duration-300 {
   transition-duration: 300ms;
+}
+</style>
+<style>
+.tiptap p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
 }
 </style>
