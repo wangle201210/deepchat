@@ -285,7 +285,9 @@
       "imageModel": "시각적 모델을 선택하십시오",
       "customHeadersParseError": "사용자 정의 헤더 구문 분석이 실패했습니다",
       "customHeaders": "사용자 정의 요청 헤더",
-      "invalidKeyValueFormat": "잘못된 요청 헤더 형식, 입력이 올바른지 확인하십시오."
+      "invalidKeyValueFormat": "잘못된 요청 헤더 형식, 입력이 올바른지 확인하십시오.",
+      "npmRegistry": "사용자 정의 NPM 레지스트리",
+      "npmRegistryPlaceholder": "사용자 정의 NPM 레지스트리를 설정하고 시스템을 남겨두고 가장 빠른 것을 자동으로 선택하십시오."
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",

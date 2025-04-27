@@ -286,7 +286,9 @@
       "imageModel": "选择视觉模型",
       "customHeadersParseError": "自定义Header解析失败",
       "customHeaders": "自定义请求头",
-      "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确"
+      "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确",
+      "npmRegistry": "自定义NPM Registry",
+      "npmRegistryPlaceholder": "设置自定义NPM Registry,留空系统会自动选择最快的一个"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",

@@ -164,12 +164,12 @@ export class ServerManager {
 
     try {
       console.info(`正在启动MCP服务器 ${name}...`)
-
+      const npmRegistry = serverConfig.customNpmRegistry || this.npmRegistry
       // 创建并保存客户端实例，传入npm registry
       const client = new McpClient(
         name,
         serverConfig as unknown as Record<string, unknown>,
-        this.npmRegistry
+        npmRegistry
       )
       this.clients.set(name, client)
 

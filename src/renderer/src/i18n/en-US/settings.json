@@ -286,7 +286,9 @@
       "imageModel": "Choose a vision model",
       "customHeadersParseError": "Custom Header parsing failed",
       "customHeaders": "Custom request header",
-      "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct."
+      "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct.",
+      "npmRegistry": "Custom NPM Registry",
+      "npmRegistryPlaceholder": "Set up a custom NPM Registry, leave the system to automatically select the fastest one"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",

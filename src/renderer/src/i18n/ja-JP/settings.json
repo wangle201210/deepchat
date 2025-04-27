@@ -285,7 +285,9 @@
       "imageModel": "視覚モデルを選択します",
       "customHeadersParseError": "カスタムヘッダーの解析は失敗しました",
       "customHeaders": "カスタムリクエストヘッダー",
-      "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。"
+      "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。",
+      "npmRegistry": "カスタムNPMレジストリ",
+      "npmRegistryPlaceholder": "カスタムNPMレジストリをセットアップし、システムを残して最速のレジストリを自動的に選択する"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",

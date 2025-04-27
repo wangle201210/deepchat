@@ -621,6 +621,7 @@ export interface MCPServerConfig {
   disable?: boolean
   baseUrl?: string
   customHeaders?: Record<string, string>
+  customNpmRegistry?: string
   type: 'sse' | 'stdio' | 'inmemory' | 'http'
 }
 

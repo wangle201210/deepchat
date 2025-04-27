@@ -285,7 +285,9 @@
       "imageModel": "選擇視覺模型",
       "customHeadersParseError": "自定義Header解析失敗",
       "customHeaders": "自定義請求頭",
-      "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確"
+      "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確",
+      "npmRegistry": "自定義NPM Registry",
+      "npmRegistryPlaceholder": "設置自定義NPM Registry,留空系統會自動選擇最快的一個"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
