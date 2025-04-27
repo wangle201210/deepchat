@@ -291,7 +291,7 @@ watch(
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
+  <div class="h-full flex flex-col w-full">
     <!-- 选项卡 -->
     <div class="flex border-b mb-4 px-4">
       <button
@@ -316,9 +316,9 @@ watch(
       </button>
     </div>
 
-    <div class="flex-grow overflow-hidden px-4">
+    <div class="flex overflow-hidden px-4">
       <!-- 服务器配置选项卡 -->
-      <div v-if="activeTab === 'servers'" class="h-full overflow-y-auto">
+      <ScrollArea v-if="activeTab === 'servers'" class="h-full w-full">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-base font-medium">{{ t('settings.mcp.serverList') }}</h3>
           <div class="flex space-x-2">
@@ -378,9 +378,9 @@ watch(
           {{ t('settings.mcp.noServersFound') }}
         </div>
 
-        <div v-else class="space-y-4 pb-4">
+        <div v-else class="space-y-4 pb-4 pr-4">
           <!-- 内置服务 -->
-          <div v-if="inMemoryServers.length > 0">
+          <div v-if="inMemoryServers.length > 0" class="server-item">
             <h4 class="text-sm font-medium mb-2 text-muted-foreground">
               {{ t('settings.mcp.builtInServers') }}
             </h4>
@@ -390,14 +390,16 @@ watch(
               class="border rounded-lg overflow-hidden bg-card mb-4"
             >
               <div class="flex items-center p-4">
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <div>
                     <div class="flex items-center">
-                      <span class="text-xl mr-2">{{ server.icons }}</span>
-                      <h4 class="text-sm font-medium">{{ getLocalizedServerName(server.name) }}</h4>
+                      <span class="text-xl mr-2 flex-shrink-0">{{ server.icons }}</span>
+                      <h4 class="text-sm font-medium truncate">
+                        {{ getLocalizedServerName(server.name) }}
+                      </h4>
                       <span
                         :class="[
-                          'ml-2 px-2 py-0.5 text-xs rounded-full',
+                          'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
                           server.isRunning
                             ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
@@ -408,12 +410,12 @@ watch(
                         }}
                       </span>
                     </div>
-                    <p class="text-xs text-muted-foreground mt-1">
+                    <p class="text-xs text-muted-foreground mt-1 break-words">
                       {{ getLocalizedServerDesc(server.name, server.descriptions) }}
                     </p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-shrink-0">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
@@ -503,12 +505,14 @@ watch(
                   </TooltipProvider>
                 </div>
               </div>
-              <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
+              <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
                 <div class="flex justify-between items-center">
-                  <div class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                  <div
+                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                  >
                     {{ server.command }} {{ server.args.join(' ') }}
                   </div>
-                  <div class="flex space-x-2">
+                  <div class="flex space-x-2 flex-shrink-0">
                     <span
                       class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 rounded-full shrink-0"
                     >
@@ -541,14 +545,14 @@ watch(
             class="border rounded-lg overflow-hidden bg-card"
           >
             <div class="flex items-center p-4">
-              <div class="flex-1">
+              <div class="flex-1 min-w-0">
                 <div>
                   <div class="flex items-center">
-                    <span class="text-xl mr-2">{{ server.icons }}</span>
-                    <h4 class="text-sm font-medium">{{ server.name }}</h4>
+                    <span class="text-xl mr-2 flex-shrink-0">{{ server.icons }}</span>
+                    <h4 class="text-sm font-medium truncate">{{ server.name }}</h4>
                     <span
                       :class="[
-                        'ml-2 px-2 py-0.5 text-xs rounded-full',
+                        'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
                         server.isRunning
                           ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
@@ -557,10 +561,12 @@ watch(
                       {{ server.isRunning ? t('settings.mcp.running') : t('settings.mcp.stopped') }}
                     </span>
                   </div>
-                  <p class="text-xs text-muted-foreground mt-1">{{ server.descriptions }}</p>
+                  <p class="text-xs text-muted-foreground mt-1 break-words">
+                    {{ server.descriptions }}
+                  </p>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-shrink-0">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger as-child>
@@ -665,15 +671,18 @@ watch(
                 </TooltipProvider>
               </div>
             </div>
-            <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
+            <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
               <div class="flex justify-between items-center">
                 <div
                   v-if="server.type === 'http'"
-                  class="text-xs font-mono overflow-x-auto whitespace-nowrap"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
                 >
                   {{ server.baseUrl }}
                 </div>
-                <div v-else class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                <div
+                  v-else
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                >
                   {{ server.command }} {{ server.args.join(' ') }}
                 </div>
                 <span
@@ -686,7 +695,7 @@ watch(
             </div>
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
       <!-- 调试工具选项卡 -->
       <div
