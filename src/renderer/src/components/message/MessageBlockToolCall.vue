@@ -181,7 +181,15 @@ const showPermissionIcon = () => {
 // 解析JSON为对象
 const parseJson = (jsonStr: string) => {
   try {
-    return JSON.parse(jsonStr)
+    const parsed = JSON.parse(jsonStr)
+    if (parsed) {
+      if (typeof parsed === 'object' || Array.isArray(parsed)) {
+        return parsed
+      } else {
+        return { raw: parsed }
+      }
+    }
+    return parsed
   } catch (e) {
     return { raw: jsonStr }
   }
