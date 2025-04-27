@@ -93,6 +93,8 @@ const getFileIcon = () => {
     return 'vscode-icons:file-type-html'
   } else if (props.mimeType.startsWith('text/css')) {
     return 'vscode-icons:file-type-css'
+  } else if (props.mimeType.startsWith('audio/')) {
+    return 'vscode-icons:file-type-audio'
   } else {
     // 默认文件图标
     return 'vscode-icons:default-file'

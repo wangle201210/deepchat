@@ -82,6 +82,8 @@ export class FilePresenter implements IFilePresenter {
           token:
             adapter.mimeType && adapter.mimeType.startsWith('image')
               ? calculateImageTokens(adapter as ImageFileAdapter)
+              : adapter.mimeType && adapter.mimeType.startsWith('audio')
+              ? approximateTokenSize(`音频文件路径: ${adapter.filePath}`)
               : approximateTokenSize(content || ''),
           path: adapter.filePath,
           mimeType: adapter.mimeType ?? '',
