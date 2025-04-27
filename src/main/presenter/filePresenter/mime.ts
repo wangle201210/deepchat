@@ -7,6 +7,7 @@ import { TextFileAdapter } from './TextFileAdapter'
 import { DocFileAdapter } from './DocFileAdapter'
 import { PptFileAdapter } from './PptFileAdapter'
 import { CodeFileAdapter } from './CodeFileAdapter'
+import { AudioFileAdapter } from './AudioFileAdapter'
 
 export const getMimeTypeAdapterMap = (): Map<string, FileAdapterConstructor> => {
   const map = new Map<string, FileAdapterConstructor>()
@@ -19,6 +20,14 @@ export const getMimeTypeAdapterMap = (): Map<string, FileAdapterConstructor> => 
   map.set('application/x-yaml', TextFileAdapter)
   map.set('application/xml', TextFileAdapter)
   map.set('text/*', TextFileAdapter)
+
+  // Audio formats
+  map.set('audio/mp3', AudioFileAdapter)
+  map.set('audio/mpeg', AudioFileAdapter)
+  map.set('audio/wav', AudioFileAdapter)
+  map.set('audio/x-wav', AudioFileAdapter)
+  map.set('audio/x-m4a', AudioFileAdapter)
+  map.set('audio/m4a', AudioFileAdapter)
 
   // Code formats
   map.set('application/javascript', CodeFileAdapter)
