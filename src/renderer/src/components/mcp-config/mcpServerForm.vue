@@ -124,7 +124,7 @@ const showArgsInput = computed(
 
 // 当命令是npx或node时，显示npmRegistry输入框
 const showNpmRegistryInput = computed(() => {
-  return ['npx', 'node'].includes(command.value.toLowerCase())
+  return type.value === 'stdio' && ['npx', 'node'].includes(command.value.toLowerCase())
 })
 
 // 当选择 all 时，自动选中其他权限
