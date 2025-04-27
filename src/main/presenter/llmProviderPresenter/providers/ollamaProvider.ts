@@ -38,7 +38,16 @@ export class OllamaProvider extends BaseLLMProvider {
   private ollama: Ollama
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
-    this.ollama = new Ollama({ host: this.provider.baseUrl })
+    if (this.provider.apiKey) {
+      this.ollama = new Ollama({
+        host: this.provider.baseUrl,
+        headers: { Authorization: `Bearer ${this.provider.apiKey}` }
+      })
+    } else {
+      this.ollama = new Ollama({
+        host: this.provider.baseUrl
+      })
+    }
     this.init()
   }
 
