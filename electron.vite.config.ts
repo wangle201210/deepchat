@@ -51,6 +51,9 @@ export default defineConfig({
       vueDevTools({
         launchEditor: 'cursor'
       })
-    ]
+    ],
+    build: {
+      minify: 'esbuild'
+    }
   }
 })
