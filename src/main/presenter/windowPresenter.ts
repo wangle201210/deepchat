@@ -11,6 +11,25 @@ import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
 import contextMenu from '../contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
+import os from 'os'
+
+// 检查 Windows 版本
+function isWindows10OrLater(): boolean {
+  if (process.platform !== 'win32') return false
+  const release = os.release().split('.')
+  const major = parseInt(release[0])
+  return major >= 10
+}
+
+// 检查是否为 Windows 11
+function isWindows11OrLater(): boolean {
+  if (process.platform !== 'win32') return false
+  const release = os.release().split('.')
+  const major = parseInt(release[0])
+  const build = parseInt(release[2])
+  // Windows 11 的内部版本号从 22000 开始
+  return major >= 10 && build >= 22000
+}
 
 export const MAIN_WIN = 'main'
 export class WindowPresenter implements IWindowPresenter {
@@ -71,6 +90,14 @@ export class WindowPresenter implements IWindowPresenter {
 
   createMainWindow(): BrowserWindow {
     const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
+    let backgroundMaterial: 'acrylic' | 'auto' | 'none' | 'mica' | 'tabbed' | undefined
+    if (process.platform === 'darwin') {
+      backgroundMaterial = undefined
+    } else if (isWindows11OrLater()) {
+      backgroundMaterial = 'acrylic'
+    } else {
+      backgroundMaterial = 'none'
+    }
     const mainWindow = new BrowserWindow({
       width: 1024,
       height: 620,
@@ -78,15 +105,17 @@ export class WindowPresenter implements IWindowPresenter {
       autoHideMenuBar: true,
       icon: iconFile,
       titleBarStyle: 'hiddenInset',
-      transparent: process.platform === 'darwin',
+      transparent: true,
       vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
-      backgroundColor: process.platform === 'darwin' ? '#00000000' : '#00ffffff',
+      backgroundColor: '#00000000',
+      maximizable: true,
       frame: process.platform === 'darwin',
       hasShadow: true,
       trafficLightPosition: {
         x: 12,
         y: 12
       },
+      backgroundMaterial: backgroundMaterial,
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
         sandbox: false,
