@@ -151,5 +151,21 @@
       "name": "Поиск в базе знаний Dify",
       "desc": "Поисковая служба базы знаний Dify, может выполнять поиск по содержимому базы знаний Dify"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "Нет подсказок",
+    "noDescription": "Пока нет описания",
+    "selectPrompt": "Показано здесь",
+    "parameters": "Быстрые параметры",
+    "runningPrompt": "Подсказка получает",
+    "executeButton": "Нажмите, чтобы получить",
+    "resultTitle": "Краткие данные"
+  },
+  "resources": {
+    "noResourcesAvailable": "Нет ресурсов",
+    "selectResource": "Показать ресурсы содержание здесь",
+    "loading": "загрузка",
+    "loadContent": "Получить контент ресурсов",
+    "pleaseSelect": "Нажмите, чтобы получить данные ресурсов отображения"
   }
 }

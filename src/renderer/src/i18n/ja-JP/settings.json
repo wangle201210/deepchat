@@ -216,7 +216,9 @@
     "enableToAccess": "設定オプションにアクセスするにはMCPを有効にしてください",
     "tabs": {
       "servers": "サーバー",
-      "tools": "ツール"
+      "tools": "ツール",
+      "prompts": "Prompts",
+      "resources": "Resources"
     },
     "serverList": "サーバーリスト",
     "addServer": "サーバーを追加",

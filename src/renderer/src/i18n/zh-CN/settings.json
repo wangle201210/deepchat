@@ -217,7 +217,9 @@
     "marketplace": "前往MCP市场一键安装",
     "tabs": {
       "servers": "服务器",
-      "tools": "工具"
+      "tools": "工具",
+      "prompts": "Prompts",
+      "resources": "Resources"
     },
     "serverList": "服务器列表",
     "addServer": "添加服务器",

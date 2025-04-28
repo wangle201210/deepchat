@@ -151,5 +151,21 @@
       "name": "Dify知识库检索",
       "desc": "Dify知识库检索服务，可以检索Dify知识库中的内容"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "暂无可用的 Prompts",
+    "noDescription": "暂无描述",
+    "selectPrompt": "此处展示选中的Prompt",
+    "parameters": "Prompt 参数",
+    "runningPrompt": "Prompt 获取中",
+    "executeButton": "点击获取",
+    "resultTitle": "Prompt 详情"
+  },
+  "resources": {
+    "noResourcesAvailable": "暂无 Resources",
+    "selectResource": "此处展示 Resources 内容",
+    "loading": "加载中",
+    "loadContent": "获取 Resource 内容",
+    "pleaseSelect": "点击获取展示Resources详情"
   }
 }

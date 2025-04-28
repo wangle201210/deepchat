@@ -216,7 +216,9 @@
     "enableToAccess": "Пожалуйста, включите MCP для доступа к настройкам",
     "tabs": {
       "servers": "Серверы",
-      "tools": "Инструменты"
+      "tools": "Инструменты",
+      "prompts": "Prompts",
+      "resources": "Resources"
     },
     "serverList": "Список серверов",
     "addServer": "Добавить сервер",

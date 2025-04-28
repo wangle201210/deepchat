@@ -151,5 +151,21 @@
       "desc": "Dify Knowledge Base Search Service, which can retrieve content in Dify Knowledge Base",
       "name": "Dify Knowledge Base Search"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "No Prompts available",
+    "noDescription": "No description yet",
+    "selectPrompt": "Shown here",
+    "parameters": "Prompt parameters",
+    "runningPrompt": "Prompt is getting",
+    "executeButton": "Click to get",
+    "resultTitle": "Prompt Details"
+  },
+  "resources": {
+    "noResourcesAvailable": "None Resources",
+    "selectResource": "Show Resources content here",
+    "loading": "loading",
+    "loadContent": "Get Resource content",
+    "pleaseSelect": "Click to get display Resources details"
   }
 }

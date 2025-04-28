@@ -349,6 +349,56 @@ export class ToolManager {
     }
   }
 
+  // 根据客户端名称获取提示模板内容
+  async getPromptByClient(
+    clientName: string,
+    promptName: string,
+    params: Record<string, unknown> = {}
+  ): Promise<unknown> {
+    try {
+      const clients = await this.getRunningClients()
+
+      // 查找指定的客户端
+      const client = clients.find((c) => c.serverName === clientName)
+      if (!client) {
+        throw new Error(`未找到MCP客户端: ${clientName}`)
+      }
+
+      if (typeof client.getPrompt !== 'function') {
+        throw new Error(`MCP客户端 ${clientName} 不支持获取提示模板`)
+      }
+
+      return await client.getPrompt(promptName, params)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('获取提示模板失败:', errorMessage)
+      throw new Error(`获取提示模板失败: ${errorMessage}`)
+    }
+  }
+
+  // 根据客户端名称读取资源内容
+  async readResourceByClient(clientName: string, resourceUri: string): Promise<unknown> {
+    try {
+      const clients = await this.getRunningClients()
+
+      // 查找指定的客户端
+      const client = clients.find((c) => c.serverName === clientName)
+      if (!client) {
+        throw new Error(`未找到MCP客户端: ${clientName}`)
+      }
+
+      if (typeof client.readResource !== 'function') {
+        throw new Error(`MCP客户端 ${clientName} 不支持读取资源`)
+      }
+
+      return await client.readResource(resourceUri)
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error('读取资源失败:', errorMessage)
+      throw new Error(`读取资源失败: ${errorMessage}`)
+    }
+  }
+
   public destroy(): void {
     eventBus.off(MCP_EVENTS.CLIENT_LIST_UPDATED, this.handleServerListUpdate)
   }
