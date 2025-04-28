@@ -218,8 +218,8 @@
     "tabs": {
       "servers": "服务器",
       "tools": "工具",
-      "prompts": "Prompts",
-      "resources": "Resources"
+      "prompts": "提示词",
+      "resources": "资源"
     },
     "serverList": "服务器列表",
     "addServer": "添加服务器",

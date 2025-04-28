@@ -217,8 +217,8 @@
     "tabs": {
       "servers": "서버",
       "tools": "도구",
-      "prompts": "Prompts",
-      "resources": "Resources"
+      "prompts": "신속한 단어",
+      "resources": "의지"
     },
     "serverList": "서버 목록",
     "addServer": "서버 추가",
