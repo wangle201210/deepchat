@@ -11,25 +11,6 @@ import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
 import contextMenu from '../contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
-import os from 'os'
-
-// 检查 Windows 版本
-function isWindows10OrLater(): boolean {
-  if (process.platform !== 'win32') return false
-  const release = os.release().split('.')
-  const major = parseInt(release[0])
-  return major >= 10
-}
-
-// 检查是否为 Windows 11
-function isWindows11OrLater(): boolean {
-  if (process.platform !== 'win32') return false
-  const release = os.release().split('.')
-  const major = parseInt(release[0])
-  const build = parseInt(release[2])
-  // Windows 11 的内部版本号从 22000 开始
-  return major >= 10 && build >= 22000
-}
 
 export const MAIN_WIN = 'main'
 export class WindowPresenter implements IWindowPresenter {
