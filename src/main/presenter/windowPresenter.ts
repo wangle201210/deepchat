@@ -70,10 +70,6 @@ export class WindowPresenter implements IWindowPresenter {
       autoHideMenuBar: true,
       icon: iconFile,
       titleBarStyle: 'hiddenInset',
-      transparent: true,
-      vibrancy: 'under-window',
-      backgroundColor: '#00000000',
-      frame: false,
       trafficLightPosition: {
         x: 8,
         y: 10
@@ -82,7 +78,8 @@ export class WindowPresenter implements IWindowPresenter {
         preload: join(__dirname, '../preload/index.mjs'),
         sandbox: false,
         devTools: is.dev
-      }
+      },
+      frame: false
     })
 
     // 获取内容保护设置的值

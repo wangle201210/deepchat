@@ -2,6 +2,7 @@
 import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import AppBar from './components/AppBar.vue'
+import SideBar from './components/SideBar.vue'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
 import ArtifactDialog from './components/artifacts/ArtifactDialog.vue'
@@ -251,11 +252,11 @@ onBeforeUnmount(() => {
     <AppBar />
     <div class="flex flex-row h-0 flex-grow relative overflow-hidden">
       <!-- 侧边导航栏 -->
-      <!-- <SideBar
+      <SideBar
         v-show="route.name !== 'welcome'"
         v-model:model-value="activeTab"
         class="h-full z-10"
-      /> -->
+      />
 
       <!-- 主内容区域 -->
       <div
