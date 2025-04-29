@@ -72,6 +72,7 @@ export interface IWindowPresenter {
   hide(): void
   show(): void
   isMaximized(): boolean
+  isMainWindowFocused(): boolean
 }
 
 export interface ILlamaCppPresenter {
@@ -147,8 +148,15 @@ export interface IPresenter {
   mcpPresenter: IMCPPresenter
   syncPresenter: ISyncPresenter
   deeplinkPresenter: IDeeplinkPresenter
+  notificationPresenter: INotificationPresenter
   init(): void
   destroy(): void
+}
+
+export interface INotificationPresenter {
+  showNotification(options: { id: string; title: string; body: string; silent?: boolean }): void
+  clearNotification(id: string): void
+  clearAllNotifications(): void
 }
 
 export interface IConfigPresenter {

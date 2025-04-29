@@ -17,7 +17,8 @@ export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
 
 export const useChatStore = defineStore('chat', () => {
   const threadP = usePresenter('threadPresenter')
-
+  const windowP = usePresenter('windowPresenter')
+  const notificationP = usePresenter('notificationPresenter')
   // 状态
   const activeThreadId = ref<string | null>(null)
   const threads = ref<
@@ -529,6 +530,31 @@ export const useChatStore = defineStore('chat', () => {
         updateThreadWorkingStatus(cached.threadId, 'completed')
       }
 
+      // 检查窗口是否聚焦，如果未聚焦则发送通知
+      const isFocused = await windowP.isMainWindowFocused()
+      if (!isFocused) {
+        // 获取生成内容的前20个字符作为通知内容
+        let notificationContent = ''
+        if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
+          const assistantMsg = enrichedMessage as AssistantMessage
+          // 从content中提取文本内容
+          for (const block of assistantMsg.content) {
+            if (block.type === 'content' && block.content) {
+              notificationContent = block.content.substring(0, 20)
+              if (block.content.length > 20) notificationContent += '...'
+              break
+            }
+          }
+        }
+
+        // 发送通知
+        await notificationP.showNotification({
+          id: `message-${msg.eventId}`,
+          title: '生成完毕',
+          body: notificationContent || '消息生成已完成'
+        })
+      }
+
       // 如果是变体消息，需要更新主消息
       if (enrichedMessage.is_variant && enrichedMessage.parentId) {
         // 获取主消息
@@ -615,6 +641,31 @@ export const useChatStore = defineStore('chat', () => {
             if (messageIndex !== -1) {
               messages.value[messageIndex] = enrichedMessage
             }
+          }
+
+          // 检查窗口是否聚焦，如果未聚焦则发送错误通知
+          const isFocused = await windowP.isMainWindowFocused()
+          if (!isFocused) {
+            // 获取错误信息
+            let errorMessage = '生成过程中发生错误'
+            if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
+              const assistantMsg = enrichedMessage as AssistantMessage
+              // 查找错误信息块
+              for (const block of assistantMsg.content) {
+                if (block.status === 'error' && block.content) {
+                  errorMessage = block.content.substring(0, 20)
+                  if (block.content.length > 20) errorMessage += '...'
+                  break
+                }
+              }
+            }
+
+            // 发送错误通知
+            await notificationP.showNotification({
+              id: `error-${msg.eventId}`,
+              title: '生成错误',
+              body: errorMessage
+            })
           }
         } catch (error) {
           console.error('加载错误消息失败:', error)
