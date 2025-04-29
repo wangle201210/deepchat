@@ -119,6 +119,7 @@ jobs:
           DEEPCHAT_APPLE_NOTARY_USERNAME: ${{ secrets.DEEPCHAT_APPLE_NOTARY_USERNAME }}
           DEEPCHAT_APPLE_NOTARY_TEAM_ID: ${{ secrets.DEEPCHAT_APPLE_NOTARY_TEAM_ID }}
           DEEPCHAT_APPLE_NOTARY_PASSWORD: ${{ secrets.DEEPCHAT_APPLE_NOTARY_PASSWORD }}
+          build_for_release: '2'
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
