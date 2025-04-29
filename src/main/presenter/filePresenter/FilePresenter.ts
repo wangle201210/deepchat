@@ -10,7 +10,7 @@ import { IFilePresenter } from '../../../shared/presenter'
 import { MessageFile } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { ImageFileAdapter } from './ImageFileAdapter'
-import { v4 as uuidv4 } from 'uuid'
+import { nanoid } from 'nanoid'
 
 export class FilePresenter implements IFilePresenter {
   private userDataPath: string
@@ -83,8 +83,8 @@ export class FilePresenter implements IFilePresenter {
             adapter.mimeType && adapter.mimeType.startsWith('image')
               ? calculateImageTokens(adapter as ImageFileAdapter)
               : adapter.mimeType && adapter.mimeType.startsWith('audio')
-              ? approximateTokenSize(`音频文件路径: ${adapter.filePath}`)
-              : approximateTokenSize(content || ''),
+                ? approximateTokenSize(`音频文件路径: ${adapter.filePath}`)
+                : approximateTokenSize(content || ''),
           path: adapter.filePath,
           mimeType: adapter.mimeType ?? '',
           metadata: adapter.fileMetaData ?? {
@@ -124,7 +124,7 @@ export class FilePresenter implements IFilePresenter {
 
   async writeTemp(file: { name: string; content: string }): Promise<string> {
     const ext = path.extname(file.name)
-    const tempName = `${uuidv4()}${ext}`
+    const tempName = `${nanoid()}${ext}`
     const tempPath = path.join(this.tempDir, tempName)
     await fs.writeFile(tempPath, file.content, 'utf-8')
     return tempPath

@@ -217,7 +217,9 @@
     "marketplace": "Go to the MCP Market for one-click installation",
     "tabs": {
       "servers": "Servers",
-      "tools": "Tools"
+      "tools": "Tools",
+      "prompts": "Prompts",
+      "resources": "Resources"
     },
     "serverList": "Server List",
     "addServer": "Add Server",

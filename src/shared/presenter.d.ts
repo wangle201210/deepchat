@@ -728,6 +728,8 @@ export interface IMCPPresenter {
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
   getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
   getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
+  getPrompt(prompt: PromptWithClient, params?: Record<string, unknown>): Promise<unknown>
+  readResource(resource: ResourceListEntryWithClient): Promise<unknown>
   callTool(request: {
     id: string
     type: string
@@ -837,6 +839,7 @@ export interface ChatMessageContent {
     detail?: 'auto' | 'low' | 'high'
   }
 }
+
 export interface LLMAgentEventData {
   eventId: string
   content?: string

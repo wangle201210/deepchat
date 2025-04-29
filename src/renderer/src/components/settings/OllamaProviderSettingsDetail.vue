@@ -276,6 +276,30 @@ const pullingModels = computed(() => settingsStore.ollamaPullingModels)
 // 预设可拉取的模型列表
 const presetModels = [
   {
+    name: 'qwen3:0.6b'
+  },
+  {
+    name: 'qwen3:1.7b'
+  },
+  {
+    name: 'qwen3:4b'
+  },
+  {
+    name: 'qwen3:8b'
+  },
+  {
+    name: 'qwen3:14b'
+  },
+  {
+    name: 'qwen3:30b'
+  },
+  {
+    name: 'qwen3:32b'
+  },
+  {
+    name: 'qwen3:235b'
+  },
+  {
     name: 'gemma3:1b'
   },
   {
@@ -341,7 +365,6 @@ const presetModels = [
   {
     name: 'llama3:70b'
   }
-  // ... 其他模型配置 ...
 ]
 
 // 可拉取的模型（排除已有的和正在拉取的）

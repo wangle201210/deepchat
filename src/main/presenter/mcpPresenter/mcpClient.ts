@@ -69,7 +69,9 @@ export interface ResourceListEntry {
 // 定义资源的接口
 interface Resource {
   uri: string
-  text: string
+  mimeType?: string
+  text?: string
+  blob?: string
 }
 
 // MCP 客户端类

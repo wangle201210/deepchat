@@ -11,12 +11,12 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, watch, onMounted } from 'vue'
 import MarkdownIt from 'markdown-it'
-import { v4 as uuidv4 } from 'uuid'
+import { nanoid } from 'nanoid'
 import { useI18n } from 'vue-i18n'
 import mermaid from 'mermaid'
 
 const { t } = useI18n()
-const id = ref(`editor-${uuidv4()}`)
+const id = ref(`editor-${nanoid()}`)
 const messageBlock = ref<HTMLDivElement>()
 
 // 初始化 mermaid 配置

@@ -151,5 +151,21 @@
       "name": "Dify ナレッジベース検索",
       "desc": "Dify ナレッジベース検索サービス。Dify ナレッジベースのコンテンツを検索できます。"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "利用可能なプロンプトはありません",
+    "noDescription": "まだ説明はありません",
+    "selectPrompt": "ここに示されています",
+    "parameters": "プロンプトパラメーター",
+    "runningPrompt": "プロンプトが取得されています",
+    "executeButton": "クリックして取得します",
+    "resultTitle": "詳細を迅速にします"
+  },
+  "resources": {
+    "noResourcesAvailable": "なしリソース",
+    "selectResource": "ここにリソースのコンテンツを表示します",
+    "loading": "読み込み",
+    "loadContent": "リソースコンテンツを取得します",
+    "pleaseSelect": "クリックして表示リソースの詳細を取得します"
   }
 }

@@ -151,5 +151,21 @@
       "name": "Dify知識庫檢索",
       "desc": "Dify知識庫檢索服務，可以檢索Dify知識庫中的內容"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "暫無可用的 Prompts",
+    "noDescription": "暫無描述",
+    "selectPrompt": "此處展示選中的Prompt",
+    "parameters": "Prompt 參數",
+    "runningPrompt": "Prompt 獲取中",
+    "executeButton": "點擊獲取",
+    "resultTitle": "Prompt 詳情"
+  },
+  "resources": {
+    "noResourcesAvailable": "暫無 Resources",
+    "selectResource": "此處展示 Resources 內容",
+    "loading": "載入中",
+    "loadContent": "獲取 Resource 內容",
+    "pleaseSelect": "點擊獲取展示Resources詳情"
   }
 }

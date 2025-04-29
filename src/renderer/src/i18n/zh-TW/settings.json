@@ -216,7 +216,9 @@
     "enableToAccess": "請先啟用MCP以訪問配置選項",
     "tabs": {
       "servers": "伺服器",
-      "tools": "工具"
+      "tools": "工具",
+      "prompts": "提示詞",
+      "resources": "資源"
     },
     "serverList": "伺服器列表",
     "addServer": "新增伺服器",

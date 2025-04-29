@@ -151,5 +151,21 @@
       "name": "Dify 지식 기반 검색",
       "desc": "Dify 지식 기반 검색 서비스, Dify 지식 기반의 콘텐츠를 검색할 수 있습니다."
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "사용 가능한 프롬프트가 없습니다",
+    "noDescription": "아직 설명이 없습니다",
+    "selectPrompt": "여기에 표시됩니다",
+    "parameters": "프롬프트 매개 변수",
+    "runningPrompt": "프롬프트가 얻고 있습니다",
+    "executeButton": "클릭하려면 클릭하십시오",
+    "resultTitle": "신속한 세부 사항"
+  },
+  "resources": {
+    "noResourcesAvailable": "자원이 없습니다",
+    "selectResource": "여기에 리소스 콘텐츠를 표시하십시오",
+    "loading": "로딩",
+    "loadContent": "리소스 컨텐츠를 얻으십시오",
+    "pleaseSelect": "디스플레이 리소스 세부 정보를 얻으려면 클릭하십시오"
   }
 }
