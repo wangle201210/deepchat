@@ -215,7 +215,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const provider = this.getProviderInstance(providerId)
     let models = await provider.fetchModels()
     models = models.map((model) => {
-      const config = this.configPresenter.getModelConfig(model.id)
+      const config = this.configPresenter.getModelConfig(model.id, providerId)
       if (config) {
         model.maxTokens = config.maxTokens
         model.contextLength = config.contextLength
@@ -286,7 +286,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
     const provider = this.getProviderInstance(providerId)
     const abortController = new AbortController()
-    const modelConfig = this.configPresenter.getModelConfig(modelId)
+    const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
 
     this.activeStreams.set(eventId, {
       isGenerating: true,

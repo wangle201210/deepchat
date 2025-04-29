@@ -18,6 +18,7 @@ import { McpConfHelper } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
 import { defaultModelsSettings } from './modelDefaultSettings'
+import { getProviderSpecificModelConfig } from './providerModelSettings'
 
 // 定义应用设置的接口
 interface IAppSettings {
@@ -308,7 +309,7 @@ export class ConfigPresenter implements IConfigPresenter {
     let models = store.get('models') || []
 
     models = models.map((model) => {
-      const config = this.getModelConfig(model.id)
+      const config = this.getModelConfig(model.id, providerId)
       if (config) {
         model.maxTokens = config.maxTokens
         model.contextLength = config.contextLength
@@ -329,8 +330,8 @@ export class ConfigPresenter implements IConfigPresenter {
     return models
   }
 
-  getModelDefaultConfig(modelId: string): ModelConfig {
-    const model = this.getModelConfig(modelId)
+  getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig {
+    const model = this.getModelConfig(modelId, providerId)
     if (model) {
       return model
     }
@@ -727,15 +728,25 @@ export class ConfigPresenter implements IConfigPresenter {
   /**
    * 获取指定provider和model的推荐配置
    * @param modelId 模型ID
-   * @returns ModelConfig | undefined 如果找到配置则返回，否则返回undefined
+   * @param providerId 可选的提供商ID，如果提供则优先查找该提供商的特定配置
+   * @returns ModelConfig 模型配置
    */
-  getModelConfig(modelId: string): ModelConfig {
-    // 首先查找完全匹配的配置
-    for (const config of defaultModelsSettings) {
-      // 将modelId转为小写以进行不区分大小写的匹配
-      const lowerModelId = modelId.toLowerCase()
+  getModelConfig(modelId: string, providerId?: string): ModelConfig {
+    // 如果提供了providerId，先尝试查找特定提供商的配置
+    if (providerId) {
+      const providerConfig = getProviderSpecificModelConfig(providerId, modelId)
+      if (providerConfig) {
+        console.log('providerConfig', providerConfig)
+        return providerConfig
+      }
+    }
 
-      // 检查是否有任何匹配条件符合
+    // 如果没有找到特定提供商的配置，或者没有提供providerId，则查找通用配置
+    // 将modelId转为小写以进行不区分大小写的匹配
+    const lowerModelId = modelId.toLowerCase()
+
+    // 检查是否有任何匹配条件符合
+    for (const config of defaultModelsSettings) {
       if (config.match.some((matchStr) => lowerModelId.includes(matchStr.toLowerCase()))) {
         return {
           maxTokens: config.maxTokens,
@@ -759,3 +770,7 @@ export class ConfigPresenter implements IConfigPresenter {
     }
   }
 }
+
+// 导出配置相关内容，方便其他组件使用
+export { defaultModelsSettings } from './modelDefaultSettings'
+export { providerModelSettings } from './providerModelSettings'

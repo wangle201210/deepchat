@@ -161,7 +161,7 @@ export interface IConfigPresenter {
   getProviderModels(providerId: string): MODEL_META[]
   setProviderModels(providerId: string, models: MODEL_META[]): void
   getEnabledProviders(): LLM_PROVIDER[]
-  getModelDefaultConfig(modelId: string): ModelConfig
+  getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
   getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
   // 日志设置
   getLoggingEnabled(): boolean
@@ -218,7 +218,7 @@ export interface IConfigPresenter {
   removeMcpServer(serverName: string): Promise<void>
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
-  getModelConfig(modelId: string): ModelConfig
+  getModelConfig(modelId: string, providerId?: string): ModelConfig
 }
 export type RENDERER_MODEL_META = {
   id: string

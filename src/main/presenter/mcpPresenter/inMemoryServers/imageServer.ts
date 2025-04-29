@@ -124,7 +124,7 @@ export class ImageServer {
       }
     ]
 
-    const modelConfig = presenter.configPresenter.getModelConfig(this.model)
+    const modelConfig = presenter.configPresenter.getModelConfig(this.model, this.provider)
 
     try {
       const response = await presenter.llmproviderPresenter.generateCompletionStandalone(

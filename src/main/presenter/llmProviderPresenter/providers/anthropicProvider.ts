@@ -63,7 +63,7 @@ export class AnthropicProvider extends BaseLLMProvider {
           // 确保模型有必要的属性
           if (model.id) {
             // 获取额外的配置信息
-            const modelConfig = this.configPresenter.getModelConfig(model.id)
+            const modelConfig = this.configPresenter.getModelConfig(model.id, this.provider.id)
 
             // 提取模型组名称，通常是Claude后面的版本号
 

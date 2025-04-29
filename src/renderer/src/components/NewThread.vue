@@ -142,7 +142,10 @@ watch(
   () => activeModel.value,
   async () => {
     // console.log('activeModel', activeModel.value)
-    const config = await configPresenter.getModelDefaultConfig(activeModel.value.id)
+    const config = await configPresenter.getModelDefaultConfig(
+      activeModel.value.id,
+      activeModel.value.providerId
+    )
     temperature.value = config.temperature
     contextLength.value = config.contextLength
     maxTokens.value = config.maxTokens

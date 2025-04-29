@@ -541,7 +541,10 @@ export class ThreadPresenter implements IThreadPresenter {
     // 检查是否有 modelId 的变化
     if (settings.modelId && settings.modelId !== conversation.settings.modelId) {
       // 获取模型配置
-      const modelConfig = this.configPresenter.getModelConfig(mergedSettings.modelId)
+      const modelConfig = this.configPresenter.getModelConfig(
+        mergedSettings.modelId,
+        mergedSettings.providerId
+      )
       console.log('check model default config', modelConfig)
       if (modelConfig) {
         // 如果当前设置小于推荐值，则使用推荐值
@@ -996,7 +999,7 @@ export class ThreadPresenter implements IThreadPresenter {
       )
 
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
-      const modelConfig = this.configPresenter.getModelConfig(modelId)
+      const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
       const { vision } = modelConfig || {}
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
