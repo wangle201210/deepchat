@@ -75,6 +75,18 @@ jobs:
             cp artifacts/deepchat-linux-x64/*.tar.gz release_assets/ 2>/dev/null || true
           fi
 
+          # Process Mac x64 artifacts
+          if [ -d "artifacts/deepchat-mac-x64" ]; then
+            cp artifacts/deepchat-mac-x64/*.dmg release_assets/ 2>/dev/null || true
+            cp artifacts/deepchat-mac-x64/*.zip release_assets/ 2>/dev/null || true
+          fi
+
+          # Process Mac arm64 artifacts
+          if [ -d "artifacts/deepchat-mac-arm64" ]; then
+            cp artifacts/deepchat-mac-arm64/*.dmg release_assets/ 2>/dev/null || true
+            cp artifacts/deepchat-mac-arm64/*.zip release_assets/ 2>/dev/null || true
+          fi
+
           ls -la release_assets/
 
       - name: Create New Release
