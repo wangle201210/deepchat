@@ -27,12 +27,146 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // Anthropic提供商特定模型配置
   anthropic: {
-    models: []
+    models: [
+      {
+        id: 'claude-3-7-sonnet',
+        name: 'Claude 3.7 Sonnet',
+        temperature: 1,
+        maxTokens: 64000,
+        contextLength: 204800,
+        match: ['claude-3-7-sonnet', 'claude-3.7-sonnet'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'claude-3-5-sonnet',
+        name: 'Claude 3.5 Sonnet',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 204800,
+        match: ['claude-3-5-sonnet', 'claude-3.5-sonnet'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'claude-3-opus',
+        name: 'Claude 3 Opus',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 204800,
+        match: ['claude-3-opus', 'claude-3.opus'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'claude-3-haiku',
+        name: 'Claude 3 Haiku',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 204800,
+        match: ['claude-3-haiku', 'claude-3.haiku', 'claude-3-5-haiku', 'claude-3.5-haiku'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      }
+    ]
   },
 
   // Gemini提供商特定模型配置
   gemini: {
-    models: []
+    models: [
+      {
+        id: 'models/gemini-2.5-flash-preview-04-17',
+        name: 'Gemini 2.5 Flash Preview',
+        temperature: 0.7,
+        maxTokens: 65536,
+        contextLength: 1048576,
+        match: ['models/gemini-2.5-flash-preview-04-17', 'gemini-2.5-flash-preview-04-17'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'gemini-2.5-pro-preview-03-25',
+        name: 'Gemini 2.5 Pro Preview 03-25',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 2048576,
+        match: ['gemini-2.5-pro-preview-03-25'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-2.5-pro-exp-03-25',
+        name: 'Gemini 2.5 Pro Exp 03-25',
+        temperature: 0.7,
+        maxTokens: 65536,
+        contextLength: 2048576,
+        match: ['gemini-2.5-pro-exp-03-25'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-2.0-flash-exp-image-generation',
+        name: 'Gemini 2.0 Flash Exp Image Generation',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 1048576,
+        match: ['gemini-2.0-flash-exp-image-generation'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-2.0-pro-exp-02-05',
+        name: 'Gemini 2.0 Pro Exp 02-05',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 2048576,
+        match: ['gemini-2.0-pro-exp-02-05'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 1048576,
+        match: ['gemini-2.0-flash'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-1.5-flash',
+        name: 'Gemini 1.5 Flash',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 1048576,
+        match: ['gemini-1.5-flash'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-1.5-pro',
+        name: 'Gemini 1.5 Pro',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 2097152,
+        match: ['gemini-1.5-pro'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      }
+    ]
   },
 
   // 华为云Hunyuan提供商特定模型配置
