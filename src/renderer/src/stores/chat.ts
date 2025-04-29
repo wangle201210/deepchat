@@ -12,6 +12,9 @@ import { usePresenter } from '@/composables/usePresenter'
 import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
 
+// 定义会话工作状态类型
+export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
+
 export const useChatStore = defineStore('chat', () => {
   const threadP = usePresenter('threadPresenter')
 
@@ -29,6 +32,9 @@ export const useChatStore = defineStore('chat', () => {
   const pageSize = ref(40)
   const hasMore = ref(true)
   const isSidebarOpen = ref(false)
+
+  // 使用Map来存储会话工作状态
+  const threadsWorkingStatus = ref<Map<string, WorkingStatus>>(new Map())
 
   // 添加消息生成缓存
   const generatingMessagesCache = ref<
@@ -142,6 +148,14 @@ export const useChatStore = defineStore('chat', () => {
 
   const setActiveThread = async (threadId: string) => {
     try {
+      // 如果当前会话状态为completed或error，从状态map中移除
+      if (
+        threadsWorkingStatus.value.get(threadId) === 'completed' ||
+        threadsWorkingStatus.value.get(threadId) === 'error'
+      ) {
+        threadsWorkingStatus.value.delete(threadId)
+      }
+
       activeThreadId.value = threadId
       messages.value = []
       await threadP.setActiveConversation(threadId)
@@ -251,6 +265,8 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       generatingThreadIds.value.add(activeThreadId.value)
+      // 设置当前会话的workingStatus为working
+      updateThreadWorkingStatus(activeThreadId.value, 'working')
       const aiResponseMessage = await threadP.sendMessage(
         activeThreadId.value,
         JSON.stringify(content),
@@ -282,6 +298,8 @@ export const useChatStore = defineStore('chat', () => {
       })
       await loadMessages()
       generatingThreadIds.value.add(activeThreadId.value)
+      // 设置当前会话的workingStatus为working
+      updateThreadWorkingStatus(activeThreadId.value, 'working')
       await threadP.startStreamCompletion(activeThreadId.value, messageId)
     } catch (error) {
       console.error('重试消息失败:', error)
@@ -503,6 +521,13 @@ export const useChatStore = defineStore('chat', () => {
 
       generatingMessagesCache.value.delete(msg.eventId)
       generatingThreadIds.value.delete(cached.threadId)
+      // 设置会话的workingStatus为completed
+      // 如果是当前活跃的会话，则直接从Map中移除
+      if (activeThreadId.value === cached.threadId) {
+        threadsWorkingStatus.value.delete(cached.threadId)
+      } else {
+        updateThreadWorkingStatus(cached.threadId, 'completed')
+      }
 
       // 如果是变体消息，需要更新主消息
       if (enrichedMessage.is_variant && enrichedMessage.parentId) {
@@ -597,6 +622,13 @@ export const useChatStore = defineStore('chat', () => {
       }
       generatingMessagesCache.value.delete(msg.eventId)
       generatingThreadIds.value.delete(cached.threadId)
+      // 设置会话的workingStatus为error
+      // 如果是当前活跃的会话，则直接从Map中移除
+      if (activeThreadId.value === cached.threadId) {
+        threadsWorkingStatus.value.delete(cached.threadId)
+      } else {
+        updateThreadWorkingStatus(cached.threadId, 'error')
+      }
     }
   }
 
@@ -665,6 +697,13 @@ export const useChatStore = defineStore('chat', () => {
         // 从缓存中移除消息
         generatingMessagesCache.value.delete(messageId)
         generatingThreadIds.value.delete(threadId)
+        // 设置会话的workingStatus为completed
+        // 如果是当前活跃的会话，则直接从Map中移除
+        if (activeThreadId.value === threadId) {
+          threadsWorkingStatus.value.delete(threadId)
+        } else {
+          updateThreadWorkingStatus(threadId, 'completed')
+        }
         // 获取更新后的消息
         const updatedMessage = await threadP.getMessage(messageId)
         // 更新消息列表中的对应消息
@@ -681,6 +720,8 @@ export const useChatStore = defineStore('chat', () => {
     if (!conversationId || !messageId) return
     try {
       generatingThreadIds.value.add(conversationId)
+      // 设置会话的workingStatus为working
+      updateThreadWorkingStatus(conversationId, 'working')
 
       // 创建一个新的助手消息
       const aiResponseMessage = await threadP.sendMessage(
@@ -729,6 +770,8 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
       generatingThreadIds.value.delete(threadId)
+      // 从状态Map中移除会话状态
+      threadsWorkingStatus.value.delete(threadId)
     } catch (error) {
       console.error('清空消息失败:', error)
       throw error
@@ -738,6 +781,15 @@ export const useChatStore = defineStore('chat', () => {
   window.electron.ipcRenderer.on(CONVERSATION_EVENTS.ACTIVATED, (_, msg) => {
     // console.log(CONVERSATION_EVENTS.ACTIVATED, msg)
     activeThreadId.value = msg.conversationId
+
+    // 如果存在状态为completed或error的会话，从Map中移除
+    if (activeThreadId.value) {
+      const status = threadsWorkingStatus.value.get(activeThreadId.value)
+      if (status === 'completed' || status === 'error') {
+        threadsWorkingStatus.value.delete(activeThreadId.value)
+      }
+    }
+
     loadMessages()
     loadChatConfig() // 加载对话配置
   })
@@ -804,6 +856,28 @@ export const useChatStore = defineStore('chat', () => {
     deeplinkCache.value = null
   }
 
+  // 新增更新会话workingStatus的方法
+  const updateThreadWorkingStatus = (threadId: string, status: WorkingStatus) => {
+    // 如果是活跃会话，且状态为completed或error，直接从Map中移除
+    if (activeThreadId.value === threadId && (status === 'completed' || status === 'error')) {
+      console.log(`活跃会话状态移除: ${threadId}`)
+      threadsWorkingStatus.value.delete(threadId)
+      return
+    }
+
+    // 记录状态变更
+    const oldStatus = threadsWorkingStatus.value.get(threadId)
+    if (oldStatus !== status) {
+      console.log(`会话状态变更: ${threadId} ${oldStatus || 'none'} -> ${status}`)
+      threadsWorkingStatus.value.set(threadId, status)
+    }
+  }
+
+  // 获取会话工作状态的方法
+  const getThreadWorkingStatus = (threadId: string): WorkingStatus | null => {
+    return threadsWorkingStatus.value.get(threadId) || null
+  }
+
   return {
     renameThread,
     // 状态
@@ -839,6 +913,9 @@ export const useChatStore = defineStore('chat', () => {
     continueStream,
     deeplinkCache,
     clearDeeplinkCache,
-    forkThread
+    forkThread,
+    updateThreadWorkingStatus,
+    getThreadWorkingStatus,
+    threadsWorkingStatus
   }
 })
