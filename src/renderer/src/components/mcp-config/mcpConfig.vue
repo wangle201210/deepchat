@@ -2,7 +2,6 @@
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
