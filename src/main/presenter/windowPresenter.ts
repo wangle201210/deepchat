@@ -168,6 +168,7 @@ export class WindowPresenter implements IWindowPresenter {
       window.setContentProtection(enabled)
       window.webContents.setBackgroundThrottling(!enabled)
       window.webContents.setFrameRate(60)
+      window.setBackgroundColor('#00000000')
       if (process.platform === 'darwin') {
         window.setHiddenInMissionControl(enabled)
         window.setSkipTaskbar(enabled)
