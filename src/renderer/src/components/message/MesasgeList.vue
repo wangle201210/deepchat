@@ -122,7 +122,26 @@ const scrollToBottom = () => {
     })
   })
 }
-
+onMounted(() => {
+  nextTick(() => {
+    setTimeout(() => {
+      scrollToBottom()
+      nextTick(() => {
+        visible.value = true
+      })
+    }, 10)
+  })
+})
+const { height } = useElementBounding(messageList.value)
+watch(
+  () => height.value,
+  () => {
+    const lastMessage = props.messages[props.messages.length - 1]
+    if (lastMessage?.status === 'pending' && !aboveThreshold.value) {
+      scrollToBottom()
+    }
+  }
+)
 const aboveThreshold = ref(false)
 const SCROLL_THRESHOLD = 100
 const handleScroll = useDebounceFn((event) => {
@@ -133,15 +152,6 @@ const handleScroll = useDebounceFn((event) => {
     aboveThreshold.value = scrollBottom > SCROLL_THRESHOLD
   }
 }, 100)
-
-// 创建新会话
-const createNewThread = async () => {
-  try {
-    await chatStore.clearActiveThread()
-  } catch (error) {
-    console.error(t('common.error.createChatFailed'), error)
-  }
-}
 
 const showCancelButton = computed(() => {
   return chatStore.generatingThreadIds.has(chatStore.activeThreadId ?? '')
@@ -169,30 +179,16 @@ const handleRetry = (index: number) => {
     }
   }
 }
-
+// 创建新会话
+const createNewThread = async () => {
+  try {
+    await chatStore.clearActiveThread()
+  } catch (error) {
+    console.error(t('common.error.createChatFailed'), error)
+  }
+}
 defineExpose({
   scrollToBottom,
   aboveThreshold
-})
-
-onMounted(() => {
-  nextTick(() => {
-    setTimeout(() => {
-      scrollToBottom()
-      nextTick(() => {
-        visible.value = true
-      })
-    }, 10)
-    const { height } = useElementBounding(messageList.value)
-    watch(
-      () => height.value,
-      () => {
-        const lastMessage = props.messages[props.messages.length - 1]
-        if (lastMessage?.status === 'pending' && !aboveThreshold.value) {
-          scrollToBottom()
-        }
-      }
-    )
-  })
 })
 </script>
