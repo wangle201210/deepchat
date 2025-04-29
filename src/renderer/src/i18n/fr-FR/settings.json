@@ -289,7 +289,8 @@
       "customHeaders": "En-tête de demande personnalisé",
       "invalidKeyValueFormat": "Format d'en-tête de demande incorrect, veuillez vérifier si l'entrée est correcte.",
       "npmRegistry": "Registre NPM personnalisé",
-      "npmRegistryPlaceholder": "Configurez un registre NPM personnalisé, laissez le système pour sélectionner automatiquement le plus rapide"
+      "npmRegistryPlaceholder": "Configurez un registre NPM personnalisé, laissez le système pour sélectionner automatiquement le plus rapide",
+      "browseHigress": "Voir Higress MCP Marketplace"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -320,7 +321,8 @@
     "setDefault": "Définir par défaut",
     "marketplace": "Allez sur MCP Market et installez-le en un seul clic",
     "maxDefaultServersReached": "Seuls 3 serveurs par défaut peuvent être définis au maximum",
-    "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut"
+    "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut",
+    "higressMarket": "Aller à l'installation de Higress MCP"
   },
   "about": {
     "checkUpdate": "Vérifier les mises à jour",

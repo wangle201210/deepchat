@@ -289,7 +289,8 @@
       "customHeaders": "カスタムリクエストヘッダー",
       "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。",
       "npmRegistry": "カスタムNPMレジストリ",
-      "npmRegistryPlaceholder": "カスタムNPMレジストリをセットアップし、システムを残して最速のレジストリを自動的に選択する"
+      "npmRegistryPlaceholder": "カスタムNPMレジストリをセットアップし、システムを残して最速のレジストリを自動的に選択する",
+      "browseHigress": "Higress MCP Marketplaceを表示します"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -320,7 +321,8 @@
     "removeDefault": "デフォルトを削除します",
     "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします",
     "maxDefaultServersReached": "せいぜい3つのデフォルトサーバーのみを設定できます",
-    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください"
+    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください",
+    "higressMarket": "Higress MCPのインストールに移動します"
   },
   "about": {
     "title": "私たちについて",

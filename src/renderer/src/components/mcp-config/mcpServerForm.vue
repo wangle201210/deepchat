@@ -25,6 +25,7 @@ import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
 import type { RENDERER_MODEL_META } from '@shared/presenter'
+import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from './const'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -522,7 +523,12 @@ watch(
 
 // 打开MCP Marketplace
 const openMcpMarketplace = () => {
-  window.open('https://mcp.deepchatai.cn', '_blank')
+  window.open(MCP_MARKETPLACE_URL, '_blank')
+}
+
+// 打开Higress MCP Marketplace
+const openHigressMcpMarketplace = () => {
+  window.open(HIGRESS_MCP_MARKETPLACE_URL, '_blank')
 }
 
 // --- 新增辅助函数 ---
@@ -567,15 +573,29 @@ HTTP-Referer=deepchatai.cn`
 
         <!-- MCP Marketplace 入口 -->
         <div class="my-4">
-          <Button
-            variant="outline"
-            class="w-full flex items-center justify-center gap-2"
-            @click="openMcpMarketplace"
-          >
-            <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
-            <span>{{ t('settings.mcp.serverForm.browseMarketplace') }}</span>
-            <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
-          </Button>
+          <div class="flex gap-2">
+            <Button
+              v-if="false"
+              variant="outline"
+              class="flex-1 flex items-center justify-center gap-2"
+              @click="openMcpMarketplace"
+            >
+              <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
+              <span>{{ t('settings.mcp.serverForm.browseMarketplace') }}</span>
+              <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+            </Button>
+
+            <!-- Higress MCP Marketplace 入口 -->
+            <Button
+              variant="outline"
+              class="flex-1 flex items-center justify-center gap-2"
+              @click="openHigressMcpMarketplace"
+            >
+              <img src="@/assets/mcp-icons/higress.avif" class="w-4 h-4" />
+              <span>{{ $t('settings.mcp.serverForm.browseHigress') }}</span>
+              <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
 
         <div class="space-y-2">
