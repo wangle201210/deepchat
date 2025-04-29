@@ -11,7 +11,7 @@ import type { CONVERSATION, CONVERSATION_SETTINGS } from '@shared/presenter'
 import { usePresenter } from '@/composables/usePresenter'
 import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
-
+import { useI18n } from 'vue-i18n'
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
 
@@ -19,6 +19,7 @@ export const useChatStore = defineStore('chat', () => {
   const threadP = usePresenter('threadPresenter')
   const windowP = usePresenter('windowPresenter')
   const notificationP = usePresenter('notificationPresenter')
+  const { t } = useI18n()
   // 状态
   const activeThreadId = ref<string | null>(null)
   const threads = ref<
@@ -427,7 +428,8 @@ export const useChatStore = defineStore('chat', () => {
             if (existingToolCallBlock && existingToolCallBlock.type === 'tool_call') {
               if (msg.tool_call === 'error') {
                 existingToolCallBlock.status = 'error'
-                existingToolCallBlock.tool_call.response = msg.tool_call_response || '执行失败'
+                existingToolCallBlock.tool_call.response =
+                  msg.tool_call_response || 'tool call failed'
               } else {
                 existingToolCallBlock.status = 'success'
                 if (msg.tool_call_response) {
@@ -549,9 +551,9 @@ export const useChatStore = defineStore('chat', () => {
 
         // 发送通知
         await notificationP.showNotification({
-          id: `message-${msg.eventId}`,
-          title: '生成完毕',
-          body: notificationContent || '消息生成已完成'
+          id: `chat/${cached.threadId}/${msg.eventId}`,
+          title: t('chat.notify.generationComplete'),
+          body: notificationContent || t('chat.notify.generationComplete')
         })
       }
 
@@ -647,7 +649,7 @@ export const useChatStore = defineStore('chat', () => {
           const isFocused = await windowP.isMainWindowFocused()
           if (!isFocused) {
             // 获取错误信息
-            let errorMessage = '生成过程中发生错误'
+            let errorMessage = t('chat.notify.generationError')
             if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
               const assistantMsg = enrichedMessage as AssistantMessage
               // 查找错误信息块
@@ -663,7 +665,7 @@ export const useChatStore = defineStore('chat', () => {
             // 发送错误通知
             await notificationP.showNotification({
               id: `error-${msg.eventId}`,
-              title: '生成错误',
+              title: t('chat.notify.generationError'),
               body: errorMessage
             })
           }
