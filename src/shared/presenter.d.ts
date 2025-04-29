@@ -836,9 +836,13 @@ export interface ChatMessage {
   }>
 }
 
-export interface UserChatMessage {
-  type: 'text' | 'resource'
+export interface ChatMessageContent {
+  type: 'text' | 'image_url' | 'resource'
   text?: string
+  image_url?: {
+    url: string
+    detail?: 'auto' | 'low' | 'high'
+  }
   resource?: {
     uri: string
     mimeType?: string
@@ -846,17 +850,6 @@ export interface UserChatMessage {
     blob?: string
   }
 }
-
-export interface AssistantChatMessage {
-  type: 'text' | 'image_url'
-  text?: string
-  image_url?: {
-    url: string
-    detail?: 'auto' | 'low' | 'high'
-  }
-}
-
-export type ChatMessageContent = UserChatMessage | AssistantChatMessage
 
 export interface LLMAgentEventData {
   eventId: string
