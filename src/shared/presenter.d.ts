@@ -57,6 +57,9 @@ export interface ModelConfig {
   functionCall: boolean
   reasoning: boolean
 }
+export interface ProviderModelConfigs {
+  [modelId: string]: ModelConfig
+}
 
 export interface IWindowPresenter {
   createMainWindow(): BrowserWindow
@@ -215,6 +218,7 @@ export interface IConfigPresenter {
   removeMcpServer(serverName: string): Promise<void>
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
+  getModelConfig(modelId: string): ModelConfig
 }
 export type RENDERER_MODEL_META = {
   id: string

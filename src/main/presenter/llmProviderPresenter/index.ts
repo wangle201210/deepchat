@@ -15,7 +15,6 @@ import { SiliconcloudProvider } from './providers/siliconcloudProvider'
 import { eventBus } from '@/eventbus'
 import { OpenAICompatibleProvider } from './providers/openAICompatibleProvider'
 import { PPIOProvider } from './providers/ppioProvider'
-import { getModelConfig } from './modelConfigs'
 import { OLLAMA_EVENTS } from '@/events'
 import { ConfigPresenter } from '../configPresenter'
 import { GeminiProvider } from './providers/geminiProvider'
@@ -216,7 +215,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const provider = this.getProviderInstance(providerId)
     let models = await provider.fetchModels()
     models = models.map((model) => {
-      const config = getModelConfig(model.id)
+      const config = this.configPresenter.getModelConfig(model.id)
       if (config) {
         model.maxTokens = config.maxTokens
         model.contextLength = config.contextLength
@@ -287,7 +286,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
     const provider = this.getProviderInstance(providerId)
     const abortController = new AbortController()
-    const modelConfig = getModelConfig(modelId)
+    const modelConfig = this.configPresenter.getModelConfig(modelId)
 
     this.activeStreams.set(eventId, {
       isGenerating: true,

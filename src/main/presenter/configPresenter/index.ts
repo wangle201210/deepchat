@@ -10,7 +10,6 @@ import {
 import { SearchEngineTemplate } from '@shared/chat'
 import ElectronStore from 'electron-store'
 import { DEFAULT_PROVIDERS } from './providers'
-import { getModelConfig } from '../llmProviderPresenter/modelConfigs'
 import path from 'path'
 import { app, shell } from 'electron'
 import fs from 'fs'
@@ -18,6 +17,7 @@ import { CONFIG_EVENTS } from '@/events'
 import { McpConfHelper } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
+import { defaultModelsSettings } from './modelDefaultSettings'
 
 // 定义应用设置的接口
 interface IAppSettings {
@@ -308,7 +308,7 @@ export class ConfigPresenter implements IConfigPresenter {
     let models = store.get('models') || []
 
     models = models.map((model) => {
-      const config = getModelConfig(model.id)
+      const config = this.getModelConfig(model.id)
       if (config) {
         model.maxTokens = config.maxTokens
         model.contextLength = config.contextLength
@@ -330,7 +330,7 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 
   getModelDefaultConfig(modelId: string): ModelConfig {
-    const model = getModelConfig(modelId)
+    const model = this.getModelConfig(modelId)
     if (model) {
       return model
     }
@@ -722,5 +722,40 @@ export class ConfigPresenter implements IConfigPresenter {
   // 提供getMcpConfHelper方法，用于获取MCP配置助手
   getMcpConfHelper(): McpConfHelper {
     return this.mcpConfHelper
+  }
+
+  /**
+   * 获取指定provider和model的推荐配置
+   * @param modelId 模型ID
+   * @returns ModelConfig | undefined 如果找到配置则返回，否则返回undefined
+   */
+  getModelConfig(modelId: string): ModelConfig {
+    // 首先查找完全匹配的配置
+    for (const config of defaultModelsSettings) {
+      // 将modelId转为小写以进行不区分大小写的匹配
+      const lowerModelId = modelId.toLowerCase()
+
+      // 检查是否有任何匹配条件符合
+      if (config.match.some((matchStr) => lowerModelId.includes(matchStr.toLowerCase()))) {
+        return {
+          maxTokens: config.maxTokens,
+          contextLength: config.contextLength,
+          temperature: config.temperature,
+          vision: config.vision,
+          functionCall: config.functionCall || false,
+          reasoning: config.reasoning || false
+        }
+      }
+    }
+
+    // 如果没有找到匹配的配置，返回默认的安全配置
+    return {
+      maxTokens: 4096,
+      contextLength: 8192,
+      temperature: 0.6,
+      vision: false,
+      functionCall: false,
+      reasoning: false
+    }
   }
 }

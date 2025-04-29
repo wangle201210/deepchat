@@ -27,7 +27,6 @@ import {
   MessageFile
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
-import { getModelConfig } from '../llmProviderPresenter/modelConfigs'
 import { generateSearchPrompt, SearchManager } from './searchManager'
 import { getFileContext } from './fileContext'
 import { ContentEnricher } from './contentEnricher'
@@ -486,7 +485,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
     })
     const mergedSettings = { ...defaultSettings, ...settings }
-    const defaultModelsSettings = getModelConfig(mergedSettings.modelId)
+    const defaultModelsSettings = this.configPresenter.getModelConfig(mergedSettings.modelId)
     if (defaultModelsSettings) {
       mergedSettings.maxTokens = defaultModelsSettings.maxTokens
       mergedSettings.contextLength = defaultModelsSettings.contextLength
@@ -542,7 +541,7 @@ export class ThreadPresenter implements IThreadPresenter {
     // 检查是否有 modelId 的变化
     if (settings.modelId && settings.modelId !== conversation.settings.modelId) {
       // 获取模型配置
-      const modelConfig = getModelConfig(mergedSettings.modelId)
+      const modelConfig = this.configPresenter.getModelConfig(mergedSettings.modelId)
       console.log('check model default config', modelConfig)
       if (modelConfig) {
         // 如果当前设置小于推荐值，则使用推荐值
@@ -997,7 +996,7 @@ export class ThreadPresenter implements IThreadPresenter {
       )
 
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
-      const modelConfig = getModelConfig(modelId)
+      const modelConfig = this.configPresenter.getModelConfig(modelId)
       const { vision } = modelConfig || {}
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
