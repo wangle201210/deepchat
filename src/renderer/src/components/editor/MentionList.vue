@@ -1,57 +1,61 @@
 <template>
   <div
-    class="bg-white border border-gray-100 rounded-lg shadow-md flex flex-col gap-0.5 overflow-auto p-2 relative"
+    class="z-50 min-w-[180px] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
   >
+    <div v-if="isCategoryView" class="text-xs text-muted-foreground pb-1 px-1">
+      {{ currentCategory }}
+    </div>
     <template v-if="items.length">
       <button
         v-for="(item, index) in displayItems"
         :key="index"
-        :class="{ 'bg-gray-200': index === selectedIndex, 'hover:bg-gray-300': true }"
-        class="flex items-center gap-1 text-left w-full bg-transparent hover:bg-gray-300"
+        class="relative flex cursor-default hover:bg-accent select-none items-center rounded-sm gap-2 px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left"
+        :class="[index === selectedIndex ? 'bg-accent' : '']"
         @click="selectItem(index)"
       >
-        <template v-if="isCategoryView">
-          <span class="font-medium">{{ item }}</span>
-        </template>
-        <template v-else>
-          <span>{{ item }}</span>
-        </template>
+        <Icon v-if="item.icon" :icon="item.icon" class="size-4 shrink-0" />
+        <div class="font-medium flex-1 truncate">
+          {{ item.label }}
+        </div>
+        <Icon v-if="isCategoryView" icon="lucide:chevron-right" class="size-4 shrink-0"></Icon>
       </button>
     </template>
-    <div class="p-1 text-gray-500" v-else>No result</div>
+    <div v-else class="p-1 text-sm text-muted-foreground">No result</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { Icon } from '@iconify/vue'
+import { CategorizedData } from './suggestion'
 
-const props = defineProps({
-  items: {
-    type: Array,
-    required: true
-  },
-  command: {
-    type: Function,
-    required: true
-  },
-  categorizedItems: {
-    type: Object,
-    default: () => ({})
-  }
-})
-
+const props = defineProps<{
+  items: CategorizedData[] // Allow items to be strings or objects
+  command: (payload: { id: string; category?: string | null }) => void
+  query: string // Declare the query prop
+}>()
 const selectedIndex = ref(0)
-const currentCategory = ref(null)
-const isCategoryView = computed(() => currentCategory.value === null)
+const currentCategory = ref<string | null>(null)
+const isCategoryView = computed(() => currentCategory.value != null)
 
 // Compute items to display based on the current category
-const displayItems = computed(() => {
-  if (currentCategory.value === null) {
-    // If in category view, return category names
-    return Object.keys(props.categorizedItems)
+const displayItems = computed<CategorizedData[]>(() => {
+  if (props.query) {
+    if (!isCategoryView.value) {
+      return props.items
+    } else {
+      return props.items.filter(
+        (item) => item.type === 'item' && item.category === currentCategory.value
+      )
+    }
   } else {
-    // If in sub-item view, return items of the current category
-    return props.categorizedItems[currentCategory.value] || []
+    if (!isCategoryView.value) {
+      return props.items.filter((item) => item.type === 'category')
+    } else {
+      return props.items.filter(
+        (item) => item.type === 'item' && item.category === currentCategory.value
+      )
+    }
   }
 })
 
@@ -60,33 +64,29 @@ watch(
   () => {
     // Reset selection state when items change
     selectedIndex.value = 0
-    currentCategory.value = null
-  }
+  },
+  { immediate: true } // Run watcher immediately to set initial state
 )
 
 const upHandler = () => {
+  if (displayItems.value.length === 0) return
   selectedIndex.value =
     (selectedIndex.value + displayItems.value.length - 1) % displayItems.value.length
 }
 
 const downHandler = () => {
+  if (displayItems.value.length === 0) return
   selectedIndex.value = (selectedIndex.value + 1) % displayItems.value.length
 }
 
-const selectItem = (index) => {
-  if (isCategoryView.value) {
-    // If we're in category view, select the category
-    const categoryName = displayItems.value[index]
-    if (categoryName) {
-      currentCategory.value = categoryName
-      selectedIndex.value = 0
-    }
+const selectItem = (index: number) => {
+  const selectedDisplayItem = displayItems.value[index]
+  if (!selectedDisplayItem) return
+  if (selectedDisplayItem.type === 'category') {
+    currentCategory.value = selectedDisplayItem.label
+    selectedIndex.value = 0
   } else {
-    // If we're in subitem view, select the item
-    const item = displayItems.value[index]
-    if (item) {
-      props.command({ id: item, category: currentCategory.value })
-    }
+    props.command({ id: selectedDisplayItem.label, category: currentCategory.value })
   }
 }
 
@@ -95,16 +95,21 @@ const enterHandler = () => {
 }
 
 const backHandler = () => {
-  if (!isCategoryView.value) {
-    // Go back to category view
+  if (currentCategory.value !== null) {
     currentCategory.value = null
     selectedIndex.value = 0
     return true
+  } else {
+    return false
   }
-  return false
 }
 
-const onKeyDown = ({ event }) => {
+const cleanHandler = () => {
+  currentCategory.value = null
+  selectedIndex.value = 0
+}
+
+const onKeyDown = ({ event }: { event: KeyboardEvent }): boolean => {
   if (event.key === 'ArrowUp') {
     upHandler()
     return true
@@ -117,12 +122,30 @@ const onKeyDown = ({ event }) => {
 
   if (event.key === 'Enter') {
     enterHandler()
+    // Prevent default form submission or other behavior
+    event.preventDefault()
     return true
   }
 
-  if (event.key === 'Escape' || event.key === 'Backspace') {
-    return backHandler()
+  if (event.key === 'Escape') {
+    cleanHandler()
+    return true
   }
+
+  if (event.key === 'Backspace') {
+    if (backHandler()) {
+      return true
+    } else {
+      return false
+    }
+  }
+
+  // Use Escape or Backspace (if not in category view) to go back
+  // if (event.key === 'Escape' || (event.key === 'Backspace' && !isCategoryView.value)) {
+  //   if (backHandler()) {
+  //     return true
+  //   }
+  // }
 
   return false
 }

@@ -1,41 +1,45 @@
 import { VueRenderer } from '@tiptap/vue-3'
 import tippy from 'tippy.js'
-import { ref } from 'vue'
+import { Ref, ref } from 'vue'
 
 import MentionList from './MentionList.vue'
 
 // Define the type for categorized data
-interface CategorizedData {
-  [category: string]: string[]
+export interface CategorizedData {
+  label: string
+  icon?: string
+  type: string
+  category?: string
 }
 
 // Sample categorized items
-const categorizedData: CategorizedData = {
-  resources: ['resource1', 'resource2'],
-  files: ['file1']
-}
+const categorizedData: CategorizedData[] = [
+  { label: 'mcp-resources', icon: 'lucide:swatch-book', type: 'category' },
+  { label: 'files', icon: 'lucide:files', type: 'category' }
+]
 
 // Create a ref to track mention selections
 export const mentionSelected = ref(false)
+export const mentionData: Ref<CategorizedData[]> = ref(categorizedData)
 
 export default {
   items: ({ query }) => {
     // If there's a query, search across all categories
     if (query) {
-      const allItems: string[] = []
+      const allItems: CategorizedData[] = []
       // Flatten the structure and search in all categories
-      Object.entries(categorizedData).forEach(([, items]) => {
-        const matchedItems = items.filter((item) =>
-          item.toLowerCase().includes(query.toLowerCase())
-        )
-        allItems.push(...matchedItems)
-      })
+
+      for (const item of mentionData.value) {
+        if (item.label.toLowerCase().includes(query.toLowerCase())) {
+          allItems.push(item)
+        }
+      }
 
       return allItems.slice(0, 5)
     }
 
-    // If no query, return the categories
-    return Object.keys(categorizedData)
+    // If no query, return the full list
+    return mentionData.value
   },
 
   render: () => {
@@ -51,7 +55,7 @@ export default {
           // using vue 3:
           props: {
             ...props,
-            categorizedItems: categorizedData
+            query: props.query
           },
           editor: props.editor
         })
@@ -67,14 +71,14 @@ export default {
           showOnCreate: true,
           interactive: true,
           trigger: 'manual',
-          placement: 'bottom-start'
+          placement: 'top-start'
         })
       },
 
       onUpdate(props) {
         component.updateProps({
           ...props,
-          categorizedItems: categorizedData
+          query: props.query
         })
 
         if (!props.clientRect) {

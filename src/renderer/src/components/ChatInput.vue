@@ -212,11 +212,12 @@ import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import Mention from '@tiptap/extension-mention'
-import suggestion from './editor/suggestion'
+import suggestion, { mentionData } from './editor/suggestion'
 import { mentionSelected } from './editor/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
-
+import { useMcpStore } from '@/stores/mcp'
+const mcpStore = useMcpStore()
 const { t } = useI18n()
 const editor = new Editor({
   editorProps: {
@@ -232,7 +233,7 @@ const editor = new Editor({
     Text,
     Mention.configure({
       HTMLAttributes: {
-        class: 'mention'
+        class: 'mention px-1.5 py-0.5 text-xs rounded-md bg-secondary text-foreground inline-block'
       },
       suggestion
     }),
@@ -253,7 +254,7 @@ const editor = new Editor({
     })
   ],
   onUpdate: ({ editor }) => {
-    console.log(editor.getText(), editor.getJSON())
+    // console.log(editor.getText(), editor.getJSON())
     inputText.value = editor.getText()
   }
 })
@@ -502,7 +503,6 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         const fileInfo: MessageFile = await filePresenter.prepareFile(path)
-        console.log('fileInfo', fileInfo)
         if (fileInfo) {
           selectedFiles.value.push(fileInfo)
         }
@@ -549,6 +549,39 @@ watch(
   () => settingsStore.activeSearchEngine?.id,
   async () => {
     selectedSearchEngine.value = settingsStore.activeSearchEngine?.id ?? 'google'
+  }
+)
+
+watch(
+  selectedFiles,
+  () => {
+    mentionData.value = mentionData.value
+      .filter((item) => item.type != 'item' || item.category != 'files')
+      .concat(
+        selectedFiles.value.map((file) => ({
+          label: file.metadata.fileName,
+          icon: file.mimeType.startsWith('image/') ? 'lucide:image' : 'lucide:file',
+          type: 'item',
+          category: 'files'
+        }))
+      )
+  },
+  { deep: true }
+)
+
+watch(
+  () => mcpStore.resources,
+  () => {
+    mentionData.value = mentionData.value
+      .filter((item) => item.type != 'item' || item.category != 'mcp-resources')
+      .concat(
+        mcpStore.resources.map((resource) => ({
+          label: resource.name ?? '',
+          icon: 'lucide:tag',
+          type: 'item',
+          category: 'mcp-resources'
+        }))
+      )
   }
 )
 defineExpose({

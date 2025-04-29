@@ -136,10 +136,10 @@ export class WindowPresenter implements IWindowPresenter {
         mainWindow.restore()
       }
     })
-
-    if (is.dev) {
-      mainWindow.webContents.openDevTools()
-    }
+    mainWindow.webContents.openDevTools()
+    // if (is.dev) {
+    //   mainWindow.webContents.openDevTools()
+    // }
 
     // HMR for renderer base on electron-vite cli.
     // Load the remote URL for development or the local html file for production.
