@@ -6,7 +6,9 @@ import {
   McpClient,
   MCPToolResponse,
   Prompt,
-  ResourceListEntry
+  ResourceListEntry,
+  PromptWithClient,
+  ResourceListEntryWithClient
 } from '@shared/presenter'
 import { ServerManager } from './serverManager'
 import { ToolManager } from './toolManager'
@@ -803,7 +805,7 @@ export class McpPresenter implements IMCPPresenter {
    * @returns 提示模板内容
    */
   async getPrompt(
-    prompt: Prompt & { client: { name: string; icon: string } },
+    prompt: PromptWithClient,
     params: Record<string, unknown> = {}
   ): Promise<unknown> {
     const enabled = await this.configPresenter.getMcpEnabled()
@@ -812,7 +814,7 @@ export class McpPresenter implements IMCPPresenter {
     }
 
     // 传递客户端信息和提示模板名称给toolManager
-    return this.toolManager.getPromptByClient(prompt.client.name, prompt.name, params)
+    return this.toolManager.getPromptByClient(prompt.clientName, prompt.name, params)
   }
 
   /**
@@ -820,15 +822,13 @@ export class McpPresenter implements IMCPPresenter {
    * @param resource 资源对象（包含客户端信息）
    * @returns 资源内容
    */
-  async readResource(
-    resource: ResourceListEntry & { client: { name: string; icon: string } }
-  ): Promise<unknown> {
+  async readResource(resource: ResourceListEntryWithClient): Promise<unknown> {
     const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
       throw new Error('MCP功能已禁用')
     }
 
     // 传递客户端信息和资源URI给toolManager
-    return this.toolManager.readResourceByClient(resource.client.name, resource.uri)
+    return this.toolManager.readResourceByClient(resource.clientName, resource.uri)
   }
 }

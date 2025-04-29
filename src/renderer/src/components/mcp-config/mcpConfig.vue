@@ -15,12 +15,16 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useMcpStore } from '@/stores/mcp'
 import { useSettingsStore } from '@/stores/settings'
-import type { MCPServerConfig, MCPToolDefinition } from '@shared/presenter'
+import type {
+  MCPServerConfig,
+  MCPToolDefinition,
+  PromptWithClient,
+  ResourceListEntryWithClient
+} from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import McpServerForm from './mcpServerForm.vue'
 import { useToast } from '@/components/ui/toast'
 import { useRoute, useRouter } from 'vue-router'
-import type { PromptWithClient, ResourceListEntryWithClient } from '@/stores/mcp'
 
 // 使用MCP Store
 const mcpStore = useMcpStore()

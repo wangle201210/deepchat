@@ -39,6 +39,15 @@ export interface ResourceListEntry {
   uri: string
   name?: string
 }
+export interface PromptWithClient extends Prompt {
+  clientName: string
+  clientIcon?: string
+}
+
+export interface ResourceListEntryWithClient extends ResourceListEntry {
+  clientName: string
+  clientIcon?: string
+}
 
 export interface ModelConfig {
   maxTokens: number
