@@ -61,21 +61,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       defaultBaseUrl: 'https://api.siliconflow.cn/v1'
     }
   },
-  {
-    id: 'qwenlm',
-    name: 'QwenLM',
-    apiType: 'qwenlm',
-    apiKey: '',
-    baseUrl: 'https://chat.qwenlm.ai/api',
-    enable: false,
-    websites: {
-      official: 'https://chat.qwenlm.ai',
-      apiKey: 'https://chat.qwenlm.ai',
-      docs: 'https://chat.qwenlm.ai',
-      models: 'https://chat.qwenlm.ai',
-      defaultBaseUrl: 'https://chat.qwenlm.ai/api'
-    }
-  },
+  // {
+  //   id: 'qwenlm',
+  //   name: 'QwenLM',
+  //   apiType: 'qwenlm',
+  //   apiKey: '',
+  //   baseUrl: 'https://chat.qwenlm.ai/api',
+  //   enable: false,
+  //   websites: {
+  //     official: 'https://chat.qwenlm.ai',
+  //     apiKey: 'https://chat.qwenlm.ai',
+  //     docs: 'https://chat.qwenlm.ai',
+  //     models: 'https://chat.qwenlm.ai',
+  //     defaultBaseUrl: 'https://chat.qwenlm.ai/api'
+  //   }
+  // },
   {
     id: 'doubao',
     name: 'Doubao',
@@ -272,21 +272,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.baichuan-ai.com'
   //   }
   // },
-  // {
-  //   id: 'dashscope',
-  //   name: 'DashScope',
-  //   apiType: 'dashscope',
-  //   apiKey: '',
-  //   baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://www.aliyun.com/product/bailian',
-  //     apiKey: 'https://bailian.console.aliyun.com/?apiKey=1#/api-key',
-  //     docs: 'https://help.aliyun.com/zh/model-studio/getting-started/',
-  //     models: 'https://bailian.console.aliyun.com/model-market#/model-market',
-  //     defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/'
-  //   }
-  // },
+  {
+    id: 'dashscope',
+    name: 'DashScope',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
+    enable: false,
+    websites: {
+      official: 'https://www.aliyun.com/product/bailian',
+      apiKey: 'https://bailian.console.aliyun.com/?apiKey=1#/api-key',
+      docs: 'https://help.aliyun.com/zh/model-studio/getting-started/',
+      models: 'https://bailian.console.aliyun.com/model-market#/model-market',
+      defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/'
+    }
+  },
   // {
   //   id: 'stepfun',
   //   name: 'StepFun',

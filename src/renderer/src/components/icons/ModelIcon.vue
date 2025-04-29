@@ -50,9 +50,11 @@ import googleColorIcon from '@/assets/llm-icons/google-color.svg?url'
 import qiniuIcon from '@/assets/llm-icons/qiniu.svg?url'
 import grokColorIcon from '@/assets/llm-icons/grok.svg?url'
 import hunyuanColorIcon from '@/assets/llm-icons/hunyuan-color.svg?url'
+import dashscopeColorIcon from '@/assets/llm-icons/alibabacloud-color.svg?url'
 import defaultIcon from '@/assets/logo.png?url'
 // 导入所有图标
 const icons = {
+  dashscope: dashscopeColorIcon,
   hunyuan: hunyuanColorIcon,
   grok: grokColorIcon,
   qiniu: qiniuIcon,

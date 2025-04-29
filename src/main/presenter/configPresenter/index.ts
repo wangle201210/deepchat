@@ -199,6 +199,21 @@ export class ConfigPresenter implements IConfigPresenter {
         }
       }
     }
+
+    // 0.0.17 版本之前，需要移除 qwenlm 提供商
+    if (oldVersion && compare(oldVersion, '0.0.17', '<')) {
+      // 获取当前所有提供商
+      const providers = this.getProviders()
+
+      // 过滤掉 qwenlm 提供商
+      const filteredProviders = providers.filter((provider) => provider.id !== 'qwenlm')
+
+      // 如果过滤后数量不同，说明有移除操作，需要保存更新后的提供商列表
+      if (filteredProviders.length !== providers.length) {
+        console.log('[Config] 迁移: 移除了 qwenlm 提供商')
+        this.setProviders(filteredProviders)
+      }
+    }
   }
 
   getSetting<T>(key: string): T | undefined {
