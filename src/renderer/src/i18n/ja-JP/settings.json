@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新しいチャットを作成します",
       "title": "ショートカットキー設定"
-    }
+    },
+    "notifications": "システム通知",
+    "notificationsDesc": "[有効になった後もDeepChatが前景にいない場合、セッションが生成された場合、システム通知が送信されます。"
   },
   "data": {
     "title": "データ設定",

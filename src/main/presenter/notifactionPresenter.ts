@@ -2,6 +2,7 @@ import { nativeImage, Notification, NotificationConstructorOptions } from 'elect
 import icon from '../../../resources/icon.png?asset'
 import { eventBus } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
+import { presenter } from '.'
 
 interface NotificationItem {
   id: string
@@ -14,7 +15,12 @@ export class NotificationPresenter {
   /**
    * 显示系统通知
    */
-  showNotification(options: { id: string; title: string; body: string; silent?: boolean }) {
+  async showNotification(options: { id: string; title: string; body: string; silent?: boolean }) {
+    const notificationsEnabled = presenter.configPresenter.getNotificationsEnabled()
+    if (!notificationsEnabled) {
+      return
+    }
+
     // 如果已经存在相同ID的通知，先清除
     this.clearNotification(options.id)
 

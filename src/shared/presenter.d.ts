@@ -227,6 +227,8 @@ export interface IConfigPresenter {
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
   getModelConfig(modelId: string, providerId?: string): ModelConfig
+  setNotificationsEnabled(enabled: boolean): void
+  getNotificationsEnabled(): boolean
 }
 export type RENDERER_MODEL_META = {
   id: string

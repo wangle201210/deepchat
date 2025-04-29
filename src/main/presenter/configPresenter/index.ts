@@ -769,6 +769,19 @@ export class ConfigPresenter implements IConfigPresenter {
       reasoning: false
     }
   }
+
+  getNotificationsEnabled(): boolean {
+    const value = this.getSetting<boolean>('notificationsEnabled')
+    if (value === undefined) {
+      return true
+    } else {
+      return value
+    }
+  }
+
+  setNotificationsEnabled(enabled: boolean): void {
+    this.setSetting('notificationsEnabled', enabled)
+  }
 }
 
 // 导出配置相关内容，方便其他组件使用

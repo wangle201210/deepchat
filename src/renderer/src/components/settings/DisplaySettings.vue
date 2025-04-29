@@ -21,6 +21,31 @@
         </div>
       </div>
 
+      <!-- 系统通知设置 -->
+      <div class="flex flex-col p-2 gap-2 px-2">
+        <div class="flex flex-row items-center gap-2">
+          <span class="flex flex-row items-center gap-2 flex-grow w-full">
+            <Icon icon="lucide:bell" class="w-4 h-4 text-muted-foreground" />
+            <span class="text-sm font-medium">{{
+              t('settings.common.notifications') || '系统通知'
+            }}</span>
+          </span>
+          <div class="flex-shrink-0">
+            <Switch
+              id="notifications-switch"
+              :checked="notificationsEnabled"
+              @update:checked="handleNotificationsChange"
+            />
+          </div>
+        </div>
+        <div class="pl-6 text-xs text-muted-foreground">
+          {{
+            t('settings.common.notificationsDesc') ||
+            '当DeepChat在后台的时候如果有会话生成完毕会发出系统通知'
+          }}
+        </div>
+      </div>
+
       <!-- 字体大小设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
         <span class="flex flex-row items-center gap-2 flex-grow w-full mb-1">
@@ -175,6 +200,16 @@ const cancelContentProtectionChange = () => {
 const confirmContentProtectionChange = () => {
   settingsStore.setContentProtectionEnabled(newContentProtectionValue.value)
   isContentProtectionDialogOpen.value = false
+}
+
+// --- Notifications Settings ---
+const notificationsEnabled = computed({
+  get: () => settingsStore.notificationsEnabled,
+  set: (value) => settingsStore.setNotificationsEnabled(value)
+})
+
+const handleNotificationsChange = (value: boolean) => {
+  settingsStore.setNotificationsEnabled(value)
 }
 
 // --- Lifecycle ---
