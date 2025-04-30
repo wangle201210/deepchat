@@ -30,6 +30,7 @@
               :deletable="true"
               :mime-type="file.mimeType"
               :tokens="file.token"
+              :thumbnail="file.thumbnail"
               @click="previewFile(file.path)"
               @delete="deleteFile(idx)"
             />
@@ -189,9 +190,9 @@ import { Editor, EditorContent } from '@tiptap/vue-3'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
-import Mention from '@tiptap/extension-mention'
-import suggestion, { mentionData } from './editor/suggestion'
-import { mentionSelected } from './editor/suggestion'
+import { Mention } from './editor/mention/mention'
+import suggestion, { mentionData } from './editor/mention/suggestion'
+import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
 import { useMcpStore } from '@/stores/mcp'
@@ -211,7 +212,8 @@ const editor = new Editor({
     Text,
     Mention.configure({
       HTMLAttributes: {
-        class: 'mention px-1.5 py-0.5 text-xs rounded-md bg-secondary text-foreground inline-block'
+        class:
+          'mention px-1.5 py-0.5 mx-0.5 text-xs rounded-md bg-secondary text-foreground inline-block max-w-64 align-sub !truncate'
       },
       suggestion
     }),
@@ -233,6 +235,7 @@ const editor = new Editor({
   ],
   onUpdate: ({ editor }) => {
     console.log(editor.getJSON())
+    console.log(editor.getText())
     inputText.value = editor.getText()
   }
 })
@@ -551,13 +554,14 @@ watch(
   () => mcpStore.resources,
   () => {
     mentionData.value = mentionData.value
-      .filter((item) => item.type != 'item' || item.category != 'mcp-resources')
+      .filter((item) => item.type != 'item' || item.category != 'resources')
       .concat(
         mcpStore.resources.map((resource) => ({
+          id: `${resource.clientName}.${resource.name ?? ''}`,
           label: resource.name ?? '',
           icon: 'lucide:tag',
           type: 'item',
-          category: 'mcp-resources'
+          category: 'resources'
         }))
       )
   }
@@ -567,13 +571,14 @@ watch(
   () => mcpStore.tools,
   () => {
     mentionData.value = mentionData.value
-      .filter((item) => item.type != 'item' || item.category != 'mcp-tools')
+      .filter((item) => item.type != 'item' || item.category != 'tools')
       .concat(
         mcpStore.tools.map((tool) => ({
-          label: tool.function.name ?? '',
-          icon: 'lucide:hammer',
+          id: `${tool.server.name}.${tool.function.name ?? ''}`,
+          label: `${tool.server.icons}${' '}${tool.function.name ?? ''}`,
+          icon: undefined,
           type: 'item',
-          category: 'mcp-tools',
+          category: 'tools',
           description: tool.function.description ?? ''
         }))
       )

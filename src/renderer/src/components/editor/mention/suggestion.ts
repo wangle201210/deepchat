@@ -8,6 +8,7 @@ import MentionList from './MentionList.vue'
 export interface CategorizedData {
   label: string
   icon?: string
+  id?: string
   type: string
   category?: string
   description?: string
@@ -16,8 +17,8 @@ export interface CategorizedData {
 // Sample categorized items
 const categorizedData: CategorizedData[] = [
   { label: 'files', icon: 'lucide:files', type: 'category' },
-  { label: 'mcp-resources', icon: 'lucide:swatch-book', type: 'category' },
-  { label: 'mcp-tools', icon: 'lucide:hammer', type: 'category' }
+  { label: 'resources', icon: 'lucide:swatch-book', type: 'category' },
+  { label: 'tools', icon: 'lucide:hammer', type: 'category' }
 ]
 
 // Create a ref to track mention selections

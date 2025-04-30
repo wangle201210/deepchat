@@ -56,6 +56,7 @@ export type MessageFile = {
   metadata: FileMetaData
   token: number
   path: string
+  thumbnail?: string
 }
 
 export type AssistantMessageBlock = {

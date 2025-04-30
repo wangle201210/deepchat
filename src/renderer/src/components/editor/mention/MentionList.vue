@@ -15,9 +15,7 @@
         @click="selectItem(index)"
       >
         <Icon v-if="item.icon" :icon="item.icon" class="size-4 shrink-0" />
-        <div class="font-medium flex-1 truncate">
-          {{ item.label }}
-        </div>
+        <div class="font-medium flex-1 truncate">{{ item.label }}</div>
         <Icon
           v-if="item.type === 'category'"
           icon="lucide:chevron-right"
@@ -43,7 +41,12 @@ import { CategorizedData } from './suggestion'
 
 const props = defineProps<{
   items: CategorizedData[] // Allow items to be strings or objects
-  command: (payload: { id: string; label?: string | null }) => void
+  command: (payload: {
+    id: string
+    label?: string | null
+    type?: string | null
+    content?: string | null
+  }) => void
   query: string // Declare the query prop
 }>()
 const selectedIndex = ref(0)
@@ -111,7 +114,13 @@ const selectItem = (index: number) => {
     currentCategory.value = selectedDisplayItem.label
     selectedIndex.value = 0
   } else {
-    props.command({ id: selectedDisplayItem.label, label: selectedDisplayItem.label })
+    console.log('----------', `${selectedDisplayItem.id}`)
+    props.command({
+      id: `${selectedDisplayItem.id}`,
+      label: `${selectedDisplayItem.label}`,
+      type: selectedDisplayItem.category,
+      content: selectedDisplayItem.description
+    })
   }
 }
 

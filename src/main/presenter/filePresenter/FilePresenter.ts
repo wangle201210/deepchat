@@ -77,6 +77,7 @@ export class FilePresenter implements IFilePresenter {
       if (adapter) {
         await adapter.processFile()
         const content = (await adapter.getLLMContent()) ?? ''
+        const thumbnail = adapter.getThumbnail ? await adapter.getThumbnail() : undefined
         const result = {
           name: adapter.fileMetaData?.fileName ?? '',
           token:
@@ -94,6 +95,7 @@ export class FilePresenter implements IFilePresenter {
             fileCreated: new Date(),
             fileModified: new Date()
           },
+          thumbnail: thumbnail,
           content: content || ''
         }
         return result
