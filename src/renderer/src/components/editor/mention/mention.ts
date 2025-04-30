@@ -11,15 +11,15 @@ export const Mention = TipTMention.extend({
     return {
       ...this.parent?.(),
 
-      type: {
+      category: {
         default: null,
-        parseHTML: (element) => element.getAttribute('data-type-mention'),
+        parseHTML: (element) => element.getAttribute('data-category'),
         renderHTML: (attributes) => {
-          if (!attributes.type) {
+          if (!attributes.category) {
             return {}
           }
           return {
-            'data-type-mention': attributes.type
+            'data-category': attributes.category
           }
         }
       },

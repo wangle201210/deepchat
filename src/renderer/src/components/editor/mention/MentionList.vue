@@ -44,7 +44,7 @@ const props = defineProps<{
   command: (payload: {
     id: string
     label?: string | null
-    type?: string | null
+    category?: string | null
     content?: string | null
   }) => void
   query: string // Declare the query prop
@@ -118,7 +118,7 @@ const selectItem = (index: number) => {
     props.command({
       id: `${selectedDisplayItem.id}`,
       label: `${selectedDisplayItem.label}`,
-      type: selectedDisplayItem.category,
+      category: selectedDisplayItem.category,
       content: selectedDisplayItem.description
     })
   }

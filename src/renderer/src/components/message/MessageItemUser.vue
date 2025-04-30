@@ -23,6 +23,7 @@
             :deletable="false"
             :tokens="file.token"
             :mime-type="file.mimeType"
+            :thumbnail="file.thumbnail"
             @click="previewFile(file.path)"
           />
         </div>
@@ -30,10 +31,15 @@
           <textarea
             v-model="editedText"
             class="text-sm bg-[#EFF6FF] dark:bg-muted rounded-lg p-2 border flex flex-col gap-1.5 resize"
-            :style="{ height: originalContentHeight + 18 + 'px', width: originalContentWidth + 20 + 'px' }"
+            :style="{
+              height: originalContentHeight + 18 + 'px',
+              width: originalContentWidth + 20 + 'px'
+            }"
           ></textarea>
         </div>
-        <div v-else class="text-sm whitespace-pre-wrap break-all" ref="originalContent">{{ displayText }}</div>
+        <div v-else class="text-sm whitespace-pre-wrap break-all" ref="originalContent">
+          {{ displayText }}
+        </div>
         <!-- <div
           v-else-if="message.content.continue"
           class="text-sm whitespace-pre-wrap break-all flex flex-row flex-wrap items-center gap-2"

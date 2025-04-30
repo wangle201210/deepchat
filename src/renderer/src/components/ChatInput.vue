@@ -218,7 +218,7 @@ const editor = new Editor({
     Mention.configure({
       HTMLAttributes: {
         class:
-          'mention px-1.5 py-0.5 mx-0.5 text-xs rounded-md bg-secondary text-foreground inline-block max-w-64 align-sub !truncate'
+          'mention px-1.5 py-0.5 text-xs rounded-md bg-secondary text-foreground inline-block max-w-64 align-sub !truncate'
       },
       suggestion
     }),
@@ -575,6 +575,7 @@ watch(
       .filter((item) => item.type != 'item' || item.category != 'files')
       .concat(
         selectedFiles.value.map((file) => ({
+          id: file.metadata.fileName,
           label: file.metadata.fileName,
           icon: file.mimeType.startsWith('image/') ? 'lucide:image' : 'lucide:file',
           type: 'item',
