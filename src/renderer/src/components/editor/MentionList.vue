@@ -1,14 +1,15 @@
 <template>
   <div
-    class="z-50 min-w-[180px] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+    class="z-50 relative min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
   >
     <div v-if="isCategoryView" class="text-xs text-muted-foreground pb-1 px-1">
       {{ currentCategory }}
     </div>
-    <template v-if="items.length">
+    <div v-if="displayItems.length > 0" class="max-h-64 overflow-y-auto">
       <button
         v-for="(item, index) in displayItems"
         :key="index"
+        :ref="(el) => (itemElements[index] = el)"
         class="relative flex cursor-default hover:bg-accent select-none items-center rounded-sm gap-2 px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left"
         :class="[index === selectedIndex ? 'bg-accent' : '']"
         @click="selectItem(index)"
@@ -17,10 +18,21 @@
         <div class="font-medium flex-1 truncate">
           {{ item.label }}
         </div>
-        <Icon v-if="isCategoryView" icon="lucide:chevron-right" class="size-4 shrink-0"></Icon>
+        <Icon
+          v-if="item.type === 'category'"
+          icon="lucide:chevron-right"
+          class="size-4 shrink-0"
+        ></Icon>
       </button>
-    </template>
+    </div>
     <div v-else class="p-1 text-sm text-muted-foreground">No result</div>
+    <div
+      v-if="displayItems[selectedIndex]?.description"
+      class="absolute text-muted-foreground shadow-sm top-[-1px] right-[-328px] w-[320px] max-h-64 bg-card rounded-md p-2 border text-xs overflow-y-auto"
+    >
+      <div class="font-medium pb-1 border-b border-dashed">Description</div>
+      <div class="py-1">{{ displayItems[selectedIndex].description }}</div>
+    </div>
   </div>
 </template>
 
@@ -31,12 +43,13 @@ import { CategorizedData } from './suggestion'
 
 const props = defineProps<{
   items: CategorizedData[] // Allow items to be strings or objects
-  command: (payload: { id: string; category?: string | null }) => void
+  command: (payload: { id: string; label?: string | null }) => void
   query: string // Declare the query prop
 }>()
 const selectedIndex = ref(0)
 const currentCategory = ref<string | null>(null)
 const isCategoryView = computed(() => currentCategory.value != null)
+const itemElements = ref<HTMLButtonElement | null[]>([])
 
 // Compute items to display based on the current category
 const displayItems = computed<CategorizedData[]>(() => {
@@ -79,6 +92,18 @@ const downHandler = () => {
   selectedIndex.value = (selectedIndex.value + 1) % displayItems.value.length
 }
 
+watch(
+  () => selectedIndex.value,
+  () => {
+    if (itemElements.value[selectedIndex.value]) {
+      itemElements.value[selectedIndex.value]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest'
+      })
+    }
+  }
+)
+
 const selectItem = (index: number) => {
   const selectedDisplayItem = displayItems.value[index]
   if (!selectedDisplayItem) return
@@ -86,7 +111,7 @@ const selectItem = (index: number) => {
     currentCategory.value = selectedDisplayItem.label
     selectedIndex.value = 0
   } else {
-    props.command({ id: selectedDisplayItem.label, category: currentCategory.value })
+    props.command({ id: selectedDisplayItem.label, label: selectedDisplayItem.label })
   }
 }
 
@@ -139,13 +164,6 @@ const onKeyDown = ({ event }: { event: KeyboardEvent }): boolean => {
       return false
     }
   }
-
-  // Use Escape or Backspace (if not in category view) to go back
-  // if (event.key === 'Escape' || (event.key === 'Backspace' && !isCategoryView.value)) {
-  //   if (backHandler()) {
-  //     return true
-  //   }
-  // }
 
   return false
 }

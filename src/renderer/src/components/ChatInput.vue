@@ -66,28 +66,6 @@
               </TooltipTrigger>
               <TooltipContent>{{ t('chat.input.fileSelect') }}</TooltipContent>
             </Tooltip>
-
-            <!-- MCP 工具列表 -->
-
-            <!-- <Tooltip v-show="false">
-              <TooltipTrigger>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  :class="[
-                    'rounded-lg text-xs font-normal',
-                    settings.deepThinking
-                      ? '!bg-primary dark:!bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
-                      : 'text-muted-foreground'
-                  ]"
-                  @click="onDeepThinkingClick"
-                >
-                  <Icon icon="lucide:sparkles" class="w-4 h-4" />
-                  {{ t('chat.features.deepThinking') }}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{{ t('chat.features.deepThinking') }}</TooltipContent>
-            </Tooltip> -->
             <Tooltip>
               <TooltipTrigger>
                 <span
@@ -254,7 +232,7 @@ const editor = new Editor({
     })
   ],
   onUpdate: ({ editor }) => {
-    // console.log(editor.getText(), editor.getJSON())
+    console.log(editor.getJSON())
     inputText.value = editor.getText()
   }
 })
@@ -553,7 +531,7 @@ watch(
 )
 
 watch(
-  selectedFiles,
+  () => selectedFiles.value,
   () => {
     mentionData.value = mentionData.value
       .filter((item) => item.type != 'item' || item.category != 'files')
@@ -584,6 +562,24 @@ watch(
       )
   }
 )
+
+watch(
+  () => mcpStore.tools,
+  () => {
+    mentionData.value = mentionData.value
+      .filter((item) => item.type != 'item' || item.category != 'mcp-tools')
+      .concat(
+        mcpStore.tools.map((tool) => ({
+          label: tool.function.name ?? '',
+          icon: 'lucide:hammer',
+          type: 'item',
+          category: 'mcp-tools',
+          description: tool.function.description ?? ''
+        }))
+      )
+  }
+)
+
 defineExpose({
   setText: (text: string) => {
     inputText.value = text

@@ -10,12 +10,14 @@ export interface CategorizedData {
   icon?: string
   type: string
   category?: string
+  description?: string
 }
 
 // Sample categorized items
 const categorizedData: CategorizedData[] = [
+  { label: 'files', icon: 'lucide:files', type: 'category' },
   { label: 'mcp-resources', icon: 'lucide:swatch-book', type: 'category' },
-  { label: 'files', icon: 'lucide:files', type: 'category' }
+  { label: 'mcp-tools', icon: 'lucide:hammer', type: 'category' }
 ]
 
 // Create a ref to track mention selections
