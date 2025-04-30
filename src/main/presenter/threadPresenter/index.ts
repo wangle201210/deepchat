@@ -24,7 +24,8 @@ import {
   AssistantMessageBlock,
   SearchEngineTemplate,
   UserMessage,
-  MessageFile
+  MessageFile,
+  UserMessageContent
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { generateSearchPrompt, SearchManager } from './searchManager'
@@ -364,11 +365,21 @@ export class ThreadPresenter implements IThreadPresenter {
           if (toolCallBlock && toolCallBlock.type === 'tool_call') {
             if (tool_call === 'error') {
               toolCallBlock.status = 'error'
-              toolCallBlock.tool_call.response = tool_call_response || '执行失败'
+              if (toolCallBlock.tool_call) {
+                if (typeof tool_call_response === 'string') {
+                  toolCallBlock.tool_call.response = tool_call_response || '执行失败'
+                } else {
+                  toolCallBlock.tool_call.response = JSON.stringify(tool_call_response)
+                }
+              }
             } else {
               toolCallBlock.status = 'success'
-              if (tool_call_response) {
-                toolCallBlock.tool_call.response = tool_call_response
+              if (toolCallBlock.tool_call) {
+                if (typeof tool_call_response === 'string') {
+                  toolCallBlock.tool_call.response = tool_call_response
+                } else {
+                  toolCallBlock.tool_call.response = JSON.stringify(tool_call_response)
+                }
               }
             }
           }
@@ -877,10 +888,12 @@ export class ThreadPresenter implements IThreadPresenter {
       const formattedContext = contextMessages
         .map((msg) => {
           if (msg.role === 'user') {
-            return `user: ${msg.content.text}${getFileContext(msg.content.files)}`
+            const content = msg.content as UserMessageContent
+            return `user: ${content.text}${getFileContext(content.files)}`
           } else if (msg.role === 'assistant') {
             let finanContent = 'assistant: '
-            msg.content.forEach((block) => {
+            const content = msg.content as AssistantMessageBlock[]
+            content.forEach((block) => {
               if (block.type === 'content') {
                 finanContent += block.content + '\n'
               }
@@ -1014,15 +1027,16 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 2. 处理用户消息内容
-      const { userContent, urlResults, imageFiles } =
-        await this.processUserMessageContent(userMessage)
+      const { userContent, urlResults, imageFiles } = await this.processUserMessageContent(
+        userMessage as UserMessage
+      )
 
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
 
       // 3. 处理搜索（如果需要）
       let searchResults: SearchResult[] | null = null
-      if (userMessage.content.search) {
+      if ((userMessage.content as UserMessageContent).search) {
         try {
           searchResults = await this.startStreamSearch(
             conversationId,
@@ -1114,7 +1128,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 2. 解析最后一个 action block
-      const content: AssistantMessageBlock[] = queryMessage.content
+      const content = queryMessage.content as AssistantMessageBlock[]
       const lastActionBlock = content.filter((block) => block.type === 'action').pop()
 
       if (!lastActionBlock || lastActionBlock.type !== 'action') {
@@ -1290,10 +1304,10 @@ export class ThreadPresenter implements IThreadPresenter {
       contextMessages = await this.getContextMessages(conversationId)
     }
     // 任何情况都使用最新配置
-    const webSearchEnabled = this.configPresenter.getSetting('input_webSearch')
-    const thinkEnabled = this.configPresenter.getSetting('input_deepThinking')
-    userMessage.content.search = webSearchEnabled
-    userMessage.content.think = thinkEnabled
+    const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
+    const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
+    ;(userMessage.content as UserMessageContent).search = webSearchEnabled
+    ;(userMessage.content as UserMessageContent).think = thinkEnabled
     return { conversation, userMessage, contextMessages }
   }
 
@@ -1411,7 +1425,7 @@ export class ThreadPresenter implements IThreadPresenter {
     for (const msg of messages) {
       const msgTokens = approximateTokenSize(
         msg.role === 'user'
-          ? `${msg.content.text}${getFileContext(msg.content.files)}`
+          ? `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
           : JSON.stringify(msg.content)
       )
 
@@ -1500,8 +1514,8 @@ export class ThreadPresenter implements IThreadPresenter {
     contextMessages.forEach((msg) => {
       const content =
         msg.role === 'user'
-          ? `${msg.content.text}${getFileContext(msg.content.files)}`
-          : msg.content
+          ? `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+          : (msg.content as AssistantMessageBlock[])
               .filter((block) => block.type === 'content' || block.type === 'tool_call')
               .map((block) => block.content)
               .join('\n')
@@ -1651,7 +1665,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
     // 初始化生成状态
     this.generatingMessages.set(assistantMessage.id, {
-      message: assistantMessage,
+      message: assistantMessage as AssistantMessage,
       conversationId: message.conversationId,
       startTime: Date.now(),
       firstTokenTime: null,
@@ -1661,7 +1675,7 @@ export class ThreadPresenter implements IThreadPresenter {
       lastReasoningTime: null
     })
 
-    return assistantMessage
+    return assistantMessage as AssistantMessage
   }
 
   async getMessageVariants(messageId: string): Promise<Message[]> {
@@ -1770,14 +1784,16 @@ export class ThreadPresenter implements IThreadPresenter {
         if (msg.role === 'user') {
           return {
             message: msg,
-            length: `${msg.content.text}${getFileContext(msg.content.files)}`.length,
+            length:
+              `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+                .length,
             formattedMessage: {
               role: 'user' as const,
-              content: `${msg.content.text}${getFileContext(msg.content.files)}`
+              content: `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
             }
           }
         } else {
-          const content = msg.content
+          const content = (msg.content as AssistantMessageBlock[])
             .filter((block) => block.type === 'content')
             .map((block) => block.content)
             .join('\n')

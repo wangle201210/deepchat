@@ -24,5 +24,9 @@
   },
   "messages": {
     "thinking": "생각..."
+  },
+  "notify": {
+    "generationComplete": "세대가 완료되었습니다",
+    "generationError": "세대가 실패했습니다"
   }
 }
