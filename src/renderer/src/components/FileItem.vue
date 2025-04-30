@@ -4,7 +4,7 @@
       <Tooltip>
         <TooltipTrigger as-child>
           <div
-            class="flex p-1.5 gap-2 flex-row bg-card border items-center shadow-sm justify-start rounded-md text-xs cursor-pointer select-none hover:bg-accent relative"
+            class="flex py-1.5 pl-1.5 pr-3 gap-2 flex-row bg-card border items-center shadow-sm justify-start rounded-md text-xs cursor-pointer select-none hover:bg-accent relative"
             @click="$emit('click', fileName)"
           >
             <img v-if="thumbnail" :src="thumbnail" class="w-8 h-8 rounded-md border" />
@@ -109,6 +109,8 @@ const getFileIcon = () => {
     return 'vscode-icons:file-type-css'
   } else if (props.mimeType.startsWith('audio/')) {
     return 'vscode-icons:file-type-audio'
+  } else if (props.mimeType.startsWith('directory')) {
+    return 'vscode-icons:default-folder-opened'
   } else {
     // 默认文件图标
     return 'vscode-icons:default-file'

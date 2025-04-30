@@ -559,9 +559,16 @@ const handleDrop = async (e: DragEvent) => {
     for (const file of e.dataTransfer.files) {
       try {
         const path = window.api.getPathForFile(file)
-        const fileInfo: MessageFile = await filePresenter.prepareFile(path)
-        if (fileInfo) {
-          selectedFiles.value.push(fileInfo)
+        if (file.type === '') {
+          const fileInfo: MessageFile = await filePresenter.prepareDirectory(path)
+          if (fileInfo) {
+            selectedFiles.value.push(fileInfo)
+          }
+        } else {
+          const fileInfo: MessageFile = await filePresenter.prepareFile(path)
+          if (fileInfo) {
+            selectedFiles.value.push(fileInfo)
+          }
         }
       } catch (error) {
         console.error('文件准备失败:', error)

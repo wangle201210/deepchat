@@ -76,4 +76,8 @@ export class CsvFileAdapter extends BaseFileAdapter {
     }
     return this.fileContent
   }
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }

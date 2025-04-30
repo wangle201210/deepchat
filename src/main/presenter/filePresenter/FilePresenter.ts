@@ -11,6 +11,7 @@ import { MessageFile } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { ImageFileAdapter } from './ImageFileAdapter'
 import { nanoid } from 'nanoid'
+import { DirectoryAdapter } from './DirectoryAdapter'
 
 export class FilePresenter implements IFilePresenter {
   private userDataPath: string
@@ -68,6 +69,27 @@ export class FilePresenter implements IFilePresenter {
     }
 
     return new AdapterConstructor(filePath, this.maxFileSize)
+  }
+
+  async prepareDirectory(absPath: string): Promise<MessageFile> {
+    const fullPath = path.join(absPath)
+    const adapter = new DirectoryAdapter(fullPath)
+    await adapter.processDirectory()
+    return {
+      name: adapter.dirMetaData?.dirName ?? '',
+      token: approximateTokenSize(adapter.dirMetaData?.dirName ?? ''),
+      path: adapter.dirPath,
+      mimeType: 'directory',
+      metadata: {
+        fileName: adapter.dirMetaData?.dirName ?? '',
+        fileSize: 0,
+        fileDescription: 'directory',
+        fileCreated: adapter.dirMetaData?.dirCreated ?? new Date(),
+        fileModified: adapter.dirMetaData?.dirModified ?? new Date()
+      },
+      thumbnail: '',
+      content: ''
+    }
   }
 
   async prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile> {

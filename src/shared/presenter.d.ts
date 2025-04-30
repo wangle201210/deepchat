@@ -19,6 +19,13 @@ export type SQLITE_MESSAGE = {
   variants?: SQLITE_MESSAGE[]
 }
 
+export interface DirectoryMetaData {
+  dirName: string
+  dirPath: string
+  dirCreated: Date
+  dirModified: Date
+}
+
 export interface McpClient {
   name: string
   icon: string
@@ -609,6 +616,7 @@ export interface IFilePresenter {
   deleteFile(relativePath: string): Promise<void>
   createFileAdapter(filePath: string, typeInfo?: string): Promise<any> // Return type might need refinement
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
+  prepareDirectory(absPath: string): Promise<MessageFile>
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
 }
 

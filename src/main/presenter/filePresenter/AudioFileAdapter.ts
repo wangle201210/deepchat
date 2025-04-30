@@ -6,7 +6,6 @@ export class AudioFileAdapter extends BaseFileAdapter {
     return `音频文件路径: ${this.filePath}`
   }
 
-
   constructor(filePath: string) {
     super(filePath)
   }
@@ -19,4 +18,8 @@ export class AudioFileAdapter extends BaseFileAdapter {
     // 对于音频文件，只返回路径信息，不读取内容
     return `音频文件路径: ${this.filePath}`
   }
-} 
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
+}

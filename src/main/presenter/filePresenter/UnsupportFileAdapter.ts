@@ -22,4 +22,8 @@ export class UnsupportFileAdapter extends BaseFileAdapter {
   async getContent(): Promise<string | undefined> {
     return ''
   }
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }
