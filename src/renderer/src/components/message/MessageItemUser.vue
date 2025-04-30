@@ -37,9 +37,12 @@
             }"
           ></textarea>
         </div>
-        <div v-else class="text-sm whitespace-pre-wrap break-all" ref="originalContent">
-          {{ displayText }}
-        </div>
+        <div
+          v-else
+          ref="originalContent"
+          class="text-sm whitespace-pre-wrap break-all"
+          v-html="displayText"
+        ></div>
         <!-- <div
           v-else-if="message.content.continue"
           class="text-sm whitespace-pre-wrap break-all flex flex-row flex-wrap items-center gap-2"
@@ -97,7 +100,23 @@ const originalContentHeight = ref(0)
 const originalContentWidth = ref(0)
 
 // Initialize display text with message content
-displayText.value = props.message.content.text
+
+const formatDisplayText = () => {
+  if (props.message.content.content) {
+    displayText.value = props.message.content.content
+      .map((block) => {
+        if (block.type === 'mention') {
+          return `<span class=" cursor-pointer px-1.5 py-0.5 text-xs rounded-md bg-blue-200/80 dark:bg-secondary text-foreground inline-block max-w-64 align-sub !truncate">${block.content}</span>`
+        } else {
+          return block.content
+        }
+      })
+      .join('')
+  } else {
+    displayText.value = props.message.content.text
+  }
+}
+formatDisplayText()
 
 // Update displayText whenever message content changes
 watch(

@@ -439,9 +439,9 @@ const emitSend = async () => {
       think: settings.value.deepThinking,
       content: blocks
     }
-    console.log(messageContent)
+    // console.log(messageContent)
 
-    // emit('send', messageContent)
+    emit('send', messageContent)
     inputText.value = ''
     editor.chain().clearContent().blur().run()
 

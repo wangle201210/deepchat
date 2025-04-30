@@ -25,7 +25,9 @@ import {
   SearchEngineTemplate,
   UserMessage,
   MessageFile,
-  UserMessageContent
+  UserMessageContent,
+  UserMessageTextBlock,
+  UserMessageMentionBlock
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { generateSearchPrompt, SearchManager } from './searchManager'
@@ -628,22 +630,37 @@ export class ThreadPresenter implements IThreadPresenter {
         const newMsg = { ...msg }
         const msgContent = newMsg.content as UserMessageContent
         if (msgContent.content) {
-          ;(newMsg.content as UserMessageContent).text = msgContent.content
-            .map((block) => {
-              if (block.type === 'mention') {
-                return `${block.id}`
-              } else if (block.type === 'text') {
-                return block.content
-              }
-              return ''
-            })
-            .join('')
+          ;(newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
+            msgContent.content
+          )
         }
         return newMsg
       } else {
         return msg
       }
     })
+  }
+
+  private formatUserMessageContent(
+    msgContentBlock: (UserMessageTextBlock | UserMessageMentionBlock)[]
+  ) {
+    return msgContentBlock
+      .map((block) => {
+        if (block.type === 'mention') {
+          if (block.category === 'resources') {
+            return `@${block.content}`
+          } else if (block.category === 'tools') {
+            return `@${block.id}`
+          } else if (block.category === 'files') {
+            return `@${block.id}`
+          }
+          return `@${block.id}`
+        } else if (block.type === 'text') {
+          return block.content
+        }
+        return ''
+      })
+      .join('')
   }
 
   async clearContext(conversationId: string): Promise<void> {
