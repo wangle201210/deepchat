@@ -39,10 +39,7 @@
           </div>
         </div>
         <div class="pl-6 text-xs text-muted-foreground">
-          {{
-            t('settings.common.notificationsDesc') ||
-            '当DeepChat在后台的时候如果有会话生成完毕会发出系统通知'
-          }}
+          {{ t('settings.common.notificationsDesc') }}
         </div>
       </div>
 

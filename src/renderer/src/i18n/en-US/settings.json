@@ -49,7 +49,7 @@
       "title": "Shortcut key settings"
     },
     "notifications": "System Notification",
-    "notificationsDesc": "When DeepChat is not in the foreground after enabled, a system notification will be sent if a session is generated."
+    "notificationsDesc": "When DeepChat is not in the foreground, if a session is generated, a system notification will be sent"
   },
   "data": {
     "title": "Data Settings",

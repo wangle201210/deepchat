@@ -49,7 +49,7 @@
       "title": "Paramètres des raccourcis clavier"
     },
     "notifications": "Notification système",
-    "notificationsDesc": "Lorsque DeepChat n'est pas au premier plan après activité, une notification système sera envoyée si une session est générée."
+    "notificationsDesc": "Lorsque Deepchat n'est pas au premier plan, si une session est générée, une notification système sera envoyée"
   },
   "data": {
     "title": "Paramètres des données",
