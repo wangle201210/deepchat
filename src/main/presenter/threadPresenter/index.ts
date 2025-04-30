@@ -997,7 +997,6 @@ export class ThreadPresenter implements IThreadPresenter {
       console.warn('未找到状态，conversationId:', conversationId)
       return
     }
-
     try {
       // 设置消息未取消
       state.isCancelled = false

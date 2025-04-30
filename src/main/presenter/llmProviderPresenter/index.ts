@@ -276,7 +276,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     maxTokens: number = 4096
   ): AsyncGenerator<LLMAgentEvent, void, unknown> {
     console.log('Starting agent loop for event:', eventId, 'with model:', modelId)
-
     if (!this.canStartNewStream()) {
       // Instead of throwing, yield an error event
       yield { type: 'error', data: { eventId, error: '已达到最大并发流数量限制' } }

@@ -192,27 +192,67 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
     // --- [NEW] Handle Image Generation Models ---
     if (OPENAI_IMAGE_GENERATION_MODELS.includes(modelId)) {
-      // Extract prompt from the last user message
-      const lastUserMessage = messages.findLast((m) => m.role === 'user')
+      // 获取最后几条消息，检查是否有图片
       let prompt = ''
       const imageUrls: string[] = []
-
+      // 获取最后的用户消息内容作为提示词
+      const lastUserMessage = messages.findLast((m) => m.role === 'user')
       if (lastUserMessage?.content) {
         if (typeof lastUserMessage.content === 'string') {
           prompt = lastUserMessage.content
         } else if (Array.isArray(lastUserMessage.content)) {
-          // 处理多模态内容，提取文本和图片
+          // 处理多模态内容，提取文本
           const textParts: string[] = []
-
           for (const part of lastUserMessage.content) {
             if (part.type === 'text' && part.text) {
               textParts.push(part.text)
-            } else if (part.type === 'image_url' && part.image_url?.url) {
-              imageUrls.push(part.image_url.url)
             }
           }
-
           prompt = textParts.join('\n')
+        }
+      }
+
+      // 检查最后几条消息中是否有图片
+      // 通常我们只需要检查最后两条消息：最近的用户消息和最近的助手消息
+      const lastMessages = messages.slice(-2)
+      for (const message of lastMessages) {
+        // 处理用户消息中的图片
+        if (message.role === 'user' && message.content) {
+          if (Array.isArray(message.content)) {
+            for (const part of message.content) {
+              if (part.type === 'image_url' && part.image_url?.url) {
+                imageUrls.push(part.image_url.url)
+              }
+            }
+          }
+        }
+        // 处理助手消息中的图片
+        else if (message.role === 'assistant' && message.content) {
+          // 助手消息可能是字符串形式的JSON
+          if (typeof message.content === 'string') {
+            try {
+              const parsedContent = JSON.parse(message.content)
+              if (Array.isArray(parsedContent)) {
+                for (const item of parsedContent) {
+                  if (item.type === 'image' && item.image_data?.data) {
+                    imageUrls.push(item.image_data.data)
+                  }
+                }
+              }
+            } catch (e) {
+              // 解析失败，忽略错误
+              console.log('Failed to parse assistant message content as JSON:', e)
+            }
+          }
+          // 也可能已经是数组类型
+          else if (Array.isArray(message.content)) {
+            for (const part of message.content) {
+              // 标准 OpenAI 格式的图片
+              if (part.type === 'image_url' && part.image_url?.url) {
+                imageUrls.push(part.image_url.url)
+              }
+            }
+          }
         }
       }
 
