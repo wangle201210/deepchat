@@ -19,6 +19,7 @@ export class WindowPresenter implements IWindowPresenter {
   private isQuitting: boolean = false
   private trayPresenter: TrayPresenter | null = null
   private contextMenuDisposer?: () => void
+  private mainWindowFocused: boolean = false
 
   constructor(configPresenter: ConfigPresenter) {
     this.windows = new Map()
@@ -135,6 +136,12 @@ export class WindowPresenter implements IWindowPresenter {
       if (mainWindow.isMinimized()) {
         mainWindow.restore()
       }
+    })
+    mainWindow.on('blur', () => {
+      this.mainWindowFocused = false
+    })
+    mainWindow.on('focus', () => {
+      this.mainWindowFocused = true
     })
 
     if (is.dev) {
@@ -262,5 +269,8 @@ export class WindowPresenter implements IWindowPresenter {
     } else {
       console.error('无法重置上下文菜单: 找不到主窗口')
     }
+  }
+  isMainWindowFocused(): boolean {
+    return this.mainWindowFocused
   }
 }

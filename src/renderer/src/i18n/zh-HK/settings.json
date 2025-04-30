@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新建聊天",
       "title": "快捷鍵設置"
-    }
+    },
+    "notifications": "系統通知",
+    "notificationsDesc": "當 DeepChat 不在前台時，如有會話生成完畢會發送系統通知"
   },
   "data": {
     "title": "數據設置",

@@ -149,10 +149,16 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 更新消息的usage信息
       await this.messageManager.updateMessageMetadata(eventId, metadata)
-
       await this.messageManager.updateMessageStatus(eventId, 'sent')
       await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
       this.generatingMessages.delete(eventId)
+      this.sqlitePresenter
+        .updateConversation(state.conversationId, {
+          updatedAt: Date.now()
+        })
+        .then(() => {
+          console.log('updated conv time', state.conversationId)
+        })
     }
     eventBus.emit(STREAM_EVENTS.END, msg)
   }

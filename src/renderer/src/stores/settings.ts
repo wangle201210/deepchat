@@ -33,6 +33,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const artifactsEffectEnabled = ref<boolean>(false) // 默认值与配置文件一致
   const searchPreviewEnabled = ref<boolean>(true) // 搜索预览是否启用，默认启用
   const contentProtectionEnabled = ref<boolean>(true) // 投屏保护是否启用，默认启用
+  const notificationsEnabled = ref<boolean>(true) // 系统通知是否启用，默认启用
   const isRefreshingModels = ref<boolean>(false) // 是否正在刷新模型列表
   const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
   // Ollama 相关状态
@@ -275,6 +276,10 @@ export const useSettingsStore = defineStore('settings', () => {
 
       // 获取投屏保护设置
       contentProtectionEnabled.value = await configP.getContentProtectionEnabled()
+
+      // 获取系统通知设置
+      notificationsEnabled.value =
+        (await configP.getSetting<boolean>('notificationsEnabled')) ?? true
 
       // 获取搜索引擎
       searchEngines.value = await threadP.getSearchEngines()
@@ -1186,25 +1191,19 @@ export const useSettingsStore = defineStore('settings', () => {
     removeOllamaEventListeners()
   }
 
-  // 添加设置artifactsEffectEnabled的方法
-  // const setArtifactsEffectEnabled = async (enabled: boolean) => {
-  //   // 更新本地状态
-  //   artifactsEffectEnabled.value = Boolean(enabled)
+  // 添加设置notificationsEnabled的方法
+  const setNotificationsEnabled = async (enabled: boolean) => {
+    // 更新本地状态
+    notificationsEnabled.value = Boolean(enabled)
 
-  //   // 调用ConfigPresenter设置值，确保等待Promise完成
-  //   await configP.setArtifactsEffectEnabled(enabled)
-  // }
+    // 调用ConfigPresenter设置值，确保等待Promise完成
+    await configP.setNotificationsEnabled(enabled)
+  }
 
-  // // 在setupProviderListener方法或其他初始化方法附近添加对artifacts效果变更的监听
-  // const setupArtifactsEffectListener = () => {
-  //   // 监听artifacts效果变更事件
-  //   window.electron.ipcRenderer.on(
-  //     CONFIG_EVENTS.ARTIFACTS_EFFECT_CHANGED,
-  //     (_event, enabled: boolean) => {
-  //       artifactsEffectEnabled.value = enabled
-  //     }
-  //   )
-  // }
+  // 获取系统通知设置
+  const getNotificationsEnabled = async (): Promise<boolean> => {
+    return await configP.getNotificationsEnabled()
+  }
 
   // 添加设置searchPreviewEnabled的方法
   const setSearchPreviewEnabled = async (enabled: boolean) => {
@@ -1386,6 +1385,7 @@ export const useSettingsStore = defineStore('settings', () => {
     artifactsEffectEnabled,
     searchPreviewEnabled,
     contentProtectionEnabled,
+    notificationsEnabled, // 暴露系统通知状态
     loggingEnabled,
     updateProvider,
     updateTheme,
@@ -1428,6 +1428,8 @@ export const useSettingsStore = defineStore('settings', () => {
     // setupArtifactsEffectListener,
     getSearchPreviewEnabled,
     setSearchPreviewEnabled,
+    setNotificationsEnabled, // 暴露设置系统通知的方法
+    getNotificationsEnabled, // 暴露获取系统通知状态的方法
     setupSearchEnginesListener,
     setContentProtectionEnabled,
     setupContentProtectionListener,

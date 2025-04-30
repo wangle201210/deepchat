@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "Create a new chat",
       "title": "Shortcut key settings"
-    }
+    },
+    "notifications": "System Notification",
+    "notificationsDesc": "When DeepChat is not in the foreground, if a session is generated, a system notification will be sent"
   },
   "data": {
     "title": "Data Settings",

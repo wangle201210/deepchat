@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "Créer une nouvelle conversation",
       "title": "Paramètres des raccourcis clavier"
-    }
+    },
+    "notifications": "Notification système",
+    "notificationsDesc": "Lorsque Deepchat n'est pas au premier plan, si une session est générée, une notification système sera envoyée"
   },
   "data": {
     "title": "Paramètres des données",
