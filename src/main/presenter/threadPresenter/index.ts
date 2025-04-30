@@ -940,6 +940,9 @@ export class ThreadPresenter implements IThreadPresenter {
               if (block.type === 'tool_call') {
                 finanContent += `tool_call: ${JSON.stringify(block.tool_call)}`
               }
+              if (block.type === 'image') {
+                finanContent += `image: ${block.image_data?.data}`
+              }
             })
             return finanContent
           } else {
@@ -1103,6 +1106,7 @@ export class ThreadPresenter implements IThreadPresenter {
         searchResults,
         urlResults,
         userMessage,
+        vision,
         vision ? imageFiles : []
       )
 
@@ -1227,6 +1231,7 @@ export class ThreadPresenter implements IThreadPresenter {
         null, // 不进行搜索
         [], // 没有 URL 结果
         userMessage,
+        false,
         [] // 没有图片文件
       )
 
@@ -1385,6 +1390,7 @@ export class ThreadPresenter implements IThreadPresenter {
     searchResults: SearchResult[] | null,
     urlResults: SearchResult[],
     userMessage: Message,
+    vision: boolean,
     imageFiles: MessageFile[]
   ): {
     finalContent: ChatMessage[]
@@ -1422,7 +1428,8 @@ export class ThreadPresenter implements IThreadPresenter {
       searchPrompt,
       userContent,
       enrichedUserMessage,
-      imageFiles
+      imageFiles,
+      vision
     )
 
     // 合并连续的相同角色消息
@@ -1485,7 +1492,8 @@ export class ThreadPresenter implements IThreadPresenter {
     searchPrompt: string,
     userContent: string,
     enrichedUserMessage: string,
-    imageFiles: MessageFile[]
+    imageFiles: MessageFile[],
+    vision: boolean
   ): ChatMessage[] {
     const formattedMessages: ChatMessage[] = []
 
@@ -1500,7 +1508,7 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     // 添加上下文消息
-    formattedMessages.push(...this.addContextMessages(formattedMessages, contextMessages))
+    formattedMessages.push(...this.addContextMessages(formattedMessages, contextMessages, vision))
 
     // 添加当前用户消息
     let finalContent = searchPrompt || userContent
@@ -1516,8 +1524,8 @@ export class ThreadPresenter implements IThreadPresenter {
       // })
       console.log('artifacts目前由mcp提供，此处为兼容性保留')
     }
-
-    if (imageFiles.length > 0) {
+    // 没有 vision 就不用塞进去了
+    if (vision && imageFiles.length > 0) {
       formattedMessages.push(this.addImageFiles(finalContent, imageFiles))
     } else {
       formattedMessages.push({
@@ -1545,27 +1553,77 @@ export class ThreadPresenter implements IThreadPresenter {
   // 添加上下文消息
   private addContextMessages(
     formattedMessages: ChatMessage[],
-    contextMessages: Message[]
+    contextMessages: Message[],
+    vision: boolean
   ): ChatMessage[] {
     const resultMessages = [...formattedMessages]
+
     contextMessages.forEach((msg) => {
-      const content =
-        msg.role === 'user'
-          ? `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
-          : (msg.content as AssistantMessageBlock[])
-              .filter((block) => block.type === 'content' || block.type === 'tool_call')
-              .map((block) => block.content)
-              .join('\n')
+      if (msg.role === 'user') {
+        // 处理用户消息
+        const userContent = `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+        resultMessages.push({
+          role: 'user',
+          content: userContent
+        })
+      } else if (msg.role === 'assistant') {
+        // 处理助手消息
+        const assistantBlocks = msg.content as AssistantMessageBlock[]
 
-      if (msg.role === 'assistant' && !content) {
-        return // 如果是assistant且content为空，则不加入
+        // 提取文本内容块
+        const textContent = assistantBlocks
+          .filter((block) => block.type === 'content' || block.type === 'tool_call')
+          .map((block) => block.content)
+          .join('\n')
+        // 查找图像块
+        const imageBlocks = assistantBlocks.filter(
+          (block) => block.type === 'image' && block.image_data
+        )
+
+        // 如果没有任何内容，则跳过此消息
+        if (!textContent && imageBlocks.length === 0) {
+          return
+        }
+
+        // 如果有图像，则使用复合内容格式
+        if (vision && imageBlocks.length > 0) {
+          const content: ChatMessageContent[] = []
+
+          // 添加图像内容
+          imageBlocks.forEach((block) => {
+            if (block.image_data) {
+              content.push({
+                type: 'image_url',
+                image_url: {
+                  url: block.image_data.data,
+                  detail: 'auto'
+                }
+              })
+            }
+          })
+
+          // 添加文本内容
+          if (textContent) {
+            content.push({
+              type: 'text',
+              text: textContent
+            })
+          }
+
+          resultMessages.push({
+            role: 'assistant',
+            content: content
+          })
+        } else {
+          // 仅有文本内容
+          resultMessages.push({
+            role: 'assistant',
+            content: textContent
+          })
+        }
       }
-
-      resultMessages.push({
-        role: msg.role as 'user' | 'assistant',
-        content
-      })
     })
+
     return resultMessages
   }
 

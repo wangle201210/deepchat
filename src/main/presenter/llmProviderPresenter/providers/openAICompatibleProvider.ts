@@ -10,9 +10,11 @@ import {
 import { BaseLLMProvider } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
 import {
+  ChatCompletionAssistantMessageParam,
   ChatCompletionContentPartText,
   ChatCompletionMessage,
-  ChatCompletionMessageParam
+  ChatCompletionMessageParam,
+  ChatCompletionToolMessageParam
 } from 'openai/resources'
 import { ConfigPresenter } from '../../configPresenter'
 import { proxyConfig } from '../../proxyConfig'
@@ -104,8 +106,40 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   }
 
   // 辅助方法：格式化消息
-  protected formatMessages(messages: ChatMessage[]): ChatMessage[] {
-    return messages
+  protected formatMessages(messages: ChatMessage[]): ChatCompletionMessageParam[] {
+    return messages.map((msg) => {
+      // 处理基本消息结构
+      const baseMessage: Partial<ChatCompletionMessageParam> = {
+        role: msg.role as 'system' | 'user' | 'assistant' | 'tool'
+      }
+
+      // 处理content转换为字符串
+      if (msg.content !== undefined) {
+        if (typeof msg.content === 'string') {
+          baseMessage.content = msg.content
+        } else if (Array.isArray(msg.content)) {
+          // 处理多模态内容数组
+          const textParts: string[] = []
+          for (const part of msg.content) {
+            if (part.type === 'text' && part.text) {
+              textParts.push(part.text)
+            }
+            if (part.type === 'image_url' && part.image_url?.url) {
+              textParts.push(`image: ${part.image_url.url}`)
+            }
+          }
+          baseMessage.content = textParts.join('\n')
+        }
+      }
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        ;(baseMessage as ChatCompletionAssistantMessageParam).tool_calls = msg.tool_calls
+      }
+      if (msg.role === 'tool') {
+        ;(baseMessage as ChatCompletionToolMessageParam).tool_call_id = msg.tool_call_id || ''
+      }
+
+      return baseMessage as ChatCompletionMessageParam
+    })
   }
 
   // OpenAI完成方法
@@ -123,7 +157,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       throw new Error('Model ID is required')
     }
     const requestParams: OpenAI.Chat.ChatCompletionCreateParams = {
-      messages: messages as ChatCompletionMessageParam[],
+      messages: this.formatMessages(messages),
       model: modelId,
       stream: false,
       temperature: temperature,
@@ -189,7 +223,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
-
+    // console.log('messages', JSON.stringify(messages))
     // --- [NEW] Handle Image Generation Models ---
     if (OPENAI_IMAGE_GENERATION_MODELS.includes(modelId)) {
       // 获取最后几条消息，检查是否有图片
@@ -216,38 +250,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // 通常我们只需要检查最后两条消息：最近的用户消息和最近的助手消息
       const lastMessages = messages.slice(-2)
       for (const message of lastMessages) {
-        // 处理用户消息中的图片
-        if (message.role === 'user' && message.content) {
+        if (message.content) {
           if (Array.isArray(message.content)) {
             for (const part of message.content) {
-              if (part.type === 'image_url' && part.image_url?.url) {
-                imageUrls.push(part.image_url.url)
-              }
-            }
-          }
-        }
-        // 处理助手消息中的图片
-        else if (message.role === 'assistant' && message.content) {
-          // 助手消息可能是字符串形式的JSON
-          if (typeof message.content === 'string') {
-            try {
-              const parsedContent = JSON.parse(message.content)
-              if (Array.isArray(parsedContent)) {
-                for (const item of parsedContent) {
-                  if (item.type === 'image' && item.image_data?.data) {
-                    imageUrls.push(item.image_data.data)
-                  }
-                }
-              }
-            } catch (e) {
-              // 解析失败，忽略错误
-              console.log('Failed to parse assistant message content as JSON:', e)
-            }
-          }
-          // 也可能已经是数组类型
-          else if (Array.isArray(message.content)) {
-            for (const part of message.content) {
-              // 标准 OpenAI 格式的图片
               if (part.type === 'image_url' && part.image_url?.url) {
                 imageUrls.push(part.image_url.url)
               }
@@ -268,7 +273,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
         if (imageUrls.length > 0) {
           // 使用 images.edit 接口处理带有图片的请求
-          console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
+          // console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
 
           // 获取图片数据
           const imageResponse = await fetch(imageUrls[0])
@@ -354,7 +359,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
     const tools = mcpTools || []
     const supportsFunctionCall = modelConfig?.functionCall || false
-    let processedMessages = [...messages] as ChatCompletionMessageParam[]
+    let processedMessages = [...this.formatMessages(messages)] as ChatCompletionMessageParam[]
     if (tools.length > 0 && !supportsFunctionCall) {
       processedMessages = this.prepareFunctionCallPrompt(processedMessages, tools)
     }
@@ -1133,7 +1138,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     maxTokens?: number
   ): Promise<LLMResponse> {
     // Simple completion, no specific system prompt needed unless required by base class or future design
-    return this.openAICompletion(this.formatMessages(messages), modelId, temperature, maxTokens)
+    return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
   async summaries(
     text: string,
@@ -1159,12 +1164,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const requestMessages: ChatMessage[] = [{ role: 'user', content: prompt }]
     // Note: formatMessages might not be needed here if it's just a single prompt string,
     // but keeping it for consistency in case formatMessages adds system prompts or other logic.
-    return this.openAICompletion(
-      this.formatMessages(requestMessages),
-      modelId,
-      temperature,
-      maxTokens
-    )
+    return this.openAICompletion(requestMessages, modelId, temperature, maxTokens)
   }
   async suggestions(
     messages: ChatMessage[],
@@ -1186,7 +1186,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const requestMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       // Include context leading up to the last user message
-      ...this.formatMessages(contextMessages)
+      ...contextMessages
     ]
 
     try {

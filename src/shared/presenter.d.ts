@@ -871,6 +871,7 @@ export interface ChatMessage {
     id: string
     type: 'function'
   }>
+  tool_call_id?: string
 }
 
 export interface ChatMessageContent {

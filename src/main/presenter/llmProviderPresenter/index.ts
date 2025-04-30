@@ -632,7 +632,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                         ? toolResponse.content
                         : JSON.stringify(toolResponse.content),
                     tool_call_id: toolCall.id
-                  } as ChatMessage)
+                  })
                 } else {
                   // Non-native function calling: Append call and response differently
 
