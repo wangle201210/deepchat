@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "메시지를 입력하세요...",
+    "placeholder": "뭔가 물어?",
     "fileArea": "파일 영역",
     "inputArea": "입력 영역",
     "functionSwitch": "기능 전환",

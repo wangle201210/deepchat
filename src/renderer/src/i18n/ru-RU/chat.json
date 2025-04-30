@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "Введите сообщение...",
+    "placeholder": "Спросить что -нибудь?",
     "fileArea": "Область файлов",
     "inputArea": "Область ввода",
     "functionSwitch": "Переключатель функций",

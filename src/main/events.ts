@@ -90,7 +90,8 @@ export const DEEPLINK_EVENTS = {
 
 // 全局通知相关事件
 export const NOTIFICATION_EVENTS = {
-  SHOW_ERROR: 'notification:show-error' // 显示错误通知
+  SHOW_ERROR: 'notification:show-error', // 显示错误通知
+  SYS_NOTIFY_CLICKED: 'notification:sys-notify-clicked' // 系统通知点击事件
 }
 
 export const SHORTCUT_EVENTS = {

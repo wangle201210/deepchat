@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新建聊天",
       "title": "快捷鍵設置"
-    }
+    },
+    "notifications": "系統通知",
+    "notificationsDesc": "當 DeepChat 不在前台時，如有會話生成完畢會發送系統通知"
   },
   "data": {
     "title": "資料設定",
@@ -289,7 +291,8 @@
       "customHeaders": "自定義請求頭",
       "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確",
       "npmRegistry": "自定義NPM Registry",
-      "npmRegistryPlaceholder": "設置自定義NPM Registry,留空系統會自動選擇最快的一個"
+      "npmRegistryPlaceholder": "設置自定義NPM Registry,留空系統會自動選擇最快的一個",
+      "browseHigress": "瀏覽 Higress MCP 市場"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -320,7 +323,8 @@
     "removeDefault": "移除默認",
     "marketplace": "前往MCP市場一鍵安裝",
     "maxDefaultServersReached": "最多只能設置3個默認服務器",
-    "removeDefaultFirst": "請先移除一些默認服務器"
+    "removeDefaultFirst": "請先移除一些默認服務器",
+    "higressMarket": "前往 Higress MCP 安裝"
   },
   "about": {
     "title": "關於我們",

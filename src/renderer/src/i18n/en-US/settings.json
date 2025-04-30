@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "Create a new chat",
       "title": "Shortcut key settings"
-    }
+    },
+    "notifications": "System Notification",
+    "notificationsDesc": "When DeepChat is not in the foreground, if a session is generated, a system notification will be sent"
   },
   "data": {
     "title": "Data Settings",
@@ -290,7 +292,8 @@
       "customHeaders": "Custom request header",
       "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct.",
       "npmRegistry": "Custom NPM Registry",
-      "npmRegistryPlaceholder": "Set up a custom NPM Registry, leave the system to automatically select the fastest one"
+      "npmRegistryPlaceholder": "Set up a custom NPM Registry, leave the system to automatically select the fastest one",
+      "browseHigress": "View Higress MCP Marketplace"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
@@ -320,7 +323,8 @@
     "cannotRemoveBuiltIn": "Cannot Remove Built-in Server",
     "builtInServerCannotBeRemoved": "Built-in servers cannot be removed, only parameters and environment variables can be modified",
     "maxDefaultServersReached": "Only 3 default servers can be set at most",
-    "removeDefaultFirst": "Please remove some default servers first"
+    "removeDefaultFirst": "Please remove some default servers first",
+    "higressMarket": "Go to Higress MCP Installation"
   },
   "about": {
     "title": "About Us",

@@ -7,8 +7,8 @@ import type {
   MCPConfig,
   MCPServerConfig,
   MCPToolDefinition,
-  Prompt,
-  ResourceListEntry
+  PromptWithClient,
+  ResourceListEntryWithClient
 } from '@shared/presenter'
 // 自定义类型定义
 interface MCPToolCallRequest {
@@ -23,16 +23,6 @@ interface MCPToolCallRequest {
 interface MCPToolCallResult {
   function_name?: string
   content: string | { type: string; text: string }[]
-}
-
-export interface PromptWithClient extends Prompt {
-  clientName: string
-  clientIcon: string
-}
-
-export interface ResourceListEntryWithClient extends ResourceListEntry {
-  clientName: string
-  clientIcon: string
 }
 
 export const useMcpStore = defineStore('mcp', () => {

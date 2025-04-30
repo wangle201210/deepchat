@@ -12,6 +12,7 @@ on:
           - all
           - windows
           - linux
+          - mac
 
 jobs:
   build-windows:
@@ -83,3 +84,47 @@ jobs:
           path: |
             dist/*
             !dist/linux-unpacked
+
+  build-mac:
+    if: github.event.inputs.platform == 'all' || contains(github.event.inputs.platform, 'mac')
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            platform: mac-x64
+          - arch: arm64
+            platform: mac-arm64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install
+        env:
+          npm_config_platform: darwin
+          npm_config_arch: ${{ matrix.arch }}
+      - name: Install Node Runtime
+        run: npm run installRuntime:mac:${{ matrix.arch }}
+      - name: Install Sharp
+        run: npm i --cpu=${{ matrix.arch }} --os=darwin sharp
+      - name: Build Mac
+        run: npm run build:mac:${{ matrix.arch }}
+        env:
+          CSC_LINK: ${{ secrets.DEEPCHAT_CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.DEEPCHAT_CSC_KEY_PASS }}
+          DEEPCHAT_APPLE_NOTARY_USERNAME: ${{ secrets.DEEPCHAT_APPLE_NOTARY_USERNAME }}
+          DEEPCHAT_APPLE_NOTARY_TEAM_ID: ${{ secrets.DEEPCHAT_APPLE_NOTARY_TEAM_ID }}
+          DEEPCHAT_APPLE_NOTARY_PASSWORD: ${{ secrets.DEEPCHAT_APPLE_NOTARY_PASSWORD }}
+          build_for_release: '2'
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: deepchat-${{ matrix.platform }}
+          path: |
+            dist/*
+            !dist/mac/*
+            !dist/mac-arm64/*

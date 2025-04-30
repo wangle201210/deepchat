@@ -13,6 +13,7 @@
   "disabled": "已禁用",
   "disclaimer": "免责声明",
   "close": "关闭",
+  "image": "图片",
   "error": {
     "requestFailed": "请求失败...",
     "createChatFailed": "创建会话失败",

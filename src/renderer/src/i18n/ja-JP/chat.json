@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "メッセージを入力...",
+    "placeholder": "何か聞いていますか？",
     "fileArea": "ファイルエリア",
     "inputArea": "入力エリア",
     "functionSwitch": "機能スイッチ",

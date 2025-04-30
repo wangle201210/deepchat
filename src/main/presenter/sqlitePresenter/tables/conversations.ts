@@ -200,9 +200,9 @@ export class ConversationsTable extends BaseTable {
       }
     }
 
-    if (updates.length > 0) {
+    if (updates.length > 0 || data.updatedAt) {
       updates.push('updated_at = ?')
-      params.push(Date.now())
+      params.push(data.updatedAt || Date.now())
 
       const updateStmt = this.db.prepare(`
         UPDATE conversations

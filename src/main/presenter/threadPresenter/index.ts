@@ -27,7 +27,6 @@ import {
   MessageFile
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
-import { getModelConfig } from '../llmProviderPresenter/modelConfigs'
 import { generateSearchPrompt, SearchManager } from './searchManager'
 import { getFileContext } from './fileContext'
 import { ContentEnricher } from './contentEnricher'
@@ -150,10 +149,16 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 更新消息的usage信息
       await this.messageManager.updateMessageMetadata(eventId, metadata)
-
       await this.messageManager.updateMessageStatus(eventId, 'sent')
       await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
       this.generatingMessages.delete(eventId)
+      this.sqlitePresenter
+        .updateConversation(state.conversationId, {
+          updatedAt: Date.now()
+        })
+        .then(() => {
+          console.log('updated conv time', state.conversationId)
+        })
     }
     eventBus.emit(STREAM_EVENTS.END, msg)
   }
@@ -486,7 +491,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
     })
     const mergedSettings = { ...defaultSettings, ...settings }
-    const defaultModelsSettings = getModelConfig(mergedSettings.modelId)
+    const defaultModelsSettings = this.configPresenter.getModelConfig(mergedSettings.modelId)
     if (defaultModelsSettings) {
       mergedSettings.maxTokens = defaultModelsSettings.maxTokens
       mergedSettings.contextLength = defaultModelsSettings.contextLength
@@ -523,6 +528,10 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversation(conversationId)
   }
 
+  async toggleConversationPinned(conversationId: string, pinned: boolean): Promise<void> {
+    await this.sqlitePresenter.updateConversation(conversationId, { is_pinned: pinned ? 1 : 0 })
+  }
+
   async updateConversationTitle(conversationId: string, title: string): Promise<void> {
     await this.sqlitePresenter.updateConversation(conversationId, { title })
   }
@@ -542,7 +551,10 @@ export class ThreadPresenter implements IThreadPresenter {
     // 检查是否有 modelId 的变化
     if (settings.modelId && settings.modelId !== conversation.settings.modelId) {
       // 获取模型配置
-      const modelConfig = getModelConfig(mergedSettings.modelId)
+      const modelConfig = this.configPresenter.getModelConfig(
+        mergedSettings.modelId,
+        mergedSettings.providerId
+      )
       console.log('check model default config', modelConfig)
       if (modelConfig) {
         // 如果当前设置小于推荐值，则使用推荐值
@@ -985,7 +997,6 @@ export class ThreadPresenter implements IThreadPresenter {
       console.warn('未找到状态，conversationId:', conversationId)
       return
     }
-
     try {
       // 设置消息未取消
       state.isCancelled = false
@@ -997,7 +1008,7 @@ export class ThreadPresenter implements IThreadPresenter {
       )
 
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
-      const modelConfig = getModelConfig(modelId)
+      const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
       const { vision } = modelConfig || {}
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)

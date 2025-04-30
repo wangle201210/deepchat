@@ -43,6 +43,8 @@ export type AssistantMessage = Message & {
 export type UserMessageContent = {
   continue?: boolean
   files: MessageFile[]
+  resources?: ResourceListEntryWithClient[]
+  prompts?: PromptWithClient[]
   links: string[]
   think: boolean
   search: boolean

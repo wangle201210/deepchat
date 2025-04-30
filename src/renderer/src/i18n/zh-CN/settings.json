@@ -47,7 +47,9 @@
     "loggingEnableDesc": "启用日志将帮助我们诊断问题并改进应用程序。日志文件可能包含敏感信息。",
     "loggingDisableDesc": "禁用日志将停止收集应用程序日志。",
     "loggingRestartNotice": "切换此设置将导致程序重启，请确认是否继续？",
-    "openLogFolder": "打开日志文件夹"
+    "openLogFolder": "打开日志文件夹",
+    "notifications": "系统通知",
+    "notificationsDesc": "当 DeepChat 不在前台时，如有会话生成完毕会发送系统通知"
   },
   "data": {
     "title": "数据设置",
@@ -290,7 +292,8 @@
       "customHeaders": "自定义请求头",
       "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确",
       "npmRegistry": "自定义NPM Registry",
-      "npmRegistryPlaceholder": "设置自定义NPM Registry,留空系统会自动选择最快的一个"
+      "npmRegistryPlaceholder": "设置自定义NPM Registry,留空系统会自动选择最快的一个",
+      "browseHigress": "浏览 Higress MCP 市场"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",
@@ -320,7 +323,8 @@
     "cannotRemoveBuiltIn": "无法删除内置服务",
     "builtInServerCannotBeRemoved": "内置服务不能被删除，仅支持修改参数和环境变量",
     "maxDefaultServersReached": "最多只能设置3个默认服务器",
-    "removeDefaultFirst": "请先移除一些默认服务器"
+    "removeDefaultFirst": "请先移除一些默认服务器",
+    "higressMarket": "前往 Higress MCP 安装"
   },
   "about": {
     "title": "关于我们",

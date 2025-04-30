@@ -39,6 +39,15 @@ export interface ResourceListEntry {
   uri: string
   name?: string
 }
+export interface PromptWithClient extends Prompt {
+  clientName: string
+  clientIcon?: string
+}
+
+export interface ResourceListEntryWithClient extends ResourceListEntry {
+  clientName: string
+  clientIcon?: string
+}
 
 export interface ModelConfig {
   maxTokens: number
@@ -47,6 +56,9 @@ export interface ModelConfig {
   vision: boolean
   functionCall: boolean
   reasoning: boolean
+}
+export interface ProviderModelConfigs {
+  [modelId: string]: ModelConfig
 }
 
 export interface IWindowPresenter {
@@ -60,6 +72,7 @@ export interface IWindowPresenter {
   hide(): void
   show(): void
   isMaximized(): boolean
+  isMainWindowFocused(): boolean
 }
 
 export interface ILlamaCppPresenter {
@@ -135,8 +148,15 @@ export interface IPresenter {
   mcpPresenter: IMCPPresenter
   syncPresenter: ISyncPresenter
   deeplinkPresenter: IDeeplinkPresenter
+  notificationPresenter: INotificationPresenter
   init(): void
   destroy(): void
+}
+
+export interface INotificationPresenter {
+  showNotification(options: { id: string; title: string; body: string; silent?: boolean }): void
+  clearNotification(id: string): void
+  clearAllNotifications(): void
 }
 
 export interface IConfigPresenter {
@@ -149,7 +169,7 @@ export interface IConfigPresenter {
   getProviderModels(providerId: string): MODEL_META[]
   setProviderModels(providerId: string, models: MODEL_META[]): void
   getEnabledProviders(): LLM_PROVIDER[]
-  getModelDefaultConfig(modelId: string): ModelConfig
+  getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
   getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
   // 日志设置
   getLoggingEnabled(): boolean
@@ -206,6 +226,9 @@ export interface IConfigPresenter {
   removeMcpServer(serverName: string): Promise<void>
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
+  getModelConfig(modelId: string, providerId?: string): ModelConfig
+  setNotificationsEnabled(enabled: boolean): void
+  getNotificationsEnabled(): boolean
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -322,6 +345,7 @@ export type CONVERSATION = {
   updatedAt: number
   is_new?: number
   artifacts?: number
+  is_pinned?: number
 }
 
 export interface IThreadPresenter {
@@ -390,6 +414,7 @@ export interface IThreadPresenter {
   getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
   continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
+  toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'

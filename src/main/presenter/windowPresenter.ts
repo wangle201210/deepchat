@@ -19,6 +19,7 @@ export class WindowPresenter implements IWindowPresenter {
   private isQuitting: boolean = false
   private trayPresenter: TrayPresenter | null = null
   private contextMenuDisposer?: () => void
+  private mainWindowFocused: boolean = false
 
   constructor(configPresenter: ConfigPresenter) {
     this.windows = new Map()
@@ -136,10 +137,16 @@ export class WindowPresenter implements IWindowPresenter {
         mainWindow.restore()
       }
     })
-    mainWindow.webContents.openDevTools()
-    // if (is.dev) {
-    //   mainWindow.webContents.openDevTools()
-    // }
+    mainWindow.on('blur', () => {
+      this.mainWindowFocused = false
+    })
+    mainWindow.on('focus', () => {
+      this.mainWindowFocused = true
+    })
+
+    if (is.dev) {
+      mainWindow.webContents.openDevTools()
+    }
 
     // HMR for renderer base on electron-vite cli.
     // Load the remote URL for development or the local html file for production.
@@ -168,6 +175,7 @@ export class WindowPresenter implements IWindowPresenter {
       window.setContentProtection(enabled)
       window.webContents.setBackgroundThrottling(!enabled)
       window.webContents.setFrameRate(60)
+      window.setBackgroundColor('#00000000')
       if (process.platform === 'darwin') {
         window.setHiddenInMissionControl(enabled)
         window.setSkipTaskbar(enabled)
@@ -261,5 +269,8 @@ export class WindowPresenter implements IWindowPresenter {
     } else {
       console.error('无法重置上下文菜单: 找不到主窗口')
     }
+  }
+  isMainWindowFocused(): boolean {
+    return this.mainWindowFocused
   }
 }

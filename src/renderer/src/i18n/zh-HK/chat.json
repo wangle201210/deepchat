@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "輸入消息...",
+    "placeholder": "問點什麼？",
     "fileArea": "文件區域",
     "inputArea": "輸入區域",
     "functionSwitch": "功能開關",

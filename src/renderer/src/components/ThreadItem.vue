@@ -6,8 +6,19 @@
     ]"
     @click="$emit('select', thread)"
   >
-    <span class="truncate">{{ thread.title }}</span>
-
+    <div class="flex items-center truncate">
+      <Icon
+        v-if="workingStatus && !isActive"
+        :icon="getStatusIcon(workingStatus)"
+        class="mr-1 h-3 w-3 flex-shrink-0"
+        :class="{
+          'text-blue-500 animate-spin': workingStatus === 'working',
+          'text-red-500': workingStatus === 'error',
+          'text-green-500': workingStatus === 'completed'
+        }"
+      />
+      <span class="truncate">{{ thread.title }}</span>
+    </div>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
@@ -43,6 +54,7 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import type { CONVERSATION } from '@shared/presenter'
+import type { WorkingStatus } from '@/stores/chat'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -53,6 +65,7 @@ import {
 defineProps<{
   thread: CONVERSATION
   isActive: boolean
+  workingStatus: WorkingStatus | null
 }>()
 
 defineEmits<{
@@ -63,4 +76,18 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// 根据工作状态返回对应的图标
+const getStatusIcon = (status: WorkingStatus | null) => {
+  switch (status) {
+    case 'working':
+      return 'lucide:loader'
+    case 'error':
+      return 'lucide:cloud-alert'
+    case 'completed':
+      return 'lucide:circle-check-big'
+    default:
+      return ''
+  }
+}
 </script>

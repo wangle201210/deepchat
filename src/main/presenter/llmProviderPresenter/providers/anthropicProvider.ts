@@ -13,7 +13,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { presenter } from '@/presenter'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { proxyConfig } from '../../proxyConfig'
-import { getModelConfig } from '../modelConfigs'
 import { Usage } from '@anthropic-ai/sdk/resources'
 
 export class AnthropicProvider extends BaseLLMProvider {
@@ -63,8 +62,8 @@ export class AnthropicProvider extends BaseLLMProvider {
         for (const model of models.data) {
           // 确保模型有必要的属性
           if (model.id) {
-            // 从modelConfigs获取额外的配置信息
-            const modelConfig = getModelConfig(model.id)
+            // 获取额外的配置信息
+            const modelConfig = this.configPresenter.getModelConfig(model.id, this.provider.id)
 
             // 提取模型组名称，通常是Claude后面的版本号
 

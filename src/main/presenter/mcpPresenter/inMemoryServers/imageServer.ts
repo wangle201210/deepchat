@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { presenter } from '@/presenter'
-import { getModelConfig } from '@/presenter/llmProviderPresenter/modelConfigs'
 import { ChatMessage, ChatMessageContent } from '@shared/presenter'
 // import { GenerateCompletionOptions } from '@/presenter/llmProviderPresenter' // Assuming this path and type exist - using any for now
 
@@ -118,7 +117,7 @@ export class ImageServer {
       }
     ]
 
-    const modelConfig = getModelConfig(this.model)
+    const modelConfig = presenter.configPresenter.getModelConfig(this.model, this.provider)
 
     try {
       const response = await presenter.llmproviderPresenter.generateCompletionStandalone(
@@ -165,7 +164,7 @@ export class ImageServer {
 
     console.log(messages)
 
-    const modelConfig = getModelConfig(this.model)
+    const modelConfig = presenter.configPresenter.getModelConfig(this.model)
 
     try {
       const ocrText = await presenter.llmproviderPresenter.generateCompletionStandalone(

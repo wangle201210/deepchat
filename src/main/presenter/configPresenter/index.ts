@@ -10,7 +10,6 @@ import {
 import { SearchEngineTemplate } from '@shared/chat'
 import ElectronStore from 'electron-store'
 import { DEFAULT_PROVIDERS } from './providers'
-import { getModelConfig } from '../llmProviderPresenter/modelConfigs'
 import path from 'path'
 import { app, shell } from 'electron'
 import fs from 'fs'
@@ -18,6 +17,8 @@ import { CONFIG_EVENTS } from '@/events'
 import { McpConfHelper } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
+import { defaultModelsSettings } from './modelDefaultSettings'
+import { getProviderSpecificModelConfig } from './providerModelSettings'
 
 // 定义应用设置的接口
 interface IAppSettings {
@@ -199,6 +200,21 @@ export class ConfigPresenter implements IConfigPresenter {
         }
       }
     }
+
+    // 0.0.17 版本之前，需要移除 qwenlm 提供商
+    if (oldVersion && compare(oldVersion, '0.0.17', '<')) {
+      // 获取当前所有提供商
+      const providers = this.getProviders()
+
+      // 过滤掉 qwenlm 提供商
+      const filteredProviders = providers.filter((provider) => provider.id !== 'qwenlm')
+
+      // 如果过滤后数量不同，说明有移除操作，需要保存更新后的提供商列表
+      if (filteredProviders.length !== providers.length) {
+        console.log('[Config] 迁移: 移除了 qwenlm 提供商')
+        this.setProviders(filteredProviders)
+      }
+    }
   }
 
   getSetting<T>(key: string): T | undefined {
@@ -293,7 +309,7 @@ export class ConfigPresenter implements IConfigPresenter {
     let models = store.get('models') || []
 
     models = models.map((model) => {
-      const config = getModelConfig(model.id)
+      const config = this.getModelConfig(model.id, providerId)
       if (config) {
         model.maxTokens = config.maxTokens
         model.contextLength = config.contextLength
@@ -314,8 +330,8 @@ export class ConfigPresenter implements IConfigPresenter {
     return models
   }
 
-  getModelDefaultConfig(modelId: string): ModelConfig {
-    const model = getModelConfig(modelId)
+  getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig {
+    const model = this.getModelConfig(modelId, providerId)
     if (model) {
       return model
     }
@@ -708,4 +724,66 @@ export class ConfigPresenter implements IConfigPresenter {
   getMcpConfHelper(): McpConfHelper {
     return this.mcpConfHelper
   }
+
+  /**
+   * 获取指定provider和model的推荐配置
+   * @param modelId 模型ID
+   * @param providerId 可选的提供商ID，如果提供则优先查找该提供商的特定配置
+   * @returns ModelConfig 模型配置
+   */
+  getModelConfig(modelId: string, providerId?: string): ModelConfig {
+    // 如果提供了providerId，先尝试查找特定提供商的配置
+    if (providerId) {
+      const providerConfig = getProviderSpecificModelConfig(providerId, modelId)
+      if (providerConfig) {
+        // console.log('providerConfig Matched', providerId, modelId)
+        return providerConfig
+      }
+    }
+
+    // 如果没有找到特定提供商的配置，或者没有提供providerId，则查找通用配置
+    // 将modelId转为小写以进行不区分大小写的匹配
+    const lowerModelId = modelId.toLowerCase()
+
+    // 检查是否有任何匹配条件符合
+    for (const config of defaultModelsSettings) {
+      if (config.match.some((matchStr) => lowerModelId.includes(matchStr.toLowerCase()))) {
+        return {
+          maxTokens: config.maxTokens,
+          contextLength: config.contextLength,
+          temperature: config.temperature,
+          vision: config.vision,
+          functionCall: config.functionCall || false,
+          reasoning: config.reasoning || false
+        }
+      }
+    }
+
+    // 如果没有找到匹配的配置，返回默认的安全配置
+    return {
+      maxTokens: 4096,
+      contextLength: 8192,
+      temperature: 0.6,
+      vision: false,
+      functionCall: false,
+      reasoning: false
+    }
+  }
+
+  getNotificationsEnabled(): boolean {
+    const value = this.getSetting<boolean>('notificationsEnabled')
+    if (value === undefined) {
+      return true
+    } else {
+      return value
+    }
+  }
+
+  setNotificationsEnabled(enabled: boolean): void {
+    this.setSetting('notificationsEnabled', enabled)
+  }
 }
+
+// 导出配置相关内容，方便其他组件使用
+export { defaultModelsSettings } from './modelDefaultSettings'
+export { providerModelSettings } from './providerModelSettings'
