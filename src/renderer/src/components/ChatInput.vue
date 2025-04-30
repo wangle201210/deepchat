@@ -201,6 +201,7 @@ import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
 import { useMcpStore } from '@/stores/mcp'
+import { ResourceListEntryWithClient } from '@shared/presenter'
 const mcpStore = useMcpStore()
 const { t } = useI18n()
 const editor = new Editor({
@@ -247,6 +248,7 @@ const configPresenter = usePresenter('configPresenter')
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
 const inputText = ref('')
+const fetchingMcpEntry = ref(false)
 const fileInput = ref<HTMLInputElement>()
 const filePresenter = usePresenter('filePresenter')
 const windowPresenter = usePresenter('windowPresenter')
@@ -358,7 +360,7 @@ const handleFileSelect = async (e: Event) => {
   }
 }
 
-const tiptapJSONtoMessageBlock = (docJSON: JSONContent) => {
+const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
   const blocks: (UserMessageMentionBlock | UserMessageTextBlock)[] = []
   if (docJSON.type === 'doc') {
     for (const [idx, block] of (docJSON.content ?? []).entries()) {
@@ -370,10 +372,48 @@ const tiptapJSONtoMessageBlock = (docJSON: JSONContent) => {
               content: subBlock.text ?? ''
             })
           } else if (subBlock.type === 'mention') {
+            let content = subBlock.attrs?.label ?? ''
+            try {
+              if (subBlock.attrs?.category === 'resources' && subBlock.attrs?.content) {
+                fetchingMcpEntry.value = true
+                console.log(subBlock.attrs?.content)
+                const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntryWithClient
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const mcpEntryResult = await mcpStore.readResource(mcpEntry)
+
+                if (mcpEntryResult.blob) {
+                  // Convert blob to ArrayBuffer
+                  const arrayBuffer = await new Blob([mcpEntryResult.blob], {
+                    type: mcpEntryResult.mimeType
+                  }).arrayBuffer()
+                  // Write the blob content to a temporary file
+                  const tempFilePath = await filePresenter.writeTemp({
+                    name: mcpEntry.name ?? 'temp_resource', // Use resource name or a default
+                    content: arrayBuffer
+                  })
+
+                  const fileInfo: MessageFile = await filePresenter.prepareFile(tempFilePath)
+                  if (fileInfo) {
+                    selectedFiles.value.push(fileInfo)
+                  }
+                  console.log('MCP resource saved to temp file:', tempFilePath)
+                  content = mcpEntry.name ?? 'temp_resource' // Placeholder content for the mention
+                } else {
+                  content = mcpEntryResult.text ?? ''
+                }
+
+                console.log('fix ', mcpEntryResult)
+              }
+            } catch (error) {
+              console.error('读取资源失败:', error)
+            } finally {
+              fetchingMcpEntry.value = false
+            }
+
             const newBlock: UserMessageMentionBlock = {
               type: 'mention',
               id: subBlock.attrs?.id ?? '',
-              content: subBlock.attrs?.label ?? '',
+              content: content,
               category: subBlock.attrs?.category ?? ''
             }
             blocks.push(newBlock)
@@ -388,18 +428,20 @@ const tiptapJSONtoMessageBlock = (docJSON: JSONContent) => {
   return blocks
 }
 
-const emitSend = () => {
+const emitSend = async () => {
   if (inputText.value.trim()) {
+    const blocks = await tiptapJSONtoMessageBlock(editor.getJSON())
     const messageContent: UserMessageContent = {
       text: inputText.value.trim(),
       files: selectedFiles.value,
       links: [],
       search: settings.value.webSearch,
       think: settings.value.deepThinking,
-      content: tiptapJSONtoMessageBlock(editor.getJSON())
+      content: blocks
     }
+    console.log(messageContent)
 
-    emit('send', messageContent)
+    // emit('send', messageContent)
     inputText.value = ''
     editor.chain().clearContent().blur().run()
 
@@ -596,7 +638,8 @@ watch(
           label: resource.name ?? '',
           icon: 'lucide:tag',
           type: 'item',
-          category: 'resources'
+          category: 'resources',
+          mcpEntry: resource
         }))
       )
   }

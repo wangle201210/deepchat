@@ -623,7 +623,27 @@ export class ThreadPresenter implements IThreadPresenter {
       messages.shift()
     }
 
-    return messages
+    return messages.map((msg) => {
+      if (msg.role === 'user') {
+        const newMsg = { ...msg }
+        const msgContent = newMsg.content as UserMessageContent
+        if (msgContent.content) {
+          ;(newMsg.content as UserMessageContent).text = msgContent.content
+            .map((block) => {
+              if (block.type === 'mention') {
+                return `${block.id}`
+              } else if (block.type === 'text') {
+                return block.content
+              }
+              return ''
+            })
+            .join('')
+        }
+        return newMsg
+      } else {
+        return msg
+      }
+    })
   }
 
   async clearContext(conversationId: string): Promise<void> {

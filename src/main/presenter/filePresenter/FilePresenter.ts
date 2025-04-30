@@ -124,11 +124,21 @@ export class FilePresenter implements IFilePresenter {
     return wildcardMatch
   }
 
-  async writeTemp(file: { name: string; content: string }): Promise<string> {
+  async writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string> {
     const ext = path.extname(file.name)
-    const tempName = `${nanoid()}${ext}`
+    const tempName = `${nanoid()}${ext || '.tmp'}` // Add .tmp extension if original name has none
     const tempPath = path.join(this.tempDir, tempName)
-    await fs.writeFile(tempPath, file.content, 'utf-8')
+    // Check if content is binary (Buffer or ArrayBuffer) or string
+    if (typeof file.content === 'string') {
+      await fs.writeFile(tempPath, file.content, 'utf-8')
+    } else if (Buffer.isBuffer(file.content)) {
+      // If it's already a Buffer, write it directly
+      await fs.writeFile(tempPath, file.content)
+    } else {
+      // Otherwise, assume it's ArrayBuffer and convert to Buffer
+      await fs.writeFile(tempPath, Buffer.from(file.content))
+    }
+
     return tempPath
   }
 }

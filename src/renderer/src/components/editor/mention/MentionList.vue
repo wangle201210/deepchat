@@ -119,7 +119,7 @@ const selectItem = (index: number) => {
       id: `${selectedDisplayItem.id}`,
       label: `${selectedDisplayItem.label}`,
       category: selectedDisplayItem.category,
-      content: selectedDisplayItem.description
+      content: selectedDisplayItem.mcpEntry ? JSON.stringify(selectedDisplayItem.mcpEntry) : ''
     })
   }
 }

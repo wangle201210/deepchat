@@ -6,7 +6,8 @@ import {
   MCPToolResponse,
   MCPContentItem,
   MCPTextContent,
-  IConfigPresenter
+  IConfigPresenter,
+  Resource
 } from '@shared/presenter'
 import { ServerManager } from './serverManager'
 import { McpClient } from './mcpClient'
@@ -377,7 +378,7 @@ export class ToolManager {
   }
 
   // 根据客户端名称读取资源内容
-  async readResourceByClient(clientName: string, resourceUri: string): Promise<unknown> {
+  async readResourceByClient(clientName: string, resourceUri: string): Promise<Resource> {
     try {
       const clients = await this.getRunningClients()
 

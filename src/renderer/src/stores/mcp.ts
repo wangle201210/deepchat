@@ -8,6 +8,7 @@ import type {
   MCPServerConfig,
   MCPToolDefinition,
   PromptWithClient,
+  Resource,
   ResourceListEntryWithClient
 } from '@shared/presenter'
 // 自定义类型定义
@@ -444,7 +445,7 @@ export const useMcpStore = defineStore('mcp', () => {
   }
 
   // 读取资源内容
-  const readResource = async (resource: ResourceListEntryWithClient): Promise<unknown> => {
+  const readResource = async (resource: ResourceListEntryWithClient): Promise<Resource> => {
     if (!config.value.mcpEnabled) {
       throw new Error('MCP功能已禁用')
     }

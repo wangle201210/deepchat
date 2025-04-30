@@ -28,6 +28,13 @@ export interface McpClient {
   resources?: ResourceListEntry[]
 }
 
+export interface Resource {
+  uri: string
+  mimeType?: string
+  text?: string
+  blob?: string
+}
+
 export interface Prompt {
   name: string
   description?: string
@@ -600,7 +607,9 @@ export interface IFilePresenter {
   readFile(relativePath: string): Promise<string>
   writeFile(operation: FileOperation): Promise<void>
   deleteFile(relativePath: string): Promise<void>
+  createFileAdapter(filePath: string, typeInfo?: string): Promise<any> // Return type might need refinement
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
+  writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
 }
 
 export interface FileMetaData {
@@ -754,7 +763,7 @@ export interface IMCPPresenter {
   getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
   getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
   getPrompt(prompt: PromptWithClient, params?: Record<string, unknown>): Promise<unknown>
-  readResource(resource: ResourceListEntryWithClient): Promise<unknown>
+  readResource(resource: ResourceListEntryWithClient): Promise<Resource>
   callTool(request: {
     id: string
     type: string
