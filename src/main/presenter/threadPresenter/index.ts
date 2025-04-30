@@ -528,6 +528,10 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversation(conversationId)
   }
 
+  async toggleConversationPinned(conversationId: string, pinned: boolean): Promise<void> {
+    await this.sqlitePresenter.updateConversation(conversationId, { is_pinned: pinned ? 1 : 0 })
+  }
+
   async updateConversationTitle(conversationId: string, title: string): Promise<void> {
     await this.sqlitePresenter.updateConversation(conversationId, { title })
   }

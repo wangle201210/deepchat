@@ -689,7 +689,10 @@ export const useChatStore = defineStore('chat', () => {
     await threadP.renameConversation(threadId, title)
     loadThreads(1)
   }
-
+  const toggleThreadPinned = async (threadId: string, isPinned: boolean) => {
+    await threadP.toggleConversationPinned(threadId, isPinned)
+    loadThreads(1)
+  }
   // 配置相关的方法
   const loadChatConfig = async () => {
     if (!activeThreadId.value) return
@@ -969,6 +972,7 @@ export const useChatStore = defineStore('chat', () => {
     forkThread,
     updateThreadWorkingStatus,
     getThreadWorkingStatus,
-    threadsWorkingStatus
+    threadsWorkingStatus,
+    toggleThreadPinned
   }
 })

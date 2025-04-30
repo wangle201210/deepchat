@@ -345,6 +345,7 @@ export type CONVERSATION = {
   updatedAt: number
   is_new?: number
   artifacts?: number
+  is_pinned?: number
 }
 
 export interface IThreadPresenter {
@@ -413,6 +414,7 @@ export interface IThreadPresenter {
   getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
   continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
+  toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'
