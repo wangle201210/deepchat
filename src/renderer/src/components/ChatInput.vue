@@ -239,7 +239,6 @@ const editor = new Editor({
     })
   ],
   onUpdate: ({ editor }) => {
-    tiptapJSONtoMessageBlock(editor.getJSON())
     inputText.value = editor.getText()
   }
 })
