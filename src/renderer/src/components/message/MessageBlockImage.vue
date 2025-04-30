@@ -32,7 +32,12 @@
 
     <!-- 全屏图片查看器 -->
     <Dialog :open="showFullImage" @update:open="showFullImage = $event">
-      <DialogContent class="sm:max-w-[800px] p-0 bg-transparent border-0 shadow-none">
+      <DialogContent class="sm:max-w-[800px] p-0 bg-background border-0 shadow-none">
+        <DialogHeader>
+          <DialogTitle>
+            {{ t('common.image') }}
+          </DialogTitle>
+        </DialogHeader>
         <div class="relative">
           <template v-if="block.image_data">
             <img
@@ -57,7 +62,7 @@ import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { AssistantMessageBlock } from '@shared/chat'
 import { useI18n } from 'vue-i18n'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 // 创建一个安全的翻译函数
 const t = (() => {

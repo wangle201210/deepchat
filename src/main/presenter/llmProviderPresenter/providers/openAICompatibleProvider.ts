@@ -195,15 +195,24 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // Extract prompt from the last user message
       const lastUserMessage = messages.findLast((m) => m.role === 'user')
       let prompt = ''
+      const imageUrls: string[] = []
+
       if (lastUserMessage?.content) {
         if (typeof lastUserMessage.content === 'string') {
           prompt = lastUserMessage.content
         } else if (Array.isArray(lastUserMessage.content)) {
-          // Find the first text part for the prompt
-          const textPart = lastUserMessage.content.find((part) => part.type === 'text')
-          if (textPart?.text) {
-            prompt = textPart.text
+          // 处理多模态内容，提取文本和图片
+          const textParts: string[] = []
+
+          for (const part of lastUserMessage.content) {
+            if (part.type === 'text' && part.text) {
+              textParts.push(part.text)
+            } else if (part.type === 'image_url' && part.image_url?.url) {
+              imageUrls.push(part.image_url.url)
+            }
           }
+
+          prompt = textParts.join('\n')
         }
       }
 
@@ -215,22 +224,70 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
 
       try {
-        // console.log(`[coreStream] Generating image with model ${modelId} and prompt: "${prompt}"`)
-        const result = await this.openai.images.generate(
-          {
+        let result
+
+        if (imageUrls.length > 0) {
+          // 使用 images.edit 接口处理带有图片的请求
+          console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
+
+          // 获取图片数据
+          const imageResponse = await fetch(imageUrls[0])
+          const imageBlob = await imageResponse.blob()
+          const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+
+          // 创建临时文件
+          const imagePath = `/tmp/openai_image_${Date.now()}.png`
+          // 使用 fs 保存图片
+          const fs = await import('fs')
+          await new Promise<void>((resolve, reject) => {
+            fs.writeFile(imagePath, imageBuffer, (err: Error | null) => {
+              if (err) {
+                reject(err)
+              } else {
+                resolve()
+              }
+            })
+          })
+
+          // 使用文件路径创建 Readable 流
+          const imageFile = fs.createReadStream(imagePath)
+
+          result = await this.openai.images.edit({
             model: modelId,
+            image: imageFile,
             prompt: prompt,
-            output_format: 'png',
-            n: 1, // Generate one image
-            size: 'auto', // Default size, consider making configurable
-            response_format: 'url', // Need base64 data
-            quality: 'hd', // Default quality, adjust as needed
-            background: 'transparent' // Optional, based on model support/needs
-          },
-          {
-            timeout: 300_000
+            n: 1,
+            size: '1024x1024',
+            response_format: 'url',
+            quality: 'standard'
+          })
+
+          // 清理临时文件
+          try {
+            fs.unlinkSync(imagePath)
+          } catch (e) {
+            console.error('Failed to delete temporary file:', e)
           }
-        )
+        } else {
+          // 使用原来的 images.generate 接口处理没有图片的请求
+          console.log(`[coreStream] Generating image with model ${modelId} and prompt: "${prompt}"`)
+          result = await this.openai.images.generate(
+            {
+              model: modelId,
+              prompt: prompt,
+              output_format: 'png',
+              n: 1, // Generate one image
+              size: 'auto', // Default size, consider making configurable
+              response_format: 'url', // Need base64 data
+              quality: 'hd', // Default quality, adjust as needed
+              background: 'transparent' // Optional, based on model support/needs
+            },
+            {
+              timeout: 300_000
+            }
+          )
+        }
+
         if (result.data && result.data[0]?.url) {
           yield {
             type: 'image_data',

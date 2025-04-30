@@ -51,9 +51,12 @@ import qiniuIcon from '@/assets/llm-icons/qiniu.svg?url'
 import grokColorIcon from '@/assets/llm-icons/grok.svg?url'
 import hunyuanColorIcon from '@/assets/llm-icons/hunyuan-color.svg?url'
 import dashscopeColorIcon from '@/assets/llm-icons/alibabacloud-color.svg?url'
+import aihubmixColorIcon from '@/assets/llm-icons/aihubmix.png?url'
 import defaultIcon from '@/assets/logo.png?url'
+import metaColorIcon from '@/assets/llm-icons/meta.svg?url'
 // 导入所有图标
 const icons = {
+  aihubmix: aihubmixColorIcon,
   dashscope: dashscopeColorIcon,
   hunyuan: hunyuanColorIcon,
   grok: grokColorIcon,
@@ -106,6 +109,13 @@ const icons = {
   gemini: geminiColorIcon,
   github: githubColorIcon,
   anthropic: anthropicColorIcon,
+  gpt: openaiColorIcon,
+  o1: openaiColorIcon,
+  o3: openaiColorIcon,
+  llama: metaColorIcon,
+  o4: openaiColorIcon,
+  glm: zhipuColorIcon,
+  meta: metaColorIcon,
   default: defaultIcon
 }
 
