@@ -86,7 +86,7 @@ export const useChatStore = defineStore('chat', () => {
       const groupedThreads: Map<string, CONVERSATION[]> = new Map()
 
       result.list.forEach((conv) => {
-        const date = new Date(conv.createdAt).toISOString().split('T')[0]
+        const date = new Date(conv.updatedAt).toISOString().split('T')[0]
         if (!groupedThreads.has(date)) {
           groupedThreads.set(date, [])
         }
@@ -913,7 +913,7 @@ export const useChatStore = defineStore('chat', () => {
   const updateThreadWorkingStatus = (threadId: string, status: WorkingStatus) => {
     // 如果是活跃会话，且状态为completed或error，直接从Map中移除
     if (activeThreadId.value === threadId && (status === 'completed' || status === 'error')) {
-      console.log(`活跃会话状态移除: ${threadId}`)
+      // console.log(`活跃会话状态移除: ${threadId}`)
       threadsWorkingStatus.value.delete(threadId)
       return
     }
@@ -921,7 +921,7 @@ export const useChatStore = defineStore('chat', () => {
     // 记录状态变更
     const oldStatus = threadsWorkingStatus.value.get(threadId)
     if (oldStatus !== status) {
-      console.log(`会话状态变更: ${threadId} ${oldStatus || 'none'} -> ${status}`)
+      // console.log(`会话状态变更: ${threadId} ${oldStatus || 'none'} -> ${status}`)
       threadsWorkingStatus.value.set(threadId, status)
     }
   }

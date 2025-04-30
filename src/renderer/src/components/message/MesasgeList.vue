@@ -123,25 +123,24 @@ const scrollToBottom = () => {
   })
 }
 onMounted(() => {
-  nextTick(() => {
-    setTimeout(() => {
-      scrollToBottom()
-      nextTick(() => {
-        visible.value = true
-      })
-    }, 10)
-  })
-})
-const { height } = useElementBounding(messageList.value)
-watch(
-  () => height.value,
-  () => {
-    const lastMessage = props.messages[props.messages.length - 1]
-    if (lastMessage?.status === 'pending' && !aboveThreshold.value) {
-      scrollToBottom()
+  setTimeout(() => {
+    scrollToBottom()
+    nextTick(() => {
+      visible.value = true
+    })
+  }, 100)
+  const { height } = useElementBounding(messageList.value)
+  watch(
+    () => height.value,
+    () => {
+      const lastMessage = props.messages[props.messages.length - 1]
+      if (lastMessage?.status === 'pending' && !aboveThreshold.value) {
+        scrollToBottom()
+      }
     }
-  }
-)
+  )
+})
+
 const aboveThreshold = ref(false)
 const SCROLL_THRESHOLD = 100
 const handleScroll = useDebounceFn((event) => {
