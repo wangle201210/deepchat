@@ -40,6 +40,18 @@ export type AssistantMessage = Message & {
   content: AssistantMessageBlock[]
 }
 
+export type UserMessageTextBlock = {
+  type: 'text'
+  content: string
+}
+
+export type UserMessageMentionBlock = {
+  type: 'mention'
+  content: string
+  id: string
+  category: string
+}
+
 export type UserMessageContent = {
   continue?: boolean
   files: MessageFile[]
@@ -49,6 +61,8 @@ export type UserMessageContent = {
   think: boolean
   search: boolean
   text: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  content?: (UserMessageTextBlock | UserMessageMentionBlock)[]
 }
 
 export type MessageFile = {

@@ -179,14 +179,19 @@ import {
 import { Icon } from '@iconify/vue'
 import FileItem from './FileItem.vue'
 import { useChatStore } from '@/stores/chat'
-import { MessageFile, UserMessageContent } from '@shared/chat'
+import {
+  MessageFile,
+  UserMessageContent,
+  UserMessageMentionBlock,
+  UserMessageTextBlock
+} from '@shared/chat'
 import { usePresenter } from '@/composables/usePresenter'
 import { approximateTokenSize } from 'tokenx'
 import { useSettingsStore } from '@/stores/settings'
 import McpToolsList from './mcpToolsList.vue'
 import { useEventListener } from '@vueuse/core'
 import { calculateImageTokens, getClipboardImageInfo, imageFileToBase64 } from '@/lib/image'
-import { Editor, EditorContent } from '@tiptap/vue-3'
+import { Editor, EditorContent, JSONContent } from '@tiptap/vue-3'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
@@ -234,8 +239,7 @@ const editor = new Editor({
     })
   ],
   onUpdate: ({ editor }) => {
-    console.log(editor.getJSON())
-    console.log(editor.getText())
+    tiptapJSONtoMessageBlock(editor.getJSON())
     inputText.value = editor.getText()
   }
 })
@@ -355,6 +359,36 @@ const handleFileSelect = async (e: Event) => {
   }
 }
 
+const tiptapJSONtoMessageBlock = (docJSON: JSONContent) => {
+  const blocks: (UserMessageMentionBlock | UserMessageTextBlock)[] = []
+  if (docJSON.type === 'doc') {
+    for (const [idx, block] of (docJSON.content ?? []).entries()) {
+      if (block.type === 'paragraph') {
+        for (const subBlock of block.content ?? []) {
+          if (subBlock.type === 'text') {
+            blocks.push({
+              type: 'text',
+              content: subBlock.text ?? ''
+            })
+          } else if (subBlock.type === 'mention') {
+            const newBlock: UserMessageMentionBlock = {
+              type: 'mention',
+              id: subBlock.attrs?.id ?? '',
+              content: subBlock.attrs?.label ?? '',
+              category: subBlock.attrs?.category ?? ''
+            }
+            blocks.push(newBlock)
+          }
+        }
+        if (idx < (docJSON.content?.length ?? 0) - 1 && idx > 0) {
+          blocks.push({ type: 'text', content: '\n' })
+        }
+      }
+    }
+  }
+  return blocks
+}
+
 const emitSend = () => {
   if (inputText.value.trim()) {
     const messageContent: UserMessageContent = {
@@ -362,7 +396,8 @@ const emitSend = () => {
       files: selectedFiles.value,
       links: [],
       search: settings.value.webSearch,
-      think: settings.value.deepThinking
+      think: settings.value.deepThinking,
+      content: tiptapJSONtoMessageBlock(editor.getJSON())
     }
 
     emit('send', messageContent)
