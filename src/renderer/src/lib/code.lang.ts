@@ -286,12 +286,32 @@ export const getLanguageIcon = (lang: string): string => {
       return 'vscode-icons:file-type-lisp'
     case 'ocaml':
       return 'vscode-icons:file-type-ocaml'
-    case 'pascal':
-      return 'vscode-icons:file-type-pascal'
     case 'prolog':
       return 'vscode-icons:file-type-prolog'
     case 'groovy':
       return 'vscode-icons:file-type-groovy'
+    case 'matlab':
+      return 'vscode-icons:file-type-matlab'
+    case 'cobol':
+      return 'vscode-icons:file-type-cobol'
+    case 'ada':
+      return 'vscode-icons:file-type-ada'
+    case 'julia':
+      return 'vscode-icons:file-type-julia'
+    case 'elixir':
+      return 'vscode-icons:file-type-elixir'
+    case 'vb.net':
+      return 'vscode-icons:file-type-vb'
+    case 'nim':
+      return 'vscode-icons:file-type-nim'
+    case 'crystal':
+      return 'vscode-icons:file-type-crystal'
+    case 'd':
+      return 'vscode-icons:file-type-dlang'
+    case 'applescript':
+      return 'vscode-icons:file-type-applescript'
+    case 'solidity':
+      return 'vscode-icons:file-type-solidity'
     case 'objectivec':
       return 'vscode-icons:file-type-objectivec'
     case 'objectivecpp':
