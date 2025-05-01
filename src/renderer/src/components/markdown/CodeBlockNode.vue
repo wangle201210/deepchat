@@ -2,9 +2,12 @@
   <MermaidBlockNode v-if="isMermaid" :node="node" />
   <div v-else class="my-4 rounded-lg border border-border overflow-hidden shadow-sm">
     <div class="flex justify-between items-center p-2 bg-gray-100 dark:bg-zinc-800 text-xs">
-      <span class="text-gray-600 dark:text-gray-400 font-mono font-bold">{{
-        displayLanguage
-      }}</span>
+      <span class="flex items-center space-x-2">
+        <Icon :icon="languageIcon" class="w-4 h-4" />
+        <span class="text-gray-600 dark:text-gray-400 font-mono font-bold">{{
+          displayLanguage
+        }}</span>
+      </span>
       <div v-if="isPreviewable" class="flex items-center space-x-2">
         <button
           class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
@@ -39,34 +42,11 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useThrottleFn } from '@vueuse/core'
+import { Icon } from '@iconify/vue'
 import { EditorView, basicSetup } from 'codemirror'
-import { EditorState, Extension } from '@codemirror/state'
-import { StreamLanguage } from '@codemirror/language'
+import { EditorState } from '@codemirror/state'
 import MermaidBlockNode from './MermaidBlockNode.vue'
 
-// Language imports
-import { javascript } from '@codemirror/lang-javascript'
-import { python } from '@codemirror/lang-python'
-import { html } from '@codemirror/lang-html'
-import { css } from '@codemirror/lang-css'
-import { json } from '@codemirror/lang-json'
-import { java } from '@codemirror/lang-java'
-import { go } from '@codemirror/lang-go'
-import { markdown } from '@codemirror/lang-markdown'
-import { sql } from '@codemirror/lang-sql'
-import { xml } from '@codemirror/lang-xml'
-import { cpp } from '@codemirror/lang-cpp'
-import { rust } from '@codemirror/lang-rust'
-import { shell } from '@codemirror/legacy-modes/mode/shell'
-import { swift } from '@codemirror/legacy-modes/mode/swift'
-import { ruby } from '@codemirror/legacy-modes/mode/ruby'
-import { perl } from '@codemirror/legacy-modes/mode/perl'
-import { lua } from '@codemirror/legacy-modes/mode/lua'
-import { haskell } from '@codemirror/legacy-modes/mode/haskell'
-import { erlang } from '@codemirror/legacy-modes/mode/erlang'
-import { clojure } from '@codemirror/legacy-modes/mode/clojure'
-import { php } from '@codemirror/lang-php'
-import { yaml } from '@codemirror/lang-yaml'
 import { anysphereThemeDark, anysphereThemeLight } from '@/lib/code.theme'
 
 // Optional: Import artifact store if needed
@@ -74,6 +54,7 @@ import { useArtifactStore } from '@/stores/artifact'
 import { nanoid } from 'nanoid'
 import { detectLanguage } from '@/lib/code.detect'
 import { useThemeStore } from '@/stores/theme'
+import { getLanguageExtension, getLanguageIcon, prepareLanguage } from '@/lib/code.lang'
 
 const props = defineProps<{
   node: {
@@ -86,13 +67,15 @@ const props = defineProps<{
   threadId?: string
 }>()
 
+prepareLanguage()
+
 const { t } = useI18n()
 const themeStore = useThemeStore()
 const artifactStore = useArtifactStore()
 const codeEditor = ref<HTMLElement | null>(null)
 const copyText = ref(t('common.copy'))
 const editorInstance = ref<EditorView | null>(null)
-const codeLanguage = ref('')
+const codeLanguage = ref(props.node.language || '')
 
 // 创建节流版本的语言检测函数，1秒内最多执行一次
 const throttledDetectLanguage = useThrottleFn(
@@ -103,6 +86,11 @@ const throttledDetectLanguage = useThrottleFn(
   1000,
   true
 )
+
+// Initialize language detection if needed, after the function is defined
+if (props.node.language === '') {
+  throttledDetectLanguage(props.node.code)
+}
 
 // Check if the language is previewable (HTML or SVG)
 const isPreviewable = computed(() => {
@@ -159,74 +147,13 @@ const displayLanguage = computed(() => {
   return languageMap[lang] || lang.charAt(0).toUpperCase() + lang.slice(1)
 })
 
+// Computed property for language icon
+const languageIcon = computed(() => {
+  const lang = codeLanguage.value.trim().toLowerCase()
+  return getLanguageIcon(lang)
+})
+
 // 获取语言扩展
-const getLanguageExtension = (lang: string): Extension => {
-  switch (lang.toLowerCase()) {
-    case 'javascript':
-    case 'js':
-    case 'ts':
-    case 'typescript':
-      return javascript()
-    case 'react':
-    case 'vue':
-    case 'html':
-      return html()
-    case 'css':
-      return css()
-    case 'json':
-      return json()
-    case 'python':
-    case 'py':
-      return python()
-    case 'kotlin':
-    case 'kt':
-    case 'java':
-      return java()
-    case 'go':
-    case 'golang':
-      return go()
-    case 'markdown':
-    case 'md':
-      return markdown()
-    case 'sql':
-      return sql()
-    case 'xml':
-      return xml()
-    case 'cpp':
-    case 'c++':
-    case 'c':
-      return cpp()
-    case 'rust':
-    case 'rs':
-      return rust()
-    case 'bash':
-    case 'sh':
-    case 'shell':
-    case 'zsh':
-      return StreamLanguage.define(shell)
-    case 'php':
-      return php()
-    case 'yaml':
-    case 'yml':
-      return yaml()
-    case 'swift':
-      return StreamLanguage.define(swift)
-    case 'ruby':
-      return StreamLanguage.define(ruby)
-    case 'perl':
-      return StreamLanguage.define(perl)
-    case 'lua':
-      return StreamLanguage.define(lua)
-    case 'haskell':
-      return StreamLanguage.define(haskell)
-    case 'erlang':
-      return StreamLanguage.define(erlang)
-    case 'clojure':
-      return StreamLanguage.define(clojure)
-    default:
-      return markdown() // 默认使用markdown作为fallback
-  }
-}
 
 // 复制代码
 const copyCode = async () => {
@@ -294,6 +221,7 @@ const createEditor = () => {
       parent: codeEditor.value
     })
     editorInstance.value = editorView
+    console.log(`Editor initialized for language: ${codeLanguage.value}`)
   } catch (error) {
     console.error('Failed to initialize editor:', error)
     // Fallback: use a simple pre tag
@@ -357,12 +285,7 @@ watch(
 
 // 初始化代码编辑器
 onMounted(() => {
-  // Initial editor setup is handled by the immediate watch on code
-  if (props.node.language === '') {
-    throttledDetectLanguage(props.node.code)
-  } else {
-    codeLanguage.value = props.node.language
-  }
+  // Initial language setup is now handled above definitions
   createEditor()
 })
 

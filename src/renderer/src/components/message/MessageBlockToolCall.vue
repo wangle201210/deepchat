@@ -1,7 +1,7 @@
 <template>
   <div class="my-1">
     <div
-      class="flex flex-col h-min-[40px] hover:bg-muted select-none cursor-pointer pt-3 overflow-hidden w-[420px] break-all shadow-sm my-2 items-start gap-3 rounded-lg border bg-card text-card-foreground"
+      class="flex flex-col h-min-[40px] hover:bg-muted select-none cursor-pointer pt-3 overflow-hidden w-[380px] break-all shadow-sm my-2 items-start gap-3 rounded-lg border bg-card text-card-foreground"
       @click="toggleExpanded"
     >
       <div class="flex flex-row items-center gap-2 w-full">
