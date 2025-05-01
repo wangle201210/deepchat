@@ -11,7 +11,7 @@ export class DoubaoProvider extends OpenAICompatibleProvider {
   protected async fetchOpenAIModels(): Promise<MODEL_META[]> {
     return [
       {
-        id: '1.5',
+        id: 'doubao-1-5-pro-32k-250115',
         name: 'doubao-1.5-pro-32k-250115',
         group: 'doubao',
         providerId: this.provider.id,
