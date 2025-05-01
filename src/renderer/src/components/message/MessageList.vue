@@ -142,7 +142,7 @@ onMounted(() => {
 })
 
 const aboveThreshold = ref(false)
-const SCROLL_THRESHOLD = 1
+const SCROLL_THRESHOLD = 20
 const handleScroll = useDebounceFn((event) => {
   const rect = messageList.value?.getBoundingClientRect()
   const container = event.target

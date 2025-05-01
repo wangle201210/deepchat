@@ -5,12 +5,10 @@
     <!-- App title/content in center -->
     <div
       :class="[
-        'flex-1 text-center text-sm font-medium window-drag-region',
+        'flex-1 text-center text-sm font-medium window-drag-region h-full',
         isMacOS ? 'px-20' : 'px-4'
       ]"
-    >
-      DeepChat
-    </div>
+    ></div>
 
     <!-- Windows/Linux window controls (only shown on Windows/Linux) -->
     <div v-if="!isMacOS" class="flex h-9">
@@ -59,10 +57,10 @@ onMounted(() => {
   devicePresenter.getDeviceInfo().then((deviceInfo) => {
     isMacOS.value = deviceInfo.platform === 'darwin'
   })
-  ipcRenderer?.on('window-maximized', () => {
+  ipcRenderer?.on('window:maximized', () => {
     isMaximized.value = true
   })
-  ipcRenderer?.on('window-unmaximized', () => {
+  ipcRenderer?.on('window:unmaximized', () => {
     isMaximized.value = false
   })
 })

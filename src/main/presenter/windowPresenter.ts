@@ -144,6 +144,14 @@ export class WindowPresenter implements IWindowPresenter {
       this.mainWindowFocused = true
     })
 
+    mainWindow.on('maximize', () => {
+      mainWindow.webContents.send(WINDOW_EVENTS.WINDOW_MAXIMIZED)
+    })
+
+    mainWindow.on('unmaximize', () => {
+      mainWindow.webContents.send(WINDOW_EVENTS.WINDOW_UNMAXIMIZED)
+    })
+
     if (is.dev) {
       mainWindow.webContents.openDevTools()
     }
