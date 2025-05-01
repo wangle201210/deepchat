@@ -46,14 +46,10 @@ import ToolCallPreview from '../artifacts/ToolCallPreview.vue'
 import { useBlockContent } from '@/composables/useArtifacts'
 import { useArtifactStore } from '@/stores/artifact'
 import MarkdownRenderer from '@/components/markdown/MarkdownRenderer.vue'
-
+import { AssistantMessageBlock } from '@shared/chat'
 const artifactStore = useArtifactStore()
 const props = defineProps<{
-  block: {
-    content: string
-    status?: 'loading' | 'success' | 'error'
-    timestamp: number
-  }
+  block: AssistantMessageBlock
   messageId: string
   threadId: string
   isSearchResult?: boolean

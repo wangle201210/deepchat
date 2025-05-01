@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'fs/promises'
 import path from 'path'
 import { z } from 'zod'
@@ -45,9 +41,6 @@ const DescribeImageArgsSchema = z.object({
 const OcrImageArgsSchema = z.object({
   path: z.string().describe('Path to the image file for OCR text extraction.')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // --- Image Server Implementation ---
 
@@ -203,43 +196,43 @@ export class ImageServer {
             name: 'read_image_base64',
             description:
               'Reads an image file from the specified path and returns its base64 encoded content.',
-            inputSchema: zodToJsonSchema(ReadImageBase64ArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(ReadImageBase64ArgsSchema)
           },
           {
             name: 'upload_image',
             description:
               'Uploads an image file from the specified path to a hosting service and returns the public URL.',
-            inputSchema: zodToJsonSchema(UploadImageArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(UploadImageArgsSchema)
           },
           {
             name: 'read_multiple_images_base64',
             description:
               'Reads multiple image files from the specified paths and returns their base64 encoded content.',
-            inputSchema: zodToJsonSchema(ReadMultipleImagesBase64ArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(ReadMultipleImagesBase64ArgsSchema)
           },
           {
             name: 'upload_multiple_images',
             description:
               'Uploads multiple image files from the specified paths to a hosting service and returns their public URLs.',
-            inputSchema: zodToJsonSchema(UploadMultipleImagesArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(UploadMultipleImagesArgsSchema)
           },
           {
             name: 'describe_image',
             description:
               'Uses a multimodal model to simply describe the image at the specified path.',
-            inputSchema: zodToJsonSchema(DescribeImageArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(DescribeImageArgsSchema)
           },
           {
             name: 'query_image_with_prompt',
             description:
               'Uses a multimodal model to answer a query (prompt) about the image at the specified path.',
-            inputSchema: zodToJsonSchema(QueryImageWithPromptArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(QueryImageWithPromptArgsSchema)
           },
           {
             name: 'ocr_image',
             description:
               'Performs Optical Character Recognition (OCR) on the image at the specified path and returns the extracted text.',
-            inputSchema: zodToJsonSchema(OcrImageArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(OcrImageArgsSchema)
           }
         ]
       }

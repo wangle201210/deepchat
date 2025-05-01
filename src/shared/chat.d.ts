@@ -3,7 +3,7 @@ import { FileMetaData } from './presenter'
 export type Message = {
   id: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content: any
+  content: UserMessageContent | AssistantMessageBlock[]
   role: MESSAGE_ROLE
   timestamp: number
   avatar: string
@@ -40,6 +40,18 @@ export type AssistantMessage = Message & {
   content: AssistantMessageBlock[]
 }
 
+export type UserMessageTextBlock = {
+  type: 'text'
+  content: string
+}
+
+export type UserMessageMentionBlock = {
+  type: 'mention'
+  content: string
+  id: string
+  category: string
+}
+
 export type UserMessageContent = {
   continue?: boolean
   files: MessageFile[]
@@ -49,6 +61,8 @@ export type UserMessageContent = {
   think: boolean
   search: boolean
   text: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  content?: (UserMessageTextBlock | UserMessageMentionBlock)[]
 }
 
 export type MessageFile = {
@@ -58,10 +72,19 @@ export type MessageFile = {
   metadata: FileMetaData
   token: number
   path: string
+  thumbnail?: string
 }
 
 export type AssistantMessageBlock = {
-  type: 'content' | 'search' | 'reasoning_content' | 'error' | 'tool_call' | 'action' | 'image'
+  type:
+    | 'content'
+    | 'search'
+    | 'reasoning_content'
+    | 'error'
+    | 'tool_call'
+    | 'action'
+    | 'image'
+    | 'artifact-thinking'
   content?: string
   extra?: Record<string, string | number | object[] | boolean>
   status: 'success' | 'loading' | 'cancel' | 'error' | 'reading' | 'optimizing' | 'pending'

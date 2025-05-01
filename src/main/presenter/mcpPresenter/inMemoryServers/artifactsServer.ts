@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -544,9 +540,6 @@ const GetArtifactInstructionsArgsSchema = z.object({
   type: z.enum(['code', 'documents', 'html', 'svg', 'mermaid', 'react'])
 })
 
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
-
 export class ArtifactsServer {
   private server: Server
 
@@ -587,7 +580,7 @@ export class ArtifactsServer {
               'Do not call this function repeatedly if instructions or definitions for the requested artifact type are already available in the current context. ' +
               'Specify the desired artifact category through the type parameter: code, documents, html, svg, mermaid, or react. ' +
               'After obtaining the instructions, use them appropriately and avoid duplicate calls for the same type.',
-            inputSchema: zodToJsonSchema(GetArtifactInstructionsArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(GetArtifactInstructionsArgsSchema)
           }
         ]
       }

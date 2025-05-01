@@ -24,5 +24,9 @@
   },
   "messages": {
     "thinking": "正在思考..."
+  },
+  "notify": {
+    "generationComplete": "生成完畢",
+    "generationError": "生成失敗"
   }
 }

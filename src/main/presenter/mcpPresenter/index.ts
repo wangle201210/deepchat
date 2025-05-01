@@ -8,7 +8,8 @@ import {
   Prompt,
   ResourceListEntry,
   PromptWithClient,
-  ResourceListEntryWithClient
+  ResourceListEntryWithClient,
+  Resource
 } from '@shared/presenter'
 import { ServerManager } from './serverManager'
 import { ToolManager } from './toolManager'
@@ -822,7 +823,7 @@ export class McpPresenter implements IMCPPresenter {
    * @param resource 资源对象（包含客户端信息）
    * @returns 资源内容
    */
-  async readResource(resource: ResourceListEntryWithClient): Promise<unknown> {
+  async readResource(resource: ResourceListEntryWithClient): Promise<Resource> {
     const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
       throw new Error('MCP功能已禁用')

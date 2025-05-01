@@ -157,4 +157,8 @@ ${textLines.join('\n')}
       return `Error processing PowerPoint file: ${(error as Error).message}`
     }
   }
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }

@@ -19,6 +19,13 @@ export type SQLITE_MESSAGE = {
   variants?: SQLITE_MESSAGE[]
 }
 
+export interface DirectoryMetaData {
+  dirName: string
+  dirPath: string
+  dirCreated: Date
+  dirModified: Date
+}
+
 export interface McpClient {
   name: string
   icon: string
@@ -26,6 +33,13 @@ export interface McpClient {
   tools: MCPToolDefinition[]
   prompts?: Prompt[]
   resources?: ResourceListEntry[]
+}
+
+export interface Resource {
+  uri: string
+  mimeType?: string
+  text?: string
+  blob?: string
 }
 
 export interface Prompt {
@@ -479,6 +493,9 @@ export interface IDevicePresenter {
   // 目录选择和应用重启
   selectDirectory(): Promise<{ canceled: boolean; filePaths: string[] }>
   restartApp(): Promise<void>
+
+  // 图片缓存
+  cacheImage(imageData: string): Promise<string>
 }
 
 export type DeviceInfo = {
@@ -600,7 +617,12 @@ export interface IFilePresenter {
   readFile(relativePath: string): Promise<string>
   writeFile(operation: FileOperation): Promise<void>
   deleteFile(relativePath: string): Promise<void>
+  createFileAdapter(filePath: string, typeInfo?: string): Promise<any> // Return type might need refinement
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
+  prepareDirectory(absPath: string): Promise<MessageFile>
+  writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
+  isDirectory(absPath: string): Promise<boolean>
+  getMimeType(filePath: string): Promise<string>
 }
 
 export interface FileMetaData {
@@ -754,7 +776,7 @@ export interface IMCPPresenter {
   getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
   getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
   getPrompt(prompt: PromptWithClient, params?: Record<string, unknown>): Promise<unknown>
-  readResource(resource: ResourceListEntryWithClient): Promise<unknown>
+  readResource(resource: ResourceListEntryWithClient): Promise<Resource>
   callTool(request: {
     id: string
     type: string
@@ -854,6 +876,7 @@ export interface ChatMessage {
     id: string
     type: 'function'
   }>
+  tool_call_id?: string
 }
 
 export interface ChatMessageContent {

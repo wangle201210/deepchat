@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -20,9 +16,6 @@ const BraveLocalSearchArgsSchema = z.object({
   query: z.string().describe("Local search query (e.g. 'pizza near Central Park')"),
   count: z.number().optional().default(5).describe('Number of results (1-20, default 5)')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 定义Brave Web API返回的数据结构
 interface BraveWeb {
@@ -319,7 +312,7 @@ export class BraveSearchServer {
               'Use this for broad information gathering, recent events, or when you need diverse web sources. ' +
               'Supports pagination, content filtering, and freshness controls. ' +
               'Maximum 20 results per request, with offset for pagination. ',
-            inputSchema: zodToJsonSchema(BraveWebSearchArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(BraveWebSearchArgsSchema)
           },
           {
             name: 'brave_local_search',
@@ -332,7 +325,7 @@ export class BraveSearchServer {
               '- Phone numbers and opening hours\n' +
               "Use this when the query implies 'near me' or mentions specific locations. " +
               'Automatically falls back to web search if no local results are found.',
-            inputSchema: zodToJsonSchema(BraveLocalSearchArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(BraveLocalSearchArgsSchema)
           }
         ]
       }

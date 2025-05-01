@@ -251,4 +251,8 @@ export class PdfFileAdapter extends BaseFileAdapter {
 `
     return fileDescription
   }
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }
