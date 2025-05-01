@@ -452,12 +452,23 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         reasoning: true
       },
       {
-        id: 'qwen/qwen3-30b-fp8',
-        name: 'Qwen/Qwen3-30B',
+        id: 'qwen/qwen3-30b-a3b-fp8',
+        name: 'Qwen/Qwen3-30B-A3B',
         temperature: 0.6,
         maxTokens: 8192,
         contextLength: 40960,
-        match: ['qwen3-30b-fp8', 'qwen3-30b'],
+        match: ['qwen3-30b-a3b-fp8', 'qwen3-30b-a3b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'qwen/qwen3-32b-fp8',
+        name: 'Qwen/Qwen3-32B',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 40960,
+        match: ['qwen3-32b-fp8', 'qwen3-32b'],
         vision: false,
         functionCall: false,
         reasoning: true
