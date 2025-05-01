@@ -40,6 +40,7 @@ import { Button } from '@/components/ui/button'
 import { computed, onMounted, ref, watch } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
 import MarkdownIt from 'markdown-it'
+import { AssistantMessageBlock } from '@shared/chat'
 
 const { t } = useI18n()
 
@@ -60,7 +61,7 @@ const md = new MarkdownIt({
 })
 
 const renderedContent = computed(() => {
-  const content = props.block.content
+  const content = props.block.content || ''
 
   return md.render(content)
 })
@@ -77,10 +78,7 @@ onMounted(async () => {
 })
 
 const props = defineProps<{
-  block: {
-    content: string
-    status?: 'loading'
-  }
+  block: AssistantMessageBlock
   usage: {
     reasoning_start_time: number
     reasoning_end_time: number
