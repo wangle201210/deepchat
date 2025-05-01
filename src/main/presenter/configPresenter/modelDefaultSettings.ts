@@ -424,6 +424,17 @@ export const defaultModelsSettings = [
   },
   // DeepSeek系列模型配置
   {
+    id: 'deepseek-prover-v2-671b',
+    name: 'Deepseek Prover V2 671B',
+    temperature: 0.3,
+    maxTokens: 10000,
+    contextLength: 150000,
+    match: ['deepseek-prover-v2-671b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
     id: 'deepseek-vl2',
     name: 'DeepSeek VL2',
     temperature: 0.7,
