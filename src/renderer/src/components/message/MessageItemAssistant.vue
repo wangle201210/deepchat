@@ -18,7 +18,7 @@
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
-        <template v-for="block in currentContent" :key="block.id">
+        <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
           <MessageBlockContent
             v-if="block.type === 'content'"
             :block="block"
@@ -98,7 +98,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, useTemplateRef } from 'vue'
-import { AssistantMessage } from '@shared/chat'
+import { AssistantMessage, AssistantMessageBlock } from '@shared/chat'
 import MessageBlockContent from './MessageBlockContent.vue'
 import MessageBlockThink from './MessageBlockThink.vue'
 import MessageBlockSearch from './MessageBlockSearch.vue'
@@ -163,11 +163,11 @@ const totalVariants = computed(() => allVariants.value.length + 1)
 // 获取当前显示的内容
 const currentContent = computed(() => {
   if (currentVariantIndex.value === 0) {
-    return props.message.content
+    return props.message.content as AssistantMessageBlock[]
   }
 
   const variant = allVariants.value[currentVariantIndex.value - 1]
-  return variant?.content || props.message.content
+  return (variant?.content || props.message.content) as AssistantMessageBlock[]
 })
 
 // 监听变体变化

@@ -255,7 +255,9 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       // 处理所有消息的 extra 信息
-      messages.value = await Promise.all(mergedMessages.map((msg) => enrichMessageWithExtra(msg)))
+      messages.value = (await Promise.all(
+        mergedMessages.map((msg) => enrichMessageWithExtra(msg))
+      )) as AssistantMessage[] | UserMessage[]
     } catch (error) {
       console.error('加载消息失败:', error)
       throw error
@@ -428,11 +430,13 @@ export const useChatStore = defineStore('chat', () => {
             if (existingToolCallBlock && existingToolCallBlock.type === 'tool_call') {
               if (msg.tool_call === 'error') {
                 existingToolCallBlock.status = 'error'
-                existingToolCallBlock.tool_call.response =
-                  msg.tool_call_response || 'tool call failed'
+                if (existingToolCallBlock.tool_call) {
+                  existingToolCallBlock.tool_call.response =
+                    msg.tool_call_response || 'tool call failed'
+                }
               } else {
                 existingToolCallBlock.status = 'success'
-                if (msg.tool_call_response) {
+                if (msg.tool_call_response && existingToolCallBlock.tool_call) {
                   existingToolCallBlock.tool_call.response = msg.tool_call_response
                 }
               }
@@ -571,7 +575,7 @@ export const useChatStore = defineStore('chat', () => {
           if (cached.threadId === activeThreadId.value) {
             const mainMsgIndex = messages.value.findIndex((m) => m.id === mainMessage.id)
             if (mainMsgIndex !== -1) {
-              messages.value[mainMsgIndex] = enrichedMainMessage
+              messages.value[mainMsgIndex] = enrichedMainMessage as AssistantMessage | UserMessage
             }
           }
         }
@@ -580,7 +584,7 @@ export const useChatStore = defineStore('chat', () => {
         if (cached.threadId === activeThreadId.value) {
           const msgIndex = messages.value.findIndex((m) => m.id === msg.eventId)
           if (msgIndex !== -1) {
-            messages.value[msgIndex] = enrichedMessage
+            messages.value[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
           }
         }
       }
@@ -641,7 +645,7 @@ export const useChatStore = defineStore('chat', () => {
             // 非变体消息的原有错误处理逻辑
             const messageIndex = messages.value.findIndex((m) => m.id === msg.eventId)
             if (messageIndex !== -1) {
-              messages.value[messageIndex] = enrichedMessage
+              messages.value[messageIndex] = enrichedMessage as AssistantMessage | UserMessage
             }
           }
 
@@ -859,13 +863,13 @@ export const useChatStore = defineStore('chat', () => {
       const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
 
       // 更新缓存
-      cached.message = enrichedMessage
+      cached.message = enrichedMessage as AssistantMessage | UserMessage
 
       // 如果是当前会话的消息，也更新显示
       if (cached.threadId === activeThreadId.value) {
         const msgIndex = messages.value.findIndex((m) => m.id === msgId)
         if (msgIndex !== -1) {
-          messages.value[msgIndex] = enrichedMessage
+          messages.value[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
         }
       }
     } else if (activeThreadId.value) {
@@ -875,7 +879,7 @@ export const useChatStore = defineStore('chat', () => {
         const updatedMessage = await threadP.getMessage(msgId)
         // 处理 extra 信息
         const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
-        messages.value[msgIndex] = enrichedMessage
+        messages.value[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
       }
     }
   }

@@ -76,7 +76,15 @@ export type MessageFile = {
 }
 
 export type AssistantMessageBlock = {
-  type: 'content' | 'search' | 'reasoning_content' | 'error' | 'tool_call' | 'action' | 'image'
+  type:
+    | 'content'
+    | 'search'
+    | 'reasoning_content'
+    | 'error'
+    | 'tool_call'
+    | 'action'
+    | 'image'
+    | 'artifact-thinking'
   content?: string
   extra?: Record<string, string | number | object[] | boolean>
   status: 'success' | 'loading' | 'cancel' | 'error' | 'reading' | 'optimizing' | 'pending'

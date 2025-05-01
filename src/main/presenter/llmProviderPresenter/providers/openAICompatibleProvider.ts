@@ -11,6 +11,7 @@ import { BaseLLMProvider } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
 import {
   ChatCompletionAssistantMessageParam,
+  ChatCompletionContentPart,
   ChatCompletionContentPartText,
   ChatCompletionMessage,
   ChatCompletionMessageParam,
@@ -105,7 +106,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     }))
   }
 
-  // 辅助方法：格式化消息
+  /**
+   * User消息，上层会根据是否存在 vision 去插入 image_url
+   * Ass 消息，需要判断一下，把图片转换成正确的上下文，因为模型可以切换
+   * @param messages
+   * @returns
+   */
   protected formatMessages(messages: ChatMessage[]): ChatCompletionMessageParam[] {
     return messages.map((msg) => {
       // 处理基本消息结构
@@ -114,7 +120,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
 
       // 处理content转换为字符串
-      if (msg.content !== undefined) {
+      if (msg.content !== undefined && msg.role !== 'user') {
         if (typeof msg.content === 'string') {
           baseMessage.content = msg.content
         } else if (Array.isArray(msg.content)) {
@@ -131,6 +137,14 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           baseMessage.content = textParts.join('\n')
         }
       }
+      if (msg.role === 'user') {
+        if (typeof msg.content === 'string') {
+          baseMessage.content = msg.content
+        } else if (Array.isArray(msg.content)) {
+          baseMessage.content = msg.content as ChatCompletionContentPart[]
+        }
+      }
+
       if (msg.role === 'assistant' && msg.tool_calls) {
         ;(baseMessage as ChatCompletionAssistantMessageParam).tool_calls = msg.tool_calls
       }
@@ -334,14 +348,32 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         }
 
         if (result.data && result.data[0]?.url) {
-          yield {
-            type: 'image_data',
-            image_data: {
-              data: result.data[0]?.url,
-              mimeType: 'deepchat/image-url'
+          // 使用devicePresenter缓存图片URL
+          try {
+            const imageUrl = result.data[0]?.url
+            const cachedUrl = await presenter.devicePresenter.cacheImage(imageUrl)
+
+            // 返回缓存后的URL
+            yield {
+              type: 'image_data',
+              image_data: {
+                data: cachedUrl,
+                mimeType: 'deepchat/image-url'
+              }
             }
+            yield { type: 'stop', stop_reason: 'complete' }
+          } catch (cacheError) {
+            // 缓存失败时降级为使用原始URL
+            console.warn('[coreStream] Failed to cache image, using original URL:', cacheError)
+            yield {
+              type: 'image_data',
+              image_data: {
+                data: result.data[0]?.url,
+                mimeType: 'deepchat/image-url'
+              }
+            }
+            yield { type: 'stop', stop_reason: 'complete' }
           }
-          yield { type: 'stop', stop_reason: 'complete' }
         } else {
           console.error('[coreStream] No image data received from API.')
           yield { type: 'error', error_message: 'No image data received from API.' }
