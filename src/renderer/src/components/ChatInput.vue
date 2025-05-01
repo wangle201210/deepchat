@@ -339,7 +339,8 @@ const handleFileSelect = async (e: Event) => {
     for (const file of files) {
       const path = window.api.getPathForFile(file)
       try {
-        const fileInfo: MessageFile = await filePresenter.prepareFile(path, file.type)
+        const mimeType = await filePresenter.getMimeType(path)
+        const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
         if (fileInfo) {
           selectedFiles.value.push(fileInfo)
         } else {
@@ -391,8 +392,11 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
                     name: mcpEntry.name ?? 'temp_resource', // Use resource name or a default
                     content: arrayBuffer
                   })
-
-                  const fileInfo: MessageFile = await filePresenter.prepareFile(tempFilePath)
+                  const mimeType = await filePresenter.getMimeType(tempFilePath)
+                  const fileInfo: MessageFile = await filePresenter.prepareFile(
+                    tempFilePath,
+                    mimeType
+                  )
                   if (fileInfo) {
                     selectedFiles.value.push(fileInfo)
                   }
@@ -560,12 +564,24 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         if (file.type === '') {
-          const fileInfo: MessageFile = await filePresenter.prepareDirectory(path)
-          if (fileInfo) {
-            selectedFiles.value.push(fileInfo)
+          const isDirectory = await filePresenter.isDirectory(path)
+          if (isDirectory) {
+            const fileInfo: MessageFile = await filePresenter.prepareDirectory(path)
+            if (fileInfo) {
+              selectedFiles.value.push(fileInfo)
+            }
+          } else {
+            const mimeType = await filePresenter.getMimeType(path)
+            console.log('mimeType', mimeType)
+            const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
+            console.log('fileInfo', fileInfo)
+            if (fileInfo) {
+              selectedFiles.value.push(fileInfo)
+            }
           }
         } else {
-          const fileInfo: MessageFile = await filePresenter.prepareFile(path)
+          const mimeType = await filePresenter.getMimeType(path)
+          const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
           if (fileInfo) {
             selectedFiles.value.push(fileInfo)
           }
@@ -625,7 +641,7 @@ watch(
         selectedFiles.value.map((file) => ({
           id: file.metadata.fileName,
           label: file.metadata.fileName,
-          icon: file.mimeType.startsWith('image/') ? 'lucide:image' : 'lucide:file',
+          icon: file.mimeType?.startsWith('image/') ? 'lucide:image' : 'lucide:file',
           type: 'item',
           category: 'files'
         }))

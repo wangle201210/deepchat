@@ -8,7 +8,7 @@ export class UnsupportFileAdapter extends BaseFileAdapter {
   }
 
   protected getFileDescription(): string | undefined {
-    return 'Unsupported File'
+    return ''
   }
 
   public async getLLMContent(): Promise<string | undefined> {

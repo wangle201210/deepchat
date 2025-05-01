@@ -91,6 +91,7 @@
     "electron-updater": "^6.1.7",
     "eventsource-parser": "^3.0.1",
     "fflate": "^0.8.2",
+    "file-type": "^20.5.0",
     "highlight.js": "^11.11.1",
     "https-proxy-agent": "^7.0.6",
     "jsonrepair": "^3.12.0",

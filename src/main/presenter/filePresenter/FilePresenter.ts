@@ -1,17 +1,18 @@
 import { app } from 'electron'
 import fs from 'fs/promises'
 import path from 'path'
-import * as mime from 'mime-types'
+
 import { BaseFileAdapter } from './BaseFileAdapter'
 import { FileAdapterConstructor } from './FileAdapterConstructor'
 import { FileOperation } from '../../../shared/presenter'
-import { getMimeTypeAdapterMap } from './mime'
+import { detectMimeType, getMimeTypeAdapterMap } from './mime'
 import { IFilePresenter } from '../../../shared/presenter'
 import { MessageFile } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { ImageFileAdapter } from './ImageFileAdapter'
 import { nanoid } from 'nanoid'
 import { DirectoryAdapter } from './DirectoryAdapter'
+import { UnsupportFileAdapter } from './UnsupportFileAdapter'
 
 export class FilePresenter implements IFilePresenter {
   private userDataPath: string
@@ -23,6 +24,10 @@ export class FilePresenter implements IFilePresenter {
     this.tempDir = path.join(this.userDataPath, 'temp')
     // Ensure temp directory exists
     fs.mkdir(this.tempDir, { recursive: true }).catch(console.error)
+  }
+
+  async getMimeType(filePath: string): Promise<string> {
+    return detectMimeType(filePath)
   }
 
   async readFile(relativePath: string): Promise<string> {
@@ -42,30 +47,25 @@ export class FilePresenter implements IFilePresenter {
   }
 
   async createFileAdapter(filePath: string, typeInfo?: string): Promise<BaseFileAdapter> {
-    const ext = path.extname(filePath).toLowerCase()
+    // Use the refined getMimeType method
+    // Prioritize provided typeInfo if available
+    const mimeType = typeInfo ?? (await this.getMimeType(filePath))
 
-    // Special handling for .ts files that might be misidentified as video/mp2t
-    if (ext === '.ts' || ext === '.tsx') {
-      const adapterMap = getMimeTypeAdapterMap()
-      const tsAdapter = adapterMap.get('application/typescript')
-      if (tsAdapter) {
-        return new tsAdapter(filePath, this.maxFileSize)
-      }
+    if (!mimeType) {
+      // This case should be less likely now, but handle it defensively
+      throw new Error(`Could not determine MIME type for file: ${filePath}`)
     }
-    let mimeType: string | null = null
-    if (typeof typeInfo === 'string') {
-      mimeType = typeInfo
-    } else {
-      mimeType = mime.lookup(filePath)
-      if (!mimeType) {
-        throw new Error('无法确定文件类型' + filePath)
-      }
-    }
+
+    console.log(`Using MIME type: ${mimeType} for file: ${filePath}`)
 
     const adapterMap = getMimeTypeAdapterMap()
     const AdapterConstructor = this.findAdapterForMimeType(mimeType, adapterMap)
     if (!AdapterConstructor) {
-      throw new Error('没有找到对应的文件适配器:' + mimeType)
+      // If no specific or wildcard adapter found, maybe use a generic default?
+      // For now, we throw an error as before, but with the determined type.
+      throw new Error(
+        `No adapter found for file "${filePath}" with determined mime type "${mimeType}"`
+      )
     }
 
     return new AdapterConstructor(filePath, this.maxFileSize)
@@ -96,6 +96,7 @@ export class FilePresenter implements IFilePresenter {
     const fullPath = path.join(absPath)
     try {
       const adapter = await this.createFileAdapter(fullPath, typeInfo)
+      console.log('adapter', adapter)
       if (adapter) {
         await adapter.processFile()
         const content = (await adapter.getLLMContent()) ?? ''
@@ -122,11 +123,12 @@ export class FilePresenter implements IFilePresenter {
         }
         return result
       } else {
-        throw new Error(`无法创建文件适配器: ${fullPath}`)
+        throw new Error(`Can not create file adapter: ${fullPath}`)
       }
     } catch (error) {
       // Clean up temp file in case of error
-      throw new Error(`无法读取文件: ${fullPath}`)
+      console.error(error)
+      throw new Error(`Can not read file: ${fullPath}`)
     }
   }
 
@@ -143,7 +145,12 @@ export class FilePresenter implements IFilePresenter {
     // 尝试通配符匹配
     const type = mimeType.split('/')[0]
     const wildcardMatch = adapterMap.get(`${type}/*`)
-    return wildcardMatch
+
+    if (wildcardMatch) {
+      return wildcardMatch
+    }
+
+    return UnsupportFileAdapter
   }
 
   async writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string> {
@@ -162,6 +169,17 @@ export class FilePresenter implements IFilePresenter {
     }
 
     return tempPath
+  }
+
+  async isDirectory(absPath: string): Promise<boolean> {
+    try {
+      const fullPath = path.join(absPath)
+      const stats = await fs.stat(fullPath)
+      return stats.isDirectory()
+    } catch (error) {
+      // If the path doesn't exist or there's any other error, return false
+      return false
+    }
   }
 }
 

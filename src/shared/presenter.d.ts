@@ -618,6 +618,8 @@ export interface IFilePresenter {
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
   prepareDirectory(absPath: string): Promise<MessageFile>
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
+  isDirectory(absPath: string): Promise<boolean>
+  getMimeType(filePath: string): Promise<string>
 }
 
 export interface FileMetaData {
