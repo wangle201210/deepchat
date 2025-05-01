@@ -318,7 +318,107 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // Silicon Flow提供商特定模型配置
   silicon: {
-    models: []
+    models: [
+      {
+        id: 'Qwen/Qwen3-235B-A22B',
+        name: 'Qwen/Qwen3-235B-A22B',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 100_000,
+        match: ['qwen3-235b-a22b'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'Qwen/Qwen3-30B-A3B',
+        name: 'Qwen/Qwen3-30B-A3B',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 100_000,
+        match: ['qwen3-30b-a3b'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'Qwen/Qwen3-32B',
+        name: 'Qwen/Qwen3-32B',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 100_000,
+        match: ['qwen3-32b'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'Qwen/Qwen3-14B',
+        name: 'Qwen/Qwen3-14B',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 100_000,
+        match: ['qwen3-14b'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'Qwen/Qwen3-8B',
+        name: 'Qwen/Qwen3-8B',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 100_000,
+        match: ['qwen3-8b'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'Pro/deepseek-ai/DeepSeek-V3',
+        name: 'DeepSeek V3 Pro',
+        temperature: 0.6,
+        maxTokens: 7000,
+        contextLength: 62000,
+        match: ['pro/deepseek-ai/deepseek-v3'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'Pro/deepseek-ai/DeepSeek-R1',
+        name: 'DeepSeek R1 Pro',
+        temperature: 0.6,
+        maxTokens: 7000,
+        contextLength: 62000,
+        match: ['pro/deepseek-ai/deepseek-r1'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek-ai/DeepSeek-V3',
+        name: 'DeepSeek V3',
+        temperature: 0.6,
+        maxTokens: 7000,
+        contextLength: 62000,
+        match: ['deepseek-ai/deepseek-v3'],
+        vision: false,
+        functionCall: false,
+        reasoning: false
+      },
+      {
+        id: 'deepseek-ai/DeepSeek-R1',
+        name: 'DeepSeek R1',
+        temperature: 0.6,
+        maxTokens: 7000,
+        contextLength: 62000,
+        match: ['deepseek-ai/deepseek-r1'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      }
+    ]
   },
 
   // Fireworks提供商特定模型配置
@@ -406,7 +506,6 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         functionCall: true,
         reasoning: false
       },
-
       {
         id: 'deepseek/deepseek-v3/community',
         name: 'DeepSeek V3 Community',
