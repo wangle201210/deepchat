@@ -1,3 +1,4 @@
+import { AssistantMessageBlock } from '@shared/chat'
 import { computed } from 'vue'
 export interface ProcessedPart {
   type: 'text' | 'thinking' | 'artifact' | 'tool_call'
@@ -21,13 +22,7 @@ export interface ProcessedPart {
     error?: string
   }
 }
-export const useBlockContent = (props: {
-  block: {
-    content: string
-    status?: 'loading' | 'success' | 'error'
-    timestamp: number
-  }
-}) => {
+export const useBlockContent = (props: { block: AssistantMessageBlock }) => {
   // 辅助函数：解析标签属性
   function parseAttributes(attributesStr?: string): Record<string, string> {
     const attributes: Record<string, string> = {}

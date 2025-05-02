@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as crypto from 'crypto'
-import * as mime from 'mime-types'
 import { FileMetaData } from '@shared/presenter'
 import path from 'path'
+import { detectMimeType } from './mime'
 
 export abstract class BaseFileAdapter {
   filePath: string
@@ -37,7 +37,7 @@ export abstract class BaseFileAdapter {
   }
 
   protected async preprocessFile(): Promise<void> {
-    this.mimeType = mime.lookup(this.filePath)
+    this.mimeType = await detectMimeType(this.filePath)
   }
 
   public async processFile(): Promise<FileMetaData | null> {
@@ -70,4 +70,5 @@ export abstract class BaseFileAdapter {
   protected abstract getFileDescription(): string | undefined
   protected abstract getContent(): Promise<string | undefined>
   public abstract getLLMContent(): Promise<string | undefined>
+  public abstract getThumbnail(): Promise<string | undefined>
 }

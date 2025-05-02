@@ -4,7 +4,12 @@ import {
   MCPToolDefinition,
   MCPToolCall,
   McpClient,
-  MCPToolResponse
+  MCPToolResponse,
+  Prompt,
+  ResourceListEntry,
+  PromptWithClient,
+  ResourceListEntryWithClient,
+  Resource
 } from '@shared/presenter'
 import { ServerManager } from './serverManager'
 import { ToolManager } from './toolManager'
@@ -194,12 +199,40 @@ export class McpPresenter implements IMCPPresenter {
           }
         })
       }
-      clientsList.push({
+
+      // 创建客户端基本信息对象
+      const clientObj: McpClient = {
         name: client.serverName,
         icon: client.serverConfig['icons'] as string,
         isRunning: client.isServerRunning(),
         tools: results
-      })
+      }
+
+      // 检查并添加 prompts（如果支持）
+      if (typeof client.listPrompts === 'function') {
+        try {
+          const prompts = await client.listPrompts()
+          if (prompts && prompts.length > 0) {
+            clientObj.prompts = prompts
+          }
+        } catch (error) {
+          console.error(`[MCP] 获取客户端 ${client.serverName} 的提示模板失败:`, error)
+        }
+      }
+
+      // 检查并添加 resources（如果支持）
+      if (typeof client.listResources === 'function') {
+        try {
+          const resources = await client.listResources()
+          if (resources && resources.length > 0) {
+            clientObj.resources = resources
+          }
+        } catch (error) {
+          console.error(`[MCP] 获取客户端 ${client.serverName} 的资源失败:`, error)
+        }
+      }
+
+      clientsList.push(clientObj)
     }
     return clientsList
   }
@@ -297,6 +330,82 @@ export class McpPresenter implements IMCPPresenter {
       return this.toolManager.getAllToolDefinitions()
     }
     return []
+  }
+
+  /**
+   * 获取所有客户端的提示模板，并附加客户端信息
+   * @returns 所有提示模板列表，每个提示模板附带所属客户端信息
+   */
+  async getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>> {
+    const enabled = await this.configPresenter.getMcpEnabled()
+    if (!enabled) {
+      return []
+    }
+
+    const clients = await this.toolManager.getRunningClients()
+    const promptsList: Array<Prompt & { client: { name: string; icon: string } }> = []
+
+    for (const client of clients) {
+      if (typeof client.listPrompts === 'function') {
+        try {
+          const prompts = await client.listPrompts()
+          if (prompts && prompts.length > 0) {
+            // 为每个提示模板添加客户端信息
+            const clientPrompts = prompts.map((prompt) => ({
+              ...prompt,
+              client: {
+                name: client.serverName,
+                icon: client.serverConfig['icons'] as string
+              }
+            }))
+            promptsList.push(...clientPrompts)
+          }
+        } catch (error) {
+          console.error(`[MCP] 获取客户端 ${client.serverName} 的提示模板失败:`, error)
+        }
+      }
+    }
+
+    return promptsList
+  }
+
+  /**
+   * 获取所有客户端的资源列表，并附加客户端信息
+   * @returns 所有资源列表，每个资源附带所属客户端信息
+   */
+  async getAllResources(): Promise<
+    Array<ResourceListEntry & { client: { name: string; icon: string } }>
+  > {
+    const enabled = await this.configPresenter.getMcpEnabled()
+    if (!enabled) {
+      return []
+    }
+
+    const clients = await this.toolManager.getRunningClients()
+    const resourcesList: Array<ResourceListEntry & { client: { name: string; icon: string } }> = []
+
+    for (const client of clients) {
+      if (typeof client.listResources === 'function') {
+        try {
+          const resources = await client.listResources()
+          if (resources && resources.length > 0) {
+            // 为每个资源添加客户端信息
+            const clientResources = resources.map((resource) => ({
+              ...resource,
+              client: {
+                name: client.serverName,
+                icon: client.serverConfig['icons'] as string
+              }
+            }))
+            resourcesList.push(...clientResources)
+          }
+        } catch (error) {
+          console.error(`[MCP] 获取客户端 ${client.serverName} 的资源失败:`, error)
+        }
+      }
+    }
+
+    return resourcesList
   }
 
   async callTool(request: MCPToolCall): Promise<{ content: string; rawData: MCPToolResponse }> {
@@ -688,5 +797,39 @@ export class McpPresenter implements IMCPPresenter {
 
   async resetToDefaultServers(): Promise<void> {
     await this.configPresenter?.getMcpConfHelper().resetToDefaultServers()
+  }
+
+  /**
+   * 获取指定提示模板
+   * @param prompt 提示模板对象（包含客户端信息）
+   * @param params 提示模板参数
+   * @returns 提示模板内容
+   */
+  async getPrompt(
+    prompt: PromptWithClient,
+    params: Record<string, unknown> = {}
+  ): Promise<unknown> {
+    const enabled = await this.configPresenter.getMcpEnabled()
+    if (!enabled) {
+      throw new Error('MCP功能已禁用')
+    }
+
+    // 传递客户端信息和提示模板名称给toolManager
+    return this.toolManager.getPromptByClient(prompt.clientName, prompt.name, params)
+  }
+
+  /**
+   * 读取指定资源
+   * @param resource 资源对象（包含客户端信息）
+   * @returns 资源内容
+   */
+  async readResource(resource: ResourceListEntryWithClient): Promise<Resource> {
+    const enabled = await this.configPresenter.getMcpEnabled()
+    if (!enabled) {
+      throw new Error('MCP功能已禁用')
+    }
+
+    // 传递客户端信息和资源URI给toolManager
+    return this.toolManager.readResourceByClient(resource.clientName, resource.uri)
   }
 }

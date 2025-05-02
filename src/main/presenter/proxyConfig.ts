@@ -147,7 +147,7 @@ export class ProxyConfig {
     try {
       // 检查URL格式，确保开头是http://或https://
       const urlPattern =
-        /^(http|https):\/\/([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
+        /^(http|https):\/\/(?:([^:@\/]+)(?::([^@\/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
       if (!urlPattern.test(url)) {
         return false
       }

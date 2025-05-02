@@ -1,30 +1,43 @@
 <template>
-  <div
-    class="inline-flex flex-row bg-card border items-center justify-start rounded-md text-xs cursor-pointer select-none overflow-hidden"
-    @click="$emit('click', fileName)"
-  >
-    <span class="flex flex-row gap-1 items-center hover:bg-accent px-2 py-1">
-      <Icon :icon="getFileIcon()" class="w-4 h-4 text-muted-foreground" />
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <span class="max-w-28 truncate">{{ fileName }}</span>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{{ tokens }} tokens</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </span>
+  <div class="inline-block">
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <div
+            class="flex py-1.5 pl-1.5 pr-3 gap-2 flex-row bg-card border items-center shadow-sm justify-start rounded-md text-xs cursor-pointer select-none hover:bg-accent relative"
+            @click="$emit('click', fileName)"
+          >
+            <img v-if="thumbnail" :src="thumbnail" class="w-8 h-8 rounded-md border" />
+            <Icon
+              v-else
+              :icon="getFileIcon()"
+              class="w-8 h-8 text-muted-foreground p-1 bg-accent rounded-md border"
+            />
 
-    <span v-if="deletable" class="h-3 w-[1px] bg-border"></span>
-    <span
-      v-if="deletable"
-      class="hover:bg-accent px-2 h-full flex items-center justify-center"
-      @click.stop.prevent="$emit('delete', fileName)"
-    >
-      <Icon icon="lucide:x" class="w-3 h-3 text-muted-foreground" />
-    </span>
+            <div class="flex-grow flex-1 max-w-28">
+              <div class="text-xs leading-none pb-1 truncate text-ellipsis whitespace-nowrap">
+                {{ fileName }}
+              </div>
+              <div
+                class="text-[10px] leading-none text-secondary-foreground truncate text-ellipsis whitespace-nowrap"
+              >
+                {{ mimeType }}
+              </div>
+            </div>
+            <span
+              v-if="deletable"
+              class="bg-card shadow-sm flex items-center justify-center absolute rounded-full -top-1 -right-2 p-0.5 border"
+              @click.stop.prevent="$emit('delete', fileName)"
+            >
+              <Icon icon="lucide:x" class="w-3 h-3 text-muted-foreground" />
+            </span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>{{ tokens }} tokens</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   </div>
 </template>
 
@@ -38,6 +51,7 @@ const props = withDefaults(
     deletable: boolean
     mimeType?: string
     tokens: number
+    thumbnail?: string
   }>(),
   {
     mimeType: 'text/plain'
@@ -93,6 +107,10 @@ const getFileIcon = () => {
     return 'vscode-icons:file-type-html'
   } else if (props.mimeType.startsWith('text/css')) {
     return 'vscode-icons:file-type-css'
+  } else if (props.mimeType.startsWith('audio/')) {
+    return 'vscode-icons:file-type-audio'
+  } else if (props.mimeType.startsWith('directory')) {
+    return 'vscode-icons:default-folder-opened'
   } else {
     // 默认文件图标
     return 'vscode-icons:default-file'

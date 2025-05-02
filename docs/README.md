@@ -6,7 +6,7 @@
 
 - [事件系统设计](./event-system-design.md) - 应用事件系统的设计与实现
 - [数据同步功能](./data-sync-feature.md) - 数据同步功能的设计与实现
-- [LLM Provider接口设计](./llm-provider-interface.md) - LLM Provider接口的设计，包括completions和streamCompletions的区别
+- [LLM Provider接口设计](./llm-provider-interface.md) - LLM Provider接口的设计
 
 ## 构建指南
 

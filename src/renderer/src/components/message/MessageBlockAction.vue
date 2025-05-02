@@ -9,7 +9,7 @@
       <div
         class="prose prose-sm max-w-full break-all whitespace-pre-wrap leading-7 text-left text-card-foreground"
       >
-        {{ t(block.content) }}
+        {{ t(block.content || '') }}
       </div>
     </div>
 
@@ -36,6 +36,7 @@ import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { useChatStore } from '@/stores/chat'
+import { AssistantMessageBlock } from '@shared/chat'
 
 const { t } = useI18n()
 const chatStore = useChatStore()
@@ -43,11 +44,7 @@ const chatStore = useChatStore()
 const props = defineProps<{
   messageId: string
   conversationId: string
-  block: {
-    content: string
-    action_type?: string
-    extra?: Record<string, string | number | object[]>
-  }
+  block: AssistantMessageBlock
 }>()
 
 const handleClick = () => {

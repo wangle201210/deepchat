@@ -108,4 +108,8 @@ export class DocFileAdapter extends BaseFileAdapter {
 
     return fileDescription + pagesContent
   }
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }

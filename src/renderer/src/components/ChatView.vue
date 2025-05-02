@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
+  <div class="flex flex-col overflow-hidden h-0 flex-1">
     <!-- 消息列表区域 -->
     <MessageList
       :key="chatStore.activeThreadId ?? 'default'"
@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import MessageList from './message/MesasgeList.vue'
+import MessageList from './message/MessageList.vue'
 import ChatInput from './ChatInput.vue'
 import { useRoute } from 'vue-router'
 import { UserMessageContent } from '@shared/chat'

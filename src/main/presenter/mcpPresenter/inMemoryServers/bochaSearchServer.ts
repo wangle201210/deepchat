@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -33,9 +29,6 @@ const BochaAiSearchArgsSchema = z.object({
     ),
   count: z.number().optional().default(10).describe('Number of results (1-50, default 10)')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 定义Bocha API返回的数据结构 - Web Search
 interface BochaWebSearchResponse {
@@ -100,11 +93,11 @@ export class BochaSearchServer {
   private server: Server
   private apiKey: string
 
-  constructor(env?: Record<string, string>) {
+  constructor(env?: Record<string, unknown>) {
     if (!env?.apiKey) {
       throw new Error('需要提供Bocha API Key')
     }
-    this.apiKey = env.apiKey
+    this.apiKey = env.apiKey as string
 
     // 创建服务器实例
     this.server = new Server(
@@ -138,13 +131,13 @@ export class BochaSearchServer {
             name: 'bocha_web_search',
             description:
               'Search with Bocha Web Search and get enhanced search details from billions of web documents, including page titles, urls, summaries, site names, site icons, publication dates, image links, and more.', // 官方描述
-            inputSchema: zodToJsonSchema(BochaWebSearchArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(BochaWebSearchArgsSchema)
           },
           {
             name: 'bocha_ai_search',
             description:
               'Search with Bocha AI Search, recognizes the semantics of search terms and additionally returns structured modal cards with content from vertical domains.', // 官方描述
-            inputSchema: zodToJsonSchema(BochaAiSearchArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(BochaAiSearchArgsSchema)
           }
         ]
       }

@@ -349,4 +349,8 @@ export class CodeFileAdapter extends BaseFileAdapter {
   ${content}
   \`\`\``
   }
+
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }

@@ -10,7 +10,10 @@ import {
   ISQLitePresenter,
   IConfigPresenter,
   ILlmProviderPresenter,
-  MCPToolResponse
+  MCPToolResponse,
+  ChatMessage,
+  ChatMessageContent,
+  LLMAgentEventData
 } from '../../../shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './messageManager'
@@ -21,15 +24,16 @@ import {
   AssistantMessageBlock,
   SearchEngineTemplate,
   UserMessage,
-  MessageFile
+  MessageFile,
+  UserMessageContent,
+  UserMessageTextBlock,
+  UserMessageMentionBlock
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
-import { getModelConfig } from '../llmProviderPresenter/modelConfigs'
 import { generateSearchPrompt, SearchManager } from './searchManager'
 import { getFileContext } from './fileContext'
 import { ContentEnricher } from './contentEnricher'
 import { CONVERSATION_EVENTS, STREAM_EVENTS } from '@/events'
-import { ChatMessage, ChatMessageContent } from '../llmProviderPresenter/baseProvider'
 import { DEFAULT_SETTINGS } from './const'
 
 interface GeneratingMessageState {
@@ -75,334 +79,363 @@ export class ThreadPresenter implements IThreadPresenter {
 
     // 初始化时处理所有未完成的消息
     this.messageManager.initializeUnfinishedMessages()
+  }
+  async handleLLMAgentError(msg: LLMAgentEventData) {
+    const { eventId, error } = msg
+    const state = this.generatingMessages.get(eventId)
+    if (state) {
+      await this.messageManager.handleMessageError(eventId, String(error))
+      this.generatingMessages.delete(eventId)
+    }
+    eventBus.emit(STREAM_EVENTS.ERROR, msg)
+  }
+  async handleLLMAgentEnd(msg: LLMAgentEventData) {
+    const { eventId, userStop } = msg
+    const state = this.generatingMessages.get(eventId)
+    if (state) {
+      state.message.content.forEach((block) => {
+        block.status = 'success'
+      })
+      // 计算completion tokens
+      let completionTokens = 0
+      if (state.totalUsage) {
+        completionTokens = state.totalUsage.completion_tokens
+      } else {
+        for (const block of state.message.content) {
+          if (
+            block.type === 'content' ||
+            block.type === 'reasoning_content' ||
+            block.type === 'tool_call'
+          ) {
+            completionTokens += approximateTokenSize(block.content)
+          }
+        }
+      }
 
-    eventBus.on(STREAM_EVENTS.RESPONSE, async (msg) => {
-      const {
-        eventId,
-        content,
-        reasoning_content,
-        tool_call_id,
-        tool_call_name,
-        tool_call_params,
-        tool_call_response,
-        maximum_tool_calls_reached,
-        tool_call_server_name,
-        tool_call_server_icons,
-        tool_call_server_description,
-        tool_call_response_raw,
-        tool_call,
-        totalUsage
-      } = msg
-      const state = this.generatingMessages.get(eventId)
-      if (state) {
-        // 记录第一个token的时间
-        if (state.firstTokenTime === null && (content || reasoning_content)) {
-          state.firstTokenTime = Date.now()
+      // 检查是否有内容块
+      const hasContentBlock = state.message.content.some(
+        (block) =>
+          block.type === 'content' ||
+          block.type === 'reasoning_content' ||
+          block.type === 'tool_call' ||
+          block.type === 'image'
+      )
+
+      // 如果没有内容块，添加错误信息
+      if (!hasContentBlock && !userStop) {
+        state.message.content.push({
+          type: 'error',
+          content: 'common.error.noModelResponse',
+          status: 'error',
+          timestamp: Date.now()
+        })
+      }
+
+      const totalTokens = state.promptTokens + completionTokens
+      const generationTime = Date.now() - (state.firstTokenTime ?? state.startTime)
+      const tokensPerSecond = completionTokens / (generationTime / 1000)
+
+      // 如果有reasoning_content，记录结束时间
+      const metadata: Partial<MESSAGE_METADATA> = {
+        totalTokens,
+        inputTokens: state.promptTokens,
+        outputTokens: completionTokens,
+        generationTime,
+        firstTokenTime: state.firstTokenTime ? state.firstTokenTime - state.startTime : 0,
+        tokensPerSecond
+      }
+
+      if (state.reasoningStartTime !== null && state.lastReasoningTime !== null) {
+        metadata.reasoningStartTime = state.reasoningStartTime - state.startTime
+        metadata.reasoningEndTime = state.lastReasoningTime - state.startTime
+      }
+
+      // 更新消息的usage信息
+      await this.messageManager.updateMessageMetadata(eventId, metadata)
+      await this.messageManager.updateMessageStatus(eventId, 'sent')
+      await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+      this.generatingMessages.delete(eventId)
+      this.sqlitePresenter
+        .updateConversation(state.conversationId, {
+          updatedAt: Date.now()
+        })
+        .then(() => {
+          console.log('updated conv time', state.conversationId)
+        })
+    }
+    eventBus.emit(STREAM_EVENTS.END, msg)
+  }
+  async handleLLMAgentResponse(msg: LLMAgentEventData) {
+    const {
+      eventId,
+      content,
+      reasoning_content,
+      tool_call_id,
+      tool_call_name,
+      tool_call_params,
+      tool_call_response,
+      maximum_tool_calls_reached,
+      tool_call_server_name,
+      tool_call_server_icons,
+      tool_call_server_description,
+      tool_call_response_raw,
+      tool_call,
+      totalUsage,
+      image_data
+    } = msg
+    const state = this.generatingMessages.get(eventId)
+    if (state) {
+      // 记录第一个token的时间
+      if (state.firstTokenTime === null && (content || reasoning_content)) {
+        state.firstTokenTime = Date.now()
+        await this.messageManager.updateMessageMetadata(eventId, {
+          firstTokenTime: Date.now() - state.startTime
+        })
+      }
+      if (totalUsage) {
+        state.totalUsage = totalUsage
+        state.promptTokens = totalUsage.prompt_tokens
+      }
+
+      // 处理工具调用达到最大次数的情况
+      if (maximum_tool_calls_reached) {
+        const lastBlock = state.message.content[state.message.content.length - 1]
+        if (lastBlock) {
+          lastBlock.status = 'success'
+        }
+        state.message.content.push({
+          type: 'action',
+          content: 'common.error.maximumToolCallsReached',
+          status: 'success',
+          timestamp: Date.now(),
+          action_type: 'maximum_tool_calls_reached',
+          tool_call: {
+            id: tool_call_id,
+            name: tool_call_name,
+            params: tool_call_params,
+            server_name: tool_call_server_name,
+            server_icons: tool_call_server_icons,
+            server_description: tool_call_server_description
+          },
+          extra: {
+            needContinue: true
+          }
+        })
+        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+        return
+      }
+
+      // 处理reasoning_content的时间戳
+      if (reasoning_content) {
+        if (state.reasoningStartTime === null) {
+          state.reasoningStartTime = Date.now()
           await this.messageManager.updateMessageMetadata(eventId, {
-            firstTokenTime: Date.now() - state.startTime
+            reasoningStartTime: Date.now() - state.startTime
           })
         }
-        if (totalUsage) {
-          state.totalUsage = totalUsage
-          state.promptTokens = totalUsage.prompt_tokens
-        }
+        state.lastReasoningTime = Date.now()
+      }
 
-        // 处理工具调用达到最大次数的情况
-        if (maximum_tool_calls_reached) {
-          const lastBlock = state.message.content[state.message.content.length - 1]
+      const lastBlock = state.message.content[state.message.content.length - 1]
+
+      // 检查tool_call_response_raw中是否包含搜索结果
+      if (tool_call_response_raw && tool_call === 'end') {
+        try {
+          // 检查返回的内容中是否有deepchat-webpage类型的资源
+          const hasSearchResults = tool_call_response_raw.content?.some(
+            (item: { type: string; resource?: { mimeType: string } }) =>
+              item?.type === 'resource' &&
+              item?.resource?.mimeType === 'application/deepchat-webpage'
+          )
+
+          if (hasSearchResults) {
+            // 解析搜索结果
+            const searchResults = tool_call_response_raw.content
+              .filter(
+                (item: {
+                  type: string
+                  resource?: { mimeType: string; text: string; uri?: string }
+                }) =>
+                  item.type === 'resource' &&
+                  item.resource?.mimeType === 'application/deepchat-webpage'
+              )
+              .map((item: { resource: { text: string; uri?: string } }) => {
+                try {
+                  const blobContent = JSON.parse(item.resource.text) as {
+                    title?: string
+                    url?: string
+                    content?: string
+                    icon?: string
+                  }
+                  return {
+                    title: blobContent.title || '',
+                    url: blobContent.url || item.resource.uri || '',
+                    content: blobContent.content || '',
+                    description: blobContent.content || '',
+                    icon: blobContent.icon || ''
+                  }
+                } catch (e) {
+                  console.error('解析搜索结果失败:', e)
+                  return null
+                }
+              })
+              .filter(Boolean)
+
+            if (searchResults.length > 0) {
+              // 检查是否已经存在搜索块
+              const existingSearchBlock =
+                state.message.content.length > 0 && state.message.content[0].type === 'search'
+                  ? state.message.content[0]
+                  : null
+
+              if (existingSearchBlock) {
+                // 如果已经存在搜索块，更新其状态和总数
+                existingSearchBlock.status = 'success'
+                existingSearchBlock.timestamp = Date.now()
+                if (existingSearchBlock.extra) {
+                  // 累加搜索结果数量
+                  existingSearchBlock.extra.total =
+                    (existingSearchBlock.extra.total || 0) + searchResults.length
+                } else {
+                  existingSearchBlock.extra = {
+                    total: searchResults.length
+                  }
+                }
+              } else {
+                // 如果不存在搜索块，创建新的并添加到内容的最前面
+                const searchBlock: AssistantMessageBlock = {
+                  type: 'search',
+                  content: '',
+                  status: 'success',
+                  timestamp: Date.now(),
+                  extra: {
+                    total: searchResults.length
+                  }
+                }
+                state.message.content.unshift(searchBlock)
+              }
+
+              // 保存搜索结果
+              for (const result of searchResults) {
+                await this.sqlitePresenter.addMessageAttachment(
+                  eventId,
+                  'search_result',
+                  JSON.stringify(result)
+                )
+              }
+
+              await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+            }
+          }
+        } catch (error) {
+          console.error('处理搜索结果时出错:', error)
+        }
+      }
+
+      // 处理工具调用
+      if (tool_call) {
+        if (tool_call === 'start') {
+          // 创建新的工具调用块
+          if (lastBlock) {
+            lastBlock.status = 'success'
+          }
+
+          state.message.content.push({
+            type: 'tool_call',
+            content: '',
+            status: 'loading',
+            timestamp: Date.now(),
+            tool_call: {
+              id: tool_call_id,
+              name: tool_call_name,
+              params: tool_call_params || '',
+              server_name: tool_call_server_name,
+              server_icons: tool_call_server_icons,
+              server_description: tool_call_server_description
+            }
+          })
+        } else if (tool_call === 'end' || tool_call === 'error') {
+          // 查找对应的工具调用块
+          const toolCallBlock = state.message.content.find(
+            (block) =>
+              block.type === 'tool_call' &&
+              ((tool_call_id && block.tool_call?.id === tool_call_id) ||
+                block.tool_call?.name === tool_call_name) &&
+              block.status === 'loading'
+          )
+
+          if (toolCallBlock && toolCallBlock.type === 'tool_call') {
+            if (tool_call === 'error') {
+              toolCallBlock.status = 'error'
+              if (toolCallBlock.tool_call) {
+                if (typeof tool_call_response === 'string') {
+                  toolCallBlock.tool_call.response = tool_call_response || '执行失败'
+                } else {
+                  toolCallBlock.tool_call.response = JSON.stringify(tool_call_response)
+                }
+              }
+            } else {
+              toolCallBlock.status = 'success'
+              if (toolCallBlock.tool_call) {
+                if (typeof tool_call_response === 'string') {
+                  toolCallBlock.tool_call.response = tool_call_response
+                } else {
+                  toolCallBlock.tool_call.response = JSON.stringify(tool_call_response)
+                }
+              }
+            }
+          }
+        }
+      } else if (image_data) {
+        // 处理图像数据
+        if (lastBlock) {
+          lastBlock.status = 'success'
+        }
+        state.message.content.push({
+          type: 'image',
+          content: 'image',
+          status: 'success',
+          timestamp: Date.now(),
+          image_data: image_data
+        })
+      } else if (content) {
+        // 处理普通内容
+        if (lastBlock && lastBlock.type === 'content') {
+          lastBlock.content += content
+        } else {
           if (lastBlock) {
             lastBlock.status = 'success'
           }
           state.message.content.push({
-            type: 'action',
-            content: 'common.error.maximumToolCallsReached',
-            status: 'success',
-            timestamp: Date.now(),
-            action_type: 'maximum_tool_calls_reached',
-            tool_call: {
-              id: tool_call_id,
-              name: tool_call_name,
-              params: tool_call_params,
-              server_name: tool_call_server_name,
-              server_icons: tool_call_server_icons,
-              server_description: tool_call_server_description
-            },
-            extra: {
-              needContinue: true
-            }
-          })
-          await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-          return
-        }
-
-        // 处理reasoning_content的时间戳
-        if (reasoning_content) {
-          if (state.reasoningStartTime === null) {
-            state.reasoningStartTime = Date.now()
-            await this.messageManager.updateMessageMetadata(eventId, {
-              reasoningStartTime: Date.now() - state.startTime
-            })
-          }
-          state.lastReasoningTime = Date.now()
-        }
-
-        const lastBlock = state.message.content[state.message.content.length - 1]
-
-        // 检查tool_call_response_raw中是否包含搜索结果
-        if (tool_call_response_raw && tool_call === 'end') {
-          try {
-            // 检查返回的内容中是否有deepchat-webpage类型的资源
-            const hasSearchResults = tool_call_response_raw.content?.some(
-              (item: { type: string; resource?: { mimeType: string } }) =>
-                item?.type === 'resource' &&
-                item?.resource?.mimeType === 'application/deepchat-webpage'
-            )
-
-            if (hasSearchResults) {
-              // 解析搜索结果
-              const searchResults = tool_call_response_raw.content
-                .filter(
-                  (item: {
-                    type: string
-                    resource?: { mimeType: string; text: string; uri?: string }
-                  }) =>
-                    item.type === 'resource' &&
-                    item.resource?.mimeType === 'application/deepchat-webpage'
-                )
-                .map((item: { resource: { text: string; uri?: string } }) => {
-                  try {
-                    const blobContent = JSON.parse(item.resource.text) as {
-                      title?: string
-                      url?: string
-                      content?: string
-                      icon?: string
-                    }
-                    return {
-                      title: blobContent.title || '',
-                      url: blobContent.url || item.resource.uri || '',
-                      content: blobContent.content || '',
-                      description: blobContent.content || '',
-                      icon: blobContent.icon || ''
-                    }
-                  } catch (e) {
-                    console.error('解析搜索结果失败:', e)
-                    return null
-                  }
-                })
-                .filter(Boolean)
-
-              if (searchResults.length > 0) {
-                // 检查是否已经存在搜索块
-                const existingSearchBlock =
-                  state.message.content.length > 0 && state.message.content[0].type === 'search'
-                    ? state.message.content[0]
-                    : null
-
-                if (existingSearchBlock) {
-                  // 如果已经存在搜索块，更新其状态和总数
-                  existingSearchBlock.status = 'success'
-                  existingSearchBlock.timestamp = Date.now()
-                  if (existingSearchBlock.extra) {
-                    // 累加搜索结果数量
-                    existingSearchBlock.extra.total =
-                      (existingSearchBlock.extra.total || 0) + searchResults.length
-                  } else {
-                    existingSearchBlock.extra = {
-                      total: searchResults.length
-                    }
-                  }
-                } else {
-                  // 如果不存在搜索块，创建新的并添加到内容的最前面
-                  const searchBlock: AssistantMessageBlock = {
-                    type: 'search',
-                    content: '',
-                    status: 'success',
-                    timestamp: Date.now(),
-                    extra: {
-                      total: searchResults.length
-                    }
-                  }
-                  state.message.content.unshift(searchBlock)
-                }
-
-                // 保存搜索结果
-                for (const result of searchResults) {
-                  await this.sqlitePresenter.addMessageAttachment(
-                    eventId,
-                    'search_result',
-                    JSON.stringify(result)
-                  )
-                }
-
-                await this.messageManager.editMessage(
-                  eventId,
-                  JSON.stringify(state.message.content)
-                )
-              }
-            }
-          } catch (error) {
-            console.error('处理搜索结果时出错:', error)
-          }
-        }
-
-        // 处理工具调用
-        if (tool_call) {
-          if (tool_call === 'start') {
-            // 创建新的工具调用块
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
-
-            state.message.content.push({
-              type: 'tool_call',
-              content: '',
-              status: 'loading',
-              timestamp: Date.now(),
-              tool_call: {
-                id: tool_call_id,
-                name: tool_call_name,
-                params: tool_call_params || '',
-                server_name: tool_call_server_name,
-                server_icons: tool_call_server_icons,
-                server_description: tool_call_server_description
-              }
-            })
-          } else if (tool_call === 'end' || tool_call === 'error') {
-            // 查找对应的工具调用块
-            const toolCallBlock = state.message.content.find(
-              (block) =>
-                block.type === 'tool_call' &&
-                ((tool_call_id && block.tool_call?.id === tool_call_id) ||
-                  block.tool_call?.name === tool_call_name) &&
-                block.status === 'loading'
-            )
-
-            if (toolCallBlock && toolCallBlock.type === 'tool_call') {
-              if (tool_call === 'error') {
-                toolCallBlock.status = 'error'
-                toolCallBlock.tool_call.response = tool_call_response || '执行失败'
-              } else {
-                toolCallBlock.status = 'success'
-                if (tool_call_response) {
-                  toolCallBlock.tool_call.response = tool_call_response
-                }
-              }
-            }
-          }
-        } else if (content) {
-          // 处理普通内容
-          if (lastBlock && lastBlock.type === 'content') {
-            lastBlock.content += content
-          } else {
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
-            state.message.content.push({
-              type: 'content',
-              content: content,
-              status: 'loading',
-              timestamp: Date.now()
-            })
-          }
-        }
-
-        // 处理推理内容
-        if (reasoning_content) {
-          if (lastBlock && lastBlock.type === 'reasoning_content') {
-            lastBlock.content += reasoning_content
-          } else {
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
-            state.message.content.push({
-              type: 'reasoning_content',
-              content: reasoning_content,
-              status: 'loading',
-              timestamp: Date.now()
-            })
-          }
-        }
-
-        // 更新消息内容
-        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-      }
-    })
-    eventBus.on(STREAM_EVENTS.END, async (msg) => {
-      const { eventId, userStop } = msg
-      const state = this.generatingMessages.get(eventId)
-      if (state) {
-        state.message.content.forEach((block) => {
-          block.status = 'success'
-        })
-        // 计算completion tokens
-        let completionTokens = 0
-        if (state.totalUsage) {
-          completionTokens = state.totalUsage.completion_tokens
-        } else {
-          for (const block of state.message.content) {
-            if (
-              block.type === 'content' ||
-              block.type === 'reasoning_content' ||
-              block.type === 'tool_call'
-            ) {
-              completionTokens += approximateTokenSize(block.content)
-            }
-          }
-        }
-
-        // 检查是否有内容块
-        const hasContentBlock = state.message.content.some(
-          (block) =>
-            block.type === 'content' ||
-            block.type === 'reasoning_content' ||
-            block.type === 'tool_call'
-        )
-
-        // 如果没有内容块，添加错误信息
-        if (!hasContentBlock && !userStop) {
-          state.message.content.push({
-            type: 'error',
-            content: 'common.error.noModelResponse',
-            status: 'error',
+            type: 'content',
+            content: content,
+            status: 'loading',
             timestamp: Date.now()
           })
         }
-
-        const totalTokens = state.promptTokens + completionTokens
-        const generationTime = Date.now() - (state.firstTokenTime ?? state.startTime)
-        const tokensPerSecond = completionTokens / (generationTime / 1000)
-
-        // 如果有reasoning_content，记录结束时间
-        const metadata: Partial<MESSAGE_METADATA> = {
-          totalTokens,
-          inputTokens: state.promptTokens,
-          outputTokens: completionTokens,
-          generationTime,
-          firstTokenTime: state.firstTokenTime ? state.firstTokenTime - state.startTime : 0,
-          tokensPerSecond
-        }
-
-        if (state.reasoningStartTime !== null && state.lastReasoningTime !== null) {
-          metadata.reasoningStartTime = state.reasoningStartTime - state.startTime
-          metadata.reasoningEndTime = state.lastReasoningTime - state.startTime
-        }
-
-        // 更新消息的usage信息
-        await this.messageManager.updateMessageMetadata(eventId, metadata)
-
-        await this.messageManager.updateMessageStatus(eventId, 'sent')
-        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-        this.generatingMessages.delete(eventId)
       }
-    })
-    eventBus.on(STREAM_EVENTS.ERROR, async (msg) => {
-      const { eventId, error } = msg
-      const state = this.generatingMessages.get(eventId)
-      if (state) {
-        await this.messageManager.handleMessageError(eventId, String(error))
-        this.generatingMessages.delete(eventId)
+
+      // 处理推理内容
+      if (reasoning_content) {
+        if (lastBlock && lastBlock.type === 'reasoning_content') {
+          lastBlock.content += reasoning_content
+        } else {
+          if (lastBlock) {
+            lastBlock.status = 'success'
+          }
+          state.message.content.push({
+            type: 'reasoning_content',
+            content: reasoning_content,
+            status: 'loading',
+            timestamp: Date.now()
+          })
+        }
       }
-    })
+
+      // 更新消息内容
+      await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+    }
+    eventBus.emit(STREAM_EVENTS.RESPONSE, msg)
   }
 
   setSearchAssistantModel(model: MODEL_META, providerId: string) {
@@ -471,7 +504,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
     })
     const mergedSettings = { ...defaultSettings, ...settings }
-    const defaultModelsSettings = getModelConfig(mergedSettings.modelId)
+    const defaultModelsSettings = this.configPresenter.getModelConfig(mergedSettings.modelId)
     if (defaultModelsSettings) {
       mergedSettings.maxTokens = defaultModelsSettings.maxTokens
       mergedSettings.contextLength = defaultModelsSettings.contextLength
@@ -508,6 +541,10 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversation(conversationId)
   }
 
+  async toggleConversationPinned(conversationId: string, pinned: boolean): Promise<void> {
+    await this.sqlitePresenter.updateConversation(conversationId, { is_pinned: pinned ? 1 : 0 })
+  }
+
   async updateConversationTitle(conversationId: string, title: string): Promise<void> {
     await this.sqlitePresenter.updateConversation(conversationId, { title })
   }
@@ -527,7 +564,10 @@ export class ThreadPresenter implements IThreadPresenter {
     // 检查是否有 modelId 的变化
     if (settings.modelId && settings.modelId !== conversation.settings.modelId) {
       // 获取模型配置
-      const modelConfig = getModelConfig(mergedSettings.modelId)
+      const modelConfig = this.configPresenter.getModelConfig(
+        mergedSettings.modelId,
+        mergedSettings.providerId
+      )
       console.log('check model default config', modelConfig)
       if (modelConfig) {
         // 如果当前设置小于推荐值，则使用推荐值
@@ -585,7 +625,42 @@ export class ThreadPresenter implements IThreadPresenter {
       messages.shift()
     }
 
-    return messages
+    return messages.map((msg) => {
+      if (msg.role === 'user') {
+        const newMsg = { ...msg }
+        const msgContent = newMsg.content as UserMessageContent
+        if (msgContent.content) {
+          ;(newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
+            msgContent.content
+          )
+        }
+        return newMsg
+      } else {
+        return msg
+      }
+    })
+  }
+
+  private formatUserMessageContent(
+    msgContentBlock: (UserMessageTextBlock | UserMessageMentionBlock)[]
+  ) {
+    return msgContentBlock
+      .map((block) => {
+        if (block.type === 'mention') {
+          if (block.category === 'resources') {
+            return `@${block.content}`
+          } else if (block.category === 'tools') {
+            return `@${block.id}`
+          } else if (block.category === 'files') {
+            return `@${block.id}`
+          }
+          return `@${block.id}`
+        } else if (block.type === 'text') {
+          return block.content
+        }
+        return ''
+      })
+      .join('')
   }
 
   async clearContext(conversationId: string): Promise<void> {
@@ -748,21 +823,16 @@ export class ThreadPresenter implements IThreadPresenter {
     searchEngine: string
   ): Promise<string> {
     const rewritePrompt = `
-    你是一个搜索优化专家。基于以下内容，生成一个优化的搜索查询：
+    你非常擅长于使用搜索引擎去获取最新的数据,你的目标是在充分理解用户的问题后，进行全面的网络搜索搜集必要的信息，首先你要提取并优化搜索的查询内容
 
-    当前时间：${new Date().toISOString()}
-    搜索引擎：${searchEngine}
+    现在时间：${new Date().toISOString()}
+    正在使用的搜索引擎：${searchEngine}
 
     请遵循以下规则重写搜索查询：
     1. 根据用户的问题和上下文，重写应该进行搜索的关键词
     2. 如果需要使用时间，则根据当前时间给出需要查询的具体时间日期信息
-    3. 编程相关查询：
-        - 加上编程语言或框架名称
-        - 指定错误代码或具体版本号
-    4. 保持查询简洁，通常不超过3个关键词, 最多不要超过5个关键词，参考当前搜索引擎的查询习惯书写关键字
-    5. 默认保留用户的问题的语言，如果用户的问题是中文，则返回中文，如果用户的问题是英文，则返回英文，其他语言也一样
-    6. 如果用户的问题是关于某个具体的问题，则直接返回用户的问题，不要进行任何重写
-    7. 如果是你不了解的搜索引擎, 则直接返回用户的问题
+    3. 生成的查询关键词要选择合适的语言，考虑用户的问题类型使用最适合的语言进行搜索，例如某些问题应该保持用户的问题语言，而有一些则更适合翻译成英语或其他语言
+    4. 保持查询简洁，通常不超过3个关键词, 最多不要超过5个关键词，参考当前搜索引擎的查询习惯重写关键字
 
     直接返回优化后的搜索词，不要有任何额外说明。
     如下是之前对话的上下文：
@@ -855,10 +925,12 @@ export class ThreadPresenter implements IThreadPresenter {
       const formattedContext = contextMessages
         .map((msg) => {
           if (msg.role === 'user') {
-            return `user: ${msg.content.text}${getFileContext(msg.content.files)}`
+            const content = msg.content as UserMessageContent
+            return `user: ${content.text}${getFileContext(content.files)}`
           } else if (msg.role === 'assistant') {
             let finanContent = 'assistant: '
-            msg.content.forEach((block) => {
+            const content = msg.content as AssistantMessageBlock[]
+            content.forEach((block) => {
               if (block.type === 'content') {
                 finanContent += block.content + '\n'
               }
@@ -867,6 +939,9 @@ export class ThreadPresenter implements IThreadPresenter {
               }
               if (block.type === 'tool_call') {
                 finanContent += `tool_call: ${JSON.stringify(block.tool_call)}`
+              }
+              if (block.type === 'image') {
+                finanContent += `image: ${block.image_data?.data}`
               }
             })
             return finanContent
@@ -975,7 +1050,6 @@ export class ThreadPresenter implements IThreadPresenter {
       console.warn('未找到状态，conversationId:', conversationId)
       return
     }
-
     try {
       // 设置消息未取消
       state.isCancelled = false
@@ -987,21 +1061,22 @@ export class ThreadPresenter implements IThreadPresenter {
       )
 
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
-      const modelConfig = getModelConfig(modelId)
+      const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
       const { vision } = modelConfig || {}
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
 
       // 2. 处理用户消息内容
-      const { userContent, urlResults, imageFiles } =
-        await this.processUserMessageContent(userMessage)
+      const { userContent, urlResults, imageFiles } = await this.processUserMessageContent(
+        userMessage as UserMessage
+      )
 
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
 
       // 3. 处理搜索（如果需要）
       let searchResults: SearchResult[] | null = null
-      if (userMessage.content.search) {
+      if ((userMessage.content as UserMessageContent).search) {
         try {
           searchResults = await this.startStreamSearch(
             conversationId,
@@ -1031,6 +1106,7 @@ export class ThreadPresenter implements IThreadPresenter {
         searchResults,
         urlResults,
         userMessage,
+        vision,
         vision ? imageFiles : []
       )
 
@@ -1045,7 +1121,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 6. 启动流式生成
 
-      await this.llmProviderPresenter.startStreamCompletion(
+      const stream = this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
         modelId,
@@ -1053,6 +1129,16 @@ export class ThreadPresenter implements IThreadPresenter {
         temperature,
         maxTokens
       )
+      for await (const event of stream) {
+        const msg = event.data
+        if (event.type === 'response') {
+          await this.handleLLMAgentResponse(msg)
+        } else if (event.type === 'error') {
+          await this.handleLLMAgentError(msg)
+        } else if (event.type === 'end') {
+          await this.handleLLMAgentEnd(msg)
+        }
+      }
     } catch (error) {
       // 检查是否是取消错误
       if (String(error).includes('userCanceledGeneration')) {
@@ -1083,7 +1169,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 2. 解析最后一个 action block
-      const content: AssistantMessageBlock[] = queryMessage.content
+      const content = queryMessage.content as AssistantMessageBlock[]
       const lastActionBlock = content.filter((block) => block.type === 'action').pop()
 
       if (!lastActionBlock || lastActionBlock.type !== 'action') {
@@ -1145,6 +1231,7 @@ export class ThreadPresenter implements IThreadPresenter {
         null, // 不进行搜索
         [], // 没有 URL 结果
         userMessage,
+        false,
         [] // 没有图片文件
       )
 
@@ -1184,7 +1271,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 10. 启动流式生成
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
-      await this.llmProviderPresenter.startStreamCompletion(
+      const stream = this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
         modelId,
@@ -1192,6 +1279,16 @@ export class ThreadPresenter implements IThreadPresenter {
         temperature,
         maxTokens
       )
+      for await (const event of stream) {
+        const msg = event.data
+        if (event.type === 'response') {
+          await this.handleLLMAgentResponse(msg)
+        } else if (event.type === 'error') {
+          await this.handleLLMAgentError(msg)
+        } else if (event.type === 'end') {
+          await this.handleLLMAgentEnd(msg)
+        }
+      }
     } catch (error) {
       // 检查是否是取消错误
       if (String(error).includes('userCanceledGeneration')) {
@@ -1249,10 +1346,10 @@ export class ThreadPresenter implements IThreadPresenter {
       contextMessages = await this.getContextMessages(conversationId)
     }
     // 任何情况都使用最新配置
-    const webSearchEnabled = this.configPresenter.getSetting('input_webSearch')
-    const thinkEnabled = this.configPresenter.getSetting('input_deepThinking')
-    userMessage.content.search = webSearchEnabled
-    userMessage.content.think = thinkEnabled
+    const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
+    const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
+    ;(userMessage.content as UserMessageContent).search = webSearchEnabled
+    ;(userMessage.content as UserMessageContent).think = thinkEnabled
     return { conversation, userMessage, contextMessages }
   }
 
@@ -1293,6 +1390,7 @@ export class ThreadPresenter implements IThreadPresenter {
     searchResults: SearchResult[] | null,
     urlResults: SearchResult[],
     userMessage: Message,
+    vision: boolean,
     imageFiles: MessageFile[]
   ): {
     finalContent: ChatMessage[]
@@ -1330,7 +1428,8 @@ export class ThreadPresenter implements IThreadPresenter {
       searchPrompt,
       userContent,
       enrichedUserMessage,
-      imageFiles
+      imageFiles,
+      vision
     )
 
     // 合并连续的相同角色消息
@@ -1343,11 +1442,11 @@ export class ThreadPresenter implements IThreadPresenter {
         promptTokens += approximateTokenSize(msg.content)
       } else {
         promptTokens +=
-          approximateTokenSize(msg.content.map((item) => item.text).join('')) +
+          approximateTokenSize(msg.content?.map((item) => item.text).join('') || '') +
           imageFiles.reduce((acc, file) => acc + file.token, 0)
       }
     }
-    console.log('preparePromptContent', mergedMessages, promptTokens)
+    // console.log('preparePromptContent', mergedMessages, promptTokens)
 
     return { finalContent: mergedMessages, promptTokens }
   }
@@ -1370,7 +1469,7 @@ export class ThreadPresenter implements IThreadPresenter {
     for (const msg of messages) {
       const msgTokens = approximateTokenSize(
         msg.role === 'user'
-          ? `${msg.content.text}${getFileContext(msg.content.files)}`
+          ? `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
           : JSON.stringify(msg.content)
       )
 
@@ -1393,7 +1492,8 @@ export class ThreadPresenter implements IThreadPresenter {
     searchPrompt: string,
     userContent: string,
     enrichedUserMessage: string,
-    imageFiles: MessageFile[]
+    imageFiles: MessageFile[],
+    vision: boolean
   ): ChatMessage[] {
     const formattedMessages: ChatMessage[] = []
 
@@ -1408,7 +1508,7 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     // 添加上下文消息
-    formattedMessages.push(...this.addContextMessages(formattedMessages, contextMessages))
+    formattedMessages.push(...this.addContextMessages(formattedMessages, contextMessages, vision))
 
     // 添加当前用户消息
     let finalContent = searchPrompt || userContent
@@ -1424,8 +1524,8 @@ export class ThreadPresenter implements IThreadPresenter {
       // })
       console.log('artifacts目前由mcp提供，此处为兼容性保留')
     }
-
-    if (imageFiles.length > 0) {
+    // 没有 vision 就不用塞进去了
+    if (vision && imageFiles.length > 0) {
       formattedMessages.push(this.addImageFiles(finalContent, imageFiles))
     } else {
       formattedMessages.push({
@@ -1453,27 +1553,77 @@ export class ThreadPresenter implements IThreadPresenter {
   // 添加上下文消息
   private addContextMessages(
     formattedMessages: ChatMessage[],
-    contextMessages: Message[]
+    contextMessages: Message[],
+    vision: boolean
   ): ChatMessage[] {
     const resultMessages = [...formattedMessages]
+
     contextMessages.forEach((msg) => {
-      const content =
-        msg.role === 'user'
-          ? `${msg.content.text}${getFileContext(msg.content.files)}`
-          : msg.content
-              .filter((block) => block.type === 'content' || block.type === 'tool_call')
-              .map((block) => block.content)
-              .join('\n')
+      if (msg.role === 'user') {
+        // 处理用户消息
+        const userContent = `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+        resultMessages.push({
+          role: 'user',
+          content: userContent
+        })
+      } else if (msg.role === 'assistant') {
+        // 处理助手消息
+        const assistantBlocks = msg.content as AssistantMessageBlock[]
 
-      if (msg.role === 'assistant' && !content) {
-        return // 如果是assistant且content为空，则不加入
+        // 提取文本内容块
+        const textContent = assistantBlocks
+          .filter((block) => block.type === 'content' || block.type === 'tool_call')
+          .map((block) => block.content)
+          .join('\n')
+        // 查找图像块
+        const imageBlocks = assistantBlocks.filter(
+          (block) => block.type === 'image' && block.image_data
+        )
+
+        // 如果没有任何内容，则跳过此消息
+        if (!textContent && imageBlocks.length === 0) {
+          return
+        }
+
+        // 如果有图像，则使用复合内容格式
+        if (vision && imageBlocks.length > 0) {
+          const content: ChatMessageContent[] = []
+
+          // 添加图像内容
+          imageBlocks.forEach((block) => {
+            if (block.image_data) {
+              content.push({
+                type: 'image_url',
+                image_url: {
+                  url: block.image_data.data,
+                  detail: 'auto'
+                }
+              })
+            }
+          })
+
+          // 添加文本内容
+          if (textContent) {
+            content.push({
+              type: 'text',
+              text: textContent
+            })
+          }
+
+          resultMessages.push({
+            role: 'assistant',
+            content: content
+          })
+        } else {
+          // 仅有文本内容
+          resultMessages.push({
+            role: 'assistant',
+            content: textContent
+          })
+        }
       }
-
-      resultMessages.push({
-        role: msg.role as 'user' | 'assistant',
-        content
-      })
     })
+
     return resultMessages
   }
 
@@ -1488,8 +1638,8 @@ export class ThreadPresenter implements IThreadPresenter {
         mergedMessages[mergedMessages.length - 1].role === currentMessage.role
       ) {
         mergedMessages[mergedMessages.length - 1].content = this.mergeMessageContent(
-          currentMessage.content,
-          mergedMessages[mergedMessages.length - 1].content
+          currentMessage.content || '',
+          mergedMessages[mergedMessages.length - 1].content || ''
         )
       } else {
         mergedMessages.push({ ...currentMessage })
@@ -1610,7 +1760,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
     // 初始化生成状态
     this.generatingMessages.set(assistantMessage.id, {
-      message: assistantMessage,
+      message: assistantMessage as AssistantMessage,
       conversationId: message.conversationId,
       startTime: Date.now(),
       firstTokenTime: null,
@@ -1620,7 +1770,7 @@ export class ThreadPresenter implements IThreadPresenter {
       lastReasoningTime: null
     })
 
-    return assistantMessage
+    return assistantMessage as AssistantMessage
   }
 
   async getMessageVariants(messageId: string): Promise<Message[]> {
@@ -1729,14 +1879,16 @@ export class ThreadPresenter implements IThreadPresenter {
         if (msg.role === 'user') {
           return {
             message: msg,
-            length: `${msg.content.text}${getFileContext(msg.content.files)}`.length,
+            length:
+              `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+                .length,
             formattedMessage: {
               role: 'user' as const,
-              content: `${msg.content.text}${getFileContext(msg.content.files)}`
+              content: `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
             }
           }
         } else {
-          const content = msg.content
+          const content = (msg.content as AssistantMessageBlock[])
             .filter((block) => block.type === 'content')
             .map((block) => block.content)
             .join('\n')
@@ -1884,7 +2036,6 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 5. 触发会话创建事件
-      eventBus.emit(CONVERSATION_EVENTS.CREATED, { conversationId: newConversationId })
 
       return newConversationId
     } catch (error) {

@@ -10,16 +10,15 @@
     />
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
-      <!-- 消息内容 -->
       <div
         v-if="currentContent.length === 0"
         class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
       >
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
-        正在思考...
+        {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
-        <div v-for="block in currentContent" :key="block.id" class="w-full">
+        <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
           <MessageBlockContent
             v-if="block.type === 'content'"
             :block="block"
@@ -49,8 +48,14 @@
             :conversation-id="currentThreadId"
             :block="block"
           />
+          <MessageBlockImage
+            v-else-if="block.type === 'image'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
-        </div>
+        </template>
       </div>
       <MessageToolbar
         :loading="message.status === 'pending'"
@@ -93,7 +98,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, useTemplateRef } from 'vue'
-import { AssistantMessage } from '@shared/chat'
+import { AssistantMessage, AssistantMessageBlock } from '@shared/chat'
 import MessageBlockContent from './MessageBlockContent.vue'
 import MessageBlockThink from './MessageBlockThink.vue'
 import MessageBlockSearch from './MessageBlockSearch.vue'
@@ -105,10 +110,10 @@ import { useChatStore } from '@/stores/chat'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
 import { toCanvas } from 'html-to-image'
-import { useDark } from '@vueuse/core'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
 import { addWatermark } from '@/lib/watermark'
+import MessageBlockImage from './MessageBlockImage.vue'
 
 import {
   Dialog,
@@ -127,9 +132,9 @@ const appVersion = ref('')
 
 const props = defineProps<{
   message: AssistantMessage
+  isDark: boolean
 }>()
 
-const isDark = useDark()
 const chatStore = useChatStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
@@ -158,11 +163,11 @@ const totalVariants = computed(() => allVariants.value.length + 1)
 // 获取当前显示的内容
 const currentContent = computed(() => {
   if (currentVariantIndex.value === 0) {
-    return props.message.content
+    return props.message.content as AssistantMessageBlock[]
   }
 
   const variant = allVariants.value[currentVariantIndex.value - 1]
-  return variant?.content || props.message.content
+  return (variant?.content || props.message.content) as AssistantMessageBlock[]
 })
 
 // 监听变体变化
@@ -249,13 +254,13 @@ const handleAction = (
   } else if (action === 'copyImage') {
     if (messageNode.value) {
       toCanvas(messageNode.value, {
-        backgroundColor: isDark.value ? '#000000' : '#FFFFFF',
+        backgroundColor: props.isDark ? '#000000' : '#FFFFFF',
         filter: filterDom
       }).then((canvas) => {
         // 添加水印
         const canvasWithWatermark = addWatermark(
           canvas,
-          isDark.value,
+          props.isDark,
           appVersion.value, // 添加版本号水印
           t
         )

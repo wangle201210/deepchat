@@ -67,6 +67,15 @@ const router = createRouter({
           }
         },
         {
+          path: 'knowledge-base',
+          name: 'settings-knowledge-base',
+          component: () => import('@/components/settings/KnowledgeBaseSettings.vue'),
+          meta: {
+            titleKey: 'routes.settings-knowledge-base',
+            icon: 'lucide:book-marked'
+          }
+        },
+        {
           path: 'database',
           name: 'settings-database',
           component: () => import('@/components/settings/DataSettings.vue'),

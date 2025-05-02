@@ -43,6 +43,26 @@ export class ImageFileAdapter extends BaseFileAdapter {
     }
   }
 
+  public async getThumbnail(): Promise<string | undefined> {
+    // 压缩图片并转换为JPG格式
+    const compressedImage = await sharp(this.filePath)
+      .resize(256, 256, {
+        // 限制最大尺寸
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({
+        // 统一转换为JPG
+        quality: 70, // 压缩质量
+        mozjpeg: true // 使用mozjpeg优化
+      })
+
+    const buffer = await compressedImage.toBuffer()
+
+    const base64ImageString = buffer.toString('base64')
+    return `data:image/jpeg;base64,${base64ImageString}`
+  }
+
   public async getLLMContent(): Promise<string | undefined> {
     const stats = await fs.stat(this.filePath)
     if (stats.size > this.maxFileSize) {

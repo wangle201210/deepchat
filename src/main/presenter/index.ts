@@ -15,6 +15,7 @@ import { FilePresenter } from './filePresenter/FilePresenter'
 import { McpPresenter } from './mcpPresenter'
 import { SyncPresenter } from './syncPresenter'
 import { DeeplinkPresenter } from './deeplinkPresenter'
+import { NotificationPresenter } from './notifactionPresenter'
 import {
   CONFIG_EVENTS,
   CONVERSATION_EVENTS,
@@ -25,9 +26,47 @@ import {
   MCP_EVENTS,
   SYNC_EVENTS,
   DEEPLINK_EVENTS,
-  NOTIFICATION_EVENTS
+  NOTIFICATION_EVENTS,
+  SHORTCUT_EVENTS
 } from '@/events'
 
+// --- 所有需要通过 forward 函数处理的事件列表 ---
+const eventsToForward: string[] = [
+  CONFIG_EVENTS.PROVIDER_CHANGED,
+  STREAM_EVENTS.RESPONSE,
+  STREAM_EVENTS.END,
+  STREAM_EVENTS.ERROR,
+  CONVERSATION_EVENTS.ACTIVATED,
+  CONVERSATION_EVENTS.DEACTIVATED,
+  CONFIG_EVENTS.MODEL_LIST_CHANGED,
+  CONFIG_EVENTS.MODEL_STATUS_CHANGED,
+  UPDATE_EVENTS.STATUS_CHANGED,
+  UPDATE_EVENTS.PROGRESS,
+  UPDATE_EVENTS.WILL_RESTART,
+  UPDATE_EVENTS.ERROR,
+  CONVERSATION_EVENTS.MESSAGE_EDITED,
+  MCP_EVENTS.SERVER_STARTED,
+  MCP_EVENTS.SERVER_STOPPED,
+  MCP_EVENTS.CONFIG_CHANGED,
+  MCP_EVENTS.TOOL_CALL_RESULT,
+  OLLAMA_EVENTS.PULL_MODEL_PROGRESS,
+  SYNC_EVENTS.BACKUP_STARTED,
+  SYNC_EVENTS.BACKUP_COMPLETED,
+  SYNC_EVENTS.BACKUP_ERROR,
+  SYNC_EVENTS.IMPORT_STARTED,
+  SYNC_EVENTS.IMPORT_COMPLETED,
+  SYNC_EVENTS.IMPORT_ERROR,
+  DEEPLINK_EVENTS.START,
+  DEEPLINK_EVENTS.MCP_INSTALL,
+  NOTIFICATION_EVENTS.SHOW_ERROR,
+  NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED,
+  SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
+  SHORTCUT_EVENTS.GO_SETTINGS,
+  SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
+  SHORTCUT_EVENTS.ZOOM_IN,
+  SHORTCUT_EVENTS.ZOOM_OUT,
+  SHORTCUT_EVENTS.ZOOM_RESUME
+]
 export class Presenter implements IPresenter {
   windowPresenter: WindowPresenter
   sqlitePresenter: SQLitePresenter
@@ -41,6 +80,7 @@ export class Presenter implements IPresenter {
   mcpPresenter: McpPresenter
   syncPresenter: SyncPresenter
   deeplinkPresenter: DeeplinkPresenter
+  notificationPresenter: NotificationPresenter
   // llamaCppPresenter: LlamaCppPresenter
 
   constructor() {
@@ -59,156 +99,60 @@ export class Presenter implements IPresenter {
     )
     this.mcpPresenter = new McpPresenter(this.configPresenter)
     this.upgradePresenter = new UpgradePresenter()
-    this.shortcutPresenter = new ShortcutPresenter(this.windowPresenter, this.configPresenter)
+    this.shortcutPresenter = new ShortcutPresenter()
     this.filePresenter = new FilePresenter()
     this.syncPresenter = new SyncPresenter(this.configPresenter, this.sqlitePresenter)
     this.deeplinkPresenter = new DeeplinkPresenter()
+    this.notificationPresenter = new NotificationPresenter()
     // this.llamaCppPresenter = new LlamaCppPresenter()
     this.setupEventBus()
   }
 
   setupEventBus() {
-    // 窗口事件
+    // --- 事件转发辅助函数（包含特定逻辑处理） ---
+    const forward = (eventName: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      eventBus.on(eventName, (...payload: any[]) => {
+        const mainWindow = this.windowPresenter.mainWindow
+        if (!mainWindow) return // 窗口不存在则不处理
+        // 根据事件名称处理特定逻辑
+        if (eventName === STREAM_EVENTS.RESPONSE) {
+          const [msg] = payload
+          const dataToRender = { ...msg }
+          delete dataToRender.tool_call_response_raw // 删除原始数据
+          mainWindow.webContents.send(eventName, dataToRender)
+        } else if (eventName === STREAM_EVENTS.END) {
+          const [msg] = payload
+          console.log('stream-end', msg.eventId)
+          mainWindow.webContents.send(eventName, msg)
+        } else if (eventName === CONFIG_EVENTS.PROVIDER_CHANGED) {
+          const providers = this.configPresenter.getProviders()
+          this.llmproviderPresenter.setProviders(providers)
+          mainWindow.webContents.send(eventName) // 此事件转发无需 payload
+        } else if (
+          eventName === UPDATE_EVENTS.STATUS_CHANGED ||
+          eventName === UPDATE_EVENTS.PROGRESS ||
+          eventName === UPDATE_EVENTS.WILL_RESTART ||
+          eventName === UPDATE_EVENTS.ERROR ||
+          eventName === DEEPLINK_EVENTS.START
+        ) {
+          const [msg] = payload
+          console.log(eventName, msg) // 记录日志
+          mainWindow.webContents.send(eventName, msg)
+        } else {
+          // 默认处理：直接转发所有 payload
+          mainWindow.webContents.send(eventName, ...payload)
+        }
+      })
+    }
+
+    // --- 真正需要特殊处理的事件 ---
     eventBus.on(WINDOW_EVENTS.READY_TO_SHOW, () => {
       this.init()
     })
 
-    // 配置相关事件
-    eventBus.on(CONFIG_EVENTS.PROVIDER_CHANGED, () => {
-      const providers = this.configPresenter.getProviders()
-      this.llmproviderPresenter.setProviders(providers)
-      this.windowPresenter.mainWindow?.webContents.send(CONFIG_EVENTS.PROVIDER_CHANGED)
-    })
-
-    // 流式响应事件
-    eventBus.on(STREAM_EVENTS.RESPONSE, (msg) => {
-      const dataToRender = { ...msg }
-      delete dataToRender.tool_call_response_raw // 删除 rawData 字段,此处不需要上发给 renderer，节约性能
-      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.RESPONSE, dataToRender)
-    })
-
-    eventBus.on(STREAM_EVENTS.END, (msg) => {
-      console.log('stream-end', msg.eventId)
-      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.END, msg)
-    })
-
-    eventBus.on(STREAM_EVENTS.ERROR, (msg) => {
-      this.windowPresenter.mainWindow?.webContents.send(STREAM_EVENTS.ERROR, msg)
-    })
-
-    // 会话相关事件
-    eventBus.on(CONVERSATION_EVENTS.ACTIVATED, (msg) => {
-      this.windowPresenter.mainWindow?.webContents.send(CONVERSATION_EVENTS.ACTIVATED, msg)
-    })
-
-    eventBus.on(CONVERSATION_EVENTS.DEACTIVATED, (msg) => {
-      this.windowPresenter.mainWindow?.webContents.send(CONVERSATION_EVENTS.DEACTIVATED, msg)
-    })
-
-    // 处理从ConfigPresenter过来的模型列表更新事件
-    eventBus.on(CONFIG_EVENTS.MODEL_LIST_CHANGED, (providerId: string) => {
-      // 转发事件到渲染进程
-      this.windowPresenter.mainWindow?.webContents.send(
-        CONFIG_EVENTS.MODEL_LIST_CHANGED,
-        providerId
-      )
-    })
-
-    eventBus.on(
-      CONFIG_EVENTS.MODEL_STATUS_CHANGED,
-      (providerId: string, modelId: string, enabled: boolean) => {
-        this.windowPresenter.mainWindow?.webContents.send(CONFIG_EVENTS.MODEL_STATUS_CHANGED, {
-          providerId,
-          modelId,
-          enabled
-        })
-      }
-    )
-
-    // 更新相关事件
-    eventBus.on(UPDATE_EVENTS.STATUS_CHANGED, (msg) => {
-      console.log(UPDATE_EVENTS.STATUS_CHANGED, msg)
-      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.STATUS_CHANGED, msg)
-    })
-
-    eventBus.on(UPDATE_EVENTS.PROGRESS, (msg) => {
-      console.log(UPDATE_EVENTS.PROGRESS, msg)
-      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.PROGRESS, msg)
-    })
-
-    eventBus.on(UPDATE_EVENTS.WILL_RESTART, (msg) => {
-      console.log(UPDATE_EVENTS.WILL_RESTART, msg)
-      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.WILL_RESTART, msg)
-    })
-
-    eventBus.on(UPDATE_EVENTS.ERROR, (msg) => {
-      console.log(UPDATE_EVENTS.ERROR, msg)
-      this.windowPresenter.mainWindow?.webContents.send(UPDATE_EVENTS.ERROR, msg)
-    })
-
-    // 消息编辑事件
-    eventBus.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (msgId: string) => {
-      this.windowPresenter.mainWindow?.webContents.send(CONVERSATION_EVENTS.MESSAGE_EDITED, msgId)
-    })
-
-    // MCP 相关事件
-    eventBus.on(MCP_EVENTS.SERVER_STARTED, (serverName) => {
-      this.windowPresenter.mainWindow?.webContents.send(MCP_EVENTS.SERVER_STARTED, serverName)
-    })
-
-    eventBus.on(MCP_EVENTS.SERVER_STOPPED, (serverName) => {
-      this.windowPresenter.mainWindow?.webContents.send(MCP_EVENTS.SERVER_STOPPED, serverName)
-    })
-
-    eventBus.on(MCP_EVENTS.CONFIG_CHANGED, (config) => {
-      this.windowPresenter.mainWindow?.webContents.send(MCP_EVENTS.CONFIG_CHANGED, config)
-    })
-
-    eventBus.on(MCP_EVENTS.TOOL_CALL_RESULT, (result) => {
-      this.windowPresenter.mainWindow?.webContents.send(MCP_EVENTS.TOOL_CALL_RESULT, result)
-    })
-
-    // Ollama 相关事件
-    eventBus.on(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, (progress) => {
-      this.windowPresenter.mainWindow?.webContents.send(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, progress)
-    })
-
-    // 同步相关事件
-    eventBus.on(SYNC_EVENTS.BACKUP_STARTED, () => {
-      this.windowPresenter.mainWindow?.webContents.send(SYNC_EVENTS.BACKUP_STARTED)
-    })
-
-    eventBus.on(SYNC_EVENTS.BACKUP_COMPLETED, (time) => {
-      this.windowPresenter.mainWindow?.webContents.send(SYNC_EVENTS.BACKUP_COMPLETED, time)
-    })
-
-    eventBus.on(SYNC_EVENTS.BACKUP_ERROR, (error) => {
-      this.windowPresenter.mainWindow?.webContents.send(SYNC_EVENTS.BACKUP_ERROR, error)
-    })
-
-    eventBus.on(SYNC_EVENTS.IMPORT_STARTED, () => {
-      this.windowPresenter.mainWindow?.webContents.send(SYNC_EVENTS.IMPORT_STARTED)
-    })
-
-    eventBus.on(SYNC_EVENTS.IMPORT_COMPLETED, () => {
-      this.windowPresenter.mainWindow?.webContents.send(SYNC_EVENTS.IMPORT_COMPLETED)
-    })
-
-    eventBus.on(SYNC_EVENTS.IMPORT_ERROR, (error) => {
-      this.windowPresenter.mainWindow?.webContents.send(SYNC_EVENTS.IMPORT_ERROR, error)
-    })
-
-    // DeepLink 相关事件
-    eventBus.on(DEEPLINK_EVENTS.START, (msg) => {
-      console.log('DEEPLINK_EVENTS.START', msg)
-      this.windowPresenter.mainWindow?.webContents.send(DEEPLINK_EVENTS.START, msg)
-    })
-    eventBus.on(DEEPLINK_EVENTS.MCP_INSTALL, (mcpConfig) => {
-      this.windowPresenter.mainWindow?.webContents.send(DEEPLINK_EVENTS.MCP_INSTALL, mcpConfig)
-    })
-    eventBus.on(NOTIFICATION_EVENTS.SHOW_ERROR, (error) => {
-      this.windowPresenter.mainWindow?.webContents.send(NOTIFICATION_EVENTS.SHOW_ERROR, error)
-    })
+    // 统一注册事件
+    eventsToForward.forEach(forward)
   }
 
   init() {
@@ -246,6 +190,7 @@ export class Presenter implements IPresenter {
     this.sqlitePresenter.close()
     this.shortcutPresenter.destroy()
     this.syncPresenter.destroy()
+    this.notificationPresenter.clearAllNotifications()
   }
 }
 

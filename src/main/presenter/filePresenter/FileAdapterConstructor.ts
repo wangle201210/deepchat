@@ -6,6 +6,8 @@ import { TextFileAdapter } from './TextFileAdapter'
 import { DocFileAdapter } from './DocFileAdapter'
 import { PptFileAdapter } from './PptFileAdapter'
 import { CodeFileAdapter } from './CodeFileAdapter'
+import { AudioFileAdapter } from './AudioFileAdapter'
+import { UnsupportFileAdapter } from './UnsupportFileAdapter'
 
 export type FileAdapterConstructor = new (
   filePath: string,
@@ -19,3 +21,5 @@ export type FileAdapterConstructor = new (
   | DocFileAdapter
   | PptFileAdapter
   | CodeFileAdapter
+  | AudioFileAdapter
+  | UnsupportFileAdapter

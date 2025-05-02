@@ -11,7 +11,7 @@ interface MCPInstallConfig {
     {
       command?: string
       args?: string[]
-      env?: Record<string, string>
+      env?: Record<string, string> | string
       descriptions?: string
       icons?: string
       autoApprove?: string[]
@@ -250,7 +250,15 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
 
         // Merge configuration
         const finalConfig: MCPServerConfig = {
-          env: { ...defaultConfig.env, ...serverConfig.env },
+          env: {
+            ...(typeof defaultConfig.env === 'string'
+              ? JSON.parse(defaultConfig.env)
+              : defaultConfig.env),
+            ...(typeof serverConfig.env === 'string'
+              ? JSON.parse(serverConfig.env)
+              : serverConfig.env)
+          },
+          // env: { ...defaultConfig.env, ...serverConfig.env },
           descriptions: serverConfig.descriptions || defaultConfig.descriptions!,
           icons: serverConfig.icons || defaultConfig.icons!,
           autoApprove: serverConfig.autoApprove || defaultConfig.autoApprove!,

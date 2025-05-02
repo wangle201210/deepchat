@@ -8,7 +8,7 @@
     "searchEngine": "Поисковая система",
     "searchEngineSelect": "Выбрать поисковую систему",
     "searchPreview": "Предпросмотр поиска",
-    "searchAssistantModel": "Модель ассистента поиска",
+    "searchAssistantModel": "Помощник модели",
     "selectModel": "Выбрать модель",
     "proxyMode": "Режим прокси",
     "proxyModeSelect": "Выбрать режим прокси",
@@ -47,7 +47,9 @@
       "newChat": "Создать новый чат",
       "title": "Настройки клавиши ярлыка"
     },
-    "themeSelect": "Выберите тему"
+    "themeSelect": "Выберите тему",
+    "notifications": "Системное уведомление",
+    "notificationsDesc": "Когда DeepChat не будет на переднем плане, если сгенерируется сеанс, будет отправлено системное уведомление"
   },
   "data": {
     "title": "Настройки данных",
@@ -173,7 +175,40 @@
     "deleteModelConfirm": "Вы уверены, что хотите удалить модель \"{name}\"? Это действие нельзя отменить.",
     "noLocalModels": "Нет локальных моделей",
     "localModels": "Локальные модели",
-    "urlFormat": "Образец API: {defaultUrl}"
+    "urlFormat": "Образец API: {defaultUrl}",
+    "azureApiVersion": "Версия API",
+    "safety": {
+      "title": "Настройки безопасности"
+    }
+  },
+  "knowledgeBase": {
+    "title": "Настройки базы знаний",
+    "addKnowledgeBase": "Добавить базу знаний",
+    "selectKnowledgeBaseType": "Пожалуйста, выберите тип базы знаний для добавления",
+    "difyDescription": "База знаний Dify помогает управлять и использовать данные документов",
+    "comingSoon": "Скоро",
+    "featureNotAvailable": "Эта функция пока недоступна",
+    "addDifyConfig": "Добавить конфигурацию Dify",
+    "apiKey": "API ключ",
+    "datasetId": "ID набора данных",
+    "endpoint": "API эндпоинт",
+    "configAdded": "Конфигурация добавлена",
+    "configAddedDesc": "Конфигурация базы знаний Dify успешно добавлена",
+    "addConfig": "Добавить конфигурацию",
+    "moreComingSoon": "Больше типов баз знаний появится в ближайшее время",
+    "configUpdated": "Конфигурация обновлена",
+    "configUpdatedDesc": "Конфигурация базы знаний Dify успешно обновлена",
+    "descriptionPlaceholder": "Например: база знаний документации продуктов компании",
+    "ragflowTitle": "База знаний RAGFlow",
+    "ragflowDescription": "RAGFlow - это мощная система управления базами знаний, поддерживающая множество методов поиска и функций управления документами.",
+    "addRagflowConfig": "Добавить конфигурацию RAGFlow",
+    "editRagflowConfig": "Редактировать конфигурацию RAGFlow",
+    "dify": "База знаний DIFY",
+    "editDifyConfig": "Изменить конфигурацию DIFY",
+    "fastgptTitle": "База знаний FastGPT",
+    "fastgptDescription": "FastGPT - это мощная система управления базами знаний, поддерживающая несколько методов поиска и функции управления документами.",
+    "addFastGptConfig": "Добавить конфигурацию FastGPT",
+    "editFastGptConfig": "Редактировать конфигурацию FastGPT"
   },
   "mcp": {
     "title": "Настройки MCP",
@@ -183,7 +218,9 @@
     "enableToAccess": "Пожалуйста, включите MCP для доступа к настройкам",
     "tabs": {
       "servers": "Серверы",
-      "tools": "Инструменты"
+      "tools": "Инструменты",
+      "prompts": "Prompts",
+      "resources": "ресурс"
     },
     "serverList": "Список серверов",
     "addServer": "Добавить сервер",
@@ -252,7 +289,10 @@
       "imageModel": "Выберите визуальную модель",
       "customHeadersParseError": "Пользовательский диапазон заголовка не удалось",
       "customHeaders": "Пользовательский заголовок запроса",
-      "invalidKeyValueFormat": "Неправильный формат заголовка запроса, пожалуйста, проверьте, является ли вход правильным."
+      "invalidKeyValueFormat": "Неправильный формат заголовка запроса, пожалуйста, проверьте, является ли вход правильным.",
+      "npmRegistry": "Пользовательский реестр NPM",
+      "npmRegistryPlaceholder": "Установите пользовательский реестр NPM, оставьте систему, чтобы автоматически выбрать самый быстрый",
+      "browseHigress": "Посмотреть Higress MCP Marketplace"
     },
     "deleteServer": "Удалить сервер",
     "editServer": "Редактировать сервер",
@@ -283,7 +323,8 @@
     "builtInServerCannotBeRemoved": "Встроенные серверы нельзя удалить, можно изменять только параметры и переменные окружения",
     "marketplace": "Перейдите на MCP Market и установите его одним щелчком",
     "maxDefaultServersReached": "Только 3 сервера по умолчанию могут быть установлены по максимум",
-    "removeDefaultFirst": "Сначала удалите несколько серверов по умолчанию"
+    "removeDefaultFirst": "Сначала удалите несколько серверов по умолчанию",
+    "higressMarket": "Перейти к установке Higress MCP"
   },
   "about": {
     "title": "О нас",
@@ -299,5 +340,14 @@
     "text-lg": "по умолчанию",
     "text-sm": "Чрезвычайно маленький",
     "text-xl": "большой"
+  },
+  "shortcuts": {
+    "cleanHistory": "Четкая история чата",
+    "goSettings": "Откройте настройки",
+    "hideWindow": "Скрыть окно",
+    "quitApp": "Отказаться от приложения",
+    "zoomIn": "Увеличить",
+    "zoomOut": "Увеличить",
+    "zoomReset": "Сбросить Zoom"
   }
 }

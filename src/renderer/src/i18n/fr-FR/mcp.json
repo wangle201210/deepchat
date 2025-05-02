@@ -146,6 +146,26 @@
     "powerpack": {
       "desc": "Fournissez des capacités améliorées telles que la requête temporelle, l'acquisition d'informations Web et l'exécution de code sécurisé pour tout grand modèle, afin que le modèle ait des capacités d'acquisition d'informations plus puissantes et précises.",
       "name": "Boîte à outils d'amélioration"
+    },
+    "difyKnowledge": {
+      "name": "Recherche dans la base de connaissances Dify",
+      "desc": "Service de recherche de la base de connaissances Dify, permet de rechercher le contenu de la base de connaissances Dify"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "Aucune invite disponible",
+    "noDescription": "Aucune description encore",
+    "selectPrompt": "Montré ici",
+    "parameters": "Paramètres rapides",
+    "runningPrompt": "Invite obtient",
+    "executeButton": "Cliquez pour obtenir",
+    "resultTitle": "Des détails proches"
+  },
+  "resources": {
+    "noResourcesAvailable": "Aucune ressource",
+    "selectResource": "Afficher le contenu des ressources ici",
+    "loading": "chargement",
+    "loadContent": "Obtenez du contenu de ressources",
+    "pleaseSelect": "Cliquez pour obtenir des détails sur les ressources d'affichage"
   }
 }

@@ -4,6 +4,7 @@
   "paste": "붙여넣기",
   "copySuccess": "복사 완료!",
   "copyCode": "코드 복사",
+  "export": "내보내기",
   "newChat": "새 채팅",
   "newTopic": "새 주제",
   "cancel": "취소",
@@ -45,7 +46,7 @@
   "searchEngine": "검색 엔진",
   "searchEngineSelect": "검색 엔진 선택",
   "searchPreview": "검색 미리보기",
-  "searchAssistantModel": "검색 보조 모델",
+  "searchAssistantModel": "보조 모델",
   "selectModel": "모델 선택",
   "proxyMode": "프록시 모드",
   "proxyModeSelect": "프록시 모드 선택",
@@ -56,5 +57,8 @@
   "customProxyUrlPlaceholder": "예: http://127.0.0.1:7890",
   "invalidProxyUrl": "잘못된 프록시 URL, 유효한 http/https URL을 입력하세요",
   "languageSystem": "시스템을 따르십시오",
-  "watermarkTip": "AI 에서 생성됨"
+  "watermarkTip": "AI 에서 생성됨",
+  "collapse": "접기",
+  "expand": "펼치기",
+  "image": "그림"
 }

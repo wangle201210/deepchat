@@ -1,32 +1,28 @@
 <template>
-  <Dialog :open="settings.showUpdateDialog" @update:open="settings.closeUpdateDialog">
+  <Dialog :open="upgrade.showUpdateDialog" @update:open="upgrade.closeUpdateDialog">
     <DialogContent>
       <DialogHeader>
         <DialogTitle>{{ t('update.newVersion') }}</DialogTitle>
         <DialogDescription>
           <div class="space-y-2">
-            <p>{{ t('update.version') }}: {{ settings.updateInfo?.version }}</p>
-            <p>{{ t('update.releaseDate') }}: {{ settings.updateInfo?.releaseDate }}</p>
+            <p>{{ t('update.version') }}: {{ upgrade.updateInfo?.version }}</p>
+            <p>{{ t('update.releaseDate') }}: {{ upgrade.updateInfo?.releaseDate }}</p>
             <p>{{ t('update.releaseNotes') }}:</p>
             <p
               class="whitespace-pre-line"
-              v-html="renderMarkdown(getCommonMarkdown(), settings.updateInfo?.releaseNotes || '')"
+              v-html="renderMarkdown(getCommonMarkdown(), upgrade.updateInfo?.releaseNotes || '')"
             />
 
             <!-- 显示下载进度 -->
-            <div v-if="settings.isDownloading && settings.updateProgress" class="mt-4">
+            <div v-if="upgrade.isDownloading && upgrade.updateProgress" class="mt-4">
               <p class="mb-2">
-                {{ t('update.downloading') }}: {{ Math.round(settings.updateProgress.percent) }}%
+                {{ t('update.downloading') }}: {{ Math.round(upgrade.updateProgress.percent) }}%
               </p>
-              <progress
-                class="w-full"
-                :value="settings.updateProgress.percent"
-                max="100"
-              ></progress>
+              <progress class="w-full" :value="upgrade.updateProgress.percent" max="100"></progress>
               <p class="text-xs mt-1">
-                {{ formatSize(settings.updateProgress.transferred) }} /
-                {{ formatSize(settings.updateProgress.total) }}
-                ({{ formatSpeed(settings.updateProgress.bytesPerSecond) }})
+                {{ formatSize(upgrade.updateProgress.transferred) }} /
+                {{ formatSize(upgrade.updateProgress.total) }}
+                ({{ formatSpeed(upgrade.updateProgress.bytesPerSecond) }})
               </p>
             </div>
           </div>
@@ -35,23 +31,23 @@
       <DialogFooter>
         <Button
           variant="outline"
-          @click="settings.closeUpdateDialog"
-          :disabled="settings.isRestarting"
+          @click="upgrade.closeUpdateDialog"
+          :disabled="upgrade.isRestarting"
         >
           {{ t('update.later') }}
         </Button>
 
         <!-- 如果已下载完成，只显示"立即安装"按钮 -->
         <Button
-          v-if="settings.isReadyToInstall"
+          v-if="upgrade.isReadyToInstall"
           @click="handleUpdate('auto')"
-          :disabled="settings.isRestarting"
+          :disabled="upgrade.isRestarting"
         >
-          {{ settings.isRestarting ? t('update.restarting') : t('update.installNow') }}
+          {{ upgrade.isRestarting ? t('update.restarting') : t('update.installNow') }}
         </Button>
 
         <!-- 如果自动更新失败，显示手动下载按钮 -->
-        <template v-else-if="settings.updateError">
+        <template v-else-if="upgrade.updateError">
           <Button @click="handleUpdate('github')">
             {{ t('update.githubDownload') }}
           </Button>
@@ -75,14 +71,14 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { useSettingsStore } from '@/stores/settings'
+import { useUpgradeStore } from '@/stores/upgrade'
 import { renderMarkdown, getCommonMarkdown } from '@/lib/markdown.helper'
 
 const { t } = useI18n()
-const settings = useSettingsStore()
+const upgrade = useUpgradeStore()
 
 const handleUpdate = async (type: 'github' | 'netdisk' | 'auto') => {
-  await settings.handleUpdate(type)
+  await upgrade.handleUpdate(type)
 }
 
 // 格式化文件大小

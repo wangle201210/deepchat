@@ -8,7 +8,7 @@
     "searchEngine": "Moteur de recherche",
     "searchEngineSelect": "Sélectionner le moteur de recherche",
     "searchPreview": "Aperçu de la recherche",
-    "searchAssistantModel": "Modèle d'assistant de recherche",
+    "searchAssistantModel": "Modèle adjoint",
     "selectModel": "Sélectionner le modèle",
     "proxyMode": "Mode proxy",
     "proxyModeSelect": "Sélectionner le mode proxy",
@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "Créer une nouvelle conversation",
       "title": "Paramètres des raccourcis clavier"
-    }
+    },
+    "notifications": "Notification système",
+    "notificationsDesc": "Lorsque Deepchat n'est pas au premier plan, si une session est générée, une notification système sera envoyée"
   },
   "data": {
     "title": "Paramètres des données",
@@ -173,7 +175,40 @@
     "deleteModel": "Supprimer le modèle",
     "deleteModelConfirm": "Êtes-vous sûr de vouloir supprimer le modèle \"{name}\" ? Cette action ne peut pas être annulée.",
     "noLocalModels": "Aucun modèle local",
-    "localModels": "Modèles locaux"
+    "localModels": "Modèles locaux",
+    "azureApiVersion": "Version API",
+    "safety": {
+      "title": "Paramètres de sécurité"
+    }
+  },
+  "knowledgeBase": {
+    "title": "Paramètres de la base de connaissances",
+    "addKnowledgeBase": "Ajouter une base de connaissances",
+    "selectKnowledgeBaseType": "Veuillez sélectionner le type de base de connaissances à ajouter",
+    "difyDescription": "La base de connaissances Dify vous aide à gérer et utiliser les données documentaires",
+    "comingSoon": "Bientôt disponible",
+    "featureNotAvailable": "Cette fonctionnalité n'est pas encore disponible",
+    "addDifyConfig": "Ajouter une configuration Dify",
+    "apiKey": "Clé API",
+    "datasetId": "ID du jeu de données",
+    "endpoint": "Point de terminaison API",
+    "configAdded": "Configuration ajoutée",
+    "configAddedDesc": "La configuration de la base de connaissances Dify a été ajoutée avec succès",
+    "addConfig": "Ajouter une configuration",
+    "moreComingSoon": "Plus de types de bases de connaissances à venir",
+    "configUpdated": "Configuration mise à jour",
+    "configUpdatedDesc": "La configuration de la base de connaissances Dify a été mise à jour avec succès",
+    "descriptionPlaceholder": "Exemple : Base de connaissances des documents produits de l'entreprise",
+    "ragflowTitle": "Base de connaissances RAGFlow",
+    "ragflowDescription": "RAGFlow est un système puissant de gestion de base de connaissances qui prend en charge plusieurs méthodes de recherche et fonctionnalités de gestion de documents.",
+    "addRagflowConfig": "Ajouter une configuration RAGFlow",
+    "editRagflowConfig": "Modifier la configuration RAGFlow",
+    "dify": "Base de connaissances Dify",
+    "editDifyConfig": "Modifier la configuration dify",
+    "fastgptTitle": "Base de connaissances FastGPT",
+    "fastgptDescription": "FastGPT est un puissant système de gestion des connaissances prenant en charge plusieurs méthodes de recherche et des fonctionnalités de gestion de documents.",
+    "addFastGptConfig": "Ajouter la configuration FastGPT",
+    "editFastGptConfig": "Éditer la configuration FastGPT"
   },
   "mcp": {
     "title": "Paramètres MCP",
@@ -183,7 +218,9 @@
     "enableToAccess": "Veuillez activer MCP pour accéder aux options de configuration",
     "tabs": {
       "servers": "Serveurs",
-      "tools": "Outils"
+      "tools": "Outils",
+      "prompts": "Prompts",
+      "resources": "Resources"
     },
     "serverList": "Liste des serveurs",
     "addServer": "Ajouter un serveur",
@@ -252,7 +289,10 @@
       "imageModel": "Sélectionnez un modèle visuel",
       "customHeadersParseError": "L'analyse de l'en-tête personnalisée a échoué",
       "customHeaders": "En-tête de demande personnalisé",
-      "invalidKeyValueFormat": "Format d'en-tête de demande incorrect, veuillez vérifier si l'entrée est correcte."
+      "invalidKeyValueFormat": "Format d'en-tête de demande incorrect, veuillez vérifier si l'entrée est correcte.",
+      "npmRegistry": "Registre NPM personnalisé",
+      "npmRegistryPlaceholder": "Configurez un registre NPM personnalisé, laissez le système pour sélectionner automatiquement le plus rapide",
+      "browseHigress": "Voir Higress MCP Marketplace"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -283,7 +323,8 @@
     "setDefault": "Définir par défaut",
     "marketplace": "Allez sur MCP Market et installez-le en un seul clic",
     "maxDefaultServersReached": "Seuls 3 serveurs par défaut peuvent être définis au maximum",
-    "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut"
+    "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut",
+    "higressMarket": "Aller à l'installation de Higress MCP"
   },
   "about": {
     "checkUpdate": "Vérifier les mises à jour",
@@ -299,5 +340,14 @@
     "text-lg": "grand",
     "text-sm": "Petit",
     "text-xl": "Extrêmement grand"
+  },
+  "shortcuts": {
+    "cleanHistory": "Historique de chat clair",
+    "goSettings": "Paramètres ouvrir",
+    "hideWindow": "Cache-fenêtre",
+    "quitApp": "Quitter l'application",
+    "zoomIn": "Zoomer",
+    "zoomOut": "Zoom out",
+    "zoomReset": "Réinitialiser le zoom"
   }
 }

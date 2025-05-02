@@ -61,21 +61,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       defaultBaseUrl: 'https://api.siliconflow.cn/v1'
     }
   },
-  {
-    id: 'qwenlm',
-    name: 'QwenLM',
-    apiType: 'qwenlm',
-    apiKey: '',
-    baseUrl: 'https://chat.qwenlm.ai/api',
-    enable: false,
-    websites: {
-      official: 'https://chat.qwenlm.ai',
-      apiKey: 'https://chat.qwenlm.ai',
-      docs: 'https://chat.qwenlm.ai',
-      models: 'https://chat.qwenlm.ai',
-      defaultBaseUrl: 'https://chat.qwenlm.ai/api'
-    }
-  },
+  // {
+  //   id: 'qwenlm',
+  //   name: 'QwenLM',
+  //   apiType: 'qwenlm',
+  //   apiKey: '',
+  //   baseUrl: 'https://chat.qwenlm.ai/api',
+  //   enable: false,
+  //   websites: {
+  //     official: 'https://chat.qwenlm.ai',
+  //     apiKey: 'https://chat.qwenlm.ai',
+  //     docs: 'https://chat.qwenlm.ai',
+  //     models: 'https://chat.qwenlm.ai',
+  //     defaultBaseUrl: 'https://chat.qwenlm.ai/api'
+  //   }
+  // },
   {
     id: 'doubao',
     name: 'Doubao',
@@ -227,21 +227,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.lingyiwanwu.com'
   //   }
   // },
-  // {
-  //   id: 'zhipu',
-  //   name: 'Zhipu',
-  //   apiType: 'zhipu',
-  //   apiKey: '',
-  //   baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://open.bigmodel.cn/',
-  //     apiKey: 'https://open.bigmodel.cn/usercenter/apikeys',
-  //     docs: 'https://open.bigmodel.cn/dev/howuse/introduction',
-  //     models: 'https://open.bigmodel.cn/modelcenter/square',
-  //     defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4/'
-  //   }
-  // },
+  {
+    id: 'zhipu',
+    name: 'Zhipu',
+    apiType: 'zhipu',
+    apiKey: '',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
+    enable: false,
+    websites: {
+      official: 'https://open.bigmodel.cn/',
+      apiKey: 'https://open.bigmodel.cn/usercenter/apikeys',
+      docs: 'https://open.bigmodel.cn/dev/howuse/introduction',
+      models: 'https://open.bigmodel.cn/modelcenter/square',
+      defaultBaseUrl: 'https://open.bigmodel.cn/api/paas/v4/'
+    }
+  },
   {
     id: 'moonshot',
     name: 'Moonshot',
@@ -272,21 +272,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.baichuan-ai.com'
   //   }
   // },
-  // {
-  //   id: 'dashscope',
-  //   name: 'DashScope',
-  //   apiType: 'dashscope',
-  //   apiKey: '',
-  //   baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://www.aliyun.com/product/bailian',
-  //     apiKey: 'https://bailian.console.aliyun.com/?apiKey=1#/api-key',
-  //     docs: 'https://help.aliyun.com/zh/model-studio/getting-started/',
-  //     models: 'https://bailian.console.aliyun.com/model-market#/model-market',
-  //     defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/'
-  //   }
-  // },
+  {
+    id: 'dashscope',
+    name: 'DashScope',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/',
+    enable: false,
+    websites: {
+      official: 'https://www.aliyun.com/product/bailian',
+      apiKey: 'https://bailian.console.aliyun.com/?apiKey=1#/api-key',
+      docs: 'https://help.aliyun.com/zh/model-studio/getting-started/',
+      models: 'https://bailian.console.aliyun.com/model-market#/model-market',
+      defaultBaseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1/'
+    }
+  },
   // {
   //   id: 'stepfun',
   //   name: 'StepFun',
@@ -409,21 +409,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.jina.ai'
   //   }
   // },
-  // {
-  //   id: 'aihubmix',
-  //   name: 'AIHubMix',
-  //   apiType: 'aihubmix',
-  //   apiKey: '',
-  //   baseUrl: 'https://aihubmix.com?aff=SJyh',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://aihubmix.com?aff=SJyh',
-  //     apiKey: 'https://aihubmix.com?aff=SJyh',
-  //     docs: 'https://doc.aihubmix.com/',
-  //     models: 'https://aihubmix.com/models',
-  //     defaultBaseUrl: 'https://aihubmix.com?aff=SJyh'
-  //   }
-  // },
+  {
+    id: 'aihubmix',
+    name: 'AIHubMix',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://aihubmix.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://aihubmix.com',
+      apiKey: 'https://aihubmix.com/token',
+      docs: 'https://doc.aihubmix.com/',
+      models: 'https://docs.aihubmix.com/cn/api/Model-Information',
+      defaultBaseUrl: 'https://aihubmix.com/v1'
+    }
+  },
   // {
   //   id: 'fireworks',
   //   name: 'Fireworks',

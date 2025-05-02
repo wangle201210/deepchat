@@ -1,36 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import MarkdownIt from 'markdown-it'
 import mathjax3 from 'markdown-it-mathjax3'
-// export const initReference = ({
-//   onClick,
-//   onHover
-// }: {
-//   msgId: string;
-//   onClick: (id: string, rect: DOMRect) => void;
-//   onHover: (id: string, isHover: boolean, rect: DOMRect) => void;
-//   }) => {
-//   if (!(window as any).handleReferenceClick) {
-//         (window as any).handleReferenceClick = (id: string, event: MouseEvent) => {
-//           const rect = (event.target as HTMLElement).getBoundingClientRect();
-//           onClick(id, rect);
-//         };
-//   }
-//   if (!(window as any).handleReferenceHover) {
-//   (window as any).handleReferenceHover = (
-//     id: string,
-//     isHover: boolean,
-//     event: MouseEvent
-//   ) => {
-//     const rect = (event.target as HTMLElement).getBoundingClientRect();
-//       onHover(id, isHover, rect);
-//     };
-//   }
-// };
+import markdownItSub from 'markdown-it-sub'
+import markdownItSup from 'markdown-it-sup'
+import markdownItMark from 'markdown-it-mark'
+import { full as markdownItEmoji } from 'markdown-it-emoji'
+import markdownItIns from 'markdown-it-ins'
+import markdownItCheckbox from 'markdown-it-task-checkbox'
+import markdownItFootnote from 'markdown-it-footnote'
+import markdownItContainer from 'markdown-it-container'
 
-export const getMarkdown = (msgId: string, t: (key: string) => string) => {
+// Re-export the node types for backward compatibility
+export * from './markdown-parser/types'
+
+// Import the parser functions
+import { parseMarkdownToStructure, processTokens, parseInlineTokens } from './markdown-parser'
+
+// Re-export the parser functions
+export { parseMarkdownToStructure, processTokens, parseInlineTokens }
+
+export const getMarkdown = () => {
   // import footnote from 'markdown-it-footnote'
   // Create markdown-it instance with configuration
-  console.log('getmarkdown', msgId)
   const md = new MarkdownIt({
     html: true,
     linkify: true,
@@ -38,15 +29,29 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
     breaks: false
   })
 
+  // Apply additional plugins
+  md.use(markdownItSub) // H~2~O -> subscript
+  md.use(markdownItSup) // 2^10 -> superscript
+  md.use(markdownItMark) // ==marked== -> highlighted text
+  md.use(markdownItEmoji) // :smile: -> emoji
+  md.use(markdownItCheckbox) // [ ] and [x] -> checkboxes
+  md.use(markdownItIns) // ++inserted++ -> inserted text
+  md.use(markdownItFootnote) // 添加脚注支持
+
+  // 添加警告块支持
+  const containers = ['note', 'tip', 'warning', 'danger', 'info', 'caution']
+  containers.forEach((name) => {
+    md.use(markdownItContainer, name)
+  })
+
   // Custom math inline rule
   const mathInline = (state: any, silent: boolean) => {
-    const delimiters: [string, string, boolean][] = [
-      ['\\(', '\\)', true],
-      ['\\[', '\\]', false],
-      ['$$', '$$', true]
+    const delimiters: [string, string][] = [
+      ['\\(', '\\)'],
+      ['$$', '$$']
     ]
 
-    for (const [open, close, isInline] of delimiters) {
+    for (const [open, close] of delimiters) {
       const start = state.pos
       if (state.src.slice(start, start + open.length) !== open) continue
 
@@ -54,9 +59,9 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
       if (end === -1) continue
 
       if (!silent) {
-        const token = state.push(isInline ? 'math_inline' : 'math_block', 'math', 0)
+        const token = state.push('math_inline', 'math', 0)
         token.content = state.src.slice(start + open.length, end)
-        token.markup = isInline ? '\\(\\)' : open === '$$' ? '$$' : '\\[\\]'
+        token.markup = open === '$$' ? '$$' : '\\(\\)'
       }
 
       state.pos = end + close.length
@@ -65,8 +70,77 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
     return false
   }
 
+  // Custom math block rule
+  const mathBlock = (state: any, startLine: number, endLine: number, silent: boolean) => {
+    const delimiters: [string, string][] = [
+      ['\\[', '\\]'],
+      ['$$', '$$']
+    ]
+
+    // Check for math block at the current position
+    const startPos = state.bMarks[startLine] + state.tShift[startLine]
+    const lineText = state.src.slice(startPos, state.eMarks[startLine])
+
+    let matched = false
+    let openDelim = '',
+      closeDelim = ''
+
+    for (const [open, close] of delimiters) {
+      if (lineText.startsWith(open)) {
+        matched = true
+        openDelim = open
+        closeDelim = close
+        break
+      }
+    }
+
+    if (!matched) return false
+
+    // Skip if in silent mode
+    if (silent) return true
+
+    // Find the closing delimiter
+    let nextLine = startLine
+    let content = ''
+    let found = false
+
+    for (nextLine = startLine + 1; nextLine < endLine; nextLine++) {
+      const lineStart = state.bMarks[nextLine] + state.tShift[nextLine]
+      const lineEnd = state.eMarks[nextLine]
+      const currentLine = state.src.slice(lineStart, lineEnd)
+
+      // Check if this line has the closing delimiter
+      if (currentLine.includes(closeDelim)) {
+        found = true
+        content += state.src.slice(
+          state.bMarks[nextLine] + state.tShift[nextLine],
+          state.src.indexOf(closeDelim, state.bMarks[nextLine])
+        )
+        break
+      }
+
+      content += currentLine + '\n'
+    }
+
+    if (!found) return false
+
+    // Create the token
+    const token = state.push('math_block', 'math', 0)
+    token.content = content.trim()
+    token.markup = openDelim === '$$' ? '$$' : '\\[\\]'
+    token.map = [startLine, nextLine + 1]
+    token.block = true
+
+    // Update parser position
+    state.line = nextLine + 1
+    return true
+  }
+
   // Register custom rules
   md.inline.ruler.before('escape', 'math', mathInline)
+  md.block.ruler.before('code', 'math_block', mathBlock, {
+    alt: ['paragraph', 'reference', 'blockquote']
+  })
 
   // Add rendering rules
   md.renderer.rules.math_inline = (tokens, idx) => tokens[idx].content
@@ -92,38 +166,38 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
   md.options.highlight = null
 
   // Custom code block rendering
-  md.renderer.rules.fence = (tokens, idx) => {
-    const token = tokens[idx]
-    const info = token.info ? token.info.trim() : ''
-    const str = token.content
-    const encodedCode = btoa(unescape(encodeURIComponent(str)))
-    const language = info || 'text'
-    const uniqueId = `editor-${msgId}-${idx}-${language}`
+  // md.renderer.rules.fence = (tokens, idx) => {
+  //   const token = tokens[idx]
+  //   const info = token.info ? token.info.trim() : ''
+  //   const str = token.content
+  //   const encodedCode = btoa(unescape(encodeURIComponent(str)))
+  //   const language = info || 'text'
+  //   const uniqueId = `editor-${msgId}-${idx}-${language}`
 
-    return `<div class="code-block" data-code="${encodedCode}" data-lang="${language}" id="${uniqueId}">
-      <div class="code-header">
-        <span class="code-lang">${language.toUpperCase()}</span>
-        <button class="copy-button" data-code="${encodedCode}">${t('common.copyCode')}</button>
-      </div>
-      <div class="code-editor"></div>
-    </div>`
-  }
+  //   return `<div class="code-block" data-code="${encodedCode}" data-lang="${language}" id="${uniqueId}">
+  //     <div class="code-header">
+  //       <span class="code-lang">${language.toUpperCase()}</span>
+  //       <button class="copy-button" data-code="${encodedCode}">${t('common.copyCode')}</button>
+  //     </div>
+  //     <div class="code-editor"></div>
+  //   </div>`
+  // }
 
-  // Custom image rendering
-  // const defaultImageRenderer = md.renderer.rules.image; // Keep the default renderer if needed later
-  md.renderer.rules.image = (tokens, idx /*, options, env, self */) => {
-    const token = tokens[idx]
-    const src = token.attrGet('src')
-    const alt = token.content
-    const title = token.attrGet('title')
+  // // Custom image rendering
+  // // const defaultImageRenderer = md.renderer.rules.image; // Keep the default renderer if needed later
+  // md.renderer.rules.image = (tokens, idx /*, options, env, self */) => {
+  //   const token = tokens[idx]
+  //   const src = token.attrGet('src')
+  //   const alt = token.content
+  //   const title = token.attrGet('title')
 
-    // Add the max-width style
-    let attrs = token.attrs ? token.attrs.map(([key, value]) => `${key}="${value}"`).join(' ') : ''
-    // Prepend the style attribute
-    attrs = `style="max-width: 400px;" ${attrs}`.trim()
+  //   // Add the max-width style
+  //   let attrs = token.attrs ? token.attrs.map(([key, value]) => `${key}="${value}"`).join(' ') : ''
+  //   // Prepend the style attribute
+  //   attrs = `style="max-width: 400px;" ${attrs}`.trim()
 
-    return `<img src="${src || ''}" alt="${alt}" ${title ? `title="${title}"` : ''} ${attrs} />`
-  }
+  //   return `<img src="${src || ''}" alt="${alt}" ${title ? `title="${title}"` : ''} ${attrs} />`
+  // }
 
   // Custom reference inline rule
   const referenceInline = (state: any, silent: boolean) => {
@@ -144,14 +218,14 @@ export const getMarkdown = (msgId: string, t: (key: string) => string) => {
   }
 
   // Add rendering rule for references
-  md.renderer.rules.reference = (tokens, idx) => {
-    const id = tokens[idx].content
-    return `<span class="reference-link"
-    data-reference-id="${id}"
-    role="button"
-    tabindex="0"
-    title="Click to view reference">${id}</span>`
-  }
+  // md.renderer.rules.reference = (tokens, idx) => {
+  //   const id = tokens[idx].content
+  //   return `<span class="reference-link"
+  //   data-reference-id="${id}"
+  //   role="button"
+  //   tabindex="0"
+  //   title="Click to view reference">${id}</span>`
+  // }
 
   // Register custom rule
   md.inline.ruler.before('escape', 'reference', referenceInline)
@@ -165,6 +239,7 @@ export const getCommonMarkdown = () => {
     typographer: true,
     breaks: false
   })
+
   return md
 }
 

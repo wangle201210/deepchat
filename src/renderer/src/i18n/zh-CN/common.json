@@ -4,6 +4,7 @@
   "paste": "粘贴",
   "copySuccess": "已复制!",
   "copyCode": "复制代码",
+  "export": "导出",
   "newChat": "新会话",
   "newTopic": "新话题",
   "cancel": "取消",
@@ -12,6 +13,7 @@
   "disabled": "已禁用",
   "disclaimer": "免责声明",
   "close": "关闭",
+  "image": "图片",
   "error": {
     "requestFailed": "请求失败...",
     "createChatFailed": "创建会话失败",
@@ -45,7 +47,7 @@
   "searchEngine": "搜索引擎",
   "searchEngineSelect": "选择搜索引擎",
   "searchPreview": "搜索预览",
-  "searchAssistantModel": "搜索助手模型",
+  "searchAssistantModel": "助手模型",
   "selectModel": "选择模型",
   "proxyMode": "代理模式",
   "proxyModeSelect": "选择代理模式",
@@ -56,5 +58,7 @@
   "customProxyUrlPlaceholder": "例如: http://127.0.0.1:7890",
   "invalidProxyUrl": "无效的代理地址，请输入有效的 http/https URL",
   "languageSystem": "跟随系统",
-  "watermarkTip": "AI生成内容，请谨慎参考"
+  "watermarkTip": "AI生成内容，请谨慎参考",
+  "collapse": "收起",
+  "expand": "展开"
 }

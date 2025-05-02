@@ -11,7 +11,7 @@
     </Transition>
 
     <!-- 主聊天区域 -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col w-0">
       <!-- 新会话 -->
       <NewThread v-if="!chatStore.activeThreadId" />
       <template v-else>

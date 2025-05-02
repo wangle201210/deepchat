@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "메시지를 입력하세요...",
+    "placeholder": "뭔가 물어?",
     "fileArea": "파일 영역",
     "inputArea": "입력 영역",
     "functionSwitch": "기능 전환",
@@ -21,5 +21,12 @@
     "optimizing": "검색 의도 추출 중...",
     "reading": "웹 페이지 검색 중...",
     "error": "검색 실패"
+  },
+  "messages": {
+    "thinking": "생각..."
+  },
+  "notify": {
+    "generationComplete": "세대가 완료되었습니다",
+    "generationError": "세대가 실패했습니다"
   }
 }

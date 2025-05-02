@@ -4,6 +4,7 @@
   "paste": "貼上",
   "copySuccess": "已複製！",
   "copyCode": "複製程式碼",
+  "export": "匯出",
   "newChat": "新對話",
   "newTopic": "新主題",
   "cancel": "取消",
@@ -45,7 +46,7 @@
   "searchEngine": "搜尋引擎",
   "searchEngineSelect": "選擇搜尋引擎",
   "searchPreview": "搜尋預覽",
-  "searchAssistantModel": "搜尋助理模型",
+  "searchAssistantModel": "助手模型",
   "selectModel": "選擇模型",
   "proxyMode": "代理伺服器模式",
   "proxyModeSelect": "選擇代理伺服器模式",
@@ -56,5 +57,8 @@
   "customProxyUrlPlaceholder": "例如：http://127.0.0.1:7890",
   "invalidProxyUrl": "無效的代理伺服器位址，請輸入有效的 http/https URL",
   "languageSystem": "跟隨系統",
-  "watermarkTip": "AI生成內容，請謹慎參考"
+  "watermarkTip": "AI生成內容，請謹慎參考",
+  "collapse": "收起",
+  "expand": "展開",
+  "image": "圖片"
 }
