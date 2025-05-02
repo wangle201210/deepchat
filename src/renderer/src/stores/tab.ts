@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
+import { usePresenter } from '@/composables/usePresenter'
 
 export const useTabStore = defineStore('tab', () => {
+  const tabPresenter = usePresenter('tabPresenter')
   const tabs = ref<
     {
       id: string
@@ -11,16 +13,20 @@ export const useTabStore = defineStore('tab', () => {
       closable: boolean
       order: number
       viewType: string
-      viewId: string
+      viewId: number | null
     }[]
   >([])
 
   const currentTabId = ref<string>('')
 
-  const addTab = (tab: { name: string; icon: string; viewType: string }) => {
+  const addTab = async (tab: { name: string; icon: string; viewType: string }) => {
     // if (tabs.value.find((t) => t.viewType === tab.viewType)) {
     //   return
     // }
+    const windowId = window.api.getWindowId()
+    console.log('windowId', windowId)
+    const viewId = await tabPresenter.createTab(windowId ?? 1, `local://${tab.viewType}`)
+    console.log('viewId', viewId)
     const newTab = {
       id: uuidv4(),
       name: tab.name,
@@ -28,32 +34,45 @@ export const useTabStore = defineStore('tab', () => {
       closable: true,
       order: tabs.value.length,
       viewType: tab.viewType,
-      viewId: ''
+      viewId: viewId ?? null
     }
     tabs.value.push(newTab)
     setCurrentTabId(newTab.id)
     return newTab
   }
 
-  const removeTab = (id: string) => {
+  const removeTab = async (id: string) => {
+    await tabPresenter.closeTab(tabs.value.find((tab) => tab.id === id)?.viewId ?? 0)
     tabs.value = tabs.value.filter((tab) => tab.id !== id)
   }
 
-  const setCurrentTabId = (id: string) => {
+  const setCurrentTabId = async (id: string) => {
+    await tabPresenter.switchTab(tabs.value.find((tab) => tab.id === id)?.viewId ?? 0)
     currentTabId.value = id
   }
 
-  tabs.value.push({
-    id: uuidv4(),
-    name: 'New Tab',
-    icon: 'asset://logo.png',
-    closable: false,
-    order: tabs.value.length,
-    viewType: 'chat',
-    viewId: ''
-  })
+  const init = async () => {
+    const windowId = window.api.getWindowId()
+    const tabsData = await tabPresenter.getWindowTabsData(windowId ?? 1)
+    console.log('tabsData', tabsData)
+    if (tabsData.length <= 0) {
+      await addTab({
+        name: 'New Tab',
+        icon: 'lucide:plus',
+        viewType: 'chat'
+      })
+    }
+  }
 
-  setCurrentTabId(tabs.value[0].id)
+  init()
+
+  // addTab({
+  //   name: 'New Tab',
+  //   icon: 'lucide:plus',
+  //   viewType: 'chat'
+  // })
+
+  // setCurrentTabId(tabs.value[0].id)
 
   return {
     tabs,

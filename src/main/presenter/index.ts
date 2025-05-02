@@ -16,6 +16,7 @@ import { McpPresenter } from './mcpPresenter'
 import { SyncPresenter } from './syncPresenter'
 import { DeeplinkPresenter } from './deeplinkPresenter'
 import { NotificationPresenter } from './notifactionPresenter'
+import { TabPresenter } from './tabPresenter'
 import {
   CONFIG_EVENTS,
   CONVERSATION_EVENTS,
@@ -81,11 +82,13 @@ export class Presenter implements IPresenter {
   syncPresenter: SyncPresenter
   deeplinkPresenter: DeeplinkPresenter
   notificationPresenter: NotificationPresenter
+  tabPresenter: TabPresenter
   // llamaCppPresenter: LlamaCppPresenter
 
   constructor() {
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
+    this.tabPresenter = new TabPresenter()
     this.llmproviderPresenter = new LLMProviderPresenter(this.configPresenter)
     this.devicePresenter = new DevicePresenter()
     // 初始化 SQLite 数据库
@@ -104,6 +107,7 @@ export class Presenter implements IPresenter {
     this.syncPresenter = new SyncPresenter(this.configPresenter, this.sqlitePresenter)
     this.deeplinkPresenter = new DeeplinkPresenter()
     this.notificationPresenter = new NotificationPresenter()
+
     // this.llamaCppPresenter = new LlamaCppPresenter()
     this.setupEventBus()
   }

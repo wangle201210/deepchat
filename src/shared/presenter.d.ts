@@ -89,6 +89,24 @@ export interface IWindowPresenter {
   isMainWindowFocused(): boolean
 }
 
+export interface ITabPresenter {
+  createTab(windowId: number, url: string, options?: TabCreateOptions): Promise<number | null>
+  closeTab(tabId: number): Promise<boolean>
+  switchTab(tabId: number): Promise<boolean>
+  getTab(tabId: number): Promise<BrowserView | undefined>
+  detachTab(tabId: number): Promise<boolean>
+  attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+  moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+  getWindowTabsData(
+    windowId: number
+  ): Promise<Array<{ id: number; title: string; faviconUrl?: string; isActive: boolean }>>
+}
+
+export interface TabCreateOptions {
+  active?: boolean
+  index?: number
+}
+
 export interface ILlamaCppPresenter {
   init(): void
   prompt(text: string): Promise<string>
@@ -163,6 +181,7 @@ export interface IPresenter {
   syncPresenter: ISyncPresenter
   deeplinkPresenter: IDeeplinkPresenter
   notificationPresenter: INotificationPresenter
+  tabPresenter: ITabPresenter
   init(): void
   destroy(): void
 }

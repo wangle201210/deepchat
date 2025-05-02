@@ -37,6 +37,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': resolve('src/renderer/src'),
+        '@shell': resolve('src/renderer/shell'),
         '@shared': resolve('src/shared')
       }
     },
@@ -53,7 +54,13 @@ export default defineConfig({
       })
     ],
     build: {
-      minify: 'esbuild'
+      minify: 'esbuild',
+      rollupOptions: {
+        input: {
+          shell: resolve('src/renderer/shell/index.html'),
+          index: resolve('src/renderer/index.html')
+        }
+      }
     }
   }
 })

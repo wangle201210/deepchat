@@ -28,6 +28,7 @@ export const mentionSelected = ref(false)
 export const mentionData: Ref<CategorizedData[]> = ref(categorizedData)
 
 export default {
+  allowedPrefixes: null,
   items: ({ query }) => {
     // If there's a query, search across all categories
     if (query) {

@@ -5,12 +5,7 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'tab',
-      component: () => import('@/components/TabView.vue'),
-      meta: {
-        titleKey: 'routes.tab',
-        icon: 'lucide:message-square'
-      }
+      redirect: '/chat'
     },
     {
       path: '/chat',

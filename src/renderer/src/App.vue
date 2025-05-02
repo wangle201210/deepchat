@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
-import AppBar from './components/AppBar.vue'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
 
@@ -270,7 +269,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col h-screen">
-    <AppBar />
     <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-1 pb-1">
       <!-- 主内容区域 -->
 

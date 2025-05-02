@@ -43,13 +43,13 @@
 
     <div v-if="!isMacOS" class="flex h-10">
       <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-muted"
+        class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
         @click="minimizeWindow"
       >
         <MinusIcon class="h-4 w-4" />
       </button>
       <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-muted"
+        class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
         @click="toggleMaximize"
       >
         <MaximizeIcon v-if="!isMaximized" class="h-4 w-4" />
@@ -73,7 +73,7 @@ import { MinusIcon, XIcon } from 'lucide-vue-next'
 import MaximizeIcon from './icons/MaximizeIcon.vue'
 import RestoreIcon from './icons/RestoreIcon.vue'
 import { usePresenter } from '@/composables/usePresenter'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import AppBarTabItem from './app-bar/AppBarTabItem.vue'
 import { useTabStore } from '@/stores/tab'
@@ -106,7 +106,7 @@ onMounted(() => {
   ipcRenderer?.on('window-fullscreened', () => {
     isFullscreened.value = true
   })
-  ipcRenderer?.on('window-unmaximized', () => {
+  ipcRenderer?.on('window:unmaximized', () => {
     isMaximized.value = false
   })
   ipcRenderer?.on('window-unfullscreened', () => {

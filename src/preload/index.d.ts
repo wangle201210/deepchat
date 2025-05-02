@@ -7,6 +7,8 @@ declare global {
       copyText(text: string): void
       copyImage(image: string): void
       getPathForFile(file: File): string
+      getWindowId(): number | null
+      getWebContentsId(): number
     }
   }
 }

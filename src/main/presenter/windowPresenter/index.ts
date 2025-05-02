@@ -1,7 +1,7 @@
-import { BrowserWindow, shell, app, nativeImage } from 'electron'
+import { BrowserWindow, shell, app, nativeImage, ipcMain } from 'electron'
 import { join } from 'path'
-import icon from '../../../resources/icon.png?asset'
-import iconWin from '../../../resources/icon.ico?asset'
+import icon from '../../../../resources/icon.png?asset'
+import iconWin from '../../../../resources/icon.ico?asset'
 import { is } from '@electron-toolkit/utils'
 import { IWindowPresenter } from '@shared/presenter'
 import { eventBus } from '@/eventbus'
@@ -24,6 +24,16 @@ export class WindowPresenter implements IWindowPresenter {
   constructor(configPresenter: ConfigPresenter) {
     this.windows = new Map()
     this.configPresenter = configPresenter
+
+    // 添加IPC处理函数来返回窗口ID和WebContents ID
+    ipcMain.on('get-window-id', (event) => {
+      const window = BrowserWindow.fromWebContents(event.sender)
+      event.returnValue = window ? window.id : null
+    })
+
+    ipcMain.on('get-web-contents-id', (event) => {
+      event.returnValue = event.sender.id
+    })
 
     // 监听应用退出事件
     app.on('before-quit', () => {
@@ -145,6 +155,16 @@ export class WindowPresenter implements IWindowPresenter {
       // 内部路由变化则不阻止
     })
 
+    mainWindow.on('resize', () => {
+      console.log('resize')
+      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZE, mainWindow.id)
+    })
+
+    mainWindow.on('resized', () => {
+      console.log('resized')
+      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZED, mainWindow.id)
+    })
+
     mainWindow.on('show', () => {
       if (mainWindow.isMinimized()) {
         mainWindow.restore()
@@ -191,9 +211,10 @@ export class WindowPresenter implements IWindowPresenter {
     // HMR for renderer base on electron-vite cli.
     // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+      console.log('loadURL', `${process.env['ELECTRON_RENDERER_URL']}/shell`)
+      mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/shell/index.html`)
     } else {
-      mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+      mainWindow.loadFile(join(__dirname, '../renderer/shell/index.html'))
     }
     this.windows.set(MAIN_WIN, mainWindow)
 
