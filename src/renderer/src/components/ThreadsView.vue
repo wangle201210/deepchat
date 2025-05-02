@@ -1,5 +1,7 @@
 <template>
-  <div class="w-60 h-full bg-muted overflow-hidden p-2 space-y-3 border-r flex flex-col">
+  <div
+    class="w-60 h-full bg-muted overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col"
+  >
     <!-- 固定在顶部的"新会话"按钮 -->
     <div class="flex-none">
       <Button
@@ -24,6 +26,7 @@
             :key="dtThread.id"
             :thread="dtThread"
             :is-active="dtThread.id === chatStore.activeThreadId"
+            :working-status="chatStore.getThreadWorkingStatus(dtThread.id)"
             @select="handleThreadSelect"
             @rename="showRenameDialog(dtThread)"
             @delete="showDeleteDialog(dtThread)"
@@ -96,7 +99,7 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import ThreadItem from './ThreadItem.vue'
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
@@ -110,8 +113,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { CONVERSATION_EVENTS } from '@/events'
 import { useEventListener } from '@vueuse/core'
+import { SHORTCUT_EVENTS } from '@/events'
 
 const { t } = useI18n()
 const chatStore = useChatStore()
@@ -128,17 +131,14 @@ const currentPage = ref(1) // 当前页码
 // 创建新会话
 const createNewThread = async () => {
   try {
-    await chatStore.clearActiveThread()
-    // 创建新会话后重新加载第一页
-    currentPage.value = 1
-    await chatStore.loadThreads(1)
+    await chatStore.createNewEmptyThread()
   } catch (error) {
     console.error(t('common.error.createChatFailed'), error)
   }
 }
 
 // 处理滚动事件
-const handleScroll = async (_event: Event) => {
+const handleScroll = async () => {
   // 通过event.target获取滚动元素
   // const target = event.target as HTMLElement
   // const { scrollTop, scrollHeight, clientHeight } = target
@@ -270,12 +270,15 @@ const handleRenameDialogCancel = () => {
   renameThread.value = null
 }
 
+// 处理清除聊天历史
+const handleCleanChatHistory = () => {
+  if (chatStore.activeThread) {
+    showCleanMessagesDialog(chatStore.activeThread)
+  }
+}
+
 // 在组件挂载时加载会话列表
 onMounted(async () => {
-  // 监听创建新会话事件
-  window.electron.ipcRenderer.on(CONVERSATION_EVENTS.CREATED, async () => {
-    await createNewThread()
-  })
   currentPage.value = 1 // 重置页码
   await chatStore.loadThreads(1)
 
@@ -287,6 +290,17 @@ onMounted(async () => {
       useEventListener(viewportElement, 'scroll', handleScroll)
     }
   })
+
+  // 监听清除聊天历史的快捷键事件
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY, () => {
+    handleCleanChatHistory()
+  })
+})
+
+// 在组件卸载前移除事件监听
+onBeforeUnmount(() => {
+  // 移除清除聊天历史的事件监听
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY)
 })
 </script>
 

@@ -18,6 +18,9 @@ files:
   - '!test/*'
   - '!*.config.ts'
   - '!*.config.js'
+  - '!**/{LICENSE,LICENSE.txt,*.LICENSE.txt,NOTICE.txt,README.md,CHANGELOG.md,CONTRIBUTING.md,CONTRIBUTING.zh.md,README.zh.md,README.jp.md}'
+  - '!**/{.DS_Store,Thumbs.db}'
+  - '!*.md'
 asarUnpack:
   - '**/node_modules/sharp/**/*'
   - '**/node_modules/@img/**/*'
@@ -27,6 +30,23 @@ extraResources:
     filter: ['**/*']
 afterSign: scripts/notarize.js
 afterPack: scripts/afterPack.js
+electronLanguages:
+  - zh-CN
+  - zh-TW
+  - zh-HK
+  - en-US
+  - ja-JP
+  - ko-KR
+  - fr-FR
+  - ru-RU
+  - ja
+  - ru
+  - zh_CN
+  - zh_TW
+  - zh_HK
+  - en
+  - ko
+  - fr
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:

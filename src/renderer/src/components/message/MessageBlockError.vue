@@ -7,7 +7,7 @@
       <span class="flex-grow">{{ t('common.error.requestFailed') }}</span>
     </div>
     <div class="prose prose-sm max-w-full break-all whitespace-pre-wrap leading-7">
-      {{ t(block.content) }}
+      {{ t(block.content || '') }}
     </div>
     <div v-if="errorExplanation" class="mt-2 text-red-400 font-medium">
       {{ t('common.error.causeOfError') }} {{ t(errorExplanation) }}
@@ -19,18 +19,15 @@
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
-
+import { AssistantMessageBlock } from '@shared/chat'
 const { t } = useI18n()
 
 const props = defineProps<{
-  block: {
-    content: string
-    status?: 'error'
-  }
+  block: AssistantMessageBlock
 }>()
 
 const errorExplanation = computed(() => {
-  const content = props.block.content
+  const content = props.block.content || ''
 
   if (content.includes('400')) return 'common.error.error400'
   if (content.includes('401')) return 'common.error.error401'

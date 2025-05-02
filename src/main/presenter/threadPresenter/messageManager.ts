@@ -277,7 +277,7 @@ export class MessageManager implements IMessageManager {
 
     let content: AssistantMessageBlock[] = []
     try {
-      content = JSON.parse(message.content)
+      content = message.content as AssistantMessageBlock[]
     } catch (e) {
       content = []
     }

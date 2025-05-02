@@ -6,6 +6,7 @@
   "copyCode": "Скопировать код",
   "copy": "Копировать",
   "paste": "Вставить",
+  "export": "Экспорт",
   "newChat": "Новый чат",
   "newTopic": "Новая тема",
   "cancel": "Отмена",
@@ -49,12 +50,15 @@
   "language": "язык",
   "languageSelect": "Выберите язык",
   "resetData": "Сбросить данные",
-  "searchAssistantModel": "Помощник поиска",
+  "searchAssistantModel": "Помощник модели",
   "searchEngine": "Поисковая система",
   "searchEngineSelect": "Выберите поисковую систему",
   "searchPreview": "Поиск предварительного просмотра",
   "selectModel": "Выберите модель",
   "title": "Общие настройки",
   "languageSystem": "Следуйте системе",
-  "watermarkTip": "Сгенерировано AI"
+  "watermarkTip": "Сгенерировано AI",
+  "collapse": "Свернуть",
+  "expand": "Развернуть",
+  "image": "картина"
 }

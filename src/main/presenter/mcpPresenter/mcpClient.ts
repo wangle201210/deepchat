@@ -9,7 +9,7 @@ import path from 'path'
 import { presenter } from '@/presenter'
 import { app } from 'electron'
 import fs from 'fs'
-import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
+// import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 // TODO: resources 和 prompts 的类型,Notifactions 的类型 https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/client/simpleStreamableHttp.ts
@@ -52,10 +52,26 @@ export interface Tool {
   inputSchema: Record<string, unknown>
 }
 
+// 定义 Prompt 的接口
+export interface Prompt {
+  name: string
+  description?: string
+  inputSchema?: Record<string, unknown>
+  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
+}
+
+// 定义 ResourceListEntry 的接口 (用于 listResources)
+export interface ResourceListEntry {
+  uri: string
+  name?: string
+}
+
 // 定义资源的接口
 interface Resource {
   uri: string
-  text: string
+  mimeType?: string
+  text?: string
+  blob?: string
 }
 
 // MCP 客户端类
@@ -68,6 +84,11 @@ export class McpClient {
   private connectionTimeout: NodeJS.Timeout | null = null
   private nodeRuntimePath: string | null = null
   private npmRegistry: string | null = null
+
+  // 缓存
+  private cachedTools: Tool[] | null = null
+  private cachedPrompts: Prompt[] | null = null
+  private cachedResources: ResourceListEntry[] | null = null
 
   // 处理PATH环境变量的函数
   private normalizePathEnv(paths: string[]): { key: string; value: string } {
@@ -181,9 +202,9 @@ export class McpClient {
           'NPM_CONFIG_REGISTRY',
           'NPM_CONFIG_CACHE',
           'NPM_CONFIG_PREFIX',
-          'NPM_CONFIG_TMP',
-          'GRPC_PROXY',
-          'grpc_proxy'
+          'NPM_CONFIG_TMP'
+          // 'GRPC_PROXY',
+          // 'grpc_proxy'
         ]
 
         // 修复env类型问题
@@ -241,13 +262,14 @@ export class McpClient {
         }
 
         // 从proxyConfig获取代理URL并设置环境变量
-        const proxyUrl = proxyConfig.getProxyUrl()
-        if (proxyUrl) {
-          env.http_proxy = proxyUrl
-          env.https_proxy = proxyUrl
-          env.grpc_proxy = proxyUrl
-          env.no_proxy = NO_PROXY
-        }
+        // 目前好像加上代理后问题更多，暂时mcp就停用代理
+        // const proxyUrl = proxyConfig.getProxyUrl()
+        // if (proxyUrl) {
+        //   env.http_proxy = proxyUrl
+        //   env.https_proxy = proxyUrl
+        //   env.grpc_proxy = proxyUrl
+        //   env.no_proxy = NO_PROXY
+        // }
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
         }
@@ -432,6 +454,11 @@ export class McpClient {
     this.client = null
     this.transport = null
     this.isConnected = false
+
+    // 清空缓存
+    this.cachedTools = null
+    this.cachedPrompts = null
+    this.cachedResources = null
   }
 
   // 检查服务器是否正在运行
@@ -459,6 +486,8 @@ export class McpClient {
       // 检查结果
       if (result.isError) {
         const errorText = result.content && result.content[0] ? result.content[0].text : '未知错误'
+        // 如果调用失败，清空工具缓存，以便下次重新获取
+        this.cachedTools = null
         return {
           isError: true,
           content: [{ type: 'error', text: errorText }]
@@ -467,12 +496,19 @@ export class McpClient {
       return result
     } catch (error) {
       console.error(`调用MCP工具 ${toolName} 失败:`, error)
+      // 调用失败，清空工具缓存
+      this.cachedTools = null
       throw error
     }
   }
 
   // 列出可用工具
   async listTools(): Promise<Tool[]> {
+    // 检查缓存
+    if (this.cachedTools !== null) {
+      return this.cachedTools
+    }
+
     if (!this.isConnected) {
       await this.connect()
     }
@@ -487,13 +523,171 @@ export class McpClient {
       if (response && typeof response === 'object' && 'tools' in response) {
         const toolsArray = response.tools
         if (Array.isArray(toolsArray)) {
-          return toolsArray as Tool[]
+          // 缓存结果
+          this.cachedTools = toolsArray as Tool[]
+          return this.cachedTools
         }
       }
       throw new Error('无效的工具响应格式')
     } catch (error) {
-      console.error(`列出MCP工具失败:`, error)
+      // 尝试从错误对象中提取更多信息
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      // 如果错误表明不支持，则缓存空数组
+      if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
+        console.warn(`服务器 ${this.serverName} 不支持 listTools`)
+        this.cachedTools = []
+        return this.cachedTools
+      } else {
+        console.error(`列出MCP工具失败:`, error)
+        // 发生其他错误，不清空缓存（保持null），以便下次重试
+        throw error
+      }
+    }
+  }
+
+  // 列出可用提示
+  async listPrompts(): Promise<Prompt[]> {
+    // 检查缓存
+    if (this.cachedPrompts !== null) {
+      return this.cachedPrompts
+    }
+
+    if (!this.isConnected) {
+      await this.connect()
+    }
+
+    if (!this.client) {
+      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+    }
+
+    try {
+      // SDK可能没有 listPrompts 方法，需要使用通用的 request
+      const response = await this.client.listPrompts()
+
+      // 检查响应格式
+      if (response && typeof response === 'object' && 'prompts' in response) {
+        const promptsArray = (response as { prompts: unknown }).prompts
+        if (Array.isArray(promptsArray)) {
+          // 需要确保每个元素都符合 Prompt 接口
+          const validPrompts = promptsArray.map((p) => ({
+            name: typeof p === 'object' && p !== null && 'name' in p ? String(p.name) : 'unknown',
+            description:
+              typeof p === 'object' && p !== null && 'description' in p
+                ? String(p.description)
+                : undefined,
+            inputSchema:
+              typeof p === 'object' && p !== null && 'inputSchema' in p
+                ? (p.inputSchema as Record<string, unknown>)
+                : undefined
+          })) as Prompt[]
+          // 缓存结果
+          this.cachedPrompts = validPrompts
+          return this.cachedPrompts
+        }
+      }
+      throw new Error('无效的提示响应格式')
+    } catch (error) {
+      // 尝试从错误对象中提取更多信息
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      // 如果错误表明不支持，则缓存空数组
+      if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
+        console.warn(`服务器 ${this.serverName} 不支持 listPrompts`)
+        this.cachedPrompts = []
+        return this.cachedPrompts
+      } else {
+        console.error(`列出MCP提示失败:`, error)
+        // 发生其他错误，不清空缓存（保持null），以便下次重试
+        throw error
+      }
+    }
+  }
+
+  // 获取指定提示
+  async getPrompt(name: string, args?: Record<string, unknown>): Promise<Prompt> {
+    if (!this.isConnected) {
+      await this.connect()
+    }
+
+    if (!this.client) {
+      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+    }
+
+    try {
+      // SDK可能没有 getPrompt 方法，需要使用通用的 request
+      const response = await this.client.getPrompt({
+        name,
+        arguments: (args as Record<string, string>) || {}
+      })
+
+      // 检查响应格式并转换为 Prompt 类型
+      if (
+        response &&
+        typeof response === 'object' &&
+        'messages' in response &&
+        Array.isArray(response.messages)
+      ) {
+        return {
+          name: name, // 从请求参数中获取 name
+          messages: response.messages as Array<{ role: string; content: { text: string } }>
+          // description 和 inputSchema 在 getPrompt 的响应中通常不返回
+        }
+      }
+      throw new Error('无效的获取提示响应格式')
+    } catch (error) {
+      console.error(`获取MCP提示 ${name} 失败:`, error)
+      // 获取失败，清空提示缓存
+      this.cachedPrompts = null
       throw error
+    }
+  }
+
+  // 列出可用资源
+  async listResources(): Promise<ResourceListEntry[]> {
+    // 检查缓存
+    if (this.cachedResources !== null) {
+      return this.cachedResources
+    }
+
+    if (!this.isConnected) {
+      await this.connect()
+    }
+
+    if (!this.client) {
+      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+    }
+
+    try {
+      // SDK可能没有 listResources 方法，需要使用通用的 request
+      const response = await this.client.listResources()
+
+      // 检查响应格式
+      if (response && typeof response === 'object' && 'resources' in response) {
+        const resourcesArray = (response as { resources: unknown }).resources
+        if (Array.isArray(resourcesArray)) {
+          // 需要确保每个元素都符合 ResourceListEntry 接口
+          const validResources = resourcesArray.map((r) => ({
+            uri: typeof r === 'object' && r !== null && 'uri' in r ? String(r.uri) : 'unknown',
+            name: typeof r === 'object' && r !== null && 'name' in r ? String(r.name) : undefined
+          })) as ResourceListEntry[]
+          // 缓存结果
+          this.cachedResources = validResources
+          return this.cachedResources
+        }
+      }
+      throw new Error('无效的资源列表响应格式')
+    } catch (error) {
+      // 尝试从错误对象中提取更多信息
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      // 如果错误表明不支持，则缓存空数组
+      if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
+        console.warn(`服务器 ${this.serverName} 不支持 listResources`)
+        this.cachedResources = []
+        return this.cachedResources
+      } else {
+        console.error(`列出MCP资源失败:`, error)
+        // 发生其他错误，不清空缓存（保持null），以便下次重试
+        throw error
+      }
     }
   }
 
@@ -509,7 +703,7 @@ export class McpClient {
 
     try {
       // 使用 unknown 作为中间类型进行转换
-      const rawResource = (await this.client.readResource({ uri: resourceUri })) as unknown
+      const rawResource = await this.client.readResource({ uri: resourceUri })
 
       // 手动构造 Resource 对象
       const resource: Resource = {
@@ -523,6 +717,8 @@ export class McpClient {
       return resource
     } catch (error) {
       console.error(`读取MCP资源 ${resourceUri} 失败:`, error)
+      // 读取失败，清空资源缓存
+      this.cachedResources = null
       throw error
     }
   }

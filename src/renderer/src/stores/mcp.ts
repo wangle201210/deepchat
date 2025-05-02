@@ -2,8 +2,15 @@ import { ref, computed, onMounted } from 'vue'
 import { defineStore } from 'pinia'
 import { usePresenter } from '@/composables/usePresenter'
 import { MCP_EVENTS } from '@/events'
-import type { McpClient, MCPConfig, MCPServerConfig, MCPToolDefinition } from '@shared/presenter'
-
+import type {
+  McpClient,
+  MCPConfig,
+  MCPServerConfig,
+  MCPToolDefinition,
+  PromptWithClient,
+  Resource,
+  ResourceListEntryWithClient
+} from '@shared/presenter'
 // 自定义类型定义
 interface MCPToolCallRequest {
   id: string
@@ -48,7 +55,8 @@ export const useMcpStore = defineStore('mcp', () => {
   const toolLoadingStates = ref<Record<string, boolean>>({})
   const toolInputs = ref<Record<string, Record<string, string>>>({})
   const toolResults = ref<Record<string, string | { type: string; text: string }[]>>({})
-
+  const prompts = ref<PromptWithClient[]>([])
+  const resources = ref<ResourceListEntryWithClient[]>([])
   // ==================== 计算属性 ====================
   // 服务器列表
   const serverList = computed(() => {
@@ -134,9 +142,12 @@ export const useMcpStore = defineStore('mcp', () => {
       if (enabled) {
         await loadTools()
         await loadClients()
+        await Promise.all([loadPrompts(), loadResources()])
       } else {
         // 如果禁用MCP，清空工具列表
         tools.value = []
+        prompts.value = []
+        resources.value = []
       }
 
       return true
@@ -260,6 +271,8 @@ export const useMcpStore = defineStore('mcp', () => {
 
   const loadClients = async () => {
     clients.value = (await mcpPresenter.getMcpClients()) ?? []
+    // 加载客户端后，同时加载提示模板和资源
+    await Promise.all([loadPrompts(), loadResources()])
   }
 
   // 加载工具列表
@@ -276,7 +289,7 @@ export const useMcpStore = defineStore('mcp', () => {
       toolsErrorMessage.value = ''
 
       tools.value = await mcpPresenter.getAllToolDefinitions()
-      console.log('tools.value', tools.value)
+      // console.log('tools.value', tools.value)
 
       // 初始化工具输入
       tools.value.forEach((tool) => {
@@ -309,6 +322,56 @@ export const useMcpStore = defineStore('mcp', () => {
       return false
     } finally {
       toolsLoading.value = false
+    }
+  }
+
+  // 加载提示模板
+  const loadPrompts = async () => {
+    // 如果MCP未启用，则不加载提示模板
+    if (!config.value.mcpEnabled) {
+      prompts.value = []
+      return false
+    }
+
+    try {
+      const promptsData = await mcpPresenter.getAllPrompts()
+
+      // 将主进程返回的数据格式转换为渲染进程所需的格式
+      prompts.value = promptsData.map((prompt) => ({
+        ...prompt,
+        clientName: prompt.client.name,
+        clientIcon: prompt.client.icon
+      }))
+
+      return true
+    } catch (error) {
+      console.error('Failed to load MCP prompts:', error)
+      return false
+    }
+  }
+
+  // 加载资源列表
+  const loadResources = async () => {
+    // 如果MCP未启用，则不加载资源
+    if (!config.value.mcpEnabled) {
+      resources.value = []
+      return false
+    }
+
+    try {
+      const resourcesData = await mcpPresenter.getAllResources()
+
+      // 将主进程返回的数据格式转换为渲染进程所需的格式
+      resources.value = resourcesData.map((resource) => ({
+        ...resource,
+        clientName: resource.client.name,
+        clientIcon: resource.client.icon
+      }))
+
+      return true
+    } catch (error) {
+      console.error('Failed to load MCP resources:', error)
+      return false
     }
   }
 
@@ -363,6 +426,39 @@ export const useMcpStore = defineStore('mcp', () => {
     }
   }
 
+  // 获取提示模板详情
+  const getPrompt = async (
+    prompt: PromptWithClient,
+    params: Record<string, unknown> = {}
+  ): Promise<unknown> => {
+    if (!config.value.mcpEnabled) {
+      throw new Error('MCP功能已禁用')
+    }
+
+    try {
+      // 传递完整对象给mcpPresenter
+      return await mcpPresenter.getPrompt(prompt, params)
+    } catch (error) {
+      console.error('Failed to get prompt:', error)
+      throw error
+    }
+  }
+
+  // 读取资源内容
+  const readResource = async (resource: ResourceListEntryWithClient): Promise<Resource> => {
+    if (!config.value.mcpEnabled) {
+      throw new Error('MCP功能已禁用')
+    }
+
+    try {
+      // 传递完整对象给mcpPresenter
+      return await mcpPresenter.readResource(resource)
+    } catch (error) {
+      console.error('Failed to read resource:', error)
+      throw error
+    }
+  }
+
   // ==================== 事件监听 ====================
   // 初始化事件监听
   const initEvents = () => {
@@ -404,6 +500,12 @@ export const useMcpStore = defineStore('mcp', () => {
   const init = async () => {
     initEvents()
     await loadConfig()
+
+    // 如果MCP已启用，加载工具、客户端、提示模板和资源
+    if (config.value.mcpEnabled) {
+      await loadTools()
+      await loadClients()
+    }
   }
 
   // 立即初始化
@@ -424,6 +526,8 @@ export const useMcpStore = defineStore('mcp', () => {
     toolLoadingStates,
     toolInputs,
     toolResults,
+    prompts,
+    resources,
     mcpEnabled,
 
     // 计算属性
@@ -431,7 +535,6 @@ export const useMcpStore = defineStore('mcp', () => {
     toolCount,
     hasTools,
     clients,
-    loadClients,
 
     // 方法
     loadConfig,
@@ -444,8 +547,13 @@ export const useMcpStore = defineStore('mcp', () => {
     resetToDefaultServers,
     toggleServer,
     loadTools,
+    loadClients,
+    loadPrompts,
+    loadResources,
     updateToolInput,
     callTool,
-    setMcpEnabled
+    setMcpEnabled,
+    getPrompt,
+    readResource
   }
 })

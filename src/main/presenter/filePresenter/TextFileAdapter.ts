@@ -36,4 +36,7 @@ export class TextFileAdapter extends BaseFileAdapter {
     }
     return this.fileContent
   }
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }

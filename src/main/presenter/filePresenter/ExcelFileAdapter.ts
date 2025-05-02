@@ -95,4 +95,7 @@ export class ExcelFileAdapter extends BaseFileAdapter {
 
     return fileDescription + sheetsContent
   }
+  async getThumbnail(): Promise<string | undefined> {
+    return ''
+  }
 }

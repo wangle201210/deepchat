@@ -6,6 +6,7 @@
   "copyCode": "Copier le code",
   "copy": "Copier",
   "paste": "Coller",
+  "export": "Exporter",
   "newChat": "Nouvelle conversation",
   "newTopic": "Nouveau sujet",
   "cancel": "Annuler",
@@ -49,12 +50,15 @@
   "language": "Langue",
   "languageSelect": "Sélectionner une langue",
   "resetData": "Réinitialiser les données",
-  "searchAssistantModel": "Rechercher un modèle d'assistant",
+  "searchAssistantModel": "Modèle adjoint",
   "searchEngine": "Moteur de recherche",
   "searchEngineSelect": "Sélectionner un moteur de recherche",
   "searchPreview": "Aperçu de la recherche",
   "selectModel": "Sélectionner un modèle",
   "title": "Paramètres généraux",
   "languageSystem": "Suivez le système",
-  "watermarkTip": "Généré par AI"
+  "watermarkTip": "Généré par AI",
+  "collapse": "Fermer",
+  "expand": "Développer",
+  "image": "image"
 }

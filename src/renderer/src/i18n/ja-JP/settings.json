@@ -8,7 +8,7 @@
     "searchEngine": "検索エンジン",
     "searchEngineSelect": "検索エンジンを選択",
     "searchPreview": "検索プレビュー",
-    "searchAssistantModel": "検索アシスタントモデル",
+    "searchAssistantModel": "アシスタントモデル",
     "selectModel": "モデルを選択",
     "proxyMode": "プロキシモード",
     "proxyModeSelect": "プロキシモードを選択",
@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新しいチャットを作成します",
       "title": "ショートカットキー設定"
-    }
+    },
+    "notifications": "システム通知",
+    "notificationsDesc": "Deepchatが前景にない場合、セッションが生成された場合、システム通知が送信されます"
   },
   "data": {
     "title": "データ設定",
@@ -173,7 +175,40 @@
     "deleteModel": "モデルを削除",
     "deleteModelConfirm": "モデル \"{name}\" を削除してもよろしいですか？この操作は元に戻せません。",
     "noLocalModels": "ローカルモデルはありません",
-    "localModels": "ローカルモデル"
+    "localModels": "ローカルモデル",
+    "azureApiVersion": "APIバージョン",
+    "safety": {
+      "title": "セキュリティ設定"
+    }
+  },
+  "knowledgeBase": {
+    "title": "ナレッジベース設定",
+    "addKnowledgeBase": "ナレッジベースを追加",
+    "selectKnowledgeBaseType": "追加するナレッジベースの種類を選択してください",
+    "difyDescription": "Difyナレッジベースはドキュメントデータの管理と利用をサポートします",
+    "comingSoon": "近日公開",
+    "featureNotAvailable": "この機能はまだ利用できません",
+    "addDifyConfig": "Dify設定を追加",
+    "apiKey": "APIキー",
+    "datasetId": "データセットID",
+    "endpoint": "APIエンドポイント",
+    "configAdded": "設定が追加されました",
+    "configAddedDesc": "Difyナレッジベースの設定が正常に追加されました",
+    "addConfig": "設定を追加",
+    "moreComingSoon": "より多くのナレッジベースタイプが近日公開予定",
+    "configUpdated": "設定が更新されました",
+    "configUpdatedDesc": "Difyナレッジベースの設定が正常に更新されました",
+    "descriptionPlaceholder": "例：会社の製品ドキュメントナレッジベース",
+    "ragflowTitle": "RAGFlowナレッジベース",
+    "ragflowDescription": "RAGFlowは、複数の検索方法とドキュメント管理機能をサポートする強力なナレッジベース管理システムです。",
+    "addRagflowConfig": "RAGFlow設定を追加",
+    "editRagflowConfig": "RAGFlow設定を編集",
+    "dify": "dify知識ベース",
+    "editDifyConfig": "Dify構成を変更します",
+    "fastgptTitle": "FastGPT知識ベース",
+    "fastgptDescription": "FastGPTは、複数の検索方法とドキュメント管理機能をサポートする強力な知識ベース管理システムです。",
+    "addFastGptConfig": "FastGPT設定を追加",
+    "editFastGptConfig": "FastGPT設定を編集"
   },
   "mcp": {
     "title": "MCP設定",
@@ -183,7 +218,9 @@
     "enableToAccess": "設定オプションにアクセスするにはMCPを有効にしてください",
     "tabs": {
       "servers": "サーバー",
-      "tools": "ツール"
+      "tools": "ツール",
+      "prompts": "迅速な言葉",
+      "resources": "リソース"
     },
     "serverList": "サーバーリスト",
     "addServer": "サーバーを追加",
@@ -252,7 +289,10 @@
       "imageModel": "視覚モデルを選択します",
       "customHeadersParseError": "カスタムヘッダーの解析は失敗しました",
       "customHeaders": "カスタムリクエストヘッダー",
-      "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。"
+      "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。",
+      "npmRegistry": "カスタムNPMレジストリ",
+      "npmRegistryPlaceholder": "カスタムNPMレジストリをセットアップし、システムを残して最速のレジストリを自動的に選択する",
+      "browseHigress": "Higress MCP Marketplaceを表示します"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -283,7 +323,8 @@
     "removeDefault": "デフォルトを削除します",
     "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします",
     "maxDefaultServersReached": "せいぜい3つのデフォルトサーバーのみを設定できます",
-    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください"
+    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください",
+    "higressMarket": "Higress MCPのインストールに移動します"
   },
   "about": {
     "title": "私たちについて",
@@ -299,5 +340,14 @@
     "text-lg": "大きい",
     "text-sm": "小さい",
     "text-xl": "非常に大きい"
+  },
+  "shortcuts": {
+    "cleanHistory": "明確なチャット履歴",
+    "goSettings": "設定を開く",
+    "hideWindow": "ウィンドウを非表示にします",
+    "quitApp": "プログラムを終了します",
+    "zoomIn": "フォントにズームインします",
+    "zoomOut": "フォントを削減します",
+    "zoomReset": "フォントをリセットします"
   }
 }

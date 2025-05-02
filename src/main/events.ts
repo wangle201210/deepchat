@@ -52,7 +52,9 @@ export const WINDOW_EVENTS = {
   READY_TO_SHOW: 'window:ready-to-show', // 替代 main-window-ready-to-show
   FORCE_QUIT_APP: 'window:force-quit-app', // 替代 force-quit-app
   APP_FOCUS: 'app:focus',
-  APP_BLUR: 'app:blur'
+  APP_BLUR: 'app:blur',
+  WINDOW_MAXIMIZED: 'window:maximized',
+  WINDOW_UNMAXIMIZED: 'window:unmaximized'
 }
 
 // ollama 相关事件
@@ -90,5 +92,15 @@ export const DEEPLINK_EVENTS = {
 
 // 全局通知相关事件
 export const NOTIFICATION_EVENTS = {
-  SHOW_ERROR: 'notification:show-error' // 显示错误通知
+  SHOW_ERROR: 'notification:show-error', // 显示错误通知
+  SYS_NOTIFY_CLICKED: 'notification:sys-notify-clicked' // 系统通知点击事件
+}
+
+export const SHORTCUT_EVENTS = {
+  ZOOM_IN: 'shortcut:zoom-in',
+  ZOOM_OUT: 'shortcut:zoom-out',
+  ZOOM_RESUME: 'shortcut:zoom-resume',
+  CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
+  GO_SETTINGS: 'shortcut:go-settings',
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
 }

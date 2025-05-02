@@ -23,7 +23,6 @@
         class="prose prose-sm dark:prose-invert w-full max-w-full leading-7 break-all"
         v-html="renderedContent"
       ></div>
-      <LoadingCursor v-show="block.status === 'loading'" ref="loadingCursor" />
     </div>
 
     <Icon
@@ -41,12 +40,12 @@ import { Button } from '@/components/ui/button'
 import { computed, onMounted, ref, watch } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
 import MarkdownIt from 'markdown-it'
-import LoadingCursor from '@/components/LoadingCursor.vue'
+import { AssistantMessageBlock } from '@shared/chat'
 
 const { t } = useI18n()
 
 const configPresenter = usePresenter('configPresenter')
-const loadingCursor = ref<InstanceType<typeof LoadingCursor> | null>(null)
+
 const messageBlock = ref<HTMLDivElement | null>(null)
 
 const collapse = ref(false)
@@ -62,18 +61,10 @@ const md = new MarkdownIt({
 })
 
 const renderedContent = computed(() => {
-  const content = props.block.content
-  refreshLoadingCursor()
-  return md.render(
-    props.block.status === 'loading' ? content + loadingCursor.value?.CURSOR_MARKER : content
-  )
-})
+  const content = props.block.content || ''
 
-const refreshLoadingCursor = () => {
-  if (messageBlock.value) {
-    loadingCursor.value?.updateCursorPosition(messageBlock.value)
-  }
-}
+  return md.render(content)
+})
 
 watch(
   () => collapse.value,
@@ -87,10 +78,7 @@ onMounted(async () => {
 })
 
 const props = defineProps<{
-  block: {
-    content: string
-    status?: 'loading'
-  }
+  block: AssistantMessageBlock
   usage: {
     reasoning_start_time: number
     reasoning_end_time: number

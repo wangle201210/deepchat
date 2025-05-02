@@ -8,7 +8,7 @@ import { usePresenter } from './composables/usePresenter'
 import ArtifactDialog from './components/artifacts/ArtifactDialog.vue'
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
-import { NOTIFICATION_EVENTS } from './events'
+import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
 import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
 import { useSettingsStore } from '@/stores/settings'
@@ -121,6 +121,43 @@ const getInitComplete = async () => {
   }
 }
 
+// 处理字体缩放
+const handleZoomIn = () => {
+  // 字体大小增加逻辑
+  const currentLevel = settingsStore.fontSizeLevel
+  settingsStore.updateFontSizeLevel(currentLevel + 1)
+}
+
+const handleZoomOut = () => {
+  // 字体大小减小逻辑
+  const currentLevel = settingsStore.fontSizeLevel
+  settingsStore.updateFontSizeLevel(currentLevel - 1)
+}
+
+const handleZoomResume = () => {
+  // 重置字体大小
+  settingsStore.updateFontSizeLevel(1) // 1 对应 'text-base'，默认字体大小
+}
+
+// 处理创建新会话
+const handleCreateNewConversation = () => {
+  try {
+    chatStore.createNewEmptyThread()
+    // 简化处理，只记录日志，实际功能待实现
+  } catch (error) {
+    console.error('创建新会话失败:', error)
+  }
+}
+
+// 处理进入设置页面
+const handleGoSettings = () => {
+  const currentRoute = router.currentRoute.value
+  // 检查当前路由或其父路由是否已经是settings
+  if (!currentRoute.path.startsWith('/settings')) {
+    router.push({ name: 'settings' })
+  }
+}
+
 getInitComplete()
 
 onMounted(() => {
@@ -131,6 +168,48 @@ onMounted(() => {
   // 监听全局错误通知事件
   window.electron.ipcRenderer.on(NOTIFICATION_EVENTS.SHOW_ERROR, (_event, error) => {
     showErrorToast(error)
+  })
+
+  // 监听快捷键事件
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.ZOOM_IN, () => {
+    handleZoomIn()
+  })
+
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.ZOOM_OUT, () => {
+    handleZoomOut()
+  })
+
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.ZOOM_RESUME, () => {
+    handleZoomResume()
+  })
+
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION, () => {
+    handleCreateNewConversation()
+  })
+
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.GO_SETTINGS, () => {
+    handleGoSettings()
+  })
+
+  window.electron.ipcRenderer.on(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED, (_, msg) => {
+    let threadId: string | null = null
+
+    // 检查msg是否为字符串且是否以chat/开头
+    if (typeof msg === 'string' && msg.startsWith('chat/')) {
+      // 按/分割，检查是否有三段数据
+      const parts = msg.split('/')
+      if (parts.length === 3) {
+        // 提取中间部分作为threadId
+        threadId = parts[1]
+      }
+    } else if (msg && msg.threadId) {
+      // 兼容原有格式，如果msg是对象且包含threadId属性
+      threadId = msg.threadId
+    }
+
+    if (threadId) {
+      chatStore.setActiveThread(threadId)
+    }
   })
 
   watch(
@@ -173,12 +252,20 @@ onMounted(() => {
   )
 })
 
-// 在组件卸载前清除定时器
+// 在组件卸载前清除定时器和事件监听
 onBeforeUnmount(() => {
   if (errorDisplayTimer.value) {
     clearTimeout(errorDisplayTimer.value)
     errorDisplayTimer.value = null
   }
+
+  // 移除快捷键事件监听
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.ZOOM_IN)
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.ZOOM_OUT)
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.ZOOM_RESUME)
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION)
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.GO_SETTINGS)
+  window.electron.ipcRenderer.removeAllListeners(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED)
 })
 </script>
 

@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -40,9 +36,6 @@ const RunNodeCodeArgsSchema = z.object({
     .default(5000)
     .describe('Code execution timeout in milliseconds, default 5 seconds')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 限制和安全配置
 const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
@@ -196,7 +189,7 @@ export class PowerpackServer {
             'Get formatted time with specified offset from current time. Calculate any time point relative to the current time. ' +
             "For example, get current time, yesterday's time, tomorrow's time, etc. " +
             'Use the offset parameter (milliseconds) to specify the offset relative to the current time, positive for future, negative for past.',
-          inputSchema: zodToJsonSchema(GetTimeArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(GetTimeArgsSchema)
         },
         {
           name: 'get_web_info',
@@ -204,7 +197,7 @@ export class PowerpackServer {
             'Get detailed content information from a specified webpage. Extract title, description, main content, and other information. ' +
             'This tool is useful for analyzing webpage content, obtaining article summaries or details. ' +
             'Just provide a valid HTTP or HTTPS URL to get complete webpage content analysis.',
-          inputSchema: zodToJsonSchema(GetWebInfoArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(GetWebInfoArgsSchema)
         }
       ]
 
@@ -218,7 +211,7 @@ export class PowerpackServer {
             'For security reasons, the code cannot perform file operations, modify system settings, spawn child processes, or execute external code from network. ' +
             'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
             'When a problem can be solved by a simple and secure Node.js code or you have generated a simple code for the user and want to execute it, please use this tool, providing more reliable information to the user.',
-          inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
         })
       }
 

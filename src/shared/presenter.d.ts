@@ -19,11 +19,48 @@ export type SQLITE_MESSAGE = {
   variants?: SQLITE_MESSAGE[]
 }
 
+export interface DirectoryMetaData {
+  dirName: string
+  dirPath: string
+  dirCreated: Date
+  dirModified: Date
+}
+
 export interface McpClient {
   name: string
   icon: string
   isRunning: boolean
   tools: MCPToolDefinition[]
+  prompts?: Prompt[]
+  resources?: ResourceListEntry[]
+}
+
+export interface Resource {
+  uri: string
+  mimeType?: string
+  text?: string
+  blob?: string
+}
+
+export interface Prompt {
+  name: string
+  description?: string
+  inputSchema?: Record<string, unknown>
+  messages?: Array<{ role: string; content: { text: string } }>
+}
+
+export interface ResourceListEntry {
+  uri: string
+  name?: string
+}
+export interface PromptWithClient extends Prompt {
+  clientName: string
+  clientIcon?: string
+}
+
+export interface ResourceListEntryWithClient extends ResourceListEntry {
+  clientName: string
+  clientIcon?: string
 }
 
 export interface ModelConfig {
@@ -33,6 +70,9 @@ export interface ModelConfig {
   vision: boolean
   functionCall: boolean
   reasoning: boolean
+}
+export interface ProviderModelConfigs {
+  [modelId: string]: ModelConfig
 }
 
 export interface IWindowPresenter {
@@ -46,6 +86,7 @@ export interface IWindowPresenter {
   hide(): void
   show(): void
   isMaximized(): boolean
+  isMainWindowFocused(): boolean
 }
 
 export interface ILlamaCppPresenter {
@@ -121,8 +162,15 @@ export interface IPresenter {
   mcpPresenter: IMCPPresenter
   syncPresenter: ISyncPresenter
   deeplinkPresenter: IDeeplinkPresenter
+  notificationPresenter: INotificationPresenter
   init(): void
   destroy(): void
+}
+
+export interface INotificationPresenter {
+  showNotification(options: { id: string; title: string; body: string; silent?: boolean }): void
+  clearNotification(id: string): void
+  clearAllNotifications(): void
 }
 
 export interface IConfigPresenter {
@@ -135,7 +183,7 @@ export interface IConfigPresenter {
   getProviderModels(providerId: string): MODEL_META[]
   setProviderModels(providerId: string, models: MODEL_META[]): void
   getEnabledProviders(): LLM_PROVIDER[]
-  getModelDefaultConfig(modelId: string): ModelConfig
+  getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
   getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
   // 日志设置
   getLoggingEnabled(): boolean
@@ -192,6 +240,9 @@ export interface IConfigPresenter {
   removeMcpServer(serverName: string): Promise<void>
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
+  getModelConfig(modelId: string, providerId?: string): ModelConfig
+  setNotificationsEnabled(enabled: boolean): void
+  getNotificationsEnabled(): boolean
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -219,7 +270,6 @@ export type MODEL_META = {
   functionCall?: boolean
   reasoning?: boolean
 }
-
 export type LLM_PROVIDER = {
   id: string
   name: string
@@ -270,7 +320,7 @@ export interface ILlmProviderPresenter {
     eventId: string,
     temperature?: number,
     maxTokens?: number
-  ): Promise<void>
+  ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
@@ -278,22 +328,6 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string>
-  startStreamSummary(
-    providerId: string,
-    text: string,
-    modelId: string,
-    eventId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<void>
-  startStreamText(
-    providerId: string,
-    prompt: string,
-    modelId: string,
-    eventId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<void>
   stopStream(eventId: string): Promise<void>
   check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }>
   summaryTitles(
@@ -325,6 +359,7 @@ export type CONVERSATION = {
   updatedAt: number
   is_new?: number
   artifacts?: number
+  is_pinned?: number
 }
 
 export interface IThreadPresenter {
@@ -393,6 +428,7 @@ export interface IThreadPresenter {
   getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
   continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
+  toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'
@@ -457,6 +493,9 @@ export interface IDevicePresenter {
   // 目录选择和应用重启
   selectDirectory(): Promise<{ canceled: boolean; filePaths: string[] }>
   restartApp(): Promise<void>
+
+  // 图片缓存
+  cacheImage(imageData: string): Promise<string>
 }
 
 export type DeviceInfo = {
@@ -578,7 +617,12 @@ export interface IFilePresenter {
   readFile(relativePath: string): Promise<string>
   writeFile(operation: FileOperation): Promise<void>
   deleteFile(relativePath: string): Promise<void>
+  createFileAdapter(filePath: string, typeInfo?: string): Promise<any> // Return type might need refinement
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
+  prepareDirectory(absPath: string): Promise<MessageFile>
+  writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
+  isDirectory(absPath: string): Promise<boolean>
+  getMimeType(filePath: string): Promise<string>
 }
 
 export interface FileMetaData {
@@ -617,13 +661,14 @@ export interface ProgressResponse {
 export interface MCPServerConfig {
   command: string
   args: string[]
-  env: Record<string, string>
+  env: Record<string, unknow>
   descriptions: string
   icons: string
   autoApprove: string[]
   disable?: boolean
   baseUrl?: string
   customHeaders?: Record<string, string>
+  customNpmRegistry?: string
   type: 'sse' | 'stdio' | 'inmemory' | 'http'
 }
 
@@ -728,6 +773,10 @@ export interface IMCPPresenter {
   startServer(serverName: string): Promise<void>
   stopServer(serverName: string): Promise<void>
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
+  getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
+  getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
+  getPrompt(prompt: PromptWithClient, params?: Record<string, unknown>): Promise<unknown>
+  readResource(resource: ResourceListEntryWithClient): Promise<Resource>
   callTool(request: {
     id: string
     type: string
@@ -735,7 +784,7 @@ export interface IMCPPresenter {
       name: string
       arguments: string
     }
-  }): Promise<{ content: string }>
+  }): Promise<{ content: string; rawData: MCPToolResponse }>
   setMcpEnabled(enabled: boolean): Promise<void>
   getMcpEnabled(): Promise<boolean>
   resetToDefaultServers(): Promise<void>
@@ -781,3 +830,89 @@ export interface ISyncPresenter {
   init(): void
   destroy(): void
 }
+
+// 从 LLM Provider 的 coreStream 返回的标准化事件
+export interface LLMCoreStreamEvent {
+  type:
+    | 'text'
+    | 'reasoning'
+    | 'tool_call_start'
+    | 'tool_call_chunk'
+    | 'tool_call_end'
+    | 'error'
+    | 'usage'
+    | 'stop'
+    | 'image_data'
+  content?: string // 用于 type 'text'
+  reasoning_content?: string // 用于 type 'reasoning'
+  tool_call_id?: string // 用于 tool_call_* 类型
+  tool_call_name?: string // 用于 tool_call_start
+  tool_call_arguments_chunk?: string // 用于 tool_call_chunk (流式参数)
+  tool_call_arguments_complete?: string // 用于 tool_call_end (可选，如果一次性可用)
+  error_message?: string // 用于 type 'error'
+  usage?: {
+    // 用于 type 'usage'
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+  stop_reason?: 'tool_use' | 'max_tokens' | 'stop_sequence' | 'error' | 'complete' // 用于 type 'stop'
+  image_data?: {
+    // 用于 type 'image_data'
+    data: string // Base64 编码的图像数据
+    mimeType: string
+  }
+}
+
+// 定义ChatMessage接口用于统一消息格式
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool'
+  content?: string | ChatMessageContent[]
+  tool_calls?: Array<{
+    function: {
+      arguments: string
+      name: string
+    }
+    id: string
+    type: 'function'
+  }>
+  tool_call_id?: string
+}
+
+export interface ChatMessageContent {
+  type: 'text' | 'image_url'
+  text?: string
+  image_url?: {
+    url: string
+    detail?: 'auto' | 'low' | 'high'
+  }
+}
+
+export interface LLMAgentEventData {
+  eventId: string
+  content?: string
+  reasoning_content?: string
+  tool_call_id?: string
+  tool_call_name?: string
+  tool_call_params?: string
+  tool_call_response?: string | MCPToolResponse['content'] // Allow complex tool response content
+  maximum_tool_calls_reached?: boolean
+  tool_call_server_name?: string
+  tool_call_server_icons?: string
+  tool_call_server_description?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tool_call_response_raw?: any
+  tool_call?: 'start' | 'end' | 'error'
+  totalUsage?: {
+    prompt_tokens: number
+    completion_tokens: number
+    total_tokens: number
+  }
+  image_data?: { data: string; mimeType: string }
+  error?: string // For error event
+  userStop?: boolean // For end event
+}
+export type LLMAgentEvent =
+  | { type: 'response'; data: LLMAgentEventData }
+  | { type: 'error'; data: { eventId: string; error: string } }
+  | { type: 'end'; data: { eventId: string; userStop: boolean } }

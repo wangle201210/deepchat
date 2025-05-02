@@ -8,7 +8,7 @@
     "searchEngine": "搜尋引擎",
     "searchEngineSelect": "選擇搜尋引擎",
     "searchPreview": "搜尋預覽",
-    "searchAssistantModel": "搜尋助理模型",
+    "searchAssistantModel": "助手模型",
     "selectModel": "選擇模型",
     "proxyMode": "代理伺服器模式",
     "proxyModeSelect": "選擇代理伺服器模式",
@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新建聊天",
       "title": "快捷鍵設置"
-    }
+    },
+    "notifications": "系統通知",
+    "notificationsDesc": "當 DeepChat 不在前台時，如有會話生成完畢會發送系統通知"
   },
   "data": {
     "title": "資料設定",
@@ -173,7 +175,40 @@
     "deleteModel": "刪除模型",
     "deleteModelConfirm": "是否確認刪除模型「{name}」？此操作無法復原。",
     "localModels": "本機模型",
-    "noLocalModels": "沒有本機模型"
+    "noLocalModels": "沒有本機模型",
+    "azureApiVersion": "API 版本",
+    "safety": {
+      "title": "安全設置"
+    }
+  },
+  "knowledgeBase": {
+    "title": "知識庫設置",
+    "addKnowledgeBase": "添加知識庫",
+    "selectKnowledgeBaseType": "請選擇要添加的知識庫類型",
+    "difyDescription": "Dify知識庫可以幫助您管理和使用文檔數據",
+    "comingSoon": "即將推出",
+    "featureNotAvailable": "該功能暫未開放，敬請期待",
+    "addDifyConfig": "添加Dify配置",
+    "apiKey": "API密鑰",
+    "datasetId": "數據集ID",
+    "endpoint": "API地址",
+    "configAdded": "配置已添加",
+    "configAddedDesc": "Dify知識庫配置已成功添加",
+    "addConfig": "添加配置",
+    "moreComingSoon": "更多知識庫類型即將推出",
+    "configUpdated": "配置已更新",
+    "configUpdatedDesc": "Dify知識庫配置已成功更新",
+    "descriptionPlaceholder": "例如：公司產品文檔知識庫",
+    "ragflowTitle": "RAGFlow 知識庫",
+    "ragflowDescription": "RAGFlow 是一個強大的知識庫管理系統，支援多種檢索方式和文件管理功能。",
+    "addRagflowConfig": "新增 RAGFlow 設定",
+    "editRagflowConfig": "編輯 RAGFlow 設定",
+    "dify": "Dify知識庫",
+    "editDifyConfig": "修改Dify配置",
+    "fastgptTitle": "FastGPT知識庫",
+    "fastgptDescription": "FastGPT是一個強大的知識庫管理系統，支援多種檢索方式和文檔管理功能。",
+    "addFastGptConfig": "添加FastGPT配置",
+    "editFastGptConfig": "編輯FastGPT配置"
   },
   "mcp": {
     "title": "MCP設定",
@@ -183,7 +218,9 @@
     "enableToAccess": "請先啟用MCP以訪問配置選項",
     "tabs": {
       "servers": "伺服器",
-      "tools": "工具"
+      "tools": "工具",
+      "prompts": "提示詞",
+      "resources": "資源"
     },
     "serverList": "伺服器列表",
     "addServer": "新增伺服器",
@@ -252,7 +289,10 @@
       "imageModel": "選擇視覺模型",
       "customHeadersParseError": "自定義Header解析失敗",
       "customHeaders": "自定義請求頭",
-      "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確"
+      "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確",
+      "npmRegistry": "自定義NPM Registry",
+      "npmRegistryPlaceholder": "設置自定義NPM Registry,留空系統會自動選擇最快的一個",
+      "browseHigress": "瀏覽 Higress MCP 市場"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -283,7 +323,8 @@
     "removeDefault": "移除默認",
     "marketplace": "前往MCP市場一鍵安裝",
     "maxDefaultServersReached": "最多只能設置3個默認服務器",
-    "removeDefaultFirst": "請先移除一些默認服務器"
+    "removeDefaultFirst": "請先移除一些默認服務器",
+    "higressMarket": "前往 Higress MCP 安裝"
   },
   "about": {
     "title": "關於我們",
@@ -299,5 +340,14 @@
     "text-lg": "大",
     "text-sm": "小",
     "text-xl": "特大"
+  },
+  "shortcuts": {
+    "cleanHistory": "清除聊天歷史",
+    "goSettings": "打開設置",
+    "hideWindow": "隱藏窗口",
+    "quitApp": "退出程序",
+    "zoomIn": "放大字體",
+    "zoomOut": "縮小字體",
+    "zoomReset": "重置字體"
   }
 }

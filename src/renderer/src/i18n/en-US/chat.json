@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "Type a message...",
+    "placeholder": "Ask something?",
     "fileArea": "File Area",
     "inputArea": "Input Area",
     "functionSwitch": "Function Switch",
@@ -21,5 +21,12 @@
     "optimizing": "Optimizing search query...",
     "reading": "Searching and reading web pages...",
     "error": "Search failed"
+  },
+  "messages": {
+    "thinking": "Thinking..."
+  },
+  "notify": {
+    "generationComplete": "Generation is complete",
+    "generationError": "Generation failed"
   }
 }

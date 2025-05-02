@@ -2,26 +2,14 @@ import {
   LLM_PROVIDER,
   MODEL_META,
   LLMResponse,
-  LLMResponseStream,
-  MCPToolDefinition
+  MCPToolDefinition,
+  LLMCoreStreamEvent,
+  ModelConfig,
+  ChatMessage
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
 import { jsonrepair } from 'jsonrepair'
-// 定义ChatMessage接口用于统一消息格式
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string | ChatMessageContent[]
-}
-
-export interface ChatMessageContent {
-  type: 'text' | 'image_url'
-  text?: string
-  image_url?: {
-    url: string
-    detail?: 'auto' | 'low' | 'high'
-  }
-}
 
 /**
  * 基础LLM提供商抽象类
@@ -219,11 +207,10 @@ export abstract class BaseLLMProvider {
    * @returns 格式化的提示词
    */
   protected getFunctionCallWrapPrompt(tools: MCPToolDefinition[]): string {
-    return `你具备调用外部工具的能力来协助解决用户的问题。可用的工具列表定义在 <tool_list> 标签中，格式为 JSON 数组：
+    return `你具备调用外部工具的能力来协助解决用户的问题,可用的工具列表定义在 <tool_list> 标签中，格式为 JSON 数组：
 <tool_list>
 ${JSON.stringify(tools)}
-</tool_list>
-
+</tool_list>\n
 当你判断调用工具是**解决用户问题的唯一或最佳方式**时，**必须**严格遵循以下格式进行回复。你的回复中**仅**包含 <function_call> 标签及其内容，不要包含任何其他文字、解释或评论。
 
 如果需要连续调用多个工具，请为每个工具生成一个独立的 <function_call> 标签，按顺序排列。
@@ -245,7 +232,7 @@ ${JSON.stringify(tools)}
 **重要约束:**
 1.  **必要性**: 仅在无法直接回答用户问题，且工具能提供必要信息或执行必要操作时才使用工具。
 2.  **准确性**: \`name\` 字段必须**精确匹配** <tool_list> 中提供的某个工具的名称。\`arguments\` 字段必须是一个有效的 JSON 对象，包含该工具所需的**所有**参数及其基于用户请求的**准确**值。
-3.  **格式**: 如果决定调用工具，你的回复**必须且只能**包含一个或多个 <function_call> 标签，不允许任何前缀、后缀或解释性文本。
+3.  **格式**: 如果决定调用工具，你的回复**必须且只能**包含一个或多个 <function_call> 标签，不允许任何前缀、后缀或解释性文本。而在函数调用之外的内容中不要包含任何 <function_call> 标签，以防异常。
 4.  **直接回答**: 如果你可以直接、完整地回答用户的问题，请**不要**使用工具，直接生成回答内容。
 5.  **避免猜测**: 如果不确定信息，且有合适的工具可以获取该信息，请使用工具而不是猜测。
 
@@ -447,79 +434,21 @@ ${JSON.stringify(tools)}
   ): Promise<LLMResponse>
 
   /**
-   * 生成对话建议
-   *
-   * @param context 对话上下文
+   * [新] 核心流式处理方法
+   * 此方法由具体的提供商子类实现，负责单次API调用和事件标准化。
+   * @param messages 对话消息
    * @param modelId 模型ID
    * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 建议列表
+   * @param maxTokens 最大Token数
+   * @param tools 可选的 MCP 工具定义
+   * @returns 标准化流事件的异步生成器 (LLMCoreStreamEvent)
    */
-  abstract suggestions(
-    context: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): Promise<string[]>
-
-  /**
-   * 流式对话生成
-   *
-   * 该方法以流的形式实时返回生成内容，适用于交互式对话和需要实时反馈的场景。
-   * 特点：
-   * 1. 实时流式返回部分响应
-   * 2. 支持工具调用（通过function calling）
-   * 3. 支持思考过程的实时展示
-   * 4. 支持多轮工具调用的连续对话
-   *
-   * 流式响应包含：
-   * - content: 当前生成的内容片段
-   * - reasoning_content: 当前生成的思考过程片段
-   * - tool_call相关信息: 工具调用的各种状态和数据
-   * - totalUsage: 最终的token使用统计（仅在流结束时）
-   *
-   * @param messages 对话历史消息
-   * @param modelId 模型ID
-   * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 生成内容的异步迭代器
-   */
-  abstract streamCompletions(
+  abstract coreStream(
     messages: ChatMessage[],
     modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream>
-
-  /**
-   * 流式总结文本
-   *
-   * @param text 需要总结的文本
-   * @param modelId 模型ID
-   * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 总结内容的异步迭代器
-   */
-  abstract streamSummaries(
-    text: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream>
-
-  /**
-   * 流式生成文本
-   *
-   * @param prompt 文本提示
-   * @param modelId 模型ID
-   * @param temperature 温度参数
-   * @param maxTokens 最大生成token数
-   * @returns 生成内容的异步迭代器
-   */
-  abstract streamGenerateText(
-    prompt: string,
-    modelId: string,
-    temperature?: number,
-    maxTokens?: number
-  ): AsyncGenerator<LLMResponseStream>
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    tools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent>
 }

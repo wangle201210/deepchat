@@ -25,6 +25,7 @@ import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
 import type { RENDERER_MODEL_META } from '@shared/presenter'
+import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from './const'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -51,6 +52,7 @@ const icons = ref(props.initialConfig?.icons || '📁')
 const type = ref<'sse' | 'stdio' | 'inmemory' | 'http'>(props.initialConfig?.type || 'stdio')
 const baseUrl = ref(props.initialConfig?.baseUrl || '')
 const customHeaders = ref('')
+const npmRegistry = ref(props.initialConfig?.customNpmRegistry || '')
 
 // 模型选择相关
 const modelSelectOpen = ref(false)
@@ -120,6 +122,11 @@ const showCommandFields = computed(() => type.value === 'stdio')
 const showArgsInput = computed(
   () => showCommandFields.value || (isInMemoryType.value && !isImageServer.value)
 )
+
+// 当命令是npx或node时，显示npmRegistry输入框
+const showNpmRegistryInput = computed(() => {
+  return type.value === 'stdio' && ['npx', 'node'].includes(command.value.toLowerCase())
+})
 
 // 当选择 all 时，自动选中其他权限
 const handleAutoApproveAllChange = (checked: boolean) => {
@@ -412,6 +419,13 @@ const handleSubmit = () => {
     customHeaders.value = '' // 默认空字符串
   }
 
+  // 添加 customNpmRegistry 字段（仅当显示npm registry输入框且有值时）
+  if (showNpmRegistryInput.value && npmRegistry.value.trim()) {
+    serverConfig.customNpmRegistry = npmRegistry.value.trim()
+  } else {
+    serverConfig.customNpmRegistry = ''
+  }
+
   emit('submit', name.value.trim(), serverConfig)
 }
 
@@ -484,6 +498,7 @@ watch(
       icons.value = newConfig.icons || '📁'
       type.value = newConfig.type || 'stdio'
       baseUrl.value = newConfig.baseUrl || ''
+      npmRegistry.value = newConfig.customNpmRegistry || ''
 
       // Format customHeaders from initialConfig
       if (newConfig.customHeaders) {
@@ -508,7 +523,12 @@ watch(
 
 // 打开MCP Marketplace
 const openMcpMarketplace = () => {
-  window.open('https://mcp.deepchatai.cn', '_blank')
+  window.open(MCP_MARKETPLACE_URL, '_blank')
+}
+
+// 打开Higress MCP Marketplace
+const openHigressMcpMarketplace = () => {
+  window.open(HIGRESS_MCP_MARKETPLACE_URL, '_blank')
 }
 
 // --- 新增辅助函数 ---
@@ -553,15 +573,29 @@ HTTP-Referer=deepchatai.cn`
 
         <!-- MCP Marketplace 入口 -->
         <div class="my-4">
-          <Button
-            variant="outline"
-            class="w-full flex items-center justify-center gap-2"
-            @click="openMcpMarketplace"
-          >
-            <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
-            <span>{{ t('settings.mcp.serverForm.browseMarketplace') }}</span>
-            <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
-          </Button>
+          <div class="flex gap-2">
+            <Button
+              v-if="false"
+              variant="outline"
+              class="flex-1 flex items-center justify-center gap-2"
+              @click="openMcpMarketplace"
+            >
+              <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
+              <span>{{ t('settings.mcp.serverForm.browseMarketplace') }}</span>
+              <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+            </Button>
+
+            <!-- Higress MCP Marketplace 入口 -->
+            <Button
+              variant="outline"
+              class="flex-1 flex items-center justify-center gap-2"
+              @click="openHigressMcpMarketplace"
+            >
+              <img src="@/assets/mcp-icons/higress.avif" class="w-4 h-4" />
+              <span>{{ $t('settings.mcp.serverForm.browseHigress') }}</span>
+              <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
 
         <div class="space-y-2">
@@ -589,7 +623,7 @@ HTTP-Referer=deepchatai.cn`
       <div class="space-y-2 px-4 pb-4">
         <!-- 服务器名称 -->
         <!-- 本地化名称 (针对inmemory类型) -->
-        <div class="space-y-2" v-if="isInMemoryType && name">
+        <div v-if="isInMemoryType && name" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="localized-name">{{
             t('settings.mcp.serverForm.name')
           }}</Label>
@@ -600,7 +634,7 @@ HTTP-Referer=deepchatai.cn`
             {{ getLocalizedName }}
           </div>
         </div>
-        <div class="space-y-2" v-else>
+        <div v-else class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-name">{{
             t('settings.mcp.serverForm.name')
           }}</Label>
@@ -637,8 +671,8 @@ HTTP-Referer=deepchatai.cn`
               <SelectItem value="sse">{{ t('settings.mcp.serverForm.typeSse') }}</SelectItem>
               <SelectItem value="http">{{ t('settings.mcp.serverForm.typeHttp') }}</SelectItem>
               <SelectItem
-                value="inmemory"
                 v-if="props.editMode && props.initialConfig?.type === 'inmemory'"
+                value="inmemory"
                 >{{ t('settings.mcp.serverForm.typeInMemory') }}</SelectItem
               >
             </SelectContent>
@@ -646,7 +680,7 @@ HTTP-Referer=deepchatai.cn`
         </div>
 
         <!-- 基础URL，仅在类型为SSE或HTTP时显示 -->
-        <div class="space-y-2" v-if="showBaseUrl">
+        <div v-if="showBaseUrl" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-base-url">{{
             t('settings.mcp.serverForm.baseUrl')
           }}</Label>
@@ -660,7 +694,7 @@ HTTP-Referer=deepchatai.cn`
         </div>
 
         <!-- 命令 -->
-        <div class="space-y-2" v-if="showCommandFields">
+        <div v-if="showCommandFields" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-command">{{
             t('settings.mcp.serverForm.command')
           }}</Label>
@@ -696,7 +730,7 @@ HTTP-Referer=deepchatai.cn`
           </Popover>
         </div>
         <!-- 参数 (标签式输入 for stdio/inmemory) -->
-        <div class="space-y-2" v-else-if="showArgsInput">
+        <div v-else-if="showArgsInput" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-args">{{
             t('settings.mcp.serverForm.args')
           }}</Label>
@@ -714,15 +748,15 @@ HTTP-Referer=deepchatai.cn`
               <button
                 type="button"
                 class="rounded-full outline-none ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                @click.stop="removeArgument(index)"
                 :aria-label="`Remove ${arg}`"
+                @click.stop="removeArgument(index)"
               >
                 <X class="h-3 w-3 text-muted-foreground hover:text-foreground" />
               </button>
             </Badge>
             <input
-              ref="argsInputRef"
               id="server-args-input"
+              ref="argsInputRef"
               v-model="currentArgumentInput"
               :placeholder="
                 argumentsList.length === 0 ? t('settings.mcp.serverForm.argsPlaceholder') : ''
@@ -736,7 +770,7 @@ HTTP-Referer=deepchatai.cn`
         </div>
 
         <!-- 环境变量 -->
-        <div class="space-y-2" v-if="showCommandFields || isInMemoryType">
+        <div v-if="showCommandFields || isInMemoryType" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-env">{{
             t('settings.mcp.serverForm.env')
           }}</Label>
@@ -751,7 +785,7 @@ HTTP-Referer=deepchatai.cn`
 
         <!-- 描述 -->
         <!-- 本地化描述 (针对inmemory类型) -->
-        <div class="space-y-2" v-if="isInMemoryType && name">
+        <div v-if="isInMemoryType && name" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="localized-desc">{{
             t('settings.mcp.serverForm.descriptions')
           }}</Label>
@@ -761,7 +795,7 @@ HTTP-Referer=deepchatai.cn`
             {{ getLocalizedDesc }}
           </div>
         </div>
-        <div class="space-y-2" v-else>
+        <div v-else class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-description">{{
             t('settings.mcp.serverForm.descriptions')
           }}</Label>
@@ -772,7 +806,20 @@ HTTP-Referer=deepchatai.cn`
             :disabled="isFieldReadOnly"
           />
         </div>
-
+        <!-- NPM Registry 自定义设置 (仅在命令为 npx 或 node 时显示) -->
+        <div v-if="showNpmRegistryInput" class="space-y-2">
+          <Label class="text-xs text-muted-foreground" for="npm-registry">
+            {{ t('settings.mcp.serverForm.npmRegistry') || '自定义npm Registry' }}
+          </Label>
+          <Input
+            id="npm-registry"
+            v-model="npmRegistry"
+            :placeholder="
+              t('settings.mcp.serverForm.npmRegistryPlaceholder') ||
+              '设置自定义 npm registry，留空系统会自动选择最快的'
+            "
+          />
+        </div>
         <!-- 自动授权选项 -->
         <div class="space-y-3">
           <Label class="text-xs text-muted-foreground">{{
@@ -824,7 +871,7 @@ HTTP-Referer=deepchatai.cn`
         </div>
 
         <!-- Custom Headers，仅在类型为SSE或HTTP时显示 -->
-        <div class="space-y-2" v-if="showBaseUrl">
+        <div v-if="showBaseUrl" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-custom-headers">{{
             t('settings.mcp.serverForm.customHeaders')
           }}</Label>

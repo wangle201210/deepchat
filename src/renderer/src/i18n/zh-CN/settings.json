@@ -8,7 +8,7 @@
     "searchEngine": "搜索引擎",
     "searchEngineSelect": "选择搜索引擎",
     "searchPreview": "搜索预览",
-    "searchAssistantModel": "搜索助手模型",
+    "searchAssistantModel": "助手模型",
     "selectModel": "选择模型",
     "proxyMode": "代理模式",
     "proxyModeSelect": "选择代理模式",
@@ -47,7 +47,9 @@
     "loggingEnableDesc": "启用日志将帮助我们诊断问题并改进应用程序。日志文件可能包含敏感信息。",
     "loggingDisableDesc": "禁用日志将停止收集应用程序日志。",
     "loggingRestartNotice": "切换此设置将导致程序重启，请确认是否继续？",
-    "openLogFolder": "打开日志文件夹"
+    "openLogFolder": "打开日志文件夹",
+    "notifications": "系统通知",
+    "notificationsDesc": "当 DeepChat 不在前台时，如有会话生成完毕会发送系统通知"
   },
   "data": {
     "title": "数据设置",
@@ -173,7 +175,40 @@
     "deleteModel": "删除模型",
     "deleteModelConfirm": "是否确认删除模型 \"{name}\"？此操作不可恢复。",
     "noLocalModels": "没有本地模型",
-    "localModels": "本地模型"
+    "localModels": "本地模型",
+    "azureApiVersion": "API 版本",
+    "safety": {
+      "title": "安全设置"
+    }
+  },
+  "knowledgeBase": {
+    "title": "知识库设置",
+    "addKnowledgeBase": "添加知识库",
+    "selectKnowledgeBaseType": "请选择要添加的知识库类型",
+    "difyDescription": "Dify知识库可以帮助您管理和使用文档数据",
+    "comingSoon": "即将推出",
+    "featureNotAvailable": "该功能暂未开放，敬请期待",
+    "addDifyConfig": "添加Dify配置",
+    "apiKey": "API密钥",
+    "datasetId": "数据集ID",
+    "endpoint": "API地址",
+    "configAdded": "配置已添加",
+    "configAddedDesc": "Dify知识库配置已成功添加",
+    "addConfig": "添加配置",
+    "moreComingSoon": "更多知识库类型即将推出",
+    "configUpdated": "配置已更新",
+    "configUpdatedDesc": "Dify知识库配置已成功更新",
+    "descriptionPlaceholder": "例如：公司产品文档知识库",
+    "ragflowTitle": "RAGFlow知识库",
+    "ragflowDescription": "RAGFlow是一个强大的知识库管理系统，支持多种检索方式和文档管理功能。",
+    "addRagflowConfig": "添加RAGFlow配置",
+    "editRagflowConfig": "编辑RAGFlow配置",
+    "dify": "Dify知识库",
+    "editDifyConfig": "修改Dify配置",
+    "fastgptTitle": "FastGPT知识库",
+    "fastgptDescription": "FastGPT是一个强大的知识库管理系统，支持多种检索方式和文档管理功能。",
+    "addFastGptConfig": "添加FastGPT配置",
+    "editFastGptConfig": "编辑FastGPT配置"
   },
   "mcp": {
     "title": "MCP设置",
@@ -184,7 +219,9 @@
     "marketplace": "前往MCP市场一键安装",
     "tabs": {
       "servers": "服务器",
-      "tools": "工具"
+      "tools": "工具",
+      "prompts": "提示词",
+      "resources": "资源"
     },
     "serverList": "服务器列表",
     "addServer": "添加服务器",
@@ -253,7 +290,10 @@
       "imageModel": "选择视觉模型",
       "customHeadersParseError": "自定义Header解析失败",
       "customHeaders": "自定义请求头",
-      "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确"
+      "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确",
+      "npmRegistry": "自定义NPM Registry",
+      "npmRegistryPlaceholder": "设置自定义NPM Registry,留空系统会自动选择最快的一个",
+      "browseHigress": "浏览 Higress MCP 市场"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",
@@ -283,7 +323,8 @@
     "cannotRemoveBuiltIn": "无法删除内置服务",
     "builtInServerCannotBeRemoved": "内置服务不能被删除，仅支持修改参数和环境变量",
     "maxDefaultServersReached": "最多只能设置3个默认服务器",
-    "removeDefaultFirst": "请先移除一些默认服务器"
+    "removeDefaultFirst": "请先移除一些默认服务器",
+    "higressMarket": "前往 Higress MCP 安装"
   },
   "about": {
     "title": "关于我们",
@@ -299,5 +340,14 @@
     "text-lg": "大",
     "text-xl": "特大",
     "text-2xl": "超大"
+  },
+  "shortcuts": {
+    "zoomIn": "放大字体",
+    "zoomOut": "缩小字体",
+    "zoomReset": "重置字体",
+    "goSettings": "打开设置",
+    "cleanHistory": "清除聊天历史",
+    "hideWindow": "隐藏窗口",
+    "quitApp": "退出程序"
   }
 }
