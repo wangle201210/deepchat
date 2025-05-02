@@ -86,9 +86,6 @@ export interface IWindowPresenter {
   hide(): void
   show(): void
   isMaximized(): boolean
-  toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
-  getTheme(): Promise<string>
-  getSystemTheme(): Promise<'dark' | 'light'>
   isMainWindowFocused(): boolean
 }
 
@@ -246,6 +243,11 @@ export interface IConfigPresenter {
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
+  // 主题设置
+  initTheme(): void
+  toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
+  getTheme(): Promise<string>
+  getSystemTheme(): Promise<'dark' | 'light'>
 }
 export type RENDERER_MODEL_META = {
   id: string

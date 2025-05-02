@@ -1,4 +1,4 @@
-import { BrowserWindow, shell, app, nativeImage, nativeTheme } from 'electron'
+import { BrowserWindow, shell, app, nativeImage } from 'electron'
 import { join } from 'path'
 import icon from '../../../resources/icon.png?asset'
 import iconWin from '../../../resources/icon.ico?asset'
@@ -7,7 +7,7 @@ import { IWindowPresenter } from '@shared/presenter'
 import { eventBus } from '@/eventbus'
 import { ConfigPresenter } from './configPresenter'
 import { TrayPresenter } from './trayPresenter'
-import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
+import { CONFIG_EVENTS, SYSTEM_EVENTS, WINDOW_EVENTS } from '@/events'
 import contextMenu from '../contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
@@ -31,6 +31,13 @@ export class WindowPresenter implements IWindowPresenter {
       this.isQuitting = true
       if (this.trayPresenter) {
         this.trayPresenter.destroy()
+      }
+    })
+
+    eventBus.on(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, (isDark: boolean) => {
+      // console.log('system-theme-updated', isDark)
+      if (this.mainWindow) {
+        this.mainWindow.webContents.send('system-theme-updated', isDark)
       }
     })
 
@@ -58,14 +65,6 @@ export class WindowPresenter implements IWindowPresenter {
         setTimeout(() => {
           presenter.devicePresenter.restartApp()
         }, 1000)
-      }
-    })
-
-    // 监听系统主题变化
-    nativeTheme.on('updated', () => {
-      // 只有当主题设置为 system 时，才需要通知渲染进程
-      if (nativeTheme.themeSource === 'system' && this.mainWindow) {
-        this.mainWindow.webContents.send('system-theme-updated', nativeTheme.shouldUseDarkColors)
       }
     })
   }
@@ -286,19 +285,6 @@ export class WindowPresenter implements IWindowPresenter {
   isMaximized(): boolean {
     const window = this.mainWindow
     return window ? window.isMaximized() : false
-  }
-
-  async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
-    nativeTheme.themeSource = theme
-    return nativeTheme.shouldUseDarkColors
-  }
-
-  async getTheme(): Promise<string> {
-    return nativeTheme.themeSource
-  }
-
-  async getSystemTheme(): Promise<'dark' | 'light'> {
-    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
   }
 
   async resetContextMenu(lang: string): Promise<void> {

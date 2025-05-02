@@ -39,6 +39,11 @@ export const STREAM_EVENTS = {
   ERROR: 'stream:error' // 替代 stream-error
 }
 
+// 系统相关事件
+export const SYSTEM_EVENTS = {
+  SYSTEM_THEME_UPDATED: 'system:theme-updated'
+}
+
 // 应用更新相关事件
 export const UPDATE_EVENTS = {
   STATUS_CHANGED: 'update:status-changed', // 替代 update-status-changed

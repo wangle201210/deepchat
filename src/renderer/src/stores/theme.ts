@@ -9,19 +9,19 @@ export type ThemeMode = 'dark' | 'light' | 'system'
 export const useThemeStore = defineStore('theme', () => {
   const isDark = useDark()
   const toggleDark = useToggle(isDark)
-  const windowPresenter = usePresenter('windowPresenter')
+  const configPresenter = usePresenter('configPresenter')
 
   // 存储当前主题模式
   const themeMode = ref<ThemeMode>('system')
 
   // 初始化主题
   const initTheme = async () => {
-    const currentTheme = (await windowPresenter.getTheme()) as ThemeMode
+    const currentTheme = (await configPresenter.getTheme()) as ThemeMode
     themeMode.value = currentTheme
 
     // 如果是系统主题模式，则根据系统实际深色/浅色设置来设置界面
     if (currentTheme === 'system') {
-      const systemIsDark = await windowPresenter.toggleTheme('system')
+      const systemIsDark = await configPresenter.toggleTheme('system')
       toggleDark(systemIsDark)
     } else {
       toggleDark(currentTheme === 'dark')
@@ -59,7 +59,7 @@ export const useThemeStore = defineStore('theme', () => {
   // 设置主题模式
   const setThemeMode = async (mode: ThemeMode) => {
     themeMode.value = mode
-    const isDarkMode = await windowPresenter.toggleTheme(mode)
+    const isDarkMode = await configPresenter.toggleTheme(mode)
 
     // 如果不是系统模式，直接设置深色/浅色状态
     // 如果是系统模式，toggleTheme 会返回系统当前的深色状态
