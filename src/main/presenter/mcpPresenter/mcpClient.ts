@@ -9,7 +9,7 @@ import path from 'path'
 import { presenter } from '@/presenter'
 import { app } from 'electron'
 import fs from 'fs'
-import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
+// import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 // TODO: resources 和 prompts 的类型,Notifactions 的类型 https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/client/simpleStreamableHttp.ts
@@ -69,7 +69,9 @@ export interface ResourceListEntry {
 // 定义资源的接口
 interface Resource {
   uri: string
-  text: string
+  mimeType?: string
+  text?: string
+  blob?: string
 }
 
 // MCP 客户端类
@@ -200,9 +202,9 @@ export class McpClient {
           'NPM_CONFIG_REGISTRY',
           'NPM_CONFIG_CACHE',
           'NPM_CONFIG_PREFIX',
-          'NPM_CONFIG_TMP',
-          'GRPC_PROXY',
-          'grpc_proxy'
+          'NPM_CONFIG_TMP'
+          // 'GRPC_PROXY',
+          // 'grpc_proxy'
         ]
 
         // 修复env类型问题
@@ -260,13 +262,14 @@ export class McpClient {
         }
 
         // 从proxyConfig获取代理URL并设置环境变量
-        const proxyUrl = proxyConfig.getProxyUrl()
-        if (proxyUrl) {
-          env.http_proxy = proxyUrl
-          env.https_proxy = proxyUrl
-          env.grpc_proxy = proxyUrl
-          env.no_proxy = NO_PROXY
-        }
+        // 目前好像加上代理后问题更多，暂时mcp就停用代理
+        // const proxyUrl = proxyConfig.getProxyUrl()
+        // if (proxyUrl) {
+        //   env.http_proxy = proxyUrl
+        //   env.https_proxy = proxyUrl
+        //   env.grpc_proxy = proxyUrl
+        //   env.no_proxy = NO_PROXY
+        // }
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
         }

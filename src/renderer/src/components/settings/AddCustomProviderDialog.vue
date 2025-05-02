@@ -104,7 +104,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { v4 as uuidv4 } from 'uuid'
+import { nanoid } from 'nanoid'
 import {
   Dialog,
   DialogContent,
@@ -195,7 +195,7 @@ const handleSubmit = async () => {
     isSubmitting.value = true
 
     // 生成唯一ID
-    formData.value.id = uuidv4()
+    formData.value.id = nanoid()
 
     closeDialog()
     // 使用 settingsStore 添加新的提供商

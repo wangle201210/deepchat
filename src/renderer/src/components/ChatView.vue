@@ -21,7 +21,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
-import MessageList from './message/MesasgeList.vue'
+import MessageList from './message/MessageList.vue'
 import ChatInput from './ChatInput.vue'
 import { useRoute } from 'vue-router'
 import { UserMessageContent } from '@shared/chat'

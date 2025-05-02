@@ -46,7 +46,7 @@
   "searchEngine": "搜尋引擎",
   "searchEngineSelect": "選擇搜尋引擎",
   "searchPreview": "搜尋預覽",
-  "searchAssistantModel": "搜尋助理模型",
+  "searchAssistantModel": "助手模型",
   "selectModel": "選擇模型",
   "proxyMode": "代理伺服器模式",
   "proxyModeSelect": "選擇代理伺服器模式",
@@ -59,5 +59,6 @@
   "languageSystem": "跟隨系統",
   "watermarkTip": "AI生成內容，請謹慎參考",
   "collapse": "收起",
-  "expand": "展開"
+  "expand": "展開",
+  "image": "圖片"
 }

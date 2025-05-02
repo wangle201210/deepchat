@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
@@ -69,9 +65,6 @@ const SearchFilesArgsSchema = z.object({
 const GetFileInfoArgsSchema = z.object({
   path: z.string()
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 interface FileInfo {
   size: number
@@ -406,7 +399,7 @@ export class FileSystemServer {
               'Handles various text encodings and provides detailed error messages ' +
               'if the file cannot be read. Use this tool when you need to examine ' +
               'the contents of a single file. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(ReadFileArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(ReadFileArgsSchema)
           },
           {
             name: 'read_multiple_files',
@@ -416,7 +409,7 @@ export class FileSystemServer {
               "or compare multiple files. Each file's content is returned with its " +
               "path as a reference. Failed reads for individual files won't stop " +
               'the entire operation. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(ReadMultipleFilesArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(ReadMultipleFilesArgsSchema)
           },
           {
             name: 'write_file',
@@ -424,7 +417,7 @@ export class FileSystemServer {
               'Create a new file or completely overwrite an existing file with new content. ' +
               'Use with caution as it will overwrite existing files without warning. ' +
               'Handles text content with proper encoding. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(WriteFileArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(WriteFileArgsSchema)
           },
           {
             name: 'edit_file',
@@ -432,7 +425,7 @@ export class FileSystemServer {
               'Make line-based edits to a text file. Each edit replaces exact line sequences ' +
               'with new content. Returns a git-style diff showing the changes made. ' +
               'Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(EditFileArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(EditFileArgsSchema)
           },
           {
             name: 'create_directory',
@@ -441,7 +434,7 @@ export class FileSystemServer {
               'nested directories in one operation. If the directory already exists, ' +
               'this operation will succeed silently. Perfect for setting up directory ' +
               'structures for projects or ensuring required paths exist. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(CreateDirectoryArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(CreateDirectoryArgsSchema)
           },
           {
             name: 'list_directory',
@@ -450,7 +443,7 @@ export class FileSystemServer {
               'Results clearly distinguish between files and directories with [FILE] and [DIR] ' +
               'prefixes. This tool is essential for understanding directory structure and ' +
               'finding specific files within a directory. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(ListDirectoryArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(ListDirectoryArgsSchema)
           },
           {
             name: 'directory_tree',
@@ -459,7 +452,7 @@ export class FileSystemServer {
               "Each entry includes 'name', 'type' (file/directory), and 'children' for directories. " +
               'Files have no children array, while directories always have a children array (which may be empty). ' +
               'The output is formatted with 2-space indentation for readability. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(DirectoryTreeArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(DirectoryTreeArgsSchema)
           },
           {
             name: 'move_file',
@@ -468,7 +461,7 @@ export class FileSystemServer {
               'and rename them in a single operation. If the destination exists, the ' +
               'operation will fail. Works across different directories and can be used ' +
               'for simple renaming within the same directory. Both source and destination must be within allowed directories.',
-            inputSchema: zodToJsonSchema(MoveFileArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(MoveFileArgsSchema)
           },
           {
             name: 'move_multiple_files',
@@ -477,7 +470,7 @@ export class FileSystemServer {
               'in a single operation. If the destination exists, the ' +
               'operation will fail. Works across different directories.' +
               'Both sources and destination must be within allowed directories.',
-            inputSchema: zodToJsonSchema(MoveFilesArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(MoveFilesArgsSchema)
           },
           {
             name: 'search_files',
@@ -487,7 +480,7 @@ export class FileSystemServer {
               'is case-insensitive and matches partial names. Returns full paths to all ' +
               "matching items. Great for finding files when you don't know their exact location. " +
               'Only searches within allowed directories.',
-            inputSchema: zodToJsonSchema(SearchFilesArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(SearchFilesArgsSchema)
           },
           {
             name: 'get_file_info',
@@ -496,7 +489,7 @@ export class FileSystemServer {
               'information including size, creation time, last modified time, permissions, ' +
               'and type. This tool is perfect for understanding file characteristics ' +
               'without reading the actual content. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(GetFileInfoArgsSchema) as ToolInput
+            inputSchema: zodToJsonSchema(GetFileInfoArgsSchema)
           },
           {
             name: 'list_allowed_directories',

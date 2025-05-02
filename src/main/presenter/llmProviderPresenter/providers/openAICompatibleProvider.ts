@@ -8,11 +8,14 @@ import {
   ChatMessage
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
-import OpenAI from 'openai'
+import OpenAI, { AzureOpenAI } from 'openai'
 import {
+  ChatCompletionAssistantMessageParam,
+  ChatCompletionContentPart,
   ChatCompletionContentPartText,
   ChatCompletionMessage,
-  ChatCompletionMessageParam
+  ChatCompletionMessageParam,
+  ChatCompletionToolMessageParam
 } from 'openai/resources'
 import { ConfigPresenter } from '../../configPresenter'
 import { proxyConfig } from '../../proxyConfig'
@@ -23,6 +26,13 @@ import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
+const OPENAI_IMAGE_GENERATION_MODELS = [
+  'gpt-4o-all',
+  'gpt-4o-image',
+  'gpt-image-1',
+  'dall-e-3',
+  'dall-e-2'
+]
 
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
@@ -33,14 +43,31 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
     const proxyUrl = proxyConfig.getProxyUrl()
-    this.openai = new OpenAI({
-      apiKey: this.provider.apiKey,
-      baseURL: this.provider.baseUrl,
-      httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
-      defaultHeaders: {
-        ...this.defaultHeaders
+    if (provider.id === 'azure-openai') {
+      try {
+        const apiVersion = this.configPresenter.getSetting<string>('azureApiVersion')
+        this.openai = new AzureOpenAI({
+          apiKey: this.provider.apiKey,
+          baseURL: this.provider.baseUrl,
+          apiVersion: apiVersion || '2024-02-01',
+          httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
+          defaultHeaders: {
+            ...this.defaultHeaders
+          }
+        })
+      } catch (e) {
+        console.warn('create azue openai failed', e)
       }
-    })
+    } else {
+      this.openai = new OpenAI({
+        apiKey: this.provider.apiKey,
+        baseURL: this.provider.baseUrl,
+        httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
+        defaultHeaders: {
+          ...this.defaultHeaders
+        }
+      })
+    }
     if (OpenAICompatibleProvider.NO_MODELS_API_LIST.includes(this.provider.id.toLowerCase())) {
       this.isNoModelsApi = true
     }
@@ -79,9 +106,54 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     }))
   }
 
-  // 辅助方法：格式化消息
-  protected formatMessages(messages: ChatMessage[]): ChatMessage[] {
-    return messages
+  /**
+   * User消息，上层会根据是否存在 vision 去插入 image_url
+   * Ass 消息，需要判断一下，把图片转换成正确的上下文，因为模型可以切换
+   * @param messages
+   * @returns
+   */
+  protected formatMessages(messages: ChatMessage[]): ChatCompletionMessageParam[] {
+    return messages.map((msg) => {
+      // 处理基本消息结构
+      const baseMessage: Partial<ChatCompletionMessageParam> = {
+        role: msg.role as 'system' | 'user' | 'assistant' | 'tool'
+      }
+
+      // 处理content转换为字符串
+      if (msg.content !== undefined && msg.role !== 'user') {
+        if (typeof msg.content === 'string') {
+          baseMessage.content = msg.content
+        } else if (Array.isArray(msg.content)) {
+          // 处理多模态内容数组
+          const textParts: string[] = []
+          for (const part of msg.content) {
+            if (part.type === 'text' && part.text) {
+              textParts.push(part.text)
+            }
+            if (part.type === 'image_url' && part.image_url?.url) {
+              textParts.push(`image: ${part.image_url.url}`)
+            }
+          }
+          baseMessage.content = textParts.join('\n')
+        }
+      }
+      if (msg.role === 'user') {
+        if (typeof msg.content === 'string') {
+          baseMessage.content = msg.content
+        } else if (Array.isArray(msg.content)) {
+          baseMessage.content = msg.content as ChatCompletionContentPart[]
+        }
+      }
+
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        ;(baseMessage as ChatCompletionAssistantMessageParam).tool_calls = msg.tool_calls
+      }
+      if (msg.role === 'tool') {
+        ;(baseMessage as ChatCompletionToolMessageParam).tool_call_id = msg.tool_call_id || ''
+      }
+
+      return baseMessage as ChatCompletionMessageParam
+    })
   }
 
   // OpenAI完成方法
@@ -99,7 +171,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       throw new Error('Model ID is required')
     }
     const requestParams: OpenAI.Chat.ChatCompletionCreateParams = {
-      messages: messages as ChatCompletionMessageParam[],
+      messages: this.formatMessages(messages),
       model: modelId,
       stream: false,
       temperature: temperature,
@@ -165,10 +237,161 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
+    // console.log('messages', JSON.stringify(messages))
+    // --- [NEW] Handle Image Generation Models ---
+    if (OPENAI_IMAGE_GENERATION_MODELS.includes(modelId)) {
+      // 获取最后几条消息，检查是否有图片
+      let prompt = ''
+      const imageUrls: string[] = []
+      // 获取最后的用户消息内容作为提示词
+      const lastUserMessage = messages.findLast((m) => m.role === 'user')
+      if (lastUserMessage?.content) {
+        if (typeof lastUserMessage.content === 'string') {
+          prompt = lastUserMessage.content
+        } else if (Array.isArray(lastUserMessage.content)) {
+          // 处理多模态内容，提取文本
+          const textParts: string[] = []
+          for (const part of lastUserMessage.content) {
+            if (part.type === 'text' && part.text) {
+              textParts.push(part.text)
+            }
+          }
+          prompt = textParts.join('\n')
+        }
+      }
+
+      // 检查最后几条消息中是否有图片
+      // 通常我们只需要检查最后两条消息：最近的用户消息和最近的助手消息
+      const lastMessages = messages.slice(-2)
+      for (const message of lastMessages) {
+        if (message.content) {
+          if (Array.isArray(message.content)) {
+            for (const part of message.content) {
+              if (part.type === 'image_url' && part.image_url?.url) {
+                imageUrls.push(part.image_url.url)
+              }
+            }
+          }
+        }
+      }
+
+      if (!prompt) {
+        console.error('[coreStream] Could not extract prompt for image generation.')
+        yield { type: 'error', error_message: 'Could not extract prompt for image generation.' }
+        yield { type: 'stop', stop_reason: 'error' }
+        return
+      }
+
+      try {
+        let result
+
+        if (imageUrls.length > 0) {
+          // 使用 images.edit 接口处理带有图片的请求
+          // console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
+
+          // 获取图片数据
+          const imageResponse = await fetch(imageUrls[0])
+          const imageBlob = await imageResponse.blob()
+          const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+
+          // 创建临时文件
+          const imagePath = `/tmp/openai_image_${Date.now()}.png`
+          // 使用 fs 保存图片
+          const fs = await import('fs')
+          await new Promise<void>((resolve, reject) => {
+            fs.writeFile(imagePath, imageBuffer, (err: Error | null) => {
+              if (err) {
+                reject(err)
+              } else {
+                resolve()
+              }
+            })
+          })
+
+          // 使用文件路径创建 Readable 流
+          const imageFile = fs.createReadStream(imagePath)
+
+          result = await this.openai.images.edit({
+            model: modelId,
+            image: imageFile,
+            prompt: prompt,
+            n: 1,
+            size: '1024x1024',
+            response_format: 'url',
+            quality: 'standard'
+          })
+
+          // 清理临时文件
+          try {
+            fs.unlinkSync(imagePath)
+          } catch (e) {
+            console.error('Failed to delete temporary file:', e)
+          }
+        } else {
+          // 使用原来的 images.generate 接口处理没有图片的请求
+          console.log(`[coreStream] Generating image with model ${modelId} and prompt: "${prompt}"`)
+          result = await this.openai.images.generate(
+            {
+              model: modelId,
+              prompt: prompt,
+              output_format: 'png',
+              n: 1, // Generate one image
+              size: 'auto', // Default size, consider making configurable
+              response_format: 'url', // Need base64 data
+              quality: 'hd', // Default quality, adjust as needed
+              background: 'transparent' // Optional, based on model support/needs
+            },
+            {
+              timeout: 300_000
+            }
+          )
+        }
+
+        if (result.data && result.data[0]?.url) {
+          // 使用devicePresenter缓存图片URL
+          try {
+            const imageUrl = result.data[0]?.url
+            const cachedUrl = await presenter.devicePresenter.cacheImage(imageUrl)
+
+            // 返回缓存后的URL
+            yield {
+              type: 'image_data',
+              image_data: {
+                data: cachedUrl,
+                mimeType: 'deepchat/image-url'
+              }
+            }
+            yield { type: 'stop', stop_reason: 'complete' }
+          } catch (cacheError) {
+            // 缓存失败时降级为使用原始URL
+            console.warn('[coreStream] Failed to cache image, using original URL:', cacheError)
+            yield {
+              type: 'image_data',
+              image_data: {
+                data: result.data[0]?.url,
+                mimeType: 'deepchat/image-url'
+              }
+            }
+            yield { type: 'stop', stop_reason: 'complete' }
+          }
+        } else {
+          console.error('[coreStream] No image data received from API.')
+          yield { type: 'error', error_message: 'No image data received from API.' }
+          yield { type: 'stop', stop_reason: 'error' }
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error('[coreStream] Error during image generation:', errorMessage)
+        yield { type: 'error', error_message: `Image generation failed: ${errorMessage}` }
+        yield { type: 'stop', stop_reason: 'error' }
+      }
+      return // Stop execution here for image models
+    }
+    // --- End Image Generation Handling ---
 
     const tools = mcpTools || []
     const supportsFunctionCall = modelConfig?.functionCall || false
-    let processedMessages = [...messages] as ChatCompletionMessageParam[]
+    let processedMessages = [...this.formatMessages(messages)] as ChatCompletionMessageParam[]
     if (tools.length > 0 && !supportsFunctionCall) {
       processedMessages = this.prepareFunctionCallPrompt(processedMessages, tools)
     }
@@ -220,6 +443,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       | undefined = undefined
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
+      // console.log('chunk', JSON.stringify(chunk))
       const choice = chunk.choices[0]
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const delta = choice?.delta as any
@@ -946,7 +1170,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     maxTokens?: number
   ): Promise<LLMResponse> {
     // Simple completion, no specific system prompt needed unless required by base class or future design
-    return this.openAICompletion(this.formatMessages(messages), modelId, temperature, maxTokens)
+    return this.openAICompletion(messages, modelId, temperature, maxTokens)
   }
   async summaries(
     text: string,
@@ -972,12 +1196,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const requestMessages: ChatMessage[] = [{ role: 'user', content: prompt }]
     // Note: formatMessages might not be needed here if it's just a single prompt string,
     // but keeping it for consistency in case formatMessages adds system prompts or other logic.
-    return this.openAICompletion(
-      this.formatMessages(requestMessages),
-      modelId,
-      temperature,
-      maxTokens
-    )
+    return this.openAICompletion(requestMessages, modelId, temperature, maxTokens)
   }
   async suggestions(
     messages: ChatMessage[],
@@ -999,7 +1218,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     const requestMessages: ChatMessage[] = [
       { role: 'system', content: systemPrompt },
       // Include context leading up to the last user message
-      ...this.formatMessages(contextMessages)
+      ...contextMessages
     ]
 
     try {

@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { presenter } from '@/presenter'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { proxyConfig } from '../../proxyConfig'
-import { getModelConfig } from '../modelConfigs'
+import { Usage } from '@anthropic-ai/sdk/resources'
 
 export class AnthropicProvider extends BaseLLMProvider {
   private anthropic!: Anthropic
@@ -62,8 +62,8 @@ export class AnthropicProvider extends BaseLLMProvider {
         for (const model of models.data) {
           // 确保模型有必要的属性
           if (model.id) {
-            // 从modelConfigs获取额外的配置信息
-            const modelConfig = getModelConfig(model.id)
+            // 获取额外的配置信息
+            const modelConfig = this.configPresenter.getModelConfig(model.id, this.provider.id)
 
             // 提取模型组名称，通常是Claude后面的版本号
 
@@ -710,19 +710,12 @@ ${context}
       let currentToolId = ''
       let currentToolName = ''
       let currentToolInputs: Record<string, unknown> = {}
-
+      let usageMetadata: Usage | undefined
       // 处理流中的各种事件
       for await (const chunk of stream) {
         // 处理使用统计
         if (chunk.type === 'message_start' && chunk.message.usage) {
-          yield {
-            type: 'usage',
-            usage: {
-              prompt_tokens: chunk.message.usage.input_tokens,
-              completion_tokens: chunk.message.usage.output_tokens,
-              total_tokens: chunk.message.usage.input_tokens + chunk.message.usage.output_tokens
-            }
-          }
+          usageMetadata = chunk.message.usage
         }
 
         // 处理工具调用开始
@@ -904,7 +897,16 @@ ${context}
           continue
         }
       }
-
+      if (usageMetadata) {
+        yield {
+          type: 'usage',
+          usage: {
+            prompt_tokens: usageMetadata.input_tokens,
+            completion_tokens: usageMetadata.output_tokens,
+            total_tokens: usageMetadata.input_tokens + usageMetadata.output_tokens
+          }
+        }
+      }
       // 发送停止事件
       yield {
         type: 'stop',

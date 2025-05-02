@@ -12,8 +12,22 @@ export default async function notarizing(context) {
     return
   }
   console.info('start notarize mac app', appOutDir)
-  return await notarize({
-    appPath: `${appOutDir}/DeepChat.app`,
-    keychainProfile: 'DeepChat' // replace with your keychain
-  })
+  if (releaseFlag === '2') {
+    // 使用预设的appid、teamid和环境变量中的密码
+    const appleId = process.env.DEEPCHAT_APPLE_NOTARY_USERNAME
+    const teamId = process.env.DEEPCHAT_APPLE_NOTARY_TEAM_ID
+    const appleIdPassword = process.env.DEEPCHAT_APPLE_NOTARY_PASSWORD
+
+    return await notarize({
+      appPath: `${appOutDir}/DeepChat.app`,
+      appleId,
+      appleIdPassword,
+      teamId
+    })
+  } else {
+    return await notarize({
+      appPath: `${appOutDir}/DeepChat.app`,
+      keychainProfile: 'DeepChat' // replace with your keychain
+    })
+  }
 }

@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "メッセージを入力...",
+    "placeholder": "何か聞いていますか？",
     "fileArea": "ファイルエリア",
     "inputArea": "入力エリア",
     "functionSwitch": "機能スイッチ",
@@ -24,5 +24,9 @@
   },
   "messages": {
     "thinking": "考え..."
+  },
+  "notify": {
+    "generationComplete": "生成は完了しました",
+    "generationError": "生成は失敗しました"
   }
 }

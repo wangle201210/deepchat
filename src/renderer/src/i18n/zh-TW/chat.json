@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "輸入訊息...",
+    "placeholder": "問點什麼？",
     "fileArea": "檔案區域",
     "inputArea": "輸入區域",
     "functionSwitch": "功能切換",
@@ -24,5 +24,9 @@
   },
   "messages": {
     "thinking": "正在思考..."
+  },
+  "notify": {
+    "generationComplete": "生成完畢",
+    "generationError": "生成失敗"
   }
 }

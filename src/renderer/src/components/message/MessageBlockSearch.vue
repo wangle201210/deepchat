@@ -21,15 +21,13 @@
           />
         </template>
       </div>
-      <span>{{ t('chat.search.results', [block.extra.total]) }}</span>
+      <span>{{ t('chat.search.results', [extra.total]) }}</span>
       <Icon icon="lucide:chevron-right" class="w-4 h-4 text-muted-foreground" />
     </template>
     <template v-else-if="block.status === 'loading'">
       <Icon icon="lucide:loader-circle" class="w-4 h-4 text-muted-foreground animate-spin" />
       <span>{{
-        block.extra.total > 0
-          ? t('chat.search.results', [block.extra.total])
-          : t('chat.search.searching')
+        extra.total > 0 ? t('chat.search.results', [extra.total]) : t('chat.search.searching')
       }}</span>
     </template>
     <template v-else-if="block.status === 'optimizing'">
@@ -55,6 +53,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { SearchResult } from '@shared/presenter'
 import { computed, ref } from 'vue'
 import SearchResultsDrawer from '../SearchResultsDrawer.vue'
+import { AssistantMessageBlock } from '@shared/chat'
 
 const { t } = useI18n()
 const threadPresenter = usePresenter('threadPresenter')
@@ -63,20 +62,21 @@ const searchResults = ref<SearchResult[]>([])
 
 const props = defineProps<{
   messageId: string
-  block: {
-    status: 'success' | 'loading' | 'optimizing' | 'reading' | 'error'
-    extra: {
-      total: number
-      pages?: Array<{
-        url: string
-        icon: string
-      }>
-    }
-  }
+  block: AssistantMessageBlock
 }>()
 
+const extra = computed(() => {
+  return props.block.extra as {
+    total: number
+    pages?: Array<{
+      url: string
+      icon: string
+    }>
+  }
+})
+
 const pages = computed(() => {
-  return props.block.extra.pages?.slice(0, 10) || []
+  return extra.value.pages?.slice(0, 10) || []
 })
 
 const openSearchResults = async () => {

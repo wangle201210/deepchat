@@ -8,7 +8,7 @@
     "searchEngine": "搜尋引擎",
     "searchEngineSelect": "選擇搜尋引擎",
     "searchPreview": "搜尋預覽",
-    "searchAssistantModel": "搜尋助理模型",
+    "searchAssistantModel": "助手模型",
     "selectModel": "選擇模型",
     "proxyMode": "代理伺服器模式",
     "proxyModeSelect": "選擇代理伺服器模式",
@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新建聊天",
       "title": "快捷鍵設置"
-    }
+    },
+    "notifications": "系統通知",
+    "notificationsDesc": "當 DeepChat 不在前台時，如有會話生成完畢會發送系統通知"
   },
   "data": {
     "title": "資料設定",
@@ -173,7 +175,11 @@
     "deleteModel": "刪除模型",
     "deleteModelConfirm": "是否確認刪除模型「{name}」？此操作無法復原。",
     "localModels": "本機模型",
-    "noLocalModels": "沒有本機模型"
+    "noLocalModels": "沒有本機模型",
+    "azureApiVersion": "API 版本",
+    "safety": {
+      "title": "安全設置"
+    }
   },
   "knowledgeBase": {
     "title": "知識庫設置",
@@ -212,7 +218,9 @@
     "enableToAccess": "請先啟用MCP以訪問配置選項",
     "tabs": {
       "servers": "伺服器",
-      "tools": "工具"
+      "tools": "工具",
+      "prompts": "提示詞",
+      "resources": "資源"
     },
     "serverList": "伺服器列表",
     "addServer": "新增伺服器",
@@ -281,7 +289,10 @@
       "imageModel": "選擇視覺模型",
       "customHeadersParseError": "自定義Header解析失敗",
       "customHeaders": "自定義請求頭",
-      "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確"
+      "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確",
+      "npmRegistry": "自定義NPM Registry",
+      "npmRegistryPlaceholder": "設置自定義NPM Registry,留空系統會自動選擇最快的一個",
+      "browseHigress": "瀏覽 Higress MCP 市場"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -312,7 +323,8 @@
     "removeDefault": "移除默認",
     "marketplace": "前往MCP市場一鍵安裝",
     "maxDefaultServersReached": "最多只能設置3個默認服務器",
-    "removeDefaultFirst": "請先移除一些默認服務器"
+    "removeDefaultFirst": "請先移除一些默認服務器",
+    "higressMarket": "前往 Higress MCP 安裝"
   },
   "about": {
     "title": "關於我們",

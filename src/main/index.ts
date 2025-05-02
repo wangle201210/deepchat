@@ -108,8 +108,48 @@ app.whenReady().then(() => {
       })
     }
   })
-})
 
+  // 注册 imgcache 协议处理图片缓存
+  protocol.handle('imgcache', (request) => {
+    try {
+      const filePath = request.url.slice('imgcache://'.length)
+      const fullPath = path.join(app.getPath('userData'), 'images', filePath)
+
+      // 检查文件是否存在
+      if (!fs.existsSync(fullPath)) {
+        return new Response(`找不到图片: ${filePath}`, {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' }
+        })
+      }
+
+      // 根据文件扩展名确定MIME类型
+      let mimeType = 'image/jpeg' // 默认MIME类型
+      if (filePath.endsWith('.png')) {
+        mimeType = 'image/png'
+      } else if (filePath.endsWith('.gif')) {
+        mimeType = 'image/gif'
+      } else if (filePath.endsWith('.webp')) {
+        mimeType = 'image/webp'
+      } else if (filePath.endsWith('.svg')) {
+        mimeType = 'image/svg+xml'
+      }
+
+      // 读取文件并返回响应
+      const fileContent = fs.readFileSync(fullPath)
+      return new Response(fileContent, {
+        headers: { 'Content-Type': mimeType }
+      })
+    } catch (error: unknown) {
+      console.error('处理imgcache请求时出错:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return new Response(`服务器错误: ${errorMessage}`, {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
+  })
+})
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.

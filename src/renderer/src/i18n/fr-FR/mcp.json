@@ -151,5 +151,21 @@
       "name": "Recherche dans la base de connaissances Dify",
       "desc": "Service de recherche de la base de connaissances Dify, permet de rechercher le contenu de la base de connaissances Dify"
     }
+  },
+  "prompts": {
+    "noPromptsAvailable": "Aucune invite disponible",
+    "noDescription": "Aucune description encore",
+    "selectPrompt": "Montré ici",
+    "parameters": "Paramètres rapides",
+    "runningPrompt": "Invite obtient",
+    "executeButton": "Cliquez pour obtenir",
+    "resultTitle": "Des détails proches"
+  },
+  "resources": {
+    "noResourcesAvailable": "Aucune ressource",
+    "selectResource": "Afficher le contenu des ressources ici",
+    "loading": "chargement",
+    "loadContent": "Obtenez du contenu de ressources",
+    "pleaseSelect": "Cliquez pour obtenir des détails sur les ressources d'affichage"
   }
 }

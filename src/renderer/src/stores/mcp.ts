@@ -7,8 +7,9 @@ import type {
   MCPConfig,
   MCPServerConfig,
   MCPToolDefinition,
-  Prompt,
-  ResourceListEntry
+  PromptWithClient,
+  Resource,
+  ResourceListEntryWithClient
 } from '@shared/presenter'
 // 自定义类型定义
 interface MCPToolCallRequest {
@@ -23,16 +24,6 @@ interface MCPToolCallRequest {
 interface MCPToolCallResult {
   function_name?: string
   content: string | { type: string; text: string }[]
-}
-
-export interface PromptWithClient extends Prompt {
-  clientName: string
-  clientIcon: string
-}
-
-export interface ResourceListEntryWithClient extends ResourceListEntry {
-  clientName: string
-  clientIcon: string
 }
 
 export const useMcpStore = defineStore('mcp', () => {
@@ -435,6 +426,39 @@ export const useMcpStore = defineStore('mcp', () => {
     }
   }
 
+  // 获取提示模板详情
+  const getPrompt = async (
+    prompt: PromptWithClient,
+    params: Record<string, unknown> = {}
+  ): Promise<unknown> => {
+    if (!config.value.mcpEnabled) {
+      throw new Error('MCP功能已禁用')
+    }
+
+    try {
+      // 传递完整对象给mcpPresenter
+      return await mcpPresenter.getPrompt(prompt, params)
+    } catch (error) {
+      console.error('Failed to get prompt:', error)
+      throw error
+    }
+  }
+
+  // 读取资源内容
+  const readResource = async (resource: ResourceListEntryWithClient): Promise<Resource> => {
+    if (!config.value.mcpEnabled) {
+      throw new Error('MCP功能已禁用')
+    }
+
+    try {
+      // 传递完整对象给mcpPresenter
+      return await mcpPresenter.readResource(resource)
+    } catch (error) {
+      console.error('Failed to read resource:', error)
+      throw error
+    }
+  }
+
   // ==================== 事件监听 ====================
   // 初始化事件监听
   const initEvents = () => {
@@ -528,6 +552,8 @@ export const useMcpStore = defineStore('mcp', () => {
     loadResources,
     updateToolInput,
     callTool,
-    setMcpEnabled
+    setMcpEnabled,
+    getPrompt,
+    readResource
   }
 })

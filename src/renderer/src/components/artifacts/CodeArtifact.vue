@@ -1,46 +1,50 @@
 <template>
-  <div class="code-artifact h-full">
-    <div class="h-full p-4">
-      <div class="code-block">
-        <div class="code-header">
-          <div class="flex items-center gap-2">
-            <div class="code-lang">{{ displayLanguage }}</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="copy-button" @click="handleCopy">
-              <Icon icon="lucide:clipboard" class="w-4 h-4 mr-1" />
-              {{ copied ? t('common.copySuccess') : t('common.copyCode') }}
-            </button>
-          </div>
-        </div>
-        <div class="code-content" ref="editorContainer"></div>
-      </div>
+  <div class="m-4 rounded-lg border border-border overflow-hidden shadow-sm">
+    <div class="flex justify-between items-center p-2 bg-gray-100 dark:bg-zinc-800 text-xs">
+      <span class="flex items-center space-x-2">
+        <Icon :icon="languageIcon" class="w-4 h-4" />
+        <span class="text-gray-600 dark:text-gray-400 font-mono font-bold">{{
+          displayLanguage
+        }}</span>
+      </span>
+
+      <button
+        class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+        @click="handleCopy"
+      >
+        {{ copied ? t('common.copySuccess') : t('common.copy') }}
+      </button>
     </div>
+    <div
+      ref="codeEditor"
+      class="min-h-[30px] text-xs overflow-auto bg-gray-50 dark:bg-zinc-900 font-mono leading-relaxed"
+      :data-language="props.block.artifact?.language"
+    ></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { EditorView, basicSetup } from 'codemirror'
 import { EditorState } from '@codemirror/state'
-import { javascript } from '@codemirror/lang-javascript'
-import { python } from '@codemirror/lang-python'
-import { java } from '@codemirror/lang-java'
-import { cpp } from '@codemirror/lang-cpp'
-import { php } from '@codemirror/lang-php'
-import { rust } from '@codemirror/lang-rust'
-import { sql } from '@codemirror/lang-sql'
-import { json } from '@codemirror/lang-json'
-import { xml } from '@codemirror/lang-xml'
-import { markdown } from '@codemirror/lang-markdown'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { getLanguageExtension, getLanguageIcon, prepareLanguage } from '@/lib/code.lang'
+import { useThemeStore } from '@/stores/theme'
+import { anysphereThemeDark, anysphereThemeLight } from '@/lib/code.theme'
+
+const themeStore = useThemeStore()
+const languageIcon = computed(() => {
+  const lang = props.block.artifact?.language?.trim().toLowerCase() ?? ''
+  return getLanguageIcon(lang)
+})
+
+prepareLanguage()
 
 const { t } = useI18n()
 const copied = ref(false)
-const editorContainer = ref<HTMLElement>()
-let editor: EditorView | null = null
+const codeEditor = ref<HTMLElement>()
+const editorInstance = ref<EditorView | null>(null)
 
 const props = defineProps<{
   block: {
@@ -53,20 +57,6 @@ const props = defineProps<{
   }
   isPreview: boolean
 }>()
-
-// 语言映射表
-const languageAliases: Record<string, string> = {
-  js: 'javascript',
-  ts: 'typescript',
-  py: 'python',
-  rb: 'ruby',
-  sh: 'bash',
-  yml: 'yaml',
-  md: 'markdown',
-  vue: 'javascript',
-  jsx: 'javascript',
-  tsx: 'typescript'
-}
 
 // 获取显示用的语言名称
 const displayLanguage = computed(() => {
@@ -102,43 +92,6 @@ const displayLanguage = computed(() => {
   return displayNames[lang] || lang.toUpperCase()
 })
 
-// 获取对应的 CodeMirror 语言支持
-const getLanguageSupport = (lang: string) => {
-  const mappedLang = languageAliases[lang] || lang
-  switch (mappedLang.toLowerCase()) {
-    case 'javascript':
-    case 'typescript':
-    case 'jsx':
-    case 'tsx':
-      return javascript()
-    case 'python':
-      return python()
-    case 'java':
-      return java()
-    case 'cpp':
-    case 'c++':
-    case 'c':
-      return cpp()
-    case 'php':
-      return php()
-    case 'rust':
-      return rust()
-    case 'sql':
-      return sql()
-    case 'json':
-      return json()
-    case 'xml':
-    case 'html':
-    case 'vue':
-      return xml()
-    case 'markdown':
-    case 'md':
-      return markdown()
-    default:
-      return null
-  }
-}
-
 const handleCopy = async () => {
   try {
     window.api.copyText(props.block.content)
@@ -151,126 +104,103 @@ const handleCopy = async () => {
   }
 }
 
-const initEditor = () => {
-  if (!editorContainer.value) return
+// 创建编辑器实例
+const createEditor = () => {
+  if (!codeEditor.value) return
 
-  const lang = props.block.artifact?.language?.toLowerCase() || ''
-  const languageSupport = getLanguageSupport(lang)
-
-  const extensions = [
-    basicSetup,
-    oneDark,
-    EditorState.readOnly.of(true),
-    EditorView.editable.of(false),
-    EditorView.lineWrapping
-  ]
-
-  if (languageSupport) {
-    extensions.push(languageSupport)
+  // Clean up existing editor if it exists
+  if (editorInstance.value) {
+    editorInstance.value.destroy()
+    editorInstance.value = null
   }
 
-  const state = EditorState.create({
-    doc: props.block.content || '',
-    extensions
-  })
+  // Set up CodeMirror extensions
+  const extensions = [
+    basicSetup,
+    themeStore.isDark ? anysphereThemeDark : anysphereThemeLight,
+    EditorView.lineWrapping,
+    EditorState.tabSize.of(2),
+    getLanguageExtension(props.block.artifact?.language ?? ''),
+    EditorState.readOnly.of(true)
+  ]
 
-  editor = new EditorView({
-    state,
-    parent: editorContainer.value
-  })
+  try {
+    const editorView = new EditorView({
+      state: EditorState.create({
+        doc: props.block.content,
+        extensions
+      }),
+      parent: codeEditor.value
+    })
+    editorInstance.value = editorView
+    console.log(`Editor initialized for language: ${props.block.artifact?.language}`)
+  } catch (error) {
+    console.error('Failed to initialize editor:', error)
+    // Fallback: use a simple pre tag
+    const escapedCode = props.block.content
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+    codeEditor.value.innerHTML = `<pre class="whitespace-pre-wrap text-gray-800 dark:text-gray-200 m-0">${escapedCode}</pre>`
+  }
 }
 
+// 监听主题变化
+watch(
+  () => themeStore.isDark,
+  () => {
+    createEditor()
+  }
+)
+
+// 监听代码变化
+watch(
+  () => props.block.content,
+  (newCode) => {
+    if (!newCode) return
+
+    // If it's a mermaid diagram, re-render it
+    if (props.block.artifact?.language?.toLowerCase() === 'mermaid' && codeEditor.value) {
+      return
+    }
+
+    // For normal code blocks, update the editor content
+    if (editorInstance.value) {
+      const state = editorInstance.value.state
+
+      editorInstance.value.dispatch({
+        changes: { from: 0, to: state.doc.length, insert: newCode }
+      })
+    } else {
+      // If editor not yet initialized, create it
+      createEditor()
+    }
+  },
+  { immediate: true }
+)
+
+// 监听语言变化
+watch(
+  () => props.block.artifact?.language,
+  () => {
+    // If the language changes, we need to recreate the editor with the new language
+    createEditor()
+  }
+)
+
+// 初始化代码编辑器
 onMounted(() => {
-  initEditor()
+  // Initial language setup is now handled above definitions
+  createEditor()
 })
 
-onBeforeUnmount(() => {
-  if (editor) {
-    editor.destroy()
-    editor = null
+// 清理资源
+onUnmounted(() => {
+  if (editorInstance.value) {
+    editorInstance.value.destroy()
+    editorInstance.value = null
   }
 })
 </script>
-
-<style scoped>
-.code-artifact {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.code-block {
-  @apply rounded-lg overflow-hidden border border-border;
-  background-color: #1e1e1e;
-}
-
-.code-header {
-  @apply flex justify-between items-center px-4 py-2;
-  background-color: #181818;
-  border-bottom: 1px solid rgb(55, 55, 55);
-}
-
-.code-lang {
-  @apply text-xs text-muted-foreground px-2 py-1 rounded-md bg-muted;
-}
-
-.copy-button {
-  @apply text-xs text-muted-foreground hover:text-foreground flex items-center px-2 py-1 rounded-md transition-colors duration-200 hover:bg-muted;
-}
-
-.code-content {
-  @apply p-4;
-  background-color: #1e1e1e;
-  min-height: 2.5rem;
-}
-
-/* CodeMirror 自定义样式 */
-.code-content .cm-editor {
-  height: 100%;
-  min-height: 2.5rem;
-}
-
-.code-content .cm-editor.cm-focused {
-  outline: none;
-}
-
-.code-content .cm-scroller {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-}
-
-.code-content .cm-gutters {
-  background-color: #1e1e1e;
-  border-right: 1px solid #333;
-}
-
-.code-content .cm-lineNumbers {
-  color: #666;
-}
-
-.code-content .cm-activeLineGutter {
-  background-color: #282828;
-}
-
-/* 滚动条样式 */
-.code-content .cm-scroller::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.code-content .cm-scroller::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.code-content .cm-scroller::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/20 rounded-full;
-}
-
-.code-content .cm-scroller::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/40;
-}
-</style>

@@ -67,7 +67,7 @@ const t = (() => {
 
 const props = defineProps<{
   block: ProcessedPart
-  blockStatus?: 'loading' | 'success' | 'error'
+  blockStatus?: string
 }>()
 
 const isBlockError = () => {

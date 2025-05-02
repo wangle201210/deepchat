@@ -46,7 +46,7 @@
   "searchEngine": "검색 엔진",
   "searchEngineSelect": "검색 엔진 선택",
   "searchPreview": "검색 미리보기",
-  "searchAssistantModel": "검색 보조 모델",
+  "searchAssistantModel": "보조 모델",
   "selectModel": "모델 선택",
   "proxyMode": "프록시 모드",
   "proxyModeSelect": "프록시 모드 선택",
@@ -59,5 +59,6 @@
   "languageSystem": "시스템을 따르십시오",
   "watermarkTip": "AI 에서 생성됨",
   "collapse": "접기",
-  "expand": "펼치기"
+  "expand": "펼치기",
+  "image": "그림"
 }

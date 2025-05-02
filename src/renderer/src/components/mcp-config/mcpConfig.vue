@@ -2,7 +2,6 @@
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog,
@@ -16,7 +15,12 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useMcpStore } from '@/stores/mcp'
 import { useSettingsStore } from '@/stores/settings'
-import type { MCPServerConfig, MCPToolDefinition } from '@shared/presenter'
+import type {
+  MCPServerConfig,
+  MCPToolDefinition,
+  PromptWithClient,
+  ResourceListEntryWithClient
+} from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import McpServerForm from './mcpServerForm.vue'
 import { useToast } from '@/components/ui/toast'
@@ -36,13 +40,21 @@ const route = useRoute()
 const router = useRouter()
 
 // 本地UI状态
-const activeTab = ref<'servers' | 'tools'>('servers')
+const activeTab = ref<'servers' | 'tools' | 'prompts' | 'resources'>('servers')
 const isAddServerDialogOpen = ref(false)
 const isEditServerDialogOpen = ref(false)
 const isResetConfirmDialogOpen = ref(false)
 const isRemoveConfirmDialogOpen = ref(false)
 const selectedServer = ref<string>('')
 const selectedTool = ref<MCPToolDefinition | null>(null)
+const selectedPrompt = ref<string>('')
+const selectedResource = ref<string>('')
+const promptResult = ref<string>('')
+const resourceContent = ref<string>('')
+const promptParams = ref<string>('{}')
+const promptLoading = ref(false)
+const resourceLoading = ref(false)
+const jsonPromptError = ref(false)
 
 // 将toolInputs和toolResults移到本地组件
 const localToolInputs = ref<Record<string, string>>({})
@@ -72,9 +84,88 @@ const validateJson = (input: string, toolName: string): boolean => {
   }
 }
 
+// 验证Prompt参数JSON格式
+const validatePromptJson = (input: string): boolean => {
+  try {
+    JSON.parse(input)
+    jsonPromptError.value = false
+    return true
+  } catch (e) {
+    jsonPromptError.value = true
+    return false
+  }
+}
+
 // 选择工具
 const selectTool = (tool: MCPToolDefinition) => {
   selectedTool.value = tool
+}
+
+// 选择Prompt
+const selectPrompt = (prompt: PromptWithClient) => {
+  selectedPrompt.value = prompt.name
+  promptResult.value = ''
+}
+
+// 选择Resource
+const selectResource = (resource: ResourceListEntryWithClient) => {
+  selectedResource.value = resource.uri
+  resourceContent.value = ''
+}
+
+// 加载资源内容
+const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
+  if (!resource) return
+
+  try {
+    resourceLoading.value = true
+    const result = await mcpStore.readResource(resource) // 传递完整的resource对象
+    // 类型断言和检查
+    if (result && typeof result === 'object' && 'content' in result) {
+      const typedResult = result as { content: unknown }
+      resourceContent.value =
+        typeof typedResult.content === 'string'
+          ? typedResult.content
+          : JSON.stringify(typedResult.content, null, 2)
+    } else {
+      resourceContent.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    }
+  } catch (error) {
+    console.error('加载资源内容失败:', error)
+    resourceContent.value = `加载失败: ${error}`
+  } finally {
+    resourceLoading.value = false
+  }
+}
+
+// 调用Prompt
+const callPrompt = async (prompt: PromptWithClient) => {
+  if (!prompt) return
+  if (!validatePromptJson(promptParams.value)) return
+
+  try {
+    promptLoading.value = true
+    const params = JSON.parse(promptParams.value)
+    const result = await mcpStore.getPrompt(prompt, params) // 传递完整的prompt对象
+
+    // 处理返回结果
+    if (result && typeof result === 'object') {
+      // 检查是否包含messages字段
+      const typedResult = result as Record<string, unknown>
+      if ('messages' in typedResult) {
+        promptResult.value = JSON.stringify(typedResult.messages, null, 2)
+      } else {
+        promptResult.value = JSON.stringify(typedResult, null, 2)
+      }
+    } else {
+      promptResult.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
+    }
+  } catch (error) {
+    console.error('调用Prompt失败:', error)
+    promptResult.value = `调用失败: ${error}`
+  } finally {
+    promptLoading.value = false
+  }
 }
 
 // 添加服务器
@@ -228,6 +319,10 @@ watch(
     if (newTab === 'tools') {
       await mcpStore.loadTools()
       await mcpStore.loadClients()
+    } else if (newTab === 'prompts') {
+      await mcpStore.loadPrompts()
+    } else if (newTab === 'resources') {
+      await mcpStore.loadResources()
     }
   },
   { immediate: true }
@@ -282,16 +377,153 @@ watch(
   () => route.query.subtab,
   (newSubtab) => {
     console.log('newSubtab', newSubtab)
-    if (newSubtab === 'servers' || newSubtab === 'tools') {
+    if (
+      newSubtab === 'servers' ||
+      newSubtab === 'tools' ||
+      newSubtab === 'prompts' ||
+      newSubtab === 'resources'
+    ) {
       activeTab.value = newSubtab
     }
   },
   { immediate: true }
 )
+
+// 添加计算属性：获取当前选中的提示模板对象
+const selectedPromptObj = computed(() => {
+  return mcpStore.prompts.find((p) => p.name === selectedPrompt.value)
+})
+
+// 添加计算属性：获取当前选中的资源对象
+const selectedResourceObj = computed(() => {
+  return mcpStore.resources.find((r) => r.uri === selectedResource.value)
+})
+
+// 添加计算属性：判断内容是否是JSON
+const isJsonContent = computed(() => {
+  if (!resourceContent.value) return false
+
+  try {
+    // 尝试将内容解析为JSON
+    JSON.parse(resourceContent.value)
+    return true
+  } catch (e) {
+    return false
+  }
+})
+
+// 添加计算属性：解析JSON内容为带有语法高亮的部分
+const jsonParts = computed(() => {
+  if (!isJsonContent.value || !resourceContent.value) return []
+
+  try {
+    // 格式化JSON字符串
+    const formattedJson = JSON.stringify(JSON.parse(resourceContent.value), null, 2)
+
+    // 解析JSON，将其分解为带有类型的部分
+    const parts: Array<{ type: string; content: string }> = []
+
+    // 简单的词法分析，识别不同类型的JSON元素
+    const regex = /"([^"]+)":|"([^"]+)"|-?\d+\.?\d*|true|false|null|[[\]{}:,]/g
+    let match
+    let lastIndex = 0
+
+    while ((match = regex.exec(formattedJson)) !== null) {
+      // 添加匹配前的空白字符
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'whitespace',
+          content: formattedJson.substring(lastIndex, match.index)
+        })
+      }
+
+      const value = match[0]
+
+      // 确定元素类型
+      if (value.endsWith(':')) {
+        // 键
+        parts.push({
+          type: 'key',
+          content: value
+        })
+      } else if (value.startsWith('"')) {
+        // 字符串值
+        parts.push({
+          type: 'string',
+          content: value
+        })
+      } else if (/^-?\d+\.?\d*$/.test(value)) {
+        // 数字
+        parts.push({
+          type: 'number',
+          content: value
+        })
+      } else if (value === 'true' || value === 'false') {
+        // 布尔值
+        parts.push({
+          type: 'boolean',
+          content: value
+        })
+      } else if (value === 'null') {
+        // null值
+        parts.push({
+          type: 'null',
+          content: value
+        })
+      } else if (/^[[\]{}:,]$/.test(value)) {
+        // 括号和分隔符
+        parts.push({
+          type: 'bracket',
+          content: value
+        })
+      } else {
+        // 其他
+        parts.push({
+          type: 'other',
+          content: value
+        })
+      }
+
+      lastIndex = regex.lastIndex
+    }
+
+    // 添加剩余部分
+    if (lastIndex < formattedJson.length) {
+      parts.push({
+        type: 'whitespace',
+        content: formattedJson.substring(lastIndex)
+      })
+    }
+
+    return parts
+  } catch (e) {
+    return [{ type: 'text', content: resourceContent.value }]
+  }
+})
+
+// 根据JSON部分类型获取CSS类名
+const getJsonPartClass = (type: string): string => {
+  switch (type) {
+    case 'key':
+      return 'json-key'
+    case 'string':
+      return 'json-string'
+    case 'number':
+      return 'json-number'
+    case 'boolean':
+      return 'json-boolean'
+    case 'null':
+      return 'json-null'
+    case 'bracket':
+      return 'json-bracket'
+    default:
+      return ''
+  }
+}
 </script>
 
 <template>
-  <div class="h-full flex flex-col overflow-hidden">
+  <div class="h-full flex flex-col w-full">
     <!-- 选项卡 -->
     <div class="flex border-b mb-4 px-4">
       <button
@@ -314,11 +546,31 @@ watch(
       >
         {{ t('settings.mcp.tabs.tools') }}
       </button>
+      <button
+        :class="
+          activeTab === 'prompts'
+            ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
+            : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
+        "
+        @click="activeTab = 'prompts'"
+      >
+        {{ t('settings.mcp.tabs.prompts') }}
+      </button>
+      <button
+        :class="
+          activeTab === 'resources'
+            ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
+            : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
+        "
+        @click="activeTab = 'resources'"
+      >
+        {{ t('settings.mcp.tabs.resources') }}
+      </button>
     </div>
 
-    <div class="flex-grow overflow-hidden px-4">
+    <div class="flex overflow-hidden px-4">
       <!-- 服务器配置选项卡 -->
-      <div v-if="activeTab === 'servers'" class="h-full overflow-y-auto">
+      <ScrollArea v-if="activeTab === 'servers'" class="h-full w-full">
         <div class="flex justify-between items-center mb-4">
           <h3 class="text-base font-medium">{{ t('settings.mcp.serverList') }}</h3>
           <div class="flex space-x-2">
@@ -378,9 +630,9 @@ watch(
           {{ t('settings.mcp.noServersFound') }}
         </div>
 
-        <div v-else class="space-y-4 pb-4">
+        <div v-else class="space-y-4 pb-4 pr-4">
           <!-- 内置服务 -->
-          <div v-if="inMemoryServers.length > 0">
+          <div v-if="inMemoryServers.length > 0" class="server-item">
             <h4 class="text-sm font-medium mb-2 text-muted-foreground">
               {{ t('settings.mcp.builtInServers') }}
             </h4>
@@ -390,14 +642,16 @@ watch(
               class="border rounded-lg overflow-hidden bg-card mb-4"
             >
               <div class="flex items-center p-4">
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                   <div>
                     <div class="flex items-center">
-                      <span class="text-xl mr-2">{{ server.icons }}</span>
-                      <h4 class="text-sm font-medium">{{ getLocalizedServerName(server.name) }}</h4>
+                      <span class="text-xl mr-2 flex-shrink-0">{{ server.icons }}</span>
+                      <h4 class="text-sm font-medium truncate">
+                        {{ getLocalizedServerName(server.name) }}
+                      </h4>
                       <span
                         :class="[
-                          'ml-2 px-2 py-0.5 text-xs rounded-full',
+                          'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
                           server.isRunning
                             ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                             : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
@@ -408,12 +662,12 @@ watch(
                         }}
                       </span>
                     </div>
-                    <p class="text-xs text-muted-foreground mt-1">
+                    <p class="text-xs text-muted-foreground mt-1 break-words">
                       {{ getLocalizedServerDesc(server.name, server.descriptions) }}
                     </p>
                   </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-shrink-0">
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
@@ -503,12 +757,14 @@ watch(
                   </TooltipProvider>
                 </div>
               </div>
-              <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
+              <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
                 <div class="flex justify-between items-center">
-                  <div class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                  <div
+                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                  >
                     {{ server.command }} {{ server.args.join(' ') }}
                   </div>
-                  <div class="flex space-x-2">
+                  <div class="flex space-x-2 flex-shrink-0">
                     <span
                       class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 rounded-full shrink-0"
                     >
@@ -541,14 +797,14 @@ watch(
             class="border rounded-lg overflow-hidden bg-card"
           >
             <div class="flex items-center p-4">
-              <div class="flex-1">
+              <div class="flex-1 min-w-0">
                 <div>
                   <div class="flex items-center">
-                    <span class="text-xl mr-2">{{ server.icons }}</span>
-                    <h4 class="text-sm font-medium">{{ server.name }}</h4>
+                    <span class="text-xl mr-2 flex-shrink-0">{{ server.icons }}</span>
+                    <h4 class="text-sm font-medium truncate">{{ server.name }}</h4>
                     <span
                       :class="[
-                        'ml-2 px-2 py-0.5 text-xs rounded-full',
+                        'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
                         server.isRunning
                           ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
                           : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
@@ -557,10 +813,12 @@ watch(
                       {{ server.isRunning ? t('settings.mcp.running') : t('settings.mcp.stopped') }}
                     </span>
                   </div>
-                  <p class="text-xs text-muted-foreground mt-1">{{ server.descriptions }}</p>
+                  <p class="text-xs text-muted-foreground mt-1 break-words">
+                    {{ server.descriptions }}
+                  </p>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-shrink-0">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger as-child>
@@ -665,15 +923,18 @@ watch(
                 </TooltipProvider>
               </div>
             </div>
-            <div class="bg-muted dark:bg-zinc-800 px-4 py-2">
+            <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
               <div class="flex justify-between items-center">
                 <div
                   v-if="server.type === 'http'"
-                  class="text-xs font-mono overflow-x-auto whitespace-nowrap"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
                 >
                   {{ server.baseUrl }}
                 </div>
-                <div v-else class="text-xs font-mono overflow-x-auto whitespace-nowrap">
+                <div
+                  v-else
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                >
                   {{ server.command }} {{ server.args.join(' ') }}
                 </div>
                 <span
@@ -686,7 +947,7 @@ watch(
             </div>
           </div>
         </div>
-      </div>
+      </ScrollArea>
 
       <!-- 调试工具选项卡 -->
       <div
@@ -695,11 +956,6 @@ watch(
       >
         <!-- 左侧工具列表 -->
         <div class="h-full border-r pr-2 flex flex-col">
-          <Input
-            type="text"
-            class="w-full h-7 px-2 text-xs rounded-md border mb-2"
-            :placeholder="t('mcp.tools.searchPlaceholder')"
-          />
           <ScrollArea class="w-full h-0 grow">
             <div v-if="mcpStore.toolsLoading" class="flex justify-center py-4">
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
@@ -795,6 +1051,184 @@ watch(
           </div>
         </div>
       </div>
+
+      <!-- 提示模板选项卡 -->
+      <div
+        v-if="activeTab === 'prompts'"
+        class="h-full overflow-hidden grid grid-cols-[200px_1fr] gap-2"
+      >
+        <!-- 左侧提示模板列表 -->
+        <div class="h-full border-r pr-2 flex flex-col">
+          <ScrollArea class="w-full h-0 grow">
+            <div v-if="mcpStore.toolsLoading" class="flex justify-center py-4">
+              <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
+            </div>
+
+            <div
+              v-else-if="mcpStore.prompts.length === 0"
+              class="text-center py-4 text-sm text-muted-foreground"
+            >
+              {{ t('mcp.prompts.noPromptsAvailable') }}
+            </div>
+
+            <div v-else class="space-y-1">
+              <div
+                v-for="prompt in mcpStore.prompts"
+                :key="prompt.name"
+                class="p-2 rounded-md cursor-pointer hover:bg-accent text-sm"
+                :class="{ 'bg-accent': selectedPrompt === prompt.name }"
+                @click="selectPrompt(prompt)"
+              >
+                <div class="font-medium">{{ prompt.name }}</div>
+                <div class="text-xs text-muted-foreground line-clamp-2 mt-1">
+                  {{ prompt.description || t('mcp.prompts.noDescription') }}
+                </div>
+                <div class="text-xs text-muted-foreground mt-1">
+                  {{ prompt.clientName }}
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+        </div>
+
+        <!-- 右侧操作区域 -->
+        <div class="h-full overflow-y-auto px-2">
+          <div v-if="!selectedPrompt" class="text-center text-sm text-muted-foreground py-8">
+            {{ t('mcp.prompts.selectPrompt') }}
+          </div>
+
+          <div v-else>
+            <div class="mb-3">
+              <h3 class="text-sm font-medium">{{ selectedPrompt }}</h3>
+              <p v-if="selectedPromptObj?.description" class="text-xs text-muted-foreground">
+                {{ selectedPromptObj.description }}
+              </p>
+            </div>
+
+            <!-- 提示参数输入 -->
+            <div class="space-y-3 mb-3">
+              <div class="space-y-1">
+                <label class="text-xs font-medium">
+                  {{ t('mcp.prompts.parameters') }}
+                </label>
+                <textarea
+                  v-model="promptParams"
+                  class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                  placeholder="{}"
+                  :class="{ 'border-red-500': jsonPromptError }"
+                  @input="validatePromptJson(promptParams)"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- 调用按钮和结果显示 -->
+            <div class="space-y-3">
+              <Button
+                class="w-full"
+                :disabled="promptLoading || jsonPromptError"
+                @click="callPrompt(selectedPromptObj as PromptWithClient)"
+              >
+                <Icon v-if="promptLoading" icon="lucide:loader" class="mr-2 h-4 w-4 animate-spin" />
+                {{
+                  promptLoading ? t('mcp.prompts.runningPrompt') : t('mcp.prompts.executeButton')
+                }}
+              </Button>
+
+              <div v-if="promptResult" class="mt-3">
+                <div class="text-sm font-medium mb-1">{{ t('mcp.prompts.resultTitle') }}</div>
+                <pre class="bg-muted p-3 rounded-md text-sm overflow-auto">{{ promptResult }}</pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 资源选项卡 -->
+      <div
+        v-if="activeTab === 'resources'"
+        class="h-full overflow-hidden grid grid-cols-[200px_1fr] gap-2"
+      >
+        <!-- 左侧资源列表 -->
+        <div class="h-full border-r pr-2 flex flex-col">
+          <ScrollArea class="w-full h-0 grow">
+            <div v-if="mcpStore.toolsLoading" class="flex justify-center py-4">
+              <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
+            </div>
+
+            <div
+              v-else-if="mcpStore.resources.length === 0"
+              class="text-center py-4 text-sm text-muted-foreground"
+            >
+              {{ t('mcp.resources.noResourcesAvailable') }}
+            </div>
+
+            <div v-else class="space-y-1">
+              <div
+                v-for="resource in mcpStore.resources"
+                :key="resource.uri"
+                class="p-2 rounded-md cursor-pointer hover:bg-accent text-sm"
+                :class="{ 'bg-accent': selectedResource === resource.uri }"
+                @click="selectResource(resource)"
+              >
+                <div class="font-medium">{{ resource.name || resource.uri }}</div>
+                <div class="text-xs text-muted-foreground mt-1">
+                  {{ resource.clientName }}
+                </div>
+              </div>
+            </div>
+          </ScrollArea>
+        </div>
+
+        <!-- 右侧操作区域 -->
+        <div class="h-full overflow-y-auto px-2">
+          <div v-if="!selectedResource" class="text-center text-sm text-muted-foreground py-8">
+            {{ t('mcp.resources.selectResource') }}
+          </div>
+
+          <div v-else>
+            <div class="mb-3">
+              <h3 class="text-sm font-medium">{{ selectedResource }}</h3>
+              <p class="text-xs text-muted-foreground">
+                {{ selectedResourceObj?.name || '' }}
+              </p>
+            </div>
+
+            <!-- 加载资源按钮 -->
+            <Button
+              class="w-full mb-3"
+              :disabled="resourceLoading"
+              @click="loadResourceContent(selectedResourceObj as ResourceListEntryWithClient)"
+            >
+              <Icon v-if="resourceLoading" icon="lucide:loader" class="mr-2 h-4 w-4 animate-spin" />
+              {{ resourceLoading ? t('mcp.resources.loading') : t('mcp.resources.loadContent') }}
+            </Button>
+
+            <!-- 资源内容显示 -->
+            <div class="resource-section">
+              <div class="resource-content-container">
+                <div v-if="resourceLoading" class="resource-loading">
+                  <Icon icon="lucide:loader" class="h-8 w-8 animate-spin" />
+                  <h3>{{ t('mcp.resources.loading') }}</h3>
+                </div>
+                <div v-else-if="resourceContent">
+                  <div v-if="isJsonContent" class="json-viewer">
+                    <span
+                      v-for="(part, index) in jsonParts"
+                      :key="index"
+                      :class="getJsonPartClass(part.type)"
+                      >{{ part.content }}</span
+                    >
+                  </div>
+                  <pre v-else class="resource-raw-content">{{ resourceContent }}</pre>
+                </div>
+                <div v-else class="empty-content">
+                  <h3>{{ t('mcp.resources.pleaseSelect') }}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -834,3 +1268,88 @@ watch(
     </DialogContent>
   </Dialog>
 </template>
+
+<style scoped>
+/* JSON查看器样式 */
+.json-viewer {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  background-color: var(--color-background-muted);
+  border-radius: 8px;
+  padding: 16px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 500px;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 14px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border);
+}
+
+.resource-raw-content {
+  font-family: 'Fira Code', 'Courier New', monospace;
+  background-color: var(--color-background-muted);
+  border-radius: 8px;
+  padding: 16px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 500px;
+  overflow-y: auto;
+  line-height: 1.6;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+}
+
+.json-key {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.json-string {
+  color: var(--color-success);
+}
+
+.json-number {
+  color: var(--color-warning);
+}
+
+.json-boolean {
+  color: var(--color-info);
+}
+
+.json-null {
+  color: var(--color-destructive);
+  font-style: italic;
+}
+
+.json-bracket {
+  color: var(--color-foreground);
+  font-weight: 600;
+}
+
+.resource-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.empty-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  color: var(--color-muted-foreground);
+}
+
+.resource-section {
+  margin-top: 16px;
+}
+
+.resource-content-container {
+  margin-top: 8px;
+}
+</style>

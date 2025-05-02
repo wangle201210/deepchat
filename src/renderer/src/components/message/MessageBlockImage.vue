@@ -4,13 +4,22 @@
       <div class="flex flex-col space-y-2">
         <!-- 图片加载区域 -->
         <div class="flex justify-center">
-          <img
-            v-if="block.image_data"
-            :src="`data:${block.image_data.mimeType};base64,${block.image_data.data}`"
-            class="max-w-[400px] rounded-md cursor-pointer hover:shadow-md transition-shadow"
-            @click="openFullImage"
-            @error="handleImageError"
-          />
+          <template v-if="block.image_data">
+            <img
+              v-if="block.image_data.mimeType === 'deepchat/image-url'"
+              :src="`${block.image_data.data}`"
+              class="max-w-[400px] rounded-md cursor-pointer hover:shadow-md transition-shadow"
+              @click="openFullImage"
+              @error="handleImageError"
+            />
+            <img
+              v-else
+              :src="`data:${block.image_data.mimeType};base64,${block.image_data.data}`"
+              class="max-w-[400px] rounded-md cursor-pointer hover:shadow-md transition-shadow"
+              @click="openFullImage"
+              @error="handleImageError"
+            />
+          </template>
           <div v-else-if="imageError" class="text-sm text-red-500 p-4">
             {{ t('common.error.requestFailed') }}
           </div>
@@ -23,13 +32,25 @@
 
     <!-- 全屏图片查看器 -->
     <Dialog :open="showFullImage" @update:open="showFullImage = $event">
-      <DialogContent class="sm:max-w-[800px] p-0 bg-transparent border-0 shadow-none">
+      <DialogContent class="sm:max-w-[800px] p-0 bg-background border-0 shadow-none">
+        <DialogHeader>
+          <DialogTitle>
+            {{ t('common.image') }}
+          </DialogTitle>
+        </DialogHeader>
         <div class="relative">
-          <img
-            v-if="block.image_data"
-            :src="`data:${block.image_data.mimeType};base64,${block.image_data.data}`"
-            class="rounded-md max-h-[80vh] max-w-full object-contain"
-          />
+          <template v-if="block.image_data">
+            <img
+              v-if="block.image_data.mimeType === 'deepchat/image-url'"
+              :src="block.image_data.data"
+              class="rounded-md max-h-[80vh] max-w-full object-contain"
+            />
+            <img
+              v-else
+              :src="`data:${block.image_data.mimeType};base64,${block.image_data.data}`"
+              class="rounded-md max-h-[80vh] max-w-full object-contain"
+            />
+          </template>
         </div>
       </DialogContent>
     </Dialog>
@@ -41,7 +62,7 @@ import { ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { AssistantMessageBlock } from '@shared/chat'
 import { useI18n } from 'vue-i18n'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 // 创建一个安全的翻译函数
 const t = (() => {

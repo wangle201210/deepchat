@@ -26,6 +26,7 @@
             :key="dtThread.id"
             :thread="dtThread"
             :is-active="dtThread.id === chatStore.activeThreadId"
+            :working-status="chatStore.getThreadWorkingStatus(dtThread.id)"
             @select="handleThreadSelect"
             @rename="showRenameDialog(dtThread)"
             @delete="showDeleteDialog(dtThread)"

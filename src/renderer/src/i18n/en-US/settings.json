@@ -8,7 +8,7 @@
     "searchEngine": "Search Engine",
     "searchEngineSelect": "Select search engine",
     "searchPreview": "Search Preview",
-    "searchAssistantModel": "Search Assistant Model",
+    "searchAssistantModel": "Assistant Model",
     "selectModel": "Select Model",
     "proxyMode": "Proxy Mode",
     "proxyModeSelect": "Select proxy mode",
@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "Create a new chat",
       "title": "Shortcut key settings"
-    }
+    },
+    "notifications": "System Notification",
+    "notificationsDesc": "When DeepChat is not in the foreground, if a session is generated, a system notification will be sent"
   },
   "data": {
     "title": "Data Settings",
@@ -173,7 +175,11 @@
     "deleteModel": "Delete Model",
     "deleteModelConfirm": "Are you sure you want to delete model \"{name}\"? This action cannot be undone.",
     "noLocalModels": "No Local Models",
-    "localModels": "Local Models"
+    "localModels": "Local Models",
+    "azureApiVersion": "API Version",
+    "safety": {
+      "title": "Safety settings"
+    }
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",
@@ -213,7 +219,9 @@
     "marketplace": "Go to the MCP Market for one-click installation",
     "tabs": {
       "servers": "Servers",
-      "tools": "Tools"
+      "tools": "Tools",
+      "prompts": "Prompts",
+      "resources": "Resources"
     },
     "serverList": "Server List",
     "addServer": "Add Server",
@@ -282,7 +290,10 @@
       "imageModel": "Choose a vision model",
       "customHeadersParseError": "Custom Header parsing failed",
       "customHeaders": "Custom request header",
-      "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct."
+      "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct.",
+      "npmRegistry": "Custom NPM Registry",
+      "npmRegistryPlaceholder": "Set up a custom NPM Registry, leave the system to automatically select the fastest one",
+      "browseHigress": "View Higress MCP Marketplace"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
@@ -312,7 +323,8 @@
     "cannotRemoveBuiltIn": "Cannot Remove Built-in Server",
     "builtInServerCannotBeRemoved": "Built-in servers cannot be removed, only parameters and environment variables can be modified",
     "maxDefaultServersReached": "Only 3 default servers can be set at most",
-    "removeDefaultFirst": "Please remove some default servers first"
+    "removeDefaultFirst": "Please remove some default servers first",
+    "higressMarket": "Go to Higress MCP Installation"
   },
   "about": {
     "title": "About Us",

@@ -322,17 +322,17 @@ const getArtifactIcon = (type: string | undefined) => {
   if (!type) return 'lucide:file'
   switch (type) {
     case 'application/vnd.ant.code':
-      return 'lucide:code'
+      return 'lucide:square-code'
     case 'text/markdown':
-      return 'lucide:file-text'
+      return 'vscode-icons:file-type-markdown'
     case 'text/html':
-      return 'lucide:file-code'
+      return 'vscode-icons:file-type-html'
     case 'image/svg+xml':
-      return 'lucide:image'
+      return 'vscode-icons:file-type-svg'
     case 'application/vnd.ant.mermaid':
-      return 'lucide:git-branch'
+      return 'vscode-icons:file-type-mermaid'
     case 'application/vnd.ant.react':
-      return 'lucide:square-dashed-bottom-code'
+      return 'vscode-icons:file-type-reactts'
     default:
       return 'lucide:file'
   }

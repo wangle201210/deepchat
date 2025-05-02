@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -15,9 +11,6 @@ const DifyKnowledgeSearchArgsSchema = z.object({
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
   scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 定义Dify API返回的数据结构
 interface DifySearchResponse {
@@ -129,7 +122,7 @@ export class DifyKnowledgeServer {
         return {
           name: `dify_knowledge_search${suffix}`,
           description: config.description,
-          inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema)
         }
       })
 

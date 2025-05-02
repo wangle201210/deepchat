@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -17,9 +13,6 @@ const RagflowKnowledgeSearchArgsSchema = z.object({
   keyword: z.boolean().optional().default(false).describe('是否启用关键词匹配 (默认false)'),
   highlight: z.boolean().optional().default(false).describe('是否高亮匹配的文本 (默认false)')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 定义RAGFlow API返回的数据结构
 interface RagflowSearchResponse {
@@ -125,7 +118,7 @@ export class RagflowKnowledgeServer {
         return {
           name: `ragflow_knowledge_search${suffix}`,
           description: config.description,
-          inputSchema: zodToJsonSchema(RagflowKnowledgeSearchArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(RagflowKnowledgeSearchArgsSchema)
         }
       })
 

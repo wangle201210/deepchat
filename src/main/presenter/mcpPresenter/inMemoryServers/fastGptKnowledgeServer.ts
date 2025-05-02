@@ -1,9 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ToolSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -15,9 +11,6 @@ const FastGptKnowledgeSearchArgsSchema = z.object({
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
   scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)')
 })
-
-const ToolInputSchema = ToolSchema.shape.inputSchema
-type ToolInput = z.infer<typeof ToolInputSchema>
 
 // 定义FastGPT API返回的数据结构
 interface FastGptSearchResponse {
@@ -118,7 +111,7 @@ export class FastGptKnowledgeServer {
         return {
           name: `fastgpt_knowledge_search${suffix}`,
           description: config.description,
-          inputSchema: zodToJsonSchema(FastGptKnowledgeSearchArgsSchema) as ToolInput
+          inputSchema: zodToJsonSchema(FastGptKnowledgeSearchArgsSchema)
         }
       })
 

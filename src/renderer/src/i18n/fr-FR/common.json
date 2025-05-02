@@ -50,7 +50,7 @@
   "language": "Langue",
   "languageSelect": "Sélectionner une langue",
   "resetData": "Réinitialiser les données",
-  "searchAssistantModel": "Rechercher un modèle d'assistant",
+  "searchAssistantModel": "Modèle adjoint",
   "searchEngine": "Moteur de recherche",
   "searchEngineSelect": "Sélectionner un moteur de recherche",
   "searchPreview": "Aperçu de la recherche",
@@ -59,5 +59,6 @@
   "languageSystem": "Suivez le système",
   "watermarkTip": "Généré par AI",
   "collapse": "Fermer",
-  "expand": "Développer"
+  "expand": "Développer",
+  "image": "image"
 }

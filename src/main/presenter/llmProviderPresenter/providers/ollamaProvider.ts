@@ -38,7 +38,16 @@ export class OllamaProvider extends BaseLLMProvider {
   private ollama: Ollama
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
-    this.ollama = new Ollama({ host: this.provider.baseUrl })
+    if (this.provider.apiKey) {
+      this.ollama = new Ollama({
+        host: this.provider.baseUrl,
+        headers: { Authorization: `Bearer ${this.provider.apiKey}` }
+      })
+    } else {
+      this.ollama = new Ollama({
+        host: this.provider.baseUrl
+      })
+    }
     this.init()
   }
 
@@ -495,7 +504,6 @@ export class OllamaProvider extends BaseLLMProvider {
             completion_tokens: chunk.eval_count || 0,
             total_tokens: (chunk.prompt_eval_count || 0) + (chunk.eval_count || 0)
           }
-          yield { type: 'usage', usage }
         }
 
         // 处理原生工具调用
@@ -642,6 +650,9 @@ export class OllamaProvider extends BaseLLMProvider {
             }
 
             continue
+          }
+          if (usage) {
+            yield { type: 'usage', usage }
           }
 
           // --- 思考标签处理 ---

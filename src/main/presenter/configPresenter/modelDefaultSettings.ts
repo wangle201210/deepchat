@@ -424,6 +424,17 @@ export const defaultModelsSettings = [
   },
   // DeepSeek系列模型配置
   {
+    id: 'deepseek-prover-v2-671b',
+    name: 'Deepseek Prover V2 671B',
+    temperature: 0.3,
+    maxTokens: 10000,
+    contextLength: 150000,
+    match: ['deepseek-prover-v2-671b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
     id: 'deepseek-vl2',
     name: 'DeepSeek VL2',
     temperature: 0.7,
@@ -1059,6 +1070,96 @@ export const defaultModelsSettings = [
     vision: false,
     functionCall: false,
     reasoning: false
+  },
+
+  // Qwen3系列模型
+  {
+    id: 'qwen3-235b-a22b',
+    name: 'Qwen3 235B A22B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-235b-a22b', 'qwen/qwen3-235b-a22b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-32b',
+    name: 'Qwen3 32B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-32b', 'qwen/qwen3-32b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-30b-a3b',
+    name: 'Qwen3 30B A3B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-30b-a3b', 'qwen/qwen3-30b-a3b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-14b',
+    name: 'Qwen3 14B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-14b', 'qwen/qwen3-14b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-8b',
+    name: 'Qwen3 8B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-8b', 'qwen/qwen3-8b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-4b',
+    name: 'Qwen3 4B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-4b', 'qwen/qwen3-4b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-1.7b',
+    name: 'Qwen3 1.7B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-1.7b', 'qwen/qwen3-1.7b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
+  },
+  {
+    id: 'qwen3-0.6b',
+    name: 'Qwen3 0.6B',
+    temperature: 0.6,
+    maxTokens: 8192,
+    contextLength: 40960,
+    match: ['qwen3-0.6b', 'qwen/qwen3-0.6b'],
+    vision: false,
+    functionCall: false,
+    reasoning: true
   },
 
   // Yi系列

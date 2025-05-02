@@ -8,7 +8,7 @@
     "searchEngine": "検索エンジン",
     "searchEngineSelect": "検索エンジンを選択",
     "searchPreview": "検索プレビュー",
-    "searchAssistantModel": "検索アシスタントモデル",
+    "searchAssistantModel": "アシスタントモデル",
     "selectModel": "モデルを選択",
     "proxyMode": "プロキシモード",
     "proxyModeSelect": "プロキシモードを選択",
@@ -47,7 +47,9 @@
     "shortcut": {
       "newChat": "新しいチャットを作成します",
       "title": "ショートカットキー設定"
-    }
+    },
+    "notifications": "システム通知",
+    "notificationsDesc": "Deepchatが前景にない場合、セッションが生成された場合、システム通知が送信されます"
   },
   "data": {
     "title": "データ設定",
@@ -173,7 +175,11 @@
     "deleteModel": "モデルを削除",
     "deleteModelConfirm": "モデル \"{name}\" を削除してもよろしいですか？この操作は元に戻せません。",
     "noLocalModels": "ローカルモデルはありません",
-    "localModels": "ローカルモデル"
+    "localModels": "ローカルモデル",
+    "azureApiVersion": "APIバージョン",
+    "safety": {
+      "title": "セキュリティ設定"
+    }
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
@@ -212,7 +218,9 @@
     "enableToAccess": "設定オプションにアクセスするにはMCPを有効にしてください",
     "tabs": {
       "servers": "サーバー",
-      "tools": "ツール"
+      "tools": "ツール",
+      "prompts": "迅速な言葉",
+      "resources": "リソース"
     },
     "serverList": "サーバーリスト",
     "addServer": "サーバーを追加",
@@ -281,7 +289,10 @@
       "imageModel": "視覚モデルを選択します",
       "customHeadersParseError": "カスタムヘッダーの解析は失敗しました",
       "customHeaders": "カスタムリクエストヘッダー",
-      "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。"
+      "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。",
+      "npmRegistry": "カスタムNPMレジストリ",
+      "npmRegistryPlaceholder": "カスタムNPMレジストリをセットアップし、システムを残して最速のレジストリを自動的に選択する",
+      "browseHigress": "Higress MCP Marketplaceを表示します"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -312,7 +323,8 @@
     "removeDefault": "デフォルトを削除します",
     "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします",
     "maxDefaultServersReached": "せいぜい3つのデフォルトサーバーのみを設定できます",
-    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください"
+    "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください",
+    "higressMarket": "Higress MCPのインストールに移動します"
   },
   "about": {
     "title": "私たちについて",

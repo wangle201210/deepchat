@@ -17,15 +17,29 @@
 
       <!-- MCP Marketplace 入口 -->
       <div class="px-4 pb-4 flex-shrink-0">
-        <Button
-          variant="outline"
-          class="w-full flex items-center justify-center gap-2"
-          @click="openMcpMarketplace"
-        >
-          <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
-          <span>{{ t('settings.mcp.marketplace') }}</span>
-          <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
-        </Button>
+        <div class="flex gap-2">
+          <Button
+            v-if="false"
+            variant="outline"
+            class="flex-1 flex items-center justify-center gap-2"
+            @click="openMcpMarketplace"
+          >
+            <Icon icon="lucide:shopping-bag" class="w-4 h-4" />
+            <span>{{ t('settings.mcp.marketplace') }}</span>
+            <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+          </Button>
+
+          <!-- Higress MCP Marketplace 入口 -->
+          <Button
+            variant="outline"
+            class="flex-1 flex items-center justify-center gap-2"
+            @click="openHigressMcpMarketplace"
+          >
+            <img src="@/assets/mcp-icons/higress.avif" class="w-4 h-4" />
+            <span>{{ $t('settings.mcp.higressMarket') }}</span>
+            <Icon icon="lucide:external-link" class="w-3.5 h-3.5 text-muted-foreground" />
+          </Button>
+        </div>
       </div>
     </div>
 
@@ -50,6 +64,7 @@ import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import { useMcpStore } from '@/stores/mcp'
+import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from '../mcp-config/const'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -64,6 +79,11 @@ const handleMcpEnabledChange = async (enabled: boolean) => {
 
 // 打开MCP Marketplace
 const openMcpMarketplace = () => {
-  window.open('https://mcp.deepchatai.cn', '_blank')
+  window.open(MCP_MARKETPLACE_URL, '_blank')
+}
+
+// 打开Higress MCP Marketplace
+const openHigressMcpMarketplace = () => {
+  window.open(HIGRESS_MCP_MARKETPLACE_URL, '_blank')
 }
 </script>

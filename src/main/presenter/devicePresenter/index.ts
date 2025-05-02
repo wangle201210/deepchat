@@ -5,6 +5,8 @@ import { promisify } from 'util'
 import fs from 'fs'
 import path from 'path'
 import { app, dialog } from 'electron'
+import { nanoid } from 'nanoid'
+import axios from 'axios'
 const execAsync = promisify(exec)
 
 export class DevicePresenter implements IDevicePresenter {
@@ -99,6 +101,142 @@ export class DevicePresenter implements IDevicePresenter {
       }
     }
   }
+
+  /**
+   * 缓存图片到本地文件系统
+   * @param imageData 图片数据，可以是URL或Base64编码
+   * @returns 返回以imgcache://协议的图片URL或原始URL（下载失败时）
+   */
+  async cacheImage(imageData: string): Promise<string> {
+    // 如果已经是imgcache协议，直接返回
+    if (imageData.startsWith('imgcache://')) {
+      return imageData
+    }
+
+    // 创建缓存目录
+    const cacheDir = path.join(app.getPath('userData'), 'images')
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true })
+    }
+
+    // 生成唯一的文件名
+    const timestamp = Date.now()
+    const uniqueId = nanoid(8)
+    const fileName = `img_${timestamp}_${uniqueId}`
+
+    // 判断图片类型
+    if (imageData.startsWith('http://') || imageData.startsWith('https://')) {
+      // 处理URL图片
+      return this.cacheImageFromUrl(imageData, cacheDir, fileName)
+    } else if (imageData.startsWith('data:image/')) {
+      // 处理Base64图片
+      return this.cacheImageFromBase64(imageData, cacheDir, fileName)
+    } else {
+      console.warn('不支持的图片格式')
+      return imageData // 返回原始数据
+    }
+  }
+
+  /**
+   * 从URL下载并缓存图片
+   * @param url 图片URL
+   * @param cacheDir 缓存目录
+   * @param fileName 文件名(不含扩展名)
+   * @returns 返回imgcache协议URL或原始URL（下载失败时）
+   */
+  private async cacheImageFromUrl(
+    url: string,
+    cacheDir: string,
+    fileName: string
+  ): Promise<string> {
+    try {
+      // 使用axios下载图片
+      const response = await axios({
+        method: 'get',
+        url: url,
+        responseType: 'arraybuffer',
+        timeout: 10000 // 10秒超时
+      })
+
+      // 获取内容类型并确定文件扩展名
+      const contentType = response.headers['content-type'] || 'image/jpeg'
+      let extension = 'jpg'
+
+      if (contentType.includes('png')) {
+        extension = 'png'
+      } else if (contentType.includes('gif')) {
+        extension = 'gif'
+      } else if (contentType.includes('webp')) {
+        extension = 'webp'
+      } else if (contentType.includes('svg')) {
+        extension = 'svg'
+      }
+
+      const saveFileName = `${fileName}.${extension}`
+      const fullPath = path.join(cacheDir, saveFileName)
+
+      // 将下载的数据写入文件
+      await fs.promises.writeFile(fullPath, Buffer.from(response.data))
+
+      // 返回imgcache协议URL
+      return `imgcache://${saveFileName}`
+    } catch (error) {
+      console.error('下载图片失败:', error)
+      // 下载失败时返回原始URL
+      return url
+    }
+  }
+
+  /**
+   * 从Base64数据缓存图片
+   * @param base64Data Base64编码的图片数据
+   * @param cacheDir 缓存目录
+   * @param fileName 文件名(不含扩展名)
+   * @returns 返回imgcache协议URL或原始数据（处理失败时）
+   */
+  private async cacheImageFromBase64(
+    base64Data: string,
+    cacheDir: string,
+    fileName: string
+  ): Promise<string> {
+    // 解析MIME类型和实际的Base64数据
+    const matches = base64Data.match(/^data:([^;]+);base64,(.*)$/)
+    if (!matches || matches.length !== 3) {
+      console.warn('无效的Base64图片数据')
+      return base64Data
+    }
+
+    const mimeType = matches[1]
+    const actualData = matches[2]
+
+    // 确定文件扩展名
+    let extension = 'jpg'
+    if (mimeType.includes('png')) {
+      extension = 'png'
+    } else if (mimeType.includes('gif')) {
+      extension = 'gif'
+    } else if (mimeType.includes('webp')) {
+      extension = 'webp'
+    } else if (mimeType.includes('svg')) {
+      extension = 'svg'
+    }
+
+    const saveFileName = `${fileName}.${extension}`
+    const fullPath = path.join(cacheDir, saveFileName)
+
+    try {
+      // 将Base64数据写入文件
+      const buffer = Buffer.from(actualData, 'base64')
+      await fs.promises.writeFile(fullPath, buffer)
+
+      // 返回imgcache协议URL
+      return `imgcache://${saveFileName}`
+    } catch (error) {
+      console.error('保存Base64图片失败:', error)
+      return base64Data // 出错时返回原始数据
+    }
+  }
+
   async resetData(): Promise<void> {
     return new Promise((resolve, reject) => {
       const response = dialog.showMessageBoxSync({

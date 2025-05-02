@@ -13,6 +13,7 @@
   "disabled": "已禁用",
   "disclaimer": "免责声明",
   "close": "关闭",
+  "image": "图片",
   "error": {
     "requestFailed": "请求失败...",
     "createChatFailed": "创建会话失败",
@@ -46,7 +47,7 @@
   "searchEngine": "搜索引擎",
   "searchEngineSelect": "选择搜索引擎",
   "searchPreview": "搜索预览",
-  "searchAssistantModel": "搜索助手模型",
+  "searchAssistantModel": "助手模型",
   "selectModel": "选择模型",
   "proxyMode": "代理模式",
   "proxyModeSelect": "选择代理模式",

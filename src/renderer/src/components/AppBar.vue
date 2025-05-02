@@ -1,4 +1,5 @@
 <template>
+<<<<<<< HEAD
   <div class="h-10 flex-shrink-0 w-full flex items-center justify-between select-none">
     <!-- App title/content in center -->
     <div
@@ -40,6 +41,18 @@
         <Icon icon="lucide:settings" class="w-4 h-4" />
       </Button>
     </div>
+=======
+  <div
+    class="h-9 flex-shrink-0 w-full flex items-center justify-between select-none bg-background border-b"
+  >
+    <!-- App title/content in center -->
+    <div
+      :class="[
+        'flex-1 text-center text-sm font-medium window-drag-region h-full',
+        isMacOS ? 'px-20' : 'px-4'
+      ]"
+    ></div>
+>>>>>>> dev
 
     <!-- Windows/Linux window controls (only shown on Windows/Linux) -->
     <div v-if="!isMacOS" class="flex h-10">
@@ -63,6 +76,8 @@
         <XIcon class="h-4 w-4" />
       </button>
     </div>
+    <!-- Spacer for macOS to maintain layout -->
+    <div v-else class="px-4"></div>
   </div>
 </template>
 
@@ -72,12 +87,16 @@ import { MinusIcon, XIcon } from 'lucide-vue-next'
 import MaximizeIcon from './icons/MaximizeIcon.vue'
 import RestoreIcon from './icons/RestoreIcon.vue'
 import { usePresenter } from '@/composables/usePresenter'
+<<<<<<< HEAD
 import { Button } from './ui/button'
 import { Icon } from '@iconify/vue'
 import AppBarTabItem from './app-bar/AppBarTabItem.vue'
 import { useTabStore } from '@/stores/tab'
 import { useThemeStore } from '@/stores/theme'
 const tabStore = useTabStore()
+=======
+
+>>>>>>> dev
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
 
@@ -99,13 +118,17 @@ onMounted(() => {
   devicePresenter.getDeviceInfo().then((deviceInfo) => {
     isMacOS.value = deviceInfo.platform === 'darwin'
   })
-  ipcRenderer?.on('window-maximized', () => {
+  ipcRenderer?.on('window:maximized', () => {
     isMaximized.value = true
   })
+<<<<<<< HEAD
   ipcRenderer?.on('window-fullscreened', () => {
     isFullscreened.value = true
   })
   ipcRenderer?.on('window-unmaximized', () => {
+=======
+  ipcRenderer?.on('window:unmaximized', () => {
+>>>>>>> dev
     isMaximized.value = false
   })
   ipcRenderer?.on('window-unfullscreened', () => {

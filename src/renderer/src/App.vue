@@ -2,6 +2,7 @@
 import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import AppBar from './components/AppBar.vue'
+import SideBar from './components/SideBar.vue'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
 
@@ -190,6 +191,27 @@ onMounted(() => {
     handleGoSettings()
   })
 
+  window.electron.ipcRenderer.on(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED, (_, msg) => {
+    let threadId: string | null = null
+
+    // 检查msg是否为字符串且是否以chat/开头
+    if (typeof msg === 'string' && msg.startsWith('chat/')) {
+      // 按/分割，检查是否有三段数据
+      const parts = msg.split('/')
+      if (parts.length === 3) {
+        // 提取中间部分作为threadId
+        threadId = parts[1]
+      }
+    } else if (msg && msg.threadId) {
+      // 兼容原有格式，如果msg是对象且包含threadId属性
+      threadId = msg.threadId
+    }
+
+    if (threadId) {
+      chatStore.setActiveThread(threadId)
+    }
+  })
+
   watch(
     () => activeTab.value,
     (newVal) => {
@@ -243,6 +265,7 @@ onBeforeUnmount(() => {
   window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.ZOOM_RESUME)
   window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION)
   window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.GO_SETTINGS)
+  window.electron.ipcRenderer.removeAllListeners(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED)
 })
 </script>
 
@@ -251,11 +274,11 @@ onBeforeUnmount(() => {
     <AppBar />
     <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-1 pb-1">
       <!-- 侧边导航栏 -->
-      <!-- <SideBar
+      <SideBar
         v-show="route.name !== 'welcome'"
         v-model:model-value="activeTab"
         class="h-full z-10"
-      /> -->
+      />
 
       <!-- 主内容区域 -->
 
