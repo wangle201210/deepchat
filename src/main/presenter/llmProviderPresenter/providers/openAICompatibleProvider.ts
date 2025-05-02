@@ -24,6 +24,9 @@ import { presenter } from '@/presenter'
 import { eventBus } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
+import { app } from 'electron'
+import path from 'path'
+import fs from 'fs'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
 const OPENAI_IMAGE_GENERATION_MODELS = [
@@ -288,16 +291,27 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         if (imageUrls.length > 0) {
           // 使用 images.edit 接口处理带有图片的请求
           // console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
-
           // 获取图片数据
-          const imageResponse = await fetch(imageUrls[0])
-          const imageBlob = await imageResponse.blob()
-          const imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+          let imageBuffer: Buffer
+
+          if (imageUrls[0].startsWith('imgcache://')) {
+            // 对于imgcache协议，直接从文件系统读取
+
+            const filePath = imageUrls[0].slice('imgcache://'.length)
+            const fullPath = path.join(app.getPath('userData'), 'images', filePath)
+
+            // 读取文件
+            imageBuffer = fs.readFileSync(fullPath)
+          } else {
+            // 对于其他URL，使用fetch获取
+            const imageResponse = await fetch(imageUrls[0])
+            const imageBlob = await imageResponse.blob()
+            imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
+          }
 
           // 创建临时文件
           const imagePath = `/tmp/openai_image_${Date.now()}.png`
           // 使用 fs 保存图片
-          const fs = await import('fs')
           await new Promise<void>((resolve, reject) => {
             fs.writeFile(imagePath, imageBuffer, (err: Error | null) => {
               if (err) {
