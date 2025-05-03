@@ -476,7 +476,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         toolUseDetected = true
         // console.log('Handling native tool_calls', JSON.stringify(delta.tool_calls))
         for (const toolCallDelta of delta.tool_calls) {
-          const id = toolCallDelta.id
+          const id = toolCallDelta.id ? toolCallDelta.id : toolCallDelta.function?.name
           const index = toolCallDelta.index
           const functionName = toolCallDelta.function?.name
           const argumentChunk = toolCallDelta.function?.arguments
