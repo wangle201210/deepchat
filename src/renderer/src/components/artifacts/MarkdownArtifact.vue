@@ -238,14 +238,16 @@ declare global {
   @apply overflow-auto p-4 m-0;
   min-height: 10px;
   background-color: #1e1e1e;
-  color: #ffffff;
+  @apply text-white;
 }
 
 .markdown-content code {
   @apply font-mono text-xs;
-  color: #ffffff;
+  @apply dark:text-white text-black;
 }
-
+.markdown-content .code-content code {
+  @apply text-white;
+}
 /* Mermaid容器样式 */
 .mermaid-container {
   @apply my-4 mx-auto max-w-full overflow-auto bg-transparent;
