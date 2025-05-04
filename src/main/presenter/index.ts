@@ -191,6 +191,7 @@ export class Presenter implements IPresenter {
 
   // 在应用退出时关闭数据库连接
   destroy() {
+    this.tabPresenter.destroy()
     this.sqlitePresenter.close()
     this.shortcutPresenter.destroy()
     this.syncPresenter.destroy()

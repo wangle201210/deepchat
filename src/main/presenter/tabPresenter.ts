@@ -54,37 +54,6 @@ export class TabPresenter implements ITabPresenter {
     })
   }
 
-  // private setupIPCHandlers() {
-  // ipcMain.handle('requestNewTab', (_event, _windowId: number, url: string) => {
-  //   return this.createTab(_windowId, url)
-  // })
-
-  // ipcMain.handle('requestCloseTab', (_event, _windowId: number, tabId: number) => {
-  //   return this.destroyTab(tabId)
-  // })
-
-  // ipcMain.handle('requestSwitchTab', (_event, _windowId: number, tabId: number) => {
-  //   return this.activateTab(tabId)
-  // })
-
-  // ipcMain.on('notifyTabDragStart', () => {
-  //   // Handle drag start event
-  // })
-
-  // ipcMain.on(
-  //   'notifyTabDrop',
-  //   (
-  //     _event,
-  //     _sourceWindowId: number,
-  //     tabId: number,
-  //     targetWindowId: number,
-  //     targetIndex: number
-  //   ) => {
-  //     return this.moveTab(tabId, targetWindowId, targetIndex)
-  //   }
-  // )
-  // }
-
   /**
    * 创建新标签页并添加到指定窗口
    */
@@ -105,6 +74,8 @@ export class TabPresenter implements ITabPresenter {
         devTools: is.dev
       }
     })
+
+    view.setBorderRadius(8)
 
     // 加载内容
     if (url.startsWith('local://')) {
@@ -395,7 +366,8 @@ export class TabPresenter implements ITabPresenter {
     if (!window) return
 
     const tabListData = this.getWindowTabsData(windowId)
-    window.webContents.send('updateWindowTabs', windowId, tabListData)
+    console.log('----------------->notifyWindowTabsUpdate', windowId, tabListData)
+    // window.webContents.send('updateWindowTabs', windowId, tabListData)
   }
 
   /**
@@ -482,6 +454,27 @@ export class TabPresenter implements ITabPresenter {
 
     // 设置视图位置大小（留出顶部标签栏空间）
     const TAB_BAR_HEIGHT = 40 // 标签栏高度，需要根据实际UI调整
-    view.setBounds({ x: 0, y: TAB_BAR_HEIGHT, width, height: height - TAB_BAR_HEIGHT })
+    view.setBounds({
+      x: 4,
+      y: TAB_BAR_HEIGHT,
+      width: width - 8,
+      height: height - TAB_BAR_HEIGHT - 4
+    })
+  }
+
+  public destroy() {
+    // Iterate over the map containing tab views or windows
+    for (const [tabId] of this.tabWindowMap.entries()) {
+      // TODO: Implement cleanup logic for each entry
+      // This might involve destroying WebContentsView, removing listeners, etc.
+      console.log(`Destroying resources for tab: ${tabId}`)
+      this.closeTab(tabId)
+    }
+    // Clear the map after processing all entries
+
+    this.tabWindowMap.clear()
+    this.tabs.clear()
+    this.tabState.clear()
+    this.windowTabs.clear()
   }
 }

@@ -35,18 +35,16 @@
 
     - **职责:** 核心的标签页管理器。
     - **数据结构:**
-      - `tabs: Map<number, WebContentsView>`: 全局标签页实例存储，key 为 `webContents.id`。
-      - `tabState: Map<number, TabState>`: 存储标签页状态 (URL, title, favicon, isActive 等)。
-      - `windowTabs: Map<number, number[]>`: 窗口ID (`windowId`) 到其包含的标签页ID列表 (`tabId[]`) 的映射，维护顺序。
-      - `tabWindowMap: Map<number, number>`: 标签页ID (`tabId`) 到其当前所属窗口ID (`windowId`) 的映射。
+      - `tabs: Map<number, { view: WebContentsView, state: TabState, windowId: number }>`: 全局标签页实例及其状态存储。 Key 为 `tabId` (`webContents.id`), Value 为一个包含 `WebContentsView` 实例、状态对象 (`TabState`: { URL, title, favicon, isActive, etc. }) 以及所属窗口 ID (`windowId`) 的对象。
+      - `windowTabs: Map<number, number[]>`: 窗口ID (`windowId`) 到其包含的标签页ID列表 (`tabId[]`) 的映射，维护标签页在窗口内的顺序。
     - **核心方法:**
-      - `createTab(windowId, url, options)`: 创建 `WebContentsView`，加入上述 Map，并将其添加到 `windowId` 对应的 `BrowserWindow` 的视图层级中 (e.g., `window.contentView.addChildView()`)。
-      - `destroyTab(tabId)`: 从窗口视图层级移除，销毁 `WebContentsView`，清理 Map 中的记录。
-      - `activateTab(tabId)`: 将指定 `WebContentsView` 在其窗口内提升到最前，更新状态。
-      - `detachTab(tabId)`: 从当前窗口视图层级移除 `WebContentsView` (不销毁)，更新 `tabWindowMap`。
-      - `attachTab(tabId, targetWindowId, index?)`: 将已分离的 `WebContentsView` 添加到目标窗口视图层级，更新 `tabWindowMap` 和 `windowTabs`。
+      - `createTab(windowId, url, options)`: 创建 `WebContentsView`，生成 `TabInfo` 对象存入 `tabs` Map，并将 `tabId` 添加到对应 `windowId` 的 `windowTabs` 数组中。将其添加到 `windowId` 对应的 `BrowserWindow` 的视图层级中 (e.g., `window.contentView.addChildView()`)。
+      - `destroyTab(tabId)`: 从 `tabs` Map 中获取 `TabInfo`，找到 `windowId` 和 `view`。从窗口视图层级移除 `view`，销毁 `WebContentsView`，从 `tabs` Map 中删除条目，并从 `windowTabs` 中移除 `tabId`。
+      - `activateTab(tabId)`: 在 `tabs` 中找到对应的 `TabInfo`，更新其 `state.isActive`，并在其所属窗口内将 `view` 提升到最前。可能还需要将同一窗口内其他标签的 `isActive` 设为 `false`。
+      - `detachTab(tabId)`: 从 `tabs` 中获取 `TabInfo`，从其当前窗口的视图层级移除 `view`。更新 `TabInfo` 中的 `windowId` (可能设为 `null` 或特殊值表示已分离)，并从旧窗口的 `windowTabs` 中移除 `tabId`。**注意：此时 `WebContentsView` 实例本身不销毁。**
+      - `attachTab(tabId, targetWindowId, index?)`: 找到 `tabs` 中的 `TabInfo`。将其 `view` 添加到 `targetWindowId` 对应窗口的视图层级。更新 `TabInfo` 中的 `windowId` 为 `targetWindowId`。将 `tabId` 插入到 `targetWindowId` 对应的 `windowTabs` 数组的指定 `index` (或末尾)。
       - `moveTab(tabId, targetWindowId, index?)`: 协调 `detachTab` 和 `attachTab` 完成标签移动。
-    - **事件/IPC 处理:** 监听 `WebContentsView` 事件更新状态，处理来自渲染进程的标签操作请求。
+    - **事件/IPC 处理:** 监听 `WebContentsView` 事件更新 `tabs` 中对应 `TabInfo` 的 `state`，处理来自渲染进程的标签操作请求。
 
 4.  **IPC 通信:**
 

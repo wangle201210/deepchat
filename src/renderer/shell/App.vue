@@ -1,5 +1,5 @@
 <template>
-  <div class="w-screen h-screen" :class="[isMacOS ? '' : 'bg-muted']">
+  <div class="w-screen h-screen" :class="[isMacOS ? 'bg-transparent' : 'bg-muted']">
     <AppBar />
     <main class="content-container">
       <!-- WebContentsView will be rendered here by the main process -->
@@ -21,4 +21,9 @@ onMounted(() => {
 })
 </script>
 
-<style></style>
+<style>
+html,
+body {
+  @apply bg-transparent;
+}
+</style>
