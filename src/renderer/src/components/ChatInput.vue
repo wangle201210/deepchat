@@ -200,6 +200,7 @@ import suggestion, { mentionData } from './editor/mention/suggestion'
 import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
+import CodeBlock from '@tiptap/extension-code-block'
 import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntryWithClient } from '@shared/presenter'
 const mcpStore = useMcpStore()
@@ -224,7 +225,10 @@ const editor = new Editor({
       suggestion
     }),
     Placeholder.configure({
-      placeholder: () => t('chat.input.placeholder')
+      placeholder: () => {
+        const placeholder = t('chat.input.placeholder')
+        return `${placeholder}`
+      }
     }),
     HardBreak.extend({
       addKeyboardShortcuts() {
@@ -236,6 +240,11 @@ const editor = new Editor({
       keepMarks: true,
       HTMLAttributes: {
         class: 'line-break'
+      }
+    }),
+    CodeBlock.configure({
+      HTMLAttributes: {
+        class: 'rounded-md bg-secondary dark:bg-zinc-800 p-2'
       }
     })
   ],
