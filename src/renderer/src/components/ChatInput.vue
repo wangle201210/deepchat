@@ -233,7 +233,8 @@ const editor = new Editor({
     HardBreak.extend({
       addKeyboardShortcuts() {
         return {
-          'Shift-Enter': () => this.editor.commands.setHardBreak()
+          'Shift-Enter': () => this.editor.commands.setHardBreak(),
+          'Alt-Enter': () => this.editor.commands.setHardBreak()
         }
       }
     }).configure({
@@ -242,7 +243,36 @@ const editor = new Editor({
         class: 'line-break'
       }
     }),
-    CodeBlock.configure({
+    CodeBlock.extend({
+      addStorage() {
+        return {
+          lastShiftEnterTime: 0
+        }
+      },
+      addKeyboardShortcuts() {
+        return {
+          'Shift-Enter': () => {
+            if (this.editor.isActive('codeBlock')) {
+              const now = Date.now()
+              const timeDiff = now - this.storage.lastShiftEnterTime
+
+              // If Shift+Enter was pressed within 800ms, exit the code block
+              if (timeDiff < 800) {
+                this.editor.commands.exitCode()
+                this.storage.lastShiftEnterTime = 0
+                return true
+              }
+
+              // Otherwise, insert a newline and record the time
+              this.editor.commands.insertContent('\n')
+              this.storage.lastShiftEnterTime = now
+              return true
+            }
+            return false
+          }
+        }
+      }
+    }).configure({
       HTMLAttributes: {
         class: 'rounded-md bg-secondary dark:bg-zinc-800 p-2'
       }

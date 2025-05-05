@@ -27,7 +27,8 @@ import {
   MessageFile,
   UserMessageContent,
   UserMessageTextBlock,
-  UserMessageMentionBlock
+  UserMessageMentionBlock,
+  UserMessageCodeBlock
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { generateSearchPrompt, SearchManager } from './searchManager'
@@ -642,7 +643,7 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   private formatUserMessageContent(
-    msgContentBlock: (UserMessageTextBlock | UserMessageMentionBlock)[]
+    msgContentBlock: (UserMessageTextBlock | UserMessageMentionBlock | UserMessageCodeBlock)[]
   ) {
     return msgContentBlock
       .map((block) => {
@@ -657,6 +658,8 @@ export class ThreadPresenter implements IThreadPresenter {
           return `@${block.id}`
         } else if (block.type === 'text') {
           return block.content
+        } else if (block.type === 'code') {
+          return `\`\`\`${block.content}\`\`\``
         }
         return ''
       })

@@ -45,6 +45,11 @@ export type UserMessageTextBlock = {
   content: string
 }
 
+export type UserMessageCodeBlock = {
+  type: 'code'
+  content: string
+}
+
 export type UserMessageMentionBlock = {
   type: 'mention'
   content: string
@@ -62,7 +67,7 @@ export type UserMessageContent = {
   search: boolean
   text: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  content?: (UserMessageTextBlock | UserMessageMentionBlock)[]
+  content?: (UserMessageTextBlock | UserMessageMentionBlock | UserMessageCodeBlock)[]
 }
 
 export type MessageFile = {
