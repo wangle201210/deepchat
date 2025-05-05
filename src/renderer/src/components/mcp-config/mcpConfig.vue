@@ -760,7 +760,7 @@ const getJsonPartClass = (type: string): string => {
               <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
                 <div class="flex justify-between items-center">
                   <div
-                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
                   >
                     {{ server.command }} {{ server.args.join(' ') }}
                   </div>
@@ -927,13 +927,13 @@ const getJsonPartClass = (type: string): string => {
               <div class="flex justify-between items-center">
                 <div
                   v-if="server.type === 'http'"
-                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
                 >
                   {{ server.baseUrl }}
                 </div>
                 <div
                   v-else
-                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
                 >
                   {{ server.command }} {{ server.args.join(' ') }}
                 </div>

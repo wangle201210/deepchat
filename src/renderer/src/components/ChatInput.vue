@@ -366,12 +366,22 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
   if (docJSON.type === 'doc') {
     for (const [idx, block] of (docJSON.content ?? []).entries()) {
       if (block.type === 'paragraph') {
-        for (const subBlock of block.content ?? []) {
+        // console.log(block)
+        for (const [index, subBlock] of (block.content ?? []).entries()) {
           if (subBlock.type === 'text') {
             blocks.push({
               type: 'text',
               content: subBlock.text ?? ''
             })
+          } else if (subBlock.type === 'hardBreak') {
+            if (index > 0 && block.content?.[index - 1]?.type === 'text') {
+              blocks[blocks.length - 1].content += '\n'
+            } else {
+              blocks.push({
+                type: 'text',
+                content: '\n'
+              })
+            }
           } else if (subBlock.type === 'mention') {
             let content = subBlock.attrs?.label ?? ''
             try {
