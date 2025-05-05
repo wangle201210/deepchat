@@ -654,6 +654,8 @@ export class ThreadPresenter implements IThreadPresenter {
             return `@${block.id}`
           } else if (block.category === 'files') {
             return `@${block.id}`
+          } else if (block.category === 'prompts') {
+            return `${block.content}`
           }
           return `@${block.id}`
         } else if (block.type === 'text') {

@@ -88,6 +88,7 @@
     "@tiptap/extension-code-block": "^2.11.9",
     "@tiptap/extension-document": "^2.11.7",
     "@tiptap/extension-hard-break": "^2.11.7",
+    "@tiptap/extension-history": "^2.12.0",
     "@tiptap/extension-mention": "^2.11.7",
     "@tiptap/extension-paragraph": "^2.11.7",
     "@tiptap/extension-placeholder": "^2.11.7",

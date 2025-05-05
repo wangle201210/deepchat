@@ -201,6 +201,7 @@ import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
 import CodeBlock from '@tiptap/extension-code-block'
+import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntryWithClient } from '@shared/presenter'
 const mcpStore = useMcpStore()
@@ -217,6 +218,7 @@ const editor = new Editor({
     Document,
     Paragraph,
     Text,
+    History,
     Mention.configure({
       HTMLAttributes: {
         class:
@@ -461,6 +463,10 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
               console.error('读取资源失败:', error)
             } finally {
               fetchingMcpEntry.value = false
+            }
+
+            if (subBlock.attrs?.category === 'prompts') {
+              content = atob(subBlock.attrs?.content ?? '')
             }
 
             const newBlock: UserMessageMentionBlock = {
@@ -730,6 +736,24 @@ watch(
           type: 'item',
           category: 'tools',
           description: tool.function.description ?? ''
+        }))
+      )
+  }
+)
+
+watch(
+  () => mcpStore.prompts,
+  () => {
+    mentionData.value = mentionData.value
+      .filter((item) => item.type != 'item' || item.category != 'prompts')
+      .concat(
+        mcpStore.prompts.map((prompt) => ({
+          id: prompt.name,
+          label: prompt.name,
+          icon: undefined,
+          type: 'item',
+          category: 'prompts',
+          description: prompt.messages?.map((message) => message.content).join('\n') ?? ''
         }))
       )
   }
