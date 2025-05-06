@@ -79,6 +79,8 @@ linux:
   maintainer: ThinkInAIXYZ
   category: Utility
   artifactName: ${name}-${version}-linux-${arch}.${ext}
+  mimeTypes:
+    - x-scheme-handler/deepchat
 npmRebuild: true
 publish:
   provider: generic

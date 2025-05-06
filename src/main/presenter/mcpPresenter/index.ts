@@ -518,7 +518,6 @@ export class McpPresenter implements IMCPPresenter {
       return {
         type: 'function',
         function: {
-          id: tool.id,
           name: tool.name,
           description: tool.description,
           parameters: {
@@ -582,7 +581,7 @@ export class McpPresenter implements IMCPPresenter {
     return mcpTools.map((toolDef) => {
       const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName)
       return {
-        name: tool.id,
+        name: tool.name,
         description: tool.description,
         input_schema: {
           type: 'object',

@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "Ask something?",
+    "placeholder": "Ask something? You can quote tools, files, resources via {'@'}...",
     "fileArea": "File Area",
     "inputArea": "Input Area",
     "functionSwitch": "Function Switch",

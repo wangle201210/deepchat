@@ -20,7 +20,8 @@ export interface CategorizedData {
 const categorizedData: CategorizedData[] = [
   { label: 'files', icon: 'lucide:files', type: 'category' },
   { label: 'resources', icon: 'lucide:swatch-book', type: 'category' },
-  { label: 'tools', icon: 'lucide:hammer', type: 'category' }
+  { label: 'tools', icon: 'lucide:hammer', type: 'category' },
+  { label: 'prompts', icon: 'lucide:message-square-quote', type: 'category' }
 ]
 
 // Create a ref to track mention selections
