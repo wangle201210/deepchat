@@ -1,20 +1,33 @@
 <template>
-  <div class="z-50 relative min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
+  <div
+    class="z-50 relative min-w-[180px] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+  >
     <div v-if="isCategoryView" class="text-xs text-muted-foreground pb-1 px-1">
       {{ currentCategory }}
     </div>
     <div v-if="displayItems.length > 0" class="max-h-64 overflow-y-auto">
-      <button v-for="(item, index) in displayItems" :key="index" :ref="(el) => (itemElements[index] = el)"
+      <button
+        v-for="(item, index) in displayItems"
+        :key="index"
+        :ref="(el) => (itemElements[index] = el)"
         class="relative flex cursor-default hover:bg-accent select-none items-center rounded-sm gap-2 px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left"
-        :class="[index === selectedIndex ? 'bg-accent' : '']" @click="selectItem(index)">
+        :class="[index === selectedIndex ? 'bg-accent' : '']"
+        @click="selectItem(index)"
+      >
         <Icon v-if="item.icon" :icon="item.icon" class="size-4 shrink-0" />
         <div class="font-medium flex-1 truncate">{{ item.label }}</div>
-        <Icon v-if="item.type === 'category'" icon="lucide:chevron-right" class="size-4 shrink-0"></Icon>
+        <Icon
+          v-if="item.type === 'category'"
+          icon="lucide:chevron-right"
+          class="size-4 shrink-0"
+        ></Icon>
       </button>
     </div>
     <div v-else class="p-1 text-sm text-muted-foreground">No result</div>
-    <div v-if="displayItems[selectedIndex]?.description"
-      class="absolute text-muted-foreground shadow-sm top-[-1px] right-[-328px] w-[320px] max-h-64 bg-card rounded-md p-2 border text-xs overflow-y-auto">
+    <div
+      v-if="displayItems[selectedIndex]?.description"
+      class="absolute text-muted-foreground shadow-sm top-[-1px] right-[-328px] w-[320px] max-h-64 bg-card rounded-md p-2 border text-xs overflow-y-auto"
+    >
       <div class="font-medium pb-1 border-b border-dashed">Description</div>
       <div class="py-1">{{ displayItems[selectedIndex].description }}</div>
     </div>
@@ -107,7 +120,7 @@ const selectItem = (index: number) => {
         id: `${selectedDisplayItem.id}`,
         label: `${selectedDisplayItem.label}`,
         category: selectedDisplayItem.category,
-        content: btoa(selectedDisplayItem.description ?? '')
+        content: selectedDisplayItem.mcpEntry ? JSON.stringify(selectedDisplayItem.mcpEntry) : ''
       })
     } else {
       props.command({
