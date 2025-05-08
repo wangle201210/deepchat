@@ -100,7 +100,7 @@ export const useMcpStore = defineStore('mcp', () => {
   const defaultServersCount = computed(() => config.value.defaultServers.length)
 
   // 检查是否达到默认服务器最大数量
-  const hasMaxDefaultServers = computed(() => defaultServersCount.value >= 3)
+  const hasMaxDefaultServers = computed(() => defaultServersCount.value >= 30)
 
   // 工具数量
   const toolCount = computed(() => tools.value.length)
