@@ -215,10 +215,10 @@ const handleToggleDefaultServer = async (serverName: string) => {
   const isDefault = mcpStore.config.defaultServers.includes(serverName)
   console.log('mcpStore.config.defaultServers', mcpStore.config.defaultServers)
   // 如果不是默认服务器，且已达到最大数量，显示提示
-  if (!isDefault && mcpStore.config.defaultServers.length > 3) {
+  if (!isDefault && mcpStore.config.defaultServers.length > 30) {
     toast({
-      title: t('settings.mcp.maxDefaultServersReached'),
-      description: t('settings.mcp.removeDefaultFirst'),
+      title: t('mcp.errors.maxDefaultServersReached'),
+      description: t('mcp.errors.removeDefaultFirst'),
       variant: 'destructive'
     })
     return
@@ -227,7 +227,7 @@ const handleToggleDefaultServer = async (serverName: string) => {
   const result = await mcpStore.toggleDefaultServer(serverName)
   if (!result.success) {
     toast({
-      title: t('common.error.operationFailed'),
+      title: t('mcp.errors.operationFailed'),
       description: result.message,
       variant: 'destructive'
     })
