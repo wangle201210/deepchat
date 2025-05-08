@@ -9,7 +9,7 @@ import axios from 'axios'
 const RagflowKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)'),
+  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)'),
   keyword: z.boolean().optional().default(false).describe('是否启用关键词匹配 (默认false)'),
   highlight: z.boolean().optional().default(false).describe('是否高亮匹配的文本 (默认false)')
 })
@@ -194,7 +194,7 @@ export class RagflowKnowledgeServer {
     const {
       query,
       topK = 5,
-      scoreThreshold = 0.5,
+      scoreThreshold = 0.2,
       keyword = false,
       highlight = false
     } = parameters as {
@@ -228,7 +228,7 @@ export class RagflowKnowledgeServer {
         {
           question: query,
           dataset_ids: config.datasetIds,
-          top_k: topK,
+          page_size: topK,
           similarity_threshold: scoreThreshold,
           keyword,
           highlight
