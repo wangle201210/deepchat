@@ -203,7 +203,7 @@ import HardBreak from '@tiptap/extension-hard-break'
 import CodeBlock from '@tiptap/extension-code-block'
 import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
-import { PromptListEntry, ResourceListEntry } from '@shared/presenter'
+import { ResourceListEntry } from '@shared/presenter'
 const mcpStore = useMcpStore()
 const { t } = useI18n()
 const editor = new Editor({
