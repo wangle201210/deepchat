@@ -170,6 +170,14 @@
     "difyKnowledge": {
       "name": "Dify知识库检索",
       "desc": "Dify知识库检索服务，可以检索Dify知识库中的内容"
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow知识库检索",
+      "desc": "RAGFlow知识库检索服务，可以对RAGFlow知识库内容进行检索"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT知识库检索",
+      "desc": "FastGPT知识库检索服务，可以对FastGPT知识库内容进行检索"
     }
   },
   "prompts": {

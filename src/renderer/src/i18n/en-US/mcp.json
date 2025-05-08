@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "desc": "Dify Knowledge Base Search Service, which can retrieve content in Dify Knowledge Base",
       "name": "Dify Knowledge Base Search"
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow Knowledge Base Search",
+      "desc": "RAGFlow knowledge base search service, can search RAGFlow knowledge base content"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT Knowledge Base Search",
+      "desc": "FastGPT knowledge base search service, can search FastGPT knowledge base content"
     }
   },
   "prompts": {
