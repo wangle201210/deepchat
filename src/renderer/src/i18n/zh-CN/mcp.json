@@ -187,7 +187,10 @@
     "parameters": "Prompt 参数",
     "runningPrompt": "Prompt 获取中",
     "executeButton": "点击获取",
-    "resultTitle": "Prompt 详情"
+    "resultTitle": "Prompt 详情",
+    "resetToDefault": "重置为默认参数",
+    "invalidJson": "无效的 JSON 格式",
+    "parametersHint": "请输入 JSON 格式的参数，支持自动格式化"
   },
   "resources": {
     "noResourcesAvailable": "暂无 Resources",

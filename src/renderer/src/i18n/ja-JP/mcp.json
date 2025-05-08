@@ -167,7 +167,10 @@
     "parameters": "プロンプトパラメーター",
     "runningPrompt": "プロンプトが取得されています",
     "executeButton": "クリックして取得します",
-    "resultTitle": "詳細を迅速にします"
+    "resultTitle": "詳細を迅速にします",
+    "invalidJson": "無効なJSON形式",
+    "parametersHint": "JSON形式のパラメーターを入力してください。自動フォーマットをサポートしてください",
+    "resetToDefault": "デフォルトのパラメーターにリセットします"
   },
   "resources": {
     "noResourcesAvailable": "なしリソース",

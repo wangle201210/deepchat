@@ -18,8 +18,8 @@ import { useSettingsStore } from '@/stores/settings'
 import type {
   MCPServerConfig,
   MCPToolDefinition,
-  PromptWithClient,
-  ResourceListEntryWithClient
+  PromptListEntry,
+  ResourceListEntry
 } from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import McpServerForm from './mcpServerForm.vue'
@@ -102,19 +102,19 @@ const selectTool = (tool: MCPToolDefinition) => {
 }
 
 // 选择Prompt
-const selectPrompt = (prompt: PromptWithClient) => {
+const selectPrompt = (prompt: PromptListEntry) => {
   selectedPrompt.value = prompt.name
   promptResult.value = ''
 }
 
 // 选择Resource
-const selectResource = (resource: ResourceListEntryWithClient) => {
+const selectResource = (resource: ResourceListEntry) => {
   selectedResource.value = resource.uri
   resourceContent.value = ''
 }
 
 // 加载资源内容
-const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
+const loadResourceContent = async (resource: ResourceListEntry) => {
   if (!resource) return
 
   try {
@@ -139,7 +139,7 @@ const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
 }
 
 // 调用Prompt
-const callPrompt = async (prompt: PromptWithClient) => {
+const callPrompt = async (prompt: PromptListEntry) => {
   if (!prompt) return
   if (!validatePromptJson(promptParams.value)) return
 
@@ -394,6 +394,44 @@ const selectedPromptObj = computed(() => {
   return mcpStore.prompts.find((p) => p.name === selectedPrompt.value)
 })
 
+// 添加计算属性：获取默认参数模板
+const defaultPromptParams = computed(() => {
+  if (!selectedPromptObj.value) return '{}'
+
+  // 获取 arguments 字段
+  const promptArgs = selectedPromptObj.value.arguments || {}
+
+  // 如果 arguments 是数组，将其转换为对象
+  if (Array.isArray(promptArgs)) {
+    const argsObject = promptArgs.reduce(
+      (acc, arg) => {
+        acc[arg.name] = '' // 为每个参数设置空值
+        return acc
+      },
+      {} as Record<string, string>
+    )
+    return JSON.stringify(argsObject, null, 2)
+  }
+
+  // 如果已经是对象，直接返回
+  return JSON.stringify(promptArgs, null, 2)
+})
+
+// 监听选中提示模板变化，更新参数
+watch(selectedPrompt, () => {
+  promptParams.value = defaultPromptParams.value
+})
+
+// 格式化 JSON 字符串
+const formatJson = (json: string): string => {
+  try {
+    const obj = JSON.parse(json)
+    return JSON.stringify(obj, null, 2)
+  } catch (e) {
+    return json
+  }
+}
+
 // 添加计算属性：获取当前选中的资源对象
 const selectedResourceObj = computed(() => {
   return mcpStore.resources.find((r) => r.uri === selectedResource.value)
@@ -520,6 +558,22 @@ const getJsonPartClass = (type: string): string => {
       return ''
   }
 }
+
+// 添加计算属性：获取参数描述
+const promptArgsDescription = computed(() => {
+  if (!selectedPromptObj.value) return []
+  const promptArgs = selectedPromptObj.value.arguments || {}
+
+  if (Array.isArray(promptArgs)) {
+    return promptArgs.map((arg) => ({
+      name: arg.name,
+      description: arg.description || '',
+      required: arg.required || false
+    }))
+  }
+
+  return []
+})
 </script>
 
 <template>
@@ -1090,7 +1144,7 @@ const getJsonPartClass = (type: string): string => {
                   {{ prompt.description || t('mcp.prompts.noDescription') }}
                 </div>
                 <div class="text-xs text-muted-foreground mt-1">
-                  {{ prompt.clientName }}
+                  {{ prompt.client.name }}
                 </div>
               </div>
             </div>
@@ -1116,16 +1170,56 @@ const getJsonPartClass = (type: string): string => {
                 <!-- 提示参数输入 -->
                 <div class="space-y-3 mb-3">
                   <div class="space-y-1">
-                    <label class="text-xs font-medium">
-                      {{ t('mcp.prompts.parameters') }}
-                    </label>
-                    <textarea
-                      v-model="promptParams"
-                      class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                      placeholder="{}"
-                      :class="{ 'border-red-500': jsonPromptError }"
-                      @input="validatePromptJson(promptParams)"
-                    ></textarea>
+                    <div class="flex justify-between items-center">
+                      <label class="text-xs font-medium">
+                        {{ t('mcp.prompts.parameters') }}
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-6 text-xs"
+                        @click="promptParams = defaultPromptParams"
+                      >
+                        <Icon icon="lucide:refresh-cw" class="mr-1 h-3 w-3" />
+                        {{ t('mcp.prompts.resetToDefault') }}
+                      </Button>
+                    </div>
+
+                    <!-- 参数描述区域 -->
+                    <div
+                      v-if="promptArgsDescription.length > 0"
+                      class="mb-2 p-2 bg-muted/50 rounded-md"
+                    >
+                      <div
+                        v-for="arg in promptArgsDescription"
+                        :key="arg.name"
+                        class="text-xs text-muted-foreground mb-1 last:mb-0"
+                      >
+                        <span class="font-medium">{{ arg.name }}</span>
+                        <span v-if="arg.required" class="ml-1 text-red-500">*</span>
+                        <span class="ml-1">- {{ arg.description }}</span>
+                      </div>
+                    </div>
+
+                    <div class="relative">
+                      <textarea
+                        v-model="promptParams"
+                        class="flex h-48 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                        placeholder="{}"
+                        :class="{ 'border-red-500': jsonPromptError }"
+                        @input="validatePromptJson(promptParams)"
+                        @blur="promptParams = formatJson(promptParams)"
+                      ></textarea>
+                      <div
+                        v-if="jsonPromptError"
+                        class="absolute right-2 top-2 text-xs text-red-500"
+                      >
+                        {{ t('mcp.prompts.invalidJson') }}
+                      </div>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                      {{ t('mcp.prompts.parametersHint') }}
+                    </p>
                   </div>
                 </div>
 
@@ -1134,7 +1228,7 @@ const getJsonPartClass = (type: string): string => {
                   <Button
                     class="w-full"
                     :disabled="promptLoading || jsonPromptError"
-                    @click="callPrompt(selectedPromptObj as PromptWithClient)"
+                    @click="callPrompt(selectedPromptObj as PromptListEntry)"
                   >
                     <Icon
                       v-if="promptLoading"
@@ -1190,7 +1284,7 @@ const getJsonPartClass = (type: string): string => {
               >
                 <div class="font-medium">{{ resource.name || resource.uri }}</div>
                 <div class="text-xs text-muted-foreground mt-1">
-                  {{ resource.clientName }}
+                  {{ resource.client.name }}
                 </div>
               </div>
             </div>
@@ -1217,7 +1311,7 @@ const getJsonPartClass = (type: string): string => {
                 <Button
                   class="w-full mb-3"
                   :disabled="resourceLoading"
-                  @click="loadResourceContent(selectedResourceObj as ResourceListEntryWithClient)"
+                  @click="loadResourceContent(selectedResourceObj as ResourceListEntry)"
                 >
                   <Icon
                     v-if="resourceLoading"

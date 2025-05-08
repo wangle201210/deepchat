@@ -167,7 +167,10 @@
     "parameters": "Быстрые параметры",
     "runningPrompt": "Подсказка получает",
     "executeButton": "Нажмите, чтобы получить",
-    "resultTitle": "Краткие данные"
+    "resultTitle": "Краткие данные",
+    "invalidJson": "Неверный формат JSON",
+    "parametersHint": "Пожалуйста, введите параметры в формате JSON, поддержите автоматическое форматирование",
+    "resetToDefault": "Сбросить параметры по умолчанию"
   },
   "resources": {
     "noResourcesAvailable": "Нет ресурсов",

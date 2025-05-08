@@ -167,7 +167,10 @@
     "parameters": "Prompt parameters",
     "runningPrompt": "Prompt is getting",
     "executeButton": "Click to get",
-    "resultTitle": "Prompt Details"
+    "resultTitle": "Prompt Details",
+    "invalidJson": "Invalid JSON format",
+    "parametersHint": "Please enter the parameters in JSON format, support automatic formatting",
+    "resetToDefault": "Reset to default parameters"
   },
   "resources": {
     "noResourcesAvailable": "None Resources",

@@ -31,7 +31,7 @@ export interface McpClient {
   icon: string
   isRunning: boolean
   tools: MCPToolDefinition[]
-  prompts?: Prompt[]
+  prompts?: PromptListEntry[]
   resources?: ResourceListEntry[]
 }
 
@@ -41,26 +41,46 @@ export interface Resource {
   text?: string
   blob?: string
 }
-
 export interface Prompt {
   name: string
+  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
+}
+export interface PromptListEntry {
+  name: string
   description?: string
-  inputSchema?: Record<string, unknown>
-  messages?: Array<{ role: string; content: { text: string } }>
+  arguments?: {
+    name: string
+    description?: string
+    required: boolean
+  }[]
+  client: {
+    name: string
+    icon: string
+  }
+}
+// 定义工具调用结果的接口
+export interface ToolCallResult {
+  isError?: boolean
+  content: Array<{
+    type: string
+    text: string
+  }>
+}
+
+// 定义工具列表的接口
+export interface Tool {
+  name: string
+  description: string
+  inputSchema: Record<string, unknown>
 }
 
 export interface ResourceListEntry {
   uri: string
   name?: string
-}
-export interface PromptWithClient extends Prompt {
-  clientName: string
-  clientIcon?: string
-}
-
-export interface ResourceListEntryWithClient extends ResourceListEntry {
-  clientName: string
-  clientIcon?: string
+  client: {
+    name: string
+    icon: string
+  }
 }
 
 export interface ModelConfig {
@@ -773,10 +793,10 @@ export interface IMCPPresenter {
   startServer(serverName: string): Promise<void>
   stopServer(serverName: string): Promise<void>
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
-  getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
+  getAllPrompts(): Promise<Array<PromptListEntry & { client: { name: string; icon: string } }>>
   getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
-  getPrompt(prompt: PromptWithClient, params?: Record<string, unknown>): Promise<unknown>
-  readResource(resource: ResourceListEntryWithClient): Promise<Resource>
+  getPrompt(prompt: PromptListEntry, args?: Record<string, unknown>): Promise<unknown>
+  readResource(resource: ResourceListEntry): Promise<Resource>
   callTool(request: {
     id: string
     type: string

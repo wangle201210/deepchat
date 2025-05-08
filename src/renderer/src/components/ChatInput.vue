@@ -203,7 +203,7 @@ import HardBreak from '@tiptap/extension-hard-break'
 import CodeBlock from '@tiptap/extension-code-block'
 import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
-import { PromptWithClient, ResourceListEntryWithClient } from '@shared/presenter'
+import { ResourceListEntry } from '@shared/presenter'
 const mcpStore = useMcpStore()
 const { t } = useI18n()
 const editor = new Editor({
@@ -429,7 +429,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
               if (subBlock.attrs?.category === 'resources' && subBlock.attrs?.content) {
                 fetchingMcpEntry.value = true
                 // console.log(subBlock.attrs?.content)
-                const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntryWithClient
+                const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntry
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const mcpEntryResult = await mcpStore.readResource(mcpEntry)
 
@@ -472,8 +472,11 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
                 if (promptAttrContent) {
                   // Assuming promptAttrContent is JSON.stringify(originalPromptObjectFromStore)
                   // And originalPromptObjectFromStore has a field 'content' with base64 data.
-                  const promptObject = JSON.parse(promptAttrContent) as PromptWithClient
-                  const prompResult = await mcpStore.getPrompt(promptObject)
+                  const promptObject = JSON.parse(promptAttrContent)
+                  const prompResult = await mcpStore.getPrompt(
+                    promptObject,
+                    promptObject.argumentsValue
+                  )
                   content = JSON.stringify(prompResult)
                 } else {
                   console.warn('Prompt mention is missing "content" attribute.')
@@ -730,7 +733,7 @@ watch(
       .filter((item) => item.type != 'item' || item.category != 'resources')
       .concat(
         mcpStore.resources.map((resource) => ({
-          id: `${resource.clientName}.${resource.name ?? ''}`,
+          id: `${resource.client.name}.${resource.name ?? ''}`,
           label: resource.name ?? '',
           icon: 'lucide:tag',
           type: 'item',
