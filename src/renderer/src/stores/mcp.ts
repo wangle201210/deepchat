@@ -2,6 +2,7 @@ import { ref, computed, onMounted } from 'vue'
 import { defineStore } from 'pinia'
 import { usePresenter } from '@/composables/usePresenter'
 import { MCP_EVENTS } from '@/events'
+import { useI18n } from 'vue-i18n'
 import type {
   McpClient,
   MCPConfig,
@@ -27,6 +28,7 @@ interface MCPToolCallResult {
 }
 
 export const useMcpStore = defineStore('mcp', () => {
+  const { t } = useI18n()
   // 获取MCP相关的presenter
   const mcpPresenter = usePresenter('mcpPresenter')
 
@@ -126,7 +128,7 @@ export const useMcpStore = defineStore('mcp', () => {
       // 获取服务器运行状态
       await updateAllServerStatuses()
     } catch (error) {
-      console.error('Failed to load MCP config:', error)
+      console.error(t('mcp.errors.loadConfigFailed'), error)
     } finally {
       configLoading.value = false
     }
@@ -152,7 +154,7 @@ export const useMcpStore = defineStore('mcp', () => {
 
       return true
     } catch (error) {
-      console.error('Failed to set MCP enabled state:', error)
+      console.error(t('mcp.errors.setEnabledFailed'), error)
       return false
     }
   }
@@ -173,7 +175,7 @@ export const useMcpStore = defineStore('mcp', () => {
         loadClients()
       }
     } catch (error) {
-      console.error(`Failed to get server status for ${serverName}:`, error)
+      console.error(t('mcp.errors.getServerStatusFailed', { serverName }), error)
       serverStatuses.value[serverName] = false
     }
   }
@@ -185,8 +187,7 @@ export const useMcpStore = defineStore('mcp', () => {
       await loadConfig()
       return { success: true, message: '' }
     }
-    // 如果返回false，理论上不会发生，因为presenter会抛出错误
-    return { success: false, message: 'Failed to add server for unknown reason.' }
+    return { success: false, message: t('mcp.errors.addServerFailed') }
   }
 
   // 更新服务器
@@ -196,7 +197,7 @@ export const useMcpStore = defineStore('mcp', () => {
       await loadConfig()
       return true
     } catch (error) {
-      console.error('Failed to update MCP server:', error)
+      console.error(t('mcp.errors.updateServerFailed'), error)
       return false
     }
   }
@@ -208,7 +209,7 @@ export const useMcpStore = defineStore('mcp', () => {
       await loadConfig()
       return true
     } catch (error) {
-      console.error('Failed to remove MCP server:', error)
+      console.error(t('mcp.errors.removeServerFailed'), error)
       return false
     }
   }
@@ -223,14 +224,14 @@ export const useMcpStore = defineStore('mcp', () => {
         // 检查是否已达到最大默认服务器数量
         if (hasMaxDefaultServers.value) {
           // 如果已达到最大数量，返回错误
-          return { success: false, message: '最多只能设置3个默认服务器' }
+          return { success: false, message: t('mcp.errors.maxDefaultServersReached') }
         }
         await mcpPresenter.addMcpDefaultServer(serverName)
       }
       await loadConfig()
       return { success: true, message: '' }
     } catch (error) {
-      console.error('Failed to toggle default server status:', error)
+      console.error(t('mcp.errors.toggleDefaultServerFailed'), error)
       return { success: false, message: String(error) }
     }
   }
@@ -242,7 +243,7 @@ export const useMcpStore = defineStore('mcp', () => {
       await loadConfig()
       return true
     } catch (error) {
-      console.error('Failed to reset to default MCP servers:', error)
+      console.error(t('mcp.errors.resetToDefaultFailed'), error)
       return false
     }
   }
@@ -262,7 +263,7 @@ export const useMcpStore = defineStore('mcp', () => {
       await updateServerStatus(serverName)
       return true
     } catch (error) {
-      console.error(`Failed to toggle MCP server ${serverName}:`, error)
+      console.error(t('mcp.errors.toggleServerFailed', { serverName }), error)
       return false
     } finally {
       serverLoadingStates.value[serverName] = false
@@ -316,7 +317,7 @@ export const useMcpStore = defineStore('mcp', () => {
 
       return true
     } catch (error) {
-      console.error('Failed to load MCP tools:', error)
+      console.error(t('mcp.errors.loadToolsFailed'), error)
       toolsError.value = true
       toolsErrorMessage.value = error instanceof Error ? error.message : String(error)
       return false
@@ -345,7 +346,7 @@ export const useMcpStore = defineStore('mcp', () => {
 
       return true
     } catch (error) {
-      console.error('Failed to load MCP prompts:', error)
+      console.error(t('mcp.errors.loadPromptsFailed'), error)
       return false
     }
   }
@@ -370,7 +371,7 @@ export const useMcpStore = defineStore('mcp', () => {
 
       return true
     } catch (error) {
-      console.error('Failed to load MCP resources:', error)
+      console.error(t('mcp.errors.loadResourcesFailed'), error)
       return false
     }
   }
@@ -418,8 +419,8 @@ export const useMcpStore = defineStore('mcp', () => {
       toolResults.value[toolName] = result.content
       return result
     } catch (error) {
-      console.error(`Failed to call tool ${toolName}:`, error)
-      toolResults.value[toolName] = `错误: ${error}`
+      console.error(t('mcp.errors.callToolFailed', { toolName }), error)
+      toolResults.value[toolName] = t('mcp.errors.toolCallError', { error: String(error) })
       throw error
     } finally {
       toolLoadingStates.value[toolName] = false
@@ -432,14 +433,14 @@ export const useMcpStore = defineStore('mcp', () => {
     params: Record<string, unknown> = {}
   ): Promise<unknown> => {
     if (!config.value.mcpEnabled) {
-      throw new Error('MCP功能已禁用')
+      throw new Error(t('mcp.errors.mcpDisabled'))
     }
 
     try {
       // 传递完整对象给mcpPresenter
       return await mcpPresenter.getPrompt(prompt, params)
     } catch (error) {
-      console.error('Failed to get prompt:', error)
+      console.error(t('mcp.errors.getPromptFailed'), error)
       throw error
     }
   }
@@ -447,14 +448,14 @@ export const useMcpStore = defineStore('mcp', () => {
   // 读取资源内容
   const readResource = async (resource: ResourceListEntryWithClient): Promise<Resource> => {
     if (!config.value.mcpEnabled) {
-      throw new Error('MCP功能已禁用')
+      throw new Error(t('mcp.errors.mcpDisabled'))
     }
 
     try {
       // 传递完整对象给mcpPresenter
       return await mcpPresenter.readResource(resource)
     } catch (error) {
-      console.error('Failed to read resource:', error)
+      console.error(t('mcp.errors.readResourceFailed'), error)
       throw error
     }
   }

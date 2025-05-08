@@ -43,14 +43,14 @@
   "confirmRemoveServer": "Вы уверены, что хотите удалить сервер {name}? Эта операция не может быть отменена.",
   "default": "по умолчанию",
   "deleteServer": "Удалить сервер",
-  "description": "Управление и настройка серверов и инструментов MCP (протокол управления модели)",
+  "description": "Управление и настройка серверов и инструментов MCP (Model Control Protocol)",
   "editServer": "Отредактируйте сервер",
   "editServerDialog": {
     "description": "Редактировать конфигурацию сервера MCP",
     "title": "Отредактируйте сервер"
   },
-  "enableToAccess": "Пожалуйста, включите MCP первым, чтобы получить доступ к параметрам конфигурации",
-  "enabledDescription": "Включить или отключить функции и инструменты MCP",
+  "enableToAccess": "Сначала включите MCP для доступа к настройкам",
+  "enabledDescription": "Включение или отключение функций и инструментов MCP",
   "enabledTitle": "Включить MCP",
   "isDefault": "Сервер по умолчанию",
   "noServersFound": "Сервер не найден",
@@ -167,5 +167,25 @@
     "loading": "загрузка",
     "loadContent": "Получить контент ресурсов",
     "pleaseSelect": "Нажмите, чтобы получить данные ресурсов отображения"
+  },
+  "errors": {
+    "loadConfigFailed": "Не удалось загрузить конфигурацию MCP",
+    "setEnabledFailed": "Не удалось установить состояние включения MCP",
+    "getServerStatusFailed": "Не удалось получить статус сервера {serverName}",
+    "addServerFailed": "Не удалось добавить сервер",
+    "updateServerFailed": "Не удалось обновить сервер",
+    "removeServerFailed": "Не удалось удалить сервер",
+    "maxDefaultServersReached": "Достигнуто максимальное количество серверов по умолчанию (30)",
+    "toggleDefaultServerFailed": "Не удалось переключить статус сервера по умолчанию",
+    "resetToDefaultFailed": "Не удалось сбросить настройки серверов по умолчанию",
+    "toggleServerFailed": "Не удалось переключить статус сервера {serverName}",
+    "loadToolsFailed": "Не удалось загрузить инструменты",
+    "loadPromptsFailed": "Не удалось загрузить промпты",
+    "loadResourcesFailed": "Не удалось загрузить ресурсы",
+    "callToolFailed": "Не удалось вызвать инструмент {toolName}",
+    "toolCallError": "Ошибка вызова инструмента: {error}",
+    "mcpDisabled": "MCP отключен",
+    "getPromptFailed": "Не удалось получить промпт",
+    "readResourceFailed": "Не удалось прочитать ресурс"
   }
 }
