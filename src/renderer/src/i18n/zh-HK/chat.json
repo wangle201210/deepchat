@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "問點什麼？",
+    "placeholder": "問點什麼？可以通過{'@'}來引用工具、文件、資源...",
     "fileArea": "文件區域",
     "inputArea": "輸入區域",
     "functionSwitch": "功能開關",

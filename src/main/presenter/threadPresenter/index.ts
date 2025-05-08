@@ -27,7 +27,8 @@ import {
   MessageFile,
   UserMessageContent,
   UserMessageTextBlock,
-  UserMessageMentionBlock
+  UserMessageMentionBlock,
+  UserMessageCodeBlock
 } from '@shared/chat'
 import { approximateTokenSize } from 'tokenx'
 import { generateSearchPrompt, SearchManager } from './searchManager'
@@ -642,7 +643,7 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   private formatUserMessageContent(
-    msgContentBlock: (UserMessageTextBlock | UserMessageMentionBlock)[]
+    msgContentBlock: (UserMessageTextBlock | UserMessageMentionBlock | UserMessageCodeBlock)[]
   ) {
     return msgContentBlock
       .map((block) => {
@@ -653,10 +654,39 @@ export class ThreadPresenter implements IThreadPresenter {
             return `@${block.id}`
           } else if (block.category === 'files') {
             return `@${block.id}`
+          } else if (block.category === 'prompts') {
+            try {
+              // 尝试解析prompt内容
+              const promptData = JSON.parse(block.content)
+              // 如果包含messages数组，尝试提取其中的文本内容
+              if (promptData && Array.isArray(promptData.messages)) {
+                const messageTexts = promptData.messages
+                  .map((msg) => {
+                    if (typeof msg.content === 'string') {
+                      return msg.content
+                    } else if (msg.content && msg.content.type === 'text') {
+                      return msg.content.text
+                    } else {
+                      // 对于其他类型的内容（如图片等），返回空字符串或特定标记
+                      return `[${msg.content?.type || 'content'}]`
+                    }
+                  })
+                  .filter(Boolean)
+                  .join('\n')
+                return `@${block.id} <prompts>${messageTexts || block.content}</prompts>`
+              }
+            } catch (e) {
+              // 如果解析失败，直接返回原始内容
+              console.log('解析prompt内容失败:', e)
+            }
+            // 默认返回原内容
+            return `@${block.id} <prompts>${block.content}</prompts>`
           }
           return `@${block.id}`
         } else if (block.type === 'text') {
           return block.content
+        } else if (block.type === 'code') {
+          return `\`\`\`${block.content}\`\`\``
         }
         return ''
       })
@@ -1118,7 +1148,6 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
-
       // 6. 启动流式生成
 
       const stream = this.llmProviderPresenter.startStreamCompletion(
@@ -1345,6 +1374,15 @@ export class ThreadPresenter implements IThreadPresenter {
       }
       contextMessages = await this.getContextMessages(conversationId)
     }
+
+    // 处理 UserMessageMentionBlock
+    if (userMessage.role === 'user') {
+      const msgContent = userMessage.content as UserMessageContent
+      if (msgContent.content && !msgContent.text) {
+        msgContent.text = this.formatUserMessageContent(msgContent.content)
+      }
+    }
+
     // 任何情况都使用最新配置
     const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
     const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
@@ -1361,7 +1399,11 @@ export class ThreadPresenter implements IThreadPresenter {
   }> {
     // 处理文本内容
     const userContent = `
-      ${userMessage.content.text}
+      ${
+        userMessage.content.content
+          ? this.formatUserMessageContent(userMessage.content.content)
+          : userMessage.content.text
+      }
       ${getFileContext(userMessage.content.files)}
     `
 
@@ -1467,13 +1509,27 @@ export class ThreadPresenter implements IThreadPresenter {
     const selectedMessages: Message[] = []
 
     for (const msg of messages) {
+      const msgContent = msg.role === 'user' ? (msg.content as UserMessageContent) : null
+      const msgText = msgContent
+        ? msgContent.text ||
+          (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
+        : ''
+
       const msgTokens = approximateTokenSize(
         msg.role === 'user'
-          ? `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+          ? `${msgText}${getFileContext(msgContent?.files || [])}`
           : JSON.stringify(msg.content)
       )
 
       if (currentLength + msgTokens <= remainingContextLength) {
+        // 如果是用户消息且有 content 但没有 text，添加 text
+        if (msg.role === 'user') {
+          const userMsgContent = msg.content as UserMessageContent
+          if (userMsgContent.content && !userMsgContent.text) {
+            userMsgContent.text = this.formatUserMessageContent(userMsgContent.content)
+          }
+        }
+
         selectedMessages.unshift(msg)
         currentLength += msgTokens
       } else {
@@ -1561,7 +1617,11 @@ export class ThreadPresenter implements IThreadPresenter {
     contextMessages.forEach((msg) => {
       if (msg.role === 'user') {
         // 处理用户消息
-        const userContent = `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+        const msgContent = msg.content as UserMessageContent
+        const msgText = msgContent.content
+          ? this.formatUserMessageContent(msgContent.content)
+          : msgContent.text
+        const userContent = `${msgText}${getFileContext(msgContent.files)}`
         resultMessages.push({
           role: 'user',
           content: userContent

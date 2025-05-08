@@ -128,14 +128,18 @@ watch(
 
 onMounted(() => {
   if (originalContent.value) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     originalContentHeight.value = (originalContent.value as any).offsetHeight
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     originalContentWidth.value = (originalContent.value as any).offsetWidth
   }
 })
 
 watch(isEditMode, (newValue) => {
   if (newValue && originalContent.value) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     originalContentHeight.value = (originalContent.value as any).offsetHeight
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     originalContentWidth.value = (originalContent.value as any).offsetWidth
   }
 })

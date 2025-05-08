@@ -73,8 +73,8 @@ export class GeminiProvider extends BaseLLMProvider {
           'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 04-17）'
       },
       {
-        id: 'gemini-2.5-pro-preview-03-25',
-        name: 'Gemini 2.5 Pro Preview 03-25',
+        id: 'gemini-2.5-pro-preview-05-06',
+        name: 'Gemini 2.5 Pro Preview 05-06',
         group: 'default',
         providerId: this.provider.id,
         isCustom: false,
@@ -83,7 +83,7 @@ export class GeminiProvider extends BaseLLMProvider {
         vision: true,
         functionCall: true,
         reasoning: false,
-        description: 'Gemini 2.5 Pro Preview 03-25 模型（付费）'
+        description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
       },
       {
         id: 'gemini-2.5-pro-exp-03-25',
@@ -246,8 +246,8 @@ export class GeminiProvider extends BaseLLMProvider {
               'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 04-17）'
           },
           {
-            id: 'gemini-2.5-pro-preview-03-25',
-            name: 'Gemini 2.5 Pro Preview 03-25',
+            id: 'gemini-2.5-pro-preview-05-06',
+            name: 'Gemini 2.5 Pro Preview 05-06',
             group: 'default',
             providerId: this.provider.id,
             isCustom: false,
@@ -256,7 +256,7 @@ export class GeminiProvider extends BaseLLMProvider {
             vision: true,
             functionCall: true,
             reasoning: false,
-            description: 'Gemini 2.5 Pro Preview 03-25 模型（付费)'
+            description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
           },
           {
             id: 'gemini-2.5-pro-exp-03-25',

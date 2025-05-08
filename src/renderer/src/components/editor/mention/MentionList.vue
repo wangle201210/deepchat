@@ -115,12 +115,21 @@ const selectItem = (index: number) => {
     selectedIndex.value = 0
   } else {
     console.log('----------', `${selectedDisplayItem.id}`)
-    props.command({
-      id: `${selectedDisplayItem.id}`,
-      label: `${selectedDisplayItem.label}`,
-      category: selectedDisplayItem.category,
-      content: selectedDisplayItem.mcpEntry ? JSON.stringify(selectedDisplayItem.mcpEntry) : ''
-    })
+    if (selectedDisplayItem.category === 'prompts') {
+      props.command({
+        id: `${selectedDisplayItem.id}`,
+        label: `${selectedDisplayItem.label}`,
+        category: selectedDisplayItem.category,
+        content: selectedDisplayItem.mcpEntry ? JSON.stringify(selectedDisplayItem.mcpEntry) : ''
+      })
+    } else {
+      props.command({
+        id: `${selectedDisplayItem.id}`,
+        label: `${selectedDisplayItem.label}`,
+        category: selectedDisplayItem.category,
+        content: selectedDisplayItem.mcpEntry ? JSON.stringify(selectedDisplayItem.mcpEntry) : ''
+      })
+    }
   }
 }
 
