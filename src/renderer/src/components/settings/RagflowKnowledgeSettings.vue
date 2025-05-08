@@ -59,7 +59,7 @@
                   <div class="absolute top-2 right-2 flex gap-2">
                     <Switch
                       class="ml-2"
-                      :checked="config.enabled !== false"
+                      :checked="config.enabled === true"
                       @update:checked="toggleConfigEnabled(index, $event)"
                     />
                     <button
@@ -171,7 +171,7 @@
             <Input
               id="edit-ragflow-endpoint"
               v-model="editingRagflowConfig.endpoint"
-              placeholder="http://localhost:8000"
+              placeholder="http://localhost"
             />
           </div>
         </div>
@@ -237,7 +237,7 @@ const editingRagflowConfig = ref<EditingRagflowConfig>({
   description: '',
   apiKey: '',
   datasetIdsStr: '',
-  endpoint: 'http://localhost:8000',
+  endpoint: 'http://localhost',
   enabled: true
 })
 const editingConfigIndex = ref<number>(-1)
@@ -259,7 +259,7 @@ const openAddConfig = () => {
     description: '',
     apiKey: '',
     datasetIdsStr: '',
-    endpoint: 'http://localhost:8000',
+    endpoint: 'http://localhost',
     enabled: true
   }
   isRagflowConfigDialogOpen.value = true
@@ -289,7 +289,8 @@ const closeRagflowConfigDialog = () => {
     description: '',
     apiKey: '',
     datasetIdsStr: '',
-    endpoint: 'http://localhost:8000'
+    endpoint: 'http://localhost',
+    enabled: true
   }
 }
 
@@ -306,7 +307,8 @@ const saveRagflowConfig = async () => {
     description: editingRagflowConfig.value.description,
     apiKey: editingRagflowConfig.value.apiKey,
     datasetIds,
-    endpoint: editingRagflowConfig.value.endpoint
+    endpoint: editingRagflowConfig.value.endpoint,
+    enabled: editingRagflowConfig.value.enabled
   }
 
   if (isEditing.value) {

@@ -54,7 +54,7 @@
             >
               <div class="absolute top-2 right-2 flex gap-2">
                 <Switch
-                  :checked="config.enabled !== false"
+                  :checked="config.enabled === true"
                   size="sm"
                   @update:checked="toggleConfigEnabled(index, $event)"
                 />
@@ -207,14 +207,14 @@ const isDifyConfigDialogOpen = ref(false)
 
 // 打开添加配置对话框
 const openAddConfig = () => {
-  console.log('openAddConfig')
   isEditing.value = false
   editingConfigIndex.value = -1
   editingDifyConfig.value = {
     description: '',
     apiKey: '',
     datasetId: '',
-    endpoint: 'https://api.dify.ai/v1'
+    endpoint: 'https://api.dify.ai/v1',
+    enabled: true
   }
   isDifyConfigDialogOpen.value = true
 }

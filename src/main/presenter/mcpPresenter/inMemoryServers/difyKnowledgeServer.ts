@@ -9,7 +9,7 @@ import axios from 'axios'
 const DifyKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)')
+  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)')
 })
 
 // 定义Dify API返回的数据结构
@@ -198,7 +198,7 @@ export class DifyKnowledgeServer {
     const {
       query,
       topK = 5,
-      scoreThreshold = 0.5
+      scoreThreshold = 0.2
     } = parameters as {
       query: string
       topK?: number
