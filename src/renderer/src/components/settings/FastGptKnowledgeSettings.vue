@@ -55,7 +55,7 @@
               <div class="absolute top-2 right-2 flex gap-2">
                 <Switch
                   class="ml-2"
-                  :checked="config.enabled !== false"
+                  :checked="config.enabled === true"
                   @update:checked="toggleConfigEnabled(index, $event)"
                 />
                 <button
