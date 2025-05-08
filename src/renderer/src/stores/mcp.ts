@@ -422,7 +422,7 @@ export const useMcpStore = defineStore('mcp', () => {
   // 获取提示模板详情
   const getPrompt = async (
     prompt: PromptListEntry,
-    params: Record<string, unknown> = {}
+    args?: Record<string, unknown>
   ): Promise<unknown> => {
     if (!config.value.mcpEnabled) {
       throw new Error(t('mcp.errors.mcpDisabled'))
@@ -430,7 +430,7 @@ export const useMcpStore = defineStore('mcp', () => {
 
     try {
       // 传递完整对象给mcpPresenter
-      return await mcpPresenter.getPrompt(prompt, params)
+      return await mcpPresenter.getPrompt(prompt, args)
     } catch (error) {
       console.error(t('mcp.errors.getPromptFailed'), error)
       throw error

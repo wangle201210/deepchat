@@ -472,8 +472,11 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
                 if (promptAttrContent) {
                   // Assuming promptAttrContent is JSON.stringify(originalPromptObjectFromStore)
                   // And originalPromptObjectFromStore has a field 'content' with base64 data.
-                  const promptObject = JSON.parse(promptAttrContent) as PromptListEntry
-                  const prompResult = await mcpStore.getPrompt(promptObject)
+                  const promptObject = JSON.parse(promptAttrContent)
+                  const prompResult = await mcpStore.getPrompt(
+                    promptObject,
+                    promptObject.argumentsValue
+                  )
                   content = JSON.stringify(prompResult)
                 } else {
                   console.warn('Prompt mention is missing "content" attribute.')

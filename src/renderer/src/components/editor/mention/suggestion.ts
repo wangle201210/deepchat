@@ -78,7 +78,8 @@ export default {
           showOnCreate: true,
           interactive: true,
           trigger: 'manual',
-          placement: 'top-start'
+          placement: 'top-start',
+          zIndex: 90
         })
       },
 

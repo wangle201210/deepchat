@@ -795,7 +795,7 @@ export interface IMCPPresenter {
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
   getAllPrompts(): Promise<Array<PromptListEntry & { client: { name: string; icon: string } }>>
   getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
-  getPrompt(prompt: PromptListEntry, params?: Record<string, unknown>): Promise<unknown>
+  getPrompt(prompt: PromptListEntry, args?: Record<string, unknown>): Promise<unknown>
   readResource(resource: ResourceListEntry): Promise<Resource>
   callTool(request: {
     id: string

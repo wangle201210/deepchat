@@ -803,14 +803,14 @@ export class McpPresenter implements IMCPPresenter {
    * @param params 提示模板参数
    * @returns 提示模板内容
    */
-  async getPrompt(prompt: PromptListEntry, params: Record<string, unknown> = {}): Promise<unknown> {
+  async getPrompt(prompt: PromptListEntry, args?: Record<string, unknown>): Promise<unknown> {
     const enabled = await this.configPresenter.getMcpEnabled()
     if (!enabled) {
       throw new Error('MCP功能已禁用')
     }
 
     // 传递客户端信息和提示模板名称给toolManager
-    return this.toolManager.getPromptByClient(prompt.client.name, prompt.name, params)
+    return this.toolManager.getPromptByClient(prompt.client.name, prompt.name, args)
   }
 
   /**
