@@ -12,6 +12,14 @@ import fs from 'fs'
 // import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import {
+  PromptListEntry,
+  ToolCallResult,
+  Tool,
+  Prompt,
+  ResourceListEntry,
+  Resource
+} from '@shared/presenter'
 // TODO: resources 和 prompts 的类型,Notifactions 的类型 https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/client/simpleStreamableHttp.ts
 // 简单的 OAuth 提供者，用于处理 Bearer Token
 class SimpleOAuthProvider {
@@ -36,44 +44,6 @@ type MCPEventsType = typeof MCP_EVENTS & {
   SERVER_STATUS_CHANGED: string
 }
 
-// 定义工具调用结果的接口
-interface ToolCallResult {
-  isError?: boolean
-  content: Array<{
-    type: string
-    text: string
-  }>
-}
-
-// 定义工具列表的接口
-export interface Tool {
-  name: string
-  description: string
-  inputSchema: Record<string, unknown>
-}
-
-// 定义 Prompt 的接口
-export interface Prompt {
-  name: string
-  description?: string
-  inputSchema?: Record<string, unknown>
-  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
-}
-
-// 定义 ResourceListEntry 的接口 (用于 listResources)
-export interface ResourceListEntry {
-  uri: string
-  name?: string
-}
-
-// 定义资源的接口
-interface Resource {
-  uri: string
-  mimeType?: string
-  text?: string
-  blob?: string
-}
-
 // MCP 客户端类
 export class McpClient {
   private client: Client | null = null
@@ -87,7 +57,7 @@ export class McpClient {
 
   // 缓存
   private cachedTools: Tool[] | null = null
-  private cachedPrompts: Prompt[] | null = null
+  private cachedPrompts: PromptListEntry[] | null = null
   private cachedResources: ResourceListEntry[] | null = null
 
   // 处理PATH环境变量的函数
@@ -546,7 +516,7 @@ export class McpClient {
   }
 
   // 列出可用提示
-  async listPrompts(): Promise<Prompt[]> {
+  async listPrompts(): Promise<PromptListEntry[]> {
     // 检查缓存
     if (this.cachedPrompts !== null) {
       return this.cachedPrompts
@@ -567,6 +537,7 @@ export class McpClient {
       // 检查响应格式
       if (response && typeof response === 'object' && 'prompts' in response) {
         const promptsArray = (response as { prompts: unknown }).prompts
+        // console.log('promptsArray', JSON.stringify(promptsArray, null, 2))
         if (Array.isArray(promptsArray)) {
           // 需要确保每个元素都符合 Prompt 接口
           const validPrompts = promptsArray.map((p) => ({
@@ -575,11 +546,9 @@ export class McpClient {
               typeof p === 'object' && p !== null && 'description' in p
                 ? String(p.description)
                 : undefined,
-            inputSchema:
-              typeof p === 'object' && p !== null && 'inputSchema' in p
-                ? (p.inputSchema as Record<string, unknown>)
-                : undefined
-          })) as Prompt[]
+            arguments:
+              typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined
+          })) as PromptListEntry[]
           // 缓存结果
           this.cachedPrompts = validPrompts
           return this.cachedPrompts
@@ -618,7 +587,6 @@ export class McpClient {
         name,
         arguments: (args as Record<string, string>) || {}
       })
-
       // 检查响应格式并转换为 Prompt 类型
       if (
         response &&
@@ -629,7 +597,6 @@ export class McpClient {
         return {
           name: name, // 从请求参数中获取 name
           messages: response.messages as Array<{ role: string; content: { text: string } }>
-          // description 和 inputSchema 在 getPrompt 的响应中通常不返回
         }
       }
       throw new Error('无效的获取提示响应格式')

@@ -8,9 +8,9 @@ import type {
   MCPConfig,
   MCPServerConfig,
   MCPToolDefinition,
-  PromptWithClient,
+  PromptListEntry,
   Resource,
-  ResourceListEntryWithClient
+  ResourceListEntry
 } from '@shared/presenter'
 // 自定义类型定义
 interface MCPToolCallRequest {
@@ -57,8 +57,8 @@ export const useMcpStore = defineStore('mcp', () => {
   const toolLoadingStates = ref<Record<string, boolean>>({})
   const toolInputs = ref<Record<string, Record<string, string>>>({})
   const toolResults = ref<Record<string, string | { type: string; text: string }[]>>({})
-  const prompts = ref<PromptWithClient[]>([])
-  const resources = ref<ResourceListEntryWithClient[]>([])
+  const prompts = ref<PromptListEntry[]>([])
+  const resources = ref<ResourceListEntry[]>([])
   // ==================== 计算属性 ====================
   // 服务器列表
   const serverList = computed(() => {
@@ -338,11 +338,7 @@ export const useMcpStore = defineStore('mcp', () => {
       const promptsData = await mcpPresenter.getAllPrompts()
 
       // 将主进程返回的数据格式转换为渲染进程所需的格式
-      prompts.value = promptsData.map((prompt) => ({
-        ...prompt,
-        clientName: prompt.client.name,
-        clientIcon: prompt.client.icon
-      }))
+      prompts.value = promptsData
 
       return true
     } catch (error) {
@@ -363,11 +359,7 @@ export const useMcpStore = defineStore('mcp', () => {
       const resourcesData = await mcpPresenter.getAllResources()
 
       // 将主进程返回的数据格式转换为渲染进程所需的格式
-      resources.value = resourcesData.map((resource) => ({
-        ...resource,
-        clientName: resource.client.name,
-        clientIcon: resource.client.icon
-      }))
+      resources.value = resourcesData
 
       return true
     } catch (error) {
@@ -429,7 +421,7 @@ export const useMcpStore = defineStore('mcp', () => {
 
   // 获取提示模板详情
   const getPrompt = async (
-    prompt: PromptWithClient,
+    prompt: PromptListEntry,
     params: Record<string, unknown> = {}
   ): Promise<unknown> => {
     if (!config.value.mcpEnabled) {
@@ -446,7 +438,7 @@ export const useMcpStore = defineStore('mcp', () => {
   }
 
   // 读取资源内容
-  const readResource = async (resource: ResourceListEntryWithClient): Promise<Resource> => {
+  const readResource = async (resource: ResourceListEntry): Promise<Resource> => {
     if (!config.value.mcpEnabled) {
       throw new Error(t('mcp.errors.mcpDisabled'))
     }

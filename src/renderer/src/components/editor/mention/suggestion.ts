@@ -3,7 +3,7 @@ import tippy from 'tippy.js'
 import { Ref, ref } from 'vue'
 
 import MentionList from './MentionList.vue'
-import { PromptWithClient, ResourceListEntryWithClient } from '@shared/presenter'
+import { PromptListEntry, ResourceListEntry } from '@shared/presenter'
 
 // Define the type for categorized data
 export interface CategorizedData {
@@ -13,7 +13,7 @@ export interface CategorizedData {
   type: string
   category?: string
   description?: string
-  mcpEntry?: ResourceListEntryWithClient | PromptWithClient
+  mcpEntry?: ResourceListEntry | PromptListEntry
 }
 
 // Sample categorized items

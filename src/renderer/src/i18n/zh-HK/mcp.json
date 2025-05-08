@@ -167,7 +167,10 @@
     "parameters": "Prompt 參數",
     "runningPrompt": "Prompt 獲取中",
     "executeButton": "點擊獲取",
-    "resultTitle": "Prompt 詳情"
+    "resultTitle": "Prompt 詳情",
+    "invalidJson": "無效的 JSON 格式",
+    "parametersHint": "請輸入 JSON 格式的參數，支持自動格式化",
+    "resetToDefault": "重置為默認參數"
   },
   "resources": {
     "noResourcesAvailable": "暫無 Resources",
