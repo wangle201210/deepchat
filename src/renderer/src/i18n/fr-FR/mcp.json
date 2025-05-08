@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "name": "Recherche dans la base de connaissances Dify",
       "desc": "Service de recherche de la base de connaissances Dify, permet de rechercher le contenu de la base de connaissances Dify"
+    },
+    "ragflowKnowledge": {
+      "name": "Recherche dans la base de connaissances RAGFlow",
+      "desc": "Service de recherche dans la base de connaissances RAGFlow, peut rechercher le contenu de la base de connaissances RAGFlow"
+    },
+    "fastGptKnowledge": {
+      "name": "Recherche dans la base de connaissances FastGPT",
+      "desc": "Service de recherche dans la base de connaissances FastGPT, peut rechercher le contenu de la base de connaissances FastGPT"
     }
   },
   "prompts": {

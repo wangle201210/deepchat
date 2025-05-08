@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "name": "Dify知識庫檢索",
       "desc": "Dify知識庫檢索服務，可以檢索Dify知識庫中的內容"
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow知識庫檢索",
+      "desc": "RAGFlow知識庫檢索服務，可以對RAGFlow知識庫內容進行檢索"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT知識庫檢索",
+      "desc": "FastGPT知識庫檢索服務，可以對FastGPT知識庫內容進行檢索"
     }
   },
   "prompts": {
