@@ -218,7 +218,7 @@ const handleToggleDefaultServer = async (serverName: string) => {
   if (!isDefault && mcpStore.config.defaultServers.length > 30) {
     toast({
       title: t('mcp.errors.maxDefaultServersReached'),
-      description: t('mcp.errors.removeDefaultFirst'),
+      description: t('settings.mcp.removeDefaultFirst'),
       variant: 'destructive'
     })
     return
@@ -227,7 +227,7 @@ const handleToggleDefaultServer = async (serverName: string) => {
   const result = await mcpStore.toggleDefaultServer(serverName)
   if (!result.success) {
     toast({
-      title: t('mcp.errors.operationFailed'),
+      title: t('common.error.operationFailed'),
       description: result.message,
       variant: 'destructive'
     })
