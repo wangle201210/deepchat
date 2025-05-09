@@ -9,7 +9,6 @@ import path from 'path'
 import { presenter } from '@/presenter'
 import { app } from 'electron'
 import fs from 'fs'
-import { execSync } from 'child_process'
 // import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
@@ -273,27 +272,6 @@ export class McpClient {
 
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
-        }
-
-        // 如果是 Go 命令，获取 Go 环境变量
-        if (command === 'go') {
-          try {
-            const goEnvOutput = execSync('go env').toString()
-            const goEnvLines = goEnvOutput.split('\n')
-
-            goEnvLines.forEach((line) => {
-              if (line.trim()) {
-                const [key, value] = line.split('=')
-                if (key && value) {
-                  // 移除引号并设置环境变量
-                  const cleanValue = value.replace(/^'|'$/g, '')
-                  env[key.trim()] = cleanValue
-                }
-              }
-            })
-          } catch (error) {
-            console.warn('获取 Go 环境变量失败:', error)
-          }
         }
 
         console.log('mcp env', env)
