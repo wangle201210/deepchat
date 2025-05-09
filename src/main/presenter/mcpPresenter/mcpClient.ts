@@ -9,6 +9,7 @@ import path from 'path'
 import { presenter } from '@/presenter'
 import { app } from 'electron'
 import fs from 'fs'
+import { execSync } from 'child_process'
 // import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
@@ -180,20 +181,59 @@ export class McpClient {
         // 修复env类型问题
         const env: Record<string, string> = {}
 
-        // 只复制非undefined的环境变量
-        if (process.env) {
-          const existingPaths: string[] = []
+        // 判断是否是 Node.js 相关命令
+        const isNodeCommand = ['node', 'npm', 'npx'].some((cmd) => command.includes(cmd))
 
-          // 收集所有PATH相关的值
+        if (isNodeCommand) {
+          // Node.js 命令使用白名单处理
+          if (process.env) {
+            const existingPaths: string[] = []
+
+            // 收集所有PATH相关的值
+            Object.entries(process.env).forEach(([key, value]) => {
+              if (value !== undefined) {
+                if (['PATH', 'Path', 'path'].includes(key)) {
+                  existingPaths.push(value)
+                } else if (
+                  allowedEnvVars.includes(key) &&
+                  !['PATH', 'Path', 'path'].includes(key)
+                ) {
+                  env[key] = value
+                }
+              }
+            })
+
+            // 获取默认路径
+            const defaultPaths = this.getDefaultPaths(HOME_DIR)
+
+            // 合并所有路径
+            const allPaths = [...defaultPaths, ...existingPaths]
+            if (this.nodeRuntimePath) {
+              allPaths.push(
+                process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
+              )
+            }
+
+            // 规范化并设置PATH
+            const { key, value } = this.normalizePathEnv(allPaths)
+            env[key] = value
+          }
+        } else {
+          // 非 Node.js 命令，保留所有系统环境变量，只补充 PATH
           Object.entries(process.env).forEach(([key, value]) => {
             if (value !== undefined) {
-              if (['PATH', 'Path', 'path'].includes(key)) {
-                existingPaths.push(value)
-              } else if (allowedEnvVars.includes(key) && !['PATH', 'Path', 'path'].includes(key)) {
-                env[key] = value
-              }
+              env[key] = value
             }
           })
+
+          // 补充 PATH
+          const existingPaths: string[] = []
+          if (env.PATH) {
+            existingPaths.push(env.PATH)
+          }
+          if (env.Path) {
+            existingPaths.push(env.Path)
+          }
 
           // 获取默认路径
           const defaultPaths = this.getDefaultPaths(HOME_DIR)
@@ -231,59 +271,31 @@ export class McpClient {
           )
         }
 
-        // 从proxyConfig获取代理URL并设置环境变量
-        // 目前好像加上代理后问题更多，暂时mcp就停用代理
-        // const proxyUrl = proxyConfig.getProxyUrl()
-        // if (proxyUrl) {
-        //   env.http_proxy = proxyUrl
-        //   env.https_proxy = proxyUrl
-        //   env.grpc_proxy = proxyUrl
-        //   env.no_proxy = NO_PROXY
-        // }
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
         }
-        if (process.platform === 'darwin') {
-          if (!env.PATH) {
-            env.PATH = ''
-          }
-          ;[
-            '/bin',
-            '/usr/bin',
-            '/usr/local/bin',
-            '/usr/local/sbin',
-            '/opt/homebrew/bin',
-            '/opt/homebrew/sbin',
-            '/usr/local/opt/node/bin',
-            '/opt/local/bin',
-            `${HOME_DIR}/.cargo/bin`
-          ].forEach((path) => {
-            env.PATH = path + ':' + env.PATH
-          })
-        }
-        if (process.platform === 'linux') {
-          if (!env.PATH) {
-            env.PATH = ''
-          }
-          ;['/bin', '/usr/bin', '/usr/local/bin', `${HOME_DIR}/.cargo/bin`].forEach((path) => {
-            env.PATH = path + ':' + env.PATH
-          })
-        }
-        if (process.platform === 'win32') {
-          if (!env.Path) {
-            env.Path = ''
-          }
-          ;[`${HOME_DIR}\\.cargo\\bin`, `${HOME_DIR}\\.local\\bin`].forEach((path) => {
-            env.Path = path + ';' + env.Path
-          })
-        }
-        if (this.nodeRuntimePath) {
-          if (process.platform !== 'win32') {
-            env.PATH = this.nodeRuntimePath + '/bin' + ':' + env.PATH
-          } else {
-            env.Path = this.nodeRuntimePath + ';' + env.Path
+
+        // 如果是 Go 命令，获取 Go 环境变量
+        if (command === 'go') {
+          try {
+            const goEnvOutput = execSync('go env').toString()
+            const goEnvLines = goEnvOutput.split('\n')
+
+            goEnvLines.forEach((line) => {
+              if (line.trim()) {
+                const [key, value] = line.split('=')
+                if (key && value) {
+                  // 移除引号并设置环境变量
+                  const cleanValue = value.replace(/^'|'$/g, '')
+                  env[key.trim()] = cleanValue
+                }
+              }
+            })
+          } catch (error) {
+            console.warn('获取 Go 环境变量失败:', error)
           }
         }
+
         console.log('mcp env', env)
         this.transport = new StdioClientTransport({
           command,
@@ -332,6 +344,7 @@ export class McpClient {
           5 * 60 * 1000
         ) // 5分钟
       })
+
       // 连接到服务器
       const connectPromise = this.client
         .connect(this.transport)
