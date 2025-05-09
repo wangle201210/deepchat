@@ -3,7 +3,7 @@
   "description": "MCP(Model Control Protocol) 서버 및 도구 관리 및 구성",
   "enabledTitle": "MCP 활성화",
   "enabledDescription": "MCP 기능 및 도구 활성화 또는 비활성화",
-  "enableToAccess": "구성 옵션에 액세스하려면 MCP를 활성화하세요",
+  "enableToAccess": "구성 옵션에 액세스하려면 먼저 MCP를 활성화하세요",
   "tabs": {
     "servers": "서버",
     "tools": "도구"
@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "name": "Dify 지식 기반 검색",
       "desc": "Dify 지식 기반 검색 서비스, Dify 지식 기반의 콘텐츠를 검색할 수 있습니다."
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow 지식 베이스 검색",
+      "desc": "RAGFlow 지식 베이스 검색 서비스, RAGFlow 지식 베이스 콘텐츠를 검색할 수 있습니다"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT 지식 베이스 검색",
+      "desc": "FastGPT 지식 베이스 검색 서비스, FastGPT 지식 베이스 콘텐츠를 검색할 수 있습니다"
     }
   },
   "prompts": {
@@ -159,7 +167,10 @@
     "parameters": "프롬프트 매개 변수",
     "runningPrompt": "프롬프트가 얻고 있습니다",
     "executeButton": "클릭하려면 클릭하십시오",
-    "resultTitle": "신속한 세부 사항"
+    "resultTitle": "신속한 세부 사항",
+    "invalidJson": "유효하지 않은 JSON 형식",
+    "parametersHint": "JSON 형식의 매개 변수를 입력하고 자동 형식을 지원하십시오.",
+    "resetToDefault": "기본 매개 변수로 재설정하십시오"
   },
   "resources": {
     "noResourcesAvailable": "자원이 없습니다",
@@ -167,5 +178,25 @@
     "loading": "로딩",
     "loadContent": "리소스 컨텐츠를 얻으십시오",
     "pleaseSelect": "디스플레이 리소스 세부 정보를 얻으려면 클릭하십시오"
+  },
+  "errors": {
+    "loadConfigFailed": "MCP 구성 로드 실패",
+    "setEnabledFailed": "MCP 활성화 상태 설정 실패",
+    "getServerStatusFailed": "서버 {serverName} 상태 가져오기 실패",
+    "addServerFailed": "서버 추가 실패",
+    "updateServerFailed": "서버 업데이트 실패",
+    "removeServerFailed": "서버 제거 실패",
+    "maxDefaultServersReached": "기본 서버 최대 수(30)에 도달했습니다",
+    "toggleDefaultServerFailed": "기본 서버 상태 전환 실패",
+    "resetToDefaultFailed": "기본 서버로 재설정 실패",
+    "toggleServerFailed": "서버 {serverName} 상태 전환 실패",
+    "loadToolsFailed": "도구 로드 실패",
+    "loadPromptsFailed": "프롬프트 로드 실패",
+    "loadResourcesFailed": "리소스 로드 실패",
+    "callToolFailed": "도구 {toolName} 호출 실패",
+    "toolCallError": "도구 호출 오류: {error}",
+    "mcpDisabled": "MCP가 비활성화되어 있습니다",
+    "getPromptFailed": "프롬프트 가져오기 실패",
+    "readResourceFailed": "리소스 읽기 실패"
   }
 }

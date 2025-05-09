@@ -445,7 +445,7 @@ const validateProxyUrl = () => {
   }
 
   const urlPattern =
-    /^(http|https):\/\/([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
+    /^(http|https):\/\/(?:([^:@\/]+)(?::([^@\/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
   const isValid = urlPattern.test(customProxyUrl.value)
 
   showUrlError.value = !isValid

@@ -200,8 +200,10 @@ import suggestion, { mentionData } from './editor/mention/suggestion'
 import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
+import CodeBlock from '@tiptap/extension-code-block'
+import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
-import { ResourceListEntryWithClient } from '@shared/presenter'
+import { ResourceListEntry } from '@shared/presenter'
 const mcpStore = useMcpStore()
 const { t } = useI18n()
 const editor = new Editor({
@@ -216,6 +218,7 @@ const editor = new Editor({
     Document,
     Paragraph,
     Text,
+    History,
     Mention.configure({
       HTMLAttributes: {
         class:
@@ -224,18 +227,56 @@ const editor = new Editor({
       suggestion
     }),
     Placeholder.configure({
-      placeholder: () => t('chat.input.placeholder')
+      placeholder: () => {
+        const placeholder = t('chat.input.placeholder')
+        return `${placeholder}`
+      }
     }),
     HardBreak.extend({
       addKeyboardShortcuts() {
         return {
-          'Shift-Enter': () => this.editor.commands.setHardBreak()
+          'Shift-Enter': () => this.editor.commands.setHardBreak(),
+          'Alt-Enter': () => this.editor.commands.setHardBreak()
         }
       }
     }).configure({
       keepMarks: true,
       HTMLAttributes: {
         class: 'line-break'
+      }
+    }),
+    CodeBlock.extend({
+      addStorage() {
+        return {
+          lastShiftEnterTime: 0
+        }
+      },
+      addKeyboardShortcuts() {
+        return {
+          'Shift-Enter': () => {
+            if (this.editor.isActive('codeBlock')) {
+              const now = Date.now()
+              const timeDiff = now - this.storage.lastShiftEnterTime
+
+              // If Shift+Enter was pressed within 800ms, exit the code block
+              if (timeDiff < 800) {
+                this.editor.commands.exitCode()
+                this.storage.lastShiftEnterTime = 0
+                return true
+              }
+
+              // Otherwise, insert a newline and record the time
+              this.editor.commands.insertContent('\n')
+              this.storage.lastShiftEnterTime = now
+              return true
+            }
+            return false
+          }
+        }
+      }
+    }).configure({
+      HTMLAttributes: {
+        class: 'rounded-md bg-secondary dark:bg-zinc-800 p-2'
       }
     })
   ],
@@ -366,19 +407,29 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
   if (docJSON.type === 'doc') {
     for (const [idx, block] of (docJSON.content ?? []).entries()) {
       if (block.type === 'paragraph') {
-        for (const subBlock of block.content ?? []) {
+        // console.log(block)
+        for (const [index, subBlock] of (block.content ?? []).entries()) {
           if (subBlock.type === 'text') {
             blocks.push({
               type: 'text',
               content: subBlock.text ?? ''
             })
+          } else if (subBlock.type === 'hardBreak') {
+            if (index > 0 && block.content?.[index - 1]?.type === 'text') {
+              blocks[blocks.length - 1].content += '\n'
+            } else {
+              blocks.push({
+                type: 'text',
+                content: '\n'
+              })
+            }
           } else if (subBlock.type === 'mention') {
             let content = subBlock.attrs?.label ?? ''
             try {
               if (subBlock.attrs?.category === 'resources' && subBlock.attrs?.content) {
                 fetchingMcpEntry.value = true
-                console.log(subBlock.attrs?.content)
-                const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntryWithClient
+                // console.log(subBlock.attrs?.content)
+                const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntry
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const mcpEntryResult = await mcpStore.readResource(mcpEntry)
 
@@ -406,12 +457,37 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
                   content = mcpEntryResult.text ?? ''
                 }
 
-                console.log('fix ', mcpEntryResult)
+                // console.log('fix ', mcpEntryResult)
               }
             } catch (error) {
               console.error('读取资源失败:', error)
             } finally {
               fetchingMcpEntry.value = false
+            }
+
+            if (subBlock.attrs?.category === 'prompts') {
+              fetchingMcpEntry.value = true // Mimicking resource style
+              try {
+                const promptAttrContent = subBlock.attrs?.content as string
+                if (promptAttrContent) {
+                  // Assuming promptAttrContent is JSON.stringify(originalPromptObjectFromStore)
+                  // And originalPromptObjectFromStore has a field 'content' with base64 data.
+                  const promptObject = JSON.parse(promptAttrContent)
+                  const prompResult = await mcpStore.getPrompt(
+                    promptObject,
+                    promptObject.argumentsValue
+                  )
+                  content = JSON.stringify(prompResult)
+                } else {
+                  console.warn('Prompt mention is missing "content" attribute.')
+                  content = subBlock.attrs?.label || subBlock.attrs?.id || 'prompt'
+                }
+              } catch (error) {
+                console.error('Error processing prompt mention:', error)
+                content = subBlock.attrs?.label || subBlock.attrs?.id || 'prompt'
+              } finally {
+                fetchingMcpEntry.value = false
+              }
             }
 
             const newBlock: UserMessageMentionBlock = {
@@ -657,7 +733,7 @@ watch(
       .filter((item) => item.type != 'item' || item.category != 'resources')
       .concat(
         mcpStore.resources.map((resource) => ({
-          id: `${resource.clientName}.${resource.name ?? ''}`,
+          id: `${resource.client.name}.${resource.name ?? ''}`,
           label: resource.name ?? '',
           icon: 'lucide:tag',
           type: 'item',
@@ -681,6 +757,24 @@ watch(
           type: 'item',
           category: 'tools',
           description: tool.function.description ?? ''
+        }))
+      )
+  }
+)
+
+watch(
+  () => mcpStore.prompts,
+  () => {
+    mentionData.value = mentionData.value
+      .filter((item) => item.type != 'item' || item.category != 'prompts')
+      .concat(
+        mcpStore.prompts.map((prompt) => ({
+          id: prompt.name,
+          label: prompt.name,
+          icon: undefined,
+          type: 'item',
+          category: 'prompts',
+          mcpEntry: prompt
         }))
       )
   }

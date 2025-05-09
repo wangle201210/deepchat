@@ -3,7 +3,7 @@ import tippy from 'tippy.js'
 import { Ref, ref } from 'vue'
 
 import MentionList from './MentionList.vue'
-import { ResourceListEntryWithClient } from '@shared/presenter'
+import { PromptListEntry, ResourceListEntry } from '@shared/presenter'
 
 // Define the type for categorized data
 export interface CategorizedData {
@@ -13,14 +13,15 @@ export interface CategorizedData {
   type: string
   category?: string
   description?: string
-  mcpEntry?: ResourceListEntryWithClient
+  mcpEntry?: ResourceListEntry | PromptListEntry
 }
 
 // Sample categorized items
 const categorizedData: CategorizedData[] = [
   { label: 'files', icon: 'lucide:files', type: 'category' },
   { label: 'resources', icon: 'lucide:swatch-book', type: 'category' },
-  { label: 'tools', icon: 'lucide:hammer', type: 'category' }
+  { label: 'tools', icon: 'lucide:hammer', type: 'category' },
+  { label: 'prompts', icon: 'lucide:message-square-quote', type: 'category' }
 ]
 
 // Create a ref to track mention selections
@@ -28,6 +29,7 @@ export const mentionSelected = ref(false)
 export const mentionData: Ref<CategorizedData[]> = ref(categorizedData)
 
 export default {
+  allowedPrefixes: null,
   items: ({ query }) => {
     // If there's a query, search across all categories
     if (query) {
@@ -76,7 +78,8 @@ export default {
           showOnCreate: true,
           interactive: true,
           trigger: 'manual',
-          placement: 'top-start'
+          placement: 'top-start',
+          zIndex: 90
         })
       },
 

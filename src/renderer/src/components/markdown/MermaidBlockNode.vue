@@ -237,12 +237,11 @@ const initMermaid = async () => {
   if (!mermaidContent.value) return
 
   try {
-    console.log('initMermaid')
     // 生成唯一的图表ID
     const id = `mermaid-${Date.now()}`
 
     // 使用 render API 直接渲染新内容
-    const { svg } = await mermaid.render(id, props.node.code)
+    const { svg } = await mermaid.render(id, props.node.code, mermaidContent.value)
 
     // 更新 DOM
     if (mermaidContent.value) {

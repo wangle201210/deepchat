@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "何か聞いていますか？",
+    "placeholder": "何か質問は？{'@'}でツール、ファイル、リソースを引用できます...",
     "fileArea": "ファイルエリア",
     "inputArea": "入力エリア",
     "functionSwitch": "機能スイッチ",

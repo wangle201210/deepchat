@@ -53,6 +53,11 @@
               class="p-3 border rounded-md relative"
             >
               <div class="absolute top-2 right-2 flex gap-2">
+                <Switch
+                  :checked="config.enabled === true"
+                  size="sm"
+                  @update:checked="toggleConfigEnabled(index, $event)"
+                />
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-primary"
@@ -202,14 +207,14 @@ const isDifyConfigDialogOpen = ref(false)
 
 // 打开添加配置对话框
 const openAddConfig = () => {
-  console.log('openAddConfig')
   isEditing.value = false
   editingConfigIndex.value = -1
   editingDifyConfig.value = {
     description: '',
     apiKey: '',
     datasetId: '',
-    endpoint: 'https://api.dify.ai/v1'
+    endpoint: 'https://api.dify.ai/v1',
+    enabled: true
   }
   isDifyConfigDialogOpen.value = true
 }
@@ -234,6 +239,7 @@ interface DifyConfig {
   apiKey: string
   datasetId: string
   endpoint: string
+  enabled?: boolean
 }
 
 const difyConfigs = ref<DifyConfig[]>([])
@@ -241,7 +247,8 @@ const editingDifyConfig = ref<DifyConfig>({
   description: '',
   apiKey: '',
   datasetId: '',
-  endpoint: 'https://api.dify.ai/v1'
+  endpoint: 'https://api.dify.ai/v1',
+  enabled: true
 })
 const editingConfigIndex = ref<number>(-1)
 
@@ -271,7 +278,8 @@ const closeEditDifyConfigDialog = () => {
     description: '',
     apiKey: '',
     datasetId: '',
-    endpoint: 'https://api.dify.ai/v1'
+    endpoint: 'https://api.dify.ai/v1',
+    enabled: true
   }
 }
 
@@ -307,6 +315,12 @@ const saveDifyConfig = async () => {
 // 移除Dify配置
 const removeDifyConfig = async (index: number) => {
   difyConfigs.value.splice(index, 1)
+  await updateDifyConfigToMcp()
+}
+
+// 切换配置启用状态
+const toggleConfigEnabled = async (index: number, enabled: boolean) => {
+  difyConfigs.value[index].enabled = enabled
   await updateDifyConfigToMcp()
 }
 

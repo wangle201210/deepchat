@@ -9,7 +9,7 @@ import axios from 'axios'
 const RagflowKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)'),
+  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)'),
   keyword: z.boolean().optional().default(false).describe('是否启用关键词匹配 (默认false)'),
   highlight: z.boolean().optional().default(false).describe('是否高亮匹配的文本 (默认false)')
 })
@@ -52,10 +52,17 @@ export class RagflowKnowledgeServer {
     endpoint: string
     datasetIds: string[]
     description: string
+    enabled: boolean
   }> = []
 
   constructor(env?: {
-    configs: { apiKey: string; endpoint: string; datasetIds: string[]; description: string }[]
+    configs: {
+      apiKey: string
+      endpoint: string
+      datasetIds: string[]
+      description: string
+      enabled: boolean
+    }[]
   }) {
     if (!env) {
       throw new Error('需要提供RAGFlow知识库配置')
@@ -83,7 +90,8 @@ export class RagflowKnowledgeServer {
         apiKey: env.apiKey,
         datasetIds: env.datasetIds,
         endpoint: env.endpoint || 'http://localhost:8000',
-        description: env.description
+        description: env.description,
+        enabled: env.enabled
       })
     }
 
@@ -113,15 +121,16 @@ export class RagflowKnowledgeServer {
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const tools = this.configs.map((config, index) => {
-        const suffix = this.configs.length > 1 ? `_${index + 1}` : ''
-        return {
-          name: `ragflow_knowledge_search${suffix}`,
-          description: config.description,
-          inputSchema: zodToJsonSchema(RagflowKnowledgeSearchArgsSchema)
-        }
-      })
-
+      const tools = this.configs
+        .filter((conf) => conf.enabled)
+        .map((config, index) => {
+          const suffix = this.configs.length > 1 ? `_${index + 1}` : ''
+          return {
+            name: `ragflow_knowledge_search${suffix}`,
+            description: config.description,
+            inputSchema: zodToJsonSchema(RagflowKnowledgeSearchArgsSchema)
+          }
+        })
       return { tools }
     })
 
@@ -132,6 +141,9 @@ export class RagflowKnowledgeServer {
       // 检查是否是RAGFlow知识库搜索工具
       if (name.startsWith('ragflow_knowledge_search')) {
         try {
+          // 过滤出启用的配置
+          const enabledConfigs = this.configs.filter((config) => config.enabled)
+
           // 提取索引
           let configIndex = 0
           const match = name.match(/_([0-9]+)$/)
@@ -140,11 +152,16 @@ export class RagflowKnowledgeServer {
           }
 
           // 确保索引有效
-          if (configIndex < 0 || configIndex >= this.configs.length) {
+          if (configIndex < 0 || configIndex >= enabledConfigs.length) {
             throw new Error(`无效的知识库索引: ${configIndex}`)
           }
 
-          return await this.performRagflowKnowledgeSearch(parameters, configIndex)
+          // 获取实际配置的索引
+          const actualConfigIndex = this.configs.findIndex(
+            (config) => config === enabledConfigs[configIndex]
+          )
+
+          return await this.performRagflowKnowledgeSearch(parameters, actualConfigIndex)
         } catch (error) {
           console.error('RAGFlow知识库搜索失败:', error)
           return {
@@ -177,7 +194,7 @@ export class RagflowKnowledgeServer {
     const {
       query,
       topK = 5,
-      scoreThreshold = 0.5,
+      scoreThreshold = 0.2,
       keyword = false,
       highlight = false
     } = parameters as {
@@ -211,7 +228,7 @@ export class RagflowKnowledgeServer {
         {
           question: query,
           dataset_ids: config.datasetIds,
-          top_k: topK,
+          page_size: topK,
           similarity_threshold: scoreThreshold,
           keyword,
           highlight

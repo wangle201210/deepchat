@@ -27,6 +27,7 @@ import { CONFIG_EVENTS } from '@/events'
 import { GrokProvider } from './providers/grokProvider'
 import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
+import { LMStudioProvider } from './providers/lmstudioProvider'
 
 // 流的状态
 interface StreamState {
@@ -99,6 +100,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
             instance = new OpenAIProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'openai-compatible') {
             instance = new OpenAICompatibleProvider(provider, this.configPresenter)
+          } else if (provider.apiType === 'lmstudio') {
+            instance = new LMStudioProvider(provider, this.configPresenter)
           } else {
             console.warn(`Unknown provider type: ${provider.apiType}`)
             continue

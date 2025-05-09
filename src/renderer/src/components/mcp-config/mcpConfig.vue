@@ -18,8 +18,8 @@ import { useSettingsStore } from '@/stores/settings'
 import type {
   MCPServerConfig,
   MCPToolDefinition,
-  PromptWithClient,
-  ResourceListEntryWithClient
+  PromptListEntry,
+  ResourceListEntry
 } from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import McpServerForm from './mcpServerForm.vue'
@@ -102,19 +102,19 @@ const selectTool = (tool: MCPToolDefinition) => {
 }
 
 // 选择Prompt
-const selectPrompt = (prompt: PromptWithClient) => {
+const selectPrompt = (prompt: PromptListEntry) => {
   selectedPrompt.value = prompt.name
   promptResult.value = ''
 }
 
 // 选择Resource
-const selectResource = (resource: ResourceListEntryWithClient) => {
+const selectResource = (resource: ResourceListEntry) => {
   selectedResource.value = resource.uri
   resourceContent.value = ''
 }
 
 // 加载资源内容
-const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
+const loadResourceContent = async (resource: ResourceListEntry) => {
   if (!resource) return
 
   try {
@@ -139,7 +139,7 @@ const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
 }
 
 // 调用Prompt
-const callPrompt = async (prompt: PromptWithClient) => {
+const callPrompt = async (prompt: PromptListEntry) => {
   if (!prompt) return
   if (!validatePromptJson(promptParams.value)) return
 
@@ -215,9 +215,9 @@ const handleToggleDefaultServer = async (serverName: string) => {
   const isDefault = mcpStore.config.defaultServers.includes(serverName)
   console.log('mcpStore.config.defaultServers', mcpStore.config.defaultServers)
   // 如果不是默认服务器，且已达到最大数量，显示提示
-  if (!isDefault && mcpStore.config.defaultServers.length > 3) {
+  if (!isDefault && mcpStore.config.defaultServers.length > 30) {
     toast({
-      title: t('settings.mcp.maxDefaultServersReached'),
+      title: t('mcp.errors.maxDefaultServersReached'),
       description: t('settings.mcp.removeDefaultFirst'),
       variant: 'destructive'
     })
@@ -394,6 +394,44 @@ const selectedPromptObj = computed(() => {
   return mcpStore.prompts.find((p) => p.name === selectedPrompt.value)
 })
 
+// 添加计算属性：获取默认参数模板
+const defaultPromptParams = computed(() => {
+  if (!selectedPromptObj.value) return '{}'
+
+  // 获取 arguments 字段
+  const promptArgs = selectedPromptObj.value.arguments || {}
+
+  // 如果 arguments 是数组，将其转换为对象
+  if (Array.isArray(promptArgs)) {
+    const argsObject = promptArgs.reduce(
+      (acc, arg) => {
+        acc[arg.name] = '' // 为每个参数设置空值
+        return acc
+      },
+      {} as Record<string, string>
+    )
+    return JSON.stringify(argsObject, null, 2)
+  }
+
+  // 如果已经是对象，直接返回
+  return JSON.stringify(promptArgs, null, 2)
+})
+
+// 监听选中提示模板变化，更新参数
+watch(selectedPrompt, () => {
+  promptParams.value = defaultPromptParams.value
+})
+
+// 格式化 JSON 字符串
+const formatJson = (json: string): string => {
+  try {
+    const obj = JSON.parse(json)
+    return JSON.stringify(obj, null, 2)
+  } catch (e) {
+    return json
+  }
+}
+
 // 添加计算属性：获取当前选中的资源对象
 const selectedResourceObj = computed(() => {
   return mcpStore.resources.find((r) => r.uri === selectedResource.value)
@@ -520,6 +558,22 @@ const getJsonPartClass = (type: string): string => {
       return ''
   }
 }
+
+// 添加计算属性：获取参数描述
+const promptArgsDescription = computed(() => {
+  if (!selectedPromptObj.value) return []
+  const promptArgs = selectedPromptObj.value.arguments || {}
+
+  if (Array.isArray(promptArgs)) {
+    return promptArgs.map((arg) => ({
+      name: arg.name,
+      description: arg.description || '',
+      required: arg.required || false
+    }))
+  }
+
+  return []
+})
 </script>
 
 <template>
@@ -568,7 +622,7 @@ const getJsonPartClass = (type: string): string => {
       </button>
     </div>
 
-    <div class="flex overflow-hidden px-4">
+    <div class="flex overflow-hidden px-4 h-full">
       <!-- 服务器配置选项卡 -->
       <ScrollArea v-if="activeTab === 'servers'" class="h-full w-full">
         <div class="flex justify-between items-center mb-4">
@@ -760,7 +814,7 @@ const getJsonPartClass = (type: string): string => {
               <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
                 <div class="flex justify-between items-center">
                   <div
-                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
                   >
                     {{ server.command }} {{ server.args.join(' ') }}
                   </div>
@@ -927,13 +981,13 @@ const getJsonPartClass = (type: string): string => {
               <div class="flex justify-between items-center">
                 <div
                   v-if="server.type === 'http'"
-                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
                 >
                   {{ server.baseUrl }}
                 </div>
                 <div
                   v-else
-                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 max-w-[800px]"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
                 >
                   {{ server.command }} {{ server.args.join(' ') }}
                 </div>
@@ -952,11 +1006,11 @@ const getJsonPartClass = (type: string): string => {
       <!-- 调试工具选项卡 -->
       <div
         v-if="activeTab === 'tools'"
-        class="h-full overflow-hidden grid grid-cols-[200px_1fr] gap-2"
+        class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden"
       >
         <!-- 左侧工具列表 -->
-        <div class="h-full border-r pr-2 flex flex-col">
-          <ScrollArea class="w-full h-0 grow">
+        <div class="h-full flex flex-col overflow-hidden border-r pr-2">
+          <ScrollArea class="h-full w-full">
             <div v-if="mcpStore.toolsLoading" class="flex justify-center py-4">
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
             </div>
@@ -986,80 +1040,86 @@ const getJsonPartClass = (type: string): string => {
         </div>
 
         <!-- 右侧操作区域 -->
-        <div class="h-full overflow-y-auto px-2">
-          <div v-if="!selectedTool" class="text-center text-sm text-muted-foreground py-8">
-            {{ t('mcp.tools.selectTool') }}
-          </div>
+        <div class="h-full flex flex-col overflow-hidden">
+          <ScrollArea class="h-full w-full">
+            <div class="px-4">
+              <div v-if="!selectedTool" class="text-center text-sm text-muted-foreground py-8">
+                {{ t('mcp.tools.selectTool') }}
+              </div>
 
-          <div v-else>
-            <div class="mb-3">
-              <h3 class="text-sm font-medium">{{ selectedTool.function.name }}</h3>
-              <p class="text-xs text-muted-foreground">{{ selectedTool.function.description }}</p>
-            </div>
+              <div v-else>
+                <div class="mb-3">
+                  <h3 class="text-sm font-medium">{{ selectedTool.function.name }}</h3>
+                  <p class="text-xs text-muted-foreground">
+                    {{ selectedTool.function.description }}
+                  </p>
+                </div>
 
-            <!-- 工具参数输入 -->
-            <div class="space-y-3 mb-3">
-              <div class="space-y-1">
-                <label class="text-xs font-medium">
-                  {{ t('mcp.tools.parameters') }}
-                  <span class="text-red-500">*</span>
-                </label>
-                <textarea
-                  v-model="localToolInputs[selectedTool.function.name]"
-                  class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                  placeholder="{}"
-                  :class="{ 'border-red-500': jsonError[selectedTool.function.name] }"
-                  @input="
-                    validateJson(
-                      localToolInputs[selectedTool.function.name],
-                      selectedTool.function.name
-                    )
-                  "
-                ></textarea>
+                <!-- 工具参数输入 -->
+                <div class="space-y-3 mb-3">
+                  <div class="space-y-1">
+                    <label class="text-xs font-medium">
+                      {{ t('mcp.tools.parameters') }}
+                      <span class="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      v-model="localToolInputs[selectedTool.function.name]"
+                      class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                      placeholder="{}"
+                      :class="{ 'border-red-500': jsonError[selectedTool.function.name] }"
+                      @input="
+                        validateJson(
+                          localToolInputs[selectedTool.function.name],
+                          selectedTool.function.name
+                        )
+                      "
+                    ></textarea>
+                  </div>
+                </div>
+
+                <!-- 调用按钮和结果显示 -->
+                <div class="space-y-3">
+                  <Button
+                    class="w-full"
+                    :disabled="
+                      mcpStore.toolLoadingStates[selectedTool.function.name] ||
+                      jsonError[selectedTool.function.name]
+                    "
+                    @click="callTool(selectedTool.function.name)"
+                  >
+                    <Icon
+                      v-if="mcpStore.toolLoadingStates[selectedTool.function.name]"
+                      icon="lucide:loader"
+                      class="mr-2 h-4 w-4 animate-spin"
+                    />
+                    {{
+                      mcpStore.toolLoadingStates[selectedTool.function.name]
+                        ? t('mcp.tools.runningTool')
+                        : t('mcp.tools.executeButton')
+                    }}
+                  </Button>
+
+                  <div v-if="localToolResults[selectedTool.function.name]" class="mt-3 mb-4">
+                    <div class="text-sm font-medium mb-1">{{ t('mcp.tools.resultTitle') }}</div>
+                    <pre class="bg-muted p-3 rounded-md text-sm overflow-auto">{{
+                      localToolResults[selectedTool.function.name]
+                    }}</pre>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <!-- 调用按钮和结果显示 -->
-            <div class="space-y-3">
-              <Button
-                class="w-full"
-                :disabled="
-                  mcpStore.toolLoadingStates[selectedTool.function.name] ||
-                  jsonError[selectedTool.function.name]
-                "
-                @click="callTool(selectedTool.function.name)"
-              >
-                <Icon
-                  v-if="mcpStore.toolLoadingStates[selectedTool.function.name]"
-                  icon="lucide:loader"
-                  class="mr-2 h-4 w-4 animate-spin"
-                />
-                {{
-                  mcpStore.toolLoadingStates[selectedTool.function.name]
-                    ? t('mcp.tools.runningTool')
-                    : t('mcp.tools.executeButton')
-                }}
-              </Button>
-
-              <div v-if="localToolResults[selectedTool.function.name]" class="mt-3">
-                <div class="text-sm font-medium mb-1">{{ t('mcp.tools.resultTitle') }}</div>
-                <pre class="bg-muted p-3 rounded-md text-sm overflow-auto">{{
-                  localToolResults[selectedTool.function.name]
-                }}</pre>
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
         </div>
       </div>
 
       <!-- 提示模板选项卡 -->
       <div
         v-if="activeTab === 'prompts'"
-        class="h-full overflow-hidden grid grid-cols-[200px_1fr] gap-2"
+        class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden"
       >
         <!-- 左侧提示模板列表 -->
-        <div class="h-full border-r pr-2 flex flex-col">
-          <ScrollArea class="w-full h-0 grow">
+        <div class="h-full flex flex-col overflow-hidden border-r pr-2">
+          <ScrollArea class="h-full w-full">
             <div v-if="mcpStore.toolsLoading" class="flex justify-center py-4">
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
             </div>
@@ -1084,7 +1144,7 @@ const getJsonPartClass = (type: string): string => {
                   {{ prompt.description || t('mcp.prompts.noDescription') }}
                 </div>
                 <div class="text-xs text-muted-foreground mt-1">
-                  {{ prompt.clientName }}
+                  {{ prompt.client.name }}
                 </div>
               </div>
             </div>
@@ -1092,65 +1152,117 @@ const getJsonPartClass = (type: string): string => {
         </div>
 
         <!-- 右侧操作区域 -->
-        <div class="h-full overflow-y-auto px-2">
-          <div v-if="!selectedPrompt" class="text-center text-sm text-muted-foreground py-8">
-            {{ t('mcp.prompts.selectPrompt') }}
-          </div>
+        <div class="h-full flex flex-col overflow-hidden">
+          <ScrollArea class="h-full w-full">
+            <div class="px-4">
+              <div v-if="!selectedPrompt" class="text-center text-sm text-muted-foreground py-8">
+                {{ t('mcp.prompts.selectPrompt') }}
+              </div>
 
-          <div v-else>
-            <div class="mb-3">
-              <h3 class="text-sm font-medium">{{ selectedPrompt }}</h3>
-              <p v-if="selectedPromptObj?.description" class="text-xs text-muted-foreground">
-                {{ selectedPromptObj.description }}
-              </p>
-            </div>
+              <div v-else>
+                <div class="mb-3">
+                  <h3 class="text-sm font-medium">{{ selectedPrompt }}</h3>
+                  <p v-if="selectedPromptObj?.description" class="text-xs text-muted-foreground">
+                    {{ selectedPromptObj.description }}
+                  </p>
+                </div>
 
-            <!-- 提示参数输入 -->
-            <div class="space-y-3 mb-3">
-              <div class="space-y-1">
-                <label class="text-xs font-medium">
-                  {{ t('mcp.prompts.parameters') }}
-                </label>
-                <textarea
-                  v-model="promptParams"
-                  class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                  placeholder="{}"
-                  :class="{ 'border-red-500': jsonPromptError }"
-                  @input="validatePromptJson(promptParams)"
-                ></textarea>
+                <!-- 提示参数输入 -->
+                <div class="space-y-3 mb-3">
+                  <div class="space-y-1">
+                    <div class="flex justify-between items-center">
+                      <label class="text-xs font-medium">
+                        {{ t('mcp.prompts.parameters') }}
+                      </label>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-6 text-xs"
+                        @click="promptParams = defaultPromptParams"
+                      >
+                        <Icon icon="lucide:refresh-cw" class="mr-1 h-3 w-3" />
+                        {{ t('mcp.prompts.resetToDefault') }}
+                      </Button>
+                    </div>
+
+                    <!-- 参数描述区域 -->
+                    <div
+                      v-if="promptArgsDescription.length > 0"
+                      class="mb-2 p-2 bg-muted/50 rounded-md"
+                    >
+                      <div
+                        v-for="arg in promptArgsDescription"
+                        :key="arg.name"
+                        class="text-xs text-muted-foreground mb-1 last:mb-0"
+                      >
+                        <span class="font-medium">{{ arg.name }}</span>
+                        <span v-if="arg.required" class="ml-1 text-red-500">*</span>
+                        <span class="ml-1">- {{ arg.description }}</span>
+                      </div>
+                    </div>
+
+                    <div class="relative">
+                      <textarea
+                        v-model="promptParams"
+                        class="flex h-48 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                        placeholder="{}"
+                        :class="{ 'border-red-500': jsonPromptError }"
+                        @input="validatePromptJson(promptParams)"
+                        @blur="promptParams = formatJson(promptParams)"
+                      ></textarea>
+                      <div
+                        v-if="jsonPromptError"
+                        class="absolute right-2 top-2 text-xs text-red-500"
+                      >
+                        {{ t('mcp.prompts.invalidJson') }}
+                      </div>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                      {{ t('mcp.prompts.parametersHint') }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- 调用按钮和结果显示 -->
+                <div class="space-y-3">
+                  <Button
+                    class="w-full"
+                    :disabled="promptLoading || jsonPromptError"
+                    @click="callPrompt(selectedPromptObj as PromptListEntry)"
+                  >
+                    <Icon
+                      v-if="promptLoading"
+                      icon="lucide:loader"
+                      class="mr-2 h-4 w-4 animate-spin"
+                    />
+                    {{
+                      promptLoading
+                        ? t('mcp.prompts.runningPrompt')
+                        : t('mcp.prompts.executeButton')
+                    }}
+                  </Button>
+
+                  <div v-if="promptResult" class="mt-3 mb-4">
+                    <div class="text-sm font-medium mb-1">{{ t('mcp.prompts.resultTitle') }}</div>
+                    <pre class="bg-muted p-3 rounded-md text-sm overflow-auto">{{
+                      promptResult
+                    }}</pre>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <!-- 调用按钮和结果显示 -->
-            <div class="space-y-3">
-              <Button
-                class="w-full"
-                :disabled="promptLoading || jsonPromptError"
-                @click="callPrompt(selectedPromptObj as PromptWithClient)"
-              >
-                <Icon v-if="promptLoading" icon="lucide:loader" class="mr-2 h-4 w-4 animate-spin" />
-                {{
-                  promptLoading ? t('mcp.prompts.runningPrompt') : t('mcp.prompts.executeButton')
-                }}
-              </Button>
-
-              <div v-if="promptResult" class="mt-3">
-                <div class="text-sm font-medium mb-1">{{ t('mcp.prompts.resultTitle') }}</div>
-                <pre class="bg-muted p-3 rounded-md text-sm overflow-auto">{{ promptResult }}</pre>
-              </div>
-            </div>
-          </div>
+          </ScrollArea>
         </div>
       </div>
 
       <!-- 资源选项卡 -->
       <div
         v-if="activeTab === 'resources'"
-        class="h-full overflow-hidden grid grid-cols-[200px_1fr] gap-2"
+        class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden"
       >
         <!-- 左侧资源列表 -->
-        <div class="h-full border-r pr-2 flex flex-col">
-          <ScrollArea class="w-full h-0 grow">
+        <div class="h-full flex flex-col overflow-hidden border-r pr-2">
+          <ScrollArea class="h-full w-full">
             <div v-if="mcpStore.toolsLoading" class="flex justify-center py-4">
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
             </div>
@@ -1172,7 +1284,7 @@ const getJsonPartClass = (type: string): string => {
               >
                 <div class="font-medium">{{ resource.name || resource.uri }}</div>
                 <div class="text-xs text-muted-foreground mt-1">
-                  {{ resource.clientName }}
+                  {{ resource.client.name }}
                 </div>
               </div>
             </div>
@@ -1180,53 +1292,63 @@ const getJsonPartClass = (type: string): string => {
         </div>
 
         <!-- 右侧操作区域 -->
-        <div class="h-full overflow-y-auto px-2">
-          <div v-if="!selectedResource" class="text-center text-sm text-muted-foreground py-8">
-            {{ t('mcp.resources.selectResource') }}
-          </div>
+        <div class="h-full flex flex-col overflow-hidden">
+          <ScrollArea class="h-full w-full">
+            <div class="px-4">
+              <div v-if="!selectedResource" class="text-center text-sm text-muted-foreground py-8">
+                {{ t('mcp.resources.selectResource') }}
+              </div>
 
-          <div v-else>
-            <div class="mb-3">
-              <h3 class="text-sm font-medium">{{ selectedResource }}</h3>
-              <p class="text-xs text-muted-foreground">
-                {{ selectedResourceObj?.name || '' }}
-              </p>
-            </div>
-
-            <!-- 加载资源按钮 -->
-            <Button
-              class="w-full mb-3"
-              :disabled="resourceLoading"
-              @click="loadResourceContent(selectedResourceObj as ResourceListEntryWithClient)"
-            >
-              <Icon v-if="resourceLoading" icon="lucide:loader" class="mr-2 h-4 w-4 animate-spin" />
-              {{ resourceLoading ? t('mcp.resources.loading') : t('mcp.resources.loadContent') }}
-            </Button>
-
-            <!-- 资源内容显示 -->
-            <div class="resource-section">
-              <div class="resource-content-container">
-                <div v-if="resourceLoading" class="resource-loading">
-                  <Icon icon="lucide:loader" class="h-8 w-8 animate-spin" />
-                  <h3>{{ t('mcp.resources.loading') }}</h3>
+              <div v-else>
+                <div class="mb-3">
+                  <h3 class="text-sm font-medium">{{ selectedResource }}</h3>
+                  <p class="text-xs text-muted-foreground">
+                    {{ selectedResourceObj?.name || '' }}
+                  </p>
                 </div>
-                <div v-else-if="resourceContent">
-                  <div v-if="isJsonContent" class="json-viewer">
-                    <span
-                      v-for="(part, index) in jsonParts"
-                      :key="index"
-                      :class="getJsonPartClass(part.type)"
-                      >{{ part.content }}</span
-                    >
+
+                <!-- 加载资源按钮 -->
+                <Button
+                  class="w-full mb-3"
+                  :disabled="resourceLoading"
+                  @click="loadResourceContent(selectedResourceObj as ResourceListEntry)"
+                >
+                  <Icon
+                    v-if="resourceLoading"
+                    icon="lucide:loader"
+                    class="mr-2 h-4 w-4 animate-spin"
+                  />
+                  {{
+                    resourceLoading ? t('mcp.resources.loading') : t('mcp.resources.loadContent')
+                  }}
+                </Button>
+
+                <!-- 资源内容显示 -->
+                <div class="resource-section mb-4">
+                  <div class="resource-content-container">
+                    <div v-if="resourceLoading" class="resource-loading">
+                      <Icon icon="lucide:loader" class="h-8 w-8 animate-spin" />
+                      <h3>{{ t('mcp.resources.loading') }}</h3>
+                    </div>
+                    <div v-else-if="resourceContent">
+                      <div v-if="isJsonContent" class="json-viewer">
+                        <span
+                          v-for="(part, index) in jsonParts"
+                          :key="index"
+                          :class="getJsonPartClass(part.type)"
+                          >{{ part.content }}</span
+                        >
+                      </div>
+                      <pre v-else class="resource-raw-content">{{ resourceContent }}</pre>
+                    </div>
+                    <div v-else class="empty-content">
+                      <h3>{{ t('mcp.resources.pleaseSelect') }}</h3>
+                    </div>
                   </div>
-                  <pre v-else class="resource-raw-content">{{ resourceContent }}</pre>
-                </div>
-                <div v-else class="empty-content">
-                  <h3>{{ t('mcp.resources.pleaseSelect') }}</h3>
                 </div>
               </div>
             </div>
-          </div>
+          </ScrollArea>
         </div>
       </div>
     </div>
@@ -1278,7 +1400,7 @@ const getJsonPartClass = (type: string): string => {
   padding: 16px;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
   line-height: 1.6;
   font-size: 14px;
@@ -1293,7 +1415,7 @@ const getJsonPartClass = (type: string): string => {
   padding: 16px;
   white-space: pre-wrap;
   word-break: break-all;
-  max-height: 500px;
+  max-height: 400px;
   overflow-y: auto;
   line-height: 1.6;
   font-size: 14px;

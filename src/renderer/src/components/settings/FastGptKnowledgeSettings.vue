@@ -53,6 +53,11 @@
               class="p-3 border rounded-md relative"
             >
               <div class="absolute top-2 right-2 flex gap-2">
+                <Switch
+                  class="ml-2"
+                  :checked="config.enabled === true"
+                  @update:checked="toggleConfigEnabled(index, $event)"
+                />
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-primary"
@@ -215,6 +220,7 @@ interface FastGptConfig {
   apiKey: string
   datasetId: string
   endpoint: string
+  enabled?: boolean
 }
 
 const fastGptConfigs = ref<FastGptConfig[]>([])
@@ -222,7 +228,8 @@ const editingFastGptConfig = ref<FastGptConfig>({
   description: '',
   apiKey: '',
   datasetId: '',
-  endpoint: 'http://localhost:3000/api'
+  endpoint: 'http://localhost:3000/api',
+  enabled: true
 })
 const editingConfigIndex = ref<number>(-1)
 
@@ -243,7 +250,8 @@ const openAddConfig = () => {
     description: '',
     apiKey: '',
     datasetId: '',
-    endpoint: 'http://localhost:3000/api'
+    endpoint: 'http://localhost:3000/api',
+    enabled: true
   }
   isFastGptConfigDialogOpen.value = true
 }
@@ -269,7 +277,8 @@ const closeFastGptConfigDialog = () => {
     description: '',
     apiKey: '',
     datasetId: '',
-    endpoint: 'http://localhost:3000/api'
+    endpoint: 'http://localhost:3000/api',
+    enabled: true
   }
 }
 
@@ -305,6 +314,12 @@ const saveFastGptConfig = async () => {
 // 移除FastGPT配置
 const removeFastGptConfig = async (index: number) => {
   fastGptConfigs.value.splice(index, 1)
+  await updateFastGptConfigToMcp()
+}
+
+// 切换配置启用状态
+const toggleConfigEnabled = async (index: number, enabled: boolean) => {
+  fastGptConfigs.value[index].enabled = enabled
   await updateFastGptConfigToMcp()
 }
 

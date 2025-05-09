@@ -43,7 +43,7 @@ const shortcuts = ref([
     id: 'zoom_in',
     icon: 'lucide:zoom-in',
     label: 'settings.shortcuts.zoomIn',
-    key: 'CommandOrControl+='
+    key: 'CommandOrControl++'
   },
   {
     id: 'zoom_out',
