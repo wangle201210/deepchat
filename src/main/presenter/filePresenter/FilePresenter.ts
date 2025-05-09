@@ -171,6 +171,35 @@ export class FilePresenter implements IFilePresenter {
     return tempPath
   }
 
+  async writeImageBase64(file: { name: string; content: string }): Promise<string> {
+    // 检查是否是base64格式的图片数据
+    if (!file.content.startsWith('data:image/')) {
+      throw new Error('Invalid image base64 data')
+    }
+
+    // 从base64字符串中提取实际的图片数据
+    const base64Data = file.content.split(',')[1]
+    if (!base64Data) {
+      throw new Error('Invalid base64 image format')
+    }
+
+    // 将base64转换为二进制数据
+    const binaryData = Buffer.from(base64Data, 'base64')
+
+    // 获取文件扩展名
+    const mimeMatch = file.content.match(/^data:image\/([a-zA-Z0-9]+);base64,/)
+    const ext = mimeMatch ? `.${mimeMatch[1].toLowerCase()}` : '.png'
+
+    // 生成临时文件名
+    const tempName = `${nanoid()}${ext}`
+    const tempPath = path.join(this.tempDir, tempName)
+
+    // 写入文件
+    await fs.writeFile(tempPath, binaryData)
+
+    return tempPath
+  }
+
   async isDirectory(absPath: string): Promise<boolean> {
     try {
       const fullPath = path.join(absPath)
