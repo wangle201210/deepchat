@@ -643,6 +643,7 @@ export interface IFilePresenter {
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
   isDirectory(absPath: string): Promise<boolean>
   getMimeType(filePath: string): Promise<string>
+  writeImageBase64(file: { name: string; content: string }): Promise<string>
 }
 
 export interface FileMetaData {
