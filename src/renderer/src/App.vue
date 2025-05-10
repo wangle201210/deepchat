@@ -235,7 +235,7 @@ onMounted(() => {
 
   // 监听当前对话的变化
   watch(
-    () => chatStore.activeThreadId,
+    () => chatStore.getActiveThreadId(),
     () => {
       // 当切换对话时关闭 artifacts 页面
       artifactStore.hideArtifact()

@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col overflow-hidden h-0 flex-1">
     <!-- 消息列表区域 -->
-    <MessageList :key="chatStore.activeThreadId ?? 'default'" ref="messageList" :messages="chatStore.messages"
+    <MessageList :key="chatStore.getActiveThreadId() ?? 'default'" ref="messageList" :messages="chatStore.getMessages()"
       @scroll-bottom="scrollToBottom" />
 
     <!-- 输入框区域 -->
     <div class="flex-none p-2">
-      <ChatInput :disabled="!chatStore.activeThreadId || isGenerating" @send="handleSend"
+      <ChatInput :disabled="!chatStore.getActiveThreadId() || isGenerating" @send="handleSend"
         @file-upload="handleFileUpload" />
     </div>
   </div>
@@ -34,8 +34,8 @@ const scrollToBottom = (smooth = true) => {
   messageList.value?.scrollToBottom(smooth)
 }
 const isGenerating = computed(() => {
-  if (!chatStore.activeThreadId) return false
-  return chatStore.generatingThreadIds.has(chatStore.activeThreadId)
+  if (!chatStore.getActiveThreadId()) return false
+  return chatStore.generatingThreadIds.has(chatStore.getActiveThreadId()!)
 })
 const handleSend = async (msg: UserMessageContent) => {
   if (messageList.value) {

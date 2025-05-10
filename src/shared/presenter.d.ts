@@ -410,7 +410,11 @@ export type CONVERSATION = {
 
 export interface IThreadPresenter {
   // 基本对话操作
-  createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
+  createConversation(
+    title: string,
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    tabId: number
+  ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>
   renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
@@ -433,8 +437,10 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
-  setActiveConversation(conversationId: string): Promise<void>
-  getActiveConversation(): Promise<CONVERSATION | null>
+  setActiveConversation(conversationId: string, tabId: number): Promise<void>
+  getActiveConversation(tabId: number): Promise<CONVERSATION | null>
+  getActiveConversationId(tabId: number): Promise<string | null>
+  clearActiveThread(tabId: number): Promise<void>
 
   getSearchResults(messageId: string): Promise<SearchResult[]>
   clearAllMessages(conversationId: string): Promise<void>
@@ -460,8 +466,7 @@ export interface IThreadPresenter {
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(modelId?: string): Promise<string>
-  clearActiveThread(): Promise<void>
+  summaryTitles(modelId?: string, tabId?: number): Promise<string>
   stopMessageGeneration(messageId: string): Promise<void>
   getSearchEngines(): Promise<SearchEngineTemplate[]>
   getActiveSearchEngine(): Promise<SearchEngineTemplate>

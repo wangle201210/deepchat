@@ -1,26 +1,21 @@
 <template>
   <div class="w-full h-full flex-row flex">
-    <div
-      :class="{
-        'flex-1 w-0 h-full transition-all duration-200': true,
-        'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'tab'
-      }"
-    >
+    <div :class="{
+      'flex-1 w-0 h-full transition-all duration-200': true,
+      'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'tab'
+    }">
       <div class="flex h-full bg-white/80 dark:bg-black/80">
         <!-- 左侧会话列表 -->
-        <Transition
-          enter-active-class="transition-all duration-300 ease-out"
-          leave-active-class="transition-all duration-300 ease-in"
-          enter-from-class="-translate-x-full opacity-0"
-          leave-to-class="-translate-x-full opacity-0"
-        >
+        <Transition enter-active-class="transition-all duration-300 ease-out"
+          leave-active-class="transition-all duration-300 ease-in" enter-from-class="-translate-x-full opacity-0"
+          leave-to-class="-translate-x-full opacity-0">
           <ThreadsView v-show="chatStore.isSidebarOpen" class="transform" />
         </Transition>
 
         <!-- 主聊天区域 -->
         <div class="flex-1 flex flex-col w-0">
           <!-- 新会话 -->
-          <NewThread v-if="!chatStore.activeThreadId" />
+          <NewThread v-if="!chatStore.getActiveThreadId()" />
           <template v-else>
             <!-- 标题栏 -->
             <TitleView :model="activeModel" />

@@ -1,15 +1,9 @@
 <template>
-  <div
-    class="w-60 h-full bg-muted overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col"
-  >
+  <div class="w-60 h-full bg-muted overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col">
     <!-- 固定在顶部的"新会话"按钮 -->
     <div class="flex-none">
-      <Button
-        variant="outline"
-        size="sm"
-        class="w-full text-xs text-muted-foreground justify-start gap-2"
-        @click="createNewThread"
-      >
+      <Button variant="outline" size="sm" class="w-full text-xs text-muted-foreground justify-start gap-2"
+        @click="createNewThread">
         <Icon icon="lucide:pen-line" class="h-4 w-4" />
         <span>{{ t('common.newChat') }}</span>
       </Button>
@@ -21,17 +15,11 @@
       <div v-for="thread in chatStore.threads" :key="thread.dt" class="space-y-1.5 mb-3">
         <div class="text-xs font-bold text-secondary-foreground px-2">{{ thread.dt }}</div>
         <ul class="space-y-1.5">
-          <ThreadItem
-            v-for="dtThread in thread.dtThreads"
-            :key="dtThread.id"
-            :thread="dtThread"
-            :is-active="dtThread.id === chatStore.activeThreadId"
-            :working-status="chatStore.getThreadWorkingStatus(dtThread.id)"
-            @select="handleThreadSelect"
-            @rename="showRenameDialog(dtThread)"
-            @delete="showDeleteDialog(dtThread)"
-            @cleanmsgs="showCleanMessagesDialog(dtThread)"
-          />
+          <ThreadItem v-for="dtThread in thread.dtThreads" :key="dtThread.id" :thread="dtThread"
+            :is-active="dtThread.id === chatStore.getActiveThreadId()"
+            :working-status="chatStore.getThreadWorkingStatus(dtThread.id)" @select="handleThreadSelect"
+            @rename="showRenameDialog(dtThread)" @delete="showDeleteDialog(dtThread)"
+            @cleanmsgs="showCleanMessagesDialog(dtThread)" />
         </ul>
       </div>
 
@@ -51,10 +39,10 @@
         <DialogFooter>
           <Button variant="outline" @click="handleDeleteDialogCancel">{{
             t('dialog.cancel')
-          }}</Button>
+            }}</Button>
           <Button variant="destructive" @click="handleThreadDelete">{{
             t('dialog.delete.confirm')
-          }}</Button>
+            }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -68,7 +56,7 @@
         <DialogFooter>
           <Button variant="outline" @click="handleRenameDialogCancel">{{
             t('dialog.cancel')
-          }}</Button>
+            }}</Button>
           <Button variant="default" @click="handleThreadRename">{{ t('dialog.confirm') }}</Button>
         </DialogFooter>
       </DialogContent>
@@ -84,10 +72,10 @@
         <DialogFooter>
           <Button variant="outline" @click="handleCleanMessagesDialogCancel">{{
             t('dialog.cancel')
-          }}</Button>
+            }}</Button>
           <Button variant="destructive" @click="handleThreadCleanMessages">{{
             t('dialog.cleanMessages.confirm')
-          }}</Button>
+            }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
