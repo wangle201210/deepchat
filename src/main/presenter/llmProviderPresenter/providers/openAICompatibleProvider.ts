@@ -329,10 +329,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             model: modelId,
             image: imageFile,
             prompt: prompt,
-            n: 1,
-            size: '1024x1024',
-            response_format: 'url',
-            quality: 'standard'
+            n: 1
           })
 
           // 清理临时文件
@@ -349,18 +346,14 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
               model: modelId,
               prompt: prompt,
               output_format: 'png',
-              n: 1, // Generate one image
-              size: 'auto', // Default size, consider making configurable
-              response_format: 'url', // Need base64 data
-              quality: 'hd', // Default quality, adjust as needed
-              background: 'transparent' // Optional, based on model support/needs
+              n: 1 // Generate one image
             },
             {
               timeout: 300_000
             }
           )
         }
-
+        console.log('result', JSON.stringify(result))
         if (result.data && result.data[0]?.url) {
           // 使用devicePresenter缓存图片URL
           try {

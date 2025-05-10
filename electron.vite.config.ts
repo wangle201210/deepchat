@@ -10,7 +10,7 @@ export default defineConfig({
   main: {
     plugins: [
       externalizeDepsPlugin({
-        exclude: ['mermaid', 'dompurify']
+        exclude: ['mermaid', 'dompurify', 'pyodide']
       })
     ],
     resolve: {
@@ -21,7 +21,7 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
-        external: ['sharp']
+        external: ['sharp', 'pyodide']
       }
     }
   },
