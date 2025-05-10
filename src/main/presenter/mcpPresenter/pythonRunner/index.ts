@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-explicit-any: off */
 import type { LoggingLevel } from '@modelcontextprotocol/sdk/types.js'
 import { loadPyodide } from 'pyodide'
 import { preparePythonCode } from './prepareEnv'
@@ -9,7 +8,6 @@ export interface CodeFile {
 }
 interface RunSuccess {
   status: 'success'
-  // we could record stdout and stderr separately, but I suspect simplicity is more important
   output: string[]
   dependencies: string[]
   returnValueJson: string | null
@@ -113,7 +111,7 @@ interface RunError {
   error: string
 }
 
-// deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function formatError(err: any): string {
   let errStr = err.toString()
   errStr = errStr.replace(/^PythonError: +/, '')
