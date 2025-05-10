@@ -537,29 +537,29 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       // 检查窗口是否聚焦，如果未聚焦则发送通知
-      const isFocused = await windowP.isMainWindowFocused()
-      if (!isFocused) {
-        // 获取生成内容的前20个字符作为通知内容
-        let notificationContent = ''
-        if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
-          const assistantMsg = enrichedMessage as AssistantMessage
-          // 从content中提取文本内容
-          for (const block of assistantMsg.content) {
-            if (block.type === 'content' && block.content) {
-              notificationContent = block.content.substring(0, 20)
-              if (block.content.length > 20) notificationContent += '...'
-              break
-            }
-          }
-        }
+      // const isFocused = await windowP.isMainWindowFocused(windowP.mainWindow?.id)
+      // if (!isFocused) {
+      //   // 获取生成内容的前20个字符作为通知内容
+      //   let notificationContent = ''
+      //   if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
+      //     const assistantMsg = enrichedMessage as AssistantMessage
+      //     // 从content中提取文本内容
+      //     for (const block of assistantMsg.content) {
+      //       if (block.type === 'content' && block.content) {
+      //         notificationContent = block.content.substring(0, 20)
+      //         if (block.content.length > 20) notificationContent += '...'
+      //         break
+      //       }
+      //     }
+      //   }
 
-        // 发送通知
-        await notificationP.showNotification({
-          id: `chat/${cached.threadId}/${msg.eventId}`,
-          title: t('chat.notify.generationComplete'),
-          body: notificationContent || t('chat.notify.generationComplete')
-        })
-      }
+      //   // 发送通知
+      //   await notificationP.showNotification({
+      //     id: `chat/${cached.threadId}/${msg.eventId}`,
+      //     title: t('chat.notify.generationComplete'),
+      //     body: notificationContent || t('chat.notify.generationComplete')
+      //   })
+      // }
 
       // 如果是变体消息，需要更新主消息
       if (enrichedMessage.is_variant && enrichedMessage.parentId) {

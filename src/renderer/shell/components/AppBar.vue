@@ -27,6 +27,10 @@
         @click="openSettings">
         <Icon icon="lucide:settings" class="w-4 h-4" />
       </Button>
+      <Button class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+        @click="openNewWindow">
+        <Icon icon="lucide:plus" class="w-4 h-4" />
+      </Button>
     </div>
 
     <div v-if="!isMacOS" class="flex h-10">
@@ -42,6 +46,7 @@
         @click="closeWindow">
         <XIcon class="h-4 w-4" />
       </button>
+
     </div>
 
     <div v-else class="px-4"></div>
@@ -77,6 +82,7 @@ const onThemeClick = () => {
 }
 
 onMounted(() => {
+  console.log('onMounted', tabStore.tabs)
   // Listen for window maximize/unmaximize events
   devicePresenter.getDeviceInfo().then((deviceInfo) => {
     isMacOS.value = deviceInfo.platform === 'darwin'
@@ -101,6 +107,10 @@ const openNewTab = () => {
     icon: 'lucide:plus',
     viewType: 'chat'
   })
+}
+
+const openNewWindow = () => {
+  windowPresenter.createShellWindow()
 }
 
 const minimizeWindow = () => {

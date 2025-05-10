@@ -158,12 +158,25 @@ export class WindowPresenter implements IWindowPresenter {
    * @param channel 消息通道
    * @param args 消息参数
    */
-  sendToAllWindows(channel: string, ...args: unknown[]): void {
-    this.windows.forEach((window) => {
+  async sendToAllWindows(channel: string, ...args: unknown[]): Promise<void> {
+    for (const window of this.windows.values()) {
       if (!window.isDestroyed()) {
+        // 发送到主窗口
         window.webContents.send(channel, ...args)
+
+        // 获取该窗口的所有标签页
+        const tabIds = await presenter.tabPresenter.getWindowTabsData(window.id)
+        if (tabIds && tabIds.length > 0) {
+          // 向每个标签页发送消息
+          for (const tabData of tabIds) {
+            const tab = await presenter.tabPresenter.getTab(tabData.id)
+            if (tab && !tab.webContents.isDestroyed()) {
+              tab.webContents.send(channel, ...args)
+            }
+          }
+        }
       }
-    })
+    }
   }
 
   /**
@@ -176,7 +189,21 @@ export class WindowPresenter implements IWindowPresenter {
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean {
     const window = this.windows.get(windowId)
     if (window && !window.isDestroyed()) {
+      // 发送到主窗口
       window.webContents.send(channel, ...args)
+
+      // 获取该窗口的所有标签页并异步发送消息
+      presenter.tabPresenter.getWindowTabsData(windowId).then((tabIds) => {
+        if (tabIds && tabIds.length > 0) {
+          // 向每个标签页发送消息
+          tabIds.forEach(async (tabData) => {
+            const tab = await presenter.tabPresenter.getTab(tabData.id)
+            if (tab && !tab.webContents.isDestroyed()) {
+              tab.webContents.send(channel, ...args)
+            }
+          })
+        }
+      })
       return true
     }
     return false
