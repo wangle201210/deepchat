@@ -43,15 +43,15 @@
   "confirmRemoveServer": "サーバー{name}を削除したいですか？この操作はキャンセルできません。",
   "default": "デフォルト",
   "deleteServer": "サーバーを削除します",
-  "description": "MCP（モデル制御プロトコル）サーバーとツールの管理と構成",
+  "description": "MCP（Model Control Protocol）サーバーとツールの管理と設定",
   "editServer": "サーバーを編集します",
   "editServerDialog": {
     "description": "MCPサーバーの構成を編集します",
     "title": "サーバーを編集します"
   },
-  "enableToAccess": "MCPを最初に構成オプションにアクセスできるようにしてください",
-  "enabledDescription": "MCP機能とツールを有効または無効にします",
-  "enabledTitle": "MCPを有効にします",
+  "enableToAccess": "設定オプションにアクセスするには、まずMCPを有効にしてください",
+  "enabledDescription": "MCP機能とツールの有効化または無効化",
+  "enabledTitle": "MCPを有効化",
   "isDefault": "デフォルトサーバー",
   "noServersFound": "サーバーが見つかりません",
   "removeDefault": "デフォルトを削除します",
@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "name": "Dify ナレッジベース検索",
       "desc": "Dify ナレッジベース検索サービス。Dify ナレッジベースのコンテンツを検索できます。"
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow知識ベース検索",
+      "desc": "RAGFlow知識ベース検索サービス、RAGFlow知識ベースのコンテンツを検索できます"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT知識ベース検索",
+      "desc": "FastGPT知識ベース検索サービス、FastGPT知識ベースのコンテンツを検索できます"
     }
   },
   "prompts": {
@@ -159,7 +167,10 @@
     "parameters": "プロンプトパラメーター",
     "runningPrompt": "プロンプトが取得されています",
     "executeButton": "クリックして取得します",
-    "resultTitle": "詳細を迅速にします"
+    "resultTitle": "詳細を迅速にします",
+    "invalidJson": "無効なJSON形式",
+    "parametersHint": "JSON形式のパラメーターを入力してください。自動フォーマットをサポートしてください",
+    "resetToDefault": "デフォルトのパラメーターにリセットします"
   },
   "resources": {
     "noResourcesAvailable": "なしリソース",
@@ -167,5 +178,25 @@
     "loading": "読み込み",
     "loadContent": "リソースコンテンツを取得します",
     "pleaseSelect": "クリックして表示リソースの詳細を取得します"
+  },
+  "errors": {
+    "loadConfigFailed": "MCP設定の読み込みに失敗しました",
+    "setEnabledFailed": "MCPの有効状態の設定に失敗しました",
+    "getServerStatusFailed": "サーバー {serverName} の状態の取得に失敗しました",
+    "addServerFailed": "サーバーの追加に失敗しました",
+    "updateServerFailed": "サーバーの更新に失敗しました",
+    "removeServerFailed": "サーバーの削除に失敗しました",
+    "maxDefaultServersReached": "デフォルトサーバーの最大数（30）に達しました",
+    "toggleDefaultServerFailed": "デフォルトサーバーの状態の切り替えに失敗しました",
+    "resetToDefaultFailed": "デフォルトサーバーへのリセットに失敗しました",
+    "toggleServerFailed": "サーバー {serverName} の状態の切り替えに失敗しました",
+    "loadToolsFailed": "ツールの読み込みに失敗しました",
+    "loadPromptsFailed": "プロンプトの読み込みに失敗しました",
+    "loadResourcesFailed": "リソースの読み込みに失敗しました",
+    "callToolFailed": "ツール {toolName} の呼び出しに失敗しました",
+    "toolCallError": "ツール呼び出しエラー: {error}",
+    "mcpDisabled": "MCPは無効になっています",
+    "getPromptFailed": "プロンプトの取得に失敗しました",
+    "readResourceFailed": "リソースの読み込みに失敗しました"
   }
 }

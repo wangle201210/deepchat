@@ -31,6 +31,15 @@
       <div class="font-medium pb-1 border-b border-dashed">Description</div>
       <div class="py-1">{{ displayItems[selectedIndex].description }}</div>
     </div>
+
+    <!-- 参数输入对话框 -->
+    <PromptParamsDialog
+      v-if="showParamsDialog && selectedPrompt"
+      :prompt-name="selectedPrompt.label"
+      :params="selectedPrompt.params || []"
+      @close="showParamsDialog = false"
+      @submit="handlePromptParams"
+    />
   </div>
 </template>
 
@@ -38,6 +47,7 @@
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { CategorizedData } from './suggestion'
+import PromptParamsDialog from './PromptParamsDialog.vue'
 
 const props = defineProps<{
   items: CategorizedData[] // Allow items to be strings or objects
@@ -107,6 +117,42 @@ watch(
   }
 )
 
+const showParamsDialog = ref(false)
+const selectedPrompt = ref<{
+  id: string
+  label: string
+  category: string
+  content: string
+  params?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
+} | null>(null)
+
+const handlePromptParams = (values: Record<string, string>) => {
+  if (selectedPrompt.value) {
+    // 将参数值添加到 prompt 内容中
+    const promptContent = JSON.parse(selectedPrompt.value.content)
+    // 确保 arguments 字段存在
+    if (!promptContent.arguments) {
+      promptContent.arguments = {}
+    }
+    // 合并参数值
+    promptContent.argumentsValue = values
+
+    props.command({
+      id: selectedPrompt.value.id,
+      label: selectedPrompt.value.label,
+      category: selectedPrompt.value.category,
+      content: JSON.stringify(promptContent)
+    })
+
+    showParamsDialog.value = false
+    selectedPrompt.value = null
+  }
+}
+
 const selectItem = (index: number) => {
   const selectedDisplayItem = displayItems.value[index]
   if (!selectedDisplayItem) return
@@ -114,13 +160,57 @@ const selectItem = (index: number) => {
     currentCategory.value = selectedDisplayItem.label
     selectedIndex.value = 0
   } else {
-    console.log('----------', `${selectedDisplayItem.id}`)
-    props.command({
-      id: `${selectedDisplayItem.id}`,
-      label: `${selectedDisplayItem.label}`,
-      category: selectedDisplayItem.category,
-      content: selectedDisplayItem.mcpEntry ? JSON.stringify(selectedDisplayItem.mcpEntry) : ''
-    })
+    if (selectedDisplayItem.category === 'prompts') {
+      const mcpEntry = selectedDisplayItem.mcpEntry
+        ? typeof selectedDisplayItem.mcpEntry === 'string'
+          ? JSON.parse(selectedDisplayItem.mcpEntry)
+          : selectedDisplayItem.mcpEntry
+        : null
+
+      // 检查是否有参数需要填写
+      if (
+        mcpEntry?.arguments &&
+        Array.isArray(mcpEntry.arguments) &&
+        mcpEntry.arguments.length > 0
+      ) {
+        selectedPrompt.value = {
+          id: selectedDisplayItem.id || '',
+          label: selectedDisplayItem.label,
+          category: selectedDisplayItem.category || '',
+          content:
+            typeof selectedDisplayItem.mcpEntry === 'string'
+              ? selectedDisplayItem.mcpEntry
+              : JSON.stringify(selectedDisplayItem.mcpEntry),
+          params: mcpEntry.arguments
+        }
+        showParamsDialog.value = true
+      } else {
+        // 没有参数，直接执行
+        props.command({
+          id: selectedDisplayItem.id || '',
+          label: selectedDisplayItem.label,
+          category: selectedDisplayItem.category || '',
+          content:
+            typeof selectedDisplayItem.mcpEntry === 'string'
+              ? selectedDisplayItem.mcpEntry
+              : selectedDisplayItem.mcpEntry
+                ? JSON.stringify(selectedDisplayItem.mcpEntry)
+                : ''
+        })
+      }
+    } else {
+      props.command({
+        id: selectedDisplayItem.id || '',
+        label: selectedDisplayItem.label,
+        category: selectedDisplayItem.category || '',
+        content:
+          typeof selectedDisplayItem.mcpEntry === 'string'
+            ? selectedDisplayItem.mcpEntry
+            : selectedDisplayItem.mcpEntry
+              ? JSON.stringify(selectedDisplayItem.mcpEntry)
+              : ''
+      })
+    }
   }
 }
 

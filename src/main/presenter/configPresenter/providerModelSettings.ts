@@ -90,12 +90,12 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         reasoning: true
       },
       {
-        id: 'gemini-2.5-pro-preview-03-25',
-        name: 'Gemini 2.5 Pro Preview 03-25',
+        id: 'gemini-2.5-pro-preview-05-06',
+        name: 'Gemini 2.5 Pro Preview 05-06',
         temperature: 0.7,
         maxTokens: 8192,
         contextLength: 2048576,
-        match: ['gemini-2.5-pro-preview-03-25'],
+        match: ['gemini-2.5-pro-preview'],
         vision: true,
         functionCall: true,
         reasoning: false

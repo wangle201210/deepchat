@@ -57,6 +57,11 @@
                   class="p-3 border rounded-md relative"
                 >
                   <div class="absolute top-2 right-2 flex gap-2">
+                    <Switch
+                      class="ml-2"
+                      :checked="config.enabled === true"
+                      @update:checked="toggleConfigEnabled(index, $event)"
+                    />
                     <button
                       type="button"
                       class="text-muted-foreground hover:text-primary"
@@ -166,7 +171,7 @@
             <Input
               id="edit-ragflow-endpoint"
               v-model="editingRagflowConfig.endpoint"
-              placeholder="http://localhost:8000"
+              placeholder="http://localhost"
             />
           </div>
         </div>
@@ -220,6 +225,7 @@ interface RagflowConfig {
   apiKey: string
   datasetIds: string[]
   endpoint: string
+  enabled?: boolean
 }
 
 interface EditingRagflowConfig extends Omit<RagflowConfig, 'datasetIds'> {
@@ -231,7 +237,8 @@ const editingRagflowConfig = ref<EditingRagflowConfig>({
   description: '',
   apiKey: '',
   datasetIdsStr: '',
-  endpoint: 'http://localhost:8000'
+  endpoint: 'http://localhost',
+  enabled: true
 })
 const editingConfigIndex = ref<number>(-1)
 
@@ -252,7 +259,8 @@ const openAddConfig = () => {
     description: '',
     apiKey: '',
     datasetIdsStr: '',
-    endpoint: 'http://localhost:8000'
+    endpoint: 'http://localhost',
+    enabled: true
   }
   isRagflowConfigDialogOpen.value = true
 }
@@ -281,7 +289,8 @@ const closeRagflowConfigDialog = () => {
     description: '',
     apiKey: '',
     datasetIdsStr: '',
-    endpoint: 'http://localhost:8000'
+    endpoint: 'http://localhost',
+    enabled: true
   }
 }
 
@@ -298,7 +307,8 @@ const saveRagflowConfig = async () => {
     description: editingRagflowConfig.value.description,
     apiKey: editingRagflowConfig.value.apiKey,
     datasetIds,
-    endpoint: editingRagflowConfig.value.endpoint
+    endpoint: editingRagflowConfig.value.endpoint,
+    enabled: editingRagflowConfig.value.enabled
   }
 
   if (isEditing.value) {
@@ -329,6 +339,12 @@ const saveRagflowConfig = async () => {
 // 移除RAGFlow配置
 const removeRagflowConfig = async (index: number) => {
   ragflowConfigs.value.splice(index, 1)
+  await updateRagflowConfigToMcp()
+}
+
+// 切换配置启用状态
+const toggleConfigEnabled = async (index: number, enabled: boolean) => {
+  ragflowConfigs.value[index].enabled = enabled
   await updateRagflowConfigToMcp()
 }
 

@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "name": "Recherche dans la base de connaissances Dify",
       "desc": "Service de recherche de la base de connaissances Dify, permet de rechercher le contenu de la base de connaissances Dify"
+    },
+    "ragflowKnowledge": {
+      "name": "Recherche dans la base de connaissances RAGFlow",
+      "desc": "Service de recherche dans la base de connaissances RAGFlow, peut rechercher le contenu de la base de connaissances RAGFlow"
+    },
+    "fastGptKnowledge": {
+      "name": "Recherche dans la base de connaissances FastGPT",
+      "desc": "Service de recherche dans la base de connaissances FastGPT, peut rechercher le contenu de la base de connaissances FastGPT"
     }
   },
   "prompts": {
@@ -159,7 +167,10 @@
     "parameters": "Paramètres rapides",
     "runningPrompt": "Invite obtient",
     "executeButton": "Cliquez pour obtenir",
-    "resultTitle": "Des détails proches"
+    "resultTitle": "Des détails proches",
+    "invalidJson": "Format JSON non valide",
+    "parametersHint": "Veuillez saisir les paramètres au format JSON, prendre en charge la mise en forme automatique",
+    "resetToDefault": "Réinitialiser avec les paramètres par défaut"
   },
   "resources": {
     "noResourcesAvailable": "Aucune ressource",
@@ -167,5 +178,25 @@
     "loading": "chargement",
     "loadContent": "Obtenez du contenu de ressources",
     "pleaseSelect": "Cliquez pour obtenir des détails sur les ressources d'affichage"
+  },
+  "errors": {
+    "loadConfigFailed": "Échec du chargement de la configuration MCP",
+    "setEnabledFailed": "Échec de la modification de l'état d'activation de MCP",
+    "getServerStatusFailed": "Échec de l'obtention du statut du serveur {serverName}",
+    "addServerFailed": "Échec de l'ajout du serveur",
+    "updateServerFailed": "Échec de la mise à jour du serveur",
+    "removeServerFailed": "Échec de la suppression du serveur",
+    "maxDefaultServersReached": "Nombre maximum de serveurs par défaut (30) atteint",
+    "toggleDefaultServerFailed": "Échec du changement d'état du serveur par défaut",
+    "resetToDefaultFailed": "Échec de la réinitialisation des serveurs par défaut",
+    "toggleServerFailed": "Échec du changement d'état du serveur {serverName}",
+    "loadToolsFailed": "Échec du chargement des outils",
+    "loadPromptsFailed": "Échec du chargement des prompts",
+    "loadResourcesFailed": "Échec du chargement des ressources",
+    "callToolFailed": "Échec de l'appel de l'outil {toolName}",
+    "toolCallError": "Erreur d'appel d'outil : {error}",
+    "mcpDisabled": "MCP est désactivé",
+    "getPromptFailed": "Échec de l'obtention du prompt",
+    "readResourceFailed": "Échec de la lecture de la ressource"
   }
 }

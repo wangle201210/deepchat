@@ -150,6 +150,14 @@
     "difyKnowledge": {
       "desc": "Dify Knowledge Base Search Service, which can retrieve content in Dify Knowledge Base",
       "name": "Dify Knowledge Base Search"
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow Knowledge Base Search",
+      "desc": "RAGFlow knowledge base search service, can search RAGFlow knowledge base content"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT Knowledge Base Search",
+      "desc": "FastGPT knowledge base search service, can search FastGPT knowledge base content"
     }
   },
   "prompts": {
@@ -159,7 +167,10 @@
     "parameters": "Prompt parameters",
     "runningPrompt": "Prompt is getting",
     "executeButton": "Click to get",
-    "resultTitle": "Prompt Details"
+    "resultTitle": "Prompt Details",
+    "invalidJson": "Invalid JSON format",
+    "parametersHint": "Please enter the parameters in JSON format, support automatic formatting",
+    "resetToDefault": "Reset to default parameters"
   },
   "resources": {
     "noResourcesAvailable": "None Resources",
@@ -167,5 +178,25 @@
     "loading": "loading",
     "loadContent": "Get Resource content",
     "pleaseSelect": "Click to get display Resources details"
+  },
+  "errors": {
+    "loadConfigFailed": "Failed to load MCP configuration",
+    "setEnabledFailed": "Failed to set MCP enabled state",
+    "getServerStatusFailed": "Failed to get server status for {serverName}",
+    "addServerFailed": "Failed to add server",
+    "updateServerFailed": "Failed to update server",
+    "removeServerFailed": "Failed to remove server",
+    "maxDefaultServersReached": "Maximum number of default servers (30) reached",
+    "toggleDefaultServerFailed": "Failed to toggle default server status",
+    "resetToDefaultFailed": "Failed to reset to default servers",
+    "toggleServerFailed": "Failed to toggle server {serverName}",
+    "loadToolsFailed": "Failed to load tools",
+    "loadPromptsFailed": "Failed to load prompts",
+    "loadResourcesFailed": "Failed to load resources",
+    "callToolFailed": "Failed to call tool {toolName}",
+    "toolCallError": "Tool call error: {error}",
+    "mcpDisabled": "MCP is disabled",
+    "getPromptFailed": "Failed to get prompt",
+    "readResourceFailed": "Failed to read resource"
   }
 }

@@ -29,19 +29,37 @@ export function getInMemoryServer(
     case 'difyKnowledge':
       return new DifyKnowledgeServer(
         env as {
-          configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+          configs: {
+            apiKey: string
+            endpoint: string
+            datasetId: string
+            description: string
+            enabled: boolean
+          }[]
         }
       )
     case 'ragflowKnowledge':
       return new RagflowKnowledgeServer(
         env as {
-          configs: { apiKey: string; endpoint: string; datasetIds: string[]; description: string }[]
+          configs: {
+            apiKey: string
+            endpoint: string
+            datasetIds: string[]
+            description: string
+            enabled: boolean
+          }[]
         }
       )
     case 'fastGptKnowledge':
       return new FastGptKnowledgeServer(
         env as {
-          configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+          configs: {
+            apiKey: string
+            endpoint: string
+            datasetId: string
+            description: string
+            enabled: boolean
+          }[]
         }
       )
     default:

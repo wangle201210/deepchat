@@ -38,6 +38,30 @@ export const getMarkdown = () => {
   md.use(markdownItIns) // ++inserted++ -> inserted text
   md.use(markdownItFootnote) // 添加脚注支持
 
+  // 添加波浪号处理规则
+  const waveRule = (state: any, silent: boolean) => {
+    const start = state.pos
+
+    if (state.src[start] !== '~') return false
+
+    // 检查是否是数字之间的波浪号
+    const prevChar = state.src[start - 1]
+    const nextChar = state.src[start + 1]
+    if (/\d/.test(prevChar) && /\d/.test(nextChar)) {
+      if (!silent) {
+        const token = state.push('text', '', 0)
+        token.content = '~'
+      }
+      state.pos += 1
+      return true
+    }
+
+    return false
+  }
+
+  // 注册波浪号规则
+  md.inline.ruler.before('sub', 'wave', waveRule)
+
   // 添加警告块支持
   const containers = ['note', 'tip', 'warning', 'danger', 'info', 'caution']
   containers.forEach((name) => {

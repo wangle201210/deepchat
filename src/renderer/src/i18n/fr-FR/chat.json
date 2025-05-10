@@ -1,6 +1,6 @@
 {
   "input": {
-    "placeholder": "Demandez quelque chose?",
+    "placeholder": "Posez une question ? Vous pouvez citer des outils, des fichiers, des ressources via {'@'}...",
     "fileArea": "Zone de fichiers",
     "inputArea": "Zone de saisie",
     "functionSwitch": "Commutateur de fonction",

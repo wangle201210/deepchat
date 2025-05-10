@@ -4,6 +4,26 @@
   "enabledTitle": "启用MCP",
   "enabledDescription": "启用或禁用MCP功能和工具",
   "enableToAccess": "请先启用MCP以访问配置选项",
+  "errors": {
+    "loadConfigFailed": "加载MCP配置失败",
+    "setEnabledFailed": "设置MCP启用状态失败",
+    "getServerStatusFailed": "获取服务器 {serverName} 状态失败",
+    "addServerFailed": "添加服务器失败",
+    "updateServerFailed": "更新服务器失败",
+    "removeServerFailed": "删除服务器失败",
+    "maxDefaultServersReached": "最多只能设置30个默认服务器",
+    "toggleDefaultServerFailed": "切换默认服务器状态失败",
+    "resetToDefaultFailed": "恢复默认服务器失败",
+    "toggleServerFailed": "切换服务器 {serverName} 状态失败",
+    "loadToolsFailed": "加载工具失败",
+    "loadPromptsFailed": "加载提示模板失败",
+    "loadResourcesFailed": "加载资源失败",
+    "callToolFailed": "调用工具 {toolName} 失败",
+    "toolCallError": "工具调用错误: {error}",
+    "mcpDisabled": "MCP功能已禁用",
+    "getPromptFailed": "获取提示模板失败",
+    "readResourceFailed": "读取资源失败"
+  },
   "tabs": {
     "servers": "服务器",
     "tools": "工具"
@@ -150,6 +170,14 @@
     "difyKnowledge": {
       "name": "Dify知识库检索",
       "desc": "Dify知识库检索服务，可以检索Dify知识库中的内容"
+    },
+    "ragflowKnowledge": {
+      "name": "RAGFlow知识库检索",
+      "desc": "RAGFlow知识库检索服务，可以对RAGFlow知识库内容进行检索"
+    },
+    "fastGptKnowledge": {
+      "name": "FastGPT知识库检索",
+      "desc": "FastGPT知识库检索服务，可以对FastGPT知识库内容进行检索"
     }
   },
   "prompts": {
@@ -159,7 +187,10 @@
     "parameters": "Prompt 参数",
     "runningPrompt": "Prompt 获取中",
     "executeButton": "点击获取",
-    "resultTitle": "Prompt 详情"
+    "resultTitle": "Prompt 详情",
+    "resetToDefault": "重置为默认参数",
+    "invalidJson": "无效的 JSON 格式",
+    "parametersHint": "请输入 JSON 格式的参数，支持自动格式化"
   },
   "resources": {
     "noResourcesAvailable": "暂无 Resources",

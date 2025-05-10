@@ -12,6 +12,14 @@ import fs from 'fs'
 // import { NO_PROXY, proxyConfig } from '@/presenter/proxyConfig'
 import { getInMemoryServer } from './inMemoryServers/builder'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import {
+  PromptListEntry,
+  ToolCallResult,
+  Tool,
+  Prompt,
+  ResourceListEntry,
+  Resource
+} from '@shared/presenter'
 // TODO: resources 和 prompts 的类型,Notifactions 的类型 https://github.com/modelcontextprotocol/typescript-sdk/blob/main/src/examples/client/simpleStreamableHttp.ts
 // 简单的 OAuth 提供者，用于处理 Bearer Token
 class SimpleOAuthProvider {
@@ -36,44 +44,6 @@ type MCPEventsType = typeof MCP_EVENTS & {
   SERVER_STATUS_CHANGED: string
 }
 
-// 定义工具调用结果的接口
-interface ToolCallResult {
-  isError?: boolean
-  content: Array<{
-    type: string
-    text: string
-  }>
-}
-
-// 定义工具列表的接口
-export interface Tool {
-  name: string
-  description: string
-  inputSchema: Record<string, unknown>
-}
-
-// 定义 Prompt 的接口
-export interface Prompt {
-  name: string
-  description?: string
-  inputSchema?: Record<string, unknown>
-  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
-}
-
-// 定义 ResourceListEntry 的接口 (用于 listResources)
-export interface ResourceListEntry {
-  uri: string
-  name?: string
-}
-
-// 定义资源的接口
-interface Resource {
-  uri: string
-  mimeType?: string
-  text?: string
-  blob?: string
-}
-
 // MCP 客户端类
 export class McpClient {
   private client: Client | null = null
@@ -87,7 +57,7 @@ export class McpClient {
 
   // 缓存
   private cachedTools: Tool[] | null = null
-  private cachedPrompts: Prompt[] | null = null
+  private cachedPrompts: PromptListEntry[] | null = null
   private cachedResources: ResourceListEntry[] | null = null
 
   // 处理PATH环境变量的函数
@@ -210,20 +180,59 @@ export class McpClient {
         // 修复env类型问题
         const env: Record<string, string> = {}
 
-        // 只复制非undefined的环境变量
-        if (process.env) {
-          const existingPaths: string[] = []
+        // 判断是否是 Node.js 相关命令
+        const isNodeCommand = ['node', 'npm', 'npx'].some((cmd) => command.includes(cmd))
 
-          // 收集所有PATH相关的值
+        if (isNodeCommand) {
+          // Node.js 命令使用白名单处理
+          if (process.env) {
+            const existingPaths: string[] = []
+
+            // 收集所有PATH相关的值
+            Object.entries(process.env).forEach(([key, value]) => {
+              if (value !== undefined) {
+                if (['PATH', 'Path', 'path'].includes(key)) {
+                  existingPaths.push(value)
+                } else if (
+                  allowedEnvVars.includes(key) &&
+                  !['PATH', 'Path', 'path'].includes(key)
+                ) {
+                  env[key] = value
+                }
+              }
+            })
+
+            // 获取默认路径
+            const defaultPaths = this.getDefaultPaths(HOME_DIR)
+
+            // 合并所有路径
+            const allPaths = [...defaultPaths, ...existingPaths]
+            if (this.nodeRuntimePath) {
+              allPaths.push(
+                process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
+              )
+            }
+
+            // 规范化并设置PATH
+            const { key, value } = this.normalizePathEnv(allPaths)
+            env[key] = value
+          }
+        } else {
+          // 非 Node.js 命令，保留所有系统环境变量，只补充 PATH
           Object.entries(process.env).forEach(([key, value]) => {
             if (value !== undefined) {
-              if (['PATH', 'Path', 'path'].includes(key)) {
-                existingPaths.push(value)
-              } else if (allowedEnvVars.includes(key) && !['PATH', 'Path', 'path'].includes(key)) {
-                env[key] = value
-              }
+              env[key] = value
             }
           })
+
+          // 补充 PATH
+          const existingPaths: string[] = []
+          if (env.PATH) {
+            existingPaths.push(env.PATH)
+          }
+          if (env.Path) {
+            existingPaths.push(env.Path)
+          }
 
           // 获取默认路径
           const defaultPaths = this.getDefaultPaths(HOME_DIR)
@@ -261,59 +270,10 @@ export class McpClient {
           )
         }
 
-        // 从proxyConfig获取代理URL并设置环境变量
-        // 目前好像加上代理后问题更多，暂时mcp就停用代理
-        // const proxyUrl = proxyConfig.getProxyUrl()
-        // if (proxyUrl) {
-        //   env.http_proxy = proxyUrl
-        //   env.https_proxy = proxyUrl
-        //   env.grpc_proxy = proxyUrl
-        //   env.no_proxy = NO_PROXY
-        // }
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
         }
-        if (process.platform === 'darwin') {
-          if (!env.PATH) {
-            env.PATH = ''
-          }
-          ;[
-            '/bin',
-            '/usr/bin',
-            '/usr/local/bin',
-            '/usr/local/sbin',
-            '/opt/homebrew/bin',
-            '/opt/homebrew/sbin',
-            '/usr/local/opt/node/bin',
-            '/opt/local/bin',
-            `${HOME_DIR}/.cargo/bin`
-          ].forEach((path) => {
-            env.PATH = path + ':' + env.PATH
-          })
-        }
-        if (process.platform === 'linux') {
-          if (!env.PATH) {
-            env.PATH = ''
-          }
-          ;['/bin', '/usr/bin', '/usr/local/bin', `${HOME_DIR}/.cargo/bin`].forEach((path) => {
-            env.PATH = path + ':' + env.PATH
-          })
-        }
-        if (process.platform === 'win32') {
-          if (!env.Path) {
-            env.Path = ''
-          }
-          ;[`${HOME_DIR}\\.cargo\\bin`, `${HOME_DIR}\\.local\\bin`].forEach((path) => {
-            env.Path = path + ';' + env.Path
-          })
-        }
-        if (this.nodeRuntimePath) {
-          if (process.platform !== 'win32') {
-            env.PATH = this.nodeRuntimePath + '/bin' + ':' + env.PATH
-          } else {
-            env.Path = this.nodeRuntimePath + ';' + env.Path
-          }
-        }
+
         console.log('mcp env', env)
         this.transport = new StdioClientTransport({
           command,
@@ -362,6 +322,7 @@ export class McpClient {
           5 * 60 * 1000
         ) // 5分钟
       })
+
       // 连接到服务器
       const connectPromise = this.client
         .connect(this.transport)
@@ -546,7 +507,7 @@ export class McpClient {
   }
 
   // 列出可用提示
-  async listPrompts(): Promise<Prompt[]> {
+  async listPrompts(): Promise<PromptListEntry[]> {
     // 检查缓存
     if (this.cachedPrompts !== null) {
       return this.cachedPrompts
@@ -567,6 +528,7 @@ export class McpClient {
       // 检查响应格式
       if (response && typeof response === 'object' && 'prompts' in response) {
         const promptsArray = (response as { prompts: unknown }).prompts
+        // console.log('promptsArray', JSON.stringify(promptsArray, null, 2))
         if (Array.isArray(promptsArray)) {
           // 需要确保每个元素都符合 Prompt 接口
           const validPrompts = promptsArray.map((p) => ({
@@ -575,11 +537,9 @@ export class McpClient {
               typeof p === 'object' && p !== null && 'description' in p
                 ? String(p.description)
                 : undefined,
-            inputSchema:
-              typeof p === 'object' && p !== null && 'inputSchema' in p
-                ? (p.inputSchema as Record<string, unknown>)
-                : undefined
-          })) as Prompt[]
+            arguments:
+              typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined
+          })) as PromptListEntry[]
           // 缓存结果
           this.cachedPrompts = validPrompts
           return this.cachedPrompts
@@ -618,7 +578,6 @@ export class McpClient {
         name,
         arguments: (args as Record<string, string>) || {}
       })
-
       // 检查响应格式并转换为 Prompt 类型
       if (
         response &&
@@ -629,7 +588,6 @@ export class McpClient {
         return {
           name: name, // 从请求参数中获取 name
           messages: response.messages as Array<{ role: string; content: { text: string } }>
-          // description 和 inputSchema 在 getPrompt 的响应中通常不返回
         }
       }
       throw new Error('无效的获取提示响应格式')
