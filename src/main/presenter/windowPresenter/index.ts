@@ -105,15 +105,15 @@ export class WindowPresenter implements IWindowPresenter {
     }
   }
 
-  minimize(): void {
-    const window = this.mainWindow
+  minimize(windowId: number): void {
+    const window = this.windows.get(windowId)
     if (window) {
       window.minimize()
     }
   }
 
-  maximize(): void {
-    const window = this.mainWindow
+  maximize(windowId: number): void {
+    const window = this.windows.get(windowId)
     if (window) {
       if (window.isMaximized()) {
         window.unmaximize()
@@ -123,34 +123,34 @@ export class WindowPresenter implements IWindowPresenter {
     }
   }
 
-  close(): void {
-    const window = this.mainWindow
+  close(windowId: number): void {
+    const window = this.windows.get(windowId)
     if (window) {
       window.close()
     }
   }
 
-  hide(): void {
-    const window = this.mainWindow
+  hide(windowId: number): void {
+    const window = this.windows.get(windowId)
     if (window) {
       window.hide()
     }
   }
 
-  show(): void {
-    const window = this.mainWindow
+  show(windowId: number): void {
+    const window = this.windows.get(windowId)
     if (window) {
       window.show()
     }
   }
 
-  isMaximized(): boolean {
-    const window = this.mainWindow
+  isMaximized(windowId: number): boolean {
+    const window = this.windows.get(windowId)
     return window ? window.isMaximized() : false
   }
 
-  isMainWindowFocused(): boolean {
-    return this.focusedWindowId !== null
+  isMainWindowFocused(windowId: number): boolean {
+    return this.focusedWindowId === windowId
   }
 
   /**

@@ -96,17 +96,17 @@ export interface ProviderModelConfigs {
 }
 
 export interface IWindowPresenter {
-  createMainWindow(): BrowserWindow
+  createShellWindow(): BrowserWindow
   getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
-  minimize(): void
-  maximize(): void
-  close(): void
-  hide(): void
-  show(): void
-  isMaximized(): boolean
-  isMainWindowFocused(): boolean
+  minimize(windowId: number): void
+  maximize(windowId: number): void
+  close(windowId: number): void
+  hide(windowId: number): void
+  show(windowId: number): void
+  isMaximized(windowId: number): boolean
+  isMainWindowFocused(windowId: number): boolean
   sendToAllWindows(channel: string, ...args: unknown[]): void
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
 }

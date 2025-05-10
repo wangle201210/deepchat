@@ -79,10 +79,13 @@ export class TabPresenter implements ITabPresenter {
 
     // 加载内容
     if (url.startsWith('local://')) {
+      const viewType = url.replace('local://', '')
       if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-        view.webContents.loadURL(`${process.env['ELECTRON_RENDERER_URL']}`)
+        view.webContents.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/${viewType}`)
       } else {
-        view.webContents.loadFile(join(__dirname, '../renderer/index.html'))
+        view.webContents.loadFile(join(__dirname, '../renderer/index.html'), {
+          hash: `/${viewType}`
+        })
       }
     } else {
       view.webContents.loadURL(url)
