@@ -12,14 +12,13 @@ import contextMenu from '../../contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '../'
 
-export const MAIN_WIN = 'main'
 export class WindowPresenter implements IWindowPresenter {
-  windows: Map<string, BrowserWindow>
+  windows: Map<number, BrowserWindow>
   private configPresenter: ConfigPresenter
   private isQuitting: boolean = false
   private trayPresenter: TrayPresenter | null = null
   private contextMenuDisposer?: () => void
-  private mainWindowFocused: boolean = false
+  private focusedWindowId: number | null = null
 
   constructor(configPresenter: ConfigPresenter) {
     this.windows = new Map()
@@ -45,10 +44,10 @@ export class WindowPresenter implements IWindowPresenter {
     })
 
     eventBus.on(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, (isDark: boolean) => {
-      // console.log('system-theme-updated', isDark)
-      if (this.mainWindow) {
-        this.mainWindow.webContents.send('system-theme-updated', isDark)
-      }
+      // 广播主题更新到所有窗口
+      this.windows.forEach((window) => {
+        window.webContents.send('system-theme-updated', isDark)
+      })
     })
 
     // 监听强制退出事件
@@ -67,190 +66,32 @@ export class WindowPresenter implements IWindowPresenter {
 
     // 监听内容保护设置变化
     eventBus.on(CONFIG_EVENTS.CONTENT_PROTECTION_CHANGED, (enabled: boolean) => {
-      if (this.mainWindow) {
-        // 发送通知告知应用程序将重启
-        console.log('Content protection setting changed to:', enabled, 'Restarting app...')
-
-        // 延迟一点时间以确保设置已保存并且用户能看到对话框的反馈
-        setTimeout(() => {
-          presenter.devicePresenter.restartApp()
-        }, 1000)
-      }
+      // 更新所有窗口的内容保护设置
+      this.windows.forEach((window) => {
+        this.updateContentProtection(window, enabled)
+      })
+      console.log('Content protection setting changed to:', enabled, 'Restarting app...')
+      setTimeout(() => {
+        presenter.devicePresenter.restartApp()
+      }, 1000)
     })
   }
 
+  // 实现 IWindowPresenter 接口的方法
   createMainWindow(): BrowserWindow {
-    const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
-    const mainWindow = new BrowserWindow({
-      width: 1024,
-      height: 620,
-      show: false,
-      autoHideMenuBar: true,
-      icon: iconFile,
-      titleBarStyle: 'hiddenInset',
-      transparent: process.platform === 'darwin',
-      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
-      backgroundColor: '#00000000',
-      maximizable: true,
-      frame: process.platform === 'darwin',
-      hasShadow: true,
-      trafficLightPosition: {
-        x: 12,
-        y: 12
-      },
-      webPreferences: {
-        preload: join(__dirname, '../preload/index.mjs'),
-        sandbox: false,
-        devTools: is.dev
-      },
-      roundedCorners: true
-    })
-
-    // 获取内容保护设置的值
-    const contentProtectionEnabled = this.configPresenter.getContentProtectionEnabled()
-    // 更新内容保护设置
-    this.updateContentProtection(mainWindow, contentProtectionEnabled)
-
-    mainWindow.on('ready-to-show', () => {
-      mainWindow.show()
-      eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW, mainWindow)
-    })
-
-    // 处理关闭按钮点击
-    mainWindow.on('close', (e) => {
-      eventBus.emit('main-window-close', mainWindow)
-      console.log('main-window-close', this.isQuitting, e)
-      if (!this.isQuitting) {
-        e.preventDefault()
-        if (mainWindow.isFullScreen()) {
-          mainWindow.setFullScreen(false)
-        }
-        mainWindow.hide()
-      }
-    })
-
-    mainWindow.on('closed', () => {
-      this.windows.delete(MAIN_WIN)
-      eventBus.emit('main-window-closed', mainWindow)
-    })
-
-    mainWindow.webContents.setWindowOpenHandler((details) => {
-      shell.openExternal(details.url)
-      return { action: 'deny' }
-    })
-
-    // Add handler for regular link clicks
-    mainWindow.webContents.on('will-navigate', (event, url) => {
-      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-        if (url.startsWith(process.env['ELECTRON_RENDERER_URL'] || '')) {
-          return
-        }
-      }
-      // 检查是否为外部链接
-      const isExternal = url.startsWith('http:') || url.startsWith('https:')
-      if (isExternal) {
-        event.preventDefault()
-        shell.openExternal(url)
-      }
-      // 内部路由变化则不阻止
-    })
-
-    mainWindow.on('resize', () => {
-      console.log('resize')
-      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZE, mainWindow.id)
-    })
-
-    mainWindow.on('resized', () => {
-      console.log('resized')
-      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZED, mainWindow.id)
-    })
-
-    mainWindow.on('show', () => {
-      if (mainWindow.isMinimized()) {
-        mainWindow.restore()
-      }
-    })
-    mainWindow.on('blur', () => {
-      this.mainWindowFocused = false
-    })
-    mainWindow.on('focus', () => {
-      this.mainWindowFocused = true
-    })
-
-    mainWindow.on('maximize', () => {
-      console.log('maximize')
-      mainWindow.webContents.send(WINDOW_EVENTS.WINDOW_MAXIMIZED)
-    })
-
-    mainWindow.on('unmaximize', () => {
-      console.log('unmaximize')
-      mainWindow.webContents.send(WINDOW_EVENTS.WINDOW_UNMAXIMIZED)
-    })
-
-    mainWindow.on('enter-full-screen', () => {
-      mainWindow.webContents.send('window-fullscreened')
-    })
-
-    mainWindow.on('leave-full-screen', () => {
-      mainWindow.webContents.send('window-unfullscreened')
-    })
-
-    mainWindow.on('minimize', () => {
-      mainWindow.webContents.send('window-minimized')
-    })
-
-    mainWindow.on('restore', () => {
-      console.log('restore')
-      mainWindow.webContents.send('window-restored')
-    })
-
-    if (is.dev) {
-      mainWindow.webContents.openDevTools()
-    }
-
-    // HMR for renderer base on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
-    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      console.log('loadURL', `${process.env['ELECTRON_RENDERER_URL']}/shell`)
-      mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/shell/index.html`)
-    } else {
-      mainWindow.loadFile(join(__dirname, '../renderer/shell/index.html'))
-    }
-    this.windows.set(MAIN_WIN, mainWindow)
-
-    // 初始化托盘
-    if (!this.trayPresenter) {
-      this.trayPresenter = new TrayPresenter(this)
-    }
-
-    const lang = this.configPresenter.getSetting<string>('language')
-    this.resetContextMenu(lang || app.getLocale())
-
-    return mainWindow
-  }
-
-  // 添加更新内容保护的方法
-  private updateContentProtection(window: BrowserWindow, enabled: boolean): void {
-    console.log('更新窗口内容保护状态:', enabled)
-    if (enabled) {
-      window.setContentProtection(enabled)
-      window.webContents.setBackgroundThrottling(!enabled)
-      window.webContents.setFrameRate(60)
-      window.setBackgroundColor('#00000000')
-      if (process.platform === 'darwin') {
-        window.setHiddenInMissionControl(enabled)
-        window.setSkipTaskbar(enabled)
-      }
-    }
-    // 如果关闭内容保护，则使用默认设置
+    return this.createShellWindow()
   }
 
   getWindow(windowName: string): BrowserWindow | undefined {
-    return this.windows.get(windowName)
+    // 为了向后兼容，我们仍然支持通过字符串名称获取窗口
+    // 但我们现在使用数字ID作为主要标识符
+    const windowId = parseInt(windowName, 10)
+    return isNaN(windowId) ? undefined : this.windows.get(windowId)
   }
 
   get mainWindow(): BrowserWindow | undefined {
-    return this.getWindow(MAIN_WIN)
+    // 返回当前聚焦的窗口，如果没有聚焦的窗口则返回第一个窗口
+    return this.getFocusedWindow() || this.getAllWindows()[0]
   }
 
   previewFile(filePath: string): void {
@@ -308,30 +149,226 @@ export class WindowPresenter implements IWindowPresenter {
     return window ? window.isMaximized() : false
   }
 
-  async resetContextMenu(lang: string): Promise<void> {
-    const locale = lang === 'system' ? app.getLocale() : lang
-    console.log('resetContextMenu', locale)
-    if (this.contextMenuDisposer) {
-      this.contextMenuDisposer()
-      this.contextMenuDisposer = undefined
+  isMainWindowFocused(): boolean {
+    return this.focusedWindowId !== null
+  }
+
+  /**
+   * 向所有窗口发送消息
+   * @param channel 消息通道
+   * @param args 消息参数
+   */
+  sendToAllWindows(channel: string, ...args: unknown[]): void {
+    this.windows.forEach((window) => {
+      if (!window.isDestroyed()) {
+        window.webContents.send(channel, ...args)
+      }
+    })
+  }
+
+  /**
+   * 向指定窗口发送消息
+   * @param windowId 窗口ID
+   * @param channel 消息通道
+   * @param args 消息参数
+   * @returns 是否发送成功
+   */
+  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean {
+    const window = this.windows.get(windowId)
+    if (window && !window.isDestroyed()) {
+      window.webContents.send(channel, ...args)
+      return true
     }
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    const window = this.mainWindow
-    if (window) {
-      const labels = getContextMenuLabels(locale)
-      this.contextMenuDisposer = contextMenu({
-        window: window,
-        shouldShowMenu(event, params) {
-          console.log('shouldShowMenu 被调用:', params.x, params.y, params.mediaType, event)
-          return true
-        },
-        labels
-      })
+    return false
+  }
+
+  // 新增的多窗口支持方法
+  createShellWindow(): BrowserWindow {
+    const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
+    const shellWindow = new BrowserWindow({
+      width: 1024,
+      height: 620,
+      show: false,
+      autoHideMenuBar: true,
+      icon: iconFile,
+      titleBarStyle: 'hiddenInset',
+      transparent: process.platform === 'darwin',
+      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+      backgroundColor: '#00000000',
+      maximizable: true,
+      frame: process.platform === 'darwin',
+      hasShadow: true,
+      trafficLightPosition: {
+        x: 12,
+        y: 12
+      },
+      webPreferences: {
+        preload: join(__dirname, '../preload/index.mjs'),
+        sandbox: false,
+        devTools: is.dev
+      },
+      roundedCorners: true
+    })
+
+    // 获取内容保护设置的值
+    const contentProtectionEnabled = this.configPresenter.getContentProtectionEnabled()
+    // 更新内容保护设置
+    this.updateContentProtection(shellWindow, contentProtectionEnabled)
+
+    shellWindow.on('ready-to-show', () => {
+      shellWindow.show()
+      eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW, shellWindow)
+    })
+
+    // 处理关闭按钮点击
+    shellWindow.on('close', (e) => {
+      eventBus.emit('shell-window-close', shellWindow)
+      console.log('shell-window-close', this.isQuitting, e)
+      if (!this.isQuitting) {
+        e.preventDefault()
+        if (shellWindow.isFullScreen()) {
+          shellWindow.setFullScreen(false)
+        }
+        shellWindow.hide()
+      }
+    })
+
+    shellWindow.on('closed', () => {
+      this.windows.delete(shellWindow.id)
+      eventBus.emit('shell-window-closed', shellWindow)
+    })
+
+    shellWindow.webContents.setWindowOpenHandler((details) => {
+      shell.openExternal(details.url)
+      return { action: 'deny' }
+    })
+
+    // Add handler for regular link clicks
+    shellWindow.webContents.on('will-navigate', (event, url) => {
+      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        if (url.startsWith(process.env['ELECTRON_RENDERER_URL'] || '')) {
+          return
+        }
+      }
+      // 检查是否为外部链接
+      const isExternal = url.startsWith('http:') || url.startsWith('https:')
+      if (isExternal) {
+        event.preventDefault()
+        shell.openExternal(url)
+      }
+    })
+
+    shellWindow.on('resize', () => {
+      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZE, shellWindow.id)
+    })
+
+    shellWindow.on('resized', () => {
+      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZED, shellWindow.id)
+    })
+
+    shellWindow.on('show', () => {
+      if (shellWindow.isMinimized()) {
+        shellWindow.restore()
+      }
+    })
+
+    shellWindow.on('blur', () => {
+      if (this.focusedWindowId === shellWindow.id) {
+        this.focusedWindowId = null
+      }
+    })
+
+    shellWindow.on('focus', () => {
+      this.focusedWindowId = shellWindow.id
+    })
+
+    shellWindow.on('maximize', () => {
+      shellWindow.webContents.send(WINDOW_EVENTS.WINDOW_MAXIMIZED)
+    })
+
+    shellWindow.on('unmaximize', () => {
+      shellWindow.webContents.send(WINDOW_EVENTS.WINDOW_UNMAXIMIZED)
+    })
+
+    shellWindow.on('enter-full-screen', () => {
+      shellWindow.webContents.send('window-fullscreened')
+    })
+
+    shellWindow.on('leave-full-screen', () => {
+      shellWindow.webContents.send('window-unfullscreened')
+    })
+
+    shellWindow.on('minimize', () => {
+      shellWindow.webContents.send('window-minimized')
+    })
+
+    shellWindow.on('restore', () => {
+      shellWindow.webContents.send('window-restored')
+    })
+
+    if (is.dev) {
+      shellWindow.webContents.openDevTools()
+    }
+
+    // HMR for renderer base on electron-vite cli.
+    // Load the remote URL for development or the local html file for production.
+    if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+      console.log('loadURL', `${process.env['ELECTRON_RENDERER_URL']}/shell`)
+      shellWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/shell/index.html`)
     } else {
-      console.error('无法重置上下文菜单: 找不到主窗口')
+      shellWindow.loadFile(join(__dirname, '../renderer/shell/index.html'))
+    }
+    this.windows.set(shellWindow.id, shellWindow)
+
+    // 初始化托盘（仅在第一个窗口创建时）
+    if (!this.trayPresenter) {
+      this.trayPresenter = new TrayPresenter(this)
+    }
+
+    const lang = this.configPresenter.getSetting<string>('language')
+    this.resetContextMenu(lang || app.getLocale())
+
+    return shellWindow
+  }
+
+  // 添加更新内容保护的方法
+  private updateContentProtection(window: BrowserWindow, enabled: boolean): void {
+    console.log('更新窗口内容保护状态:', enabled)
+    if (enabled) {
+      window.setContentProtection(enabled)
+      window.webContents.setBackgroundThrottling(!enabled)
+      window.webContents.setFrameRate(60)
+      window.setBackgroundColor('#00000000')
+      if (process.platform === 'darwin') {
+        window.setHiddenInMissionControl(enabled)
+        window.setSkipTaskbar(enabled)
+      }
     }
   }
-  isMainWindowFocused(): boolean {
-    return this.mainWindowFocused
+
+  getFocusedWindow(): BrowserWindow | undefined {
+    return this.focusedWindowId ? this.windows.get(this.focusedWindowId) : undefined
+  }
+
+  getAllWindows(): BrowserWindow[] {
+    return Array.from(this.windows.values())
+  }
+
+  async resetContextMenu(lang: string): Promise<void> {
+    if (this.contextMenuDisposer) {
+      this.contextMenuDisposer()
+    }
+
+    const labels = await getContextMenuLabels(lang)
+    const focusedWindow = this.getFocusedWindow()
+    if (focusedWindow) {
+      this.contextMenuDisposer = contextMenu({
+        window: focusedWindow,
+        labels,
+        shouldShowMenu() {
+          return true
+        }
+      })
+    }
   }
 }

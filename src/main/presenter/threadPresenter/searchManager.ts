@@ -5,7 +5,6 @@ import { ContentEnricher } from './contentEnricher'
 import { SearchResult } from '@shared/presenter'
 import { is } from '@electron-toolkit/utils'
 import { presenter } from '@/presenter'
-import { MAIN_WIN } from '../windowPresenter'
 import { eventBus } from '@/eventbus'
 import { CONFIG_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
@@ -699,7 +698,7 @@ export class SearchManager {
       const [oldestConversationId] = this.searchWindows.keys()
       this.destroySearchWindow(oldestConversationId)
     }
-    const mainWindow = presenter.windowPresenter.getWindow(MAIN_WIN)
+    const mainWindow = presenter.windowPresenter.mainWindow
 
     // 确保mainWindow存在
     if (!mainWindow) {
@@ -876,7 +875,7 @@ export class SearchManager {
       const wasFullScreen = this.wasFullScreen.get(conversationId)
 
       if (originalSize && originalPosition) {
-        const mainWindow = presenter.windowPresenter.getWindow(MAIN_WIN)
+        const mainWindow = presenter.windowPresenter.mainWindow
         if (mainWindow) {
           if (wasFullScreen) {
             // 如果原来是全屏，先恢复原始尺寸和位置，再进入全屏

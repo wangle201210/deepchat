@@ -117,22 +117,20 @@ export class Presenter implements IPresenter {
     const forward = (eventName: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eventBus.on(eventName, (...payload: any[]) => {
-        const mainWindow = this.windowPresenter.mainWindow
-        if (!mainWindow) return // 窗口不存在则不处理
         // 根据事件名称处理特定逻辑
         if (eventName === STREAM_EVENTS.RESPONSE) {
           const [msg] = payload
           const dataToRender = { ...msg }
           delete dataToRender.tool_call_response_raw // 删除原始数据
-          mainWindow.webContents.send(eventName, dataToRender)
+          this.windowPresenter.sendToAllWindows(eventName, dataToRender)
         } else if (eventName === STREAM_EVENTS.END) {
           const [msg] = payload
           console.log('stream-end', msg.eventId)
-          mainWindow.webContents.send(eventName, msg)
+          this.windowPresenter.sendToAllWindows(eventName, msg)
         } else if (eventName === CONFIG_EVENTS.PROVIDER_CHANGED) {
           const providers = this.configPresenter.getProviders()
           this.llmproviderPresenter.setProviders(providers)
-          mainWindow.webContents.send(eventName) // 此事件转发无需 payload
+          this.windowPresenter.sendToAllWindows(eventName) // 此事件转发无需 payload
         } else if (
           eventName === UPDATE_EVENTS.STATUS_CHANGED ||
           eventName === UPDATE_EVENTS.PROGRESS ||
@@ -142,10 +140,10 @@ export class Presenter implements IPresenter {
         ) {
           const [msg] = payload
           console.log(eventName, msg) // 记录日志
-          mainWindow.webContents.send(eventName, msg)
+          this.windowPresenter.sendToAllWindows(eventName, msg)
         } else {
           // 默认处理：直接转发所有 payload
-          mainWindow.webContents.send(eventName, ...payload)
+          this.windowPresenter.sendToAllWindows(eventName, ...payload)
         }
       })
     }

@@ -107,6 +107,8 @@ export interface IWindowPresenter {
   show(): void
   isMaximized(): boolean
   isMainWindowFocused(): boolean
+  sendToAllWindows(channel: string, ...args: unknown[]): void
+  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
 }
 
 export interface ITabPresenter {
