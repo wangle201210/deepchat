@@ -209,11 +209,12 @@ export abstract class BaseLLMProvider {
   protected getFunctionCallWrapPrompt(tools: MCPToolDefinition[]): string {
     return `你具备调用外部工具的能力来协助解决用户的问题,可用的工具列表定义在 <tool_list> 标签中，格式为 JSON 数组：
 <tool_list>
-${JSON.stringify(tools)}
+${this.convertToolsToXml(tools)}
 </tool_list>\n
-当你判断调用工具是**解决用户问题的唯一或最佳方式**时，**必须**严格遵循以下格式进行回复。你的回复中**仅**包含 <function_call> 标签及其内容，不要包含任何其他文字、解释或评论。
-
-如果需要连续调用多个工具，请为每个工具生成一个独立的 <function_call> 标签，按顺序排列。
+当你判断调用工具是**解决用户问题的唯一或最佳方式**时，**必须**严格遵循以下流程进行回复。
+首先进行工具调用计划的阐述，可以用列表按顺序列出所有你计划调用的工具。
+随后立刻开始输出，**仅仅**包含 <function_call> 标签及其内容，不要包含任何其他文字、解释或评论。
+如果需要连续调用多个工具，请为每个工具生成一个独立的 <function_call> 标签，按计划顺序排列。
 
 工具调用的格式如下：
 <function_call>
@@ -451,4 +452,38 @@ ${JSON.stringify(tools)}
     maxTokens: number,
     tools: MCPToolDefinition[]
   ): AsyncGenerator<LLMCoreStreamEvent>
+
+  /**
+   * 将 MCPToolDefinition 转换为 XML 格式
+   * @param tools MCPToolDefinition 数组
+   * @returns XML 格式的工具定义字符串
+   */
+  protected convertToolsToXml(tools: MCPToolDefinition[]): string {
+    const xmlTools = tools
+      .map((tool) => {
+        const { name, description, parameters } = tool.function
+        const { properties, required = [] } = parameters
+
+        // 构建参数 XML
+        const paramsXml = Object.entries(properties)
+          .map(([paramName, paramDef]) => {
+            const requiredAttr = required.includes(paramName) ? ' required="true"' : ''
+            const descriptionAttr = paramDef.description
+              ? ` description="${paramDef.description}"`
+              : ''
+            const typeAttr = paramDef.type ? ` type="${paramDef.type}"` : ''
+
+            return `<parameter name="${paramName}"${requiredAttr}${descriptionAttr}${typeAttr}></parameter>`
+          })
+          .join('\n    ')
+
+        // 构建工具 XML
+        return `<tool name="${name}" description="${description}">
+    ${paramsXml}
+</tool>`
+      })
+      .join('\n\n')
+
+    return xmlTools
+  }
 }
