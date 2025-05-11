@@ -353,11 +353,29 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
           )
         }
-        console.log('result', JSON.stringify(result))
-        if (result.data && result.data[0]?.url) {
+        if (result.data && (result.data[0]?.url || result.data[0]?.b64_json)) {
           // 使用devicePresenter缓存图片URL
           try {
-            const imageUrl = result.data[0]?.url
+            let imageUrl: string
+            if (result.data[0]?.b64_json) {
+              // 处理 base64 数据
+              const base64Data = result.data[0].b64_json
+              // 创建临时文件
+              const tempImagePath = path.join(
+                app.getPath('userData'),
+                'images',
+                `temp_${Date.now()}.png`
+              )
+              // 将 base64 数据写入文件
+              const imageBuffer = Buffer.from(base64Data, 'base64')
+              fs.writeFileSync(tempImagePath, imageBuffer)
+              // 使用 imgcache:// 协议
+              imageUrl = `imgcache://${path.basename(tempImagePath)}`
+            } else {
+              // 原有的 URL 处理逻辑
+              imageUrl = result.data[0]?.url
+            }
+
             const cachedUrl = await presenter.devicePresenter.cacheImage(imageUrl)
 
             // 返回缓存后的URL
@@ -368,6 +386,19 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 mimeType: 'deepchat/image-url'
               }
             }
+
+            // 处理 usage 信息
+            if (result.usage) {
+              yield {
+                type: 'usage',
+                usage: {
+                  prompt_tokens: result.usage.input_tokens || 0,
+                  completion_tokens: result.usage.output_tokens || 0,
+                  total_tokens: result.usage.total_tokens || 0
+                }
+              }
+            }
+
             yield { type: 'stop', stop_reason: 'complete' }
           } catch (cacheError) {
             // 缓存失败时降级为使用原始URL
@@ -375,14 +406,14 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             yield {
               type: 'image_data',
               image_data: {
-                data: result.data[0]?.url,
+                data: result.data[0]?.url || result.data[0]?.b64_json,
                 mimeType: 'deepchat/image-url'
               }
             }
             yield { type: 'stop', stop_reason: 'complete' }
           }
         } else {
-          console.error('[coreStream] No image data received from API.')
+          console.error('[coreStream] No image data received from API.', result)
           yield { type: 'error', error_message: 'No image data received from API.' }
           yield { type: 'stop', stop_reason: 'error' }
         }
