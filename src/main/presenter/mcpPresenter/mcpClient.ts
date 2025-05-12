@@ -206,9 +206,9 @@ export class McpClient {
             const defaultPaths = this.getDefaultPaths(HOME_DIR)
 
             // 合并所有路径
-            const allPaths = [...defaultPaths, ...existingPaths]
+            const allPaths = [...existingPaths, ...defaultPaths]
             if (this.nodeRuntimePath) {
-              allPaths.push(
+              allPaths.unshift(
                 process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
               )
             }
@@ -238,9 +238,9 @@ export class McpClient {
           const defaultPaths = this.getDefaultPaths(HOME_DIR)
 
           // 合并所有路径
-          const allPaths = [...defaultPaths, ...existingPaths]
+          const allPaths = [...existingPaths, ...defaultPaths]
           if (this.nodeRuntimePath) {
-            allPaths.push(
+            allPaths.unshift(
               process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
             )
           }
