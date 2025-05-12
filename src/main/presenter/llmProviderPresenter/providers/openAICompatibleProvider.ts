@@ -324,13 +324,17 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
           // 使用文件路径创建 Readable 流
           const imageFile = fs.createReadStream(imagePath)
-
-          result = await this.openai.images.edit({
+          const params: OpenAI.Images.ImageEditParams = {
             model: modelId,
             image: imageFile,
             prompt: prompt,
             n: 1
-          })
+          }
+          if (modelId === 'gpt-image-1' || modelId === 'gpt-4o-image' || modelId === 'gpt-4o-all') {
+            params.size = '1024x1536'
+            params.quality = 'high'
+          }
+          result = await this.openai.images.edit(params)
 
           // 清理临时文件
           try {
@@ -341,17 +345,19 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         } else {
           // 使用原来的 images.generate 接口处理没有图片的请求
           console.log(`[coreStream] Generating image with model ${modelId} and prompt: "${prompt}"`)
-          result = await this.openai.images.generate(
-            {
-              model: modelId,
-              prompt: prompt,
-              output_format: 'png',
-              n: 1 // Generate one image
-            },
-            {
-              timeout: 300_000
-            }
-          )
+          const params: OpenAI.Images.ImageGenerateParams = {
+            model: modelId,
+            prompt: prompt,
+            n: 1,
+            output_format: 'png'
+          }
+          if (modelId === 'gpt-image-1' || modelId === 'gpt-4o-image' || modelId === 'gpt-4o-all') {
+            params.size = '1024x1536'
+            params.quality = 'high'
+          }
+          result = await this.openai.images.generate(params, {
+            timeout: 300_000
+          })
         }
         if (result.data && (result.data[0]?.url || result.data[0]?.b64_json)) {
           // 使用devicePresenter缓存图片URL
