@@ -11,6 +11,7 @@ import { CONFIG_EVENTS, SYSTEM_EVENTS, WINDOW_EVENTS } from '@/events'
 import contextMenu from '../../contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '../'
+import windowStateManager from 'electron-window-state'
 
 export class WindowPresenter implements IWindowPresenter {
   windows: Map<number, BrowserWindow>
@@ -124,10 +125,7 @@ export class WindowPresenter implements IWindowPresenter {
   }
 
   close(windowId: number): void {
-    const window = this.windows.get(windowId)
-    if (window) {
-      window.close()
-    }
+    this.closeWindow(windowId, true)
   }
 
   hide(windowId: number): void {
@@ -212,9 +210,15 @@ export class WindowPresenter implements IWindowPresenter {
   // 新增的多窗口支持方法
   createShellWindow(): BrowserWindow {
     const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
+    const shellWindowState = windowStateManager({
+      defaultWidth: 1024,
+      defaultHeight: 620
+    })
     const shellWindow = new BrowserWindow({
-      width: 1024,
-      height: 620,
+      width: shellWindowState.width,
+      height: shellWindowState.height,
+      x: shellWindowState.x,
+      y: shellWindowState.y,
       show: false,
       autoHideMenuBar: true,
       icon: iconFile,
@@ -237,6 +241,8 @@ export class WindowPresenter implements IWindowPresenter {
       roundedCorners: true
     })
 
+    shellWindowState.manage(shellWindow)
+
     // 获取内容保护设置的值
     const contentProtectionEnabled = this.configPresenter.getContentProtectionEnabled()
     // 更新内容保护设置
@@ -248,15 +254,12 @@ export class WindowPresenter implements IWindowPresenter {
     })
 
     // 处理关闭按钮点击
-    shellWindow.on('close', (e) => {
+    shellWindow.on('close', async (e) => {
       eventBus.emit('shell-window-close', shellWindow)
       console.log('shell-window-close', this.isQuitting, e)
       if (!this.isQuitting) {
         e.preventDefault()
-        if (shellWindow.isFullScreen()) {
-          shellWindow.setFullScreen(false)
-        }
-        shellWindow.hide()
+        await this.closeWindow(shellWindow.id)
       }
     })
 
@@ -397,5 +400,28 @@ export class WindowPresenter implements IWindowPresenter {
         }
       })
     }
+  }
+
+  async closeWindow(windowId: number, forceClose: boolean = false): Promise<void> {
+    const window = this.windows.get(windowId)
+    if (!window) return
+
+    // 如果不是强制关闭且不是最后一个窗口，则隐藏窗口
+    if (!forceClose && this.getAllWindows().length === 1) {
+      if (window.isFullScreen()) {
+        window.setFullScreen(false)
+      }
+      window.hide()
+      return
+    }
+
+    // 销毁该窗口下的所有标签页
+    const tabs = await presenter.tabPresenter.getWindowTabsData(windowId)
+    for (const tab of tabs) {
+      await presenter.tabPresenter.closeTab(tab.id)
+    }
+
+    // 销毁窗口
+    window.destroy()
   }
 }

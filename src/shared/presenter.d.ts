@@ -109,6 +109,7 @@ export interface IWindowPresenter {
   isMainWindowFocused(windowId: number): boolean
   sendToAllWindows(channel: string, ...args: unknown[]): void
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  closeWindow(windowId: number, forceClose?: boolean): Promise<void>
 }
 
 export interface ITabPresenter {
