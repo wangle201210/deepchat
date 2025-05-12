@@ -28,5 +28,6 @@
   "code": "Код",
   "export": "Экспорт",
   "htmlPreviewTitle": "HTML Предварительный просмотр",
-  "svgPreviewTitle": "Предварительный просмотр SVG"
+  "svgPreviewTitle": "Предварительный просмотр SVG",
+  "copy": "Копировать"
 }

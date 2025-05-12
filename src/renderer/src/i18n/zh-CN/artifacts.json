@@ -28,5 +28,6 @@
   "code": "代码",
   "export": "导出",
   "htmlPreviewTitle": "HTML 预览",
-  "svgPreviewTitle": "SVG 预览"
+  "svgPreviewTitle": "SVG 预览",
+  "copy": "复制"
 }

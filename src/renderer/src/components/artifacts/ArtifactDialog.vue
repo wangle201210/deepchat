@@ -63,6 +63,16 @@
               <Icon icon="lucide:download" class="w-4 h-4" />
             </Button>
             <Button
+              v-if="isPreview && artifactStore.currentArtifact?.content"
+              variant="outline"
+              size="sm"
+              class="text-xs h-7"
+              :title="t('artifacts.copy')"
+              @click="copyContent"
+            >
+              <Icon icon="lucide:copy" class="w-4 h-4" />
+            </Button>
+            <Button
               variant="outline"
               size="sm"
               class="text-xs h-7"
@@ -248,6 +258,16 @@ const exportCode = () => {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+  }
+}
+
+const copyContent = async () => {
+  if (artifactStore.currentArtifact?.content) {
+    try {
+      await navigator.clipboard.writeText(artifactStore.currentArtifact.content)
+    } catch (e) {
+      console.error('复制失败', e)
+    }
   }
 }
 </script>
