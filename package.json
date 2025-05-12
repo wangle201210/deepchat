@@ -42,7 +42,7 @@
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/generative-ai": "^0.24.1",
-    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@modelcontextprotocol/sdk": "^1.11.2",
     "axios": "^1.7.9",
     "better-sqlite3-multiple-ciphers": "11.9.1",
     "cheerio": "^1.0.0",

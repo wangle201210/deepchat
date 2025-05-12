@@ -27,7 +27,10 @@
     "enabledDescription": "ツール呼び出しを使用するためにMCP機能を有効にします",
     "empty": "空",
     "invalidJsonFormat": "無効なJSON形式",
-    "jsonInputPlaceholder": "JSON形式でパラメーターを入力します"
+    "jsonInputPlaceholder": "JSON形式でパラメーターを入力します",
+    "input": "パラメータ入力",
+    "type": "タイプ",
+    "annotations": "注釈"
   },
   "addServer": "サーバーを追加します",
   "addServerDialog": {

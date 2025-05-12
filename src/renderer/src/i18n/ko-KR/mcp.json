@@ -120,7 +120,10 @@
     "enabledDescription": "도구 호출을 사용하도록 MCP 기능 활성화",
     "empty": "비어있음",
     "invalidJsonFormat": "유효하지 않은 JSON 형식",
-    "jsonInputPlaceholder": "JSON 형식의 매개 변수를 입력하십시오"
+    "jsonInputPlaceholder": "JSON 형식의 매개 변수를 입력하십시오",
+    "input": "매개 변수를 입력하십시오",
+    "type": "유형",
+    "annotations": "주석"
   },
   "inmemory": {
     "Artifacts": {

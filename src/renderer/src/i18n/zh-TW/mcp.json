@@ -140,7 +140,10 @@
     "enabledDescription": "啟用MCP功能以使用工具調用",
     "jsonInputPlaceholder": "輸入JSON格式的參數",
     "invalidJsonFormat": "無效的JSON格式",
-    "empty": "空"
+    "empty": "空",
+    "input": "輸入參數",
+    "type": "類型",
+    "annotations": "註解"
   },
   "inmemory": {
     "Artifacts": {

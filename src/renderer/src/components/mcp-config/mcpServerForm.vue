@@ -619,7 +619,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-if="isInMemoryType && name" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="localized-name">{{
             t('settings.mcp.serverForm.name')
-            }}</Label>
+          }}</Label>
 
           <div
             class="flex h-9 items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background opacity-50">
@@ -629,7 +629,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-else class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-name">{{
             t('settings.mcp.serverForm.name')
-            }}</Label>
+          }}</Label>
           <Input id="server-name" v-model="name" :placeholder="t('settings.mcp.serverForm.namePlaceholder')"
             :disabled="editMode || isFieldReadOnly" required />
         </div>
@@ -638,7 +638,7 @@ HTTP-Referer=deepchatai.cn`
         <div class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-icon">{{
             t('settings.mcp.serverForm.icons')
-            }}</Label>
+          }}</Label>
           <div class="flex items-center space-x-2">
             <EmojiPicker v-model="icons" :disabled="isFieldReadOnly" />
           </div>
@@ -648,7 +648,7 @@ HTTP-Referer=deepchatai.cn`
         <div class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-type">{{
             t('settings.mcp.serverForm.type')
-            }}</Label>
+          }}</Label>
           <Select v-model="type" :disabled="isFieldReadOnly">
             <SelectTrigger class="w-full">
               <SelectValue :placeholder="t('settings.mcp.serverForm.typePlaceholder')" />
@@ -667,7 +667,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-if="showBaseUrl" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-base-url">{{
             t('settings.mcp.serverForm.baseUrl')
-            }}</Label>
+          }}</Label>
           <Input id="server-base-url" v-model="baseUrl" :placeholder="t('settings.mcp.serverForm.baseUrlPlaceholder')"
             :disabled="isFieldReadOnly" required />
         </div>
@@ -676,7 +676,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-if="showCommandFields" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-command">{{
             t('settings.mcp.serverForm.command')
-            }}</Label>
+          }}</Label>
           <Input id="server-command" v-model="command" :placeholder="t('settings.mcp.serverForm.commandPlaceholder')"
             :disabled="isFieldReadOnly" required />
         </div>
@@ -693,7 +693,7 @@ HTTP-Referer=deepchatai.cn`
                   <ModelIcon :model-id="selectedImageModel?.id || ''" class="h-4 w-4" />
                   <span class="truncate">{{
                     selectedImageModel?.name || t('settings.common.selectModel')
-                    }}</span>
+                  }}</span>
                 </div>
                 <ChevronDown class="h-4 w-4 opacity-50" />
               </Button>
@@ -707,7 +707,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-else-if="showArgsInput" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-args">{{
             t('settings.mcp.serverForm.args')
-            }}</Label>
+          }}</Label>
           <div class="flex flex-wrap items-center gap-1 p-2 border border-input rounded-md min-h-[40px] cursor-text"
             @click="focusArgsInput">
             <Badge v-for="(arg, index) in argumentsList" :key="index" variant="outline"
@@ -731,7 +731,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-if="showCommandFields || isInMemoryType" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-env">{{
             t('settings.mcp.serverForm.env')
-            }}</Label>
+          }}</Label>
           <Textarea id="server-env" v-model="env" rows="5" :placeholder="t('settings.mcp.serverForm.envPlaceholder')"
             :class="{ 'border-red-500': !isEnvValid }" />
         </div>
@@ -741,7 +741,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-if="isInMemoryType && name" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="localized-desc">{{
             t('settings.mcp.serverForm.descriptions')
-            }}</Label>
+          }}</Label>
           <div
             class="flex h-9 items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background opacity-50">
             {{ getLocalizedDesc }}
@@ -750,7 +750,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-else class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-description">{{
             t('settings.mcp.serverForm.descriptions')
-            }}</Label>
+          }}</Label>
           <Input id="server-description" v-model="descriptions"
             :placeholder="t('settings.mcp.serverForm.descriptionsPlaceholder')" :disabled="isFieldReadOnly" />
         </div>
@@ -767,7 +767,7 @@ HTTP-Referer=deepchatai.cn`
         <div class="space-y-3">
           <Label class="text-xs text-muted-foreground">{{
             t('settings.mcp.serverForm.autoApprove')
-            }}</Label>
+          }}</Label>
           <div class="flex flex-col space-y-2">
             <div class="flex items-center space-x-2">
               <Checkbox id="auto-approve-all" v-model:checked="autoApproveAll"
@@ -800,7 +800,7 @@ HTTP-Referer=deepchatai.cn`
         <div v-if="showBaseUrl" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-custom-headers">{{
             t('settings.mcp.serverForm.customHeaders')
-            }}</Label>
+          }}</Label>
           <Textarea id="server-custom-headers" v-model="customHeaders" rows="5" :placeholder="customHeadersPlaceholder"
             :class="{ 'border-red-500': !isCustomHeadersFormatValid }" :disabled="isFieldReadOnly" />
           <p v-if="!isCustomHeadersFormatValid" class="text-xs text-red-500">
