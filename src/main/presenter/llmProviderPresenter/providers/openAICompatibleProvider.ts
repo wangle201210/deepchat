@@ -27,6 +27,7 @@ import { jsonrepair } from 'jsonrepair'
 import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import sharp from 'sharp'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
 const OPENAI_IMAGE_GENERATION_MODELS = [
@@ -36,6 +37,16 @@ const OPENAI_IMAGE_GENERATION_MODELS = [
   'dall-e-3',
   'dall-e-2'
 ]
+
+// 添加支持的图片尺寸常量
+const SUPPORTED_IMAGE_SIZES = {
+  SQUARE: '1024x1024',
+  LANDSCAPE: '1536x1024',
+  PORTRAIT: '1024x1536'
+} as const
+
+// 添加可设置尺寸的模型列表
+const SIZE_CONFIGURABLE_MODELS = ['gpt-image-1', 'gpt-4o-image', 'gpt-4o-all']
 
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
@@ -290,20 +301,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
         if (imageUrls.length > 0) {
           // 使用 images.edit 接口处理带有图片的请求
-          // console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
-          // 获取图片数据
           let imageBuffer: Buffer
 
           if (imageUrls[0].startsWith('imgcache://')) {
-            // 对于imgcache协议，直接从文件系统读取
-
             const filePath = imageUrls[0].slice('imgcache://'.length)
             const fullPath = path.join(app.getPath('userData'), 'images', filePath)
-
-            // 读取文件
             imageBuffer = fs.readFileSync(fullPath)
           } else {
-            // 对于其他URL，使用fetch获取
             const imageResponse = await fetch(imageUrls[0])
             const imageBlob = await imageResponse.blob()
             imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
@@ -311,7 +315,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
           // 创建临时文件
           const imagePath = `/tmp/openai_image_${Date.now()}.png`
-          // 使用 fs 保存图片
           await new Promise<void>((resolve, reject) => {
             fs.writeFile(imagePath, imageBuffer, (err: Error | null) => {
               if (err) {
@@ -330,10 +333,38 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             prompt: prompt,
             n: 1
           }
-          if (modelId === 'gpt-image-1' || modelId === 'gpt-4o-image' || modelId === 'gpt-4o-all') {
-            params.size = '1024x1536'
-            params.quality = 'high'
+
+          // 如果是支持尺寸配置的模型，检测图片尺寸并设置合适的参数
+          if (SIZE_CONFIGURABLE_MODELS.includes(modelId)) {
+            try {
+              const metadata = await sharp(imageBuffer).metadata()
+              if (metadata.width && metadata.height) {
+                const aspectRatio = metadata.width / metadata.height
+
+                // 根据宽高比选择最接近的尺寸
+                if (Math.abs(aspectRatio - 1) < 0.1) {
+                  // 接近正方形
+                  params.size = SUPPORTED_IMAGE_SIZES.SQUARE
+                } else if (aspectRatio > 1) {
+                  // 横向图片
+                  params.size = SUPPORTED_IMAGE_SIZES.LANDSCAPE
+                } else {
+                  // 纵向图片
+                  params.size = SUPPORTED_IMAGE_SIZES.PORTRAIT
+                }
+              } else {
+                // 如果无法获取宽高，使用默认参数
+                params.size = '1024x1536'
+              }
+              params.quality = 'high'
+            } catch (error) {
+              console.warn('Failed to detect image dimensions, using default size:', error)
+              // 检测失败时使用默认参数
+              params.size = '1024x1536'
+              params.quality = 'high'
+            }
           }
+
           result = await this.openai.images.edit(params)
 
           // 清理临时文件
