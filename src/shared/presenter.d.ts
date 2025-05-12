@@ -72,6 +72,13 @@ export interface Tool {
   name: string
   description: string
   inputSchema: Record<string, unknown>
+  annotations?: {
+    title?: string // A human-readable title for the tool.
+    readOnlyHint?: boolean // default false
+    destructiveHint?: boolean // default true
+    idempotentHint?: boolean // default false
+    openWorldHint?: boolean // default true
+  }
 }
 
 export interface ResourceListEntry {

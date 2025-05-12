@@ -27,7 +27,10 @@
     "enabledDescription": "Activer la fonctionnalité MCP pour utiliser les appels d'outils",
     "empty": "Vide",
     "invalidJsonFormat": "Format JSON invalide",
-    "jsonInputPlaceholder": "Entrez les paramètres au format JSON"
+    "jsonInputPlaceholder": "Entrez les paramètres au format JSON",
+    "input": "Paramètres d'entrée",
+    "type": "Type",
+    "annotations": "Annotations"
   },
   "addServer": "Ajouter un serveur",
   "addServerDialog": {
