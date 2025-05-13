@@ -795,17 +795,6 @@ export class ThreadPresenter implements IThreadPresenter {
         }
       )) as AssistantMessage
 
-      this.generatingMessages.set(assistantMessage.id, {
-        message: assistantMessage,
-        conversationId,
-        startTime: Date.now(),
-        firstTokenTime: null,
-        promptTokens: 0,
-        reasoningStartTime: null,
-        reasoningEndTime: null,
-        lastReasoningTime: null
-      })
-
       return assistantMessage
     } catch (error) {
       await this.messageManager.updateMessageStatus(userMessageId, 'error')
