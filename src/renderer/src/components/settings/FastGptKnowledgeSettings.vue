@@ -54,8 +54,8 @@
             >
               <div class="absolute top-2 right-2 flex gap-2">
                 <Switch
-                  class="ml-2"
                   :checked="config.enabled === true"
+                  size="sm"
                   @update:checked="toggleConfigEnabled(index, $event)"
                 />
                 <button
@@ -210,7 +210,7 @@ import { useRoute } from 'vue-router'
 const route = useRoute()
 
 // 对话框状态
-const isFastGptConfigPanelOpen = ref(true)
+const isFastGptConfigPanelOpen = ref(false)
 const isFastGptConfigDialogOpen = ref(false)
 const isEditing = ref(false)
 

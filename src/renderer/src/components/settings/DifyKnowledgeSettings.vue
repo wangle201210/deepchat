@@ -228,7 +228,7 @@ const mcpStore = useMcpStore()
 const { toast } = useToast()
 
 // 对话框状态
-const isDifyConfigPanelOpen = ref(true)
+const isDifyConfigPanelOpen = ref(false)
 const isEditing = ref(false)
 import { useRoute } from 'vue-router'
 
