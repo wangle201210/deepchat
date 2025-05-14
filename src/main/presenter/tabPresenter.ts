@@ -1,5 +1,5 @@
 import { eventBus } from '@/eventbus'
-import { WINDOW_EVENTS, CONFIG_EVENTS } from '@/events'
+import { WINDOW_EVENTS, CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
 import { ITabPresenter, TabCreateOptions } from '@shared/presenter'
 import { BrowserWindow, WebContentsView } from 'electron'
@@ -65,6 +65,16 @@ export class TabPresenter implements ITabPresenter {
         // 为所有活动的标签页更新右键菜单
         for (const [tabId] of this.tabWindowMap.entries()) {
           await this.setupTabContextMenu(tabId)
+        }
+      }
+    })
+
+    // 添加系统主题更新的事件处理
+    eventBus.on(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, (isDark: boolean) => {
+      // 向所有标签页广播主题更新
+      for (const [, view] of this.tabs.entries()) {
+        if (!view.webContents.isDestroyed()) {
+          view.webContents.send('system-theme-updated', isDark)
         }
       }
     })

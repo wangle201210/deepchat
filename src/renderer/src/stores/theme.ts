@@ -22,6 +22,7 @@ export const useThemeStore = defineStore('theme', () => {
     // 如果是系统主题模式，则根据系统实际深色/浅色设置来设置界面
     if (currentTheme === 'system') {
       const systemIsDark = await configPresenter.toggleTheme('system')
+      console.log('initTheme', systemIsDark)
       toggleDark(systemIsDark)
     } else {
       toggleDark(currentTheme === 'dark')
