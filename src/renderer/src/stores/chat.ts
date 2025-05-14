@@ -848,8 +848,22 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   window.electron.ipcRenderer.on(CONVERSATION_EVENTS.ACTIVATED, (_, msg) => {
-    // console.log(CONVERSATION_EVENTS.ACTIVATED, msg)
-    if (msg.tabId !== getTabId()) return
+    // 如果不是当前tab
+    if (msg.tabId !== getTabId()) {
+      // 检查新激活的会话是否在当前窗口的会话列表中
+      const isThreadInCurrentWindow = threads.value
+        .flatMap((t) => t.dtThreads)
+        .some((t) => t.id === msg.conversationId)
+      console.log('isThreadInCurrentWindow', isThreadInCurrentWindow)
+      // 如果新激活的会话不在当前窗口的会话列表中，保持当前激活状态
+      if (!isThreadInCurrentWindow) {
+        loadThreads(1)
+        return
+      }
+      return
+    }
+
+    // 如果是当前tab或新激活的会话在当前窗口中，则正常处理
     activeThreadIdMap.value.set(getTabId(), msg.conversationId)
 
     // 如果存在状态为completed或error的会话，从Map中移除

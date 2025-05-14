@@ -61,12 +61,12 @@ const eventsToForward: string[] = [
   DEEPLINK_EVENTS.MCP_INSTALL,
   NOTIFICATION_EVENTS.SHOW_ERROR,
   NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED,
-  SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
   SHORTCUT_EVENTS.GO_SETTINGS,
   SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
   SHORTCUT_EVENTS.ZOOM_IN,
   SHORTCUT_EVENTS.ZOOM_OUT,
-  SHORTCUT_EVENTS.ZOOM_RESUME
+  SHORTCUT_EVENTS.ZOOM_RESUME,
+  SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION
 ]
 export class Presenter implements IPresenter {
   windowPresenter: WindowPresenter
@@ -117,8 +117,14 @@ export class Presenter implements IPresenter {
     const forward = (eventName: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eventBus.on(eventName, (...payload: any[]) => {
-        // 根据事件名称处理特定逻辑
-        if (eventName === STREAM_EVENTS.RESPONSE) {
+        if (eventName === SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION) {
+          console.log('create-new-conversation', payload)
+          const focusedWindow = this.windowPresenter.getFocusedWindow()
+          if (focusedWindow) {
+            this.windowPresenter.sendToWindow(focusedWindow.id, eventName, ...payload)
+          }
+        } else if (eventName === STREAM_EVENTS.RESPONSE) {
+          // 根据事件名称处理特定逻辑
           const [msg] = payload
           const dataToRender = { ...msg }
           delete dataToRender.tool_call_response_raw // 删除原始数据
