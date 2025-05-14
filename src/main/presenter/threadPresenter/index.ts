@@ -56,7 +56,6 @@ interface GeneratingMessageState {
 }
 
 export class ThreadPresenter implements IThreadPresenter {
-  private activeConversationId: string | null = null
   private sqlitePresenter: ISQLitePresenter
   private messageManager: MessageManager
   private llmProviderPresenter: ILlmProviderPresenter
@@ -1988,7 +1987,7 @@ export class ThreadPresenter implements IThreadPresenter {
   async clearAllMessages(conversationId: string): Promise<void> {
     await this.messageManager.clearAllMessages(conversationId)
     // 检查所有 tab 中的活跃会话
-    for (const [tabId, activeId] of this.activeConversationIds.entries()) {
+    for (const [_, activeId] of this.activeConversationIds.entries()) {
       if (activeId === conversationId) {
         // 停止所有正在生成的消息
         await this.stopConversationGeneration(conversationId)

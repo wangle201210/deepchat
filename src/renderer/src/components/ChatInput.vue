@@ -493,11 +493,13 @@ const deleteFile = (idx: number) => {
 }
 
 const disabledSend = computed(() => {
-  return (
-    chatStore.generatingThreadIds.has(chatStore.activeThreadId ?? '') ||
-    inputText.value.length <= 0 ||
-    currentContextLength.value > (props.contextLength ?? chatStore.chatConfig.contextLength)
-  )
+  const activeThreadId = chatStore.getActiveThreadId()
+  if (activeThreadId) {
+    return chatStore.generatingThreadIds.has(activeThreadId) ||
+      inputText.value.length <= 0 ||
+      currentContextLength.value > (props.contextLength ?? chatStore.chatConfig.contextLength)
+  }
+  return false
 })
 
 const handleEditorEnter = (e: KeyboardEvent) => {

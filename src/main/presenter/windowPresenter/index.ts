@@ -8,8 +8,6 @@ import { eventBus } from '@/eventbus'
 import { ConfigPresenter } from '../configPresenter'
 import { TrayPresenter } from '../trayPresenter'
 import { CONFIG_EVENTS, SYSTEM_EVENTS, WINDOW_EVENTS } from '@/events'
-import contextMenu from '../../contextMenuHelper'
-import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '../'
 import windowStateManager from 'electron-window-state'
 
@@ -18,7 +16,6 @@ export class WindowPresenter implements IWindowPresenter {
   private configPresenter: ConfigPresenter
   private isQuitting: boolean = false
   private trayPresenter: TrayPresenter | null = null
-  private contextMenuDisposer?: () => void
   private focusedWindowId: number | null = null
 
   constructor(configPresenter: ConfigPresenter) {
@@ -56,12 +53,6 @@ export class WindowPresenter implements IWindowPresenter {
       this.isQuitting = true
       if (this.trayPresenter) {
         this.trayPresenter.destroy()
-      }
-    })
-
-    eventBus.on(CONFIG_EVENTS.SETTING_CHANGED, (key, value) => {
-      if (key === 'language') {
-        this.resetContextMenu(value as string)
       }
     })
 
@@ -135,10 +126,17 @@ export class WindowPresenter implements IWindowPresenter {
     }
   }
 
-  show(windowId: number): void {
-    const window = this.windows.get(windowId)
-    if (window) {
-      window.show()
+  show(windowId?: number): void {
+    if (windowId === undefined) {
+      const windows = this.getAllWindows()
+      if (windows.length > 0) {
+        windows[windows.length - 1].show()
+      }
+    } else {
+      const window = this.windows.get(windowId)
+      if (window) {
+        window.show()
+      }
     }
   }
 
@@ -355,9 +353,6 @@ export class WindowPresenter implements IWindowPresenter {
       this.trayPresenter = new TrayPresenter(this)
     }
 
-    const lang = this.configPresenter.getSetting<string>('language')
-    this.resetContextMenu(lang || app.getLocale())
-
     return shellWindow
   }
 
@@ -382,24 +377,6 @@ export class WindowPresenter implements IWindowPresenter {
 
   getAllWindows(): BrowserWindow[] {
     return Array.from(this.windows.values())
-  }
-
-  async resetContextMenu(lang: string): Promise<void> {
-    if (this.contextMenuDisposer) {
-      this.contextMenuDisposer()
-    }
-
-    const labels = await getContextMenuLabels(lang)
-    const focusedWindow = this.getFocusedWindow()
-    if (focusedWindow) {
-      this.contextMenuDisposer = contextMenu({
-        window: focusedWindow,
-        labels,
-        shouldShowMenu() {
-          return true
-        }
-      })
-    }
   }
 
   async closeWindow(windowId: number, forceClose: boolean = false): Promise<void> {

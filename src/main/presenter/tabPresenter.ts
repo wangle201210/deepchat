@@ -1,9 +1,12 @@
 import { eventBus } from '@/eventbus'
-import { WINDOW_EVENTS } from '@/events'
+import { WINDOW_EVENTS, CONFIG_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
 import { ITabPresenter, TabCreateOptions } from '@shared/presenter'
 import { BrowserWindow, WebContentsView } from 'electron'
 import { join } from 'path'
+import contextMenu from '@/contextMenuHelper'
+import { getContextMenuLabels } from '@shared/i18n'
+import { app } from 'electron'
 
 interface TabState {
   url: string
@@ -24,6 +27,9 @@ export class TabPresenter implements ITabPresenter {
 
   // 标签页ID到其当前所属窗口ID的映射
   private tabWindowMap: Map<number, number> = new Map()
+
+  // 存储每个标签页的右键菜单处理器
+  private tabContextMenuDisposers: Map<number, () => void> = new Map()
 
   constructor() {
     // this.setupIPCHandlers()
@@ -50,6 +56,16 @@ export class TabPresenter implements ITabPresenter {
         views?.forEach((view) => {
           this.updateViewBounds(window, this.tabs.get(view)!)
         })
+      }
+    })
+
+    // 添加语言设置改变的事件处理
+    eventBus.on(CONFIG_EVENTS.SETTING_CHANGED, async (key) => {
+      if (key === 'language') {
+        // 为所有活动的标签页更新右键菜单
+        for (const [tabId] of this.tabWindowMap.entries()) {
+          await this.setupTabContextMenu(tabId)
+        }
       }
     })
   }
@@ -120,11 +136,14 @@ export class TabPresenter implements ITabPresenter {
       this.activateTab(tabId)
     }
 
+    // 在创建标签页后设置右键菜单
+    await this.setupTabContextMenu(tabId)
+
     // // 监听标签页相关事件
-    // this.setupWebContentsListeners(view.webContents, tabId, windowId)
+    this.setupWebContentsListeners(view.webContents, tabId, windowId)
 
     // // 通知渲染进程更新标签列表
-    // this.notifyWindowTabsUpdate(windowId)
+    this.notifyWindowTabsUpdate(windowId)
 
     return tabId
   }
@@ -154,6 +173,9 @@ export class TabPresenter implements ITabPresenter {
    * 销毁标签页
    */
   destroyTab(tabId: number): boolean {
+    // 清理右键菜单
+    this.cleanupTabContextMenu(tabId)
+
     const view = this.tabs.get(tabId)
     if (!view) return false
 
@@ -465,7 +487,50 @@ export class TabPresenter implements ITabPresenter {
     })
   }
 
+  /**
+   * 为标签页设置右键菜单
+   */
+  private async setupTabContextMenu(tabId: number): Promise<void> {
+    const view = this.tabs.get(tabId)
+    if (!view) return
+
+    // 如果已存在处理器，先清理
+    if (this.tabContextMenuDisposers.has(tabId)) {
+      this.tabContextMenuDisposers.get(tabId)?.()
+      this.tabContextMenuDisposers.delete(tabId)
+    }
+
+    const lang = app.getLocale()
+    const labels = await getContextMenuLabels(lang)
+
+    const disposer = contextMenu({
+      webContents: view.webContents,
+      labels,
+      shouldShowMenu() {
+        return true
+      }
+    })
+
+    this.tabContextMenuDisposers.set(tabId, disposer)
+  }
+
+  /**
+   * 清理标签页的右键菜单
+   */
+  private cleanupTabContextMenu(tabId: number): void {
+    if (this.tabContextMenuDisposers.has(tabId)) {
+      this.tabContextMenuDisposers.get(tabId)?.()
+      this.tabContextMenuDisposers.delete(tabId)
+    }
+  }
+
   public destroy() {
+    // 清理所有标签页的右键菜单
+    for (const [tabId] of this.tabContextMenuDisposers) {
+      this.cleanupTabContextMenu(tabId)
+    }
+    this.tabContextMenuDisposers.clear()
+
     // Iterate over the map containing tab views or windows
     for (const [tabId] of this.tabWindowMap.entries()) {
       // TODO: Implement cleanup logic for each entry
