@@ -37,7 +37,8 @@ export default defineConfig({
     resolve: {
       alias: {
         '@': resolve('src/renderer/src'),
-        '@shared': resolve('src/shared')
+        '@shared': resolve('src/shared'),
+        vue: 'vue/dist/vue.esm-bundler.js'
       }
     },
     css: {
