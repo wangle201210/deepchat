@@ -238,15 +238,18 @@ export class TabPresenter implements ITabPresenter {
     // 获取窗口中的所有标签
     const tabs = this.windowTabs.get(windowId) || []
 
-    // 更新所有标签的活动状态
+    // 更新所有标签的活动状态并处理视图显示/隐藏
     for (const id of tabs) {
       const state = this.tabState.get(id)
-      if (state) {
+      const tabView = this.tabs.get(id)
+      if (state && tabView) {
         state.isActive = id === tabId
+        // 根据活动状态设置视图的可见性
+        tabView.setVisible(id === tabId)
       }
     }
 
-    // 确保视图可见并位于最前
+    // 确保活动视图可见并位于最前
     this.bringViewToFront(window, view)
 
     // 通知渲染进程更新标签列表
