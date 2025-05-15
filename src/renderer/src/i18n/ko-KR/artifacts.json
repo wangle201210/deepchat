@@ -28,5 +28,6 @@
   "code": "코드",
   "export": "내보내기",
   "htmlPreviewTitle": "HTML 미리보기",
-  "svgPreviewTitle": "SVG 미리보기"
+  "svgPreviewTitle": "SVG 미리보기",
+  "copy": "복사"
 }

@@ -25,7 +25,7 @@ import { jsonrepair } from 'jsonrepair'
  */
 export abstract class BaseLLMProvider {
   // 最大工具调用次数限制
-  protected static readonly MAX_TOOL_CALLS = 20
+  protected static readonly MAX_TOOL_CALLS = 50
 
   protected provider: LLM_PROVIDER
   protected models: MODEL_META[] = []

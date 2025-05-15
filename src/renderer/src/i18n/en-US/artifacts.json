@@ -28,5 +28,6 @@
   "code": "Code",
   "export": "Export",
   "htmlPreviewTitle": "HTML Preview",
-  "svgPreviewTitle": "SVG Preview"
+  "svgPreviewTitle": "SVG Preview",
+  "copy": "Copy"
 }

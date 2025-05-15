@@ -61,7 +61,7 @@
     "mime-types": "^2.1.35",
     "nanoid": "^5.1.5",
     "ollama": "^0.5.15",
-    "openai": "^4.96.2",
+    "openai": "^4.98.0",
     "pdf-parse-new": "^1.3.9",
     "pyodide": "^0.27.5",
     "sharp": "^0.33.5",

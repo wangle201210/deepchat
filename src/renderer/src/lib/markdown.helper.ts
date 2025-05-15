@@ -29,6 +29,65 @@ export const getMarkdown = () => {
     breaks: false
   })
 
+  // 配置加粗标记
+  md.inline.ruler.before('emphasis', 'strong', (state, silent) => {
+    let found = false
+    let token
+    let pos = state.pos
+    const max = state.posMax
+    const start = pos
+    const marker = state.src.charCodeAt(pos)
+
+    if (silent) return false
+
+    if (marker !== 0x2a /* * */ && marker !== 0x5f /* _ */) return false
+
+    let scan = pos
+    const mem = pos
+
+    // 查找连续的星号或下划线
+    while (scan < max && state.src.charCodeAt(scan) === marker) {
+      scan++
+    }
+
+    const len = scan - pos
+    if (len < 2) return false
+
+    pos = scan
+    const markerCount = len
+
+    // 查找结束标记
+    while (pos < max) {
+      if (state.src.charCodeAt(pos) === marker) {
+        if (state.src.slice(pos, pos + markerCount).length === markerCount) {
+          found = true
+          break
+        }
+      }
+      pos++
+    }
+
+    if (!found) {
+      state.pos = mem
+      return false
+    }
+
+    if (!silent) {
+      state.pos = start + markerCount
+      token = state.push('strong_open', 'strong', 1)
+      token.markup = marker === 0x2a ? '**' : '__'
+
+      token = state.push('text', '', 0)
+      token.content = state.src.slice(start + markerCount, pos)
+
+      token = state.push('strong_close', 'strong', -1)
+      token.markup = marker === 0x2a ? '**' : '__'
+    }
+
+    state.pos = pos + markerCount
+    return true
+  })
+
   // Apply additional plugins
   md.use(markdownItSub) // H~2~O -> subscript
   md.use(markdownItSup) // 2^10 -> superscript

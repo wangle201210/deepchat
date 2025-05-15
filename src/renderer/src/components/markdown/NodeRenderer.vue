@@ -30,6 +30,16 @@ import ThematicBreakNode from './ThematicBreakNode.vue'
 import MathInlineNode from './MathInlineNode.vue'
 import MathBlockNode from './MathBlockNode.vue'
 import ReferenceNode from './ReferenceNode.vue'
+import StrongNode from './StrongNode.vue'
+import EmphasisNode from './EmphasisNode.vue'
+import StrikethroughNode from './StrikethroughNode.vue'
+import HighlightNode from './HighlightNode.vue'
+import InsertNode from './InsertNode.vue'
+import SubscriptNode from './SubscriptNode.vue'
+import SuperscriptNode from './SuperscriptNode.vue'
+import EmojiNode from './EmojiNode.vue'
+import CheckboxNode from './CheckboxNode.vue'
+import InlineCodeNode from './InlineCodeNode.vue'
 
 // 组件接收的 props
 defineProps<{
@@ -60,7 +70,17 @@ const nodeComponents = {
   thematic_break: ThematicBreakNode,
   math_inline: MathInlineNode,
   math_block: MathBlockNode,
-  reference: ReferenceNode
+  reference: ReferenceNode,
+  strong: StrongNode,
+  emphasis: EmphasisNode,
+  strikethrough: StrikethroughNode,
+  highlight: HighlightNode,
+  insert: InsertNode,
+  subscript: SubscriptNode,
+  superscript: SuperscriptNode,
+  emoji: EmojiNode,
+  checkbox: CheckboxNode,
+  inline_code: InlineCodeNode
   // 可以添加更多节点类型
 }
 
