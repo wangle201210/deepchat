@@ -611,6 +611,13 @@ export type UpdateStatus =
   | 'downloaded'
   | 'error'
 
+export interface TabState {
+  url: string
+  title: string
+  faviconUrl?: string
+  isActive: boolean
+}
+
 export interface UpdateProgress {
   bytesPerSecond: number
   percent: number

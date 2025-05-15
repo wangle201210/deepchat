@@ -89,7 +89,7 @@ export class WindowPresenter implements IWindowPresenter {
       icon: iconFile,
       titleBarStyle: 'hiddenInset',
       transparent: process.platform === 'darwin',
-      vibrancy: process.platform === 'darwin' ? 'under-window' : undefined,
+      vibrancy: process.platform === 'darwin' ? 'window' : undefined,
       backgroundColor: '#00000000',
       maximizable: true,
       frame: process.platform === 'darwin',

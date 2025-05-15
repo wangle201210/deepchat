@@ -6,7 +6,7 @@
         'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'tab'
       }"
     >
-      <div class="flex h-full bg-white/80 dark:bg-black/80">
+      <div class="flex h-full">
         <!-- 左侧会话列表 -->
         <Transition
           enter-active-class="transition-all duration-300 ease-out"
@@ -18,7 +18,7 @@
         </Transition>
 
         <!-- 主聊天区域 -->
-        <div class="flex-1 flex flex-col w-0">
+        <div class="flex-1 flex flex-col w-0 bg-white/80 dark:bg-black/80">
           <!-- 新会话 -->
           <NewThread v-if="!chatStore.activeThreadId" />
           <template v-else>

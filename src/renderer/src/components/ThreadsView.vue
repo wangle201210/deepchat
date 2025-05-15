@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="w-60 h-full bg-muted overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col"
-  >
+  <div class="w-60 h-full overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col">
     <!-- 固定在顶部的"新会话"按钮 -->
     <div class="flex-none">
       <Button

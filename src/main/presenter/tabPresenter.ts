@@ -1,16 +1,9 @@
 import { eventBus } from '@/eventbus'
 import { WINDOW_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
-import { ITabPresenter, TabCreateOptions } from '@shared/presenter'
+import { ITabPresenter, TabCreateOptions, TabState } from '@shared/presenter'
 import { BrowserWindow, WebContentsView } from 'electron'
 import { join } from 'path'
-
-interface TabState {
-  url: string
-  title: string
-  faviconUrl?: string
-  isActive: boolean
-}
 
 export class TabPresenter implements ITabPresenter {
   // 全局标签页实例存储
@@ -76,6 +69,7 @@ export class TabPresenter implements ITabPresenter {
     })
 
     view.setBorderRadius(8)
+    view.setBackgroundColor('#00ffffff')
 
     // 加载内容
     if (url.startsWith('local://')) {
