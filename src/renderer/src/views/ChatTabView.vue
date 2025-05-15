@@ -20,7 +20,7 @@
         <!-- 主聊天区域 -->
         <div class="flex-1 flex flex-col w-0 bg-white/80 dark:bg-black/80">
           <!-- 新会话 -->
-          <NewThread v-if="!chatStore.activeThreadId" />
+          <NewThread v-if="!chatStore.getActiveThreadId()" />
           <template v-else>
             <!-- 标题栏 -->
             <TitleView :model="activeModel" />

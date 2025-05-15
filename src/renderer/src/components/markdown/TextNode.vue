@@ -1,5 +1,5 @@
 <template>
-  <span class="whitespace-pre-wrap break-all">{{ props.node.content }}</span>
+  <span class="whitespace-pre-wrap break-normal">{{ props.node.content }}</span>
 </template>
 
 <script setup lang="ts">

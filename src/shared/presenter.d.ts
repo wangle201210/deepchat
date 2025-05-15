@@ -31,7 +31,7 @@ export interface McpClient {
   icon: string
   isRunning: boolean
   tools: MCPToolDefinition[]
-  prompts?: Prompt[]
+  prompts?: PromptListEntry[]
   resources?: ResourceListEntry[]
 }
 
@@ -41,26 +41,53 @@ export interface Resource {
   text?: string
   blob?: string
 }
-
 export interface Prompt {
   name: string
+  messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
+}
+export interface PromptListEntry {
+  name: string
   description?: string
-  inputSchema?: Record<string, unknown>
-  messages?: Array<{ role: string; content: { text: string } }>
+  arguments?: {
+    name: string
+    description?: string
+    required: boolean
+  }[]
+  client: {
+    name: string
+    icon: string
+  }
+}
+// 定义工具调用结果的接口
+export interface ToolCallResult {
+  isError?: boolean
+  content: Array<{
+    type: string
+    text: string
+  }>
+}
+
+// 定义工具列表的接口
+export interface Tool {
+  name: string
+  description: string
+  inputSchema: Record<string, unknown>
+  annotations?: {
+    title?: string // A human-readable title for the tool.
+    readOnlyHint?: boolean // default false
+    destructiveHint?: boolean // default true
+    idempotentHint?: boolean // default false
+    openWorldHint?: boolean // default true
+  }
 }
 
 export interface ResourceListEntry {
   uri: string
   name?: string
-}
-export interface PromptWithClient extends Prompt {
-  clientName: string
-  clientIcon?: string
-}
-
-export interface ResourceListEntryWithClient extends ResourceListEntry {
-  clientName: string
-  clientIcon?: string
+  client: {
+    name: string
+    icon: string
+  }
 }
 
 export interface ModelConfig {
@@ -76,17 +103,20 @@ export interface ProviderModelConfigs {
 }
 
 export interface IWindowPresenter {
-  createMainWindow(): BrowserWindow
+  createShellWindow(): BrowserWindow
   getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
-  minimize(): void
-  maximize(): void
-  close(): void
-  hide(): void
-  show(): void
-  isMaximized(): boolean
-  isMainWindowFocused(): boolean
+  minimize(windowId: number): void
+  maximize(windowId: number): void
+  close(windowId: number): void
+  hide(windowId: number): void
+  show(windowId?: number): void
+  isMaximized(windowId: number): boolean
+  isMainWindowFocused(windowId: number): boolean
+  sendToAllWindows(channel: string, ...args: unknown[]): void
+  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  closeWindow(windowId: number, forceClose?: boolean): Promise<void>
 }
 
 export interface ITabPresenter {
@@ -388,7 +418,11 @@ export type CONVERSATION = {
 
 export interface IThreadPresenter {
   // 基本对话操作
-  createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
+  createConversation(
+    title: string,
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    tabId: number
+  ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>
   renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
@@ -411,8 +445,10 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
-  setActiveConversation(conversationId: string): Promise<void>
-  getActiveConversation(): Promise<CONVERSATION | null>
+  setActiveConversation(conversationId: string, tabId: number): Promise<void>
+  getActiveConversation(tabId: number): Promise<CONVERSATION | null>
+  getActiveConversationId(tabId: number): Promise<string | null>
+  clearActiveThread(tabId: number): Promise<void>
 
   getSearchResults(messageId: string): Promise<SearchResult[]>
   clearAllMessages(conversationId: string): Promise<void>
@@ -438,8 +474,7 @@ export interface IThreadPresenter {
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(modelId?: string): Promise<string>
-  clearActiveThread(): Promise<void>
+  summaryTitles(modelId?: string, tabId?: number): Promise<string>
   stopMessageGeneration(messageId: string): Promise<void>
   getSearchEngines(): Promise<SearchEngineTemplate[]>
   getActiveSearchEngine(): Promise<SearchEngineTemplate>
@@ -654,6 +689,7 @@ export interface IFilePresenter {
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
   isDirectory(absPath: string): Promise<boolean>
   getMimeType(filePath: string): Promise<string>
+  writeImageBase64(file: { name: string; content: string }): Promise<string>
 }
 
 export interface FileMetaData {
@@ -804,10 +840,10 @@ export interface IMCPPresenter {
   startServer(serverName: string): Promise<void>
   stopServer(serverName: string): Promise<void>
   getAllToolDefinitions(): Promise<MCPToolDefinition[]>
-  getAllPrompts(): Promise<Array<Prompt & { client: { name: string; icon: string } }>>
+  getAllPrompts(): Promise<Array<PromptListEntry & { client: { name: string; icon: string } }>>
   getAllResources(): Promise<Array<ResourceListEntry & { client: { name: string; icon: string } }>>
-  getPrompt(prompt: PromptWithClient, params?: Record<string, unknown>): Promise<unknown>
-  readResource(resource: ResourceListEntryWithClient): Promise<Resource>
+  getPrompt(prompt: PromptListEntry, args?: Record<string, unknown>): Promise<unknown>
+  readResource(resource: ResourceListEntry): Promise<Resource>
   callTool(request: {
     id: string
     type: string

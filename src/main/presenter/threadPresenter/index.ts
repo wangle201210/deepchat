@@ -56,7 +56,6 @@ interface GeneratingMessageState {
 }
 
 export class ThreadPresenter implements IThreadPresenter {
-  private activeConversationId: string | null = null
   private sqlitePresenter: ISQLitePresenter
   private messageManager: MessageManager
   private llmProviderPresenter: ILlmProviderPresenter
@@ -66,6 +65,7 @@ export class ThreadPresenter implements IThreadPresenter {
   public searchAssistantModel: MODEL_META | null = null
   public searchAssistantProviderId: string | null = null
   private searchingMessages: Set<string> = new Set()
+  private activeConversationIds: Map<number, string> = new Map()
 
   constructor(
     sqlitePresenter: ISQLitePresenter,
@@ -482,7 +482,8 @@ export class ThreadPresenter implements IThreadPresenter {
 
   async createConversation(
     title: string,
-    settings: Partial<CONVERSATION_SETTINGS> = {}
+    settings: Partial<CONVERSATION_SETTINGS> = {},
+    tabId: number
   ): Promise<string> {
     console.log('createConversation', title, settings)
     const latestConversation = await this.getLatestConversation()
@@ -490,7 +491,7 @@ export class ThreadPresenter implements IThreadPresenter {
     if (latestConversation) {
       const { list: messages } = await this.getMessages(latestConversation.id, 1, 1)
       if (messages.length === 0) {
-        await this.setActiveConversation(latestConversation.id)
+        await this.setActiveConversation(latestConversation.id, tabId)
         return latestConversation.id
       }
     }
@@ -527,14 +528,17 @@ export class ThreadPresenter implements IThreadPresenter {
       mergedSettings.systemPrompt = settings.systemPrompt
     }
     const conversationId = await this.sqlitePresenter.createConversation(title, mergedSettings)
-    await this.setActiveConversation(conversationId)
+    await this.setActiveConversation(conversationId, tabId)
     return conversationId
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
     await this.sqlitePresenter.deleteConversation(conversationId)
-    if (this.activeConversationId === conversationId) {
-      this.activeConversationId = null
+    // 检查所有 tab 中的活跃会话
+    for (const [tabId, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        this.activeConversationIds.delete(tabId)
+      }
     }
   }
 
@@ -587,21 +591,22 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversationList(page, pageSize)
   }
 
-  async setActiveConversation(conversationId: string): Promise<void> {
+  async setActiveConversation(conversationId: string, tabId: number): Promise<void> {
     const conversation = await this.getConversation(conversationId)
     if (conversation) {
-      this.activeConversationId = conversationId
-      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId })
+      this.activeConversationIds.set(tabId, conversationId)
+      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId, tabId })
     } else {
       throw new Error(`Conversation ${conversationId} not found`)
     }
   }
 
-  async getActiveConversation(): Promise<CONVERSATION | null> {
-    if (!this.activeConversationId) {
+  async getActiveConversation(tabId: number): Promise<CONVERSATION | null> {
+    const conversationId = this.activeConversationIds.get(tabId)
+    if (!conversationId) {
       return null
     }
-    return this.getConversation(this.activeConversationId)
+    return this.getConversation(conversationId)
   }
 
   async getMessages(
@@ -655,7 +660,32 @@ export class ThreadPresenter implements IThreadPresenter {
           } else if (block.category === 'files') {
             return `@${block.id}`
           } else if (block.category === 'prompts') {
-            return `${block.content}`
+            try {
+              // 尝试解析prompt内容
+              const promptData = JSON.parse(block.content)
+              // 如果包含messages数组，尝试提取其中的文本内容
+              if (promptData && Array.isArray(promptData.messages)) {
+                const messageTexts = promptData.messages
+                  .map((msg) => {
+                    if (typeof msg.content === 'string') {
+                      return msg.content
+                    } else if (msg.content && msg.content.type === 'text') {
+                      return msg.content.text
+                    } else {
+                      // 对于其他类型的内容（如图片等），返回空字符串或特定标记
+                      return `[${msg.content?.type || 'content'}]`
+                    }
+                  })
+                  .filter(Boolean)
+                  .join('\n')
+                return `@${block.id} <prompts>${messageTexts || block.content}</prompts>`
+              }
+            } catch (e) {
+              // 如果解析失败，直接返回原始内容
+              console.log('解析prompt内容失败:', e)
+            }
+            // 默认返回原内容
+            return `@${block.id} <prompts>${block.content}</prompts>`
           }
           return `@${block.id}`
         } else if (block.type === 'text') {
@@ -1123,7 +1153,6 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 检查是否已被取消
       this.throwIfCancelled(state.message.id)
-
       // 6. 启动流式生成
 
       const stream = this.llmProviderPresenter.startStreamCompletion(
@@ -1350,6 +1379,15 @@ export class ThreadPresenter implements IThreadPresenter {
       }
       contextMessages = await this.getContextMessages(conversationId)
     }
+
+    // 处理 UserMessageMentionBlock
+    if (userMessage.role === 'user') {
+      const msgContent = userMessage.content as UserMessageContent
+      if (msgContent.content && !msgContent.text) {
+        msgContent.text = this.formatUserMessageContent(msgContent.content)
+      }
+    }
+
     // 任何情况都使用最新配置
     const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
     const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
@@ -1366,7 +1404,11 @@ export class ThreadPresenter implements IThreadPresenter {
   }> {
     // 处理文本内容
     const userContent = `
-      ${userMessage.content.text}
+      ${
+        userMessage.content.content
+          ? this.formatUserMessageContent(userMessage.content.content)
+          : userMessage.content.text
+      }
       ${getFileContext(userMessage.content.files)}
     `
 
@@ -1472,13 +1514,27 @@ export class ThreadPresenter implements IThreadPresenter {
     const selectedMessages: Message[] = []
 
     for (const msg of messages) {
+      const msgContent = msg.role === 'user' ? (msg.content as UserMessageContent) : null
+      const msgText = msgContent
+        ? msgContent.text ||
+          (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
+        : ''
+
       const msgTokens = approximateTokenSize(
         msg.role === 'user'
-          ? `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+          ? `${msgText}${getFileContext(msgContent?.files || [])}`
           : JSON.stringify(msg.content)
       )
 
       if (currentLength + msgTokens <= remainingContextLength) {
+        // 如果是用户消息且有 content 但没有 text，添加 text
+        if (msg.role === 'user') {
+          const userMsgContent = msg.content as UserMessageContent
+          if (userMsgContent.content && !userMsgContent.text) {
+            userMsgContent.text = this.formatUserMessageContent(userMsgContent.content)
+          }
+        }
+
         selectedMessages.unshift(msg)
         currentLength += msgTokens
       } else {
@@ -1566,7 +1622,11 @@ export class ThreadPresenter implements IThreadPresenter {
     contextMessages.forEach((msg) => {
       if (msg.role === 'user') {
         // 处理用户消息
-        const userContent = `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+        const msgContent = msg.content as UserMessageContent
+        const msgText = msgContent.content
+          ? this.formatUserMessageContent(msgContent.content)
+          : msgContent.text
+        const userContent = `${msgText}${getFileContext(msgContent.files)}`
         resultMessages.push({
           role: 'user',
           content: userContent
@@ -1797,8 +1857,8 @@ export class ThreadPresenter implements IThreadPresenter {
     await this.messageManager.markMessageAsContextEdge(messageId, isEdge)
   }
 
-  async getActiveConversationId(): Promise<string | null> {
-    return this.activeConversationId
+  async getActiveConversationId(tabId: number): Promise<string | null> {
+    return this.activeConversationIds.get(tabId) || null
   }
 
   private async getLatestConversation(): Promise<CONVERSATION | null> {
@@ -1867,13 +1927,13 @@ export class ThreadPresenter implements IThreadPresenter {
     await Promise.all(messageIds.map((messageId) => this.stopMessageGeneration(messageId)))
   }
 
-  async summaryTitles(providerId?: string, modelId?: string): Promise<string> {
-    const conversation = await this.getActiveConversation()
+  async summaryTitles(modelId?: string, tabId?: number): Promise<string> {
+    const conversation = await this.getActiveConversation(tabId || 0)
     if (!conversation) {
       throw new Error('找不到当前对话')
     }
-    let summaryProviderId = providerId
-    if (!modelId || !providerId) {
+    let summaryProviderId = conversation.settings.providerId
+    if (!modelId) {
       modelId = this.searchAssistantModel?.id
       summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
     }
@@ -1919,17 +1979,19 @@ export class ThreadPresenter implements IThreadPresenter {
     console.log('-------------> cleanedTitle \n', cleanedTitle)
     return cleanedTitle
   }
-  async clearActiveThread(): Promise<void> {
-    this.activeConversationId = null
-    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED)
+  async clearActiveThread(tabId: number): Promise<void> {
+    this.activeConversationIds.delete(tabId)
+    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED, { tabId })
   }
 
   async clearAllMessages(conversationId: string): Promise<void> {
     await this.messageManager.clearAllMessages(conversationId)
-    // 如果是当前活动会话，需要更新生成状态
-    if (conversationId === this.activeConversationId) {
-      // 停止所有正在生成的消息
-      await this.stopConversationGeneration(conversationId)
+    // 检查所有 tab 中的活跃会话
+    for (const [_, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        // 停止所有正在生成的消息
+        await this.stopConversationGeneration(conversationId)
+      }
     }
   }
 

@@ -3,23 +3,23 @@ import path from 'path'
 import sharp from 'sharp'
 
 interface ContextMenuOptions {
-  window: BrowserWindow
+  webContents: WebContents
   shouldShowMenu?: (event: Electron.Event, params: Electron.ContextMenuParams) => boolean
   labels?: Record<string, string>
   prepend?: (
     defaultActions: MenuItemConstructorOptions[],
     params: Electron.ContextMenuParams,
-    browserWindow: BrowserWindow
+    webContents: WebContents
   ) => MenuItemConstructorOptions[]
   append?: (
     defaultActions: MenuItemConstructorOptions[],
     params: Electron.ContextMenuParams,
-    browserWindow: BrowserWindow
+    webContents: WebContents
   ) => MenuItemConstructorOptions[]
   menu?: (
     defaultActions: MenuItemConstructorOptions[],
     params: Electron.ContextMenuParams,
-    browserWindow: BrowserWindow
+    webContents: WebContents
   ) => MenuItemConstructorOptions[] | Menu
 }
 
@@ -31,16 +31,13 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   const disposables: (() => void)[] = []
   let isDisposed = false
 
-  console.log('contextMenu: 初始化上下文菜单', options.window.id)
+  console.log('contextMenu: 初始化上下文菜单', options.webContents.id)
 
-  // 确保 window 参数存在
-  if (!options.window) {
-    console.error('contextMenu: Window 参数缺失')
-    throw new Error('Window is required')
+  // 确保 webContents 参数存在
+  if (!options.webContents) {
+    console.error('contextMenu: WebContents 参数缺失')
+    throw new Error('WebContents is required')
   }
-
-  // 获取 WebContents 实例
-  const getWebContents = (win: BrowserWindow): WebContents => win.webContents
 
   // 处理上下文菜单事件
   const handleContextMenu = (event: Electron.Event, params: Electron.ContextMenuParams) => {
@@ -70,8 +67,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         id: 'copyImage',
         label: options.labels?.copyImage || '复制图片',
         click: () => {
-          const webContents = getWebContents(options.window)
-          webContents.copyImageAt(params.x, params.y)
+          options.webContents.copyImageAt(params.x, params.y)
           console.log('contextMenu: 复制图片', params.srcURL)
         }
       })
@@ -210,25 +206,28 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
 
     // 允许用户在菜单前添加项目
     if (typeof options.prepend === 'function') {
-      const prependItems = options.prepend(menuItems, params, options.window)
+      const prependItems = options.prepend(menuItems, params, options.webContents)
       menuItems = prependItems.concat(menuItems)
     }
 
     // 允许用户在菜单后添加项目
     if (typeof options.append === 'function') {
-      const appendItems = options.append(menuItems, params, options.window)
+      const appendItems = options.append(menuItems, params, options.webContents)
       menuItems = menuItems.concat(appendItems)
     }
 
     // 允许用户完全自定义菜单
     if (typeof options.menu === 'function') {
-      const customMenu = options.menu(menuItems, params, options.window)
+      const customMenu = options.menu(menuItems, params, options.webContents)
 
       if (Array.isArray(customMenu)) {
         menuItems = customMenu
       } else {
         // 如果是一个 Menu 实例，直接显示
-        customMenu.popup({ window: options.window })
+        const window = BrowserWindow.fromWebContents(options.webContents)
+        if (window) {
+          customMenu.popup({ window })
+        }
         return
       }
     }
@@ -241,11 +240,14 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
       try {
         const menu = Menu.buildFromTemplate(menuItems)
         console.log('contextMenu: 显示菜单')
-        menu.popup({
-          window: options.window,
-          x: params.x,
-          y: params.y
-        })
+        const window = BrowserWindow.fromWebContents(options.webContents)
+        if (window) {
+          menu.popup({
+            window,
+            x: params.x,
+            y: params.y
+          })
+        }
       } catch (error) {
         console.error('contextMenu: 创建或显示菜单失败', error)
       }
@@ -283,15 +285,13 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   }
 
   // 初始化上下文菜单
-  const initialize = (win: BrowserWindow) => {
+  const initialize = (webContents: WebContents) => {
     if (isDisposed) {
       console.log('contextMenu: 已销毁，不初始化')
       return
     }
 
     try {
-      const webContents = getWebContents(win)
-
       // 添加上下文菜单事件监听器
       webContents.on('context-menu', handleContextMenu)
 
@@ -313,8 +313,8 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
     }
   }
 
-  // 注册窗口
-  initialize(options.window)
+  // 注册 WebContents
+  initialize(options.webContents)
 
   // 返回清理函数
   return () => {

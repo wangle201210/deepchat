@@ -23,7 +23,7 @@
             v-for="dtThread in thread.dtThreads"
             :key="dtThread.id"
             :thread="dtThread"
-            :is-active="dtThread.id === chatStore.activeThreadId"
+            :is-active="dtThread.id === chatStore.getActiveThreadId()"
             :working-status="chatStore.getThreadWorkingStatus(dtThread.id)"
             @select="handleThreadSelect"
             @rename="showRenameDialog(dtThread)"

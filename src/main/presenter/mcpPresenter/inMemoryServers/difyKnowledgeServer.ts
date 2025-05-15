@@ -9,7 +9,7 @@ import axios from 'axios'
 const DifyKnowledgeSearchArgsSchema = z.object({
   query: z.string().describe('搜索查询内容 (必填)'),
   topK: z.number().optional().default(5).describe('返回结果数量 (默认5条)'),
-  scoreThreshold: z.number().optional().default(0.5).describe('相似度阈值 (0-1之间，默认0.5)')
+  scoreThreshold: z.number().optional().default(0.2).describe('相似度阈值 (0-1之间，默认0.2)')
 })
 
 // 定义Dify API返回的数据结构
@@ -55,10 +55,17 @@ export class DifyKnowledgeServer {
     endpoint: string
     datasetId: string
     description: string
+    enabled: boolean
   }> = []
 
   constructor(env?: {
-    configs: { apiKey: string; endpoint: string; datasetId: string; description: string }[]
+    configs: {
+      apiKey: string
+      endpoint: string
+      datasetId: string
+      description: string
+      enabled: boolean
+    }[]
   }) {
     console.log('DifyKnowledgeServer constructor', env)
     if (!env) {
@@ -87,7 +94,8 @@ export class DifyKnowledgeServer {
         apiKey: env.apiKey,
         datasetId: env.datasetId,
         endpoint: env.endpoint || 'https://api.dify.ai/v1',
-        description: env.description
+        description: env.description,
+        enabled: env.enabled
       })
     }
 
@@ -117,14 +125,16 @@ export class DifyKnowledgeServer {
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const tools = this.configs.map((config, index) => {
-        const suffix = this.configs.length > 1 ? `_${index + 1}` : ''
-        return {
-          name: `dify_knowledge_search${suffix}`,
-          description: config.description,
-          inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema)
-        }
-      })
+      const tools = this.configs
+        .filter((conf) => conf.enabled)
+        .map((config, index) => {
+          const suffix = this.configs.length > 1 ? `_${index + 1}` : ''
+          return {
+            name: `dify_knowledge_search${suffix}`,
+            description: config.description,
+            inputSchema: zodToJsonSchema(DifyKnowledgeSearchArgsSchema)
+          }
+        })
 
       return { tools }
     })
@@ -136,6 +146,8 @@ export class DifyKnowledgeServer {
       // 检查是否是Dify知识库搜索工具
       if (name.startsWith('dify_knowledge_search')) {
         try {
+          // 过滤出启用的配置
+          const enabledConfigs = this.configs.filter((config) => config.enabled)
           // 提取索引
           let configIndex = 0
           const match = name.match(/_([0-9]+)$/)
@@ -144,11 +156,16 @@ export class DifyKnowledgeServer {
           }
 
           // 确保索引有效
-          if (configIndex < 0 || configIndex >= this.configs.length) {
+          if (configIndex < 0 || configIndex >= enabledConfigs.length) {
             throw new Error(`无效的知识库索引: ${configIndex}`)
           }
 
-          return await this.performDifyKnowledgeSearch(parameters, configIndex)
+          // 获取实际配置的索引
+          const actualConfigIndex = this.configs.findIndex(
+            (config) => config === enabledConfigs[configIndex]
+          )
+
+          return await this.performDifyKnowledgeSearch(parameters, actualConfigIndex)
         } catch (error) {
           console.error('Dify知识库搜索失败:', error)
           return {
@@ -181,7 +198,7 @@ export class DifyKnowledgeServer {
     const {
       query,
       topK = 5,
-      scoreThreshold = 0.5
+      scoreThreshold = 0.2
     } = parameters as {
       query: string
       topK?: number

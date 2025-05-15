@@ -10,13 +10,14 @@ import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
 import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
 import { useSettingsStore } from '@/stores/settings'
-
+import { useThemeStore } from '@/stores/theme'
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
 const artifactStore = useArtifactStore()
 const chatStore = useChatStore()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
+const themeStore = useThemeStore()
 
 // 错误通知队列及当前正在显示的错误
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
@@ -35,6 +36,7 @@ watch(
     }
     document.documentElement.classList.add(newTheme)
     document.documentElement.classList.add(newFontSizeClass)
+    console.log('newTheme', themeStore.themeMode)
   },
   { immediate: false } // 初始化在 onMounted 中处理
 )
@@ -235,7 +237,7 @@ onMounted(() => {
 
   // 监听当前对话的变化
   watch(
-    () => chatStore.activeThreadId,
+    () => chatStore.getActiveThreadId(),
     () => {
       // 当切换对话时关闭 artifacts 页面
       artifactStore.hideArtifact()

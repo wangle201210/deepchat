@@ -15,8 +15,9 @@ export class ShortcutPresenter {
 
     // Command+W 或 Ctrl+W 隐藏窗口
     globalShortcut.register(process.platform === 'darwin' ? 'Command+W' : 'Control+W', () => {
-      if (presenter.windowPresenter.mainWindow?.isFocused()) {
-        presenter.windowPresenter.hide()
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        presenter.windowPresenter.hide(focusedWindow.id)
       }
     })
 

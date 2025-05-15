@@ -18,8 +18,8 @@ import { useSettingsStore } from '@/stores/settings'
 import type {
   MCPServerConfig,
   MCPToolDefinition,
-  PromptWithClient,
-  ResourceListEntryWithClient
+  PromptListEntry,
+  ResourceListEntry
 } from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import McpServerForm from './mcpServerForm.vue'
@@ -102,19 +102,19 @@ const selectTool = (tool: MCPToolDefinition) => {
 }
 
 // 选择Prompt
-const selectPrompt = (prompt: PromptWithClient) => {
+const selectPrompt = (prompt: PromptListEntry) => {
   selectedPrompt.value = prompt.name
   promptResult.value = ''
 }
 
 // 选择Resource
-const selectResource = (resource: ResourceListEntryWithClient) => {
+const selectResource = (resource: ResourceListEntry) => {
   selectedResource.value = resource.uri
   resourceContent.value = ''
 }
 
 // 加载资源内容
-const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
+const loadResourceContent = async (resource: ResourceListEntry) => {
   if (!resource) return
 
   try {
@@ -139,7 +139,7 @@ const loadResourceContent = async (resource: ResourceListEntryWithClient) => {
 }
 
 // 调用Prompt
-const callPrompt = async (prompt: PromptWithClient) => {
+const callPrompt = async (prompt: PromptListEntry) => {
   if (!prompt) return
   if (!validatePromptJson(promptParams.value)) return
 
@@ -215,9 +215,9 @@ const handleToggleDefaultServer = async (serverName: string) => {
   const isDefault = mcpStore.config.defaultServers.includes(serverName)
   console.log('mcpStore.config.defaultServers', mcpStore.config.defaultServers)
   // 如果不是默认服务器，且已达到最大数量，显示提示
-  if (!isDefault && mcpStore.config.defaultServers.length > 3) {
+  if (!isDefault && mcpStore.config.defaultServers.length > 30) {
     toast({
-      title: t('settings.mcp.maxDefaultServersReached'),
+      title: t('mcp.errors.maxDefaultServersReached'),
       description: t('settings.mcp.removeDefaultFirst'),
       variant: 'destructive'
     })
@@ -394,6 +394,44 @@ const selectedPromptObj = computed(() => {
   return mcpStore.prompts.find((p) => p.name === selectedPrompt.value)
 })
 
+// 添加计算属性：获取默认参数模板
+const defaultPromptParams = computed(() => {
+  if (!selectedPromptObj.value) return '{}'
+
+  // 获取 arguments 字段
+  const promptArgs = selectedPromptObj.value.arguments || {}
+
+  // 如果 arguments 是数组，将其转换为对象
+  if (Array.isArray(promptArgs)) {
+    const argsObject = promptArgs.reduce(
+      (acc, arg) => {
+        acc[arg.name] = '' // 为每个参数设置空值
+        return acc
+      },
+      {} as Record<string, string>
+    )
+    return JSON.stringify(argsObject, null, 2)
+  }
+
+  // 如果已经是对象，直接返回
+  return JSON.stringify(promptArgs, null, 2)
+})
+
+// 监听选中提示模板变化，更新参数
+watch(selectedPrompt, () => {
+  promptParams.value = defaultPromptParams.value
+})
+
+// 格式化 JSON 字符串
+const formatJson = (json: string): string => {
+  try {
+    const obj = JSON.parse(json)
+    return JSON.stringify(obj, null, 2)
+  } catch (e) {
+    return json
+  }
+}
+
 // 添加计算属性：获取当前选中的资源对象
 const selectedResourceObj = computed(() => {
   return mcpStore.resources.find((r) => r.uri === selectedResource.value)
@@ -520,50 +558,50 @@ const getJsonPartClass = (type: string): string => {
       return ''
   }
 }
+
+// 添加计算属性：获取参数描述
+const promptArgsDescription = computed(() => {
+  if (!selectedPromptObj.value) return []
+  const promptArgs = selectedPromptObj.value.arguments || {}
+
+  if (Array.isArray(promptArgs)) {
+    return promptArgs.map((arg) => ({
+      name: arg.name,
+      description: arg.description || '',
+      required: arg.required || false
+    }))
+  }
+
+  return []
+})
 </script>
 
 <template>
   <div class="h-full flex flex-col w-full">
     <!-- 选项卡 -->
     <div class="flex border-b mb-4 px-4">
-      <button
-        :class="
-          activeTab === 'servers'
-            ? 'px-3 py-1.5 text-sm border-b-2 border-primary font-medium text-primary'
-            : 'px-3 py-1.5 text-sm text-muted-foreground'
-        "
-        @click="activeTab = 'servers'"
-      >
+      <button :class="activeTab === 'servers'
+        ? 'px-3 py-1.5 text-sm border-b-2 border-primary font-medium text-primary'
+        : 'px-3 py-1.5 text-sm text-muted-foreground'
+        " @click="activeTab = 'servers'">
         {{ t('settings.mcp.tabs.servers') }}
       </button>
-      <button
-        :class="
-          activeTab === 'tools'
-            ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
-            : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
-        "
-        @click="activeTab = 'tools'"
-      >
+      <button :class="activeTab === 'tools'
+        ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
+        : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
+        " @click="activeTab = 'tools'">
         {{ t('settings.mcp.tabs.tools') }}
       </button>
-      <button
-        :class="
-          activeTab === 'prompts'
-            ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
-            : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
-        "
-        @click="activeTab = 'prompts'"
-      >
+      <button :class="activeTab === 'prompts'
+        ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
+        : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
+        " @click="activeTab = 'prompts'">
         {{ t('settings.mcp.tabs.prompts') }}
       </button>
-      <button
-        :class="
-          activeTab === 'resources'
-            ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
-            : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
-        "
-        @click="activeTab = 'resources'"
-      >
+      <button :class="activeTab === 'resources'
+        ? 'px-3 py-1.5 text-sm ml-2 border-b-2 border-primary font-medium text-primary'
+        : 'px-3 py-1.5 text-sm ml-2 text-muted-foreground'
+        " @click="activeTab = 'resources'">
         {{ t('settings.mcp.tabs.resources') }}
       </button>
     </div>
@@ -610,10 +648,8 @@ const getJsonPartClass = (type: string): string => {
                 <DialogHeader class="px-4 flex-shrink-0">
                   <DialogTitle>{{ t('settings.mcp.addServerDialog.title') }}</DialogTitle>
                 </DialogHeader>
-                <McpServerForm
-                  :default-json-config="settingsStore.mcpInstallCache || undefined"
-                  @submit="handleAddServer"
-                />
+                <McpServerForm :default-json-config="settingsStore.mcpInstallCache || undefined"
+                  @submit="handleAddServer" />
               </DialogContent>
             </Dialog>
           </div>
@@ -623,10 +659,7 @@ const getJsonPartClass = (type: string): string => {
           <Icon icon="lucide:loader" class="h-8 w-8 animate-spin" />
         </div>
 
-        <div
-          v-else-if="mcpStore.serverList.length === 0"
-          class="text-center py-8 text-muted-foreground text-lg"
-        >
+        <div v-else-if="mcpStore.serverList.length === 0" class="text-center py-8 text-muted-foreground text-lg">
           {{ t('settings.mcp.noServersFound') }}
         </div>
 
@@ -636,11 +669,8 @@ const getJsonPartClass = (type: string): string => {
             <h4 class="text-sm font-medium mb-2 text-muted-foreground">
               {{ t('settings.mcp.builtInServers') }}
             </h4>
-            <div
-              v-for="server in inMemoryServers"
-              :key="server.name"
-              class="border rounded-lg overflow-hidden bg-card mb-4"
-            >
+            <div v-for="server in inMemoryServers" :key="server.name"
+              class="border rounded-lg overflow-hidden bg-card mb-4">
               <div class="flex items-center p-4">
                 <div class="flex-1 min-w-0">
                   <div>
@@ -649,14 +679,12 @@ const getJsonPartClass = (type: string): string => {
                       <h4 class="text-sm font-medium truncate">
                         {{ getLocalizedServerName(server.name) }}
                       </h4>
-                      <span
-                        :class="[
-                          'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
-                          server.isRunning
-                            ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-                        ]"
-                      >
+                      <span :class="[
+                        'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
+                        server.isRunning
+                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
+                      ]">
                         {{
                           server.isRunning ? t('settings.mcp.running') : t('settings.mcp.stopped')
                         }}
@@ -671,23 +699,11 @@ const getJsonPartClass = (type: string): string => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          class="h-8 w-8 rounded-lg text-muted-foreground"
-                          :disabled="mcpStore.configLoading"
-                          @click="handleToggleServer(server.name)"
-                        >
-                          <Icon
-                            v-if="mcpStore.serverLoadingStates[server.name]"
-                            icon="lucide:loader"
-                            class="h-4 w-4 animate-spin"
-                          />
-                          <Icon
-                            v-else
-                            :icon="server.isRunning ? 'lucide:square' : 'lucide:play'"
-                            class="h-4 w-4"
-                          />
+                        <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground"
+                          :disabled="mcpStore.configLoading" @click="handleToggleServer(server.name)">
+                          <Icon v-if="mcpStore.serverLoadingStates[server.name]" icon="lucide:loader"
+                            class="h-4 w-4 animate-spin" />
+                          <Icon v-else :icon="server.isRunning ? 'lucide:square' : 'lucide:play'" class="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -705,23 +721,11 @@ const getJsonPartClass = (type: string): string => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          class="h-8 w-8 rounded-lg"
-                          :class="
-                            server.isDefault
-                              ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                              : 'text-muted-foreground'
-                          "
-                          :disabled="mcpStore.configLoading"
-                          @click="handleToggleDefaultServer(server.name)"
-                        >
-                          <Icon
-                            v-if="server.isDefault"
-                            icon="lucide:check-circle"
-                            class="h-4 w-4"
-                          />
+                        <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg" :class="server.isDefault
+                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                          : 'text-muted-foreground'
+                          " :disabled="mcpStore.configLoading" @click="handleToggleDefaultServer(server.name)">
+                          <Icon v-if="server.isDefault" icon="lucide:check-circle" class="h-4 w-4" />
                           <Icon v-else icon="lucide:circle" class="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -740,13 +744,8 @@ const getJsonPartClass = (type: string): string => {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          class="h-8 w-8 rounded-lg text-muted-foreground"
-                          :disabled="mcpStore.configLoading"
-                          @click="openEditServerDialog(server.name)"
-                        >
+                        <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground"
+                          :disabled="mcpStore.configLoading" @click="openEditServerDialog(server.name)">
                           <Icon icon="lucide:edit" class="h-4 w-4" />
                         </Button>
                       </TooltipTrigger>
@@ -759,21 +758,16 @@ const getJsonPartClass = (type: string): string => {
               </div>
               <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
                 <div class="flex justify-between items-center">
-                  <div
-                    class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
-                  >
+                  <div class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0">
                     {{ server.command }} {{ server.args.join(' ') }}
                   </div>
                   <div class="flex space-x-2 flex-shrink-0">
                     <span
-                      class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 rounded-full shrink-0"
-                    >
+                      class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 rounded-full shrink-0">
                       {{ t('settings.mcp.builtIn') }}
                     </span>
-                    <span
-                      v-if="server.isDefault"
-                      class="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full shrink-0"
-                    >
+                    <span v-if="server.isDefault"
+                      class="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full shrink-0">
                       {{ t('settings.mcp.default') }}
                     </span>
                   </div>
@@ -782,34 +776,25 @@ const getJsonPartClass = (type: string): string => {
             </div>
 
             <!-- 普通服务标题 -->
-            <h4
-              v-if="regularServers.length > 0"
-              class="text-sm font-medium mb-2 mt-6 text-muted-foreground"
-            >
+            <h4 v-if="regularServers.length > 0" class="text-sm font-medium mb-2 mt-6 text-muted-foreground">
               {{ t('settings.mcp.customServers') }}
             </h4>
           </div>
 
           <!-- 普通服务 -->
-          <div
-            v-for="server in regularServers"
-            :key="server.name"
-            class="border rounded-lg overflow-hidden bg-card"
-          >
+          <div v-for="server in regularServers" :key="server.name" class="border rounded-lg overflow-hidden bg-card">
             <div class="flex items-center p-4">
               <div class="flex-1 min-w-0">
                 <div>
                   <div class="flex items-center">
                     <span class="text-xl mr-2 flex-shrink-0">{{ server.icons }}</span>
                     <h4 class="text-sm font-medium truncate">{{ server.name }}</h4>
-                    <span
-                      :class="[
-                        'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
-                        server.isRunning
-                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
-                      ]"
-                    >
+                    <span :class="[
+                      'ml-2 px-2 py-0.5 text-xs rounded-full flex-shrink-0',
+                      server.isRunning
+                        ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100'
+                    ]">
                       {{ server.isRunning ? t('settings.mcp.running') : t('settings.mcp.stopped') }}
                     </span>
                   </div>
@@ -822,23 +807,11 @@ const getJsonPartClass = (type: string): string => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        class="h-8 w-8 rounded-lg text-muted-foreground"
-                        :disabled="mcpStore.configLoading"
-                        @click="handleToggleServer(server.name)"
-                      >
-                        <Icon
-                          v-if="mcpStore.serverLoadingStates[server.name]"
-                          icon="lucide:loader"
-                          class="h-4 w-4 animate-spin"
-                        />
-                        <Icon
-                          v-else
-                          :icon="server.isRunning ? 'lucide:square' : 'lucide:play'"
-                          class="h-4 w-4"
-                        />
+                      <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground"
+                        :disabled="mcpStore.configLoading" @click="handleToggleServer(server.name)">
+                        <Icon v-if="mcpStore.serverLoadingStates[server.name]" icon="lucide:loader"
+                          class="h-4 w-4 animate-spin" />
+                        <Icon v-else :icon="server.isRunning ? 'lucide:square' : 'lucide:play'" class="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
@@ -856,18 +829,10 @@ const getJsonPartClass = (type: string): string => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        class="h-8 w-8 rounded-lg"
-                        :class="
-                          server.isDefault
-                            ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                            : 'text-muted-foreground'
-                        "
-                        :disabled="mcpStore.configLoading"
-                        @click="handleToggleDefaultServer(server.name)"
-                      >
+                      <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg" :class="server.isDefault
+                        ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                        : 'text-muted-foreground'
+                        " :disabled="mcpStore.configLoading" @click="handleToggleDefaultServer(server.name)">
                         <Icon v-if="server.isDefault" icon="lucide:check-circle" class="h-4 w-4" />
                         <Icon v-else icon="lucide:circle" class="h-4 w-4" />
                       </Button>
@@ -887,13 +852,8 @@ const getJsonPartClass = (type: string): string => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        class="h-8 w-8 rounded-lg text-muted-foreground"
-                        :disabled="mcpStore.configLoading"
-                        @click="openEditServerDialog(server.name)"
-                      >
+                      <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground"
+                        :disabled="mcpStore.configLoading" @click="openEditServerDialog(server.name)">
                         <Icon icon="lucide:edit" class="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
@@ -906,13 +866,8 @@ const getJsonPartClass = (type: string): string => {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger as-child>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        class="h-8 w-8 rounded-lg text-muted-foreground"
-                        :disabled="mcpStore.configLoading"
-                        @click="handleRemoveServer(server.name)"
-                      >
+                      <Button variant="outline" size="icon" class="h-8 w-8 rounded-lg text-muted-foreground"
+                        :disabled="mcpStore.configLoading" @click="handleRemoveServer(server.name)">
                         <Icon icon="lucide:trash" class="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
@@ -925,22 +880,15 @@ const getJsonPartClass = (type: string): string => {
             </div>
             <div class="bg-muted dark:bg-zinc-800 px-4 py-2 overflow-hidden">
               <div class="flex justify-between items-center">
-                <div
-                  v-if="server.type === 'http'"
-                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
-                >
+                <div v-if="server.type === 'http'"
+                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0">
                   {{ server.baseUrl }}
                 </div>
-                <div
-                  v-else
-                  class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0"
-                >
+                <div v-else class="text-xs font-mono overflow-hidden text-ellipsis whitespace-nowrap pr-2 flex-1 w-0">
                   {{ server.command }} {{ server.args.join(' ') }}
                 </div>
-                <span
-                  v-if="server.isDefault"
-                  class="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full shrink-0"
-                >
+                <span v-if="server.isDefault"
+                  class="ml-2 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full shrink-0">
                   {{ t('settings.mcp.default') }}
                 </span>
               </div>
@@ -950,10 +898,7 @@ const getJsonPartClass = (type: string): string => {
       </ScrollArea>
 
       <!-- 调试工具选项卡 -->
-      <div
-        v-if="activeTab === 'tools'"
-        class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden"
-      >
+      <div v-if="activeTab === 'tools'" class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden">
         <!-- 左侧工具列表 -->
         <div class="h-full flex flex-col overflow-hidden border-r pr-2">
           <ScrollArea class="h-full w-full">
@@ -961,21 +906,14 @@ const getJsonPartClass = (type: string): string => {
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
             </div>
 
-            <div
-              v-else-if="mcpStore.tools.length === 0"
-              class="text-center py-4 text-sm text-muted-foreground"
-            >
+            <div v-else-if="mcpStore.tools.length === 0" class="text-center py-4 text-sm text-muted-foreground">
               {{ t('mcp.tools.noToolsAvailable') }}
             </div>
 
             <div v-else class="space-y-1">
-              <div
-                v-for="tool in mcpStore.tools"
-                :key="tool.function.name"
+              <div v-for="tool in mcpStore.tools" :key="tool.function.name"
                 class="p-2 rounded-md cursor-pointer hover:bg-accent text-sm"
-                :class="{ 'bg-accent': selectedTool?.function.name === tool.function.name }"
-                @click="selectTool(tool)"
-              >
+                :class="{ 'bg-accent': selectedTool?.function.name === tool.function.name }" @click="selectTool(tool)">
                 <div class="font-medium">{{ tool.function.name }}</div>
                 <div class="text-xs text-muted-foreground line-clamp-2 mt-1">
                   {{ tool.function.description }}
@@ -1001,43 +939,55 @@ const getJsonPartClass = (type: string): string => {
                   </p>
                 </div>
 
+                <!-- 工具参数说明 -->
+                <div v-if="selectedTool.function.parameters?.properties" class="mb-3">
+                  <div class="text-xs font-medium mb-2">{{ t('mcp.tools.parameters') }}</div>
+                  <div class="space-y-2">
+                    <div v-for="(prop, key) in selectedTool.function.parameters.properties" :key="key"
+                      class="p-2 bg-muted/50 rounded-md">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs">{{ key }}</span>
+                        <span v-if="selectedTool.function.parameters.required?.includes(key)"
+                          class="text-xs text-red-500">*</span>
+                      </div>
+                      <div v-if="prop.description" class="text-xs text-muted-foreground mt-1">
+                        {{ prop.description }}
+                      </div>
+                      <div v-if="prop.type" class="text-xs text-muted-foreground mt-1">
+                        {{ t('mcp.tools.type') }}: {{ prop.type }}
+                      </div>
+                      <div v-if="prop.annotations" class="text-xs text-muted-foreground mt-1">
+                        {{ t('mcp.tools.annotations') }}: {{ JSON.stringify(prop.annotations, null, 2) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- 工具参数输入 -->
                 <div class="space-y-3 mb-3">
                   <div class="space-y-1">
                     <label class="text-xs font-medium">
-                      {{ t('mcp.tools.parameters') }}
+                      {{ t('mcp.tools.input') }}
                       <span class="text-red-500">*</span>
                     </label>
-                    <textarea
-                      v-model="localToolInputs[selectedTool.function.name]"
+                    <textarea v-model="localToolInputs[selectedTool.function.name]"
                       class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                      placeholder="{}"
-                      :class="{ 'border-red-500': jsonError[selectedTool.function.name] }"
-                      @input="
+                      placeholder="{}" :class="{ 'border-red-500': jsonError[selectedTool.function.name] }" @input="
                         validateJson(
                           localToolInputs[selectedTool.function.name],
                           selectedTool.function.name
                         )
-                      "
-                    ></textarea>
+                        "></textarea>
                   </div>
                 </div>
 
                 <!-- 调用按钮和结果显示 -->
                 <div class="space-y-3">
-                  <Button
-                    class="w-full"
-                    :disabled="
-                      mcpStore.toolLoadingStates[selectedTool.function.name] ||
-                      jsonError[selectedTool.function.name]
-                    "
-                    @click="callTool(selectedTool.function.name)"
-                  >
-                    <Icon
-                      v-if="mcpStore.toolLoadingStates[selectedTool.function.name]"
-                      icon="lucide:loader"
-                      class="mr-2 h-4 w-4 animate-spin"
-                    />
+                  <Button class="w-full" :disabled="mcpStore.toolLoadingStates[selectedTool.function.name] ||
+                    jsonError[selectedTool.function.name]
+                    " @click="callTool(selectedTool.function.name)">
+                    <Icon v-if="mcpStore.toolLoadingStates[selectedTool.function.name]" icon="lucide:loader"
+                      class="mr-2 h-4 w-4 animate-spin" />
                     {{
                       mcpStore.toolLoadingStates[selectedTool.function.name]
                         ? t('mcp.tools.runningTool')
@@ -1059,10 +1009,7 @@ const getJsonPartClass = (type: string): string => {
       </div>
 
       <!-- 提示模板选项卡 -->
-      <div
-        v-if="activeTab === 'prompts'"
-        class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden"
-      >
+      <div v-if="activeTab === 'prompts'" class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden">
         <!-- 左侧提示模板列表 -->
         <div class="h-full flex flex-col overflow-hidden border-r pr-2">
           <ScrollArea class="h-full w-full">
@@ -1070,27 +1017,20 @@ const getJsonPartClass = (type: string): string => {
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
             </div>
 
-            <div
-              v-else-if="mcpStore.prompts.length === 0"
-              class="text-center py-4 text-sm text-muted-foreground"
-            >
+            <div v-else-if="mcpStore.prompts.length === 0" class="text-center py-4 text-sm text-muted-foreground">
               {{ t('mcp.prompts.noPromptsAvailable') }}
             </div>
 
             <div v-else class="space-y-1">
-              <div
-                v-for="prompt in mcpStore.prompts"
-                :key="prompt.name"
+              <div v-for="prompt in mcpStore.prompts" :key="prompt.name"
                 class="p-2 rounded-md cursor-pointer hover:bg-accent text-sm"
-                :class="{ 'bg-accent': selectedPrompt === prompt.name }"
-                @click="selectPrompt(prompt)"
-              >
+                :class="{ 'bg-accent': selectedPrompt === prompt.name }" @click="selectPrompt(prompt)">
                 <div class="font-medium">{{ prompt.name }}</div>
                 <div class="text-xs text-muted-foreground line-clamp-2 mt-1">
                   {{ prompt.description || t('mcp.prompts.noDescription') }}
                 </div>
                 <div class="text-xs text-muted-foreground mt-1">
-                  {{ prompt.clientName }}
+                  {{ prompt.client.name }}
                 </div>
               </div>
             </div>
@@ -1116,31 +1056,47 @@ const getJsonPartClass = (type: string): string => {
                 <!-- 提示参数输入 -->
                 <div class="space-y-3 mb-3">
                   <div class="space-y-1">
-                    <label class="text-xs font-medium">
-                      {{ t('mcp.prompts.parameters') }}
-                    </label>
-                    <textarea
-                      v-model="promptParams"
-                      class="flex h-24 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
-                      placeholder="{}"
-                      :class="{ 'border-red-500': jsonPromptError }"
-                      @input="validatePromptJson(promptParams)"
-                    ></textarea>
+                    <div class="flex justify-between items-center">
+                      <label class="text-xs font-medium">
+                        {{ t('mcp.prompts.parameters') }}
+                      </label>
+                      <Button variant="ghost" size="sm" class="h-6 text-xs" @click="promptParams = defaultPromptParams">
+                        <Icon icon="lucide:refresh-cw" class="mr-1 h-3 w-3" />
+                        {{ t('mcp.prompts.resetToDefault') }}
+                      </Button>
+                    </div>
+
+                    <!-- 参数描述区域 -->
+                    <div v-if="promptArgsDescription.length > 0" class="mb-2 p-2 bg-muted/50 rounded-md">
+                      <div v-for="arg in promptArgsDescription" :key="arg.name"
+                        class="text-xs text-muted-foreground mb-1 last:mb-0">
+                        <span class="font-medium">{{ arg.name }}</span>
+                        <span v-if="arg.required" class="ml-1 text-red-500">*</span>
+                        <span class="ml-1">- {{ arg.description }}</span>
+                      </div>
+                    </div>
+
+                    <div class="relative">
+                      <textarea v-model="promptParams"
+                        class="flex h-48 w-full rounded-md border border-input bg-transparent px-2 py-1.5 text-xs shadow-sm transition-colors file:border-0 file:bg-transparent file:text-xs file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+                        placeholder="{}" :class="{ 'border-red-500': jsonPromptError }"
+                        @input="validatePromptJson(promptParams)"
+                        @blur="promptParams = formatJson(promptParams)"></textarea>
+                      <div v-if="jsonPromptError" class="absolute right-2 top-2 text-xs text-red-500">
+                        {{ t('mcp.prompts.invalidJson') }}
+                      </div>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                      {{ t('mcp.prompts.parametersHint') }}
+                    </p>
                   </div>
                 </div>
 
                 <!-- 调用按钮和结果显示 -->
                 <div class="space-y-3">
-                  <Button
-                    class="w-full"
-                    :disabled="promptLoading || jsonPromptError"
-                    @click="callPrompt(selectedPromptObj as PromptWithClient)"
-                  >
-                    <Icon
-                      v-if="promptLoading"
-                      icon="lucide:loader"
-                      class="mr-2 h-4 w-4 animate-spin"
-                    />
+                  <Button class="w-full" :disabled="promptLoading || jsonPromptError"
+                    @click="callPrompt(selectedPromptObj as PromptListEntry)">
+                    <Icon v-if="promptLoading" icon="lucide:loader" class="mr-2 h-4 w-4 animate-spin" />
                     {{
                       promptLoading
                         ? t('mcp.prompts.runningPrompt')
@@ -1162,10 +1118,7 @@ const getJsonPartClass = (type: string): string => {
       </div>
 
       <!-- 资源选项卡 -->
-      <div
-        v-if="activeTab === 'resources'"
-        class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden"
-      >
+      <div v-if="activeTab === 'resources'" class="h-full w-full grid grid-cols-[200px_1fr] gap-2 overflow-hidden">
         <!-- 左侧资源列表 -->
         <div class="h-full flex flex-col overflow-hidden border-r pr-2">
           <ScrollArea class="h-full w-full">
@@ -1173,24 +1126,17 @@ const getJsonPartClass = (type: string): string => {
               <Icon icon="lucide:loader" class="h-6 w-6 animate-spin" />
             </div>
 
-            <div
-              v-else-if="mcpStore.resources.length === 0"
-              class="text-center py-4 text-sm text-muted-foreground"
-            >
+            <div v-else-if="mcpStore.resources.length === 0" class="text-center py-4 text-sm text-muted-foreground">
               {{ t('mcp.resources.noResourcesAvailable') }}
             </div>
 
             <div v-else class="space-y-1">
-              <div
-                v-for="resource in mcpStore.resources"
-                :key="resource.uri"
+              <div v-for="resource in mcpStore.resources" :key="resource.uri"
                 class="p-2 rounded-md cursor-pointer hover:bg-accent text-sm"
-                :class="{ 'bg-accent': selectedResource === resource.uri }"
-                @click="selectResource(resource)"
-              >
+                :class="{ 'bg-accent': selectedResource === resource.uri }" @click="selectResource(resource)">
                 <div class="font-medium">{{ resource.name || resource.uri }}</div>
                 <div class="text-xs text-muted-foreground mt-1">
-                  {{ resource.clientName }}
+                  {{ resource.client.name }}
                 </div>
               </div>
             </div>
@@ -1214,16 +1160,9 @@ const getJsonPartClass = (type: string): string => {
                 </div>
 
                 <!-- 加载资源按钮 -->
-                <Button
-                  class="w-full mb-3"
-                  :disabled="resourceLoading"
-                  @click="loadResourceContent(selectedResourceObj as ResourceListEntryWithClient)"
-                >
-                  <Icon
-                    v-if="resourceLoading"
-                    icon="lucide:loader"
-                    class="mr-2 h-4 w-4 animate-spin"
-                  />
+                <Button class="w-full mb-3" :disabled="resourceLoading"
+                  @click="loadResourceContent(selectedResourceObj as ResourceListEntry)">
+                  <Icon v-if="resourceLoading" icon="lucide:loader" class="mr-2 h-4 w-4 animate-spin" />
                   {{
                     resourceLoading ? t('mcp.resources.loading') : t('mcp.resources.loadContent')
                   }}
@@ -1238,12 +1177,8 @@ const getJsonPartClass = (type: string): string => {
                     </div>
                     <div v-else-if="resourceContent">
                       <div v-if="isJsonContent" class="json-viewer">
-                        <span
-                          v-for="(part, index) in jsonParts"
-                          :key="index"
-                          :class="getJsonPartClass(part.type)"
-                          >{{ part.content }}</span
-                        >
+                        <span v-for="(part, index) in jsonParts" :key="index" :class="getJsonPartClass(part.type)">{{
+                          part.content }}</span>
                       </div>
                       <pre v-else class="resource-raw-content">{{ resourceContent }}</pre>
                     </div>
@@ -1266,13 +1201,9 @@ const getJsonPartClass = (type: string): string => {
       <DialogHeader class="px-4 flex-shrink-0">
         <DialogTitle>{{ t('settings.mcp.editServerDialog.title') }}</DialogTitle>
       </DialogHeader>
-      <McpServerForm
-        v-if="selectedServer && mcpStore.config.mcpServers[selectedServer]"
-        :server-name="selectedServer"
-        :initial-config="mcpStore.config.mcpServers[selectedServer]"
-        :edit-mode="true"
-        @submit="(name, config) => handleEditServer(name, config)"
-      />
+      <McpServerForm v-if="selectedServer && mcpStore.config.mcpServers[selectedServer]" :server-name="selectedServer"
+        :initial-config="mcpStore.config.mcpServers[selectedServer]" :edit-mode="true"
+        @submit="(name, config) => handleEditServer(name, config)" />
     </DialogContent>
   </Dialog>
 

@@ -10,6 +10,7 @@ import fs from 'fs'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { nanoid } from 'nanoid'
+import { runCode, type CodeFile } from '../pythonRunner'
 
 // Schema 定义
 const GetTimeArgsSchema = z.object({
@@ -29,6 +30,19 @@ const RunNodeCodeArgsSchema = z.object({
     .string()
     .describe(
       'Node.js code to execute, should not contain file operations, system settings modification, or external code execution'
+    ),
+  timeout: z
+    .number()
+    .optional()
+    .default(5000)
+    .describe('Code execution timeout in milliseconds, default 5 seconds')
+})
+
+const RunPythonCodeArgsSchema = z.object({
+  python_code: z
+    .string()
+    .describe(
+      'Python code to execute, should not contain file operations, system settings modification, or external code execution'
     ),
   timeout: z
     .number()
@@ -68,7 +82,7 @@ export class PowerpackServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/powerpack-server',
-        version: '0.1.0'
+        version: '0.2.0'
       },
       {
         capabilities: {
@@ -177,6 +191,27 @@ export class PowerpackServer {
     }
   }
 
+  // 执行Python代码
+  private async executePythonCode(code: string): Promise<string> {
+    const files: CodeFile[] = [
+      {
+        name: 'main.py',
+        content: code,
+        active: true
+      }
+    ]
+
+    const result = await runCode(files, (level, data) => {
+      console.log(`[${level}] ${data}`)
+    })
+
+    if (result.status === 'success') {
+      return result.output.join('\n')
+    } else {
+      throw new Error(result.error)
+    }
+  }
+
   // 设置请求处理器
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
@@ -214,6 +249,22 @@ export class PowerpackServer {
           inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
         })
       }
+
+      // 添加Python代码执行工具
+      tools.push({
+        name: 'run_python_code',
+        description:
+          'Execute simple Python code in a secure sandbox environment. Suitable for calculations, data analysis, and scientific computing. ' +
+          'The code needs to be output to the print function, and the output content needs to be formatted as a string. ' +
+          'The code will be executed with Python 3.12. ' +
+          'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
+          'Dependencies may be defined via PEP 723 script metadata, e.g. to install "pydantic", the script should startwith a comment of the form:' +
+          `# /// script\n` +
+          `# dependencies = ['pydantic']\n ` +
+          `# ///\n` +
+          `print('hello world').`,
+        inputSchema: zodToJsonSchema(RunPythonCodeArgsSchema)
+      })
 
       return { tools }
     })
@@ -296,6 +347,25 @@ export class PowerpackServer {
 
             const { code, timeout } = parsed.data
             const result = await this.executeNodeCode(code, timeout)
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `代码执行结果:\n\n${result}`
+                }
+              ]
+            }
+          }
+
+          case 'run_python_code': {
+            const parsed = RunPythonCodeArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`无效的代码参数: ${parsed.error}`)
+            }
+
+            const { python_code } = parsed.data
+            const result = await this.executePythonCode(python_code)
 
             return {
               content: [

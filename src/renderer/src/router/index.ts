@@ -33,6 +33,7 @@ const router = createRouter({
         titleKey: 'routes.settings',
         icon: 'lucide:settings'
       },
+      redirect: { name: 'settings-common' },
       children: [
         {
           path: 'common',
