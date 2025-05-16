@@ -506,6 +506,67 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
         continue
       }
 
+      // 处理函数调用相关事件
+      if (supportsFunctionCall && tools.length > 0) {
+        if (chunk.type === 'response.output_item.added') {
+          const item = chunk.item
+          if (item.type === 'function_call') {
+            toolUseDetected = true
+            nativeToolCalls[item.call_id] = {
+              name: item.name,
+              arguments: item.arguments || '',
+              completed: false
+            }
+            yield {
+              type: 'tool_call_start',
+              tool_call_id: item.call_id,
+              tool_call_name: item.name
+            }
+          }
+        } else if (chunk.type === 'response.function_call_arguments.delta') {
+          const itemId = chunk.item_id
+          const delta = chunk.delta
+          const toolCall = Object.values(nativeToolCalls).find(
+            (tool) => tool.name && !tool.completed
+          )
+          if (toolCall) {
+            toolCall.arguments += delta
+            yield {
+              type: 'tool_call_chunk',
+              tool_call_id: itemId,
+              tool_call_arguments_chunk: delta
+            }
+          }
+        } else if (chunk.type === 'response.function_call_arguments.done') {
+          const itemId = chunk.item_id
+          const argsData = chunk.arguments
+          const toolCall = Object.values(nativeToolCalls).find(
+            (tool) => tool.name && !tool.completed
+          )
+          if (toolCall) {
+            toolCall.arguments = argsData
+            yield {
+              type: 'tool_call_chunk',
+              tool_call_id: itemId,
+              tool_call_arguments_chunk: argsData
+            }
+          }
+        } else if (chunk.type === 'response.output_item.done') {
+          const item = chunk.item
+          if (item.type === 'function_call') {
+            const toolCall = nativeToolCalls[item.call_id]
+            if (toolCall) {
+              toolCall.completed = true
+              yield {
+                type: 'tool_call_end',
+                tool_call_id: item.call_id,
+                tool_call_arguments_complete: item.arguments
+              }
+            }
+          }
+        }
+      }
+
       if (chunk.type === 'response.completed') {
         const response = chunk.response
         if (response.status === 'completed' && response.output.length > 0) {
@@ -744,37 +805,6 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
 
         if (response.reasoning?.summary) {
           yield { type: 'reasoning', reasoning_content: response.reasoning.summary }
-        }
-
-        // Final check and emission for native tool calls
-        if (supportsFunctionCall && toolUseDetected) {
-          for (const toolId in nativeToolCalls) {
-            const tool = nativeToolCalls[toolId]
-            if (tool.name && tool.arguments && !tool.completed) {
-              try {
-                JSON.parse(tool.arguments) // Check validity
-                yield {
-                  type: 'tool_call_end',
-                  tool_call_id: toolId,
-                  tool_call_arguments_complete: tool.arguments
-                }
-              } catch (e) {
-                console.error(
-                  `[coreStream] Error parsing arguments for tool ${toolId} during finalization: ${tool.arguments}`,
-                  e
-                )
-                yield {
-                  type: 'tool_call_end',
-                  tool_call_id: toolId,
-                  tool_call_arguments_complete: tool.arguments // Send as received
-                }
-              }
-            } else if (!tool.completed) {
-              console.warn(
-                `[coreStream] Tool call ${toolId} is incomplete and will not have an end event during finalization. Name: ${tool.name}, Args: ${tool.arguments}`
-              )
-            }
-          }
         }
 
         yield { type: 'stop', stop_reason: toolUseDetected ? 'tool_use' : stopReason }
