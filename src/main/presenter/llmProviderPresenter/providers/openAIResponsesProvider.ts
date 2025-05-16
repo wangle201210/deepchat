@@ -523,23 +523,24 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
           const item = chunk.item
           if (item.type === 'function_call') {
             toolUseDetected = true
-            nativeToolCalls[item.call_id] = {
-              name: item.name,
-              arguments: item.arguments || '',
-              completed: false
-            }
-            yield {
-              type: 'tool_call_start',
-              tool_call_id: item.call_id,
-              tool_call_name: item.name
+            const id = item.call_id
+            if (id) {
+              nativeToolCalls[id] = {
+                name: item.name,
+                arguments: item.arguments || '',
+                completed: false
+              }
+              yield {
+                type: 'tool_call_start',
+                tool_call_id: id,
+                tool_call_name: item.name
+              }
             }
           }
         } else if (chunk.type === 'response.function_call_arguments.delta') {
           const itemId = chunk.item_id
           const delta = chunk.delta
-          const toolCall = Object.values(nativeToolCalls).find(
-            (tool) => tool.name && !tool.completed
-          )
+          const toolCall = nativeToolCalls[itemId]
           if (toolCall) {
             toolCall.arguments += delta
             yield {
@@ -551,22 +552,26 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
         } else if (chunk.type === 'response.function_call_arguments.done') {
           const itemId = chunk.item_id
           const argsData = chunk.arguments
-          const toolCall = Object.values(nativeToolCalls).find(
-            (tool) => tool.name && !tool.completed
-          )
+          const toolCall = nativeToolCalls[itemId]
           if (toolCall) {
             toolCall.arguments = argsData
+            toolCall.completed = true
             yield {
               type: 'tool_call_chunk',
               tool_call_id: itemId,
               tool_call_arguments_chunk: argsData
+            }
+            yield {
+              type: 'tool_call_end',
+              tool_call_id: itemId,
+              tool_call_arguments_complete: argsData
             }
           }
         } else if (chunk.type === 'response.output_item.done') {
           const item = chunk.item
           if (item.type === 'function_call') {
             const toolCall = nativeToolCalls[item.call_id]
-            if (toolCall) {
+            if (toolCall && !toolCall.completed) {
               toolCall.completed = true
               yield {
                 type: 'tool_call_end',
@@ -576,7 +581,6 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             }
           }
         }
-        continue
       }
 
       // 处理文本增量
