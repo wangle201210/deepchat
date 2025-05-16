@@ -49,14 +49,22 @@ app.whenReady().then(() => {
   })
 
   // 创建主窗口
-  presenter.windowPresenter.createShellWindow()
+  presenter.windowPresenter.createShellWindow({
+    initialTab: {
+      url: 'local://chat'
+    }
+  })
   presenter.shortcutPresenter.registerShortcuts()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
     if (presenter.windowPresenter.windows.size === 0) {
-      presenter.windowPresenter.createShellWindow()
+      presenter.windowPresenter.createShellWindow({
+        initialTab: {
+          url: 'local://chat'
+        }
+      })
     } else {
       presenter.windowPresenter.mainWindow?.show()
     }

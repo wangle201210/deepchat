@@ -105,9 +105,10 @@ export interface ProviderModelConfigs {
 export interface TabData {
   id: number
   title: string
-  faviconUrl?: string
   isActive: boolean
-  viewType?: string
+  position: number
+  closable: boolean
+  url: string
   icon?: string
 }
 
@@ -116,10 +117,12 @@ export interface IWindowPresenter {
     activateTabId?: number
     initialTab?: {
       url: string
-      viewType?: string
+      type?: string
       icon?: string
     }
     forMovedTab?: boolean
+    x?: number
+    y?: number
   }): Promise<number | null>
   getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
@@ -145,12 +148,12 @@ export interface ITabPresenter {
   attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   getWindowTabsData(windowId: number): Promise<Array<TabData>>
-  moveTabToNewWindow(tabId: number): Promise<boolean>
+  moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
 }
 
 export interface TabCreateOptions {
   active?: boolean
-  index?: number
+  position?: number
 }
 
 export interface ILlamaCppPresenter {
@@ -661,15 +664,6 @@ export type UpdateStatus =
   | 'downloading'
   | 'downloaded'
   | 'error'
-
-export interface TabState {
-  url: string
-  title: string
-  faviconUrl?: string
-  isActive: boolean
-  viewType?: string
-  icon?: string
-}
 
 export interface UpdateProgress {
   bytesPerSecond: number

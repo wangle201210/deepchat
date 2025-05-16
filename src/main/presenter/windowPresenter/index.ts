@@ -210,20 +210,21 @@ export class WindowPresenter implements IWindowPresenter {
     activateTabId?: number
     initialTab?: {
       url: string
-      viewType?: string
       icon?: string
     }
+    x?: number
+    y?: number
   }): Promise<number | null> {
     const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
     const shellWindowState = windowStateManager({
-      defaultWidth: 1024,
+      defaultWidth: 800,
       defaultHeight: 620
     })
     const shellWindow = new BrowserWindow({
       width: shellWindowState.width,
       height: shellWindowState.height,
-      x: shellWindowState.x,
-      y: shellWindowState.y,
+      x: options?.x ? options.x : shellWindowState.x,
+      y: options?.y ? options.y : shellWindowState.y,
       show: false,
       autoHideMenuBar: true,
       icon: iconFile,
@@ -342,10 +343,15 @@ export class WindowPresenter implements IWindowPresenter {
       shellWindow.loadFile(join(__dirname, '../../renderer/shell/index.html'))
     }
 
+    if (is.dev) {
+      shellWindow.webContents.openDevTools()
+    }
+
     // Handle initial tab creation if options are provided
     if (options?.initialTab) {
       // Wait for the window to be ready before creating a tab
       shellWindow.webContents.once('did-finish-load', async () => {
+        shellWindow.focus()
         try {
           const tabId = await presenter.tabPresenter.createTab(windowId, options.initialTab!.url, {
             active: true
