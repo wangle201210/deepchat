@@ -28,7 +28,7 @@ import { GrokProvider } from './providers/grokProvider'
 import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
-
+import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -100,6 +100,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
             instance = new OpenAIProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'openai-compatible') {
             instance = new OpenAICompatibleProvider(provider, this.configPresenter)
+          } else if (provider.apiType === 'openai-responses') {
+            instance = new OpenAIResponsesProvider(provider, this.configPresenter)
           } else if (provider.apiType === 'lmstudio') {
             instance = new LMStudioProvider(provider, this.configPresenter)
           } else {
