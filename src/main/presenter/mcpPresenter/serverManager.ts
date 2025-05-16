@@ -4,8 +4,8 @@ import axios from 'axios'
 import { proxyConfig } from '@/presenter/proxyConfig'
 import { eventBus } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
-import { getErrorMessageLabels } from '@shared/i18n'
 import { MCP_EVENTS } from '@/events'
+import { getErrorMessageLabels } from '@shared/i18n'
 
 const NPM_REGISTRY_LIST = [
   'https://registry.npmjs.org/',
@@ -74,7 +74,7 @@ export class ServerManager {
 
     // 如果所有请求都失败，返回默认的registry
     if (successfulResults.length === 0) {
-      console.log('所有npm registry测试失败，使用默认registry')
+      console.log('All npm registry tests failed, using default registry')
       return NPM_REGISTRY_LIST[0]
     }
 
@@ -148,9 +148,9 @@ export class ServerManager {
     // 如果服务器已经在运行，则不需要再次启动
     if (this.clients.has(name)) {
       if (this.isServerRunning(name)) {
-        console.info(`MCP服务器 ${name} 已经在运行中`)
+        console.info(`MCP server ${name} is already running`)
       } else {
-        console.info(`MCP服务器 ${name} 正在启动中...`)
+        console.info(`MCP server ${name} is starting...`)
       }
       return
     }
@@ -163,7 +163,7 @@ export class ServerManager {
     }
 
     try {
-      console.info(`正在启动MCP服务器 ${name}...`)
+      console.info(`Starting MCP server ${name}...`)
       const npmRegistry = serverConfig.customNpmRegistry || this.npmRegistry
       // 创建并保存客户端实例，传入npm registry
       const client = new McpClient(
@@ -176,7 +176,7 @@ export class ServerManager {
       // 连接到服务器，这将启动服务
       await client.connect()
     } catch (error) {
-      console.error(`启动MCP服务器 ${name} 失败:`, error)
+      console.error(`Failed to start MCP server ${name}:`, error)
 
       // 移除客户端引用
       this.clients.delete(name)
@@ -211,7 +211,7 @@ export class ServerManager {
         type: 'error'
       })
     } catch (notifyError) {
-      console.error('发送MCP错误通知失败:', notifyError)
+      console.error('Failed to send MCP error notification:', notifyError)
     }
   }
 
@@ -229,10 +229,10 @@ export class ServerManager {
       // 从客户端列表中移除
       this.clients.delete(name)
 
-      console.info(`MCP服务器 ${name} 已停止`)
+      console.info(`MCP server ${name} has been stopped`)
       eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
     } catch (error) {
-      console.error(`停止MCP服务器 ${name} 失败:`, error)
+      console.error(`Failed to stop MCP server ${name}:`, error)
       throw error
     }
   }

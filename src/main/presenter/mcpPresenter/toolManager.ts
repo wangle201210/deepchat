@@ -95,8 +95,11 @@ export class ToolManager {
       } catch (error: unknown) {
         // Log error and notify, but continue conflict detection with other clients
         const errorMessage = error instanceof Error ? error.message : String(error)
-        const serverName = client.serverName || '未知服务器'
-        console.error(`Pass 1 Error: 获取服务器 '${serverName}' 的工具列表失败:`, errorMessage)
+        const serverName = client.serverName || 'Unknown server'
+        console.error(
+          `Pass 1 Error: Failed to get tool list from server '${serverName}':`,
+          errorMessage
+        )
         // Send notification (existing logic from previous commit)
         const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
         const errorMessages = getErrorMessageLabels(locale)
@@ -176,8 +179,11 @@ export class ToolManager {
       } catch (error: unknown) {
         // Log error but continue building results from other clients
         const errorMessage = error instanceof Error ? error.message : String(error)
-        const serverName = client.serverName || '未知服务器'
-        console.error(`Pass 2 Error: 处理服务器 '${serverName}' 的工具时出错:`, errorMessage)
+        const serverName = client.serverName || 'Unknown server'
+        console.error(
+          `Pass 2 Error: Error processing tools from server '${serverName}':`,
+          errorMessage
+        )
         // Maybe skip adding tools from this client if listTools fails here again,
         // though it succeeded in Pass 1. Or rely on the notification from Pass 1.
         continue // Continue to next client
@@ -372,7 +378,7 @@ export class ToolManager {
       return await client.getPrompt(promptName, params)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('获取提示模板失败:', errorMessage)
+      console.error('Failed to get prompt template:', errorMessage)
       throw new Error(`获取提示模板失败: ${errorMessage}`)
     }
   }
@@ -395,7 +401,7 @@ export class ToolManager {
       return await client.readResource(resourceUri)
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      console.error('读取资源失败:', errorMessage)
+      console.error('Failed to read resource:', errorMessage)
       throw new Error(`读取资源失败: ${errorMessage}`)
     }
   }

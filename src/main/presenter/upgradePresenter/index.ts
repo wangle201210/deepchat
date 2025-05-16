@@ -251,7 +251,6 @@ export class UpgradePresenter implements IUpgradePresenter {
       const versionUrl = `${this._baseUrl}/${platformString}.json?noCache=${randomId}`
 
       const response = await axios.get<VersionInfo>(versionUrl)
-      console.info('获取更新信息响应', response.data)
       const remoteVersion = response.data
       const currentVersion = app.getVersion()
 
@@ -264,7 +263,7 @@ export class UpgradePresenter implements IUpgradePresenter {
         downloadUrl: remoteVersion.downloadUrl
       }
 
-      console.log('保存版本信息到内存：', this._versionInfo)
+      console.log('cache versionInfo：', this._versionInfo)
 
       // 更新上次检查时间
       this._lastCheckTime = Date.now()

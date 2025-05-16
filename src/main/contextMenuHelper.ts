@@ -41,10 +41,9 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
 
   // 处理上下文菜单事件
   const handleContextMenu = (event: Electron.Event, params: Electron.ContextMenuParams) => {
-    console.log('contextMenu: 触发上下文菜单事件', params.x, params.y, params.mediaType)
+    // console.log('contextMenu: trigger', params.x, params.y, params.mediaType)
 
     if (isDisposed) {
-      console.log('contextMenu: 已销毁，忽略事件')
       return
     }
 
@@ -53,7 +52,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
       typeof options.shouldShowMenu === 'function' &&
       options.shouldShowMenu(event, params) === false
     ) {
-      console.log('contextMenu: shouldShowMenu 返回 false，不显示菜单')
       return
     }
 
@@ -111,7 +109,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
               return
             }
 
-            console.log('contextMenu: 开始保存图片到', filePath)
+            console.log('contextMenu: start saving pic', filePath)
 
             // 获取图片数据
             if (isBase64) {
@@ -153,9 +151,9 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
               await sharpInstance.toFile(filePath)
             }
 
-            console.log('contextMenu: 保存图片成功', filePath)
+            console.log('contextMenu: pic saved ', filePath)
           } catch (error) {
-            console.error('contextMenu: 保存图片失败', error)
+            console.error('contextMenu: pic save failed', error)
           }
         }
       })
@@ -249,10 +247,10 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
           })
         }
       } catch (error) {
-        console.error('contextMenu: 创建或显示菜单失败', error)
+        console.error('contextMenu: create error', error)
       }
     } else {
-      console.warn('contextMenu: 没有可用的菜单项，不显示菜单')
+      console.warn('contextMenu: The menu will not be displayed')
     }
   }
 
@@ -287,7 +285,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   // 初始化上下文菜单
   const initialize = (webContents: WebContents) => {
     if (isDisposed) {
-      console.log('contextMenu: 已销毁，不初始化')
       return
     }
 
@@ -297,7 +294,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
 
       // 当 WebContents 被销毁时清理
       const cleanup = () => {
-        console.log('contextMenu: WebContents 已销毁，清理事件监听器')
         webContents.removeListener('context-menu', handleContextMenu)
       }
 
@@ -309,7 +305,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         webContents.removeListener('destroyed', cleanup)
       })
     } catch (error) {
-      console.error('contextMenu: 初始化失败', error)
+      console.error('contextMenu: init error', error)
     }
   }
 
