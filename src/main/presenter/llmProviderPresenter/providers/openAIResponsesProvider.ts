@@ -9,13 +9,6 @@ import {
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
-import {
-  ChatCompletionAssistantMessageParam,
-  ChatCompletionContentPart,
-  ChatCompletionContentPartText,
-  ChatCompletionMessageParam,
-  ChatCompletionToolMessageParam
-} from 'openai/resources'
 import { ConfigPresenter } from '../../configPresenter'
 import { proxyConfig } from '../../proxyConfig'
 import { HttpsProxyAgent } from 'https-proxy-agent'
@@ -124,47 +117,50 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
    * @param messages
    * @returns
    */
-  protected formatMessages(messages: ChatMessage[]): ChatCompletionMessageParam[] {
+  protected formatMessages(messages: ChatMessage[]): OpenAI.Responses.ResponseInput {
     return messages.map((msg) => {
-      // 处理基本消息结构
-      const baseMessage: Partial<ChatCompletionMessageParam> = {
-        role: msg.role as 'system' | 'user' | 'assistant' | 'tool'
-      }
+      const content: OpenAI.Responses.ResponseInputMessageContentList = []
 
-      // 处理content转换为字符串
-      if (msg.content !== undefined && msg.role !== 'user') {
+      if (msg.content !== undefined) {
         if (typeof msg.content === 'string') {
-          baseMessage.content = msg.content
+          content.push({
+            type: 'input_text',
+            text: msg.content
+          })
         } else if (Array.isArray(msg.content)) {
-          // 处理多模态内容数组
-          const textParts: string[] = []
           for (const part of msg.content) {
             if (part.type === 'text' && part.text) {
-              textParts.push(part.text)
+              content.push({
+                type: 'input_text',
+                text: part.text
+              })
             }
             if (part.type === 'image_url' && part.image_url?.url) {
-              textParts.push(`image: ${part.image_url.url}`)
+              content.push({
+                type: 'input_image',
+                image_url: part.image_url.url,
+                detail: 'auto'
+              })
             }
           }
-          baseMessage.content = textParts.join('\n')
         }
       }
-      if (msg.role === 'user') {
-        if (typeof msg.content === 'string') {
-          baseMessage.content = msg.content
-        } else if (Array.isArray(msg.content)) {
-          baseMessage.content = msg.content as ChatCompletionContentPart[]
-        }
+
+      const inputItem: OpenAI.Responses.EasyInputMessage = {
+        role: msg.role === 'tool' ? 'assistant' : (msg.role as 'system' | 'user' | 'assistant'),
+        content
       }
 
       if (msg.role === 'assistant' && msg.tool_calls) {
-        ;(baseMessage as ChatCompletionAssistantMessageParam).tool_calls = msg.tool_calls
+        ;(inputItem as OpenAI.Responses.EasyInputMessage & { tool_calls: unknown }).tool_calls =
+          msg.tool_calls
       }
       if (msg.role === 'tool') {
-        ;(baseMessage as ChatCompletionToolMessageParam).tool_call_id = msg.tool_call_id || ''
+        ;(inputItem as OpenAI.Responses.EasyInputMessage & { tool_call_id: string }).tool_call_id =
+          msg.tool_call_id || ''
       }
 
-      return baseMessage as ChatCompletionMessageParam
+      return inputItem
     })
   }
 
@@ -186,7 +182,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     const formattedMessages = this.formatMessages(messages)
     const requestParams: OpenAI.Responses.ResponseCreateParams = {
       model: modelId,
-      input: formattedMessages.map((msg) => msg.content).join('\n'),
+      input: formattedMessages,
       temperature: temperature,
       max_output_tokens: maxTokens,
       stream: false
@@ -447,7 +443,9 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
 
     const tools = mcpTools || []
     const supportsFunctionCall = modelConfig?.functionCall || false
-    let processedMessages = [...this.formatMessages(messages)] as ChatCompletionMessageParam[]
+    let processedMessages = [
+      ...this.formatMessages(messages)
+    ] as OpenAI.Responses.EasyInputMessage[]
     if (tools.length > 0 && !supportsFunctionCall) {
       processedMessages = this.prepareFunctionCallPrompt(processedMessages, tools)
     }
@@ -796,11 +794,10 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     }
   }
 
-  // ... [prepareFunctionCallPrompt remains unchanged] ...
   private prepareFunctionCallPrompt(
-    messages: ChatCompletionMessageParam[],
+    messages: OpenAI.Responses.EasyInputMessage[],
     mcpTools: MCPToolDefinition[]
-  ): ChatCompletionMessageParam[] {
+  ): OpenAI.Responses.EasyInputMessage[] {
     // 创建消息副本而不是直接修改原始消息
     const result = messages.map((message) => ({ ...message }))
 
@@ -811,13 +808,20 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       if (Array.isArray(userMessage.content)) {
         // 创建content数组的深拷贝
         userMessage.content = [...userMessage.content]
-        const firstTextIndex = userMessage.content.findIndex((content) => content.type === 'text')
+        const firstTextIndex = userMessage.content.findIndex(
+          (content) => content.type === 'input_text'
+        )
         if (firstTextIndex !== -1) {
           // 创建文本内容的副本
           const textContent = {
             ...userMessage.content[firstTextIndex]
-          } as ChatCompletionContentPartText
-          textContent.text = `${functionCallPrompt}\n\n${(userMessage.content[firstTextIndex] as ChatCompletionContentPartText).text}`
+          }
+          if (textContent.type === 'input_text') {
+            const originalText = (
+              userMessage.content[firstTextIndex] as { type: 'input_text'; text: string }
+            ).text
+            textContent.text = `${functionCallPrompt}\n\n${originalText}`
+          }
           userMessage.content[firstTextIndex] = textContent
         }
       } else {
