@@ -61,7 +61,13 @@ export const WINDOW_EVENTS = {
   WINDOW_MAXIMIZED: 'window:maximized',
   WINDOW_UNMAXIMIZED: 'window:unmaximized',
   WINDOW_RESIZED: 'window:resized',
-  WINDOW_RESIZE: 'window:resize'
+  WINDOW_RESIZE: 'window:resize',
+  WINDOW_CREATED: 'window:created',
+  WINDOW_FOCUSED: 'window:focused',
+  WINDOW_BLURRED: 'window:blurred',
+  WINDOW_ENTER_FULL_SCREEN: 'window:enter-full-screen',
+  WINDOW_LEAVE_FULL_SCREEN: 'window:leave-full-screen',
+  WINDOW_CLOSED: 'window:closed'
 }
 
 // ollama 相关事件

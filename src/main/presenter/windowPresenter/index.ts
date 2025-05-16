@@ -70,9 +70,9 @@ export class WindowPresenter implements IWindowPresenter {
   }
 
   // 实现 IWindowPresenter 接口的方法
-  createMainWindow(): BrowserWindow {
-    return this.createShellWindow()
-  }
+  // createMainWindow(): BrowserWindow {
+  //   return this.createShellWindow() // This will be adapted or removed as createShellWindow changes
+  // }
 
   getWindow(windowName: string): BrowserWindow | undefined {
     // 为了向后兼容，我们仍然支持通过字符串名称获取窗口
@@ -206,7 +206,14 @@ export class WindowPresenter implements IWindowPresenter {
   }
 
   // 新增的多窗口支持方法
-  createShellWindow(): BrowserWindow {
+  async createShellWindow(options?: {
+    activateTabId?: number
+    initialTab?: {
+      url: string
+      viewType?: string
+      icon?: string
+    }
+  }): Promise<number | null> {
     const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
     const shellWindowState = windowStateManager({
       defaultWidth: 1024,
@@ -232,12 +239,20 @@ export class WindowPresenter implements IWindowPresenter {
         y: 12
       },
       webPreferences: {
-        preload: join(__dirname, '../preload/index.mjs'),
+        preload: join(__dirname, '../preload/index.mjs'), // Adjusted preload path
         sandbox: false,
         devTools: is.dev
       },
       roundedCorners: true
     })
+
+    if (!shellWindow) {
+      console.error('Failed to create shell window.')
+      return null
+    }
+
+    const windowId = shellWindow.id
+    this.windows.set(windowId, shellWindow)
 
     shellWindowState.manage(shellWindow)
 
@@ -248,115 +263,135 @@ export class WindowPresenter implements IWindowPresenter {
 
     shellWindow.on('ready-to-show', () => {
       shellWindow.show()
-      eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW, shellWindow)
-    })
-
-    // 处理关闭按钮点击
-    shellWindow.on('close', async (e) => {
-      eventBus.emit('shell-window-close', shellWindow)
-      console.log('shell-window-close', this.isQuitting, e)
-      if (!this.isQuitting) {
-        e.preventDefault()
-        await this.closeWindow(shellWindow.id)
-      }
-    })
-
-    shellWindow.on('closed', () => {
-      this.windows.delete(shellWindow.id)
-      eventBus.emit('shell-window-closed', shellWindow)
-    })
-
-    shellWindow.webContents.setWindowOpenHandler((details) => {
-      shell.openExternal(details.url)
-      return { action: 'deny' }
-    })
-
-    // Add handler for regular link clicks
-    shellWindow.webContents.on('will-navigate', (event, url) => {
-      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-        if (url.startsWith(process.env['ELECTRON_RENDERER_URL'] || '')) {
-          return
-        }
-      }
-      // 检查是否为外部链接
-      const isExternal = url.startsWith('http:') || url.startsWith('https:')
-      if (isExternal) {
-        event.preventDefault()
-        shell.openExternal(url)
-      }
-    })
-
-    shellWindow.on('resize', () => {
-      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZE, shellWindow.id)
-    })
-
-    shellWindow.on('resized', () => {
-      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZED, shellWindow.id)
-    })
-
-    shellWindow.on('show', () => {
-      if (shellWindow.isMinimized()) {
-        shellWindow.restore()
-      }
-    })
-
-    shellWindow.on('blur', () => {
-      if (this.focusedWindowId === shellWindow.id) {
-        this.focusedWindowId = null
-      }
+      eventBus.emit(WINDOW_EVENTS.WINDOW_CREATED, windowId)
     })
 
     shellWindow.on('focus', () => {
-      this.focusedWindowId = shellWindow.id
+      this.focusedWindowId = windowId
+      eventBus.emit(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
+      // 向渲染进程发送窗口聚焦事件
+      shellWindow.webContents.send('window-focused', windowId)
+    })
+
+    shellWindow.on('blur', () => {
+      if (this.focusedWindowId === windowId) {
+        this.focusedWindowId = null
+      }
+      eventBus.emit(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
+      // 向渲染进程发送窗口失焦事件
+      shellWindow.webContents.send('window-blurred', windowId)
     })
 
     shellWindow.on('maximize', () => {
-      shellWindow.webContents.send(WINDOW_EVENTS.WINDOW_MAXIMIZED)
+      shellWindow.webContents.send('window:maximized')
+      eventBus.emit(WINDOW_EVENTS.WINDOW_MAXIMIZED, windowId)
     })
 
     shellWindow.on('unmaximize', () => {
-      shellWindow.webContents.send(WINDOW_EVENTS.WINDOW_UNMAXIMIZED)
+      shellWindow.webContents.send('window:unmaximized')
+      eventBus.emit(WINDOW_EVENTS.WINDOW_UNMAXIMIZED, windowId)
     })
 
     shellWindow.on('enter-full-screen', () => {
       shellWindow.webContents.send('window-fullscreened')
+      eventBus.emit(WINDOW_EVENTS.WINDOW_ENTER_FULL_SCREEN, windowId)
     })
 
     shellWindow.on('leave-full-screen', () => {
       shellWindow.webContents.send('window-unfullscreened')
+      eventBus.emit(WINDOW_EVENTS.WINDOW_LEAVE_FULL_SCREEN, windowId)
     })
 
-    shellWindow.on('minimize', () => {
-      shellWindow.webContents.send('window-minimized')
+    shellWindow.on('resize', () => {
+      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZE, windowId)
     })
 
-    shellWindow.on('restore', () => {
-      shellWindow.webContents.send('window-restored')
+    shellWindow.on('close', (event) => {
+      if (!this.isQuitting) {
+        if (this.windows.size > 1 || this.configPresenter.getSetting('minimizeToTray')) {
+          event.preventDefault()
+          shellWindow.hide()
+          if (this.trayPresenter) {
+            this.trayPresenter.show()
+          }
+        } else {
+          if (!this.configPresenter.getCloseToQuit()) {
+            event.preventDefault()
+            shellWindow.hide()
+          }
+        }
+      }
     })
 
-    if (is.dev) {
-      shellWindow.webContents.openDevTools()
-    }
+    shellWindow.on('closed', () => {
+      this.windows.delete(windowId)
+      shellWindowState.unmanage()
+      eventBus.emit(WINDOW_EVENTS.WINDOW_CLOSED, windowId)
+      if (this.windows.size === 0 && process.platform !== 'darwin') {
+        if (!this.isQuitting) {
+          // If not quitting and no windows left (and not on macOS), quit the app
+          // This case might be hit if closeToQuit is true and last window is closed
+          // app.quit()
+        }
+      }
+    })
 
-    // HMR for renderer base on electron-vite cli.
-    // Load the remote URL for development or the local html file for production.
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-      console.log('loadURL', `${process.env['ELECTRON_RENDERER_URL']}/shell`)
-      shellWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/shell/index.html`)
+      shellWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/shell/index.html')
     } else {
-      shellWindow.loadFile(join(__dirname, '../renderer/shell/index.html'))
-    }
-    this.windows.set(shellWindow.id, shellWindow)
-
-    // 初始化托盘（仅在第一个窗口创建时）
-    if (!this.trayPresenter) {
-      this.trayPresenter = new TrayPresenter(this)
+      shellWindow.loadFile(join(__dirname, '../../renderer/shell/index.html'))
     }
 
-    return shellWindow
+    // Handle initial tab creation if options are provided
+    if (options?.initialTab) {
+      // Wait for the window to be ready before creating a tab
+      shellWindow.webContents.once('did-finish-load', async () => {
+        try {
+          const tabId = await presenter.tabPresenter.createTab(windowId, options.initialTab!.url, {
+            active: true
+            // Potentially pass viewType and icon if createTab supports them directly
+            // or if tabPresenter needs them to set initial state.
+          })
+          if (tabId === null) {
+            console.error('Failed to create initial tab in new window', windowId)
+          }
+        } catch (error) {
+          console.error('Error creating initial tab:', error)
+        }
+      })
+    }
+
+    // If an activateTabId is provided, it implies a tab (WebContentsView)
+    // is already created and will be attached by tabPresenter.moveTabToNewWindow
+    // The activation logic (setVisible, bringToFront) is handled in tabPresenter.attachTab / activateTab.
+
+    return windowId
   }
 
-  // 添加更新内容保护的方法
+  /**
+   * 关闭窗口的内部辅助函数，增加了强制关闭的选项
+   * @param windowId 窗口ID
+   * @param forceClose 是否强制关闭，默认为 false
+   */
+  async closeWindow(windowId: number, forceClose: boolean = false): Promise<void> {
+    const window = this.windows.get(windowId)
+    if (window) {
+      if (forceClose) {
+        this.isQuitting = true // Mark as quitting to bypass some close handlers
+      }
+      window.close() // Triggers 'close' event on the window
+      if (forceClose && !window.isDestroyed()) {
+        // If forceClose is true and window didn't destroy (e.g. prevented by 'close' handler),
+        // explicitly destroy it.
+        window.destroy()
+      }
+      // Reset isQuitting if it was set just for this forced close, unless app is actually quitting.
+      if (forceClose && !this.isQuitting) {
+        this.isQuitting = false
+      }
+    }
+  }
+
   private updateContentProtection(window: BrowserWindow, enabled: boolean): void {
     console.log('更新窗口内容保护状态:', enabled)
     if (enabled) {
@@ -377,28 +412,5 @@ export class WindowPresenter implements IWindowPresenter {
 
   getAllWindows(): BrowserWindow[] {
     return Array.from(this.windows.values())
-  }
-
-  async closeWindow(windowId: number, forceClose: boolean = false): Promise<void> {
-    const window = this.windows.get(windowId)
-    if (!window) return
-
-    // 如果不是强制关闭且不是最后一个窗口，则隐藏窗口
-    if (!forceClose && this.getAllWindows().length === 1) {
-      if (window.isFullScreen()) {
-        window.setFullScreen(false)
-      }
-      window.hide()
-      return
-    }
-
-    // 销毁该窗口下的所有标签页
-    const tabs = await presenter.tabPresenter.getWindowTabsData(windowId)
-    for (const tab of tabs) {
-      await presenter.tabPresenter.closeTab(tab.id)
-    }
-
-    // 销毁窗口
-    window.destroy()
   }
 }

@@ -1,13 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { v4 as uuidv4 } from 'uuid'
 import { usePresenter } from '@/composables/usePresenter'
 
 export const useTabStore = defineStore('tab', () => {
   const tabPresenter = usePresenter('tabPresenter')
   const tabs = ref<
     {
-      id: string
+      id: number
       name: string
       icon: string
       closable: boolean
@@ -17,7 +16,7 @@ export const useTabStore = defineStore('tab', () => {
     }[]
   >([])
 
-  const currentTabId = ref<string>('')
+  const currentTabId = ref<number | null>(null)
 
   const addTab = async (tab: { name: string; icon: string; viewType: string }) => {
     // if (tabs.value.find((t) => t.viewType === tab.viewType)) {
@@ -28,7 +27,7 @@ export const useTabStore = defineStore('tab', () => {
     const viewId = await tabPresenter.createTab(windowId ?? 1, `local://${tab.viewType}`)
     console.log('viewId', viewId)
     const newTab = {
-      id: uuidv4(),
+      id: viewId ?? 0,
       name: tab.name,
       icon: tab.icon,
       closable: true,
@@ -41,12 +40,12 @@ export const useTabStore = defineStore('tab', () => {
     return newTab
   }
 
-  const removeTab = async (id: string) => {
+  const removeTab = async (id: number) => {
     await tabPresenter.closeTab(tabs.value.find((tab) => tab.id === id)?.viewId ?? 0)
     tabs.value = tabs.value.filter((tab) => tab.id !== id)
   }
 
-  const setCurrentTabId = async (id: string) => {
+  const setCurrentTabId = async (id: number) => {
     await tabPresenter.switchTab(tabs.value.find((tab) => tab.id === id)?.viewId ?? 0)
     currentTabId.value = id
   }

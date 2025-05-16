@@ -13,6 +13,7 @@
         :active="tab.id === tabStore.currentTabId"
         @click="tabStore.setCurrentTabId(tab.id)"
         @close="tabStore.removeTab(tab.id)"
+        @dragstart="onTabDragStart(tab.id, $event)"
       >
         <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />DeepChat
       </AppBarTabItem>
@@ -88,6 +89,7 @@ import { useThemeStore } from '@/stores/theme'
 const tabStore = useTabStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
+const tabPresenter = usePresenter('tabPresenter')
 
 const isMacOS = ref(false)
 const isMaximized = ref(false)
@@ -96,6 +98,41 @@ const isFullscreened = ref(false)
 const { ipcRenderer } = window.electron
 
 const themeStore = useThemeStore()
+
+let draggedTabId: number | null = null
+
+const onTabDragStart = (tabId: number, event: DragEvent) => {
+  if (event.dataTransfer) {
+    event.dataTransfer.setData('text/plain', tabId.toString())
+    event.dataTransfer.effectAllowed = 'move'
+    draggedTabId = tabId
+    console.log('onTabDragStart', tabId)
+  }
+}
+
+const handleDragOver = (event: DragEvent) => {
+  event.preventDefault() // Necessary to allow dropping
+}
+
+const handleDragEnd = async (event: DragEvent) => {
+  console.log('handleDragEnd', event.clientX, event.clientY, window.innerWidth, window.innerHeight)
+  if (draggedTabId && event.dataTransfer?.dropEffect === 'none') {
+    // Check if the mouse is outside the window bounds
+    // This is a simplified check; more robust checking might be needed
+    const isOutsideWindow =
+      event.clientX <= 0 ||
+      event.clientY <= 0 ||
+      event.clientX >= window.innerWidth ||
+      event.clientY >= window.innerHeight
+
+    if (isOutsideWindow) {
+      console.log('Tab dragged outside window:', draggedTabId)
+      // Call main process to move tab to new window
+      await tabPresenter.moveTabToNewWindow(draggedTabId)
+    }
+  }
+  draggedTabId = null
+}
 
 const onThemeClick = () => {
   console.log('onThemeClick')
@@ -120,6 +157,9 @@ onMounted(() => {
   ipcRenderer?.on('window-unfullscreened', () => {
     isFullscreened.value = false
   })
+
+  window.addEventListener('dragover', handleDragOver)
+  window.addEventListener('dragend', handleDragEnd)
 })
 
 const openNewTab = () => {

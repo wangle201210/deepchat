@@ -1,11 +1,13 @@
 <template>
   <div
+    draggable="true"
     class="text-xs font-medium px-3 h-7 rounded-md flex items-center justify-between transition-all duration-200 group"
     :class="[
       active
         ? 'bg-card shadow-sm'
         : 'bg-transparent text-muted-foreground hover:bg-zinc-500/20 active:bg-zinc-900/20'
     ]"
+    @dragstart="onDragStart"
   >
     <div class="flex items-center justify-center" @click="onClick">
       <slot></slot>
@@ -24,6 +26,7 @@ import { Icon } from '@iconify/vue'
 const emit = defineEmits<{
   (e: 'click'): void
   (e: 'close'): void
+  (e: 'dragstart', event: DragEvent): void
 }>()
 
 defineProps<{
@@ -36,5 +39,9 @@ const onClick = () => {
 
 const onClose = () => {
   emit('close')
+}
+
+const onDragStart = (event: DragEvent) => {
+  emit('dragstart', event)
 }
 </script>

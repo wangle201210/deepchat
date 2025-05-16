@@ -102,8 +102,25 @@ export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
 }
 
+export interface TabData {
+  id: number
+  title: string
+  faviconUrl?: string
+  isActive: boolean
+  viewType?: string
+  icon?: string
+}
+
 export interface IWindowPresenter {
-  createShellWindow(): BrowserWindow
+  createShellWindow(options?: {
+    activateTabId?: number
+    initialTab?: {
+      url: string
+      viewType?: string
+      icon?: string
+    }
+    forMovedTab?: boolean
+  }): Promise<number | null>
   getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
@@ -127,9 +144,8 @@ export interface ITabPresenter {
   detachTab(tabId: number): Promise<boolean>
   attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
-  getWindowTabsData(
-    windowId: number
-  ): Promise<Array<{ id: number; title: string; faviconUrl?: string; isActive: boolean }>>
+  getWindowTabsData(windowId: number): Promise<Array<TabData>>
+  moveTabToNewWindow(tabId: number): Promise<boolean>
 }
 
 export interface TabCreateOptions {
@@ -651,6 +667,8 @@ export interface TabState {
   title: string
   faviconUrl?: string
   isActive: boolean
+  viewType?: string
+  icon?: string
 }
 
 export interface UpdateProgress {

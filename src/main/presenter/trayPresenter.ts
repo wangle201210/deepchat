@@ -54,6 +54,13 @@ export class TrayPresenter {
     })
   }
 
+  public show(): void {
+    if (!this.tray) {
+      this.createTray()
+    }
+    // If tray exists, it's already visible. No specific Electron API to "show" an existing tray icon.
+  }
+
   destroy() {
     if (this.tray) {
       this.tray.destroy()

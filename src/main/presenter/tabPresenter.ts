@@ -1,7 +1,7 @@
 import { eventBus } from '@/eventbus'
 import { WINDOW_EVENTS, CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
-import { ITabPresenter, TabCreateOptions, TabState } from '@shared/presenter'
+import { ITabPresenter, TabCreateOptions, TabState, IWindowPresenter } from '@shared/presenter'
 import { BrowserWindow, WebContentsView } from 'electron'
 import { join } from 'path'
 import contextMenu from '@/contextMenuHelper'
@@ -24,14 +24,15 @@ export class TabPresenter implements ITabPresenter {
   // 存储每个标签页的右键菜单处理器
   private tabContextMenuDisposers: Map<number, () => void> = new Map()
 
-  constructor() {
-    // this.setupIPCHandlers()
+  private windowPresenter: IWindowPresenter // Store windowPresenter instance
+
+  constructor(windowPresenter: IWindowPresenter) {
+    this.windowPresenter = windowPresenter // Assign injected windowPresenter
     this.initBusHandlers()
   }
 
   private initBusHandlers() {
     eventBus.on(WINDOW_EVENTS.WINDOW_RESIZE, (windowId: number) => {
-      console.log('window resize', windowId)
       const views = this.windowTabs.get(windowId)
       const window = BrowserWindow.fromId(windowId)
       if (window) {
@@ -41,16 +42,16 @@ export class TabPresenter implements ITabPresenter {
       }
     })
 
-    eventBus.on(WINDOW_EVENTS.WINDOW_RESIZED, (windowId: number) => {
-      console.log('window resize', windowId)
-      const views = this.windowTabs.get(windowId)
-      const window = BrowserWindow.fromId(windowId)
-      if (window) {
-        views?.forEach((view) => {
-          this.updateViewBounds(window, this.tabs.get(view)!)
-        })
-      }
-    })
+    // eventBus.on(WINDOW_EVENTS.WINDOW_RESIZED, (windowId: number) => {
+    //   console.log('window resize', windowId)
+    //   const views = this.windowTabs.get(windowId)
+    //   const window = BrowserWindow.fromId(windowId)
+    //   if (window) {
+    //     views?.forEach((view) => {
+    //       this.updateViewBounds(window, this.tabs.get(view)!)
+    //     })
+    //   }
+    // })
 
     // 添加语言设置改变的事件处理
     eventBus.on(CONFIG_EVENTS.SETTING_CHANGED, async (key) => {
@@ -375,17 +376,26 @@ export class TabPresenter implements ITabPresenter {
   /**
    * 获取窗口的所有标签数据
    */
-  async getWindowTabsData(
-    windowId: number
-  ): Promise<Array<{ id: number; title: string; faviconUrl?: string; isActive: boolean }>> {
-    const tabs = this.windowTabs.get(windowId) || []
-    return tabs.map((tabId) => {
-      const state = this.tabState.get(tabId) || { url: '', title: '', isActive: false }
+  async getWindowTabsData(windowId: number): Promise<
+    Array<{
+      id: number
+      title: string
+      faviconUrl?: string
+      isActive: boolean
+      viewType?: string
+      icon?: string
+    }>
+  > {
+    const tabsInWindow = this.windowTabs.get(windowId) || []
+    return tabsInWindow.map((tabId) => {
+      const state = this.tabState.get(tabId) || ({} as TabState)
       return {
         id: tabId,
-        title: state.title,
+        title: state.title || '',
         faviconUrl: state.faviconUrl,
-        isActive: state.isActive
+        isActive: state.isActive || false,
+        viewType: state.viewType || 'chat',
+        icon: state.icon || ''
       }
     })
   }
@@ -395,11 +405,14 @@ export class TabPresenter implements ITabPresenter {
    */
   notifyWindowTabsUpdate(windowId: number): void {
     const window = BrowserWindow.fromId(windowId)
-    if (!window) return
+    if (!window || window.isDestroyed()) return
 
-    const tabListData = this.getWindowTabsData(windowId)
-    console.log('----------------->notifyWindowTabsUpdate', windowId, tabListData)
-    // window.webContents.send('updateWindowTabs', windowId, tabListData)
+    this.getWindowTabsData(windowId).then((tabListData) => {
+      console.log('----------------->notifyWindowTabsUpdate', windowId, tabListData)
+      if (!window.isDestroyed() && window.webContents && !window.webContents.isDestroyed()) {
+        window.webContents.send('updateWindowTabs', windowId, tabListData)
+      }
+    })
   }
 
   /**
@@ -424,8 +437,11 @@ export class TabPresenter implements ITabPresenter {
       if (favicons.length > 0) {
         const state = this.tabState.get(tabId)
         if (state) {
-          state.faviconUrl = favicons[0]
-          this.notifyWindowTabsUpdate(windowId)
+          if (state.faviconUrl !== favicons[0]) {
+            console.log('page-favicon-updated', state.faviconUrl, favicons[0])
+            state.faviconUrl = favicons[0]
+            this.notifyWindowTabsUpdate(windowId)
+          }
         }
       }
     })
@@ -499,7 +515,7 @@ export class TabPresenter implements ITabPresenter {
    */
   private async setupTabContextMenu(tabId: number): Promise<void> {
     const view = this.tabs.get(tabId)
-    if (!view) return
+    if (!view || view.webContents.isDestroyed()) return
 
     // 如果已存在处理器，先清理
     if (this.tabContextMenuDisposers.has(tabId)) {
@@ -551,5 +567,57 @@ export class TabPresenter implements ITabPresenter {
     this.tabs.clear()
     this.tabState.clear()
     this.windowTabs.clear()
+  }
+
+  async moveTabToNewWindow(tabId: number): Promise<boolean> {
+    const tabInfo = this.tabState.get(tabId)
+    const originalWindowId = this.tabWindowMap.get(tabId)
+
+    if (!tabInfo || originalWindowId === undefined) {
+      console.error(`moveTabToNewWindow: Tab ${tabId} not found or no window associated.`)
+      return false
+    }
+
+    // 1. Detach the tab from its current window
+    const detached = await this.detachTab(tabId)
+    if (!detached) {
+      console.error(
+        `moveTabToNewWindow: Failed to detach tab ${tabId} from window ${originalWindowId}.`
+      )
+      return false
+    }
+
+    // 2. Create a new, empty window.
+    // The activateTabId might be useful if the window needs to know which tab *will* be activated,
+    // but the actual attachment and activation is handled by attachTab.
+    // For now, we can simplify and not pass any specific options, or pass a generic one if needed.
+    const newWindowId = await this.windowPresenter.createShellWindow({
+      forMovedTab: true,
+      activateTabId: tabId
+    })
+
+    if (newWindowId === null) {
+      console.error('moveTabToNewWindow: Failed to create a new window.')
+      // Attempt to reattach to original window if new window creation fails
+      await this.attachTab(tabId, originalWindowId)
+      return false
+    }
+
+    // 3. Attach the tab (WebContentsView) to the new window
+    const attached = await this.attachTab(tabId, newWindowId)
+    if (!attached) {
+      console.error(
+        `moveTabToNewWindow: Failed to attach tab ${tabId} to new window ${newWindowId}.`
+      )
+      // If attaching fails, we might need to destroy the newly created window or reattach to original.
+      // For now, log and return false.
+      // Consider closing the new empty window: this.windowPresenter.close(newWindowId);
+      return false
+    }
+
+    console.log(`Tab ${tabId} moved from window ${originalWindowId} to new window ${newWindowId}`)
+    this.notifyWindowTabsUpdate(originalWindowId) // Notify original window
+    this.notifyWindowTabsUpdate(newWindowId) // Notify new window
+    return true
   }
 }

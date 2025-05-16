@@ -88,7 +88,7 @@ export class Presenter implements IPresenter {
   constructor() {
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
-    this.tabPresenter = new TabPresenter()
+    this.tabPresenter = new TabPresenter(this.windowPresenter)
     this.llmproviderPresenter = new LLMProviderPresenter(this.configPresenter)
     this.devicePresenter = new DevicePresenter()
     // 初始化 SQLite 数据库
