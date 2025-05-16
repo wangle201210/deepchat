@@ -31,11 +31,11 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   const disposables: (() => void)[] = []
   let isDisposed = false
 
-  console.log('contextMenu: 初始化上下文菜单', options.webContents.id)
+  console.log('contextMenu: initializing context menu', options.webContents.id)
 
   // 确保 webContents 参数存在
   if (!options.webContents) {
-    console.error('contextMenu: WebContents 参数缺失')
+    console.error('contextMenu: WebContents parameter is missing')
     throw new Error('WebContents is required')
   }
 
@@ -66,7 +66,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         label: options.labels?.copyImage || '复制图片',
         click: () => {
           options.webContents.copyImageAt(params.x, params.y)
-          console.log('contextMenu: 复制图片', params.srcURL)
+          console.log('contextMenu: copying image', params.srcURL)
         }
       })
 
@@ -237,7 +237,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
     if (menuItems.length > 0) {
       try {
         const menu = Menu.buildFromTemplate(menuItems)
-        console.log('contextMenu: 显示菜单')
+        console.log('contextMenu: displaying menu')
         const window = BrowserWindow.fromWebContents(options.webContents)
         if (window) {
           menu.popup({
@@ -315,11 +315,11 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   // 返回清理函数
   return () => {
     if (isDisposed) {
-      console.log('contextMenu: 已经销毁，跳过清理')
+      console.log('contextMenu: already disposed, skipping cleanup')
       return
     }
 
-    console.log('contextMenu: 开始清理')
+    console.log('contextMenu: starting cleanup')
     // 清理所有监听器
     for (const dispose of disposables) {
       dispose()
@@ -327,6 +327,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
 
     disposables.length = 0
     isDisposed = true
-    console.log('contextMenu: 清理完成')
+    console.log('contextMenu: cleanup completed')
   }
 }
