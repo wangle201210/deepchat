@@ -3,7 +3,7 @@
     <!-- App title/content in center -->
     <div
       :class="[
-        'flex-1 text-center text-sm font-medium h-full flex flex-row items-center justify-start gap-1',
+        'flex-1 text-center text-sm font-medium h-full flex flex-row items-center justify-start gap-1 ',
         isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2'
       ]"
     >

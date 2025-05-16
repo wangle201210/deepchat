@@ -224,7 +224,7 @@ export class WindowPresenter implements IWindowPresenter {
       width: shellWindowState.width,
       height: shellWindowState.height,
       x: options?.x ? options.x : shellWindowState.x,
-      y: options?.y ? options.y : shellWindowState.y,
+      y: options?.y ? Math.max(0, options.y) : Math.max(0, shellWindowState.y),
       show: false,
       autoHideMenuBar: true,
       icon: iconFile,

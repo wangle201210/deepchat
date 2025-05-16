@@ -1,10 +1,10 @@
 <template>
   <div
     draggable="true"
-    class="text-xs font-medium pl-2 pr-1 h-7 rounded-md flex items-center justify-between transition-all duration-200 group"
+    class="text-xs font-medium pl-2 pr-1 h-7 mt-0.5 rounded-md flex items-center justify-between transition-all duration-200 group"
     :class="[
       active
-        ? 'bg-card shadow-sm'
+        ? 'bg-background shadow-sm'
         : 'bg-transparent text-muted-foreground hover:bg-zinc-500/20 active:bg-zinc-900/20'
     ]"
     @dragstart="onDragStart"
