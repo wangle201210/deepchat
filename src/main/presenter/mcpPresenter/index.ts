@@ -93,7 +93,7 @@ export class McpPresenter implements IMCPPresenter {
   private configPresenter: IConfigPresenter
 
   constructor(configPresenter?: IConfigPresenter) {
-    console.log('初始化 MCP Presenter')
+    console.log('Initializing MCP Presenter')
 
     // 如果提供了configPresenter实例，则使用它，否则保持与当前方式兼容
     if (configPresenter) {
@@ -128,36 +128,36 @@ export class McpPresenter implements IMCPPresenter {
       ])
 
       // 先测试npm registry速度
-      console.log('[MCP] 测试npm registry速度...')
+      console.log('[MCP] Testing npm registry speed...')
       try {
         await this.serverManager.testNpmRegistrySpeed()
         console.log(
-          `[MCP] npm registry速度测试完成，选择最佳registry: ${this.serverManager.getNpmRegistry()}`
+          `[MCP] npm registry speed test completed, selected best registry: ${this.serverManager.getNpmRegistry()}`
         )
       } catch (error) {
-        console.error('[MCP] npm registry速度测试失败:', error)
+        console.error('[MCP] npm registry speed test failed:', error)
       }
 
       // 如果有默认服务器，尝试启动
       if (defaultServers.length > 0) {
         for (const serverName of defaultServers) {
           if (servers[serverName]) {
-            console.log(`[MCP] 尝试启动默认服务器: ${serverName}`)
+            console.log(`[MCP] Attempting to start default server: ${serverName}`)
 
             try {
               await this.serverManager.startServer(serverName)
-              console.log(`[MCP] 默认服务器 ${serverName} 启动成功`)
+              console.log(`[MCP] Default server ${serverName} started successfully`)
 
               // 通知渲染进程服务器已启动
               eventBus.emit(MCP_EVENTS.SERVER_STARTED, serverName)
             } catch (error) {
-              console.error(`[MCP] 默认服务器 ${serverName} 启动失败:`, error)
+              console.error(`[MCP] Failed to start default server ${serverName}:`, error)
             }
           }
         }
       }
     } catch (error) {
-      console.error('[MCP] 初始化失败:', error)
+      console.error('[MCP] Initialization failed:', error)
     }
   }
 
@@ -216,7 +216,10 @@ export class McpPresenter implements IMCPPresenter {
             clientObj.prompts = prompts
           }
         } catch (error) {
-          console.error(`[MCP] 获取客户端 ${client.serverName} 的提示模板失败:`, error)
+          console.error(
+            `[MCP] Failed to get prompt templates for client ${client.serverName}:`,
+            error
+          )
         }
       }
 
@@ -228,7 +231,7 @@ export class McpPresenter implements IMCPPresenter {
             clientObj.resources = resources
           }
         } catch (error) {
-          console.error(`[MCP] 获取客户端 ${client.serverName} 的资源失败:`, error)
+          console.error(`[MCP] Failed to get resources for client ${client.serverName}:`, error)
         }
       }
 
@@ -261,7 +264,7 @@ export class McpPresenter implements IMCPPresenter {
   async addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean> {
     const existingServers = await this.getMcpServers()
     if (existingServers[serverName]) {
-      console.error(`[MCP] 添加服务器失败: 服务器名称 "${serverName}" 已存在。`)
+      console.error(`[MCP] Failed to add server: Server name "${serverName}" already exists.`)
       // 获取当前语言并发送通知
       const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
       const errorMessages = getErrorMessageLabels(locale)
@@ -286,13 +289,13 @@ export class McpPresenter implements IMCPPresenter {
 
     // 如果服务器之前正在运行，则重启它以应用新配置
     if (wasRunning) {
-      console.log(`[MCP] 配置已更新，正在重启服务器: ${serverName}`)
+      console.log(`[MCP] Configuration updated, restarting server: ${serverName}`)
       try {
         await this.stopServer(serverName) // stopServer 会发出 SERVER_STOPPED 事件
         await this.startServer(serverName) // startServer 会发出 SERVER_STARTED 事件
-        console.log(`[MCP] 服务器 ${serverName} 重启成功`)
+        console.log(`[MCP] Server ${serverName} restarted successfully`)
       } catch (error) {
-        console.error(`[MCP] 重启服务器 ${serverName} 失败:`, error)
+        console.error(`[MCP] Failed to restart server ${serverName}:`, error)
         // 即使重启失败，也要确保状态正确，标记为未运行
         eventBus.emit(MCP_EVENTS.SERVER_STOPPED, serverName)
       }
@@ -361,7 +364,10 @@ export class McpPresenter implements IMCPPresenter {
             promptsList.push(...clientPrompts)
           }
         } catch (error) {
-          console.error(`[MCP] 获取客户端 ${client.serverName} 的提示模板失败:`, error)
+          console.error(
+            `[MCP] Failed to get prompt templates for client ${client.serverName}:`,
+            error
+          )
         }
       }
     }
@@ -400,7 +406,7 @@ export class McpPresenter implements IMCPPresenter {
             resourcesList.push(...clientResources)
           }
         } catch (error) {
-          console.error(`[MCP] 获取客户端 ${client.serverName} 的资源失败:`, error)
+          console.error(`[MCP] Failed to get resources for client ${client.serverName}:`, error)
         }
       }
     }
@@ -732,7 +738,9 @@ export class McpPresenter implements IMCPPresenter {
 
       // 记录没有参数的函数
       if (Object.keys(processedProperties).length === 0) {
-        console.log(`[MCP] 函数 ${tool.id} 没有参数，提供了最小化的参数结构`)
+        console.log(
+          `[MCP] Function ${tool.id} has no parameters, providing minimal parameter structure`
+        )
       }
 
       return functionDeclaration

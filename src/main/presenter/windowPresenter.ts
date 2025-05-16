@@ -187,7 +187,7 @@ export class WindowPresenter implements IWindowPresenter {
 
   // 添加更新内容保护的方法
   private updateContentProtection(window: BrowserWindow, enabled: boolean): void {
-    console.log('更新窗口内容保护状态:', enabled)
+    console.log('content protection status:', enabled)
     if (enabled) {
       window.setContentProtection(enabled)
       window.webContents.setBackgroundThrottling(!enabled)

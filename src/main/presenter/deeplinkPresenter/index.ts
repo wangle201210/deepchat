@@ -59,9 +59,8 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
 
     // 监听窗口准备好的事件
     eventBus.on(WINDOW_EVENTS.READY_TO_SHOW, () => {
-      console.log('窗口准备就绪，检查是否有待处理的 URL')
       if (this.startupUrl) {
-        console.log('处理启动时保存的 URL:', this.startupUrl)
+        console.log('process startup URL:', this.startupUrl)
         this.handleDeepLink(this.startupUrl)
         this.startupUrl = null
       }

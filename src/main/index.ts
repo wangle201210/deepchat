@@ -34,7 +34,7 @@ app.whenReady().then(() => {
   const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
   setLoggingEnabled(loggingEnabled)
 
-  console.log('应用程序准备就绪')
+  console.log('app ready')
 
   // 从配置中读取代理设置并初始化
   const proxyMode = presenter.configPresenter.getProxyMode() as ProxyMode
