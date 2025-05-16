@@ -148,14 +148,16 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       if (msg.content !== undefined) {
         if (typeof msg.content === 'string') {
           content.push({
-            type: 'input_text',
+            //@ts-ignore api 和 sdk 定义不同
+            type: msg.role === 'assistant' ? 'output_text' : 'input_text',
             text: msg.content
           })
         } else if (Array.isArray(msg.content)) {
           for (const part of msg.content) {
             if (part.type === 'text' && part.text) {
               content.push({
-                type: 'input_text',
+                //@ts-ignore api 和 sdk 定义不同
+                type: msg.role === 'assistant' ? 'output_text' : 'input_text',
                 text: part.text
               })
             }
