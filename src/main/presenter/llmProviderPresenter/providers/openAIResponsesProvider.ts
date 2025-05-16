@@ -228,7 +228,6 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
-
     // --- [NEW] Handle Image Generation Models ---
     if (OPENAI_IMAGE_GENERATION_MODELS.includes(modelId)) {
       // 获取最后几条消息，检查是否有图片
@@ -440,12 +439,10 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       return // Stop execution here for image models
     }
     // --- End Image Generation Handling ---
-
+    console.log('coreStream resp', messages)
     const tools = mcpTools || []
     const supportsFunctionCall = modelConfig?.functionCall || false
-    let processedMessages = [
-      ...this.formatMessages(messages)
-    ] as OpenAI.Responses.EasyInputMessage[]
+    let processedMessages = this.formatMessages(messages)
     if (tools.length > 0 && !supportsFunctionCall) {
       processedMessages = this.prepareFunctionCallPrompt(processedMessages, tools)
     }
@@ -456,7 +453,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
 
     const requestParams: OpenAI.Responses.ResponseCreateParams = {
       model: modelId,
-      input: processedMessages.map((msg) => msg.content).join('\n'),
+      input: processedMessages,
       temperature,
       max_output_tokens: maxTokens,
       stream: true
@@ -471,6 +468,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       if (modelId.startsWith(noTempId)) delete requestParams.temperature
     })
 
+    console.log('requestParams', JSON.stringify(requestParams, null, 2))
     const stream = await this.openai.responses.create(requestParams)
 
     // --- State Variables ---
@@ -795,36 +793,64 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
   }
 
   private prepareFunctionCallPrompt(
-    messages: OpenAI.Responses.EasyInputMessage[],
+    messages: OpenAI.Responses.ResponseInput,
     mcpTools: MCPToolDefinition[]
-  ): OpenAI.Responses.EasyInputMessage[] {
+  ): OpenAI.Responses.ResponseInput {
     // 创建消息副本而不是直接修改原始消息
-    const result = messages.map((message) => ({ ...message }))
+    const result = messages.map((message) => {
+      if ('type' in message && message.type === 'message' && 'content' in message) {
+        return { ...message }
+      }
+      return message
+    })
 
     const functionCallPrompt = this.getFunctionCallWrapPrompt(mcpTools)
-    const userMessage = result.findLast((message) => message.role === 'user')
 
-    if (userMessage?.role === 'user') {
+    // 找到最后一条用户消息
+    const userMessage = result.findLast(
+      (message) =>
+        'type' in message &&
+        message.type === 'message' &&
+        'role' in message &&
+        message.role === 'user'
+    )
+
+    if (
+      userMessage &&
+      'type' in userMessage &&
+      userMessage.type === 'message' &&
+      'content' in userMessage
+    ) {
       if (Array.isArray(userMessage.content)) {
         // 创建content数组的深拷贝
-        userMessage.content = [...userMessage.content]
-        const firstTextIndex = userMessage.content.findIndex(
-          (content) => content.type === 'input_text'
-        )
-        if (firstTextIndex !== -1) {
-          // 创建文本内容的副本
-          const textContent = {
-            ...userMessage.content[firstTextIndex]
+        const newContent: OpenAI.Responses.ResponseInputMessageContentList = []
+        let hasAddedPrompt = false
+
+        for (const content of userMessage.content) {
+          // 只处理 input_text 和 input_image 类型的内容
+          if (content.type === 'input_text' && !hasAddedPrompt) {
+            // 为第一个文本内容添加提示词
+            newContent.push({
+              type: 'input_text',
+              text: `${functionCallPrompt}\n\n${content.text}`
+            })
+            hasAddedPrompt = true
+          } else if (content.type === 'input_text' || content.type === 'input_image') {
+            // 其他输入类型的内容直接复制
+            newContent.push(content)
           }
-          if (textContent.type === 'input_text') {
-            const originalText = (
-              userMessage.content[firstTextIndex] as { type: 'input_text'; text: string }
-            ).text
-            textContent.text = `${functionCallPrompt}\n\n${originalText}`
-          }
-          userMessage.content[firstTextIndex] = textContent
         }
-      } else {
+
+        // 如果没有找到文本内容，在开头添加提示词
+        if (!hasAddedPrompt) {
+          newContent.unshift({
+            type: 'input_text',
+            text: functionCallPrompt
+          })
+        }
+
+        userMessage.content = newContent
+      } else if (typeof userMessage.content === 'string') {
         userMessage.content = `${functionCallPrompt}\n\n${userMessage.content}`
       }
     }

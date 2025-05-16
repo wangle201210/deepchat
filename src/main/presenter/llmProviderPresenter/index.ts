@@ -74,45 +74,60 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       if (provider.enable) {
         try {
           console.log('init provider', provider.id, provider.apiType)
-          let instance: BaseLLMProvider
-          if (provider.apiType === 'deepseek') {
-            instance = new DeepseekProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'silicon' || provider.apiType === 'siliconcloud') {
-            instance = new SiliconcloudProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'ppio') {
-            instance = new PPIOProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'gemini') {
-            instance = new GeminiProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'zhipu') {
-            instance = new ZhipuProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'github') {
-            instance = new GithubProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'ollama') {
-            instance = new OllamaProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'anthropic') {
-            instance = new AnthropicProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'doubao') {
-            instance = new DoubaoProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'grok' || provider.id === 'grok') {
-            console.log('match grok')
-            instance = new GrokProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'openai') {
-            instance = new OpenAIProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'openai-compatible') {
-            instance = new OpenAICompatibleProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'openai-responses') {
-            instance = new OpenAIResponsesProvider(provider, this.configPresenter)
-          } else if (provider.apiType === 'lmstudio') {
-            instance = new LMStudioProvider(provider, this.configPresenter)
-          } else {
-            console.warn(`Unknown provider type: ${provider.apiType}`)
-            continue
+          const instance = this.createProviderInstance(provider)
+          if (instance) {
+            this.providerInstances.set(provider.id, instance)
           }
-          this.providerInstances.set(provider.id, instance)
         } catch (error) {
           console.error(`Failed to initialize provider ${provider.id}:`, error)
         }
       }
+    }
+  }
+
+  private createProviderInstance(provider: LLM_PROVIDER): BaseLLMProvider | undefined {
+    try {
+      // 特殊处理 grok
+      if (provider.apiType === 'grok' || provider.id === 'grok') {
+        console.log('match grok')
+        return new GrokProvider(provider, this.configPresenter)
+      }
+
+      switch (provider.apiType) {
+        case 'deepseek':
+          return new DeepseekProvider(provider, this.configPresenter)
+        case 'silicon':
+        case 'siliconcloud':
+          return new SiliconcloudProvider(provider, this.configPresenter)
+        case 'ppio':
+          return new PPIOProvider(provider, this.configPresenter)
+        case 'gemini':
+          return new GeminiProvider(provider, this.configPresenter)
+        case 'zhipu':
+          return new ZhipuProvider(provider, this.configPresenter)
+        case 'github':
+          return new GithubProvider(provider, this.configPresenter)
+        case 'ollama':
+          return new OllamaProvider(provider, this.configPresenter)
+        case 'anthropic':
+          return new AnthropicProvider(provider, this.configPresenter)
+        case 'doubao':
+          return new DoubaoProvider(provider, this.configPresenter)
+        case 'openai':
+          return new OpenAIProvider(provider, this.configPresenter)
+        case 'openai-compatible':
+          return new OpenAICompatibleProvider(provider, this.configPresenter)
+        case 'openai-responses':
+          return new OpenAIResponsesProvider(provider, this.configPresenter)
+        case 'lmstudio':
+          return new LMStudioProvider(provider, this.configPresenter)
+        default:
+          console.warn(`Unknown provider type: ${provider.apiType}`)
+          return undefined
+      }
+    } catch (error) {
+      console.error(`Failed to create provider instance for ${provider.id}:`, error)
+      return undefined
     }
   }
 
@@ -172,44 +187,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     let instance = this.providerInstances.get(providerId)
     if (!instance) {
       const provider = this.getProviderById(providerId)
-      switch (provider.id) {
-        case 'grok':
-          instance = new GrokProvider(provider, this.configPresenter)
-          break
-        case 'openai':
-          instance = new OpenAIProvider(provider, this.configPresenter)
-          break
-        case 'deepseek':
-          instance = new DeepseekProvider(provider, this.configPresenter)
-          break
-        case 'silicon':
-          instance = new SiliconcloudProvider(provider, this.configPresenter)
-          break
-        case 'ppio':
-          instance = new PPIOProvider(provider, this.configPresenter)
-          break
-        case 'gemini':
-          instance = new GeminiProvider(provider, this.configPresenter)
-          break
-        case 'github':
-          instance = new GithubProvider(provider, this.configPresenter)
-          break
-        case 'zhipu':
-          instance = new ZhipuProvider(provider, this.configPresenter)
-          break
-        // 添加其他provider的实例化逻辑
-        case 'ollama':
-          instance = new OllamaProvider(provider, this.configPresenter)
-          break
-        case 'anthropic':
-          instance = new AnthropicProvider(provider, this.configPresenter)
-          break
-        case 'doubao':
-          instance = new DoubaoProvider(provider, this.configPresenter)
-          break
-        default:
-          instance = new OpenAICompatibleProvider(provider, this.configPresenter)
-          break
+      instance = this.createProviderInstance(provider)
+      if (!instance) {
+        throw new Error(`Failed to create provider instance for ${providerId}`)
       }
       this.providerInstances.set(providerId, instance)
     }
@@ -351,7 +331,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         try {
           console.log(`Loop iteration ${toolCallCount + 1} for event ${eventId}`)
           const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
-
           // Call the provider's core stream method, expecting LLMCoreStreamEvent
           const stream = provider.coreStream(
             conversationMessages,
