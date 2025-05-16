@@ -16,6 +16,7 @@ import { eventBus } from '@/eventbus'
 import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events'
 import { IConfigPresenter } from '@shared/presenter'
 import { getErrorMessageLabels } from '@shared/i18n'
+import { OpenAI } from 'openai'
 
 // 定义MCP工具接口
 interface MCPTool {
@@ -826,5 +827,32 @@ export class McpPresenter implements IMCPPresenter {
 
     // 传递客户端信息和资源URI给toolManager
     return this.toolManager.readResourceByClient(resource.client.name, resource.uri)
+  }
+
+  /**
+   * 将MCP工具定义转换为OpenAI Responses API工具格式
+   * @param mcpTools MCP工具定义数组
+   * @param serverName 服务器名称
+   * @returns OpenAI Responses API工具格式的工具定义
+   */
+  async mcpToolsToOpenAIResponsesTools(
+    mcpTools: MCPToolDefinition[],
+    serverName: string
+  ): Promise<OpenAI.Responses.Tool[]> {
+    const openaiTools: OpenAI.Responses.Tool[] = mcpTools.map((toolDef) => {
+      const tool = this.mcpToolDefinitionToMcpTool(toolDef, serverName)
+      return {
+        type: 'function',
+        name: tool.name,
+        description: tool.description,
+        parameters: {
+          type: 'object',
+          properties: this.filterPropertieAttributes(tool),
+          required: tool.inputSchema.required || []
+        },
+        strict: false
+      }
+    })
+    return openaiTools
   }
 }

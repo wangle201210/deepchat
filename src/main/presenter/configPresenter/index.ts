@@ -272,13 +272,17 @@ export class ConfigPresenter implements IConfigPresenter {
 
   // 构造模型状态的存储键
   private getModelStatusKey(providerId: string, modelId: string): string {
-    return `${MODEL_STATUS_KEY_PREFIX}${providerId}_${modelId}`
+    // 将 modelId 中的点号替换为连字符
+    const formattedModelId = modelId.replace(/\./g, '-')
+    return `${MODEL_STATUS_KEY_PREFIX}${providerId}_${formattedModelId}`
   }
 
   // 获取模型启用状态
   getModelStatus(providerId: string, modelId: string): boolean {
     const statusKey = this.getModelStatusKey(providerId, modelId)
-    return this.getSetting<boolean>(statusKey) ?? false
+    const status = this.getSetting<boolean>(statusKey)
+    // 如果状态不是布尔值，则返回 true
+    return typeof status === 'boolean' ? status : true
   }
 
   // 设置模型启用状态
