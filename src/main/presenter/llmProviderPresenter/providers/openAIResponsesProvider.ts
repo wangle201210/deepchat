@@ -456,7 +456,6 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       return // Stop execution here for image models
     }
     // --- End Image Generation Handling ---
-    console.log('coreStream resp', messages)
     const tools = mcpTools || []
     const supportsFunctionCall = modelConfig?.functionCall || false
     let processedMessages = this.formatMessages(messages)
@@ -872,64 +871,68 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     messages: OpenAI.Responses.ResponseInput,
     mcpTools: MCPToolDefinition[]
   ): OpenAI.Responses.ResponseInput {
+    console.log('prepareFunc')
     // 创建消息副本而不是直接修改原始消息
-    const result = messages.map((message) => {
-      if ('type' in message && message.type === 'message' && 'content' in message) {
-        return { ...message }
-      }
-      return message
-    })
+    const result = [...messages]
 
     const functionCallPrompt = this.getFunctionCallWrapPrompt(mcpTools)
 
     // 找到最后一条用户消息
-    const userMessage = result.findLast(
-      (message) =>
-        'type' in message &&
-        message.type === 'message' &&
-        'role' in message &&
-        message.role === 'user'
+    const lastUserMessageIndex = result.findLastIndex(
+      (message) => 'role' in message && message.role === 'user'
     )
 
-    if (
-      userMessage &&
-      'type' in userMessage &&
-      userMessage.type === 'message' &&
-      'content' in userMessage
-    ) {
-      if (Array.isArray(userMessage.content)) {
-        // 创建content数组的深拷贝
-        const newContent: OpenAI.Responses.ResponseInputMessageContentList = []
-        let hasAddedPrompt = false
+    if (lastUserMessageIndex !== -1) {
+      const userMessage = result[lastUserMessageIndex]
+      if ('content' in userMessage) {
+        if (Array.isArray(userMessage.content)) {
+          // 创建新的 content 数组
+          const newContent: OpenAI.Responses.ResponseInputMessageContentList = []
+          let hasAddedPrompt = false
 
-        for (const content of userMessage.content) {
-          // 只处理 input_text 和 input_image 类型的内容
-          if (content.type === 'input_text' && !hasAddedPrompt) {
-            // 为第一个文本内容添加提示词
-            newContent.push({
-              type: 'input_text',
-              text: `${functionCallPrompt}\n\n${content.text}`
-            })
-            hasAddedPrompt = true
-          } else if (content.type === 'input_text' || content.type === 'input_image') {
-            // 其他输入类型的内容直接复制
-            newContent.push(content)
+          // 遍历现有的 content 数组
+          for (const content of userMessage.content) {
+            if (content.type === 'input_text' && !hasAddedPrompt) {
+              // 为第一个文本内容添加提示词
+              newContent.push({
+                type: 'input_text',
+                text: `${functionCallPrompt}\n\n${content.text}`
+              } as OpenAI.Responses.ResponseInputText)
+              hasAddedPrompt = true
+            } else if (content.type === 'input_text' || content.type === 'input_image') {
+              // 其他内容直接复制
+              newContent.push(content as OpenAI.Responses.ResponseInputContent)
+            }
           }
-        }
 
-        // 如果没有找到文本内容，在开头添加提示词
-        if (!hasAddedPrompt) {
-          newContent.unshift({
-            type: 'input_text',
-            text: functionCallPrompt
-          })
-        }
+          // 如果没有找到文本内容，在开头添加提示词
+          if (!hasAddedPrompt) {
+            newContent.unshift({
+              type: 'input_text',
+              text: functionCallPrompt
+            } as OpenAI.Responses.ResponseInputText)
+          }
 
-        userMessage.content = newContent
-      } else if (typeof userMessage.content === 'string') {
-        userMessage.content = `${functionCallPrompt}\n\n${userMessage.content}`
+          // 更新消息的 content
+          result[lastUserMessageIndex] = {
+            ...userMessage,
+            content: newContent
+          } as OpenAI.Responses.ResponseInput[number]
+        } else if (typeof userMessage.content === 'string') {
+          // 如果 content 是字符串，直接添加提示词
+          result[lastUserMessageIndex] = {
+            ...userMessage,
+            content: [
+              {
+                type: 'input_text',
+                text: `${functionCallPrompt}\n\n${userMessage.content}`
+              } as OpenAI.Responses.ResponseInputText
+            ]
+          } as OpenAI.Responses.ResponseInput[number]
+        }
       }
     }
+
     return result
   }
 
