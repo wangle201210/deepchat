@@ -119,7 +119,30 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
    * @returns
    */
   protected formatMessages(messages: ChatMessage[]): OpenAI.Responses.ResponseInput {
-    return messages.map((msg) => {
+    const result: OpenAI.Responses.ResponseInput = []
+
+    for (const msg of messages) {
+      if (msg.role === 'tool') {
+        result.push({
+          type: 'function_call_output',
+          call_id: msg.tool_call_id || '',
+          output: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
+        })
+        continue
+      }
+
+      if (msg.role === 'assistant' && msg.tool_calls) {
+        for (const toolCall of msg.tool_calls) {
+          result.push({
+            type: 'function_call',
+            call_id: toolCall.id,
+            name: toolCall.function.name,
+            arguments: toolCall.function.arguments
+          })
+        }
+        continue
+      }
+
       const content: OpenAI.Responses.ResponseInputMessageContentList = []
 
       if (msg.content !== undefined) {
@@ -147,22 +170,13 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
         }
       }
 
-      const inputItem: OpenAI.Responses.EasyInputMessage = {
-        role: msg.role === 'tool' ? 'assistant' : (msg.role as 'system' | 'user' | 'assistant'),
+      result.push({
+        role: msg.role as 'system' | 'user' | 'assistant',
         content
-      }
+      })
+    }
 
-      if (msg.role === 'assistant' && msg.tool_calls) {
-        ;(inputItem as OpenAI.Responses.EasyInputMessage & { tool_calls: unknown }).tool_calls =
-          msg.tool_calls
-      }
-      if (msg.role === 'tool') {
-        ;(inputItem as OpenAI.Responses.EasyInputMessage & { tool_call_id: string }).tool_call_id =
-          msg.tool_call_id || ''
-      }
-
-      return inputItem
-    })
+    return result
   }
 
   // OpenAI完成方法
@@ -502,6 +516,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
 
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
+      console.log('chunk', chunk)
       if (chunk.type === 'response.created' || chunk.type === 'response.in_progress') {
         continue
       }
@@ -570,223 +585,245 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       if (chunk.type === 'response.completed') {
         const response = chunk.response
         if (response.status === 'completed' && response.output.length > 0) {
-          const message = response.output[0]
-          if (message.type === 'message' && message.content) {
-            const textContent = message.content.find((content) => content.type === 'output_text')
-            if (textContent && 'text' in textContent) {
-              // 处理文本内容，检查是否包含 think 或 function_call 标签
-              const text = textContent.text
-              for (const char of text) {
-                pendingBuffer += char
-                let processedChar = false
+          // 处理函数调用输出
+          const functionCallOutputs: OpenAI.Responses.ResponseInputMessageContentList = []
+          for (const output of response.output) {
+            if (output.type === 'function_call') {
+              const args = output.arguments
+              const callId = output.call_id
 
-                // --- Thinking Tag Processing (Inside or End states) ---
-                if (thinkState === 'inside') {
-                  if (pendingBuffer.endsWith(thinkEndMarker)) {
-                    thinkState = 'none'
-                    if (thinkBuffer) {
-                      yield { type: 'reasoning', reasoning_content: thinkBuffer }
-                      thinkBuffer = ''
-                    }
-                    pendingBuffer = ''
-                    processedChar = true
-                  } else if (thinkEndMarker.startsWith(pendingBuffer)) {
-                    thinkState = 'end'
-                    processedChar = true
-                  } else if (pendingBuffer.length >= thinkEndMarker.length) {
-                    const charsToYield = pendingBuffer.slice(0, -thinkEndMarker.length + 1)
-                    if (charsToYield) {
-                      thinkBuffer += charsToYield
-                      yield { type: 'reasoning', reasoning_content: charsToYield }
-                    }
-                    pendingBuffer = pendingBuffer.slice(-thinkEndMarker.length + 1)
-                    if (thinkEndMarker.startsWith(pendingBuffer)) {
+              // 将函数调用结果添加到输入中
+              functionCallOutputs.push({
+                type: 'input_text',
+                text: JSON.stringify({
+                  type: 'function_call_output',
+                  call_id: callId,
+                  output: args
+                })
+              })
+            }
+          }
+
+          // 如果有函数调用输出，添加到消息中
+          if (functionCallOutputs.length > 0) {
+            const message = response.output[0]
+            if (message.type === 'message' && message.content) {
+              const textContent = message.content.find((content) => content.type === 'output_text')
+              if (textContent && 'text' in textContent) {
+                // 处理文本内容
+                const text = textContent.text
+                for (const char of text) {
+                  pendingBuffer += char
+                  let processedChar = false
+
+                  // --- Thinking Tag Processing (Inside or End states) ---
+                  if (thinkState === 'inside') {
+                    if (pendingBuffer.endsWith(thinkEndMarker)) {
+                      thinkState = 'none'
+                      if (thinkBuffer) {
+                        yield { type: 'reasoning', reasoning_content: thinkBuffer }
+                        thinkBuffer = ''
+                      }
+                      pendingBuffer = ''
+                      processedChar = true
+                    } else if (thinkEndMarker.startsWith(pendingBuffer)) {
                       thinkState = 'end'
+                      processedChar = true
+                    } else if (pendingBuffer.length >= thinkEndMarker.length) {
+                      const charsToYield = pendingBuffer.slice(0, -thinkEndMarker.length + 1)
+                      if (charsToYield) {
+                        thinkBuffer += charsToYield
+                        yield { type: 'reasoning', reasoning_content: charsToYield }
+                      }
+                      pendingBuffer = pendingBuffer.slice(-thinkEndMarker.length + 1)
+                      if (thinkEndMarker.startsWith(pendingBuffer)) {
+                        thinkState = 'end'
+                      } else {
+                        thinkBuffer += pendingBuffer
+                        yield { type: 'reasoning', reasoning_content: pendingBuffer }
+                        pendingBuffer = ''
+                        thinkState = 'inside'
+                      }
+                      processedChar = true
                     } else {
-                      thinkBuffer += pendingBuffer
-                      yield { type: 'reasoning', reasoning_content: pendingBuffer }
+                      thinkBuffer += char
+                      yield { type: 'reasoning', reasoning_content: char }
+                      pendingBuffer = ''
+                      processedChar = true
+                    }
+                  } else if (thinkState === 'end') {
+                    if (pendingBuffer.endsWith(thinkEndMarker)) {
+                      thinkState = 'none'
+                      if (thinkBuffer) {
+                        yield { type: 'reasoning', reasoning_content: thinkBuffer }
+                        thinkBuffer = ''
+                      }
+                      pendingBuffer = ''
+                      processedChar = true
+                    } else if (!thinkEndMarker.startsWith(pendingBuffer)) {
+                      const failedTagChars = pendingBuffer
+                      thinkBuffer += failedTagChars
+                      yield { type: 'reasoning', reasoning_content: failedTagChars }
                       pendingBuffer = ''
                       thinkState = 'inside'
+                      processedChar = true
+                    } else {
+                      processedChar = true
                     }
-                    processedChar = true
-                  } else {
-                    thinkBuffer += char
-                    yield { type: 'reasoning', reasoning_content: char }
-                    pendingBuffer = ''
-                    processedChar = true
                   }
-                } else if (thinkState === 'end') {
-                  if (pendingBuffer.endsWith(thinkEndMarker)) {
-                    thinkState = 'none'
-                    if (thinkBuffer) {
-                      yield { type: 'reasoning', reasoning_content: thinkBuffer }
-                      thinkBuffer = ''
-                    }
-                    pendingBuffer = ''
-                    processedChar = true
-                  } else if (!thinkEndMarker.startsWith(pendingBuffer)) {
-                    const failedTagChars = pendingBuffer
-                    thinkBuffer += failedTagChars
-                    yield { type: 'reasoning', reasoning_content: failedTagChars }
-                    pendingBuffer = ''
-                    thinkState = 'inside'
-                    processedChar = true
-                  } else {
-                    processedChar = true
-                  }
-                }
-                // --- Function Call Tag Processing (Inside or End states, if applicable) ---
-                else if (
-                  !supportsFunctionCall &&
-                  tools.length > 0 &&
-                  (funcState === 'inside' || funcState === 'end')
-                ) {
-                  processedChar = true // Assume processed unless logic below changes state back
-                  if (funcState === 'inside') {
-                    if (pendingBuffer.endsWith(funcEndMarker)) {
-                      funcState = 'none'
-                      funcCallBuffer += pendingBuffer.slice(0, -funcEndMarker.length)
-                      pendingBuffer = ''
-                      toolUseDetected = true
-                      console.log(
-                        `[coreStream] Non-native <function_call> end tag detected. Buffer to parse:`,
-                        funcCallBuffer
-                      )
-                      const parsedCalls = this.parseFunctionCalls(
-                        `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`
-                      )
-                      for (const parsedCall of parsedCalls) {
-                        yield {
-                          type: 'tool_call_start',
-                          tool_call_id: parsedCall.id,
-                          tool_call_name: parsedCall.function.name
+                  // --- Function Call Tag Processing (Inside or End states, if applicable) ---
+                  else if (
+                    !supportsFunctionCall &&
+                    tools.length > 0 &&
+                    (funcState === 'inside' || funcState === 'end')
+                  ) {
+                    processedChar = true // Assume processed unless logic below changes state back
+                    if (funcState === 'inside') {
+                      if (pendingBuffer.endsWith(funcEndMarker)) {
+                        funcState = 'none'
+                        funcCallBuffer += pendingBuffer.slice(0, -funcEndMarker.length)
+                        pendingBuffer = ''
+                        toolUseDetected = true
+                        console.log(
+                          `[coreStream] Non-native <function_call> end tag detected. Buffer to parse:`,
+                          funcCallBuffer
+                        )
+                        const parsedCalls = this.parseFunctionCalls(
+                          `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`
+                        )
+                        for (const parsedCall of parsedCalls) {
+                          yield {
+                            type: 'tool_call_start',
+                            tool_call_id: parsedCall.id,
+                            tool_call_name: parsedCall.function.name
+                          }
+                          yield {
+                            type: 'tool_call_chunk',
+                            tool_call_id: parsedCall.id,
+                            tool_call_arguments_chunk: parsedCall.function.arguments
+                          }
+                          yield {
+                            type: 'tool_call_end',
+                            tool_call_id: parsedCall.id,
+                            tool_call_arguments_complete: parsedCall.function.arguments
+                          }
                         }
-                        yield {
-                          type: 'tool_call_chunk',
-                          tool_call_id: parsedCall.id,
-                          tool_call_arguments_chunk: parsedCall.function.arguments
-                        }
-                        yield {
-                          type: 'tool_call_end',
-                          tool_call_id: parsedCall.id,
-                          tool_call_arguments_complete: parsedCall.function.arguments
-                        }
-                      }
-                      funcCallBuffer = ''
-                    } else if (funcEndMarker.startsWith(pendingBuffer)) {
-                      funcState = 'end'
-                    } else if (pendingBuffer.length >= funcEndMarker.length) {
-                      const charsToAdd = pendingBuffer.slice(0, -funcEndMarker.length + 1)
-                      funcCallBuffer += charsToAdd
-                      pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1)
-                      if (funcEndMarker.startsWith(pendingBuffer)) {
+                        funcCallBuffer = ''
+                      } else if (funcEndMarker.startsWith(pendingBuffer)) {
                         funcState = 'end'
+                      } else if (pendingBuffer.length >= funcEndMarker.length) {
+                        const charsToAdd = pendingBuffer.slice(0, -funcEndMarker.length + 1)
+                        funcCallBuffer += charsToAdd
+                        pendingBuffer = pendingBuffer.slice(-funcEndMarker.length + 1)
+                        if (funcEndMarker.startsWith(pendingBuffer)) {
+                          funcState = 'end'
+                        } else {
+                          funcCallBuffer += pendingBuffer
+                          pendingBuffer = ''
+                          funcState = 'inside'
+                        }
                       } else {
+                        funcCallBuffer += char
+                        pendingBuffer = ''
+                      }
+                    } else {
+                      // funcState === 'end'
+                      if (pendingBuffer.endsWith(funcEndMarker)) {
+                        funcState = 'none'
+                        pendingBuffer = ''
+                        toolUseDetected = true
+                        console.log(
+                          `[coreStream] Non-native <function_call> end tag detected (from end state). Buffer to parse:`,
+                          funcCallBuffer
+                        )
+                        const parsedCalls = this.parseFunctionCalls(
+                          `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`
+                        )
+                        for (const parsedCall of parsedCalls) {
+                          yield {
+                            type: 'tool_call_start',
+                            tool_call_id: parsedCall.id,
+                            tool_call_name: parsedCall.function.name
+                          }
+                          yield {
+                            type: 'tool_call_chunk',
+                            tool_call_id: parsedCall.id,
+                            tool_call_arguments_chunk: parsedCall.function.arguments
+                          }
+                          yield {
+                            type: 'tool_call_end',
+                            tool_call_id: parsedCall.id,
+                            tool_call_arguments_complete: parsedCall.function.arguments
+                          }
+                        }
+                        funcCallBuffer = ''
+                      } else if (!funcEndMarker.startsWith(pendingBuffer)) {
                         funcCallBuffer += pendingBuffer
                         pendingBuffer = ''
                         funcState = 'inside'
                       }
-                    } else {
-                      funcCallBuffer += char
-                      pendingBuffer = ''
-                    }
-                  } else {
-                    // funcState === 'end'
-                    if (pendingBuffer.endsWith(funcEndMarker)) {
-                      funcState = 'none'
-                      pendingBuffer = ''
-                      toolUseDetected = true
-                      console.log(
-                        `[coreStream] Non-native <function_call> end tag detected (from end state). Buffer to parse:`,
-                        funcCallBuffer
-                      )
-                      const parsedCalls = this.parseFunctionCalls(
-                        `${funcStartMarker}${funcCallBuffer}${funcEndMarker}`
-                      )
-                      for (const parsedCall of parsedCalls) {
-                        yield {
-                          type: 'tool_call_start',
-                          tool_call_id: parsedCall.id,
-                          tool_call_name: parsedCall.function.name
-                        }
-                        yield {
-                          type: 'tool_call_chunk',
-                          tool_call_id: parsedCall.id,
-                          tool_call_arguments_chunk: parsedCall.function.arguments
-                        }
-                        yield {
-                          type: 'tool_call_end',
-                          tool_call_id: parsedCall.id,
-                          tool_call_arguments_complete: parsedCall.function.arguments
-                        }
-                      }
-                      funcCallBuffer = ''
-                    } else if (!funcEndMarker.startsWith(pendingBuffer)) {
-                      funcCallBuffer += pendingBuffer
-                      pendingBuffer = ''
-                      funcState = 'inside'
                     }
                   }
-                }
 
-                // --- General Text / Start Tag Detection (When not inside any tag) ---
-                if (!processedChar) {
-                  let potentialThink = thinkStartMarker.startsWith(pendingBuffer)
-                  let potentialFunc =
-                    !supportsFunctionCall &&
-                    tools.length > 0 &&
-                    funcStartMarker.startsWith(pendingBuffer)
-                  const matchedThink = pendingBuffer.endsWith(thinkStartMarker)
-                  const matchedFunc =
-                    !supportsFunctionCall &&
-                    tools.length > 0 &&
-                    pendingBuffer.endsWith(funcStartMarker)
-
-                  // --- Handle Full Matches First ---
-                  if (matchedThink) {
-                    const textBefore = pendingBuffer.slice(0, -thinkStartMarker.length)
-                    if (textBefore) {
-                      yield { type: 'text', content: textBefore }
-                    }
-                    console.log('[coreStream] <think> start tag matched. Entering inside state.')
-                    thinkState = 'inside'
-                    funcState = 'none' // Reset other state
-                    pendingBuffer = ''
-                  } else if (matchedFunc) {
-                    const textBefore = pendingBuffer.slice(0, -funcStartMarker.length)
-                    if (textBefore) {
-                      yield { type: 'text', content: textBefore }
-                    }
-                    console.log(
-                      '[coreStream] Non-native <function_call> start tag detected. Entering inside state.'
-                    )
-                    funcState = 'inside'
-                    thinkState = 'none' // Reset other state
-                    pendingBuffer = ''
-                  }
-                  // --- Handle Partial Matches (Keep Accumulating) ---
-                  else if (potentialThink || potentialFunc) {
-                    // If potentially matching either, just keep the buffer and wait for more chars
-                    // Update state but don't yield anything
-                    thinkState = potentialThink ? 'start' : 'none'
-                    funcState = potentialFunc ? 'start' : 'none'
-                  }
-                  // --- Handle No Match / Failure ---
-                  else if (pendingBuffer.length > 0) {
-                    // Buffer doesn't start with '<', or starts with '<' but doesn't match start of either tag anymore
-                    const charToYield = pendingBuffer[0]
-                    yield { type: 'text', content: charToYield }
-                    pendingBuffer = pendingBuffer.slice(1)
-                    // Re-evaluate potential matches with the shortened buffer immediately
-                    potentialThink =
-                      pendingBuffer.length > 0 && thinkStartMarker.startsWith(pendingBuffer)
-                    potentialFunc =
-                      pendingBuffer.length > 0 &&
+                  // --- General Text / Start Tag Detection (When not inside any tag) ---
+                  if (!processedChar) {
+                    let potentialThink = thinkStartMarker.startsWith(pendingBuffer)
+                    let potentialFunc =
                       !supportsFunctionCall &&
                       tools.length > 0 &&
                       funcStartMarker.startsWith(pendingBuffer)
-                    thinkState = potentialThink ? 'start' : 'none'
-                    funcState = potentialFunc ? 'start' : 'none'
+                    const matchedThink = pendingBuffer.endsWith(thinkStartMarker)
+                    const matchedFunc =
+                      !supportsFunctionCall &&
+                      tools.length > 0 &&
+                      pendingBuffer.endsWith(funcStartMarker)
+
+                    // --- Handle Full Matches First ---
+                    if (matchedThink) {
+                      const textBefore = pendingBuffer.slice(0, -thinkStartMarker.length)
+                      if (textBefore) {
+                        yield { type: 'text', content: textBefore }
+                      }
+                      console.log('[coreStream] <think> start tag matched. Entering inside state.')
+                      thinkState = 'inside'
+                      funcState = 'none' // Reset other state
+                      pendingBuffer = ''
+                    } else if (matchedFunc) {
+                      const textBefore = pendingBuffer.slice(0, -funcStartMarker.length)
+                      if (textBefore) {
+                        yield { type: 'text', content: textBefore }
+                      }
+                      console.log(
+                        '[coreStream] Non-native <function_call> start tag detected. Entering inside state.'
+                      )
+                      funcState = 'inside'
+                      thinkState = 'none' // Reset other state
+                      pendingBuffer = ''
+                    }
+                    // --- Handle Partial Matches (Keep Accumulating) ---
+                    else if (potentialThink || potentialFunc) {
+                      // If potentially matching either, just keep the buffer and wait for more chars
+                      // Update state but don't yield anything
+                      thinkState = potentialThink ? 'start' : 'none'
+                      funcState = potentialFunc ? 'start' : 'none'
+                    }
+                    // --- Handle No Match / Failure ---
+                    else if (pendingBuffer.length > 0) {
+                      // Buffer doesn't start with '<', or starts with '<' but doesn't match start of either tag anymore
+                      const charToYield = pendingBuffer[0]
+                      yield { type: 'text', content: charToYield }
+                      pendingBuffer = pendingBuffer.slice(1)
+                      // Re-evaluate potential matches with the shortened buffer immediately
+                      potentialThink =
+                        pendingBuffer.length > 0 && thinkStartMarker.startsWith(pendingBuffer)
+                      potentialFunc =
+                        pendingBuffer.length > 0 &&
+                        !supportsFunctionCall &&
+                        tools.length > 0 &&
+                        funcStartMarker.startsWith(pendingBuffer)
+                      thinkState = potentialThink ? 'start' : 'none'
+                      funcState = potentialFunc ? 'start' : 'none'
+                    }
                   }
                 }
               }
@@ -888,7 +925,6 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     return result
   }
 
-  // ... [check, summaryTitles, completions, summaries, generateText, suggestions remain unchanged] ...
   public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
     try {
       if (!this.isNoModelsApi) {
