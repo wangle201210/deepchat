@@ -516,8 +516,14 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
 
     // --- Stream Processing Loop ---
     for await (const chunk of stream) {
-      console.log('chunk', chunk)
+      // console.log('chunk', chunk)
       if (chunk.type === 'response.created' || chunk.type === 'response.in_progress') {
+        continue
+      }
+
+      // 处理文本增量
+      if (chunk.type === 'response.output_text.delta') {
+        yield { type: 'text', content: chunk.delta }
         continue
       }
 
