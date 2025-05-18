@@ -46,5 +46,6 @@ export default {
   components,
   newThread,
   about,
+  contextMenu,
   ...others
 }
