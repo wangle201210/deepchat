@@ -13,6 +13,7 @@ import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
 import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
 import { useSettingsStore } from '@/stores/settings'
+import TranslatePopup from '@/components/popup/TranslatePopup.vue'
 
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
@@ -299,5 +300,6 @@ onBeforeUnmount(() => {
     <!-- 全局Toast提示 -->
     <Toaster />
     <MessageContextMenu />
+    <TranslatePopup />
   </div>
 </template>
