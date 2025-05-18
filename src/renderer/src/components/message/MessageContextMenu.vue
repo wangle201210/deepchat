@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { usePresenter } from '@/composables/usePresenter'
 import { Button } from '@/components/ui/button'
@@ -53,7 +53,6 @@ const translatePosition = ref({ x: 100, y: 100 })
 const isDragging = ref(false)
 const currentDragType = ref<'translate' | null>(null)
 const dragStart = ref({ x: 0, y: 0 })
-const translateRef = ref<HTMLElement | null>(null)
 
 const VISIBLE_EDGE = 40 // 保证至少40px可见
 
@@ -110,7 +109,7 @@ const handleTranslate = async (text: string, x?: number, y?: number) => {
   isTranslating.value = true
   translatedText.value = ''
   try {
-    const result = await threadPresenter.translateText(text)
+    const result = await (threadPresenter as ThreadPresenter).translateText(text)
     translatedText.value = result
   } catch (error) {
     translatedText.value = t('contextMenu.translate.error')
@@ -127,7 +126,6 @@ const handleAskAI = (text: string) => {
 // 监听主进程发送的事件
 onMounted(() => {
   window.electron.ipcRenderer.on('context-menu-translate', (_, text: string, x?: number, y?: number) => {
-    console.log('[MessageContextMenu] 收到 context-menu-translate 事件，内容：', text, x, y)
     handleTranslate(text, x, y)
   })
   window.electron.ipcRenderer.on('context-menu-ask-ai', (_, text: string) => {
