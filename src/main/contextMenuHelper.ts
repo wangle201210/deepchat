@@ -68,7 +68,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         click: () => {
           const webContents = getWebContents(options.window)
           webContents.copyImageAt(params.x, params.y)
-          console.log('contextMenu: 复制图片', params.srcURL)
         }
       })
 
@@ -212,7 +211,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         label: options.labels?.translate || '翻译',
         click: () => {
           const webContents = getWebContents(options.window)
-          webContents.send('context-menu-translate', params.selectionText)
+          webContents.send('context-menu-translate', params.selectionText, params.x, params.y)
         }
       })
 
@@ -259,7 +258,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
     if (menuItems.length > 0) {
       try {
         const menu = Menu.buildFromTemplate(menuItems)
-        console.log('contextMenu: 显示菜单')
         menu.popup({
           window: options.window,
           x: params.x,

@@ -19,7 +19,11 @@
         </div>
         <div class="h-px bg-border my-2"></div>
         <div>
-          <div class="p-2 bg-muted text-sm">{{ translatedText }}</div>
+          <div v-if="isTranslating" class="flex items-center gap-2 p-2 bg-muted text-sm text-muted-foreground">
+            <Icon icon="lucide:loader-2" class="animate-spin w-4 h-4" />
+            <span>{{ t('common.loading') }}</span>
+          </div>
+          <div v-else class="p-2 bg-muted text-sm">{{ translatedText }}</div>
         </div>
       </div>
     </div>
@@ -40,6 +44,7 @@ const threadPresenter = usePresenter('threadPresenter')
 const isTranslateDialogOpen = ref(false)
 const selectedText = ref('')
 const translatedText = ref('')
+const isTranslating = ref(false)
 
 // 窗口位置状态
 const translatePosition = ref({ x: 100, y: 100 })
@@ -89,15 +94,28 @@ const stopDrag = () => {
 }
 
 // 处理翻译事件
-const handleTranslate = async (text: string) => {
+const handleTranslate = async (text: string, x?: number, y?: number) => {
   selectedText.value = text
+  if (typeof x === 'number' && typeof y === 'number') {
+    const dialogWidth = 500
+    const dialogHeight = 220
+    const posX = x - dialogWidth / 2
+    const posY = y - dialogHeight / 2
+    translatePosition.value = {
+      x: Math.max(0, posX),
+      y: Math.max(0, posY)
+    }
+  }
   isTranslateDialogOpen.value = true
+  isTranslating.value = true
+  translatedText.value = ''
   try {
     const result = await threadPresenter.translateText(text)
     translatedText.value = result
   } catch (error) {
-    console.error('Translation failed:', error)
     translatedText.value = t('contextMenu.translate.error')
+  } finally {
+    isTranslating.value = false
   }
 }
 
@@ -108,8 +126,9 @@ const handleAskAI = (text: string) => {
 
 // 监听主进程发送的事件
 onMounted(() => {
-  window.electron.ipcRenderer.on('context-menu-translate', (_, text: string) => {
-    handleTranslate(text)
+  window.electron.ipcRenderer.on('context-menu-translate', (_, text: string, x?: number, y?: number) => {
+    console.log('[MessageContextMenu] 收到 context-menu-translate 事件，内容：', text, x, y)
+    handleTranslate(text, x, y)
   })
   window.electron.ipcRenderer.on('context-menu-ask-ai', (_, text: string) => {
     handleAskAI(text)
