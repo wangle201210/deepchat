@@ -5,11 +5,6 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { Button } from '@/components/ui/button'
-import { Icon } from '@iconify/vue'
-
-const { t } = useI18n()
 
 // 处理翻译事件
 const handleTranslate = (text: string, x?: number, y?: number) => {

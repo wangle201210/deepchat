@@ -36,7 +36,7 @@ import { useI18n } from 'vue-i18n'
 import { usePresenter } from '@/composables/usePresenter'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
-import type { IThreadPresenter } from '../../../shared/presenter'
+import type { IThreadPresenter } from '../../../../shared/presenter'
 
 const { t } = useI18n()
 const threadPresenter = usePresenter('threadPresenter')
@@ -71,7 +71,7 @@ const startDrag = (event: MouseEvent) => {
 // 处理拖动
 const getMaxX = () => window.innerWidth - VISIBLE_EDGE
 const getMinX = () => -(POPUP_WIDTH - VISIBLE_EDGE)
-const getMaxY = (ref: HTMLElement | null) => window.innerHeight - VISIBLE_EDGE
+const getMaxY = () => window.innerHeight - VISIBLE_EDGE
 const getMinY = (ref: HTMLElement | null) => -((ref?.offsetHeight || POPUP_HEIGHT) - VISIBLE_EDGE)
 
 const handleDrag = (event: MouseEvent) => {
@@ -81,7 +81,7 @@ const handleDrag = (event: MouseEvent) => {
   let newY = event.clientY - dragStart.value.y
 
   newX = Math.max(getMinX(), Math.min(newX, getMaxX()))
-  newY = Math.max(getMinY(popupRef.value), Math.min(newY, getMaxY(popupRef.value)))
+  newY = Math.max(getMinY(popupRef.value), Math.min(newY, getMaxY()))
   position.value = { x: newX, y: newY }
 }
 
