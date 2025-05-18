@@ -68,7 +68,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         click: () => {
           const webContents = getWebContents(options.window)
           webContents.copyImageAt(params.x, params.y)
-          console.log('contextMenu: 复制图片', params.srcURL)
         }
       })
 
@@ -202,6 +201,29 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         role: 'copy',
         enabled: true
       })
+
+      // 添加分隔符
+      menuItems.push({ type: 'separator' })
+
+      // 添加翻译选项
+      menuItems.push({
+        id: 'translate',
+        label: options.labels?.translate || '翻译',
+        click: () => {
+          const webContents = getWebContents(options.window)
+          webContents.send('context-menu-translate', params.selectionText, params.x, params.y)
+        }
+      })
+
+      // 添加AI询问选项
+      menuItems.push({
+        id: 'askAI',
+        label: options.labels?.askAI || '询问AI',
+        click: () => {
+          const webContents = getWebContents(options.window)
+          webContents.send('context-menu-ask-ai', params.selectionText)
+        }
+      })
     }
 
     // 允许用户在菜单前添加项目
@@ -236,7 +258,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
     if (menuItems.length > 0) {
       try {
         const menu = Menu.buildFromTemplate(menuItems)
-        console.log('contextMenu: 显示菜单')
         menu.popup({
           window: options.window,
           x: params.x,

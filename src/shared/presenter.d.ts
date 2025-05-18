@@ -437,6 +437,10 @@ export interface IThreadPresenter {
   updateMessageMetadata(messageId: string, metadata: Partial<MESSAGE_METADATA>): Promise<void>
   getMessageExtraInfo(messageId: string, type: string): Promise<Record<string, unknown>[]>
 
+  // popup 操作
+  translateText(text: string): Promise<string>
+  askAI(text: string): Promise<string>
+
   // 上下文控制
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
