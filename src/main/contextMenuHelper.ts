@@ -200,6 +200,32 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         role: 'copy',
         enabled: true
       })
+
+      // 添加分隔符
+      menuItems.push({ type: 'separator' })
+
+      // 添加翻译选项
+      menuItems.push({
+        id: 'translate',
+        label: options.labels?.translate || '翻译',
+        click: () => {
+          options.webContents.send(
+            'context-menu-translate',
+            params.selectionText,
+            params.x,
+            params.y
+          )
+        }
+      })
+
+      // 添加AI询问选项
+      menuItems.push({
+        id: 'askAI',
+        label: options.labels?.askAI || '询问AI',
+        click: () => {
+          options.webContents.send('context-menu-ask-ai', params.selectionText)
+        }
+      })
     }
 
     // 允许用户在菜单前添加项目

@@ -1624,11 +1624,20 @@ export class ThreadPresenter implements IThreadPresenter {
         // 处理助手消息
         const assistantBlocks = msg.content as AssistantMessageBlock[]
 
-        // 提取文本内容块
+        // 提取文本内容块，同时将工具调用的响应内容提取出来
         const textContent = assistantBlocks
           .filter((block) => block.type === 'content' || block.type === 'tool_call')
-          .map((block) => block.content)
+          .map((block) => {
+            if (block.type === 'content') {
+              return block.content
+            } else if (block.type === 'tool_call' && block.tool_call?.response) {
+              return block.tool_call.response
+            } else {
+              return '[Missing response]' // 若 tool_call 或 response 是 undefined，返回空字符串
+            }
+          })
           .join('\n')
+
         // 查找图像块
         const imageBlocks = assistantBlocks.filter(
           (block) => block.type === 'image' && block.image_data
@@ -2096,6 +2105,129 @@ export class ThreadPresenter implements IThreadPresenter {
       return newConversationId
     } catch (error) {
       console.error('分支会话失败:', error)
+      throw error
+    }
+  }
+
+  // 翻译文本
+  async translateText(text: string, tabId: number): Promise<string> {
+    try {
+      let conversation = await this.getActiveConversation(tabId)
+      if (!conversation) {
+        // 创建一个临时对话用于翻译
+        const defaultProvider = this.configPresenter.getDefaultProviders()[0]
+        const models = await this.llmProviderPresenter.getModelList(defaultProvider.id)
+        const defaultModel = models[0]
+        const conversationId = await this.createConversation(
+          '临时翻译对话',
+          {
+            modelId: defaultModel.id,
+            providerId: defaultProvider.id
+          },
+          tabId
+        )
+        conversation = await this.getConversation(conversationId)
+      }
+
+      const { providerId, modelId } = conversation.settings
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content:
+            '你是一个翻译助手。请将用户输入的文本翻译成中文。只返回翻译结果，不要添加任何其他内容。'
+        },
+        {
+          role: 'user',
+          content: text
+        }
+      ]
+
+      let translatedText = ''
+      const stream = this.llmProviderPresenter.startStreamCompletion(
+        providerId,
+        messages,
+        modelId,
+        'translate-' + Date.now(),
+        0.3,
+        1000
+      )
+
+      for await (const event of stream) {
+        if (event.type === 'response') {
+          const msg = event.data as LLMAgentEventData
+          if (msg.content) {
+            translatedText += msg.content
+          }
+        } else if (event.type === 'error') {
+          const msg = event.data as { eventId: string; error: string }
+          throw new Error(msg.error || '翻译失败')
+        }
+      }
+
+      return translatedText.trim()
+    } catch (error) {
+      console.error('翻译失败:', error)
+      throw error
+    }
+  }
+
+  // AI询问
+  async askAI(text: string, tabId: number): Promise<string> {
+    try {
+      let conversation = await this.getActiveConversation(tabId)
+      if (!conversation) {
+        // 创建一个临时对话用于AI询问
+        const defaultProvider = this.configPresenter.getDefaultProviders()[0]
+        const models = await this.llmProviderPresenter.getModelList(defaultProvider.id)
+        const defaultModel = models[0]
+        const conversationId = await this.createConversation(
+          '临时AI对话',
+          {
+            modelId: defaultModel.id,
+            providerId: defaultProvider.id
+          },
+          tabId
+        )
+        conversation = await this.getConversation(conversationId)
+      }
+
+      const { providerId, modelId } = conversation.settings
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: '你是一个AI助手。请简洁地回答用户的问题。'
+        },
+        {
+          role: 'user',
+          content: text
+        }
+      ]
+
+      let aiAnswer = ''
+      const stream = this.llmProviderPresenter.startStreamCompletion(
+        providerId,
+        messages,
+        modelId,
+        'ask-ai-' + Date.now(),
+        0.7,
+        1000
+      )
+
+      for await (const event of stream) {
+        if (event.type === 'response') {
+          const msg = event.data as LLMAgentEventData
+          if (msg.content) {
+            aiAnswer += msg.content
+          }
+        } else if (event.type === 'error') {
+          const msg = event.data as { eventId: string; error: string }
+          throw new Error(msg.error || 'AI回答失败')
+        }
+      }
+
+      return aiAnswer.trim()
+    } catch (error) {
+      console.error('AI询问失败:', error)
       throw error
     }
   }

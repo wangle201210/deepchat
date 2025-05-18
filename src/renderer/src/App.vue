@@ -3,7 +3,7 @@ import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
-
+import SelectedTextContextMenu from './components/message/SelectedTextContextMenu.vue'
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
 import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
@@ -11,6 +11,8 @@ import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
+import TranslatePopup from '@/components/popup/TranslatePopup.vue'
+
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
 const artifactStore = useArtifactStore()
@@ -280,5 +282,7 @@ onBeforeUnmount(() => {
     <UpdateDialog />
     <!-- 全局Toast提示 -->
     <Toaster />
+    <SelectedTextContextMenu />
+    <TranslatePopup />
   </div>
 </template>
