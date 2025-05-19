@@ -348,6 +348,9 @@
     "quitApp": "退出程序",
     "zoomIn": "放大字體",
     "zoomOut": "縮小字體",
-    "zoomReset": "重置字體"
+    "zoomReset": "重置字體",
+    "closeTab": "關閉當前標籤頁",
+    "newTab": "新建標籤頁",
+    "newWindow": "打開新窗口"
   }
 }

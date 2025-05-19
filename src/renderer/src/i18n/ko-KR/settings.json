@@ -348,6 +348,9 @@
     "quitApp": "프로그램을 종료하십시오",
     "zoomIn": "글꼴을 확대하십시오",
     "zoomOut": "글꼴을 줄입니다",
-    "zoomReset": "글꼴을 재설정하십시오"
+    "zoomReset": "글꼴을 재설정하십시오",
+    "closeTab": "현재 탭 페이지를 닫습니다",
+    "newTab": "새 탭을 만듭니다",
+    "newWindow": "새 창을 엽니 다"
   }
 }

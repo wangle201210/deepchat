@@ -10,6 +10,7 @@ import { TrayPresenter } from '../trayPresenter'
 import { CONFIG_EVENTS, SYSTEM_EVENTS, WINDOW_EVENTS } from '@/events'
 import { presenter } from '../'
 import windowStateManager from 'electron-window-state'
+import { SHORTCUT_EVENTS } from '@/events'
 
 export class WindowPresenter implements IWindowPresenter {
   windows: Map<number, BrowserWindow>
@@ -38,6 +39,41 @@ export class WindowPresenter implements IWindowPresenter {
       this.isQuitting = true
       if (this.trayPresenter) {
         this.trayPresenter.destroy()
+      }
+    })
+
+    // 监听快捷键事件
+    eventBus.on(SHORTCUT_EVENTS.CREATE_NEW_WINDOW, () => {
+      this.createShellWindow({
+        initialTab: {
+          url: 'local://chat'
+        }
+      })
+    })
+
+    eventBus.on(SHORTCUT_EVENTS.CREATE_NEW_TAB, async (windowId: number) => {
+      await presenter.tabPresenter.createTab(windowId, 'local://chat', { active: true })
+    })
+
+    eventBus.on(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, async (windowId: number) => {
+      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+      const activeTab = tabsData.find((tab) => tab.isActive)
+
+      if (activeTab) {
+        if (tabsData.length === 1) {
+          // 如果是最后一个标签页
+          const windows = this.getAllWindows()
+          if (windows.length === 1) {
+            // 如果是最后一个窗口，隐藏窗口而不是关闭
+            this.hide(windowId)
+          } else {
+            // 如果不是最后一个窗口，直接关闭窗口
+            this.closeWindow(windowId, true)
+          }
+        } else {
+          // 如果不是最后一个标签页，直接关闭标签页
+          await presenter.tabPresenter.closeTab(activeTab.id)
+        }
       }
     })
 

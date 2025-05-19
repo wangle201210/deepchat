@@ -13,22 +13,33 @@ export class ShortcutPresenter {
   registerShortcuts(): void {
     if (this.isActive) return
 
-    // Command+W 或 Ctrl+W 隐藏窗口
+    // Command+N 或 Ctrl+N 创建新窗口
+    globalShortcut.register(process.platform === 'darwin' ? 'Command+N' : 'Control+N', () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
+      }
+    })
+
+    // Command+T 或 Ctrl+T 在当前窗口创建新标签页
+    globalShortcut.register(process.platform === 'darwin' ? 'Command+T' : 'Control+T', () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_TAB, focusedWindow.id)
+      }
+    })
+
+    // Command+W 或 Ctrl+W 关闭当前标签页
     globalShortcut.register(process.platform === 'darwin' ? 'Command+W' : 'Control+W', () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        presenter.windowPresenter.hide(focusedWindow.id)
+        eventBus.emit(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, focusedWindow.id)
       }
     })
 
     // Command+Q 或 Ctrl+Q 退出程序
     globalShortcut.register(process.platform === 'darwin' ? 'Command+Q' : 'Control+Q', () => {
       app.quit()
-    })
-
-    // Command+N 或 Ctrl+N 创建新会话
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+N' : 'Control+N', () => {
-      eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION)
     })
 
     // Command+= 或 Ctrl+= 放大字体

@@ -28,5 +28,6 @@
   "code": "程式碼",
   "export": "匯出",
   "htmlPreviewTitle": "HTML 預覽",
-  "svgPreviewTitle": "SVG 預覽"
+  "svgPreviewTitle": "SVG 預覽",
+  "copy": "複製"
 }
