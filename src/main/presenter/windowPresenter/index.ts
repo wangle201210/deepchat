@@ -340,7 +340,9 @@ export class WindowPresenter implements IWindowPresenter {
     if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
       shellWindow.loadURL(process.env['ELECTRON_RENDERER_URL'] + '/shell/index.html')
     } else {
-      shellWindow.loadFile(join(__dirname, '../../renderer/shell/index.html'))
+      // 参考 tabPresenter.ts 中的方法，使用 __dirname
+      // 注意：在打包环境中，__dirname 指向 /app.asar/main 目录
+      shellWindow.loadFile(join(__dirname, '../renderer/shell/index.html'))
     }
 
     if (is.dev) {
