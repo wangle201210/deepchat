@@ -1925,17 +1925,14 @@ export class ThreadPresenter implements IThreadPresenter {
     await Promise.all(messageIds.map((messageId) => this.stopMessageGeneration(messageId)))
   }
 
-  async summaryTitles(modelId?: string, tabId?: number): Promise<string> {
+  async summaryTitles(tabId?: number): Promise<string> {
     const conversation = await this.getActiveConversation(tabId || 0)
     if (!conversation) {
       throw new Error('找不到当前对话')
     }
     let summaryProviderId = conversation.settings.providerId
-    if (!modelId) {
-      modelId = this.searchAssistantModel?.id
-      summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
-    }
-
+    const modelId = this.searchAssistantModel?.id
+    summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
     const messages = await this.getContextMessages(conversation.id)
     const messagesWithLength = messages
       .map((msg) => {

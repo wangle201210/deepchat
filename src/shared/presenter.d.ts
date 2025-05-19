@@ -497,7 +497,7 @@ export interface IThreadPresenter {
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(modelId?: string, tabId?: number): Promise<string>
+  summaryTitles(tabId?: number): Promise<string>
   stopMessageGeneration(messageId: string): Promise<void>
   getSearchEngines(): Promise<SearchEngineTemplate[]>
   getActiveSearchEngine(): Promise<SearchEngineTemplate>

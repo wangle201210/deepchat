@@ -608,7 +608,7 @@ export const useChatStore = defineStore('chat', () => {
         if (messages.length === 2 && thread && thread.is_new === 1) {
           try {
             console.info('自动生成标题 start', messages.length, thread)
-            await threadP.summaryTitles().then(async (title) => {
+            await threadP.summaryTitles(getTabId()).then(async (title) => {
               if (title) {
                 console.info('自动生成标题', title)
                 await threadP.renameConversation(getActiveThreadId()!, title)

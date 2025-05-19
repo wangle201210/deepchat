@@ -3,7 +3,7 @@ import { eventBus } from '@/eventbus'
 import { WINDOW_EVENTS, CONFIG_EVENTS, SYSTEM_EVENTS, TAB_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
 import { ITabPresenter, TabCreateOptions, IWindowPresenter, TabData } from '@shared/presenter'
-import { BrowserWindow, WebContentsView } from 'electron'
+import { BrowserWindow, WebContentsView, shell } from 'electron'
 import { join } from 'path'
 import contextMenu from '@/contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
@@ -399,6 +399,13 @@ export class TabPresenter implements ITabPresenter {
     tabId: number,
     windowId: number
   ): void {
+    // 处理外部链接
+    webContents.setWindowOpenHandler(({ url }) => {
+      // 使用系统默认浏览器打开链接
+      shell.openExternal(url)
+      return { action: 'deny' }
+    })
+
     // 标题变更
     webContents.on('page-title-updated', (_event, title) => {
       const state = this.tabState.get(tabId)
@@ -471,6 +478,7 @@ export class TabPresenter implements ITabPresenter {
     webContents.removeAllListeners('page-favicon-updated')
     webContents.removeAllListeners('did-navigate')
     webContents.removeAllListeners('did-finish-load')
+    webContents.setWindowOpenHandler(() => ({ action: 'allow' }))
   }
 
   /**
