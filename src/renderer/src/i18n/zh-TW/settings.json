@@ -351,6 +351,7 @@
     "zoomReset": "重置字體",
     "closeTab": "關閉當前標籤頁",
     "newTab": "新建標籤頁",
-    "newWindow": "打開新窗口"
+    "newWindow": "打開新窗口",
+    "newConversation": "新會話"
   }
 }

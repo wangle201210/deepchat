@@ -351,6 +351,7 @@
     "quitApp": "退出程序",
     "newWindow": "打开新窗口",
     "newTab": "新建标签页",
-    "closeTab": "关闭当前标签页"
+    "closeTab": "关闭当前标签页",
+    "newConversation": "新会话"
   }
 }

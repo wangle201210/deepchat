@@ -351,6 +351,7 @@
     "zoomReset": "フォントをリセットします",
     "closeTab": "現在のタブページを閉じます",
     "newTab": "新しいタブを作成します",
-    "newWindow": "新しいウィンドウを開きます"
+    "newWindow": "新しいウィンドウを開きます",
+    "newConversation": "新しい会話"
   }
 }

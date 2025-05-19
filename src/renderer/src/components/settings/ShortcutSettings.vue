@@ -41,7 +41,7 @@ const shortcuts = ref([
   },
   {
     id: 'new_window',
-    icon: 'lucide:plus-square',
+    icon: 'lucide:app-window',
     label: 'settings.shortcuts.newWindow',
     key: 'CommandOrControl+Shift+N'
   },
