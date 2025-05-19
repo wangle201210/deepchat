@@ -34,10 +34,16 @@ const { t } = useI18n()
 
 const shortcuts = ref([
   {
+    id: 'new_conversation',
+    icon: 'lucide:plus-square',
+    label: 'settings.shortcuts.newConversation',
+    key: 'CommandOrControl+N'
+  },
+  {
     id: 'new_window',
     icon: 'lucide:plus-square',
     label: 'settings.shortcuts.newWindow',
-    key: 'CommandOrControl+N'
+    key: 'CommandOrControl+Shift+N'
   },
   {
     id: 'new_tab',

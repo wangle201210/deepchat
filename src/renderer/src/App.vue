@@ -186,6 +186,11 @@ onMounted(() => {
   })
 
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION, () => {
+    // 检查当前路由是否为聊天页面
+    const currentRoute = router.currentRoute.value
+    if (currentRoute.name !== 'chat') {
+      return
+    }
     handleCreateNewConversation()
   })
 

@@ -457,4 +457,34 @@ export class WindowPresenter implements IWindowPresenter {
   getAllWindows(): BrowserWindow[] {
     return Array.from(this.windows.values())
   }
+
+  /**
+   * 获取指定窗口的当前激活标签页 ID
+   * @param windowId 窗口 ID
+   * @returns 当前激活的标签页 ID，如果没有则返回 undefined
+   */
+  async getActiveTabId(windowId: number): Promise<number | undefined> {
+    const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+    const activeTab = tabsData.find((tab) => tab.isActive)
+    return activeTab?.id
+  }
+
+  /**
+   * 向指定窗口的当前激活标签页发送事件
+   * @param windowId 窗口 ID
+   * @param channel 事件通道
+   * @param args 事件参数
+   * @returns 是否发送成功
+   */
+  async sendToActiveTab(windowId: number, channel: string, ...args: unknown[]): Promise<boolean> {
+    const activeTabId = await this.getActiveTabId(windowId)
+    if (activeTabId) {
+      const tab = await presenter.tabPresenter.getTab(activeTabId)
+      if (tab && !tab.webContents.isDestroyed()) {
+        tab.webContents.send(channel, ...args)
+        return true
+      }
+    }
+    return false
+  }
 }

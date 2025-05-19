@@ -116,6 +116,7 @@ export const SHORTCUT_EVENTS = {
   ZOOM_OUT: 'shortcut:zoom-out',
   ZOOM_RESUME: 'shortcut:zoom-resume',
   CREATE_NEW_WINDOW: 'shortcut:create-new-window',
+  CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
   CREATE_NEW_TAB: 'shortcut:create-new-tab',
   CLOSE_CURRENT_TAB: 'shortcut:close-current-tab',
   GO_SETTINGS: 'shortcut:go-settings',

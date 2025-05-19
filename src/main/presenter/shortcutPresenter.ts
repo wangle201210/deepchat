@@ -13,13 +13,27 @@ export class ShortcutPresenter {
   registerShortcuts(): void {
     if (this.isActive) return
 
-    // Command+N 或 Ctrl+N 创建新窗口
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+N' : 'Control+N', () => {
+    // Command+N 或 Ctrl+N 创建新会话
+    globalShortcut.register(process.platform === 'darwin' ? 'Command+N' : 'Control+N', async () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
+        presenter.windowPresenter.sendToActiveTab(
+          focusedWindow.id,
+          SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION
+        )
       }
     })
+
+    // Command+Shift+N 或 Ctrl+Shift+N 创建新窗口
+    globalShortcut.register(
+      process.platform === 'darwin' ? 'Command+Shift+N' : 'Control+Shift+N',
+      () => {
+        const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+        if (focusedWindow?.isFocused()) {
+          eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
+        }
+      }
+    )
 
     // Command+T 或 Ctrl+T 在当前窗口创建新标签页
     globalShortcut.register(process.platform === 'darwin' ? 'Command+T' : 'Control+T', () => {

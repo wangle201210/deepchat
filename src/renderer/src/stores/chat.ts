@@ -9,7 +9,7 @@ import type {
 } from '@shared/chat'
 import type { CONVERSATION, CONVERSATION_SETTINGS } from '@shared/presenter'
 import { usePresenter } from '@/composables/usePresenter'
-import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
+import { CONVERSATION_EVENTS, DEEPLINK_EVENTS, SHORTCUT_EVENTS } from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
 // 定义会话工作状态类型
@@ -877,6 +877,7 @@ export const useChatStore = defineStore('chat', () => {
     loadMessages()
     loadChatConfig() // 加载对话配置
   })
+
   const handleMessageEdited = async (msgId: string) => {
     // 首先检查是否在生成缓存中
     const cached = getGeneratingMessagesCache().get(msgId)

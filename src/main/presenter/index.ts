@@ -65,8 +65,7 @@ const eventsToForward: string[] = [
   SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
   SHORTCUT_EVENTS.ZOOM_IN,
   SHORTCUT_EVENTS.ZOOM_OUT,
-  SHORTCUT_EVENTS.ZOOM_RESUME,
-  SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION
+  SHORTCUT_EVENTS.ZOOM_RESUME
 ]
 export class Presenter implements IPresenter {
   windowPresenter: WindowPresenter
@@ -117,13 +116,7 @@ export class Presenter implements IPresenter {
     const forward = (eventName: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eventBus.on(eventName, (...payload: any[]) => {
-        if (eventName === SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION) {
-          console.log('create-new-conversation', payload)
-          const focusedWindow = this.windowPresenter.getFocusedWindow()
-          if (focusedWindow) {
-            this.windowPresenter.sendToWindow(focusedWindow.id, eventName, ...payload)
-          }
-        } else if (eventName === STREAM_EVENTS.RESPONSE) {
+        if (eventName === STREAM_EVENTS.RESPONSE) {
           // 根据事件名称处理特定逻辑
           const [msg] = payload
           const dataToRender = { ...msg }
