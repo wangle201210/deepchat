@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { presenter } from '@/presenter'
 import { IDeeplinkPresenter, MCPServerConfig } from '@shared/presenter'
 import path from 'path'
-import { DEEPLINK_EVENTS, WINDOW_EVENTS } from '@/events'
+import { DEEPLINK_EVENTS, MCP_EVENTS, WINDOW_EVENTS } from '@/events'
 import { eventBus } from '@/eventbus'
 
 interface MCPInstallConfig {
@@ -32,6 +32,7 @@ interface MCPInstallConfig {
  */
 export class DeeplinkPresenter implements IDeeplinkPresenter {
   private startupUrl: string | null = null
+  private pendingMcpInstallUrl: string | null = null
 
   init(): void {
     // 注册协议处理器
@@ -52,18 +53,28 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
         console.log('App not ready yet, saving URL:', url)
         this.startupUrl = url
       } else {
-        console.log('App is ready, processing URL directly:', url)
-        this.handleDeepLink(url)
+        console.log('App is ready, checking URL:', url)
+        this.processDeepLink(url)
       }
     })
 
-    // 修改：使用CONTENT_LOADED事件来处理DeepLink
+    // 监听窗口内容加载完成事件
     eventBus.on(WINDOW_EVENTS.CONTENT_LOADED, () => {
       console.log('Window content loaded. Processing DeepLink if exists.')
       if (this.startupUrl) {
         console.log('Processing startup URL:', this.startupUrl)
-        this.handleDeepLink(this.startupUrl)
+        this.processDeepLink(this.startupUrl)
         this.startupUrl = null
+      }
+    })
+
+    // 监听MCP初始化完成事件
+    eventBus.on(MCP_EVENTS.INITIALIZED, () => {
+      console.log('MCP initialized. Processing pending MCP install if exists.')
+      if (this.pendingMcpInstallUrl) {
+        console.log('Processing pending MCP install URL:', this.pendingMcpInstallUrl)
+        this.handleDeepLink(this.pendingMcpInstallUrl)
+        this.pendingMcpInstallUrl = null
       }
     })
 
@@ -89,12 +100,35 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
               console.log('Windows: App not ready yet, saving URL:', deepLinkUrl)
               this.startupUrl = deepLinkUrl
             } else {
-              console.log('Windows: App is ready, processing URL directly:', deepLinkUrl)
-              this.handleDeepLink(deepLinkUrl)
+              console.log('Windows: App is ready, checking URL:', deepLinkUrl)
+              this.processDeepLink(deepLinkUrl)
             }
           }
         }
       })
+    }
+  }
+
+  // 新增：处理DeepLink的方法，根据URL类型和系统状态决定如何处理
+  private processDeepLink(url: string): void {
+    try {
+      const urlObj = new URL(url)
+      const command = urlObj.hostname
+      const subCommand = urlObj.pathname.slice(1)
+
+      // 如果是MCP安装命令，需要等待MCP初始化完成
+      if (command === 'mcp' && subCommand === 'install') {
+        if (!presenter.mcpPresenter.isReady()) {
+          console.log('MCP not ready yet, saving MCP install URL for later')
+          this.pendingMcpInstallUrl = url
+          return
+        }
+      }
+
+      // 其他类型的DeepLink或MCP已初始化完成，直接处理
+      this.handleDeepLink(url)
+    } catch (error) {
+      console.error('Error processing DeepLink:', error)
     }
   }
 

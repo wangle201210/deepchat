@@ -70,7 +70,8 @@ export const MCP_EVENTS = {
   CONFIG_CHANGED: 'mcp:config-changed',
   TOOL_CALL_RESULT: 'mcp:tool-call-result',
   SERVER_STATUS_CHANGED: 'mcp:server-status-changed',
-  CLIENT_LIST_UPDATED: 'mcp:client-list-updated'
+  CLIENT_LIST_UPDATED: 'mcp:client-list-updated',
+  INITIALIZED: 'mcp:initialized' // 新增：MCP初始化完成事件
 }
 
 // 同步相关事件

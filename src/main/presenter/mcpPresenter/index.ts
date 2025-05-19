@@ -91,6 +91,7 @@ export class McpPresenter implements IMCPPresenter {
   private serverManager: ServerManager
   private toolManager: ToolManager
   private configPresenter: IConfigPresenter
+  private isInitialized: boolean = false
 
   constructor(configPresenter?: IConfigPresenter) {
     console.log('Initializing MCP Presenter')
@@ -156,9 +157,22 @@ export class McpPresenter implements IMCPPresenter {
           }
         }
       }
+
+      // 标记初始化完成并发出事件
+      this.isInitialized = true
+      console.log('[MCP] Initialization completed')
+      eventBus.emit(MCP_EVENTS.INITIALIZED)
     } catch (error) {
       console.error('[MCP] Initialization failed:', error)
+      // 即使初始化失败也标记为已完成，避免系统卡在未初始化状态
+      this.isInitialized = true
+      eventBus.emit(MCP_EVENTS.INITIALIZED)
     }
+  }
+
+  // 添加获取初始化状态的方法
+  isReady(): boolean {
+    return this.isInitialized
   }
 
   // 获取MCP服务器配置
