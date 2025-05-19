@@ -54,7 +54,8 @@ export const WINDOW_EVENTS = {
   APP_FOCUS: 'app:focus',
   APP_BLUR: 'app:blur',
   WINDOW_MAXIMIZED: 'window:maximized',
-  WINDOW_UNMAXIMIZED: 'window:unmaximized'
+  WINDOW_UNMAXIMIZED: 'window:unmaximized',
+  CONTENT_LOADED: 'window:content-loaded' // 新增：窗口内容加载完成事件
 }
 
 // ollama 相关事件

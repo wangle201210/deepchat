@@ -102,6 +102,12 @@ export class WindowPresenter implements IWindowPresenter {
       eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW, mainWindow)
     })
 
+    // 添加：监听窗口内容加载完成事件
+    mainWindow.webContents.once('did-finish-load', () => {
+      console.log('Main window content loaded')
+      eventBus.emit(WINDOW_EVENTS.CONTENT_LOADED, mainWindow)
+    })
+
     // 处理关闭按钮点击
     mainWindow.on('close', (e) => {
       eventBus.emit('main-window-close', mainWindow)
