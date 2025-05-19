@@ -29,5 +29,9 @@
   "export": "エクスポート",
   "htmlPreviewTitle": "HTMLプレビュー",
   "svgPreviewTitle": "SVGプレビュー",
-  "copy": "コピー"
+  "copy": "コピー",
+  "copySuccess": "コピー成功",
+  "copySuccessDesc": "クリップボードにコピーしました",
+  "copyFailed": "コピー失敗",
+  "copyFailedDesc": "クリップボードへのコピーに失敗しました"
 }

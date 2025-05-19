@@ -29,5 +29,9 @@
   "export": "Exporter",
   "htmlPreviewTitle": "Aperçu HTML",
   "svgPreviewTitle": "Aperçu SVG",
-  "copy": "Copier"
+  "copy": "Copier",
+  "copySuccess": "Copie réussie",
+  "copySuccessDesc": "Contenu copié dans le presse-papiers",
+  "copyFailed": "Échec de la copie",
+  "copyFailedDesc": "Impossible de copier le contenu dans le presse-papiers"
 }
