@@ -62,7 +62,7 @@ export const useTabStore = defineStore('tab', () => {
   const init = async () => {
     const windowId = window.api.getWindowId()
     const tabsData = await tabPresenter.getWindowTabsData(windowId ?? 1)
-    window.electron.ipcRenderer.on('update-window-tabs', (event, windowId, tabsData: TabData[]) => {
+    window.electron.ipcRenderer.on('update-window-tabs', (_, windowId, tabsData: TabData[]) => {
       // console.log('update-window-tabs', windowId, tabsData)
       updateWindowTabs(windowId, tabsData)
     })
