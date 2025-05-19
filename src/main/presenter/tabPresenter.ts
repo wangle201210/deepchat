@@ -409,6 +409,16 @@ export class TabPresenter implements ITabPresenter {
       }
     })
 
+    // 检查是否是窗口的第一个标签页
+    const isFirstTab = this.windowTabs.get(windowId)?.length === 1
+
+    // 页面加载完成
+    if (isFirstTab) {
+      webContents.once('did-finish-load', () => {
+        eventBus.emit(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
+      })
+    }
+
     // Favicon变更
     webContents.on('page-favicon-updated', (_event, favicons) => {
       if (favicons.length > 0) {
@@ -439,6 +449,7 @@ export class TabPresenter implements ITabPresenter {
     webContents.removeAllListeners('page-title-updated')
     webContents.removeAllListeners('page-favicon-updated')
     webContents.removeAllListeners('did-navigate')
+    webContents.removeAllListeners('did-finish-load')
   }
 
   /**

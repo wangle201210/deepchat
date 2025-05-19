@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { presenter } from '@/presenter'
 import { IDeeplinkPresenter, MCPServerConfig } from '@shared/presenter'
 import path from 'path'
-import { DEEPLINK_EVENTS, WINDOW_EVENTS } from '@/events'
+import { DEEPLINK_EVENTS, MCP_EVENTS, WINDOW_EVENTS } from '@/events'
 import { eventBus } from '@/eventbus'
 
 interface MCPInstallConfig {
@@ -32,6 +32,7 @@ interface MCPInstallConfig {
  */
 export class DeeplinkPresenter implements IDeeplinkPresenter {
   private startupUrl: string | null = null
+  private pendingMcpInstallUrl: string | null = null
 
   init(): void {
     // 注册协议处理器
@@ -49,20 +50,31 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     app.on('open-url', (event, url) => {
       event.preventDefault()
       if (!app.isReady()) {
-        console.log('应用程序尚未就绪，保存 URL:', url)
+        console.log('App not ready yet, saving URL:', url)
         this.startupUrl = url
       } else {
-        console.log('应用程序已就绪，直接处理 URL:', url)
-        this.handleDeepLink(url)
+        console.log('App is ready, checking URL:', url)
+        this.processDeepLink(url)
       }
     })
 
-    // 监听窗口准备好的事件
-    eventBus.on(WINDOW_EVENTS.READY_TO_SHOW, () => {
+    // 监听窗口内容加载完成事件
+    eventBus.once(WINDOW_EVENTS.FIRST_CONTENT_LOADED, () => {
+      console.log('Window content loaded. Processing DeepLink if exists.')
       if (this.startupUrl) {
-        console.log('process startup URL:', this.startupUrl)
-        this.handleDeepLink(this.startupUrl)
+        console.log('Processing startup URL:', this.startupUrl)
+        this.processDeepLink(this.startupUrl)
         this.startupUrl = null
+      }
+    })
+
+    // 监听MCP初始化完成事件
+    eventBus.on(MCP_EVENTS.INITIALIZED, () => {
+      console.log('MCP initialized. Processing pending MCP install if exists.')
+      if (this.pendingMcpInstallUrl) {
+        console.log('Processing pending MCP install URL:', this.pendingMcpInstallUrl)
+        this.handleDeepLink(this.pendingMcpInstallUrl)
+        this.pendingMcpInstallUrl = null
       }
     })
 
@@ -85,11 +97,11 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
           const deepLinkUrl = commandLine.find((arg) => arg.startsWith('deepchat://'))
           if (deepLinkUrl) {
             if (!app.isReady()) {
-              console.log('Windows: 应用程序尚未就绪，保存 URL:', deepLinkUrl)
+              console.log('Windows: App not ready yet, saving URL:', deepLinkUrl)
               this.startupUrl = deepLinkUrl
             } else {
-              console.log('Windows: 应用程序已就绪，直接处理 URL:', deepLinkUrl)
-              this.handleDeepLink(deepLinkUrl)
+              console.log('Windows: App is ready, checking URL:', deepLinkUrl)
+              this.processDeepLink(deepLinkUrl)
             }
           }
         }
@@ -97,14 +109,37 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     }
   }
 
+  // 新增：处理DeepLink的方法，根据URL类型和系统状态决定如何处理
+  private processDeepLink(url: string): void {
+    try {
+      const urlObj = new URL(url)
+      const command = urlObj.hostname
+      const subCommand = urlObj.pathname.slice(1)
+
+      // 如果是MCP安装命令，需要等待MCP初始化完成
+      if (command === 'mcp' && subCommand === 'install') {
+        if (!presenter.mcpPresenter.isReady()) {
+          console.log('MCP not ready yet, saving MCP install URL for later')
+          this.pendingMcpInstallUrl = url
+          return
+        }
+      }
+
+      // 其他类型的DeepLink或MCP已初始化完成，直接处理
+      this.handleDeepLink(url)
+    } catch (error) {
+      console.error('Error processing DeepLink:', error)
+    }
+  }
+
   async handleDeepLink(url: string): Promise<void> {
-    console.log('收到 DeepLink:', url)
+    console.log('Received DeepLink:', url)
 
     try {
       const urlObj = new URL(url)
 
       if (urlObj.protocol !== 'deepchat:') {
-        console.error('不支持的协议:', urlObj.protocol)
+        console.error('Unsupported protocol:', urlObj.protocol)
         return
       }
 
@@ -120,18 +155,18 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
         if (subCommand === 'install') {
           await this.handleMcpInstall(urlObj.searchParams)
         } else {
-          console.warn('未知的 MCP 子命令:', subCommand)
+          console.warn('Unknown MCP subcommand:', subCommand)
         }
       } else {
-        console.warn('未知的 DeepLink 命令:', command)
+        console.warn('Unknown DeepLink command:', command)
       }
     } catch (error) {
-      console.error('处理 DeepLink 时出错:', error)
+      console.error('Error processing DeepLink:', error)
     }
   }
 
   async handleStart(params: URLSearchParams): Promise<void> {
-    console.log('处理 start 命令，参数:', Object.fromEntries(params.entries()))
+    console.log('Processing start command, parameters:', Object.fromEntries(params.entries()))
 
     let msg = params.get('msg')
     if (!msg) {
@@ -160,12 +195,12 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
   }
 
   async handleMcpInstall(params: URLSearchParams): Promise<void> {
-    console.log('处理 mcp/install 命令，参数:', Object.fromEntries(params.entries()))
+    console.log('Processing mcp/install command, parameters:', Object.fromEntries(params.entries()))
 
     // 获取 JSON 数据
     const jsonBase64 = params.get('code')
     if (!jsonBase64) {
-      console.error("缺少 'code' 参数")
+      console.error("Missing 'code' parameter")
       return
     }
 
@@ -177,7 +212,7 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
 
       // 检查 MCP 配置是否有效
       if (!mcpConfig || !mcpConfig.mcpServers) {
-        console.error('无效的 MCP 配置：缺少 mcpServers 字段')
+        console.error('Invalid MCP configuration: missing mcpServers field')
         return
       }
 
@@ -193,16 +228,18 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
             determinedType = serverConfig.type
             // Validate required fields based on explicit type
             if (determinedType === 'stdio' && !determinedCommand) {
-              console.error(`服务器 ${serverName} 类型为 'stdio' 但缺少必需的 'command' 字段`)
+              console.error(
+                `Server ${serverName} is type 'stdio' but missing required 'command' field`
+              )
               continue
             }
             if (determinedType === 'sse' && !determinedUrl) {
-              console.error(`服务器 ${serverName} 类型为 'sse' 但缺少必需的 'url' 字段`)
+              console.error(`Server ${serverName} is type 'sse' but missing required 'url' field`)
               continue
             }
           } else {
             console.error(
-              `服务器 ${serverName} 提供了无效的 'type' 值: ${serverConfig.type}，应为 'stdio' 或 'sse'`
+              `Server ${serverName} provided invalid 'type' value: ${serverConfig.type}, should be 'stdio' or 'sse'`
             )
             continue
           }
@@ -213,7 +250,7 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
 
           if (hasCommand && hasUrl) {
             console.error(
-              `服务器 ${serverName} 同时提供了 'command' 和 'url' 字段，但未指定 'type'。请明确指定 'type' 为 'stdio' 或 'sse'。`
+              `Server ${serverName} provides both 'command' and 'url' fields, but 'type' is not specified. Please explicitly set 'type' to 'stdio' or 'sse'.`
             )
             continue
           } else if (hasCommand) {
@@ -222,7 +259,7 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
             determinedType = 'sse'
           } else {
             console.error(
-              `服务器 ${serverName} 必须提供 'command' (用于 stdio) 或 'url' (用于 sse) 字段之一`
+              `Server ${serverName} must provide either 'command' (for stdio) or 'url' (for sse) field`
             )
             continue
           }
@@ -230,14 +267,14 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
 
         // Safeguard check (should not be reached if logic is correct)
         if (!determinedType) {
-          console.error(`无法确定服务器 ${serverName} 的类型 ('stdio' 或 'sse')`)
+          console.error(`Cannot determine server ${serverName} type ('stdio' or 'sse')`)
           continue
         }
 
         // Set default values based on determined type
         const defaultConfig: Partial<MCPServerConfig> = {
           env: {},
-          descriptions: `${serverName} MCP 服务`,
+          descriptions: `${serverName} MCP Service`,
           icons: determinedType === 'stdio' ? '🔌' : '🌐', // Different default icons
           autoApprove: ['all'],
           disable: false,
@@ -270,7 +307,10 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
         }
 
         // 安装 MCP 服务器
-        console.log(`准备安装 MCP 服务器: ${serverName} (类型: ${determinedType})`, finalConfig)
+        console.log(
+          `Preparing to install MCP server: ${serverName} (type: ${determinedType})`,
+          finalConfig
+        )
         const resultServerConfig = {
           mcpServers: {
             [serverName]: finalConfig
@@ -281,9 +321,9 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
           mcpConfig: JSON.stringify(resultServerConfig)
         })
       }
-      console.log('所有 MCP 服务器处理完成')
+      console.log('All MCP servers processing completed')
     } catch (error) {
-      console.error('解析或处理 MCP 配置时出错:', error)
+      console.error('Error parsing or processing MCP configuration:', error)
     }
   }
 }

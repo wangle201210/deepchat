@@ -67,7 +67,8 @@ export const WINDOW_EVENTS = {
   WINDOW_BLURRED: 'window:blurred',
   WINDOW_ENTER_FULL_SCREEN: 'window:enter-full-screen',
   WINDOW_LEAVE_FULL_SCREEN: 'window:leave-full-screen',
-  WINDOW_CLOSED: 'window:closed'
+  WINDOW_CLOSED: 'window:closed',
+  FIRST_CONTENT_LOADED: 'window:first-content-loaded' // 新增：首次内容加载完成事件
 }
 
 // ollama 相关事件
@@ -82,7 +83,8 @@ export const MCP_EVENTS = {
   CONFIG_CHANGED: 'mcp:config-changed',
   TOOL_CALL_RESULT: 'mcp:tool-call-result',
   SERVER_STATUS_CHANGED: 'mcp:server-status-changed',
-  CLIENT_LIST_UPDATED: 'mcp:client-list-updated'
+  CLIENT_LIST_UPDATED: 'mcp:client-list-updated',
+  INITIALIZED: 'mcp:initialized' // 新增：MCP初始化完成事件
 }
 
 // 同步相关事件
