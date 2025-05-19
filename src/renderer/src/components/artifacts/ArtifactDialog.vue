@@ -127,11 +127,13 @@ import MermaidArtifact from './MermaidArtifact.vue'
 import mermaid from 'mermaid'
 import { useI18n } from 'vue-i18n'
 import ReactArtifact from './ReactArtifact.vue'
+import { useToast } from '@/components/ui/toast/use-toast'
 
 const artifactStore = useArtifactStore()
 const componentKey = ref(0)
 const isPreview = ref(false)
 const t = useI18n().t
+const { toast } = useToast()
 
 const setPreview = (value: boolean) => {
   isPreview.value = value
@@ -265,8 +267,17 @@ const copyContent = async () => {
   if (artifactStore.currentArtifact?.content) {
     try {
       await navigator.clipboard.writeText(artifactStore.currentArtifact.content)
+      toast({
+        title: t('artifacts.copySuccess'),
+        description: t('artifacts.copySuccessDesc'),
+      })
     } catch (e) {
       console.error('复制失败', e)
+      toast({
+        title: t('artifacts.copyFailed'),
+        description: t('artifacts.copyFailedDesc'),
+        variant: 'destructive',
+      })
     }
   }
 }

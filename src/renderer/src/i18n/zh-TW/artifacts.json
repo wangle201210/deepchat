@@ -28,5 +28,10 @@
   "code": "程式碼",
   "export": "匯出",
   "htmlPreviewTitle": "HTML 預覽",
-  "svgPreviewTitle": "SVG 預覽"
+  "svgPreviewTitle": "SVG 預覽",
+  "copy": "複製",
+  "copySuccess": "複製成功",
+  "copySuccessDesc": "內容已複製到剪貼簿",
+  "copyFailed": "複製失敗",
+  "copyFailedDesc": "無法複製內容到剪貼簿"
 }
