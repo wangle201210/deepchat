@@ -17,7 +17,8 @@
         @close="tabStore.removeTab(tab.id)"
         @dragstart="onTabDragStart(tab.id, $event)"
       >
-        <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />DeepChat
+        <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
+        {{ tab.title ?? 'DeepChat' }}
       </AppBarTabItem>
       <Button
         variant="ghost"
@@ -47,7 +48,8 @@
         class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
         @click="openNewWindow"
       >
-        <Icon icon="lucide:plus" class="w-4 h-4" />
+        <Icon v-if="isMacOS" icon="lucide:app-window-mac" class="w-4 h-4" />
+        <Icon v-else icon="lucide:app-window" class="w-4 h-4" />
       </Button>
     </div>
 

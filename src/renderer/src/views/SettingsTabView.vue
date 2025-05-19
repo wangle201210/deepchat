@@ -22,12 +22,14 @@
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 import { useRoute, RouterView } from 'vue-router'
-import { onMounted, Ref, ref } from 'vue'
+import { onMounted, Ref, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useTitle } from '@vueuse/core'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
+const title = useTitle()
 const settings: Ref<
   {
     title: string
@@ -52,6 +54,27 @@ onMounted(() => {
     }
   })
 })
+
+// 更新标题的函数
+const updateTitle = () => {
+  const currentRoute = route.name as string
+  const currentSetting = settings.value.find((s) => s.name === currentRoute)
+  if (currentSetting) {
+    // 使用i18n翻译标题，中文习惯是不需要破折号
+    title.value = t('routes.settings') + ' - ' + t(currentSetting.title)
+  } else {
+    title.value = t('routes.settings')
+  }
+}
+
+// 监听路由变化
+watch(
+  () => route.name,
+  () => {
+    updateTitle()
+  },
+  { immediate: true }
+)
 
 const handleClick = (path: string) => {
   router.push(path)

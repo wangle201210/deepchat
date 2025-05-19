@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { TabData } from '@shared/presenter'
+import { TAB_EVENTS } from '@/events'
 
 export const useTabStore = defineStore('tab', () => {
   const tabPresenter = usePresenter('tabPresenter')
@@ -66,6 +67,18 @@ export const useTabStore = defineStore('tab', () => {
       // console.log('update-window-tabs', windowId, tabsData)
       updateWindowTabs(windowId, tabsData)
     })
+
+    // 监听标题更新事件
+    window.electron.ipcRenderer.on(
+      TAB_EVENTS.TITLE_UPDATED,
+      (_, data: { tabId: number; title: string; windowId: number }) => {
+        const tab = tabs.value.find((t) => t.id === data.tabId)
+        if (tab) {
+          tab.title = data.title
+        }
+      }
+    )
+
     // console.log('tabsData', tabsData)
     if (tabsData.length <= 0) {
       // await addTab({

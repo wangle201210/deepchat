@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { eventBus } from '@/eventbus'
-import { WINDOW_EVENTS, CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
+import { WINDOW_EVENTS, CONFIG_EVENTS, SYSTEM_EVENTS, TAB_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
 import { ITabPresenter, TabCreateOptions, IWindowPresenter, TabData } from '@shared/presenter'
 import { BrowserWindow, WebContentsView } from 'electron'
@@ -385,7 +385,6 @@ export class TabPresenter implements ITabPresenter {
     if (!window || window.isDestroyed()) return
 
     this.getWindowTabsData(windowId).then((tabListData) => {
-      console.log('----------------->notifyWindowTabsUpdate', windowId, tabListData)
       if (!window.isDestroyed() && window.webContents && !window.webContents.isDestroyed()) {
         window.webContents.send('update-window-tabs', windowId, tabListData)
       }
@@ -404,7 +403,16 @@ export class TabPresenter implements ITabPresenter {
     webContents.on('page-title-updated', (_event, title) => {
       const state = this.tabState.get(tabId)
       if (state) {
-        state.title = title
+        state.title = title || state.url || 'Untitled'
+        // 通知渲染进程标题已更新
+        const window = BrowserWindow.fromId(windowId)
+        if (window && !window.isDestroyed()) {
+          window.webContents.send(TAB_EVENTS.TITLE_UPDATED, {
+            tabId,
+            title: state.title,
+            windowId
+          })
+        }
         this.notifyWindowTabsUpdate(windowId)
       }
     })
@@ -438,6 +446,19 @@ export class TabPresenter implements ITabPresenter {
       const state = this.tabState.get(tabId)
       if (state) {
         state.url = url
+        // 如果没有标题，使用URL作为标题
+        if (!state.title || state.title === 'Untitled') {
+          state.title = url
+          const window = BrowserWindow.fromId(windowId)
+          if (window && !window.isDestroyed()) {
+            window.webContents.send(TAB_EVENTS.TITLE_UPDATED, {
+              tabId,
+              title: state.title,
+              windowId
+            })
+          }
+          this.notifyWindowTabsUpdate(windowId)
+        }
       }
     })
   }

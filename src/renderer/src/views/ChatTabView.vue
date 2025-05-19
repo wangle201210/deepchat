@@ -39,12 +39,13 @@
 <script setup lang="ts">
 import { defineAsyncComponent } from 'vue'
 import { useChatStore } from '@/stores/chat'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import { RENDERER_MODEL_META } from '@shared/presenter'
 import { useArtifactStore } from '@/stores/artifact'
 import ArtifactDialog from '@/components/artifacts/ArtifactDialog.vue'
 import { useRoute } from 'vue-router'
+import { useTitle } from '@vueuse/core'
 const ThreadsView = defineAsyncComponent(() => import('@/components/ThreadsView.vue'))
 const TitleView = defineAsyncComponent(() => import('@/components/TitleView.vue'))
 const ChatView = defineAsyncComponent(() => import('@/components/ChatView.vue'))
@@ -53,6 +54,38 @@ const artifactStore = useArtifactStore()
 const settingsStore = useSettingsStore()
 const route = useRoute()
 const chatStore = useChatStore()
+const title = useTitle()
+
+// 添加标题更新逻辑
+const updateTitle = () => {
+  const activeThread = chatStore.activeThread
+  if (activeThread) {
+    title.value = activeThread.title
+  } else {
+    title.value = 'New Chat'
+  }
+}
+
+// 监听活动会话变化
+watch(
+  () => chatStore.activeThread,
+  () => {
+    updateTitle()
+  },
+  { immediate: true }
+)
+
+// 监听会话标题变化
+watch(
+  () => chatStore.threads,
+  () => {
+    if (chatStore.activeThread) {
+      updateTitle()
+    }
+  },
+  { deep: true }
+)
+
 const activeModel = computed(() => {
   let model: RENDERER_MODEL_META | undefined
   const modelId = chatStore.activeThread?.settings.modelId

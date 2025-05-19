@@ -11,7 +11,7 @@
     @click="onClick"
   >
     <div
-      class="flex items-center justify-center"
+      class="flex items-center truncate"
       :class="[isSmall ? 'max-w-4 overflow-hidden justify-start truncate' : 'max-w-36 truncate']"
     >
       <slot></slot>
