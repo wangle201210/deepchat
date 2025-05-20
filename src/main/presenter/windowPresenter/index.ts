@@ -423,6 +423,7 @@ export class WindowPresenter implements IWindowPresenter {
       if (forceClose) {
         this.isQuitting = true // Mark as quitting to bypass some close handlers
       }
+      // console.log('closeWindow', windowId, forceClose)
       window.close() // Triggers 'close' event on the window
       if (forceClose && !window.isDestroyed()) {
         // If forceClose is true and window didn't destroy (e.g. prevented by 'close' handler),

@@ -10,10 +10,7 @@
     @dragstart="onDragStart"
     @click="onClick"
   >
-    <div
-      class="flex items-center truncate"
-      :class="[isSmall ? 'max-w-4 overflow-hidden justify-start truncate' : 'max-w-36 truncate']"
-    >
+    <div class="flex items-center truncate max-w-36">
       <slot></slot>
     </div>
     <button
@@ -26,8 +23,6 @@
 </template>
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed } from 'vue'
-import { useWindowSize } from '@vueuse/core'
 
 const emit = defineEmits<{
   (e: 'click'): void
@@ -35,17 +30,11 @@ const emit = defineEmits<{
   (e: 'dragstart', event: DragEvent): void
 }>()
 
-const props = defineProps<{
+defineProps<{
   active: boolean
   size: number
   index: number
 }>()
-const { width } = useWindowSize()
-const isSmall = computed(() => {
-  const totalWidth = props.size * 144 // 每个标签页最大宽度为144px
-  const screenWidth = width.value
-  return totalWidth > screenWidth * 0.8 && props.index !== props.size - 1
-})
 
 const onClick = () => {
   emit('click')

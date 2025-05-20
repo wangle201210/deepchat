@@ -62,6 +62,7 @@ export const WINDOW_EVENTS = {
   WINDOW_UNMAXIMIZED: 'window:unmaximized',
   WINDOW_RESIZED: 'window:resized',
   WINDOW_RESIZE: 'window:resize',
+  WINDOW_CLOSE: 'window:close',
   WINDOW_CREATED: 'window:created',
   WINDOW_FOCUSED: 'window:focused',
   WINDOW_BLURRED: 'window:blurred',

@@ -43,6 +43,19 @@ export class TabPresenter implements ITabPresenter {
       }
     })
 
+    eventBus.on(WINDOW_EVENTS.WINDOW_CLOSED, (windowId: number) => {
+      const views = this.windowTabs.get(windowId)
+      const window = BrowserWindow.fromId(windowId)
+      if (window) {
+        views?.forEach((viewId) => {
+          const view = this.tabs.get(viewId)
+          if (view) {
+            this.detachViewFromWindow(window, view)
+          }
+        })
+      }
+    })
+
     // 添加语言设置改变的事件处理
     eventBus.on(CONFIG_EVENTS.SETTING_CHANGED, async (key) => {
       if (key === 'language') {

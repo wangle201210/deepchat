@@ -26,6 +26,8 @@ const errorQueue = ref<Array<{ id: string; title: string; message: string; type:
 const currentErrorId = ref<string | null>(null)
 const errorDisplayTimer = ref<number | null>(null)
 
+const isMacOS = ref(false)
+const devicePresenter = usePresenter('devicePresenter')
 // 监听主题和字体大小变化，直接更新 body class
 watch(
   [() => settingsStore.theme, () => settingsStore.fontSizeClass],
@@ -163,6 +165,9 @@ const handleGoSettings = () => {
 getInitComplete()
 
 onMounted(() => {
+  devicePresenter.getDeviceInfo().then((deviceInfo) => {
+    isMacOS.value = deviceInfo.platform === 'darwin'
+  })
   // 设置初始 body class
   document.body.classList.add(settingsStore.theme)
   document.body.classList.add(settingsStore.fontSizeClass)
@@ -277,7 +282,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen">
+  <div
+    class="flex flex-col h-screen"
+    :class="[isMacOS ? 'bg-transparent' : themeStore.isDark ? 'bg-background' : 'bg-zinc-100']"
+  >
     <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]">
       <!-- 主内容区域 -->
 
