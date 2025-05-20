@@ -28,9 +28,36 @@ module.exports = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+
+        base: {
+          50: 'hsl(var(--base-50))',
+          100: 'hsl(var(--base-100))',
+          200: 'hsl(var(--base-200))',
+          300: 'hsl(var(--base-300))',
+          400: 'hsl(var(--base-400))',
+          500: 'hsl(var(--base-500))',
+          600: 'hsl(var(--base-600))',
+          700: 'hsl(var(--base-700))',
+          800: 'hsl(var(--base-800))',
+          900: 'hsl(var(--base-900))',
+          950: 'hsl(var(--base-950))',
+          1000: 'hsl(var(--base-1000))'
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))'
+          foreground: 'hsl(var(--primary-foreground))',
+          50: 'hsl(var(--primary-50))',
+          100: 'hsl(var(--primary-100))',
+          200: 'hsl(var(--primary-200))',
+          300: 'hsl(var(--primary-300))',
+          400: 'hsl(var(--primary-400))',
+          500: 'hsl(var(--primary-500))',
+          600: 'hsl(var(--primary-600))',
+          700: 'hsl(var(--primary-700))',
+          800: 'hsl(var(--primary-800))',
+          900: 'hsl(var(--primary-900))',
+          950: 'hsl(var(--primary-950))',
+          1000: 'hsl(var(--primary-1000))'
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',

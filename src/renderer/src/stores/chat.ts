@@ -9,7 +9,7 @@ import type {
 } from '@shared/chat'
 import type { CONVERSATION, CONVERSATION_SETTINGS } from '@shared/presenter'
 import { usePresenter } from '@/composables/usePresenter'
-import { CONVERSATION_EVENTS, DEEPLINK_EVENTS, SHORTCUT_EVENTS } from '@/events'
+import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
 // 定义会话工作状态类型

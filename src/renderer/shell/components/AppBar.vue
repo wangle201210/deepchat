@@ -1,81 +1,76 @@
 <template>
-  <div class="h-10 flex-shrink-0 w-full flex items-center justify-between select-none">
+  <div
+    class="h-10 flex-shrink-0 w-full flex select-none text-center text-sm font-medium flex-row items-center justify-start gap-1"
+    :class="['', isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2']"
+  >
     <!-- App title/content in center -->
-    <div
-      :class="[
-        'flex-1 text-center text-sm font-medium h-full flex flex-row items-center justify-start gap-1 ',
-        isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2'
-      ]"
+
+    <AppBarTabItem
+      v-for="(tab, idx) in tabStore.tabs"
+      :key="tab.id"
+      :active="tab.id === tabStore.currentTabId"
+      :size="tabStore.tabs.length"
+      :index="idx"
+      @click="tabStore.setCurrentTabId(tab.id)"
+      @close="tabStore.removeTab(tab.id)"
+      @dragstart="onTabDragStart(tab.id, $event)"
     >
-      <AppBarTabItem
-        v-for="(tab, idx) in tabStore.tabs"
-        :key="tab.id"
-        :active="tab.id === tabStore.currentTabId"
-        :size="tabStore.tabs.length"
-        :index="idx"
-        @click="tabStore.setCurrentTabId(tab.id)"
-        @close="tabStore.removeTab(tab.id)"
-        @dragstart="onTabDragStart(tab.id, $event)"
-      >
-        <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
-        {{ tab.title ?? 'DeepChat' }}
-      </AppBarTabItem>
-      <Button
-        variant="ghost"
-        class="text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
-        @click="openNewTab"
-      >
-        <Icon icon="lucide:plus" class="w-4 h-4" />
-      </Button>
-      <div class="flex-1 window-drag-region w-0 h-full">&nbsp;</div>
-      <Button
-        variant="ghost"
-        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
-        @click="onThemeClick"
-      >
-        <Icon v-if="themeStore.themeMode === 'dark'" icon="lucide:moon" class="w-4 h-4" />
-        <Icon v-else-if="themeStore.themeMode === 'light'" icon="lucide:sun" class="w-4 h-4" />
-        <Icon v-else icon="lucide:monitor" class="w-4 h-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
-        @click="openSettings"
-      >
-        <Icon icon="lucide:settings" class="w-4 h-4" />
-      </Button>
-      <Button
-        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
-        @click="openNewWindow"
-      >
-        <Icon v-if="isMacOS" icon="lucide:app-window-mac" class="w-4 h-4" />
-        <Icon v-else icon="lucide:app-window" class="w-4 h-4" />
-      </Button>
-    </div>
+      <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
+      {{ tab.title ?? 'DeepChat' }}
+    </AppBarTabItem>
+    <Button
+      variant="ghost"
+      class="text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
+      @click="openNewTab"
+    >
+      <Icon icon="lucide:plus" class="w-4 h-4" />
+    </Button>
+    <div class="flex-1 window-drag-region w-0 h-full">&nbsp;</div>
+    <Button
+      variant="ghost"
+      class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+      @click="onThemeClick"
+    >
+      <Icon v-if="themeStore.themeMode === 'dark'" icon="lucide:moon" class="w-4 h-4" />
+      <Icon v-else-if="themeStore.themeMode === 'light'" icon="lucide:sun" class="w-4 h-4" />
+      <Icon v-else icon="lucide:monitor" class="w-4 h-4" />
+    </Button>
+    <Button
+      variant="ghost"
+      class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+      @click="openSettings"
+    >
+      <Icon icon="lucide:settings" class="w-4 h-4" />
+    </Button>
+    <Button
+      class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+      @click="openNewWindow"
+    >
+      <Icon v-if="isMacOS" icon="lucide:app-window-mac" class="w-4 h-4" />
+      <Icon v-else icon="lucide:app-window" class="w-4 h-4" />
+    </Button>
+  </div>
 
-    <div v-if="!isMacOS" class="flex h-10">
-      <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
-        @click="minimizeWindow"
-      >
-        <MinusIcon class="h-4 w-4" />
-      </button>
-      <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
-        @click="toggleMaximize"
-      >
-        <MaximizeIcon v-if="!isMaximized" class="h-4 w-4" />
-        <RestoreIcon v-else class="h-4 w-4" />
-      </button>
-      <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-destructive hover:text-destructive-foreground"
-        @click="closeWindow"
-      >
-        <XIcon class="h-4 w-4" />
-      </button>
-    </div>
-
-    <div v-else class="px-4"></div>
+  <div v-if="!isMacOS" class="flex h-10">
+    <button
+      class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
+      @click="minimizeWindow"
+    >
+      <MinusIcon class="h-4 w-4" />
+    </button>
+    <button
+      class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
+      @click="toggleMaximize"
+    >
+      <MaximizeIcon v-if="!isMaximized" class="h-4 w-4" />
+      <RestoreIcon v-else class="h-4 w-4" />
+    </button>
+    <button
+      class="inline-flex items-center justify-center h-full w-12 hover:bg-destructive hover:text-destructive-foreground"
+      @click="closeWindow"
+    >
+      <XIcon class="h-4 w-4" />
+    </button>
   </div>
 </template>
 
