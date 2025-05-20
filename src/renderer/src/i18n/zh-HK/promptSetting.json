@@ -1,0 +1,20 @@
+{
+  "title": "提示詞管理",
+  "addTitle": "新增提示詞",
+  "editTitle": "編輯提示詞",
+  "name": "名稱",
+  "namePlaceholder": "請輸入提示詞名稱",
+  "description": "描述",
+  "descriptionPlaceholder": "請輸入描述（可選）",
+  "content": "內容",
+  "contentPlaceholder": "請輸入提示詞內容",
+  "noPrompt": "暫無提示詞，請點擊右上角新增",
+  "showMore": "顯示更多",
+  "showLess": "收起",
+  "export": "導出",
+  "import": "導入",
+  "exportSuccess": "導出成功",
+  "exportFailed": "導出失敗",
+  "importSuccess": "導入成功",
+  "importFailed": "導入失敗"
+} 

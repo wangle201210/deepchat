@@ -1,0 +1,20 @@
+{
+  "title": "Prompt Management",
+  "addTitle": "Add Prompt",
+  "editTitle": "Edit Prompt",
+  "name": "Name",
+  "namePlaceholder": "Enter prompt name",
+  "description": "Description",
+  "descriptionPlaceholder": "Enter description (optional)",
+  "content": "Content",
+  "contentPlaceholder": "Enter prompt content",
+  "noPrompt": "No prompts, click the add button in the top right",
+  "showMore": "Show More",
+  "showLess": "Show Less",
+  "export": "Export",
+  "import": "Import",
+  "exportSuccess": "Export successful",
+  "exportFailed": "Export failed",
+  "importSuccess": "Import successful",
+  "importFailed": "Import failed"
+} 

@@ -1,0 +1,20 @@
+{
+  "title": "Gestion des prompts",
+  "addTitle": "Ajouter un prompt",
+  "editTitle": "Modifier le prompt",
+  "name": "Nom",
+  "namePlaceholder": "Entrez le nom du prompt",
+  "description": "Description",
+  "descriptionPlaceholder": "Entrez la description (optionnel)",
+  "content": "Contenu",
+  "contentPlaceholder": "Entrez le contenu du prompt",
+  "noPrompt": "Aucun prompt, cliquez sur le bouton d'ajout en haut à droite",
+  "showMore": "Afficher plus",
+  "showLess": "Réduire",
+  "export": "Exporter",
+  "import": "Importer",
+  "exportSuccess": "Exportation réussie",
+  "exportFailed": "Échec de l'exportation",
+  "importSuccess": "Importation réussie",
+  "importFailed": "Échec de l'importation"
+} 
