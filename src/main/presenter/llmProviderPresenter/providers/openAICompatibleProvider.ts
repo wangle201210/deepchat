@@ -477,6 +477,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     // 诸如qwen等模型需要，如不添加则无法获取token usages
     requestParams.stream_options = { include_usage: true }
 
+    // 防止qwen等某些模型以json形式输出结果正文
+    requestParams.response_format = { type: 'text' }
+
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) delete requestParams.temperature
     })
@@ -560,32 +563,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
 
             const currentCallState = nativeToolCalls[currentToolCallId]
-
-            // Handle complete tool call in one chunk
-            if (functionName && argumentChunk && !currentCallState.completed) {
-              // console.log(`[coreStream] Handling complete tool call ${currentToolCallId} in one chunk.`)
-              if (!currentCallState.name) {
-                currentCallState.name = functionName
-                yield {
-                  type: 'tool_call_start',
-                  tool_call_id: currentToolCallId,
-                  tool_call_name: functionName
-                }
-              }
-              currentCallState.arguments += argumentChunk
-              yield {
-                type: 'tool_call_chunk',
-                tool_call_id: currentToolCallId,
-                tool_call_arguments_chunk: argumentChunk
-              }
-              currentCallState.completed = true
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: currentToolCallId,
-                tool_call_arguments_complete: currentCallState.arguments
-              }
-              continue
-            }
 
             // Handle incremental updates
             // console.log(`[coreStream] Handling incremental update for ${currentToolCallId}.`)
