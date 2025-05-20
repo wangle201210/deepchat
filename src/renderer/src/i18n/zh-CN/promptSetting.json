@@ -1,0 +1,20 @@
+{
+  "title": "提示词管理",
+  "addTitle": "新增提示词",
+  "editTitle": "编辑提示词",
+  "name": "名称",
+  "namePlaceholder": "请输入提示词名称",
+  "description": "描述",
+  "descriptionPlaceholder": "请输入描述（可选）",
+  "content": "内容",
+  "contentPlaceholder": "请输入提示词内容",
+  "noPrompt": "暂无提示词，请点击右上角新增",
+  "showMore": "显示更多",
+  "showLess": "收起",
+  "export": "导出",
+  "import": "导入",
+  "exportSuccess": "导出成功",
+  "exportFailed": "导出失败",
+  "importSuccess": "导入成功",
+  "importFailed": "导入失败"
+} 

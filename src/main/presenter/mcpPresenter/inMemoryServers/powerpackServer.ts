@@ -1,10 +1,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { ContentEnricher } from '@/presenter/threadPresenter/contentEnricher'
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { execFile } from 'child_process'
@@ -70,11 +70,31 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   /process\.env/gi
 ]
 
+interface Prompt {
+  id: string
+  name: string
+  description: string
+  content: string
+}
+
+interface PromptDefinition {
+  name: string
+  description: string
+  arguments: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
+}
+
 export class PowerpackServer {
   private server: Server
   private nodeRuntimePath: string | null = null
+  private mainWindow: BrowserWindow | null = null
 
-  constructor() {
+  constructor(mainWindow: BrowserWindow) {
+    console.log('[PowerpackServer] Initializing...')
+    this.mainWindow = mainWindow
     // 查找内置的Node运行时路径
     this.setupNodeRuntime()
 
@@ -86,13 +106,15 @@ export class PowerpackServer {
       },
       {
         capabilities: {
-          tools: {}
+          tools: {},
+          prompts: {}
         }
       }
     )
 
     // 设置请求处理器
     this.setupRequestHandlers()
+    console.log('[PowerpackServer] Initialized successfully')
   }
 
   // 设置Node运行时路径
@@ -209,6 +231,74 @@ export class PowerpackServer {
       return result.output.join('\n')
     } else {
       throw new Error(result.error)
+    }
+  }
+
+  // 获取提示词列表
+  private async getPromptsList(): Promise<PromptDefinition[]> {
+    try {
+      console.log('[PowerpackServer] Getting prompts list...')
+      if (!this.mainWindow) {
+        console.error('[PowerpackServer] Main window not available')
+        throw new Error('Main window not available')
+      }
+
+      const data = await this.mainWindow.webContents.executeJavaScript('localStorage.getItem("custom-prompts")')
+      console.log('[PowerpackServer] Raw prompts data:', data)
+      
+      if (!data) {
+        console.log('[PowerpackServer] No prompts found')
+        return []
+      }
+
+      const prompts = JSON.parse(data) as Prompt[]
+      console.log('[PowerpackServer] Parsed prompts:', JSON.stringify(prompts, null, 2))
+      
+      return prompts.map((prompt) => ({
+        name: prompt.id,
+        description: prompt.description || prompt.name,
+        arguments: [
+          {
+            name: 'content',
+            description: 'The content to be processed with this prompt',
+            required: true
+          }
+        ]
+      }))
+    } catch (error) {
+      console.error('Failed to get prompts list:', error)
+      return []
+    }
+  }
+
+  // 获取提示词内容
+  private async getPromptContent(promptId: string, content: string) {
+    try {
+      if (!this.mainWindow) {
+        throw new Error('Main window not available')
+      }
+
+      const data = await this.mainWindow.webContents.executeJavaScript('localStorage.getItem("custom-prompts")')
+      if (!data) throw new Error('No prompts found')
+
+      const prompts = JSON.parse(data) as Prompt[]
+      const prompt = prompts.find((p) => p.id === promptId)
+      if (!prompt) throw new Error('Prompt not found')
+
+      return {
+        messages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `${prompt.content}\n\n${content}`
+            }
+          }
+        ]
+      }
+    } catch (error) {
+      console.error('Failed to get prompt content:', error)
+      throw error
     }
   }
 
@@ -386,6 +476,26 @@ export class PowerpackServer {
           content: [{ type: 'text', text: `错误: ${errorMessage}` }],
           isError: true
         }
+      }
+    })
+
+    // 设置提示词列表处理器
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      const prompts = await this.getPromptsList()
+      return { prompts }
+    })
+
+    // 设置提示词获取处理器
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params
+      if (!args?.content) {
+        throw new Error('Content argument is required')
+      }
+
+      const response = await this.getPromptContent(name, args.content)
+      return {
+        messages: response.messages,
+        _meta: {}
       }
     })
   }

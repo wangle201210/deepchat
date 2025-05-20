@@ -72,6 +72,15 @@ const router = createRouter({
           }
         },
         {
+          path: 'prompt',
+          name: 'settings-prompt',
+          component: () => import('@/components/settings/PromptSetting.vue'),
+          meta: {
+            titleKey: 'routes.settings-prompt',
+            icon: 'lucide:book-open-text'
+          }
+        },
+        {
           path: 'knowledge-base',
           name: 'settings-knowledge-base',
           component: () => import('@/components/settings/KnowledgeBaseSettings.vue'),
