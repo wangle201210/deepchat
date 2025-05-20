@@ -348,9 +348,9 @@ export class WindowPresenter implements IWindowPresenter {
         if (this.windows.size > 1 || this.configPresenter.getSetting('minimizeToTray')) {
           event.preventDefault()
           shellWindow.hide()
-          if (this.trayPresenter) {
-            this.trayPresenter.show()
-          }
+          // if (this.trayPresenter) {
+          //   this.trayPresenter.show()
+          // }
         } else {
           if (!this.configPresenter.getCloseToQuit()) {
             event.preventDefault()

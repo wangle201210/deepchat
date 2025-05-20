@@ -56,13 +56,10 @@
       >
         <div
           v-if="simpleIn"
-          class="flex-row w-full gap-1 bg-muted dark:bg-background text-secondary-foreground transition-colors duration-200 inline-flex max-w-[33rem] items-center cursor-pointer select-none"
+          class="flex-row w-full gap-1 bg-muted dark:bg-background text-muted-foreground transition-colors duration-200 inline-flex max-w-[33rem] items-center cursor-pointer select-none"
         >
           <div class="text-xs inline-flex px-2 py-1 flex-row gap-2 items-center max-w-64">
-            <Icon
-              icon="lucide:arrow-up-from-dot"
-              class="w-3 h-3 text-secondary-foreground shrink-0"
-            />
+            <Icon icon="lucide:arrow-up-from-dot" class="w-3 h-3 text-muted-foreground shrink-0" />
             <span class="truncate">{{ simpleIn }}</span>
           </div>
         </div>

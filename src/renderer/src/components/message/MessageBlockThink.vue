@@ -1,10 +1,10 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div
-    class="text-xs text-muted-foreground bg-muted rounded-lg border flex flex-col gap-2 px-2 py-2"
+    class="text-xs text-secondary-foreground bg-muted rounded-lg border flex flex-col gap-2 px-2 py-2"
   >
     <div class="flex flex-row gap-2 items-center cursor-pointer" @click="collapse = !collapse">
-      <Button variant="ghost" size="icon" class="w-4 h-4 text-muted-foreground">
+      <Button variant="ghost" size="icon" class="w-4 h-4 text-secondary-foreground">
         <Icon icon="lucide:chevrons-up-down" class="w-4 h-4" />
       </Button>
       <span class="flex-grow"
@@ -28,7 +28,7 @@
     <Icon
       v-if="block.status === 'loading'"
       icon="lucide:loader-circle"
-      class="w-4 h-4 text-muted-foreground animate-spin"
+      class="w-4 h-4 text-secondary-foreground animate-spin"
     />
   </div>
 </template>

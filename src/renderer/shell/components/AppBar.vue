@@ -1,41 +1,62 @@
 <template>
   <div class="flex flex-row h-10">
     <div
-      class="h-10 flex-shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start gap-1"
+      class="h-10 flex-shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start window-drag-region"
       :class="['', isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2']"
     >
       <!-- App title/content in center -->
-
-      <div
-        class="flex-1 h-full flex flex-row items-center justify-start gap-1 overflow-x-auto scrollbar-hide window-drag-region"
+      <Button
+        v-if="isTabContainerOverflowingLeft"
+        variant="ghost"
+        class="flex-shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
+        @click="scrollTabContainer('left')"
       >
-        <AppBarTabItem
-          v-for="(tab, idx) in tabStore.tabs"
-          :key="tab.id"
-          :active="tab.id === tabStore.currentTabId"
-          :size="tabStore.tabs.length"
-          :index="idx"
-          class="window-no-drag-region"
-          @click="tabStore.setCurrentTabId(tab.id)"
-          @close="tabStore.removeTab(tab.id)"
-          @dragstart="onTabDragStart(tab.id, $event)"
-        >
-          <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
-          {{ tab.title ?? 'DeepChat' }}
-        </AppBarTabItem>
-        <Button
-          variant="ghost"
-          class="text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
-          @click="openNewTab"
-        >
-          <Icon icon="lucide:plus" class="w-4 h-4" />
-        </Button>
-        <div ref="endOfTabs" class="w-1 flex-shrink-0 h-full"></div>
+        <Icon icon="lucide:chevron-left" class="w-4 h-4" />
+      </Button>
+      <Button
+        v-if="isTabContainerOverflowingRight"
+        variant="ghost"
+        class="flex-shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
+        @click="scrollTabContainer('right')"
+      >
+        <Icon icon="lucide:chevron-right" class="w-4 h-4" />
+      </Button>
+      <div
+        ref="tabContainerWrapper"
+        class="h-full flex flex-row items-center justify-start overflow-y-hidden overflow-x-auto scrollbar-hide"
+        @scroll="onTabContainerWrapperScroll"
+      >
+        <div ref="tabContainer" class="h-full flex flex-row items-center justify-start gap-1">
+          <AppBarTabItem
+            v-for="(tab, idx) in tabStore.tabs"
+            :key="tab.id"
+            :active="tab.id === tabStore.currentTabId"
+            :size="tabStore.tabs.length"
+            :index="idx"
+            class="window-no-drag-region"
+            @click="tabStore.setCurrentTabId(tab.id)"
+            @close="tabStore.removeTab(tab.id)"
+            @dragstart="onTabDragStart(tab.id, $event)"
+          >
+            <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
+            {{ tab.title ?? 'DeepChat' }}
+          </AppBarTabItem>
+          <div ref="endOfTabs" class="w-0 flex-shrink-0 h-full"></div>
+        </div>
       </div>
 
       <Button
         variant="ghost"
-        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+        class="flex-shrink-0 text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
+        @click="openNewTab"
+      >
+        <Icon icon="lucide:plus" class="w-4 h-4" />
+      </Button>
+      <div class="flex-1"></div>
+
+      <Button
+        variant="ghost"
+        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
         @click="onThemeClick"
       >
         <Icon v-if="themeStore.themeMode === 'dark'" icon="lucide:moon" class="w-4 h-4" />
@@ -44,7 +65,7 @@
       </Button>
       <Button
         variant="ghost"
-        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center"
+        class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
         @click="openSettings"
       >
         <Icon icon="lucide:settings" class="w-4 h-4" />
@@ -60,13 +81,13 @@
 
     <div v-if="!isMacOS" class="flex h-10">
       <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
+        class="inline-flex items-center justify-center h-full w-12 hover:bg-zinc-500/20"
         @click="minimizeWindow"
       >
         <MinusIcon class="h-4 w-4" />
       </button>
       <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-secondary"
+        class="inline-flex items-center justify-center h-full w-12 hover:bg-zinc-500/20"
         @click="toggleMaximize"
       >
         <MaximizeIcon v-if="!isMaximized" class="h-4 w-4" />
@@ -83,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import { MinusIcon, XIcon } from 'lucide-vue-next'
 import MaximizeIcon from './icons/MaximizeIcon.vue'
 import RestoreIcon from './icons/RestoreIcon.vue'
@@ -93,6 +114,7 @@ import { Icon } from '@iconify/vue'
 import AppBarTabItem from './app-bar/AppBarTabItem.vue'
 import { useTabStore } from '@shell/stores/tab'
 import { useThemeStore } from '@/stores/theme'
+import { useElementSize } from '@vueuse/core'
 const tabStore = useTabStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
@@ -106,8 +128,35 @@ const isFullscreened = ref(false)
 const { ipcRenderer } = window.electron
 
 const themeStore = useThemeStore()
+const tabContainerWrapper = ref<HTMLElement | null>(null)
+const tabContainer = ref<HTMLElement | null>(null)
 
 let draggedTabId: number | null = null
+
+const tabContainerWrapperSize = useElementSize(tabContainerWrapper)
+const tabContainerSize = useElementSize(tabContainer)
+const tabContainerWrapperScrollLeft = ref(0)
+
+const onTabContainerWrapperScroll = () => {
+  requestAnimationFrame(() => {
+    tabContainerWrapperScrollLeft.value = tabContainerWrapper.value?.scrollLeft ?? 0
+  })
+}
+
+const isTabContainerOverflowingLeft = computed(() => {
+  return (
+    tabContainerWrapperSize.width.value < tabContainerSize.width.value &&
+    tabContainerWrapperScrollLeft.value > 0
+  )
+})
+
+const isTabContainerOverflowingRight = computed(() => {
+  return (
+    tabContainerWrapperSize.width.value < tabContainerSize.width.value &&
+    tabContainerWrapperScrollLeft.value <
+      (tabContainerWrapper.value?.scrollWidth ?? 0) - tabContainerWrapperSize.width.value
+  )
+})
 
 const onTabDragStart = (tabId: number, event: DragEvent) => {
   const tab = tabStore.tabs.find((t) => t.id === tabId)
@@ -221,7 +270,16 @@ const openNewTab = () => {
         endOfTabs.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     })
-  }, 100)
+  }, 300)
+}
+
+const scrollTabContainer = (direction: 'left' | 'right') => {
+  if (tabContainerWrapper.value) {
+    tabContainerWrapper.value.scrollTo({
+      left: tabContainerWrapper.value.scrollLeft + (direction === 'left' ? -100 : 100),
+      behavior: 'smooth'
+    })
+  }
 }
 
 // const openNewWindow = () => {

@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col w-full gap-2">
     <Input v-model="modelSearchQuery" :placeholder="t('model.search.placeholder')" />
-    <div class="text-xs text-secondary-foreground px-2">{{ t('model.type.custom') }}</div>
+    <div class="text-xs text-muted-foreground px-2">{{ t('model.type.custom') }}</div>
     <div
       v-show="filteredCustomModels.length > 0"
       class="flex flex-col w-full border overflow-hidden rounded-lg"
@@ -56,7 +56,7 @@
         {{ t('model.actions.add') }}
       </Button>
     </div>
-    <div class="text-xs text-secondary-foreground px-2">{{ t('model.type.official') }}</div>
+    <div class="text-xs text-muted-foreground px-2">{{ t('model.type.official') }}</div>
     <div v-for="provider in filteredProviderModels" :key="provider.providerId" class="mb-4">
       <div
         v-show="provider.models.length > 0"

@@ -40,9 +40,9 @@
     --primary: var(--primary-600);
     --primary-foreground: 0 0% 100%;
     --secondary: var(--base-200);
-    --secondary-foreground: var(--base-950);
+    --secondary-foreground: var(--base-700);
     --muted: var(--base-100);
-    --muted-foreground: var(--base-600);
+    --muted-foreground: var(--base-400);
     --accent: var(--base-100);
     --accent-foreground: var(--base-800);
     --destructive: 0 84.2% 60.2%;

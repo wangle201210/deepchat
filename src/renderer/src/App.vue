@@ -282,10 +282,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div
-    class="flex flex-col h-screen"
-    :class="[isMacOS ? 'bg-transparent' : themeStore.isDark ? 'bg-background' : 'bg-zinc-100']"
-  >
+  <div class="flex flex-col h-screen" :class="[isMacOS ? 'bg-transparent' : 'bg-background']">
     <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]">
       <!-- 主内容区域 -->
 

@@ -1,7 +1,7 @@
 <template>
   <div
     class="w-screen h-screen"
-    :class="[isMacOS ? 'bg-transparent' : themeStore.isDark ? 'bg-zinc-900' : 'bg-zinc-100']"
+    :class="[isMacOS ? 'bg-transparent' : themeStore.isDark ? 'bg-zinc-900' : 'bg-zinc-200']"
   >
     <AppBar />
     <main class="content-container">

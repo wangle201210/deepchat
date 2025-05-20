@@ -1,7 +1,8 @@
 <template>
   <div
+    ref="tabItem"
     draggable="true"
-    class="text-xs font-medium pl-2 pr-1 h-7 mt-0.5 rounded-md flex items-center justify-between transition-all duration-200 group"
+    class="flex-shrink-0 text-xs font-medium pl-2 pr-1 h-7 mt-0.5 rounded-md flex items-center justify-between transition-all duration-200 group"
     :class="[
       active
         ? 'bg-background shadow-sm'
@@ -14,7 +15,8 @@
       <slot></slot>
     </div>
     <button
-      class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-full hover:bg-zinc-500/20 p-0.5"
+      class="ml-2 opacity-0 transition-opacity duration-200 rounded-full hover:bg-zinc-500/20 p-0.5"
+      :class="[index > 0 ? 'group-hover:opacity-100' : '']"
       @click.stop="onClose"
     >
       <Icon icon="lucide:x" class="w-3 h-3" />
@@ -23,6 +25,9 @@
 </template>
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import { ref } from 'vue'
+
+const tabItem = ref<HTMLElement | null>(null)
 
 const emit = defineEmits<{
   (e: 'click'): void
@@ -30,7 +35,7 @@ const emit = defineEmits<{
   (e: 'dragstart', event: DragEvent): void
 }>()
 
-defineProps<{
+const props = defineProps<{
   active: boolean
   size: number
   index: number
@@ -38,10 +43,18 @@ defineProps<{
 
 const onClick = () => {
   emit('click')
+
+  if (tabItem.value instanceof HTMLElement) {
+    setTimeout(() => {
+      tabItem.value?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+  }
 }
 
 const onClose = () => {
-  emit('close')
+  if (props.index > 0) {
+    emit('close')
+  }
 }
 
 const onDragStart = (event: DragEvent) => {

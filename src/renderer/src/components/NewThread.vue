@@ -2,7 +2,7 @@
   <div class="h-full w-full flex flex-col items-center justify-start">
     <div class="w-full p-2 flex flex-row gap-2 items-center">
       <Button
-        class="w-7 h-7 rounded-md hover:bg-accent"
+        class="w-7 h-7 rounded-md"
         size="icon"
         variant="outline"
         @click="onSidebarButtonClick"
