@@ -484,7 +484,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
     // 添加stream_options，适用于/v1/chat/completions
     // 诸如qwen等模型需要，如不添加则无法获取token usages
-    requestParams.stream_options = { include_usage: true }  
+    requestParams.stream_options = { include_usage: true }
 
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) delete requestParams.temperature
@@ -639,7 +639,15 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           console.warn(`Unhandled finish reason: ${reasonFromAPI}`)
           stopReason = 'error'
         }
-        continue // Process content within the same chunk if any
+        /*
+        choice {
+          finish_reason: 'stop',
+          delta: { content: '！' },
+          index: 0,
+          logprobs: null
+        }
+        */
+        // continue
       }
       if (!currentContent) continue
 

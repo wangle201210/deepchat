@@ -29,5 +29,9 @@
   "export": "Export",
   "htmlPreviewTitle": "HTML Preview",
   "svgPreviewTitle": "SVG Preview",
-  "copy": "Copy"
+  "copy": "Copy",
+  "copySuccess": "Copy Success",
+  "copySuccessDesc": "Content copied to clipboard",
+  "copyFailed": "Copy Failed",
+  "copyFailedDesc": "Failed to copy content to clipboard"
 }

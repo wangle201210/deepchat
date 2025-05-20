@@ -74,10 +74,13 @@
               <Button
                 variant="ghost"
                 size="icon"
-                class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
-                @click="emit('copy')"
+                class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent relative"
+                @click="handleCopy"
               >
                 <Icon icon="lucide:copy" class="w-3 h-3" />
+                <span v-if="showCopyTip" class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                  {{ t('common.copySuccess') }}
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.copy') }}</TooltipContent>
@@ -88,10 +91,13 @@
                 variant="ghost"
                 v-show="isAssistant"
                 size="icon"
-                class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
-                @click="emit('copyImage')"
+                class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent relative"
+                @click="handleCopyImage"
               >
                 <Icon icon="lucide:images" class="w-3 h-3" />
+                <span v-if="showCopyImageTip" class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                  {{ t('common.copyImageSuccess') }}
+                </span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ t('thread.toolbar.copyImage') }}</TooltipContent>
@@ -171,11 +177,30 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+
+const showCopyTip = ref(false)
+const showCopyImageTip = ref(false)
+
+const handleCopy = () => {
+  emit('copy')
+  showCopyTip.value = true
+  setTimeout(() => {
+    showCopyTip.value = false
+  }, 2000)
+}
+
+const handleCopyImage = () => {
+  emit('copyImage')
+  showCopyImageTip.value = true
+  setTimeout(() => {
+    showCopyImageTip.value = false
+  }, 2000)
+}
 
 const props = defineProps<{
   usage: {
@@ -209,3 +234,9 @@ const emit = defineEmits<{
 const hasTokensPerSecond = computed(() => props.usage.tokens_per_second > 0)
 const hasVariants = computed(() => (props.totalVariants || 0) > 1)
 </script>
+
+<style scoped>
+.relative {
+  position: relative;
+}
+</style>
