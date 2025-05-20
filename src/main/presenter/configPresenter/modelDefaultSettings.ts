@@ -1068,7 +1068,7 @@ export const defaultModelsSettings = [
     contextLength: 131072,
     match: ['qwen-plus-latest', 'qwen-plus-2025-04-28'],
     vision: false,
-    functionCall: false,
+    functionCall: true,
     reasoning: true
   },
   {
@@ -1087,7 +1087,7 @@ export const defaultModelsSettings = [
       'qwen-plus-1125'
     ],
     vision: false,
-    functionCall: false,
+    functionCall: true,
     reasoning: false
   },
   {
