@@ -91,7 +91,6 @@ export class PowerpackServer {
   private nodeRuntimePath: string | null = null
 
   constructor() {
-    console.log('[PowerpackServer] Initializing...')
     // 查找内置的Node运行时路径
     this.setupNodeRuntime()
 
@@ -111,7 +110,6 @@ export class PowerpackServer {
 
     // 设置请求处理器
     this.setupRequestHandlers()
-    console.log('[PowerpackServer] Initialized successfully')
   }
 
   // 设置Node运行时路径
@@ -234,57 +232,40 @@ export class PowerpackServer {
   // 获取提示词列表
   private async getPromptsList(): Promise<PromptDefinition[]> {
     try {
-      console.log('[PowerpackServer] Getting prompts list...')
       const prompts = await presenter.configPresenter.getCustomPrompts()
-      console.log('[PowerpackServer] Raw prompts data:', prompts)
 
       if (!prompts || prompts.length === 0) {
-        console.log('[PowerpackServer] No prompts found')
         return []
       }
 
-      console.log('[PowerpackServer] Parsed prompts:', JSON.stringify(prompts, null, 2))
-
       return prompts.map((prompt) => ({
-        name: prompt.id,
-        description: prompt.description || prompt.name,
-        arguments: [
-          {
-            name: 'content',
-            description: 'The content to be processed with this prompt',
-            required: true
-          }
-        ]
+        name: prompt.name,
+        description: prompt.description,
+        arguments: []
       }))
     } catch (error) {
-      console.error('Failed to get prompts list:', error)
       return []
     }
   }
 
   // 获取提示词内容
-  private async getPromptContent(promptId: string, content: string) {
-    try {
-      const prompts = await presenter.configPresenter.getCustomPrompts()
-      if (!prompts || prompts.length === 0) throw new Error('No prompts found')
+  private async getPromptContent(name: string, content: string) {
+    const prompts = await presenter.configPresenter.getCustomPrompts()
+    if (!prompts || prompts.length === 0) throw new Error('No prompts found')
 
-      const prompt = prompts.find((p) => p.id === promptId)
-      if (!prompt) throw new Error('Prompt not found')
+    const prompt = prompts.find((p) => p.name === name)
+    if (!prompt) throw new Error('Prompt not found')
 
-      return {
-        messages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              text: `${prompt.content}\n\n${content}`
-            }
+    return {
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: `${prompt.content}\n\n${content}`
           }
-        ]
-      }
-    } catch (error) {
-      console.error('Failed to get prompt content:', error)
-      throw error
+        }
+      ]
     }
   }
 
@@ -473,12 +454,8 @@ export class PowerpackServer {
 
     // 设置提示词获取处理器
     this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const { name, arguments: args } = request.params
-      if (!args?.content) {
-        throw new Error('Content argument is required')
-      }
-
-      const response = await this.getPromptContent(name, args.content)
+      const { name } = request.params
+      const response = await this.getPromptContent(name, '')
       return {
         messages: response.messages,
         _meta: {}
