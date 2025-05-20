@@ -1,16 +1,22 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema, ListPromptsRequestSchema, GetPromptRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { ContentEnricher } from '@/presenter/threadPresenter/contentEnricher'
-import { app, BrowserWindow } from 'electron'
+import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { nanoid } from 'nanoid'
 import { runCode, type CodeFile } from '../pythonRunner'
+import { presenter } from '@/presenter'
 
 // Schema 定义
 const GetTimeArgsSchema = z.object({
@@ -70,13 +76,6 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   /process\.env/gi
 ]
 
-interface Prompt {
-  id: string
-  name: string
-  description: string
-  content: string
-}
-
 interface PromptDefinition {
   name: string
   description: string
@@ -90,11 +89,9 @@ interface PromptDefinition {
 export class PowerpackServer {
   private server: Server
   private nodeRuntimePath: string | null = null
-  private mainWindow: BrowserWindow | null = null
 
-  constructor(mainWindow: BrowserWindow) {
+  constructor() {
     console.log('[PowerpackServer] Initializing...')
-    this.mainWindow = mainWindow
     // 查找内置的Node运行时路径
     this.setupNodeRuntime()
 
@@ -238,22 +235,16 @@ export class PowerpackServer {
   private async getPromptsList(): Promise<PromptDefinition[]> {
     try {
       console.log('[PowerpackServer] Getting prompts list...')
-      if (!this.mainWindow) {
-        console.error('[PowerpackServer] Main window not available')
-        throw new Error('Main window not available')
-      }
+      const prompts = await presenter.configPresenter.getCustomPrompts()
+      console.log('[PowerpackServer] Raw prompts data:', prompts)
 
-      const data = await this.mainWindow.webContents.executeJavaScript('localStorage.getItem("custom-prompts")')
-      console.log('[PowerpackServer] Raw prompts data:', data)
-      
-      if (!data) {
+      if (!prompts || prompts.length === 0) {
         console.log('[PowerpackServer] No prompts found')
         return []
       }
 
-      const prompts = JSON.parse(data) as Prompt[]
       console.log('[PowerpackServer] Parsed prompts:', JSON.stringify(prompts, null, 2))
-      
+
       return prompts.map((prompt) => ({
         name: prompt.id,
         description: prompt.description || prompt.name,
@@ -274,14 +265,9 @@ export class PowerpackServer {
   // 获取提示词内容
   private async getPromptContent(promptId: string, content: string) {
     try {
-      if (!this.mainWindow) {
-        throw new Error('Main window not available')
-      }
+      const prompts = await presenter.configPresenter.getCustomPrompts()
+      if (!prompts || prompts.length === 0) throw new Error('No prompts found')
 
-      const data = await this.mainWindow.webContents.executeJavaScript('localStorage.getItem("custom-prompts")')
-      if (!data) throw new Error('No prompts found')
-
-      const prompts = JSON.parse(data) as Prompt[]
       const prompt = prompts.find((p) => p.id === promptId)
       if (!prompt) throw new Error('Prompt not found')
 

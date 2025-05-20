@@ -46,6 +46,14 @@ interface IModelStore {
   custom_models: MODEL_META[]
 }
 
+// 添加 prompts 相关的类型定义
+interface Prompt {
+  id: string
+  name: string
+  description: string
+  content: string
+}
+
 const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({
   id: provider.id,
   name: provider.name,
@@ -66,6 +74,7 @@ const MODEL_STATUS_KEY_PREFIX = 'model_status_'
 export class ConfigPresenter implements IConfigPresenter {
   private store: ElectronStore<IAppSettings>
   private providersModelStores: Map<string, ElectronStore<IModelStore>> = new Map()
+  private customPromptsStore: ElectronStore<{ prompts: Prompt[] }>
   private userDataPath: string
   private currentAppVersion: string
   private mcpConfHelper: McpConfHelper // 使用MCP配置助手
@@ -90,6 +99,14 @@ export class ConfigPresenter implements IConfigPresenter {
         lastSyncTime: 0,
         loggingEnabled: false,
         appVersion: this.currentAppVersion
+      }
+    })
+
+    // 初始化 custom prompts 存储
+    this.customPromptsStore = new ElectronStore<{ prompts: Prompt[] }>({
+      name: 'custom_prompts',
+      defaults: {
+        prompts: []
       }
     })
 
@@ -785,6 +802,65 @@ export class ConfigPresenter implements IConfigPresenter {
 
   setNotificationsEnabled(enabled: boolean): void {
     this.setSetting('notificationsEnabled', enabled)
+  }
+
+  // 获取所有自定义 prompts
+  async getCustomPrompts(): Promise<Prompt[]> {
+    try {
+      return this.customPromptsStore.get('prompts') || []
+    } catch (error) {
+      console.error('Failed to get custom prompts:', error)
+      return []
+    }
+  }
+
+  // 保存自定义 prompts
+  async setCustomPrompts(prompts: Prompt[]): Promise<void> {
+    try {
+      await this.customPromptsStore.set('prompts', prompts)
+    } catch (error) {
+      console.error('Failed to set custom prompts:', error)
+      throw error
+    }
+  }
+
+  // 添加单个 prompt
+  async addCustomPrompt(prompt: Prompt): Promise<void> {
+    try {
+      const prompts = await this.getCustomPrompts()
+      prompts.push(prompt)
+      await this.setCustomPrompts(prompts)
+    } catch (error) {
+      console.error('Failed to add custom prompt:', error)
+      throw error
+    }
+  }
+
+  // 更新单个 prompt
+  async updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void> {
+    try {
+      const prompts = await this.getCustomPrompts()
+      const index = prompts.findIndex((p) => p.id === promptId)
+      if (index !== -1) {
+        prompts[index] = { ...prompts[index], ...updates }
+        await this.setCustomPrompts(prompts)
+      }
+    } catch (error) {
+      console.error('Failed to update custom prompt:', error)
+      throw error
+    }
+  }
+
+  // 删除单个 prompt
+  async deleteCustomPrompt(promptId: string): Promise<void> {
+    try {
+      const prompts = await this.getCustomPrompts()
+      const filteredPrompts = prompts.filter((p) => p.id !== promptId)
+      await this.setCustomPrompts(filteredPrompts)
+    } catch (error) {
+      console.error('Failed to delete custom prompt:', error)
+      throw error
+    }
   }
 }
 

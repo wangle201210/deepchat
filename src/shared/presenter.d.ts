@@ -270,6 +270,11 @@ export interface IConfigPresenter {
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
+  getCustomPrompts(): Promise<Prompt[]>
+  setCustomPrompts(prompts: Prompt[]): Promise<void>
+  addCustomPrompt(prompt: Prompt): Promise<void>
+  updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void>
+  deleteCustomPrompt(promptId: string): Promise<void>
 }
 export type RENDERER_MODEL_META = {
   id: string
