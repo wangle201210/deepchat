@@ -390,17 +390,8 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
             if (result.data[0]?.b64_json) {
               // 处理 base64 数据
               const base64Data = result.data[0].b64_json
-              // 创建临时文件
-              const tempImagePath = path.join(
-                app.getPath('userData'),
-                'images',
-                `temp_${Date.now()}.png`
-              )
-              // 将 base64 数据写入文件
-              const imageBuffer = Buffer.from(base64Data, 'base64')
-              fs.writeFileSync(tempImagePath, imageBuffer)
-              // 使用 imgcache:// 协议
-              imageUrl = `imgcache://${path.basename(tempImagePath)}`
+              // 直接使用 devicePresenter 缓存 base64 数据
+              imageUrl = await presenter.devicePresenter.cacheImage(base64Data)
             } else {
               // 原有的 URL 处理逻辑
               imageUrl = result.data[0]?.url
