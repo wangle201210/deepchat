@@ -1131,7 +1131,8 @@ export class ThreadPresenter implements IThreadPresenter {
         urlResults,
         userMessage,
         vision,
-        vision ? imageFiles : []
+        vision ? imageFiles : [],
+        modelConfig.functionCall
       )
 
       // 检查是否已被取消
@@ -1247,6 +1248,9 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 7. 准备提示内容
+      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+      const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
+
       const { finalContent, promptTokens } = this.preparePromptContent(
         conversation,
         'continue',
@@ -1255,7 +1259,8 @@ export class ThreadPresenter implements IThreadPresenter {
         [], // 没有 URL 结果
         userMessage,
         false,
-        [] // 没有图片文件
+        [], // 没有图片文件
+        modelConfig.functionCall
       )
 
       // 8. 更新生成状态
@@ -1293,7 +1298,6 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 10. 启动流式生成
-      const { providerId, modelId, temperature, maxTokens } = conversation.settings
       const stream = this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
@@ -1427,7 +1431,8 @@ export class ThreadPresenter implements IThreadPresenter {
     urlResults: SearchResult[],
     userMessage: Message,
     vision: boolean,
-    imageFiles: MessageFile[]
+    imageFiles: MessageFile[],
+    supportsFunctionCall: boolean
   ): {
     finalContent: ChatMessage[]
     promptTokens: number
@@ -1465,7 +1470,8 @@ export class ThreadPresenter implements IThreadPresenter {
       userContent,
       enrichedUserMessage,
       imageFiles,
-      vision
+      vision,
+      supportsFunctionCall
     )
 
     // 合并连续的相同角色消息
@@ -1543,7 +1549,8 @@ export class ThreadPresenter implements IThreadPresenter {
     userContent: string,
     enrichedUserMessage: string,
     imageFiles: MessageFile[],
-    vision: boolean
+    vision: boolean,
+    supportsFunctionCall: boolean
   ): ChatMessage[] {
     const formattedMessages: ChatMessage[] = []
 
@@ -1558,7 +1565,9 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     // 添加上下文消息
-    formattedMessages.push(...this.addContextMessages(formattedMessages, contextMessages, vision))
+    formattedMessages.push(
+      ...this.addContextMessages(formattedMessages, contextMessages, vision, supportsFunctionCall)
+    )
 
     // 添加当前用户消息
     let finalContent = searchPrompt || userContent
@@ -1604,90 +1613,175 @@ export class ThreadPresenter implements IThreadPresenter {
   private addContextMessages(
     formattedMessages: ChatMessage[],
     contextMessages: Message[],
-    vision: boolean
+    vision: boolean,
+    supportsFunctionCall: boolean
   ): ChatMessage[] {
     const resultMessages = [...formattedMessages]
 
-    contextMessages.forEach((msg) => {
-      if (msg.role === 'user') {
-        // 处理用户消息
-        const msgContent = msg.content as UserMessageContent
-        const msgText = msgContent.content
-          ? this.formatUserMessageContent(msgContent.content)
-          : msgContent.text
-        const userContent = `${msgText}${getFileContext(msgContent.files)}`
-        resultMessages.push({
-          role: 'user',
-          content: userContent
-        })
-      } else if (msg.role === 'assistant') {
-        // 处理助手消息
-        const assistantBlocks = msg.content as AssistantMessageBlock[]
-
-        // 提取文本内容块，同时将工具调用的响应内容提取出来
-        const textContent = assistantBlocks
-          .filter((block) => block.type === 'content' || block.type === 'tool_call')
-          .map((block) => {
-            if (block.type === 'content') {
-              return block.content
-            } else if (block.type === 'tool_call' && block.tool_call?.response) {
-              return block.tool_call.response
-            } else {
-              return '[Missing response]' // 若 tool_call 或 response 是 undefined，返回空字符串
-            }
+    // 对于原生fc模型，支持正确的tool_call response history插入
+    if (supportsFunctionCall) {
+      contextMessages.forEach((msg) => {
+        if (msg.role === 'user') {
+          // 处理用户消息
+          const msgContent = msg.content as UserMessageContent
+          const msgText = msgContent.content
+            ? this.formatUserMessageContent(msgContent.content)
+            : msgContent.text
+          const userContent = `${msgText}${getFileContext(msgContent.files)}`
+          resultMessages.push({
+            role: 'user',
+            content: userContent
           })
-          .join('\n')
-
-        // 查找图像块
-        const imageBlocks = assistantBlocks.filter(
-          (block) => block.type === 'image' && block.image_data
-        )
-
-        // 如果没有任何内容，则跳过此消息
-        if (!textContent && imageBlocks.length === 0) {
-          return
-        }
-
-        // 如果有图像，则使用复合内容格式
-        if (vision && imageBlocks.length > 0) {
-          const content: ChatMessageContent[] = []
-
-          // 添加图像内容
-          imageBlocks.forEach((block) => {
-            if (block.image_data) {
-              content.push({
-                type: 'image_url',
-                image_url: {
-                  url: block.image_data.data,
-                  detail: 'auto'
-                }
+        } else if (msg.role === 'assistant') {
+          // 处理助手消息
+          const assistantBlocks = msg.content as AssistantMessageBlock[]
+          for (const subMsg of assistantBlocks) {
+            if (
+              subMsg.type === 'tool_call' &&
+              subMsg?.tool_call?.id?.trim() &&
+              subMsg?.tool_call?.name?.trim() &&
+              subMsg?.tool_call?.params?.trim() &&
+              subMsg?.tool_call?.response?.trim()
+            ) {
+              resultMessages.push({
+                role: 'assistant',
+                tool_calls: [
+                  {
+                    id: subMsg.tool_call.id,
+                    type: 'function',
+                    function: {
+                      name: subMsg.tool_call.name,
+                      arguments: subMsg.tool_call.params
+                    }
+                  }
+                ]
+              })
+              resultMessages.push({
+                role: 'tool',
+                tool_call_id: subMsg.tool_call.id,
+                content: subMsg.tool_call.response
+              })
+            } else if (subMsg.type === 'content' && subMsg?.content?.trim()) {
+              resultMessages.push({
+                role: 'assistant',
+                content: subMsg.content
               })
             }
+          }
+        }
+      })
+      return resultMessages
+    } else {
+      // 对于非原生fc模型，支持规范化prompt实现
+      contextMessages.forEach((msg) => {
+        if (msg.role === 'user') {
+          // 处理用户消息
+          const msgContent = msg.content as UserMessageContent
+          const msgText = msgContent.content
+            ? this.formatUserMessageContent(msgContent.content)
+            : msgContent.text
+          const userContent = `${msgText}${getFileContext(msgContent.files)}`
+          resultMessages.push({
+            role: 'user',
+            content: userContent
           })
+        } else if (msg.role === 'assistant') {
+          // 处理助手消息
+          const assistantBlocks = msg.content as AssistantMessageBlock[]
+          // 提取文本内容块，同时将工具调用的响应内容提取出来
+          const textContent = assistantBlocks
+            .filter((block) => block.type === 'content' || block.type === 'tool_call')
+            .map((block) => {
+              if (block.type === 'content') {
+                return block.content
+              } else if (
+                block.type === 'tool_call' &&
+                block.tool_call?.response &&
+                block.tool_call?.params
+              ) {
+                let parsedParams
+                let parsedResponse
 
-          // 添加文本内容
-          if (textContent) {
-            content.push({
-              type: 'text',
-              text: textContent
+                try {
+                  parsedParams = JSON.parse(block.tool_call.params)
+                } catch (e) {
+                  parsedParams = block.tool_call.params // 保留原字符串
+                }
+
+                try {
+                  parsedResponse = JSON.parse(block.tool_call.response)
+                } catch (e) {
+                  parsedResponse = block.tool_call.response // 保留原字符串
+                }
+
+                return (
+                  '<function_call>\n' +
+                  JSON.stringify({
+                    function_call_result: {
+                      name: block.tool_call.name,
+                      arguments: parsedParams,
+                      response: parsedResponse
+                    }
+                  }) +
+                  '</function_call>'
+                )
+              } else {
+                return '' // 若 tool_call 或 response、params 是 undefined 返回。只是便于调试而已，可以为空。
+              }
             })
+            .join('\n')
+
+          // 查找图像块
+          const imageBlocks = assistantBlocks.filter(
+            (block) => block.type === 'image' && block.image_data
+          )
+
+          // 如果没有任何内容，则跳过此消息
+          if (!textContent && imageBlocks.length === 0) {
+            return
           }
 
-          resultMessages.push({
-            role: 'assistant',
-            content: content
-          })
-        } else {
-          // 仅有文本内容
-          resultMessages.push({
-            role: 'assistant',
-            content: textContent
-          })
-        }
-      }
-    })
+          // 如果有图像，则使用复合内容格式
+          if (vision && imageBlocks.length > 0) {
+            const content: ChatMessageContent[] = []
 
-    return resultMessages
+            // 添加图像内容
+            imageBlocks.forEach((block) => {
+              if (block.image_data) {
+                content.push({
+                  type: 'image_url',
+                  image_url: {
+                    url: block.image_data.data,
+                    detail: 'auto'
+                  }
+                })
+              }
+            })
+
+            // 添加文本内容
+            if (textContent) {
+              content.push({
+                type: 'text',
+                text: textContent
+              })
+            }
+
+            resultMessages.push({
+              role: 'assistant',
+              content: content
+            })
+          } else {
+            // 仅有文本内容
+            resultMessages.push({
+              role: 'assistant',
+              content: textContent
+            })
+          }
+        }
+      })
+
+      return resultMessages
+    }
   }
 
   // 合并连续的相同角色消息

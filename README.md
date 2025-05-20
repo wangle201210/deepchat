@@ -12,6 +12,7 @@
   <a href="https://github.com/ThinkInAIXYZ/deepchat/pulls"><img src="https://img.shields.io/github/issues-pr/ThinkInAIXYZ/deepchat" alt="Pull Requests Badge"/></a>
   <a href="https://github.com/ThinkInAIXYZ/deepchat/issues"><img src="https://img.shields.io/github/issues/ThinkInAIXYZ/deepchat" alt="Issues Badge"/></a>
   <a href="https://github.com/ThinkInAIXYZ/deepchat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ThinkInAIXYZ/deepchat" alt="License Badge"/></a>
+  <a href="https://deepwiki.com/ThinkInAIXYZ/deepchat"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <div align="center">
@@ -20,16 +21,30 @@
 
 ## 📑 Table of Contents
 
-- [Project Introduction](#-project-introduction)
-- [Why Choose DeepChat](#-why-choose-deepchat)
-- [Feature Showcase](#-feature-showcase)
-- [Main Features](#-main-features)
-- [Supported Model Providers](#-supported-model-providers)
-- [Use Cases](#-use-cases)
-- [Quick Start](#-quick-start)
-- [Development Guide](#-development-guide)
-- [Community & Contribution](#-community--contribution)
-- [License](#-license)
+- [📑 Table of Contents](#-table-of-contents)
+- [🚀 Project Introduction](#-project-introduction)
+- [💡 Why Choose DeepChat](#-why-choose-deepchat)
+- [📸 Feature Showcase](#-feature-showcase)
+  - [Reasoning Capabilities](#reasoning-capabilities)
+  - [Search Enhancement](#search-enhancement)
+  - [LaTeX Support](#latex-support)
+  - [Artifacts Support](#artifacts-support)
+- [🔥 Main Features](#-main-features)
+- [🤖 Supported Model Providers](#-supported-model-providers)
+  - [Compatible with any model provider in OpenAI/Gemini/Anthropic API format](#compatible-with-any-model-provider-in-openaigeminianthropic-api-format)
+- [🔍 Use Cases](#-use-cases)
+- [📦 Quick Start](#-quick-start)
+  - [Download and Install](#download-and-install)
+  - [Configure Models](#configure-models)
+  - [Start Conversations](#start-conversations)
+- [💻 Development Guide](#-development-guide)
+  - [Install Dependencies](#install-dependencies)
+  - [Start Development](#start-development)
+  - [Build](#build)
+- [👥 Community \& Contribution](#-community--contribution)
+- [⭐ Star History](#-star-history)
+- [👨‍💻 Contributors](#-contributors)
+- [📃 License](#-license)
 
 ## 🚀 Project Introduction
 
