@@ -38,7 +38,7 @@
             {{ t('common.image') }}
           </DialogTitle>
         </DialogHeader>
-        <div class="relative">
+        <div class="flex items-center justify-center">
           <template v-if="block.image_data">
             <img
               v-if="block.image_data.mimeType === 'deepchat/image-url'"
