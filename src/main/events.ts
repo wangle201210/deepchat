@@ -130,3 +130,8 @@ export const TAB_EVENTS = {
   STATE_CHANGED: 'tab:state-changed', // 标签页状态变化
   VISIBILITY_CHANGED: 'tab:visibility-changed' // 标签页可见性变化
 }
+
+// 托盘相关事件
+export const TRAY_EVENTS = {
+  SHOW_WINDOW: 'tray:show-window' // 从托盘显示窗口
+}
