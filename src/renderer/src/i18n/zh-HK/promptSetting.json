@@ -16,5 +16,11 @@
   "exportSuccess": "導出成功",
   "exportFailed": "導出失敗",
   "importSuccess": "導入成功",
-  "importFailed": "導入失敗"
+  "importFailed": "導入失敗",
+  "parameters": "參數",
+  "addParameter": "添加參數",
+  "noParameters": "暫無參數",
+  "parameterNamePlaceholder": "請輸入參數名稱",
+  "parameterDescriptionPlaceholder": "請輸入參數描述",
+  "required": "必填"
 } 

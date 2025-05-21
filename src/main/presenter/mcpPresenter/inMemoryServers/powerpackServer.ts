@@ -241,7 +241,11 @@ export class PowerpackServer {
       return prompts.map((prompt) => ({
         name: prompt.name,
         description: prompt.description,
-        arguments: []
+        arguments: prompt.parameters ? prompt.parameters.map(param => ({
+          name: param.name,
+          description: param.description,
+          required: !!param.required
+        })) : []
       }))
     } catch (error) {
       return []
@@ -249,12 +253,23 @@ export class PowerpackServer {
   }
 
   // 获取提示词内容
-  private async getPromptContent(name: string, content: string) {
+  private async getPromptContent(name: string, content: string, args?: Record<string, string>) {
     const prompts = await presenter.configPresenter.getCustomPrompts()
     if (!prompts || prompts.length === 0) throw new Error('No prompts found')
 
     const prompt = prompts.find((p) => p.name === name)
     if (!prompt) throw new Error('Prompt not found')
+
+    let promptContent = prompt.content
+    
+    // 替换参数占位符
+    if (args && prompt.parameters) {
+      // 遍历所有参数，并替换内容中的{{参数名}}
+      for (const param of prompt.parameters) {
+        const value = args[param.name] || ''
+        promptContent = promptContent.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
+      }
+    }
 
     return {
       messages: [
@@ -262,7 +277,7 @@ export class PowerpackServer {
           role: 'user',
           content: {
             type: 'text',
-            text: `${prompt.content}\n\n${content}`
+            text: `${promptContent}\n\n${content}`
           }
         }
       ]
@@ -454,11 +469,27 @@ export class PowerpackServer {
 
     // 设置提示词获取处理器
     this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      const { name } = request.params
-      const response = await this.getPromptContent(name, '')
-      return {
-        messages: response.messages,
-        _meta: {}
+      try {
+        const { name, arguments: args } = request.params
+        const response = await this.getPromptContent(name, '', args as Record<string, string>)
+        return {
+          messages: response.messages,
+          _meta: {}
+        }
+      } catch (error) {
+        console.error('获取提示词内容失败:', error)
+        return {
+          messages: [
+            {
+              role: 'system',
+              content: {
+                type: 'text',
+                text: `Error: ${error instanceof Error ? error.message : String(error)}`
+              }
+            }
+          ],
+          _meta: {}
+        }
       }
     })
   }

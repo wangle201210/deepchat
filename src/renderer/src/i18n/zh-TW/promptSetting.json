@@ -11,10 +11,16 @@
   "noPrompt": "暫無提示詞，請點擊右上角新增",
   "showMore": "顯示更多",
   "showLess": "收起",
-  "export": "匯出",
-  "import": "匯入",
-  "exportSuccess": "匯出成功",
-  "exportFailed": "匯出失敗",
-  "importSuccess": "匯入成功",
-  "importFailed": "匯入失敗"
+  "export": "導出",
+  "import": "導入",
+  "exportSuccess": "導出成功",
+  "exportFailed": "導出失敗",
+  "importSuccess": "導入成功",
+  "importFailed": "導入失敗",
+  "parameters": "參數",
+  "addParameter": "添加參數",
+  "noParameters": "暫無參數",
+  "parameterNamePlaceholder": "請輸入參數名稱",
+  "parameterDescriptionPlaceholder": "請輸入參數描述",
+  "required": "必填"
 } 
