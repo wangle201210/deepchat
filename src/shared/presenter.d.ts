@@ -42,7 +42,15 @@ export interface Resource {
   blob?: string
 }
 export interface Prompt {
+  id: string
   name: string
+  description: string
+  content?: string
+  parameters?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
 }
 export interface PromptListEntry {
@@ -316,6 +324,11 @@ export interface IConfigPresenter {
   toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
   getTheme(): Promise<string>
   getSystemTheme(): Promise<'dark' | 'light'>
+  getCustomPrompts(): Promise<Prompt[]>
+  setCustomPrompts(prompts: Prompt[]): Promise<void>
+  addCustomPrompt(prompt: Prompt): Promise<void>
+  updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void>
+  deleteCustomPrompt(promptId: string): Promise<void>
 }
 export type RENDERER_MODEL_META = {
   id: string

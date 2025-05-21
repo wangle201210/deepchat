@@ -9,5 +9,6 @@
   "settings-about": "關於",
   "settings-shortcut": "快捷鍵",
   "settings-display": "顯示設置",
-  "settings-knowledge-base": "知識庫"
+  "settings-knowledge-base": "知識庫",
+  "settings-prompt": "Prompt管理"
 }

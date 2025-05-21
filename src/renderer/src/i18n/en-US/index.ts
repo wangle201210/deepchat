@@ -15,6 +15,7 @@ import components from './components.json'
 import newThread from './newThread.json'
 import about from './about.json'
 import contextMenu from './contextMenu.json'
+import promptSetting from './promptSetting.json'
 
 // Individual top-level keys
 const others = {
@@ -48,5 +49,6 @@ export default {
   newThread,
   about,
   contextMenu,
+  promptSetting,
   ...others
 }

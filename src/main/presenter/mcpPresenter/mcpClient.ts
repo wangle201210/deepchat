@@ -573,7 +573,6 @@ export class McpClient {
     }
 
     try {
-      // SDK可能没有 getPrompt 方法，需要使用通用的 request
       const response = await this.client.getPrompt({
         name,
         arguments: (args as Record<string, string>) || {}
@@ -586,7 +585,9 @@ export class McpClient {
         Array.isArray(response.messages)
       ) {
         return {
+          id: name,
           name: name, // 从请求参数中获取 name
+          description: response.description || '',
           messages: response.messages as Array<{ role: string; content: { text: string } }>
         }
       }

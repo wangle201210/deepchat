@@ -1446,6 +1446,7 @@ export const useSettingsStore = defineStore('settings', () => {
     setAzureApiVersion,
     getAzureApiVersion,
     setGeminiSafety,
-    getGeminiSafety
+    getGeminiSafety,
+    setupProviderListener
   }
 })

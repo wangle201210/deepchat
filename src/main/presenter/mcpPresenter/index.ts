@@ -227,7 +227,17 @@ export class McpPresenter implements IMCPPresenter {
         try {
           const prompts = await client.listPrompts()
           if (prompts && prompts.length > 0) {
-            clientObj.prompts = prompts
+            clientObj.prompts = prompts.map((prompt) => ({
+              id: prompt.name,
+              name: prompt.name,
+              content: prompt.description || '',
+              description: prompt.description || '',
+              arguments: prompt.arguments || [],
+              client: {
+                name: client.serverName,
+                icon: client.serverConfig['icons'] as string
+              }
+            }))
           }
         } catch (error) {
           console.error(
@@ -369,7 +379,10 @@ export class McpPresenter implements IMCPPresenter {
           if (prompts && prompts.length > 0) {
             // 为每个提示模板添加客户端信息
             const clientPrompts = prompts.map((prompt) => ({
-              ...prompt,
+              id: prompt.name,
+              name: prompt.name,
+              description: prompt.description || '',
+              arguments: prompt.arguments || [],
               client: {
                 name: client.serverName,
                 icon: client.serverConfig['icons'] as string
