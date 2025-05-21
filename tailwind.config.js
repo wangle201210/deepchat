@@ -13,6 +13,11 @@ module.exports = {
     './src/**/*.{ts,tsx,vue}'
   ],
 
+  fontFamily: {
+    display: ['Geist', 'sans-serif'],
+    text: ['Geist', 'sans-serif']
+  },
+
   theme: {
     container: {
       center: true,

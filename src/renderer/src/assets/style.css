@@ -1,7 +1,14 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@plugin "@tailwindcss/typography";
+@plugin @tailwindcss/typography;
+
+@font-face {
+  font-family: 'Geist';
+  src: url('./geist.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 @layer base {
   :root {
@@ -68,6 +75,9 @@
     --sidebar-accent-foreground: var(--base-800);
     --sidebar-border: var(--base-200);
     --sidebar-ring: var(--primary-600);
+
+    --display-weight: 700;
+    --text-weight: 400;
   }
 
   .dark {
@@ -111,6 +121,19 @@
     @apply border-border;
   }
   body {
-    @apply bg-transparent text-foreground;
+    @apply bg-transparent text-foreground font-text;
+    font-family: 'Geist', sans-serif !important;
+  }
+  html {
+    font-family: 'Geist', sans-serif !important;
+  }
+}
+
+@layer base {
+  .font-display {
+    font-weight: var(--display-weight);
+  }
+  .font-text {
+    font-weight: var(--text-weight);
   }
 }
