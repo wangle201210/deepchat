@@ -423,7 +423,17 @@ export class WindowPresenter implements IWindowPresenter {
       if (forceClose) {
         this.isQuitting = true // Mark as quitting to bypass some close handlers
       }
-      // console.log('closeWindow', windowId, forceClose)
+
+      // 先关闭所有相关的标签页
+      try {
+        const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+        for (const tab of tabsData) {
+          await presenter.tabPresenter.closeTab(tab.id)
+        }
+      } catch (error) {
+        console.error('Error closing tabs for window:', windowId, error)
+      }
+
       window.close() // Triggers 'close' event on the window
       if (forceClose && !window.isDestroyed()) {
         // If forceClose is true and window didn't destroy (e.g. prevented by 'close' handler),
