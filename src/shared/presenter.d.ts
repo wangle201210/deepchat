@@ -45,7 +45,7 @@ export interface Prompt {
   id: string
   name: string
   description: string
-  content: string
+  content?: string
   parameters?: Array<{
     name: string
     description: string
