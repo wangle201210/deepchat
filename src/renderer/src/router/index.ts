@@ -5,6 +5,10 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/chat'
+    },
+    {
+      path: '/chat',
       name: 'chat',
       component: () => import('@/views/ChatTabView.vue'),
       meta: {

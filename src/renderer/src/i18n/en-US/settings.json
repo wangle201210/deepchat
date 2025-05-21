@@ -348,6 +348,10 @@
     "quitApp": "Quit app",
     "zoomIn": "Zoom in ",
     "zoomOut": "Zoom out ",
-    "zoomReset": "Reset zoom"
+    "zoomReset": "Reset zoom",
+    "closeTab": "Close the current tab page",
+    "newTab": "Create a new tab",
+    "newWindow": "Open a new window",
+    "newConversation": "New conversation"
   }
 }

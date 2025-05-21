@@ -1,7 +1,7 @@
 <template>
   <TooltipProvider>
     <div
-      class="w-full h-8 text-xs text-secondary-foreground items-center justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
+      class="w-full h-8 text-xs text-muted-foreground items-center justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
       :class="[isAssistant ? '' : 'flex-row-reverse']"
     >
       <span v-show="!loading" class="flex flex-row gap-3">
@@ -78,7 +78,10 @@
                 @click="handleCopy"
               >
                 <Icon icon="lucide:copy" class="w-3 h-3" />
-                <span v-if="showCopyTip" class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                <span
+                  v-if="showCopyTip"
+                  class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50"
+                >
                   {{ t('common.copySuccess') }}
                 </span>
               </Button>
@@ -95,7 +98,10 @@
                 @click="handleCopyImage"
               >
                 <Icon icon="lucide:images" class="w-3 h-3" />
-                <span v-if="showCopyImageTip" class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                <span
+                  v-if="showCopyImageTip"
+                  class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50"
+                >
                   {{ t('common.copyImageSuccess') }}
                 </span>
               </Button>

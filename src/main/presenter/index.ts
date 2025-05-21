@@ -16,6 +16,7 @@ import { McpPresenter } from './mcpPresenter'
 import { SyncPresenter } from './syncPresenter'
 import { DeeplinkPresenter } from './deeplinkPresenter'
 import { NotificationPresenter } from './notifactionPresenter'
+import { TabPresenter } from './tabPresenter'
 import {
   CONFIG_EVENTS,
   CONVERSATION_EVENTS,
@@ -60,7 +61,6 @@ const eventsToForward: string[] = [
   DEEPLINK_EVENTS.MCP_INSTALL,
   NOTIFICATION_EVENTS.SHOW_ERROR,
   NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED,
-  SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION,
   SHORTCUT_EVENTS.GO_SETTINGS,
   SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
   SHORTCUT_EVENTS.ZOOM_IN,
@@ -81,11 +81,13 @@ export class Presenter implements IPresenter {
   syncPresenter: SyncPresenter
   deeplinkPresenter: DeeplinkPresenter
   notificationPresenter: NotificationPresenter
+  tabPresenter: TabPresenter
   // llamaCppPresenter: LlamaCppPresenter
 
   constructor() {
     this.configPresenter = new ConfigPresenter()
     this.windowPresenter = new WindowPresenter(this.configPresenter)
+    this.tabPresenter = new TabPresenter(this.windowPresenter)
     this.llmproviderPresenter = new LLMProviderPresenter(this.configPresenter)
     this.devicePresenter = new DevicePresenter()
     // 初始化 SQLite 数据库
@@ -104,6 +106,7 @@ export class Presenter implements IPresenter {
     this.syncPresenter = new SyncPresenter(this.configPresenter, this.sqlitePresenter)
     this.deeplinkPresenter = new DeeplinkPresenter()
     this.notificationPresenter = new NotificationPresenter()
+
     // this.llamaCppPresenter = new LlamaCppPresenter()
     this.setupEventBus()
   }
@@ -113,22 +116,20 @@ export class Presenter implements IPresenter {
     const forward = (eventName: string) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       eventBus.on(eventName, (...payload: any[]) => {
-        const mainWindow = this.windowPresenter.mainWindow
-        if (!mainWindow) return // 窗口不存在则不处理
-        // 根据事件名称处理特定逻辑
         if (eventName === STREAM_EVENTS.RESPONSE) {
+          // 根据事件名称处理特定逻辑
           const [msg] = payload
           const dataToRender = { ...msg }
           delete dataToRender.tool_call_response_raw // 删除原始数据
-          mainWindow.webContents.send(eventName, dataToRender)
+          this.windowPresenter.sendToAllWindows(eventName, dataToRender)
         } else if (eventName === STREAM_EVENTS.END) {
           const [msg] = payload
           console.log('stream-end', msg.eventId)
-          mainWindow.webContents.send(eventName, msg)
+          this.windowPresenter.sendToAllWindows(eventName, msg)
         } else if (eventName === CONFIG_EVENTS.PROVIDER_CHANGED) {
           const providers = this.configPresenter.getProviders()
           this.llmproviderPresenter.setProviders(providers)
-          mainWindow.webContents.send(eventName) // 此事件转发无需 payload
+          this.windowPresenter.sendToAllWindows(eventName) // 此事件转发无需 payload
         } else if (
           eventName === UPDATE_EVENTS.STATUS_CHANGED ||
           eventName === UPDATE_EVENTS.PROGRESS ||
@@ -138,10 +139,10 @@ export class Presenter implements IPresenter {
         ) {
           const [msg] = payload
           console.log(eventName, msg) // 记录日志
-          mainWindow.webContents.send(eventName, msg)
+          this.windowPresenter.sendToAllWindows(eventName, msg)
         } else {
           // 默认处理：直接转发所有 payload
-          mainWindow.webContents.send(eventName, ...payload)
+          this.windowPresenter.sendToAllWindows(eventName, ...payload)
         }
       })
     }
@@ -187,6 +188,7 @@ export class Presenter implements IPresenter {
 
   // 在应用退出时关闭数据库连接
   destroy() {
+    this.tabPresenter.destroy()
     this.sqlitePresenter.close()
     this.shortcutPresenter.destroy()
     this.syncPresenter.destroy()

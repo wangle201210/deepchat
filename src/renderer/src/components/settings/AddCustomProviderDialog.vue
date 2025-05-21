@@ -13,8 +13,13 @@
             <Label for="name" class="text-right">
               {{ t('settings.provider.dialog.addCustomProvider.name') }}
             </Label>
-            <Input id="name" v-model="formData.name" class="col-span-3"
-              :placeholder="t('settings.provider.dialog.addCustomProvider.namePlaceholder')" required />
+            <Input
+              id="name"
+              v-model="formData.name"
+              class="col-span-3"
+              :placeholder="t('settings.provider.dialog.addCustomProvider.namePlaceholder')"
+              required
+            />
           </div>
           <div class="grid grid-cols-4 items-center gap-4">
             <Label for="apiType" class="text-right">
@@ -22,7 +27,9 @@
             </Label>
             <Select v-model="formData.apiType" required>
               <SelectTrigger class="col-span-3">
-                <SelectValue :placeholder="t('settings.provider.dialog.addCustomProvider.apiTypePlaceholder')" />
+                <SelectValue
+                  :placeholder="t('settings.provider.dialog.addCustomProvider.apiTypePlaceholder')"
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="openai">OpenAI</SelectItem>
@@ -42,17 +49,27 @@
             <Label for="apiKey" class="text-right">
               {{ t('settings.provider.dialog.addCustomProvider.apiKey') }}
             </Label>
-            <Input id="apiKey" v-model="formData.apiKey" class="col-span-3"
-              :placeholder="t('settings.provider.dialog.addCustomProvider.apiKeyPlaceholder')" required />
+            <Input
+              id="apiKey"
+              v-model="formData.apiKey"
+              class="col-span-3"
+              :placeholder="t('settings.provider.dialog.addCustomProvider.apiKeyPlaceholder')"
+              required
+            />
           </div>
           <div class="grid grid-cols-4 items-center gap-4">
             <Label for="baseUrl" class="text-right">
               {{ t('settings.provider.dialog.addCustomProvider.baseUrl') }}
             </Label>
             <span class="col-span-3 flex flex-col">
-              <Input id="baseUrl" v-model="formData.baseUrl" class="col-span-3"
-                :placeholder="t('settings.provider.dialog.addCustomProvider.baseUrlPlaceholder')" required />
-              <div class="text-xs text-secondary-foreground mt-1" v-if="formData.apiType === 'openai'">
+              <Input
+                id="baseUrl"
+                v-model="formData.baseUrl"
+                class="col-span-3"
+                :placeholder="t('settings.provider.dialog.addCustomProvider.baseUrlPlaceholder')"
+                required
+              />
+              <div class="text-xs text-muted-foreground mt-1" v-if="formData.apiType === 'openai'">
                 {{ `${formData.baseUrl ?? ''}/chat/completions` }}
               </div>
             </span>
@@ -65,7 +82,7 @@
               <Switch id="enable" v-model="formData.enable" />
               <Label for="enable">{{
                 formData.enable ? t('common.enabled') : t('common.disabled')
-                }}</Label>
+              }}</Label>
             </div>
           </div>
         </div>

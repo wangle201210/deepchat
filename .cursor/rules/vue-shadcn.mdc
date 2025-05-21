@@ -1,6 +1,7 @@
 ---
-description: Render
-globs: src/renderer/src/**
+description: 
+globs: src/renderer/*,src/renderer/**/*,srr/renderer/src/**/*
+alwaysApply: false
 ---
 
       You are an expert in TypeScript, Node.js, NuxtJS, Vue 3, Shadcn Vue, Radix Vue, VueUse, and Tailwind.

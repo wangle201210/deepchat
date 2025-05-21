@@ -12,7 +12,7 @@
           @blur="handleApiHostChange(String($event.target.value))"
           @keyup.enter="handleApiHostChange(apiHost)"
         />
-        <div class="text-xs text-secondary-foreground">
+        <div class="text-xs text-muted-foreground">
           {{
             t('settings.provider.urlFormat', {
               defaultUrl: 'http://127.0.0.1:11434'
@@ -67,7 +67,7 @@
             <Icon icon="lucide:refresh-cw" class="w-4 h-4 text-muted-foreground" />
             {{ t('settings.provider.refreshModels') }}
           </Button>
-          <span class="text-xs text-secondary-foreground">
+          <span class="text-xs text-muted-foreground">
             {{ runningModels.length }}/{{ localModels.length }}
             {{ t('settings.provider.modelsRunning') }}
           </span>
@@ -75,14 +75,11 @@
 
         <!-- 运行中模型列表 -->
         <div class="flex flex-col w-full gap-2">
-          <h3 class="text-sm font-medium text-secondary-foreground">
+          <h3 class="text-sm font-medium text-muted-foreground">
             {{ t('settings.provider.runningModels') }}
           </h3>
           <div class="flex flex-col w-full border overflow-hidden rounded-lg">
-            <div
-              v-if="runningModels.length === 0"
-              class="p-4 text-center text-secondary-foreground"
-            >
+            <div v-if="runningModels.length === 0" class="p-4 text-center text-muted-foreground">
               {{ t('settings.provider.noRunningModels') }}
             </div>
             <div
@@ -92,9 +89,7 @@
             >
               <div class="flex flex-col">
                 <span class="text-sm font-medium">{{ model.name }}</span>
-                <span class="text-xs text-secondary-foreground">{{
-                  formatModelSize(model.size)
-                }}</span>
+                <span class="text-xs text-muted-foreground">{{ formatModelSize(model.size) }}</span>
               </div>
             </div>
           </div>
@@ -102,13 +97,13 @@
 
         <!-- 本地模型列表 -->
         <div class="flex flex-col w-full gap-2 mt-2">
-          <h3 class="text-sm font-medium text-secondary-foreground">
+          <h3 class="text-sm font-medium text-muted-foreground">
             {{ t('settings.provider.localModels') }}
           </h3>
           <div class="flex flex-col w-full border overflow-hidden rounded-lg">
             <div
               v-if="localModels.length === 0 && pullingModels.size === 0"
-              class="p-4 text-center text-secondary-foreground"
+              class="p-4 text-center text-muted-foreground"
             >
               {{ t('settings.provider.noLocalModels') }}
             </div>
@@ -130,9 +125,7 @@
                     <Progress :modelValue="pullingModels.get(model.name)" class="h-1.5" />
                   </span>
                 </div>
-                <span class="text-xs text-secondary-foreground">{{
-                  formatModelSize(model.size)
-                }}</span>
+                <span class="text-xs text-muted-foreground">{{ formatModelSize(model.size) }}</span>
               </div>
               <div class="flex flex-row gap-2">
                 <Button

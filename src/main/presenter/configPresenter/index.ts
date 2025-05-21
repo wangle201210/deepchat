@@ -11,9 +11,9 @@ import { SearchEngineTemplate } from '@shared/chat'
 import ElectronStore from 'electron-store'
 import { DEFAULT_PROVIDERS } from './providers'
 import path from 'path'
-import { app, shell } from 'electron'
+import { app, nativeTheme, shell } from 'electron'
 import fs from 'fs'
-import { CONFIG_EVENTS } from '@/events'
+import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { McpConfHelper } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
@@ -106,6 +106,8 @@ export class ConfigPresenter implements IConfigPresenter {
         appVersion: this.currentAppVersion
       }
     })
+
+    this.initTheme()
 
     // 初始化 custom prompts 存储
     this.customPromptsStore = new ElectronStore<{ prompts: Prompt[] }>({
@@ -807,6 +809,34 @@ export class ConfigPresenter implements IConfigPresenter {
 
   setNotificationsEnabled(enabled: boolean): void {
     this.setSetting('notificationsEnabled', enabled)
+  }
+
+  async initTheme() {
+    const theme = this.getSetting<string>('appTheme')
+    if (theme) {
+      nativeTheme.themeSource = theme as 'dark' | 'light'
+    }
+    // 监听系统主题变化
+    nativeTheme.on('updated', () => {
+      // 只有当主题设置为 system 时，才需要通知渲染进程
+      if (nativeTheme.themeSource === 'system') {
+        eventBus.emit(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, nativeTheme.shouldUseDarkColors)
+      }
+    })
+  }
+
+  async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
+    nativeTheme.themeSource = theme
+    this.setSetting('appTheme', theme)
+    return nativeTheme.shouldUseDarkColors
+  }
+
+  async getTheme(): Promise<string> {
+    return this.getSetting<string>('appTheme') || 'system'
+  }
+
+  async getSystemTheme(): Promise<'dark' | 'light'> {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
   }
 
   // 获取所有自定义 prompts

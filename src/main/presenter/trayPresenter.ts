@@ -1,18 +1,16 @@
 import { Tray, Menu, app, nativeImage, NativeImage } from 'electron'
 import path from 'path'
-import { WindowPresenter } from './windowPresenter'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
+import { eventBus } from '@/eventbus'
+import { TRAY_EVENTS } from '@/events'
 
 export class TrayPresenter {
   private tray: Tray | null = null
-  private windowPresenter: WindowPresenter
   private iconPath: string
 
-  constructor(windowPresenter: WindowPresenter) {
-    this.windowPresenter = windowPresenter
+  constructor() {
     this.iconPath = path.join(app.getAppPath(), 'resources')
-    this.createTray()
   }
 
   private createTray() {
@@ -35,7 +33,7 @@ export class TrayPresenter {
       {
         label: labels.open || '打开',
         click: () => {
-          this.windowPresenter.show()
+          eventBus.emit(TRAY_EVENTS.SHOW_WINDOW)
         }
       },
       {
@@ -50,8 +48,12 @@ export class TrayPresenter {
 
     // 点击托盘图标时显示窗口
     this.tray.on('click', () => {
-      this.windowPresenter.show()
+      eventBus.emit(TRAY_EVENTS.SHOW_WINDOW)
     })
+  }
+
+  public init(): void {
+    this.createTray()
   }
 
   destroy() {

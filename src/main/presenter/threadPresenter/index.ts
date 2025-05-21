@@ -56,7 +56,6 @@ interface GeneratingMessageState {
 }
 
 export class ThreadPresenter implements IThreadPresenter {
-  private activeConversationId: string | null = null
   private sqlitePresenter: ISQLitePresenter
   private messageManager: MessageManager
   private llmProviderPresenter: ILlmProviderPresenter
@@ -66,6 +65,7 @@ export class ThreadPresenter implements IThreadPresenter {
   public searchAssistantModel: MODEL_META | null = null
   public searchAssistantProviderId: string | null = null
   private searchingMessages: Set<string> = new Set()
+  private activeConversationIds: Map<number, string> = new Map()
 
   constructor(
     sqlitePresenter: ISQLitePresenter,
@@ -482,7 +482,8 @@ export class ThreadPresenter implements IThreadPresenter {
 
   async createConversation(
     title: string,
-    settings: Partial<CONVERSATION_SETTINGS> = {}
+    settings: Partial<CONVERSATION_SETTINGS> = {},
+    tabId: number
   ): Promise<string> {
     console.log('createConversation', title, settings)
     const latestConversation = await this.getLatestConversation()
@@ -490,7 +491,7 @@ export class ThreadPresenter implements IThreadPresenter {
     if (latestConversation) {
       const { list: messages } = await this.getMessages(latestConversation.id, 1, 1)
       if (messages.length === 0) {
-        await this.setActiveConversation(latestConversation.id)
+        await this.setActiveConversation(latestConversation.id, tabId)
         return latestConversation.id
       }
     }
@@ -527,14 +528,17 @@ export class ThreadPresenter implements IThreadPresenter {
       mergedSettings.systemPrompt = settings.systemPrompt
     }
     const conversationId = await this.sqlitePresenter.createConversation(title, mergedSettings)
-    await this.setActiveConversation(conversationId)
+    await this.setActiveConversation(conversationId, tabId)
     return conversationId
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
     await this.sqlitePresenter.deleteConversation(conversationId)
-    if (this.activeConversationId === conversationId) {
-      this.activeConversationId = null
+    // 检查所有 tab 中的活跃会话
+    for (const [tabId, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        this.activeConversationIds.delete(tabId)
+      }
     }
   }
 
@@ -587,21 +591,22 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversationList(page, pageSize)
   }
 
-  async setActiveConversation(conversationId: string): Promise<void> {
+  async setActiveConversation(conversationId: string, tabId: number): Promise<void> {
     const conversation = await this.getConversation(conversationId)
     if (conversation) {
-      this.activeConversationId = conversationId
-      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId })
+      this.activeConversationIds.set(tabId, conversationId)
+      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId, tabId })
     } else {
       throw new Error(`Conversation ${conversationId} not found`)
     }
   }
 
-  async getActiveConversation(): Promise<CONVERSATION | null> {
-    if (!this.activeConversationId) {
+  async getActiveConversation(tabId: number): Promise<CONVERSATION | null> {
+    const conversationId = this.activeConversationIds.get(tabId)
+    if (!conversationId) {
       return null
     }
-    return this.getConversation(this.activeConversationId)
+    return this.getConversation(conversationId)
   }
 
   async getMessages(
@@ -1944,8 +1949,8 @@ export class ThreadPresenter implements IThreadPresenter {
     await this.messageManager.markMessageAsContextEdge(messageId, isEdge)
   }
 
-  async getActiveConversationId(): Promise<string | null> {
-    return this.activeConversationId
+  async getActiveConversationId(tabId: number): Promise<string | null> {
+    return this.activeConversationIds.get(tabId) || null
   }
 
   private async getLatestConversation(): Promise<CONVERSATION | null> {
@@ -2014,17 +2019,14 @@ export class ThreadPresenter implements IThreadPresenter {
     await Promise.all(messageIds.map((messageId) => this.stopMessageGeneration(messageId)))
   }
 
-  async summaryTitles(providerId?: string, modelId?: string): Promise<string> {
-    const conversation = await this.getActiveConversation()
+  async summaryTitles(tabId?: number): Promise<string> {
+    const conversation = await this.getActiveConversation(tabId || 0)
     if (!conversation) {
       throw new Error('找不到当前对话')
     }
-    let summaryProviderId = providerId
-    if (!modelId || !providerId) {
-      modelId = this.searchAssistantModel?.id
-      summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
-    }
-
+    let summaryProviderId = conversation.settings.providerId
+    const modelId = this.searchAssistantModel?.id
+    summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
     const messages = await this.getContextMessages(conversation.id)
     const messagesWithLength = messages
       .map((msg) => {
@@ -2066,17 +2068,19 @@ export class ThreadPresenter implements IThreadPresenter {
     console.log('-------------> cleanedTitle \n', cleanedTitle)
     return cleanedTitle
   }
-  async clearActiveThread(): Promise<void> {
-    this.activeConversationId = null
-    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED)
+  async clearActiveThread(tabId: number): Promise<void> {
+    this.activeConversationIds.delete(tabId)
+    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED, { tabId })
   }
 
   async clearAllMessages(conversationId: string): Promise<void> {
     await this.messageManager.clearAllMessages(conversationId)
-    // 如果是当前活动会话，需要更新生成状态
-    if (conversationId === this.activeConversationId) {
-      // 停止所有正在生成的消息
-      await this.stopConversationGeneration(conversationId)
+    // 检查所有 tab 中的活跃会话
+    for (const [_, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        // 停止所有正在生成的消息
+        await this.stopConversationGeneration(conversationId)
+      }
     }
   }
 
@@ -2197,18 +2201,22 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   // 翻译文本
-  async translateText(text: string): Promise<string> {
+  async translateText(text: string, tabId: number): Promise<string> {
     try {
-      let conversation = await this.getActiveConversation()
+      let conversation = await this.getActiveConversation(tabId)
       if (!conversation) {
         // 创建一个临时对话用于翻译
         const defaultProvider = this.configPresenter.getDefaultProviders()[0]
         const models = await this.llmProviderPresenter.getModelList(defaultProvider.id)
         const defaultModel = models[0]
-        const conversationId = await this.createConversation('临时翻译对话', {
-          modelId: defaultModel.id,
-          providerId: defaultProvider.id
-        })
+        const conversationId = await this.createConversation(
+          '临时翻译对话',
+          {
+            modelId: defaultModel.id,
+            providerId: defaultProvider.id
+          },
+          tabId
+        )
         conversation = await this.getConversation(conversationId)
       }
 
@@ -2216,7 +2224,8 @@ export class ThreadPresenter implements IThreadPresenter {
       const messages: ChatMessage[] = [
         {
           role: 'system',
-          content: '你是一个翻译助手。请将用户输入的文本翻译成中文。只返回翻译结果，不要添加任何其他内容。'
+          content:
+            '你是一个翻译助手。请将用户输入的文本翻译成中文。只返回翻译结果，不要添加任何其他内容。'
         },
         {
           role: 'user',
@@ -2254,18 +2263,22 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   // AI询问
-  async askAI(text: string): Promise<string> {
+  async askAI(text: string, tabId: number): Promise<string> {
     try {
-      let conversation = await this.getActiveConversation()
+      let conversation = await this.getActiveConversation(tabId)
       if (!conversation) {
         // 创建一个临时对话用于AI询问
         const defaultProvider = this.configPresenter.getDefaultProviders()[0]
         const models = await this.llmProviderPresenter.getModelList(defaultProvider.id)
         const defaultModel = models[0]
-        const conversationId = await this.createConversation('临时AI对话', {
-          modelId: defaultModel.id,
-          providerId: defaultProvider.id
-        })
+        const conversationId = await this.createConversation(
+          '临时AI对话',
+          {
+            modelId: defaultModel.id,
+            providerId: defaultProvider.id
+          },
+          tabId
+        )
         conversation = await this.getConversation(conversationId)
       }
 

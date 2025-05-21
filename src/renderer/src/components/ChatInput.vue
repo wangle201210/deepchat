@@ -51,7 +51,7 @@
                 <Button
                   variant="outline"
                   size="icon"
-                  class="w-7 h-7 text-xs rounded-lg text-muted-foreground"
+                  class="w-7 h-7 text-xs rounded-lg"
                   @click="openFilePicker"
                 >
                   <Icon icon="lucide:paperclip" class="w-4 h-4" />
@@ -70,7 +70,7 @@
             <Tooltip>
               <TooltipTrigger>
                 <span
-                  class="search-engine-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-border transition-all duration-300"
+                  class="search-engine-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-input transition-all duration-300"
                   :class="{
                     'border-primary': settings.webSearch
                   }"
@@ -81,7 +81,7 @@
                       'flex w-7 border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full',
                       settings.webSearch
                         ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
-                        : 'text-muted-foreground'
+                        : ''
                     ]"
                     size="icon"
                     @click="onWebSearchClick"
@@ -550,11 +550,15 @@ const deleteFile = (idx: number) => {
 }
 
 const disabledSend = computed(() => {
-  return (
-    chatStore.generatingThreadIds.has(chatStore.activeThreadId ?? '') ||
-    inputText.value.length <= 0 ||
-    currentContextLength.value > (props.contextLength ?? chatStore.chatConfig.contextLength)
-  )
+  const activeThreadId = chatStore.getActiveThreadId()
+  if (activeThreadId) {
+    return (
+      chatStore.generatingThreadIds.has(activeThreadId) ||
+      inputText.value.length <= 0 ||
+      currentContextLength.value > (props.contextLength ?? chatStore.chatConfig.contextLength)
+    )
+  }
+  return false
 })
 
 const handleEditorEnter = (e: KeyboardEvent) => {

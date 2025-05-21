@@ -348,6 +348,10 @@
     "quitApp": "Quitter l'application",
     "zoomIn": "Zoomer",
     "zoomOut": "Zoom out",
-    "zoomReset": "Réinitialiser le zoom"
+    "zoomReset": "Réinitialiser le zoom",
+    "closeTab": "Fermez la page d'onglet actuelle",
+    "newTab": "Créer un nouvel onglet",
+    "newWindow": "Ouvrez une nouvelle fenêtre",
+    "newConversation": "Nouvelle conversation"
   }
 }

@@ -19,7 +19,7 @@
                 {{ fileName }}
               </div>
               <div
-                class="text-[10px] leading-none text-secondary-foreground truncate text-ellipsis whitespace-nowrap"
+                class="text-[10px] leading-none text-muted-foreground truncate text-ellipsis whitespace-nowrap"
               >
                 {{ mimeType }}
               </div>

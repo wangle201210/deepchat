@@ -137,6 +137,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     }
   },
   {
+    id: 'openai-responses',
+    name: 'OpenAI Responses',
+    apiType: 'openai-responses',
+    apiKey: '',
+    baseUrl: 'https://api.openai.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://openai.com/',
+      apiKey: 'https://platform.openai.com/api-keys',
+      docs: 'https://platform.openai.com/docs/api-reference/responses',
+      models: 'https://platform.openai.com/docs/models',
+      defaultBaseUrl: 'https://api.openai.com/v1'
+    }
+  },
+  {
     id: 'openai',
     name: 'OpenAI',
     apiType: 'openai',

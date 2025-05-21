@@ -1,4 +1,4 @@
-import { clipboard, contextBridge, nativeImage, webUtils, webFrame } from 'electron'
+import { clipboard, contextBridge, nativeImage, webUtils, webFrame, ipcRenderer } from 'electron'
 import { exposeElectronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
@@ -12,6 +12,12 @@ const api = {
   },
   getPathForFile: (file: File) => {
     return webUtils.getPathForFile(file)
+  },
+  getWindowId: () => {
+    return ipcRenderer.sendSync('get-window-id')
+  },
+  getWebContentsId: () => {
+    return ipcRenderer.sendSync('get-web-contents-id')
   }
 }
 exposeElectronAPI()

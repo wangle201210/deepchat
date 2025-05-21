@@ -110,18 +110,58 @@ export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
 }
 
+export interface TabData {
+  id: number
+  title: string
+  isActive: boolean
+  position: number
+  closable: boolean
+  url: string
+  icon?: string
+}
+
 export interface IWindowPresenter {
-  createMainWindow(): BrowserWindow
+  createShellWindow(options?: {
+    activateTabId?: number
+    initialTab?: {
+      url: string
+      type?: string
+      icon?: string
+    }
+    forMovedTab?: boolean
+    x?: number
+    y?: number
+  }): Promise<number | null>
   getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
-  minimize(): void
-  maximize(): void
-  close(): void
-  hide(): void
-  show(): void
-  isMaximized(): boolean
-  isMainWindowFocused(): boolean
+  minimize(windowId: number): void
+  maximize(windowId: number): void
+  close(windowId: number): void
+  hide(windowId: number): void
+  show(windowId?: number): void
+  isMaximized(windowId: number): boolean
+  isMainWindowFocused(windowId: number): boolean
+  sendToAllWindows(channel: string, ...args: unknown[]): void
+  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  closeWindow(windowId: number, forceClose?: boolean): Promise<void>
+}
+
+export interface ITabPresenter {
+  createTab(windowId: number, url: string, options?: TabCreateOptions): Promise<number | null>
+  closeTab(tabId: number): Promise<boolean>
+  switchTab(tabId: number): Promise<boolean>
+  getTab(tabId: number): Promise<BrowserView | undefined>
+  detachTab(tabId: number): Promise<boolean>
+  attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+  moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+  getWindowTabsData(windowId: number): Promise<Array<TabData>>
+  moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
+}
+
+export interface TabCreateOptions {
+  active?: boolean
+  position?: number
 }
 
 export interface ILlamaCppPresenter {
@@ -198,6 +238,7 @@ export interface IPresenter {
   syncPresenter: ISyncPresenter
   deeplinkPresenter: IDeeplinkPresenter
   notificationPresenter: INotificationPresenter
+  tabPresenter: ITabPresenter
   init(): void
   destroy(): void
 }
@@ -278,6 +319,11 @@ export interface IConfigPresenter {
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
+  // 主题设置
+  initTheme(): void
+  toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
+  getTheme(): Promise<string>
+  getSystemTheme(): Promise<'dark' | 'light'>
   getCustomPrompts(): Promise<Prompt[]>
   setCustomPrompts(prompts: Prompt[]): Promise<void>
   addCustomPrompt(prompt: Prompt): Promise<void>
@@ -404,7 +450,11 @@ export type CONVERSATION = {
 
 export interface IThreadPresenter {
   // 基本对话操作
-  createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
+  createConversation(
+    title: string,
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    tabId: number
+  ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>
   renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
@@ -427,8 +477,10 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
-  setActiveConversation(conversationId: string): Promise<void>
-  getActiveConversation(): Promise<CONVERSATION | null>
+  setActiveConversation(conversationId: string, tabId: number): Promise<void>
+  getActiveConversation(tabId: number): Promise<CONVERSATION | null>
+  getActiveConversationId(tabId: number): Promise<string | null>
+  clearActiveThread(tabId: number): Promise<void>
 
   getSearchResults(messageId: string): Promise<SearchResult[]>
   clearAllMessages(conversationId: string): Promise<void>
@@ -451,15 +503,14 @@ export interface IThreadPresenter {
   getMessageExtraInfo(messageId: string, type: string): Promise<Record<string, unknown>[]>
 
   // popup 操作
-  translateText(text: string): Promise<string>
-  askAI(text: string): Promise<string>
+  translateText(text: string, tabId: number): Promise<string>
+  askAI(text: string, tabId: number): Promise<string>
 
   // 上下文控制
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(modelId?: string): Promise<string>
-  clearActiveThread(): Promise<void>
+  summaryTitles(tabId?: number): Promise<string>
   stopMessageGeneration(messageId: string): Promise<void>
   getSearchEngines(): Promise<SearchEngineTemplate[]>
   getActiveSearchEngine(): Promise<SearchEngineTemplate>

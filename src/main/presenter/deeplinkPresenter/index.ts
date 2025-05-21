@@ -59,7 +59,7 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     })
 
     // 监听窗口内容加载完成事件
-    eventBus.on(WINDOW_EVENTS.CONTENT_LOADED, () => {
+    eventBus.once(WINDOW_EVENTS.FIRST_CONTENT_LOADED, () => {
       console.log('Window content loaded. Processing DeepLink if exists.')
       if (this.startupUrl) {
         console.log('Processing startup URL:', this.startupUrl)

@@ -63,7 +63,7 @@ const formatSize = (size: number): string => {
 
 <template>
   <div class="pt-2 pb-6 px-2">
-    <h2 class="text-xs text-secondary-foreground px-2">{{ t('settings.model.title') }}</h2>
+    <h2 class="text-xs text-muted-foreground px-2">{{ t('settings.model.title') }}</h2>
 
     <div class="space-y-6">
       <!-- System Prompt -->

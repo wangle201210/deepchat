@@ -34,10 +34,28 @@ const { t } = useI18n()
 
 const shortcuts = ref([
   {
-    id: 'new_chat',
-    icon: 'lucide:plus',
-    label: 'common.newChat',
+    id: 'new_conversation',
+    icon: 'lucide:plus-square',
+    label: 'settings.shortcuts.newConversation',
     key: 'CommandOrControl+N'
+  },
+  {
+    id: 'new_window',
+    icon: 'lucide:app-window',
+    label: 'settings.shortcuts.newWindow',
+    key: 'CommandOrControl+Shift+N'
+  },
+  {
+    id: 'new_tab',
+    icon: 'lucide:plus',
+    label: 'settings.shortcuts.newTab',
+    key: 'CommandOrControl+T'
+  },
+  {
+    id: 'close_tab',
+    icon: 'lucide:x',
+    label: 'settings.shortcuts.closeTab',
+    key: 'CommandOrControl+W'
   },
   {
     id: 'zoom_in',
@@ -68,12 +86,6 @@ const shortcuts = ref([
     icon: 'lucide:trash-2',
     label: 'settings.shortcuts.cleanHistory',
     key: 'CommandOrControl+L'
-  },
-  {
-    id: 'hide_window',
-    icon: 'lucide:minimize-2',
-    label: 'settings.shortcuts.hideWindow',
-    key: 'CommandOrControl+W'
   },
   {
     id: 'quit_app',

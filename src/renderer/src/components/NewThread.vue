@@ -2,23 +2,19 @@
   <div class="h-full w-full flex flex-col items-center justify-start">
     <div class="w-full p-2 flex flex-row gap-2 items-center">
       <Button
-        class="w-7 h-7 rounded-md hover:bg-accent"
+        class="w-7 h-7 rounded-md"
         size="icon"
         variant="outline"
         @click="onSidebarButtonClick"
       >
-        <Icon
-          v-if="chatStore.isSidebarOpen"
-          icon="lucide:panel-left-close"
-          class="w-4 h-4 text-muted-foreground"
-        />
-        <Icon v-else icon="lucide:panel-left-open" class="w-4 h-4 text-muted-foreground" />
+        <Icon v-if="chatStore.isSidebarOpen" icon="lucide:panel-left-close" class="w-4 h-4" />
+        <Icon v-else icon="lucide:panel-left-open" class="w-4 h-4" />
       </Button>
     </div>
     <div class="h-0 w-full flex-grow flex flex-col items-center justify-center">
       <img src="@/assets/logo-dark.png" class="w-24 h-24" />
       <h1 class="text-2xl font-bold px-8 pt-4">{{ t('newThread.greeting') }}</h1>
-      <h3 class="text-lg text-muted-foreground px-8 pb-2">{{ t('newThread.prompt') }}</h3>
+      <h3 class="text-lg px-8 pb-2">{{ t('newThread.prompt') }}</h3>
       <div class="h-12"></div>
       <ChatInput
         ref="chatInputRef"
@@ -30,9 +26,9 @@
         @send="handleSend"
       >
         <template #addon-buttons>
-          <span
+          <div
             key="newThread-model-select"
-            class="new-thread-model-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-border transition-all duration-300"
+            class="new-thread-model-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-input transition-all duration-300"
           >
             <Popover v-model:open="modelSelectOpen">
               <PopoverTrigger as-child>
@@ -52,7 +48,7 @@
                     size="xs"
                     >{{ t(`model.tags.${tag}`) }}</Badge
                   >
-                  <Icon icon="lucide:chevron-right" class="w-4 h-4 text-muted-foreground" />
+                  <Icon icon="lucide:chevron-right" class="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" class="p-0 w-80">
@@ -62,7 +58,7 @@
             <Popover v-model:open="settingsPopoverOpen" @update:open="handleSettingsPopoverUpdate">
               <PopoverTrigger as-child>
                 <Button
-                  class="w-7 h-full rounded-none border-none shadow-none hover:bg-accent text-muted-foreground dark:hover:text-primary-foreground transition-all duration-300"
+                  class="w-7 h-full rounded-none border-none shadow-none transition-all duration-300"
                   :class="{
                     'w-0 opacity-0 p-0 overflow-hidden': !showSettingsButton && !isHovering,
                     'w-7 opacity-100': showSettingsButton || isHovering
@@ -85,7 +81,7 @@
                 />
               </PopoverContent>
             </Popover>
-          </span>
+          </div>
         </template>
       </ChatInput>
       <div class="h-12"></div>

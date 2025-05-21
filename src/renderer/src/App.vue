@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
-import AppBar from './components/AppBar.vue'
-import SideBar from './components/SideBar.vue'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
-import ArtifactDialog from './components/artifacts/ArtifactDialog.vue'
 import SelectedTextContextMenu from './components/message/SelectedTextContextMenu.vue'
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
@@ -13,6 +10,7 @@ import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
 import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
 import { useSettingsStore } from '@/stores/settings'
+import { useThemeStore } from '@/stores/theme'
 import TranslatePopup from '@/components/popup/TranslatePopup.vue'
 
 const route = useRoute()
@@ -21,12 +19,15 @@ const artifactStore = useArtifactStore()
 const chatStore = useChatStore()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
+const themeStore = useThemeStore()
 
 // 错误通知队列及当前正在显示的错误
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
 const currentErrorId = ref<string | null>(null)
 const errorDisplayTimer = ref<number | null>(null)
 
+const isMacOS = ref(false)
+const devicePresenter = usePresenter('devicePresenter')
 // 监听主题和字体大小变化，直接更新 body class
 watch(
   [() => settingsStore.theme, () => settingsStore.fontSizeClass],
@@ -39,6 +40,7 @@ watch(
     }
     document.documentElement.classList.add(newTheme)
     document.documentElement.classList.add(newFontSizeClass)
+    console.log('newTheme', themeStore.themeMode)
   },
   { immediate: false } // 初始化在 onMounted 中处理
 )
@@ -163,6 +165,9 @@ const handleGoSettings = () => {
 getInitComplete()
 
 onMounted(() => {
+  devicePresenter.getDeviceInfo().then((deviceInfo) => {
+    isMacOS.value = deviceInfo.platform === 'darwin'
+  })
   // 设置初始 body class
   document.body.classList.add(settingsStore.theme)
   document.body.classList.add(settingsStore.fontSizeClass)
@@ -186,6 +191,11 @@ onMounted(() => {
   })
 
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CREATE_NEW_CONVERSATION, () => {
+    // 检查当前路由是否为聊天页面
+    const currentRoute = router.currentRoute.value
+    if (currentRoute.name !== 'chat') {
+      return
+    }
     handleCreateNewConversation()
   })
 
@@ -239,7 +249,7 @@ onMounted(() => {
 
   // 监听当前对话的变化
   watch(
-    () => chatStore.activeThreadId,
+    () => chatStore.getActiveThreadId(),
     () => {
       // 当切换对话时关闭 artifacts 页面
       artifactStore.hideArtifact()
@@ -272,28 +282,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen">
-    <AppBar />
-    <div class="flex flex-row h-0 flex-grow relative overflow-hidden">
-      <!-- 侧边导航栏 -->
-      <SideBar
-        v-show="route.name !== 'welcome'"
-        v-model:model-value="activeTab"
-        class="h-full z-10"
-      />
-
+  <div class="flex flex-col h-screen bg-container">
+    <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]">
       <!-- 主内容区域 -->
-      <div
-        :class="{
-          'flex-1 w-0 h-full transition-all duration-200': true,
-          'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'chat'
-        }"
-      >
-        <RouterView />
-      </div>
 
-      <!-- Artifacts 预览区域 -->
-      <ArtifactDialog />
+      <RouterView />
     </div>
     <!-- 全局更新弹窗 -->
     <UpdateDialog />

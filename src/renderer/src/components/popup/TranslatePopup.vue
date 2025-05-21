@@ -7,7 +7,10 @@
       class="fixed z-50 w-[500px] bg-background border rounded-lg shadow-lg"
       :style="{ top: position.y + 'px', left: position.x + 'px' }"
     >
-      <div class="flex items-center justify-between p-4 border-b cursor-move" @mousedown="startDrag">
+      <div
+        class="flex items-center justify-between p-4 border-b cursor-move"
+        @mousedown="startDrag"
+      >
         <h3 class="text-lg font-semibold">{{ t('contextMenu.translate.title') }}</h3>
         <Button variant="ghost" size="icon" @click="close">
           <Icon icon="lucide:x" class="h-4 w-4" />
@@ -19,7 +22,10 @@
         </div>
         <div class="h-px bg-border my-2"></div>
         <div>
-          <div v-if="isTranslating" class="flex items-center gap-2 p-2 bg-muted text-sm text-muted-foreground">
+          <div
+            v-if="isTranslating"
+            class="flex items-center gap-2 p-2 bg-muted text-sm text-muted-foreground"
+          >
             <Icon icon="lucide:loader-2" class="animate-spin w-4 h-4" />
             <span>{{ t('common.loading') }}</span>
           </div>
@@ -102,7 +108,7 @@ const close = () => {
 const handleTranslateRequest = async (event: Event) => {
   const customEvent = event as CustomEvent<{ text: string; x?: number; y?: number }>
   const { text: newText, x, y } = customEvent.detail
-  
+
   text.value = newText
   if (typeof x === 'number' && typeof y === 'number') {
     const posX = x
@@ -115,13 +121,16 @@ const handleTranslateRequest = async (event: Event) => {
       position.value.x = getMaxX() - POPUP_WIDTH
     }
   }
-  
+
   isOpen.value = true
   isTranslating.value = true
   translatedText.value = ''
 
   try {
-    const result = await (threadPresenter as IThreadPresenter).translateText(newText)
+    const result = await (threadPresenter as IThreadPresenter).translateText(
+      newText,
+      window.api.getWebContentsId()
+    )
     translatedText.value = result
   } catch (error) {
     translatedText.value = t('contextMenu.translate.error')
@@ -147,4 +156,4 @@ onUnmounted(() => {
 .cursor-move {
   cursor: move;
 }
-</style> 
+</style>

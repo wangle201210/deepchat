@@ -1,79 +1,43 @@
 <template>
   <div class="w-full h-full relative min-h-0">
-    <div
-      ref="messagesContainer"
-      class="relative flex-1 overflow-y-auto scroll-smooth w-full h-full"
-      @scroll="handleScroll"
-    >
-      <div
-        ref="messageList"
-        class="w-full max-w-full break-all xl:max-w-4xl mx-auto transition-opacity duration-300"
-        :class="{ 'opacity-0': !visible }"
-      >
+    <div ref="messagesContainer" class="relative flex-1 overflow-y-auto scroll-smooth w-full h-full"
+      @scroll="handleScroll">
+      <div ref="messageList" class="w-full max-w-full break-all xl:max-w-4xl mx-auto transition-opacity duration-300"
+        :class="{ 'opacity-0': !visible }">
         <template v-for="(msg, index) in messages" :key="msg.id">
-          <MessageItemAssistant
-            v-if="msg.role === 'assistant'"
-            :key="index"
-            :ref="setAssistantRef(index)"
-            :is-dark="themeStore.isDark"
-            :message="msg as AssistantMessage"
-          />
-          <MessageItemUser
-            v-if="msg.role === 'user'"
-            :key="index"
-            :message="msg as UserMessage"
-            @retry="handleRetry(index)"
-          />
+          <MessageItemAssistant v-if="msg.role === 'assistant'" :key="index" :ref="setAssistantRef(index)"
+            :is-dark="themeStore.isDark" :message="msg as AssistantMessage" />
+          <MessageItemUser v-if="msg.role === 'user'" :key="index" :message="msg as UserMessage"
+            @retry="handleRetry(index)" />
         </template>
       </div>
       <div ref="scrollAnchor" class="h-8" />
     </div>
     <div v-if="showCancelButton" class="absolute bottom-2 left-1/2 -translate-x-1/2">
       <Button variant="outline" size="sm" class="rounded-lg" @click="handleCancel">
-        <Icon
-          icon="lucide:square"
-          class="w-6 h-6 bg-red-500 p-1 text-primary-foreground rounded-full"
-        />
+        <Icon icon="lucide:square" class="w-6 h-6 bg-red-500 p-1 text-primary-foreground rounded-full" />
         <span class="">{{ t('common.cancel') }}</span>
       </Button>
     </div>
-    <div
-      v-else
-      class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center"
-      :class="[aboveThreshold ? 'w-36' : ' w-24']"
-      :style="{
+    <div v-else class="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center"
+      :class="[aboveThreshold ? 'w-36' : ' w-24']" :style="{
         transition: 'width 300ms ease-in-out'
-      }"
-    >
+      }">
       <Button variant="outline" size="sm" class="rounded-lg shrink-0" @click="createNewThread">
         <Icon icon="lucide:plus" class="w-6 h-6 text-muted-foreground" />
         <span class="">{{ t('common.newChat') }}</span>
       </Button>
-      <transition
-        enter-active-class="transition-all duration-300 ease-out"
-        enter-from-class="opacity-0 translate-y-2"
-        enter-to-class="opacity-100 translate-y-0"
-        leave-active-class="transition-all duration-300 ease-in"
-        leave-from-class="opacity-100 translate-y-0"
-        leave-to-class="opacity-0 translate-y-2"
-      >
-        <Button
-          v-if="aboveThreshold"
-          variant="outline"
-          size="icon"
-          class="w-8 h-8 ml-2 shrink-0 rounded-lg"
-          @click="scrollToBottom"
-        >
+      <transition enter-active-class="transition-all duration-300 ease-out" enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0" leave-active-class="transition-all duration-300 ease-in"
+        leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-2">
+        <Button v-if="aboveThreshold" variant="outline" size="icon" class="w-8 h-8 ml-2 shrink-0 rounded-lg"
+          @click="scrollToBottom">
           <Icon icon="lucide:arrow-down" class="w-5 h-5 text-muted-foreground" />
         </Button>
       </transition>
     </div>
-    <ReferencePreview
-      class="pointer-events-none"
-      :show="referenceStore.showPreview"
-      :content="referenceStore.currentReference"
-      :rect="referenceStore.previewRect"
-    />
+    <ReferencePreview class="pointer-events-none" :show="referenceStore.showPreview"
+      :content="referenceStore.currentReference" :rect="referenceStore.previewRect" />
   </div>
 </template>
 
@@ -153,12 +117,12 @@ const handleScroll = useDebounceFn((event) => {
 }, 100)
 
 const showCancelButton = computed(() => {
-  return chatStore.generatingThreadIds.has(chatStore.activeThreadId ?? '')
+  return chatStore.generatingThreadIds.has(chatStore.getActiveThreadId() ?? '')
 })
 
 const handleCancel = () => {
-  if (!chatStore.activeThreadId) return
-  chatStore.cancelGenerating(chatStore.activeThreadId)
+  if (!chatStore.getActiveThreadId()) return
+  chatStore.cancelGenerating(chatStore.getActiveThreadId()!)
 }
 
 // Handle retry event from MessageItemUser

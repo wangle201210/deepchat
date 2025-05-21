@@ -1,77 +1,33 @@
 <template>
-  <div
-    ref="messageNode"
-    :class="['flex flex-row py-4 pl-4 pr-11 group gap-2 w-full', 'justify-start']"
-  >
-    <ModelIcon
-      :model-id="message.model_id"
-      custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
-      :alt="message.role"
-    />
+  <div ref="messageNode" :class="['flex flex-row py-4 pl-4 pr-11 group gap-2 w-full', 'justify-start']">
+    <ModelIcon :model-id="message.model_id" custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
+      :alt="message.role" />
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
-      <div
-        v-if="currentContent.length === 0"
-        class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
-      >
+      <div v-if="currentContent.length === 0" class="flex flex-row items-center gap-2 text-xs text-muted-foreground">
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
-          <MessageBlockContent
-            v-if="block.type === 'content'"
-            :block="block"
-            :message-id="message.id"
-            :thread-id="currentThreadId"
-            :is-search-result="isSearchResult"
-          />
-          <MessageBlockThink
-            v-else-if="block.type === 'reasoning_content'"
-            :block="block"
-            :usage="message.usage"
-          />
-          <MessageBlockSearch
-            v-else-if="block.type === 'search'"
-            :message-id="message.id"
-            :block="block"
-          />
-          <MessageBlockToolCall
-            v-else-if="block.type === 'tool_call'"
-            :block="block"
-            :message-id="message.id"
-            :thread-id="currentThreadId"
-          />
-          <MessageBlockAction
-            v-else-if="block.type === 'action'"
-            :message-id="message.id"
-            :conversation-id="currentThreadId"
-            :block="block"
-          />
-          <MessageBlockImage
-            v-else-if="block.type === 'image'"
-            :block="block"
-            :message-id="message.id"
-            :thread-id="currentThreadId"
-          />
+          <MessageBlockContent v-if="block.type === 'content'" :block="block" :message-id="message.id"
+            :thread-id="currentThreadId" :is-search-result="isSearchResult" />
+          <MessageBlockThink v-else-if="block.type === 'reasoning_content'" :block="block" :usage="message.usage" />
+          <MessageBlockSearch v-else-if="block.type === 'search'" :message-id="message.id" :block="block" />
+          <MessageBlockToolCall v-else-if="block.type === 'tool_call'" :block="block" :message-id="message.id"
+            :thread-id="currentThreadId" />
+          <MessageBlockAction v-else-if="block.type === 'action'" :message-id="message.id"
+            :conversation-id="currentThreadId" :block="block" />
+          <MessageBlockImage v-else-if="block.type === 'image'" :block="block" :message-id="message.id"
+            :thread-id="currentThreadId" />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </template>
       </div>
-      <MessageToolbar
-        :loading="message.status === 'pending'"
-        :usage="message.usage"
-        :is-assistant="true"
-        :current-variant-index="currentVariantIndex"
-        :total-variants="totalVariants"
-        :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
-        @retry="handleAction('retry')"
-        @delete="handleAction('delete')"
-        @copy="handleAction('copy')"
-        @copyImage="handleAction('copyImage')"
-        @prev="handleAction('prev')"
-        @next="handleAction('next')"
-        @fork="handleAction('fork')"
-      />
+      <MessageToolbar :loading="message.status === 'pending'" :usage="message.usage" :is-assistant="true"
+        :current-variant-index="currentVariantIndex" :total-variants="totalVariants"
+        :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)" @retry="handleAction('retry')"
+        @delete="handleAction('delete')" @copy="handleAction('copy')" @copyImage="handleAction('copyImage')"
+        @prev="handleAction('prev')" @next="handleAction('next')" @fork="handleAction('fork')" />
     </div>
   </div>
 
@@ -142,13 +98,13 @@ const { t } = useI18n()
 const messageNode = useTemplateRef('messageNode')
 
 // 获取当前会话ID
-const currentThreadId = computed(() => chatStore.activeThreadId || '')
+const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
 
 // 计算当前消息的所有变体（包括缓存中的）
 const allVariants = computed(() => {
   const messageVariants = props.message.variants || []
   const combinedVariants = messageVariants.map((variant) => {
-    const cachedVariant = Array.from(chatStore.generatingMessagesCache.values()).find((cached) => {
+    const cachedVariant = Array.from(chatStore.getGeneratingMessagesCache().values()).find((cached) => {
       const msg = cached.message as AssistantMessage
       return msg.is_variant && msg.id === variant.id
     })
