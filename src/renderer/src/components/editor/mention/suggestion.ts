@@ -89,7 +89,7 @@ export default {
           query: props.query
         })
 
-        if (!props.clientRect) {
+        if (!props.clientRect || !popup?.[0]) {
           return
         }
 
@@ -99,6 +99,10 @@ export default {
       },
 
       onKeyDown(props) {
+        if (!popup?.[0]) {
+          return false
+        }
+
         if (props.event.key === 'Escape') {
           popup[0].hide()
 
@@ -118,7 +122,9 @@ export default {
       },
 
       onExit() {
-        popup[0].destroy()
+        if (popup?.[0]) {
+          popup[0].destroy()
+        }
         component.destroy()
       }
     }

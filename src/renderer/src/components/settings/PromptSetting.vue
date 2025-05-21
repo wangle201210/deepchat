@@ -25,25 +25,42 @@
         <div v-if="prompts.length === 0" class="text-center text-muted-foreground py-8">
           {{ t('promptSetting.noPrompt') }}
         </div>
-        <div v-for="(prompt, idx) in prompts" :key="prompt.id" class="flex flex-row items-center gap-2 bg-card rounded-lg p-3 border border-border">
+        <div
+          v-for="prompt in prompts"
+          :key="prompt.id"
+          class="flex flex-row items-center gap-2 bg-card rounded-lg p-3 border border-border"
+        >
           <div class="flex-1">
             <div class="font-medium text-base">{{ prompt.name }}</div>
             <div class="text-xs text-muted-foreground mt-1">{{ prompt.description }}</div>
             <div class="relative">
-              <div :class="['text-xs mt-1 whitespace-pre-line', !prompt.showMore && 'line-clamp-3']">{{ prompt.content }}</div>
-              <Button 
-                v-if="prompt.content.split('\n').length > 3" 
-                variant="ghost" 
-                size="sm" 
-                class="text-xs text-primary mt-1"
-                @click="toggleShowMore(idx)"
+              <div
+                :class="[
+                  'text-xs mt-1 whitespace-pre-line',
+                  !isExpanded(prompt.id) && 'line-clamp-3'
+                ]"
               >
-                {{ prompt.showMore ? t('promptSetting.showLess') : t('promptSetting.showMore') }}
+                {{ prompt.content }}
+              </div>
+              <Button
+                v-if="prompt.content.split('\n').length > 3"
+                variant="ghost"
+                size="sm"
+                class="text-xs text-primary mt-1"
+                @click="toggleShowMore(prompt.id)"
+              >
+                {{
+                  isExpanded(prompt.id) ? t('promptSetting.showLess') : t('promptSetting.showMore')
+                }}
               </Button>
             </div>
           </div>
-          <Button variant="outline" size="icon" @click="editPrompt(idx)"><Icon icon="lucide:pencil" class="w-4 h-4" /></Button>
-          <Button variant="destructive" size="icon" @click="deletePrompt(idx)"><Icon icon="lucide:trash-2" class="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" @click="editPrompt(prompts.indexOf(prompt))"
+            ><Icon icon="lucide:pencil" class="w-4 h-4"
+          /></Button>
+          <Button variant="destructive" size="icon" @click="deletePrompt(prompts.indexOf(prompt))"
+            ><Icon icon="lucide:trash-2" class="w-4 h-4"
+          /></Button>
         </div>
       </div>
     </div>
@@ -51,7 +68,9 @@
     <Dialog v-model:open="openAddDialog">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{{ editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle') }}</DialogTitle>
+          <DialogTitle>{{
+            editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle')
+          }}</DialogTitle>
         </DialogHeader>
         <div class="space-y-3 py-2">
           <div>
@@ -60,16 +79,25 @@
           </div>
           <div>
             <Label>{{ t('promptSetting.description') }}</Label>
-            <Input v-model="form.description" :placeholder="t('promptSetting.descriptionPlaceholder')" />
+            <Input
+              v-model="form.description"
+              :placeholder="t('promptSetting.descriptionPlaceholder')"
+            />
           </div>
           <div>
             <Label>{{ t('promptSetting.content') }}</Label>
-            <textarea v-model="form.content" class="w-full min-h-24 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono" :placeholder="t('promptSetting.contentPlaceholder')"></textarea>
+            <textarea
+              v-model="form.content"
+              class="w-full min-h-24 rounded-md border border-input bg-transparent px-2 py-1.5 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono"
+              :placeholder="t('promptSetting.contentPlaceholder')"
+            ></textarea>
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" @click="openAddDialog = false">{{ t('common.cancel') }}</Button>
-          <Button :disabled="!form.name || !form.content" @click="savePrompt">{{ t('common.confirm') }}</Button>
+          <Button :disabled="!form.name || !form.content" @click="savePrompt">{{
+            t('common.confirm')
+          }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -77,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -92,21 +120,23 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toast'
+import { usePromptsStore } from '@/stores/prompts'
 
 const { t } = useI18n()
 const { toast } = useToast()
+const promptsStore = usePromptsStore()
 
 interface PromptItem {
   id: string
   name: string
   description: string
   content: string
-  showMore?: boolean
 }
 
 const prompts = ref<PromptItem[]>([])
+const expandedPrompts = ref<Set<string>>(new Set())
 const openAddDialog = ref(false)
-const editingIdx = ref<number|null>(null)
+const editingIdx = ref<number | null>(null)
 const form = reactive<PromptItem>({
   id: '',
   name: '',
@@ -114,17 +144,19 @@ const form = reactive<PromptItem>({
   content: ''
 })
 
-const loadPrompts = () => {
-  const data = localStorage.getItem('custom-prompts')
-  prompts.value = data ? JSON.parse(data) : []
-  // 初始化 showMore 状态
-  prompts.value.forEach(prompt => {
-    prompt.showMore = false
-  })
+const loadPrompts = async () => {
+  await promptsStore.loadPrompts()
+  prompts.value = promptsStore.prompts as PromptItem[]
 }
 
-const savePrompts = () => {
-  localStorage.setItem('custom-prompts', JSON.stringify(prompts.value))
+const isExpanded = (promptId: string) => expandedPrompts.value.has(promptId)
+
+const toggleShowMore = (promptId: string) => {
+  if (expandedPrompts.value.has(promptId)) {
+    expandedPrompts.value.delete(promptId)
+  } else {
+    expandedPrompts.value.add(promptId)
+  }
 }
 
 const resetForm = () => {
@@ -135,19 +167,19 @@ const resetForm = () => {
   editingIdx.value = null
 }
 
-const savePrompt = () => {
+const savePrompt = async () => {
   if (!form.name || !form.content) return
   if (editingIdx.value === null) {
     // 新增
-    prompts.value.push({ ...form, id: Date.now().toString() })
+    const newPrompt = { ...form, id: Date.now().toString() }
+    await promptsStore.addPrompt(newPrompt)
   } else {
     // 编辑
-    prompts.value[editingIdx.value] = { ...form }
+    await promptsStore.updatePrompt(form.id, form)
   }
-  savePrompts()
   openAddDialog.value = false
   resetForm()
-  loadPrompts()
+  await loadPrompts()
 }
 
 const editPrompt = (idx: number) => {
@@ -160,19 +192,19 @@ const editPrompt = (idx: number) => {
   openAddDialog.value = true
 }
 
-const deletePrompt = (idx: number) => {
-  prompts.value.splice(idx, 1)
-  savePrompts()
-  loadPrompts()
-}
-
-const toggleShowMore = (idx: number) => {
-  prompts.value[idx].showMore = !prompts.value[idx].showMore
+const deletePrompt = async (idx: number) => {
+  const prompt = prompts.value[idx]
+  await promptsStore.deletePrompt(prompt.id)
+  await loadPrompts()
 }
 
 const exportPrompts = () => {
   try {
-    const data = JSON.stringify(prompts.value, null, 2)
+    const data = JSON.stringify(
+      prompts.value.map((prompt) => toRaw(prompt)),
+      null,
+      2
+    )
     const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -198,17 +230,17 @@ const importPrompts = () => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'
-  input.onchange = (e) => {
+  input.onchange = async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         try {
           const content = event.target?.result as string
           const importedPrompts = JSON.parse(content)
           if (Array.isArray(importedPrompts)) {
-            prompts.value = importedPrompts
-            savePrompts()
+            await promptsStore.savePrompts(importedPrompts)
+            await loadPrompts()
             toast({
               title: t('promptSetting.importSuccess'),
               variant: 'default'
@@ -229,7 +261,7 @@ const importPrompts = () => {
   input.click()
 }
 
-onMounted(() => {
-  loadPrompts()
+onMounted(async () => {
+  await loadPrompts()
 })
-</script> 
+</script>
