@@ -42,7 +42,15 @@ export interface Resource {
   blob?: string
 }
 export interface Prompt {
+  id: string
   name: string
+  description: string
+  content: string
+  parameters?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
 }
 export interface PromptListEntry {

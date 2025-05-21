@@ -92,6 +92,56 @@
               :placeholder="t('promptSetting.contentPlaceholder')"
             ></textarea>
           </div>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <Label>{{ t('promptSetting.parameters') }}</Label>
+              <Button variant="outline" size="sm" @click="addParameter">
+                <Icon icon="lucide:plus" class="w-4 h-4 mr-1" />
+                {{ t('promptSetting.addParameter') }}
+              </Button>
+            </div>
+            <div v-if="form.parameters?.length" class="space-y-2">
+              <div
+                v-for="(param, index) in form.parameters"
+                :key="index"
+                class="flex items-start gap-2 p-2 border rounded-md"
+              >
+                <div class="flex-1 space-y-2">
+                  <div class="flex items-center gap-2">
+                    <Input
+                      v-model="param.name"
+                      :placeholder="t('promptSetting.parameterNamePlaceholder')"
+                      class="flex-1"
+                    />
+                    <div class="flex items-center gap-1">
+                      <Checkbox
+                        :id="'required-' + index"
+                        :checked="param.required"
+                        @update:checked="(value) => param.required = value"
+                      />
+                      <Label :for="'required-' + index" class="text-sm">
+                        {{ t('promptSetting.required') }}
+                      </Label>
+                    </div>
+                  </div>
+                  <Input
+                    v-model="param.description"
+                    :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  @click="removeParameter(index)"
+                >
+                  <Icon icon="lucide:trash-2" class="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div v-else class="text-center text-muted-foreground py-4">
+              {{ t('promptSetting.noParameters') }}
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" @click="openAddDialog = false">{{ t('common.cancel') }}</Button>
@@ -112,6 +162,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -131,6 +182,11 @@ interface PromptItem {
   name: string
   description: string
   content: string
+  parameters?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
 }
 
 const prompts = ref<PromptItem[]>([])
@@ -141,7 +197,8 @@ const form = reactive<PromptItem>({
   id: '',
   name: '',
   description: '',
-  content: ''
+  content: '',
+  parameters: []
 })
 
 const loadPrompts = async () => {
@@ -159,11 +216,27 @@ const toggleShowMore = (promptId: string) => {
   }
 }
 
+const addParameter = () => {
+  if (!form.parameters) {
+    form.parameters = []
+  }
+  form.parameters.push({
+    name: '',
+    description: '',
+    required: true
+  })
+}
+
+const removeParameter = (index: number) => {
+  form.parameters?.splice(index, 1)
+}
+
 const resetForm = () => {
   form.id = ''
   form.name = ''
   form.description = ''
   form.content = ''
+  form.parameters = []
   editingIdx.value = null
 }
 
@@ -188,6 +261,17 @@ const editPrompt = (idx: number) => {
   form.name = p.name
   form.description = p.description
   form.content = p.content
+  if (p.parameters) {
+    form.parameters = p.parameters.map(param => {
+      return {
+        name: param.name,
+        description: param.description,
+        required: !!param.required
+      }
+    })
+  } else {
+    form.parameters = []
+  }
   editingIdx.value = idx
   openAddDialog.value = true
 }

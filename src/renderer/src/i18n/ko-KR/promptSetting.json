@@ -8,7 +8,7 @@
   "descriptionPlaceholder": "설명을 입력하세요 (선택사항)",
   "content": "내용",
   "contentPlaceholder": "프롬프트 내용을 입력하세요",
-  "noPrompt": "프롬프트가 없습니다. 오른쪽 상단의 추가 버튼을 클릭하세요",
+  "noPrompt": "프롬프트가 없습니다. 오른쪽 상단의 + 버튼을 클릭하여 추가하세요",
   "showMore": "더 보기",
   "showLess": "접기",
   "export": "내보내기",
@@ -16,5 +16,11 @@
   "exportSuccess": "내보내기 성공",
   "exportFailed": "내보내기 실패",
   "importSuccess": "가져오기 성공",
-  "importFailed": "가져오기 실패"
+  "importFailed": "가져오기 실패",
+  "parameters": "매개변수",
+  "addParameter": "매개변수 추가",
+  "noParameters": "매개변수 없음",
+  "parameterNamePlaceholder": "매개변수 이름을 입력하세요",
+  "parameterDescriptionPlaceholder": "매개변수 설명을 입력하세요",
+  "required": "필수"
 } 

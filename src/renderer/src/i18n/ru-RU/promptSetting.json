@@ -8,13 +8,19 @@
   "descriptionPlaceholder": "Введите описание (необязательно)",
   "content": "Содержание",
   "contentPlaceholder": "Введите содержание промпта",
-  "noPrompt": "Нет промптов, нажмите кнопку добавления в правом верхнем углу",
+  "noPrompt": "Нет промптов, нажмите кнопку + в правом верхнем углу для добавления",
   "showMore": "Показать больше",
-  "showLess": "Скрыть",
+  "showLess": "Показать меньше",
   "export": "Экспорт",
   "import": "Импорт",
   "exportSuccess": "Экспорт успешен",
   "exportFailed": "Ошибка экспорта",
   "importSuccess": "Импорт успешен",
-  "importFailed": "Ошибка импорта"
+  "importFailed": "Ошибка импорта",
+  "parameters": "Параметры",
+  "addParameter": "Добавить параметр",
+  "noParameters": "Нет параметров",
+  "parameterNamePlaceholder": "Введите название параметра",
+  "parameterDescriptionPlaceholder": "Введите описание параметра",
+  "required": "Обязательно"
 } 

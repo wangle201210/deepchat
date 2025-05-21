@@ -52,6 +52,11 @@ interface Prompt {
   name: string
   description: string
   content: string
+  parameters?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
 }
 
 const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({
