@@ -44,6 +44,126 @@ const safetySettingKeys = Object.keys(keyToHarmCategoryMap)
 export class GeminiProvider extends BaseLLMProvider {
   private genAI: GoogleGenerativeAI
 
+  // 定义静态的模型配置
+  private static readonly GEMINI_MODELS: MODEL_META[] = [
+    {
+      id: 'models/gemini-2.5-flash-preview-05-20',
+      name: 'Gemini 2.5 Flash Preview 0520',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 65536,
+      vision: true,
+      functionCall: true,
+      reasoning: true,
+      description: 'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 05-20）'
+    },
+    {
+      id: 'gemini-2.5-pro-preview-05-06',
+      name: 'Gemini 2.5 Pro Preview 05-06',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 2048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
+    },
+    {
+      id: 'gemini-2.5-pro-exp-03-25',
+      name: 'Gemini 2.5 Pro Exp 03-25',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 2048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 2.5 Pro Exp 03-25 模型'
+    },
+    {
+      id: 'models/gemini-2.0-flash',
+      name: 'Gemini 2.0 Flash',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 2.0 Flash 模型'
+    },
+    {
+      id: 'models/gemini-2.0-flash-lite',
+      name: 'Gemini 2.0 Flash-Lite',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 2.0 Flash-Lite 模型（更轻量级）'
+    },
+    {
+      id: 'models/gemini-1.5-flash',
+      name: 'Gemini 1.5 Flash',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 1.5 Flash 模型（更快速、性价比更高）'
+    },
+    {
+      id: 'models/gemini-1.5-flash-8b',
+      name: 'Gemini 1.5 Flash-8B',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 1.5 Flash-8B 模型（8B 参数版本）'
+    },
+    {
+      id: 'models/gemini-1.5-pro',
+      name: 'Gemini 1.5 Pro',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 2097152,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false,
+      description: 'Gemini 1.5 Pro 模型（更强大、支持多模态）'
+    },
+    {
+      id: 'gemini-2.0-flash-exp-image-generation',
+      name: 'Gemini 2.0 Flash Exp Image Generation',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false
+    }
+  ]
+
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
     this.genAI = new GoogleGenerativeAI(this.provider.apiKey)
@@ -56,126 +176,11 @@ export class GeminiProvider extends BaseLLMProvider {
 
   // 实现BaseLLMProvider中的抽象方法fetchProviderModels
   protected async fetchProviderModels(): Promise<MODEL_META[]> {
-    // Gemini没有获取模型的API，返回硬编码的模型列表
-    return [
-      {
-        id: 'models/gemini-2.5-flash-preview-04-17',
-        name: 'Gemini 2.5 Flash Preview',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 1048576,
-        maxTokens: 65536,
-        vision: true,
-        functionCall: true,
-        reasoning: true,
-        description:
-          'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 04-17）'
-      },
-      {
-        id: 'gemini-2.5-pro-preview-05-06',
-        name: 'Gemini 2.5 Pro Preview 05-06',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 2048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
-      },
-      {
-        id: 'gemini-2.5-pro-exp-03-25',
-        name: 'Gemini 2.5 Pro Exp 03-25',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 2048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 2.5 Pro Exp 03-25 模型'
-      },
-      {
-        id: 'models/gemini-2.0-flash',
-        name: 'Gemini 2.0 Flash',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 1048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 2.0 Flash 模型'
-      },
-      {
-        id: 'models/gemini-2.0-flash-lite',
-        name: 'Gemini 2.0 Flash-Lite',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 1048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 2.0 Flash-Lite 模型（更轻量级）'
-      },
-      {
-        id: 'models/gemini-1.5-flash',
-        name: 'Gemini 1.5 Flash',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 1048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 1.5 Flash 模型（更快速、性价比更高）'
-      },
-      {
-        id: 'models/gemini-1.5-flash-8b',
-        name: 'Gemini 1.5 Flash-8B',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 1048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 1.5 Flash-8B 模型（8B 参数版本）'
-      },
-      {
-        id: 'models/gemini-1.5-pro',
-        name: 'Gemini 1.5 Pro',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 2097152,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false,
-        description: 'Gemini 1.5 Pro 模型（更强大、支持多模态）'
-      },
-      {
-        id: 'gemini-2.0-flash-exp-image-generation',
-        name: 'Gemini 2.0 Flash Exp Image Generation',
-        group: 'default',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 1048576,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false
-      }
-    ]
+    // 返回静态定义的模型列表，并设置正确的providerId
+    return GeminiProvider.GEMINI_MODELS.map((model) => ({
+      ...model,
+      providerId: this.provider.id
+    }))
   }
 
   // 实现BaseLLMProvider中的summaryTitles抽象方法
@@ -229,126 +234,11 @@ export class GeminiProvider extends BaseLLMProvider {
   protected async init() {
     if (this.provider.enable) {
       try {
-        // 更新 Gemini 模型列表为最新版本
-        this.models = [
-          {
-            id: 'models/gemini-2.5-flash-preview-04-17',
-            name: 'Gemini 2.5 Flash Preview 0417',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 1048576,
-            maxTokens: 65536,
-            vision: true,
-            functionCall: true,
-            reasoning: true,
-            description:
-              'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 04-17）'
-          },
-          {
-            id: 'gemini-2.5-pro-preview-05-06',
-            name: 'Gemini 2.5 Pro Preview 05-06',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 2048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
-          },
-          {
-            id: 'gemini-2.5-pro-exp-03-25',
-            name: 'Gemini 2.5 Pro Exp 03-25',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 2048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 2.5 Pro Exp 03-25 模型'
-          },
-          {
-            id: 'models/gemini-2.0-flash',
-            name: 'Gemini 2.0 Flash',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 1048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 2.0 Flash 模型'
-          },
-          {
-            id: 'models/gemini-2.0-flash-lite',
-            name: 'Gemini 2.0 Flash-Lite',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 1048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 2.0 Flash-Lite 模型（更轻量级）'
-          },
-          {
-            id: 'models/gemini-1.5-flash',
-            name: 'Gemini 1.5 Flash',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 1048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 1.5 Flash 模型（更快速、性价比更高）'
-          },
-          {
-            id: 'models/gemini-1.5-flash-8b',
-            name: 'Gemini 1.5 Flash-8B',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 1048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 1.5 Flash-8B 模型（8B 参数版本）'
-          },
-          {
-            id: 'models/gemini-1.5-pro',
-            name: 'Gemini 1.5 Pro',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 2097152,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false,
-            description: 'Gemini 1.5 Pro 模型（更强大、支持多模态）'
-          },
-          {
-            id: 'gemini-2.0-flash-exp-image-generation',
-            name: 'Gemini 2.0 Flash Exp Image Generation',
-            group: 'default',
-            providerId: this.provider.id,
-            isCustom: false,
-            contextLength: 1048576,
-            maxTokens: 8192,
-            vision: true,
-            functionCall: true,
-            reasoning: false
-          }
-        ]
+        // 使用静态定义的模型列表，并设置正确的providerId
+        this.models = GeminiProvider.GEMINI_MODELS.map((model) => ({
+          ...model,
+          providerId: this.provider.id
+        }))
         await this.autoEnableModelsIfNeeded()
         this.isInitialized = true
         console.info('Provider initialized successfully:', this.provider.name)

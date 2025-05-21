@@ -478,7 +478,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     requestParams.stream_options = { include_usage: true }
 
     // 防止qwen等某些模型以json形式输出结果正文
-    requestParams.response_format = { type: 'text' }
+    // grok系列模型和供应商不需要设置response_format
+    if (
+      !modelId.toLowerCase().includes('grok') &&
+      !this.provider.id.toLowerCase().includes('grok')
+    ) {
+      requestParams.response_format = { type: 'text' }
+    }
 
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) delete requestParams.temperature
