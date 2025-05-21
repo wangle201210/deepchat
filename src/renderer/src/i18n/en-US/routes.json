@@ -9,5 +9,6 @@
   "settings-about": "About",
   "settings-shortcut": "Shortcuts",
   "settings-display": "Display settings",
-  "settings-knowledge-base": "Knowledge Base"
+  "settings-knowledge-base": "Knowledge Base",
+  "settings-prompt": "Prompt Management"
 }
