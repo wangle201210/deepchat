@@ -1,34 +1,68 @@
 <template>
-  <div class="w-full max-w-5xl mx-auto" @dragenter.prevent="handleDragEnter" @dragover.prevent="handleDragOver"
-    @drop.prevent="handleDrop" @dragleave.prevent="handleDragLeave" @paste="handlePaste">
+  <div
+    class="w-full max-w-5xl mx-auto"
+    @dragenter.prevent="handleDragEnter"
+    @dragover.prevent="handleDragOver"
+    @drop.prevent="handleDrop"
+    @dragleave.prevent="handleDragLeave"
+    @paste="handlePaste"
+  >
     <TooltipProvider>
       <div
-        class="bg-card border border-border rounded-lg focus-within:border-primary p-2 flex flex-col gap-2 shadow-sm relative">
+        class="bg-card border border-border rounded-lg focus-within:border-primary p-2 flex flex-col gap-2 shadow-sm relative"
+      >
         <!-- {{  t('chat.input.fileArea') }} -->
         <div v-if="selectedFiles.length > 0">
-          <TransitionGroup name="file-list" tag="div" class="flex flex-wrap gap-1.5"
+          <TransitionGroup
+            name="file-list"
+            tag="div"
+            class="flex flex-wrap gap-1.5"
             enter-active-class="transition-all duration-300 ease-in-out"
-            leave-active-class="transition-all duration-300 ease-in-out" enter-from-class="opacity-0 -translate-y-2"
-            leave-to-class="opacity-0 -translate-y-2" move-class="transition-transform duration-300 ease-in-out">
-            <FileItem v-for="(file, idx) in selectedFiles" :key="file.metadata.fileName"
-              :file-name="file.metadata.fileName" :deletable="true" :mime-type="file.mimeType" :tokens="file.token"
-              :thumbnail="file.thumbnail" @click="previewFile(file.path)" @delete="deleteFile(idx)" />
+            leave-active-class="transition-all duration-300 ease-in-out"
+            enter-from-class="opacity-0 -translate-y-2"
+            leave-to-class="opacity-0 -translate-y-2"
+            move-class="transition-transform duration-300 ease-in-out"
+          >
+            <FileItem
+              v-for="(file, idx) in selectedFiles"
+              :key="file.metadata.fileName"
+              :file-name="file.metadata.fileName"
+              :deletable="true"
+              :mime-type="file.mimeType"
+              :tokens="file.token"
+              :thumbnail="file.thumbnail"
+              @click="previewFile(file.path)"
+              @delete="deleteFile(idx)"
+            />
           </TransitionGroup>
         </div>
         <!-- {{ t('chat.input.inputArea') }} -->
-        <editor-content :editor="editor" class="p-2 text-sm" @keydown.enter.exact="handleEditorEnter" />
+        <editor-content
+          :editor="editor"
+          class="p-2 text-sm"
+          @keydown.enter.exact="handleEditorEnter"
+        />
 
         <div class="flex items-center justify-between">
           <!-- {{ t('chat.input.functionSwitch') }} -->
           <div class="flex gap-1.5">
             <Tooltip>
               <TooltipTrigger>
-                <Button variant="outline" size="icon" class="w-7 h-7 text-xs rounded-lg text-muted-foreground"
-                  @click="openFilePicker">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  class="w-7 h-7 text-xs rounded-lg text-muted-foreground"
+                  @click="openFilePicker"
+                >
                   <Icon icon="lucide:paperclip" class="w-4 h-4" />
-                  <input ref="fileInput" type="file" class="hidden" multiple
+                  <input
+                    ref="fileInput"
+                    type="file"
+                    class="hidden"
+                    multiple
                     accept="application/json,application/javascript,text/plain,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet,application/vnd.ms-excel.sheet.binary.macroEnabled.12,application/vnd.apple.numbers,text/markdown,application/x-yaml,application/xml,application/typescript,text/typescript,text/x-typescript,application/x-typescript,application/x-sh,text/*,application/pdf,image/jpeg,image/jpg,image/png,image/gif,image/webp,image/bmp,image/*,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,text/html,text/css,application/xhtml+xml,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.cs,.go,.rb,.php,.rs,.swift,.kt,.scala,.pl,.lua,.sh,.json,.yaml,.yml,.xml,.html,.htm,.css,.md,audio/mp3,audio/wav,audio/mp4,audio/mpeg,.mp3,.wav,.m4a"
-                    @change="handleFileSelect" />
+                    @change="handleFileSelect"
+                  />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{{ t('chat.input.fileSelect') }}</TooltipContent>
@@ -39,17 +73,26 @@
                   class="search-engine-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-border transition-all duration-300"
                   :class="{
                     'border-primary': settings.webSearch
-                  }">
-                  <Button variant="outline" :class="[
-                    'flex w-7 border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full',
-                    settings.webSearch
-                      ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
-                      : 'text-muted-foreground'
-                  ]" size="icon" @click="onWebSearchClick">
+                  }"
+                >
+                  <Button
+                    variant="outline"
+                    :class="[
+                      'flex w-7 border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full',
+                      settings.webSearch
+                        ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
+                        : 'text-muted-foreground'
+                    ]"
+                    size="icon"
+                    @click="onWebSearchClick"
+                  >
                     <Icon icon="lucide:globe" class="w-4 h-4" />
                   </Button>
-                  <Select v-model="selectedSearchEngine" @update:model-value="onSearchEngineChange"
-                    @update:open="handleSelectOpen">
+                  <Select
+                    v-model="selectedSearchEngine"
+                    @update:model-value="onSearchEngineChange"
+                    @update:open="handleSelectOpen"
+                  >
                     <SelectTrigger
                       class="h-full rounded-none border-none shadow-none hover:bg-accent text-muted-foreground dark:hover:text-primary-foreground transition-all duration-300"
                       :class="{
@@ -57,13 +100,18 @@
                           !showSearchSettingsButton && !isSearchHovering && !isSelectOpen,
                         'w-24 max-w-28 px-2 opacity-100':
                           showSearchSettingsButton || isSearchHovering || isSelectOpen
-                      }">
+                      }"
+                    >
                       <div class="flex items-center gap-1">
                         <SelectValue class="text-xs font-bold truncate" />
                       </div>
                     </SelectTrigger>
                     <SelectContent align="start" class="w-64">
-                      <SelectItem v-for="engine in searchEngines" :key="engine.id" :value="engine.id">
+                      <SelectItem
+                        v-for="engine in searchEngines"
+                        :key="engine.id"
+                        :value="engine.id"
+                      >
                         {{ engine.name }}
                       </SelectItem>
                     </SelectContent>
@@ -78,20 +126,29 @@
             <slot name="addon-buttons"></slot>
           </div>
           <div class="flex items-center gap-2">
-            <div v-if="
-              contextLength &&
-              contextLength > 0 &&
-              currentContextLength / (contextLength ?? 1000) > 0.5
-            " class="text-xs text-muted-foreground" :class="[
-              currentContextLength / (contextLength ?? 1000) > 0.9 ? ' text-red-600' : '',
-              currentContextLength / (contextLength ?? 1000) > 0.8
-                ? ' text-yellow-600'
-                : 'text-muted-foreground'
-            ]">
+            <div
+              v-if="
+                contextLength &&
+                contextLength > 0 &&
+                currentContextLength / (contextLength ?? 1000) > 0.5
+              "
+              class="text-xs text-muted-foreground"
+              :class="[
+                currentContextLength / (contextLength ?? 1000) > 0.9 ? ' text-red-600' : '',
+                currentContextLength / (contextLength ?? 1000) > 0.8
+                  ? ' text-yellow-600'
+                  : 'text-muted-foreground'
+              ]"
+            >
               {{ currentContextLengthText }}
             </div>
-            <Button variant="default" size="icon" class="w-7 h-7 text-xs rounded-lg" :disabled="disabledSend"
-              @click="emitSend">
+            <Button
+              variant="default"
+              size="icon"
+              class="w-7 h-7 text-xs rounded-lg"
+              :disabled="disabledSend"
+              @click="emitSend"
+            >
               <Icon icon="lucide:arrow-up" class="w-4 h-4" />
             </Button>
           </div>
@@ -346,7 +403,7 @@ const handleFileSelect = async (e: Event) => {
   }
   // Reset the input
   if (e.target) {
-    ; (e.target as HTMLInputElement).value = ''
+    ;(e.target as HTMLInputElement).value = ''
   }
 }
 
@@ -649,6 +706,7 @@ onMounted(() => {
   }
 
   // 监听 Ask AI 事件
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   window.addEventListener('context-menu-ask-ai', (e: any) => {
     inputText.value = e.detail
     editor.commands.setContent(e.detail)
