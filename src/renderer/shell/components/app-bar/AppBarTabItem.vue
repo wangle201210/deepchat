@@ -6,7 +6,7 @@
     :class="[
       active
         ? 'bg-background shadow-sm'
-        : 'bg-transparent text-muted-foreground hover:bg-zinc-500/20 active:bg-zinc-900/20'
+        : 'bg-transparent text-secondary-foreground hover:bg-zinc-500/20 active:bg-zinc-900/20'
     ]"
     @dragstart="onDragStart"
     @click="onClick"

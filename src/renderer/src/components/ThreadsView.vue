@@ -5,7 +5,7 @@
       <Button
         variant="outline"
         size="sm"
-        class="w-full text-xs text-muted-foreground justify-start gap-2"
+        class="w-full text-xs justify-start gap-2 h-7"
         @click="createNewThread"
       >
         <Icon icon="lucide:pen-line" class="h-4 w-4" />

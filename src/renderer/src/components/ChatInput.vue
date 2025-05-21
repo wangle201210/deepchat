@@ -51,7 +51,7 @@
                 <Button
                   variant="outline"
                   size="icon"
-                  class="w-7 h-7 text-xs rounded-lg text-muted-foreground"
+                  class="w-7 h-7 text-xs rounded-lg"
                   @click="openFilePicker"
                 >
                   <Icon icon="lucide:paperclip" class="w-4 h-4" />
@@ -81,7 +81,7 @@
                       'flex w-7 border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full',
                       settings.webSearch
                         ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
-                        : 'text-muted-foreground'
+                        : ''
                     ]"
                     size="icon"
                     @click="onWebSearchClick"
@@ -710,6 +710,7 @@ onMounted(() => {
   }
 
   // 监听 Ask AI 事件
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   window.addEventListener('context-menu-ask-ai', (e: any) => {
     inputText.value = e.detail
     editor.commands.setContent(e.detail)

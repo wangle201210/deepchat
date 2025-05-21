@@ -46,7 +46,7 @@
           />
         </div>
       </div>
-      <transition
+      <!-- <transition
         enter-active-class="transition-all duration-200"
         enter-from-class="opacity-0 -translate-y-2"
         enter-to-class="opacity-100 translate-y-0"
@@ -64,7 +64,8 @@
           </div>
         </div>
         <div v-else class="h-0"></div>
-      </transition>
+      </transition> -->
+      <div class="h-0"></div>
     </div>
 
     <!-- 详细内容区域 -->
@@ -114,7 +115,7 @@
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { AssistantMessageBlock } from '@shared/chat'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { JsonObject } from '@/components/json-viewer'
 
 // 创建一个安全的翻译函数
@@ -192,18 +193,18 @@ const parseJson = (jsonStr: string) => {
   }
 }
 
-const simpleIn = computed(() => {
-  if (!props.block.tool_call) return false
-  if (props.block.tool_call.params) {
-    const params = parseJson(props.block.tool_call.params)
-    const strArr: string[] = []
-    for (const key in params) {
-      strArr.push(`${params[key]}`)
-    }
-    return strArr.join(', ')
-  }
-  return ''
-})
+// const simpleIn = computed(() => {
+//   if (!props.block.tool_call) return false
+//   if (props.block.tool_call.params) {
+//     const params = parseJson(props.block.tool_call.params)
+//     const strArr: string[] = []
+//     for (const key in params) {
+//       strArr.push(`${params[key]}`)
+//     }
+//     return strArr.join(', ')
+//   }
+//   return ''
+// })
 </script>
 
 <style scoped>

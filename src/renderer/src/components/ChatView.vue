@@ -1,13 +1,20 @@
 <template>
   <div class="flex flex-col overflow-hidden h-0 flex-1">
     <!-- 消息列表区域 -->
-    <MessageList :key="chatStore.getActiveThreadId() ?? 'default'" ref="messageList" :messages="chatStore.getMessages()"
-      @scroll-bottom="scrollToBottom" />
+    <MessageList
+      :key="chatStore.getActiveThreadId() ?? 'default'"
+      ref="messageList"
+      :messages="chatStore.getMessages()"
+      @scroll-bottom="scrollToBottom"
+    />
 
     <!-- 输入框区域 -->
     <div class="flex-none p-2">
-      <ChatInput :disabled="!chatStore.getActiveThreadId() || isGenerating" @send="handleSend"
-        @file-upload="handleFileUpload" />
+      <ChatInput
+        :disabled="!chatStore.getActiveThreadId() || isGenerating"
+        @send="handleSend"
+        @file-upload="handleFileUpload"
+      />
     </div>
   </div>
 </template>
@@ -57,7 +64,7 @@ const handleFileUpload = () => {
 // 监听流式响应
 onMounted(async () => {
   window.electron.ipcRenderer.on(STREAM_EVENTS.RESPONSE, (_, msg) => {
-    console.log('stream-response', msg)
+    // console.log('stream-response', msg)
     chatStore.handleStreamResponse(msg)
   })
 

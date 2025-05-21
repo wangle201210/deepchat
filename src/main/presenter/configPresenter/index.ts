@@ -790,6 +790,10 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 
   async initTheme() {
+    const theme = this.getSetting<string>('appTheme')
+    if (theme) {
+      nativeTheme.themeSource = theme as 'dark' | 'light'
+    }
     // 监听系统主题变化
     nativeTheme.on('updated', () => {
       // 只有当主题设置为 system 时，才需要通知渲染进程

@@ -2,7 +2,7 @@
   <div
     v-if="show"
     ref="previewEl"
-    class="reference-preview fixed z-50 max-w-[384px] bg-popover border rounded-lg shadow-lg p-3 sm:p-4"
+    class="reference-preview fixed z-50 max-w-[384px] bg-card rounded-lg shadow-lg p-3 sm:p-4"
     :style="positionStyle"
   >
     <!-- 内容区域 -->

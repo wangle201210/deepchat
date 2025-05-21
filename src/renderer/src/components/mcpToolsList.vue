@@ -55,7 +55,7 @@ onMounted(async () => {
                 'flex border border-input rounded-lg shadow-sm items-center gap-1.5 h-7 text-xs px-1.5 w-auto',
                 mcpEnabled
                   ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
-                  : 'text-muted-foreground '
+                  : ''
               ]"
               size="icon"
             >

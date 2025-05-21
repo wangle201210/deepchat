@@ -5,33 +5,37 @@
 
 @layer base {
   :root {
-    --base-50: 240 11.1% 98.2%;
-    --base-100: 240 10% 96.1%;
-    --base-200: 240 8% 90.2%;
-    --base-300: 240 7.5% 84.3%;
-    --base-400: 240 4.3% 63.9%;
-    --base-500: 240 4.2% 46.3%;
-    --base-600: 240 5.2% 33.9%;
-    --base-700: 240 5.3% 26.1%;
-    --base-800: 240 4.9% 16.1%;
-    --base-900: 240 5.9% 10%;
-    --base-950: 240 10% 3.9%;
+    --base-50: 210 28% 100%;
+    --base-100: 210 28% 98.1%;
+    --base-200: 214.3 21.44% 93.4%;
+    --base-300: 212.7 17.44% 85.9%;
+    --base-400: 215 12.16% 67.1%;
+    --base-500: 215.4 9.04% 48.9%;
+    --base-600: 215.3 11.44% 36.5%;
+    --base-700: 215.3 16% 28.7%;
+    --base-800: 217.2 22.08% 19.5%;
+    --base-900: 222.2 33.92% 13.2%;
+    --base-950: 222.2 33.92% 13.2%;
     --base-1000: 0 0% 1.2%;
 
-    --primary-50: 231 100% 97.3%;
-    --primary-100: 233 100% 94.9%;
-    --primary-200: 234 100% 90.6%;
-    --primary-300: 236 100% 84.3%;
-    --primary-400: 243 100% 76.3%;
-    --primary-500: 247 100% 68.2%;
-    --primary-600: 255 83% 53.9%;
-    --primary-700: 254 70.4% 51%;
-    --primary-800: 253 63.9% 42.4%;
-    --primary-900: 250 54.4% 35.3%;
-    --primary-950: 251 56% 21.4%;
+    --primary-50: 225.9 100% 96.7%;
+    --primary-100: 226.5 100% 93.9%;
+    --primary-200: 228 96.5% 88.8%;
+    --primary-300: 229.7 93.5% 81.8%;
+    --primary-400: 234.5 89.5% 73.9%;
+    --primary-500: 238.7 83.5% 66.7%;
+    --primary-600: 243.4 75.4% 58.6%;
+    --primary-700: 244.5 57.9% 50.6%;
+    --primary-800: 243.7 54.5% 41.4%;
+    --primary-900: 242.2 47.4% 34.3%;
+    --primary-950: 242.2 47.4% 34.3%;
     --primary-1000: 249 55.9% 13.3%;
 
-    --background: var(--base-50);
+    --white: 0 0% 100%;
+    --black: 0 0% 0%;
+
+    --container: var(--white);
+    --background: var(--white);
     --foreground: var(--base-800);
     --card: 0 0% 100%;
     --card-foreground: var(--base-800);
@@ -67,6 +71,7 @@
   }
 
   .dark {
+    --container: var(--black);
     --background: var(--base-950);
     --foreground: var(--base-200);
     --card: var(--base-900);
@@ -78,7 +83,7 @@
     --secondary: var(--base-700);
     --secondary-foreground: var(--base-50);
     --muted: var(--base-800);
-    --muted-foreground: var(--base-300);
+    --muted-foreground: var(--base-500);
     --accent: var(--base-800);
     --accent-foreground: var(--base-200);
     --destructive: 0 62.8% 30.6%;
