@@ -34,3 +34,10 @@ const parsedNodes = computed<ParsedNode[]>(() => {
   return parseMarkdownToStructure(props.content, md)
 })
 </script>
+<style>
+.prose {
+  li p {
+    @apply py-0 my-0;
+  }
+}
+</style>
