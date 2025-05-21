@@ -107,9 +107,8 @@ export class ConfigPresenter implements IConfigPresenter {
       }
     })
 
-<<<<<<< HEAD
     this.initTheme()
-=======
+
     // 初始化 custom prompts 存储
     this.customPromptsStore = new ElectronStore<{ prompts: Prompt[] }>({
       name: 'custom_prompts',
@@ -117,7 +116,6 @@ export class ConfigPresenter implements IConfigPresenter {
         prompts: []
       }
     })
->>>>>>> 4072419 (feat(powerpack): add custom prompt support)
 
     // 初始化MCP配置助手
     this.mcpConfHelper = new McpConfHelper()
