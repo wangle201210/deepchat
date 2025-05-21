@@ -854,6 +854,8 @@ export class ThreadPresenter implements IThreadPresenter {
     4. 保持查询简洁，通常不超过3个关键词, 最多不要超过5个关键词，参考当前搜索引擎的查询习惯重写关键字
 
     直接返回优化后的搜索词，不要有任何额外说明。
+    如果你觉得用户的问题不需要进行搜索，请直接返回“无须搜索”。
+
     如下是之前对话的上下文：
     <context_messages>
     ${contextMessages}
@@ -947,35 +949,37 @@ export class ThreadPresenter implements IThreadPresenter {
             const content = msg.content as UserMessageContent
             return `user: ${content.text}${getFileContext(content.files)}`
           } else if (msg.role === 'assistant') {
-            let finanContent = 'assistant: '
+            let finalContent = 'assistant: '
             const content = msg.content as AssistantMessageBlock[]
             content.forEach((block) => {
               if (block.type === 'content') {
-                finanContent += block.content + '\n'
+                finalContent += block.content + '\n'
               }
               if (block.type === 'search') {
-                finanContent += `search-result: ${JSON.stringify(block.extra)}`
+                finalContent += `search-result: ${JSON.stringify(block.extra)}`
               }
               if (block.type === 'tool_call') {
-                finanContent += `tool_call: ${JSON.stringify(block.tool_call)}`
+                finalContent += `tool_call: ${JSON.stringify(block.tool_call)}`
               }
               if (block.type === 'image') {
-                finanContent += `image: ${block.image_data?.data}`
+                finalContent += `image: ${block.image_data?.data}`
               }
             })
-            return finanContent
+            return finalContent
           } else {
             return JSON.stringify(msg.content)
           }
         })
         .join('\n')
+
       // 检查是否已被取消
       this.throwIfCancelled(messageId)
 
+      // 重写搜索查询
       searchBlock.status = 'optimizing'
       await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
       console.log('optimizing')
-      // 重写搜索查询
+
       const optimizedQuery = await this.rewriteUserSearchQuery(
         query,
         formattedContext,
@@ -985,6 +989,17 @@ export class ThreadPresenter implements IThreadPresenter {
         console.error('重写搜索查询失败:', err)
         return query
       })
+
+      // 如果不需要搜索，直接返回空结果
+      if (optimizedQuery === '无须搜索') {
+        searchBlock.status = 'success'
+        searchBlock.content = ''
+        await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
+        state.isSearching = false
+        this.searchingMessages.delete(messageId)
+        return []
+      }
+
       // 检查是否已被取消
       this.throwIfCancelled(messageId)
 
@@ -1710,7 +1725,7 @@ export class ThreadPresenter implements IThreadPresenter {
                 }
 
                 return (
-                  '<function_call>\n' +
+                  '<function_call>' +
                   JSON.stringify({
                     function_call_result: {
                       name: block.tool_call.name,
