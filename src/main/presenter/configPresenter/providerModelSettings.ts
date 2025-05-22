@@ -569,9 +569,274 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
     models: []
   },
 
-  // 阿里云提供商特定模型配置
+  // 阿里云提供商特定模型配置, 注意匹配排序，only max/plus/turbo
   dashscope: {
-    models: []
+    models: [
+      {
+        id: 'qwen-turbo-latest',
+        name: 'Qwen Turbo Latest',
+        temperature: 0.7,
+        contextLength: 1000000,
+        maxTokens: 16384,
+        match: ['qwen-turbo-latest'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-turbo-2024-11-01',
+        name: 'Qwen Turbo 2024 11 01',
+        temperature: 0.7,
+        contextLength: 1000000,
+        maxTokens: 8192,
+        match: ['qwen-turbo-1101'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-turbo-2024-09-19',
+        name: 'Qwen Turbo 2024 09 19',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-turbo-0919'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-turbo-2024-06-24',
+        name: 'Qwen Turbo 2024 06 24',
+        temperature: 0.7,
+        contextLength: 8000,
+        maxTokens: 2000,
+        match: ['qwen-turbo-0624'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-turbo-2025-04-28',
+        name: 'Qwen Turbo 2025 04 28',
+        temperature: 0.7,
+        contextLength: 1000000,
+        maxTokens: 16384,
+        match: ['qwen-turbo-0428'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-turbo-2025-02-11',
+        name: 'Qwen Turbo 2025 02 11',
+        temperature: 0.7,
+        contextLength: 1000000,
+        maxTokens: 8192,
+        match: ['qwen-turbo-0211'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-turbo',
+        name: 'Qwen Turbo',
+        temperature: 0.7,
+        contextLength: 1000000,
+        maxTokens: 8192,
+        match: ['qwen-turbo'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-latest',
+        name: 'Qwen Plus Latest',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 16384,
+        match: ['qwen-plus-latest'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2024-12-20',
+        name: 'Qwen Plus 2024 12 20',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-1220'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2024-11-27',
+        name: 'Qwen Plus 2024 11 27',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-1127'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2024-11-25',
+        name: 'Qwen Plus 2024 11 25',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-1125'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2024-09-19',
+        name: 'Qwen Plus 2024 09 19',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-0919'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2024-08-06',
+        name: 'Qwen Plus 2024 08 06',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-0806'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2024-07-23',
+        name: 'Qwen Plus 2024 07 23',
+        temperature: 0.7,
+        contextLength: 32000,
+        maxTokens: 8000,
+        match: ['qwen-plus-0723'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2025-04-28',
+        name: 'Qwen Plus 2025 04 28',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 16384,
+        match: ['qwen-plus-0428'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2025-01-25',
+        name: 'Qwen Plus 2025 01 25',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-0125'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus-2025-01-12',
+        name: 'Qwen Plus 2025 01 12',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus-0112'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-plus',
+        name: 'Qwen Plus',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-plus'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-max-latest',
+        name: 'Qwen Max Latest',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-max-latest'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-max-2024-09-19',
+        name: 'Qwen Max 2024 09 19',
+        temperature: 0.7,
+        contextLength: 32768,
+        maxTokens: 8192,
+        match: ['qwen-max-0919'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-max-2024-04-28',
+        name: 'Qwen Max 2024 04 28',
+        temperature: 0.7,
+        contextLength: 8000,
+        maxTokens: 2000,
+        match: ['qwen-max-0428'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-max-2024-04-03',
+        name: 'Qwen Max 2024 04 03',
+        temperature: 0.7,
+        contextLength: 8000,
+        maxTokens: 2000,
+        match: ['qwen-max-0403'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-max-2025-01-25',
+        name: 'Qwen Max 2025 01 25',
+        temperature: 0.7,
+        contextLength: 131072,
+        maxTokens: 8192,
+        match: ['qwen-max-0125'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'qwen-max',
+        name: 'Qwen Max',
+        temperature: 0.7,
+        contextLength: 32768,
+        maxTokens: 8192,
+        match: ['qwen-max'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      }
+    ]
   },
 
   // OpenRouter提供商特定模型配置
