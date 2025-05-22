@@ -96,7 +96,7 @@
     --accent-foreground: var(--base-200);
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: var(--base-800);
+    --border: var(--base-700);
     --input: var(--base-700);
     --ring: var(--primary-600);
     --chart-1: var(--primary-600);
