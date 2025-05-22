@@ -189,7 +189,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       model: modelId,
       stream: false,
       temperature: temperature,
-      max_tokens: maxTokens
+      ...(modelId.startsWith('o1') || modelId.startsWith('o3') || modelId.startsWith('o4')
+        ? { max_completion_tokens: maxTokens }
+        : { max_tokens: maxTokens })
     }
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) {
@@ -470,7 +472,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       model: modelId,
       stream: true,
       temperature,
-      max_tokens: maxTokens
+      ...(modelId.startsWith('o1') || modelId.startsWith('o3') || modelId.startsWith('o4')
+        ? { max_completion_tokens: maxTokens }
+        : { max_tokens: maxTokens })
     }
 
     // 添加stream_options，适用于/v1/chat/completions
