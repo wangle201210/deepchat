@@ -132,7 +132,6 @@ export interface IWindowPresenter {
     x?: number
     y?: number
   }): Promise<number | null>
-  getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
   minimize(windowId: number): void

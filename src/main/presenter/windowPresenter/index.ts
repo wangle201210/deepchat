@@ -105,18 +105,6 @@ export class WindowPresenter implements IWindowPresenter {
     })
   }
 
-  // 实现 IWindowPresenter 接口的方法
-  // createMainWindow(): BrowserWindow {
-  //   return this.createShellWindow() // This will be adapted or removed as createShellWindow changes
-  // }
-
-  getWindow(windowName: string): BrowserWindow | undefined {
-    // 为了向后兼容，我们仍然支持通过字符串名称获取窗口
-    // 但我们现在使用数字ID作为主要标识符
-    const windowId = parseInt(windowName, 10)
-    return isNaN(windowId) ? undefined : this.windows.get(windowId)
-  }
-
   get mainWindow(): BrowserWindow | undefined {
     // 返回当前聚焦的窗口，如果没有聚焦的窗口则返回第一个窗口
     return this.getFocusedWindow() || this.getAllWindows()[0]

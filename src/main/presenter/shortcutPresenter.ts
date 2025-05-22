@@ -12,6 +12,7 @@ export class ShortcutPresenter {
 
   registerShortcuts(): void {
     if (this.isActive) return
+    console.log('reg shortcuts')
 
     // Command+N 或 Ctrl+N 创建新会话
     globalShortcut.register(process.platform === 'darwin' ? 'Command+N' : 'Control+N', async () => {
@@ -190,6 +191,7 @@ export class ShortcutPresenter {
   }
 
   unregisterShortcuts(): void {
+    console.log('unreg shortcuts')
     globalShortcut.unregisterAll()
     this.isActive = false
   }

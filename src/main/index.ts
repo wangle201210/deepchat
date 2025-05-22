@@ -55,6 +55,21 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
+  app.on('activate', function () {
+    // On macOS it's common to re-create a window in the app when the
+    // dock icon is clicked and there are no other windows open.
+    const allWindows = presenter.windowPresenter.getAllWindows()
+    if (allWindows.length === 0) {
+      presenter.windowPresenter.createShellWindow({
+        initialTab: {
+          url: 'local://chat'
+        }
+      })
+    } else {
+      allWindows[0].show()
+    }
+  })
+
   // 创建主窗口
   presenter.windowPresenter.createShellWindow({
     initialTab: {
@@ -75,7 +90,6 @@ app.whenReady().then(() => {
       presenter.windowPresenter.mainWindow?.show()
     }
   })
-
   // 监听应用程序获得焦点事件
   app.on('browser-window-focus', () => {
     presenter.shortcutPresenter.registerShortcuts()
@@ -84,8 +98,14 @@ app.whenReady().then(() => {
 
   // 监听应用程序失去焦点事件
   app.on('browser-window-blur', () => {
-    presenter.shortcutPresenter.unregisterShortcuts()
-    eventBus.emit(WINDOW_EVENTS.APP_BLUR)
+    // 检查是否所有窗口都失去了焦点
+    const allWindows = presenter.windowPresenter.getAllWindows()
+    const isAnyWindowFocused = allWindows.some((win) => !win.isDestroyed() && win.isFocused())
+
+    if (!isAnyWindowFocused) {
+      presenter.shortcutPresenter.unregisterShortcuts()
+      eventBus.emit(WINDOW_EVENTS.APP_BLUR)
+    }
   })
 
   protocol.handle('deepcdn', (request) => {
