@@ -370,7 +370,7 @@ export class WindowPresenter implements IWindowPresenter {
     }
 
     if (is.dev) {
-      shellWindow.webContents.openDevTools()
+      shellWindow.webContents.openDevTools({ mode: 'detach' })
     }
 
     // Handle initial tab creation if options are provided

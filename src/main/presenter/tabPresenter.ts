@@ -114,7 +114,9 @@ export class TabPresenter implements ITabPresenter {
     } else {
       view.webContents.loadURL(url)
     }
-    view.webContents.openDevTools()
+    if (is.dev) {
+      view.webContents.openDevTools({ mode: 'detach' })
+    }
 
     // 存储标签信息
     const tabId = view.webContents.id
