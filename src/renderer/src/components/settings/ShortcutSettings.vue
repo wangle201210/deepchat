@@ -3,11 +3,7 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 快捷键列表 -->
       <div class="flex flex-col gap-2">
-        <div
-          v-for="shortcut in shortcuts"
-          :key="shortcut.id"
-          class="flex flex-row p-2 items-center gap-2 px-2"
-        >
+        <div v-for="shortcut in shortcuts" :key="shortcut.id" class="flex flex-row p-2 items-center gap-2 px-2">
           <span class="flex flex-row items-center gap-2 flex-grow w-full">
             <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
@@ -56,6 +52,30 @@ const shortcuts = ref([
     icon: 'lucide:x',
     label: 'settings.shortcuts.closeTab',
     key: 'CommandOrControl+W'
+  },
+  {
+    id: 'next_tab',
+    icon: 'lucide:arrow-right',
+    label: 'settings.shortcuts.nextTab',
+    key: 'Control+Tab'
+  },
+  {
+    id: 'previous_tab',
+    icon: 'lucide:arrow-left',
+    label: 'settings.shortcuts.previousTab',
+    key: 'Control+Shift+Tab'
+  },
+  {
+    id: 'number_tabs',
+    icon: 'lucide:list-ordered',
+    label: 'settings.shortcuts.specificTab',
+    key: 'CommandOrControl+1...8'
+  },
+  {
+    id: 'last_tab',
+    icon: 'lucide:move-horizontal',
+    label: 'settings.shortcuts.lastTab',
+    key: 'CommandOrControl+9'
   },
   {
     id: 'zoom_in',

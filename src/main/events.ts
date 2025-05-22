@@ -122,7 +122,11 @@ export const SHORTCUT_EVENTS = {
   CREATE_NEW_TAB: 'shortcut:create-new-tab',
   CLOSE_CURRENT_TAB: 'shortcut:close-current-tab',
   GO_SETTINGS: 'shortcut:go-settings',
-  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  SWITCH_TO_NEXT_TAB: 'shortcut:switch-to-next-tab',
+  SWITCH_TO_PREVIOUS_TAB: 'shortcut:switch-to-previous-tab',
+  SWITCH_TO_SPECIFIC_TAB: 'shortcut:switch-to-specific-tab',
+  SWITCH_TO_LAST_TAB: 'shortcut:switch-to-last-tab'
 }
 
 // 标签页相关事件

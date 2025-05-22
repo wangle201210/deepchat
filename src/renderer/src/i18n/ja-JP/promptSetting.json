@@ -16,5 +16,11 @@
   "exportSuccess": "エクスポート成功",
   "exportFailed": "エクスポート失敗",
   "importSuccess": "インポート成功",
-  "importFailed": "インポート失敗"
-} 
+  "importFailed": "インポート失敗",
+  "addParameter": "パラメーターを追加します",
+  "noParameters": "まだパラメーターはありません",
+  "parameterDescriptionPlaceholder": "パラメーターの説明を入力してください",
+  "parameterNamePlaceholder": "パラメーター名を入力してください",
+  "parameters": "パラメーター",
+  "required": "必須"
+}
