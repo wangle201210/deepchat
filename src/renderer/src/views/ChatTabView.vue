@@ -3,7 +3,7 @@
     <div
       :class="{
         'flex-1 w-0 h-full transition-all duration-200': true,
-        'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'tab'
+        'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'chat'
       }"
     >
       <div class="flex h-full">
