@@ -1146,7 +1146,7 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 4. 准备提示内容
-      const { finalContent, promptTokens } = this.preparePromptContent(
+      const { finalContent, promptTokens } = await this.preparePromptContent(
         conversation,
         userContent,
         contextMessages,
@@ -1274,7 +1274,7 @@ export class ThreadPresenter implements IThreadPresenter {
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
       const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
 
-      const { finalContent, promptTokens } = this.preparePromptContent(
+      const { finalContent, promptTokens } = await this.preparePromptContent(
         conversation,
         'continue',
         contextMessages,
@@ -1446,7 +1446,7 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   // 准备提示内容
-  private preparePromptContent(
+  private async preparePromptContent(
     conversation: CONVERSATION,
     userContent: string,
     contextMessages: Message[],
@@ -1456,10 +1456,10 @@ export class ThreadPresenter implements IThreadPresenter {
     vision: boolean,
     imageFiles: MessageFile[],
     supportsFunctionCall: boolean
-  ): {
+  ): Promise<{
     finalContent: ChatMessage[]
     promptTokens: number
-  } {
+  }> {
     const { systemPrompt, contextLength, artifacts } = conversation.settings
 
     const searchPrompt = searchResults ? generateSearchPrompt(userContent, searchResults) : ''
@@ -1472,9 +1472,14 @@ export class ThreadPresenter implements IThreadPresenter {
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
     const systemPromptTokens = systemPrompt ? approximateTokenSize(systemPrompt ?? '') : 0
     const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
-
+    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+    const mcpToolsTokens = mcpTools.reduce(
+      (acc, tool) => acc + approximateTokenSize(JSON.stringify(tool)),
+      0
+    )
     // 计算剩余可用的上下文长度
-    const reservedTokens = searchPromptTokens + systemPromptTokens + userMessageTokens
+    const reservedTokens =
+      searchPromptTokens + systemPromptTokens + userMessageTokens + mcpToolsTokens
     const remainingContextLength = contextLength - reservedTokens
 
     // 选择合适的上下文消息
