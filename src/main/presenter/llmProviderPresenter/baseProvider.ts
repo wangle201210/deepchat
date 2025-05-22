@@ -207,6 +207,8 @@ export abstract class BaseLLMProvider {
    * @returns 格式化的提示词
    */
   protected getFunctionCallWrapPrompt(tools: MCPToolDefinition[]): string {
+    const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
+
     return `你具备调用外部工具的能力来协助解决用户的问题
 ====
     可用的工具列表定义在 <tool_list> 标签中：
@@ -323,6 +325,10 @@ ${this.convertToolsToXml(tools)}
 * 根据搜索工具返回的结果…
 * 网页爬取显示…
 * （避免使用“我猜测”之类表述）
+
+#### 8. 语言
+
+用户当前设置的系统语言是${locale},如无特殊情况请用系统设置的语言进行回复。
 
 ---
 注：工具调用指所有外部信息获取操作，包括搜索、网页爬虫、API 查询、插件访问，以及实时与非实时数据的获取、修改与控制等。
