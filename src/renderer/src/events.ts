@@ -19,7 +19,8 @@ export const CONFIG_EVENTS = {
   CUSTOM_PROXY_URL_CHANGED: 'config:custom-proxy-url-changed',
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
-  CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed'
+  CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
+  LANGUAGE_CHANGED: 'config:language-changed' // 新增：语言变更事件
 }
 
 // 会话相关事件
