@@ -1,6 +1,6 @@
 <template>
-  <ScrollArea class="w-full h-full p-2">
-    <div class="w-full h-full flex flex-col gap-2">
+  <ScrollArea class="w-full h-full">
+    <div class="w-full flex flex-col gap-2 p-2">
       <div class="flex flex-row items-center justify-between mb-2">
         <div class="flex items-center gap-2">
           <Icon icon="lucide:book-open-text" class="w-5 h-5 text-primary" />
@@ -21,22 +21,22 @@
           </Button>
         </div>
       </div>
-      <div class="flex flex-col gap-2">
+      <div class="flex flex-col gap-2 overflow-y-auto">
         <div v-if="prompts.length === 0" class="text-center text-muted-foreground py-8">
           {{ t('promptSetting.noPrompt') }}
         </div>
         <div
           v-for="prompt in prompts"
           :key="prompt.id"
-          class="flex flex-row items-center gap-2 bg-card rounded-lg p-3 border border-border"
+          class="flex flex-row items-start gap-2 bg-card rounded-lg p-3 border border-border"
         >
-          <div class="flex-1">
-            <div class="font-medium text-base">{{ prompt.name }}</div>
-            <div class="text-xs text-muted-foreground mt-1">{{ prompt.description }}</div>
+          <div class="flex-1 min-w-0 overflow-hidden">
+            <div class="font-medium text-base truncate">{{ prompt.name }}</div>
+            <div class="text-xs text-muted-foreground mt-1 truncate">{{ prompt.description }}</div>
             <div class="relative">
               <div
                 :class="[
-                  'text-xs mt-1 whitespace-pre-line',
+                  'text-xs mt-1 whitespace-pre-line break-words',
                   !isExpanded(prompt.id) && 'line-clamp-3'
                 ]"
               >
@@ -55,12 +55,14 @@
               </Button>
             </div>
           </div>
-          <Button variant="outline" size="icon" @click="editPrompt(prompts.indexOf(prompt))"
-            ><Icon icon="lucide:pencil" class="w-4 h-4"
-          /></Button>
-          <Button variant="destructive" size="icon" @click="deletePrompt(prompts.indexOf(prompt))"
-            ><Icon icon="lucide:trash-2" class="w-4 h-4"
-          /></Button>
+          <div class="flex flex-col gap-2 flex-shrink-0">
+            <Button variant="outline" size="icon" @click="editPrompt(prompts.indexOf(prompt))"
+              ><Icon icon="lucide:pencil" class="w-4 h-4"
+            /></Button>
+            <Button variant="destructive" size="icon" @click="deletePrompt(prompts.indexOf(prompt))"
+              ><Icon icon="lucide:trash-2" class="w-4 h-4"
+            /></Button>
+          </div>
         </div>
       </div>
     </div>
