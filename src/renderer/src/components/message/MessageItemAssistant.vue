@@ -205,16 +205,6 @@ const calculateMessageGroupRect = (): {
   const userMessageElement = findUserMessageElement()
   const assistantMessageElement = messageNode.value
 
-  console.log('[DEBUG_RECT] assistantMessageElement:', assistantMessageElement ? 'Exists' : 'Null')
-  if (assistantMessageElement) {
-    console.log('[DEBUG_RECT] assistantMessageElement.rect:', JSON.parse(JSON.stringify(assistantMessageElement.getBoundingClientRect())))
-  }
-
-  console.log('[DEBUG_RECT] userMessageElement:', userMessageElement ? 'Exists' : 'Null')
-  if (userMessageElement) {
-    console.log('[DEBUG_RECT] userMessageElement.rect:', JSON.parse(JSON.stringify(userMessageElement.getBoundingClientRect())))
-  }
-
   if (!userMessageElement || !assistantMessageElement) {
     // 如果找不到用户消息，只截取当前助手消息
     if (assistantMessageElement) {
@@ -225,23 +215,14 @@ const calculateMessageGroupRect = (): {
         width: Math.round(rect.width),
         height: Math.round(rect.height)
       }
-      console.log('[DEBUG_RECT] Calculated rect (assistant only): Nên JSON.parse(JSON.stringify(assistantOnlyRect)))')
       return assistantOnlyRect
     }
-    console.log('[DEBUG_RECT] No elements to calculate rect.')
     return null
   }
 
   const userRect = userMessageElement.getBoundingClientRect()
   const assistantRect = assistantMessageElement.getBoundingClientRect()
 
-  // Add checks for zero-size rects which might indicate issues
-  if (userRect.width === 0 || userRect.height === 0) {
-    console.warn('[DEBUG_RECT] User message rect has zero width or height:', JSON.parse(JSON.stringify(userRect)))
-  }
-  if (assistantRect.width === 0 || assistantRect.height === 0) {
-    console.warn('[DEBUG_RECT] Assistant message rect has zero width or height:', JSON.parse(JSON.stringify(assistantRect)))
-  }
 
   const left = Math.min(userRect.left, assistantRect.left)
   const top = Math.min(userRect.top, assistantRect.top)
@@ -254,7 +235,6 @@ const calculateMessageGroupRect = (): {
     width: Math.round(right - left),
     height: Math.round(bottom - top)
   }
-  console.log('[DEBUG_RECT] Calculated combinedRect:', JSON.parse(JSON.stringify(combinedRect)))
   return combinedRect
 }
 
@@ -297,10 +277,8 @@ const handleAction = (
  */
 const handleCopyImage = async () => {
   if (isCapturingImage.value) {
-    console.log('[CAPTURE_DEBUG] Capture already in progress')
     return
   }
-  console.log('[CAPTURE_DEBUG] Starting handleCopyImage')
   isCapturingImage.value = true
   let originalScrollBehavior = ''
   let scrollContainer: HTMLElement | null = null
@@ -312,7 +290,6 @@ const handleCopyImage = async () => {
       isCapturingImage.value = false
       return
     }
-    console.log('[CAPTURE_DEBUG] initialRect:', JSON.parse(JSON.stringify(initialRect)))
 
     const tabId = window.api.getWebContentsId()
     scrollContainer = document.querySelector('.message-list-container') as HTMLElement
@@ -325,12 +302,9 @@ const handleCopyImage = async () => {
     // Attempt to disable smooth scrolling temporarily
     originalScrollBehavior = scrollContainer.style.scrollBehavior
     scrollContainer.style.scrollBehavior = 'auto'
-    console.log(`[CAPTURE_DEBUG] scrollContainer.style.scrollBehavior set to 'auto'. Original: '${originalScrollBehavior}'`)
 
     const containerOriginalScrollTop = scrollContainer.scrollTop
     const containerRect = scrollContainer.getBoundingClientRect()
-    console.log('[CAPTURE_DEBUG] containerOriginalScrollTop:', containerOriginalScrollTop)
-    console.log('[CAPTURE_DEBUG] containerRect:', JSON.parse(JSON.stringify(containerRect)))
 
     const scrollbarOffset = 20; // Offset to avoid scrollbar
     const captureWindowVisibleHeight = containerRect.height - 44;
@@ -340,13 +314,10 @@ const handleCopyImage = async () => {
       width: containerRect.width - scrollbarOffset, // Use defined offset
       height: captureWindowVisibleHeight
     };
-    console.log('[CAPTURE_DEBUG] fixedCaptureWindow:', JSON.parse(JSON.stringify(fixedCaptureWindow)));
 
     const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-    console.log('[CAPTURE_DEBUG] maxScrollTop:', maxScrollTop);
 
     if (initialRect.height <= 0) {
-      console.log('[CAPTURE_DEBUG] initialRect has no height, skipping capture.')
       isCapturingImage.value = false
       return
     }
@@ -355,11 +326,9 @@ const handleCopyImage = async () => {
     let totalCapturedContentHeight = 0
     let iteration = 0
 
-    console.log(`[CAPTURE_DEBUG] Starting capture loop. initialRect.height: ${initialRect.height}`)
 
     while (totalCapturedContentHeight < initialRect.height) {
       iteration++;
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: totalCapturedContentHeight = ${totalCapturedContentHeight}`);
 
       const currentActualInitialRect = calculateMessageGroupRect();
       if (!currentActualInitialRect) {
@@ -370,11 +339,7 @@ const handleCopyImage = async () => {
       const targetContentSegmentTopInCurrentInitialRectY = currentActualInitialRect.y + totalCapturedContentHeight;
       const scrollTopTarget = scrollContainer.scrollTop + targetContentSegmentTopInCurrentInitialRectY - fixedCaptureWindow.y; // fixedCaptureWindow.y IS containerRect.top
 
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: currentActualInitialRect.y=${currentActualInitialRect.y}, totalCapturedH=${totalCapturedContentHeight}, fixedCaptureWindow.y=${fixedCaptureWindow.y}, currentST=${scrollContainer.scrollTop}`);
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: Calculated scrollTopTarget = ${scrollTopTarget}`);
-
       const currentScroll = Math.max(0, Math.min(scrollTopTarget, maxScrollTop));
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: Clamped currentScroll = ${currentScroll}`);
 
       scrollContainer.scrollTop = currentScroll;
       await new Promise(resolve => setTimeout(resolve, 350));
@@ -383,7 +348,6 @@ const handleCopyImage = async () => {
       if (Math.abs(actualScrolledTo - currentScroll) > 5 && !(currentScroll === 0 && actualScrolledTo < 5)) { // Allow 0->0.5 without warning
         console.warn(`[CAPTURE_DEBUG] Iteration ${iteration}: Scroll position mismatch. Requested: ${currentScroll}, Actual: ${actualScrolledTo}.`);
       }
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: Actual scroll position after wait = ${actualScrolledTo}`);
 
       const finalInitialRectStateAfterScroll = calculateMessageGroupRect();
       if (!finalInitialRectStateAfterScroll) {
@@ -394,9 +358,6 @@ const handleCopyImage = async () => {
 
       const topOfUncapturedContentInViewport = finalInitialRectStateAfterScroll.y + totalCapturedContentHeight;
       const contentOffsetYInCaptureWindow = topOfUncapturedContentInViewport - finalScRect.top;
-
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: finalInitialRectStateAfterScroll.y=${finalInitialRectStateAfterScroll.y}, totalCapturedH=${totalCapturedContentHeight}, finalScRect.top=${finalScRect.top}`);
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: contentOffsetYInCaptureWindow = ${contentOffsetYInCaptureWindow}`);
 
       let captureStartYInWindow = 0;
       let heightToCaptureFromSegment = 0;
@@ -415,15 +376,8 @@ const handleCopyImage = async () => {
         );
       }
       heightToCaptureFromSegment = Math.max(0, heightToCaptureFromSegment);
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: captureStartYInWindow=${captureStartYInWindow}, heightToCaptureFromSegment=${heightToCaptureFromSegment}`);
 
       if (heightToCaptureFromSegment < 1 && initialRect.height > totalCapturedContentHeight) {
-        if (iteration > 1 && Math.abs(actualScrolledTo - maxScrollTop) < 5) {
-          console.log('[CAPTURE_DEBUG] Iteration > 1, at max scroll, and small slice. Likely end of content.')
-        } else {
-          console.warn(`[CAPTURE_DEBUG] Iteration ${iteration}: Stalled or minimal slice. SliceH: ${heightToCaptureFromSegment}, TotalCap: ${totalCapturedContentHeight}, InitialH: ${initialRect.height}, Offset: ${contentOffsetYInCaptureWindow}, scroll: ${actualScrolledTo}/${maxScrollTop}`)
-        }
-        console.log('[CAPTURE_DEBUG] Breaking due to zero or very small slice height.')
         break
       }
 
@@ -433,22 +387,17 @@ const handleCopyImage = async () => {
         width: fixedCaptureWindow.width, // Ensure using the width from fixedCaptureWindow
         height: Math.round(heightToCaptureFromSegment)
       };
-      console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: captureRect = ${JSON.stringify(captureRect)}`);
 
       try {
         const segmentData = await tabPresenter.captureTabArea(tabId, captureRect)
         if (segmentData) {
           imageDataList.push(segmentData)
-          console.log(`[CAPTURE_DEBUG] Iteration ${iteration}: Segment captured successfully.`)
         } else {
           console.error(`[CAPTURE_DEBUG] Iteration ${iteration}: Segment capture failed (returned no data).`)
-          // If capture fails, we should probably not increment totalCapturedContentHeight with this segment's height
-          console.log('[CAPTURE_DEBUG] Breaking loop due to segment capture failure.')
           break
         }
       } catch (captureError) {
         console.error(`[CAPTURE_DEBUG] Iteration ${iteration}: Error during captureTabArea:`, captureError)
-        console.log('[CAPTURE_DEBUG] Breaking loop due to error in captureTabArea.')
         break
       }
 
@@ -459,10 +408,8 @@ const handleCopyImage = async () => {
         break
       }
     }
-    console.log(`[CAPTURE_DEBUG] Capture loop finished. totalCapturedContentHeight = ${totalCapturedContentHeight}. imageDataList length = ${imageDataList.length}`)
 
     scrollContainer.scrollTop = containerOriginalScrollTop
-    console.log('[CAPTURE_DEBUG] Restored original scroll top:', containerOriginalScrollTop)
 
     if (imageDataList.length === 0 && initialRect.height > 0) {
       console.error('[CAPTURE_DEBUG] No images captured despite content having height.')
@@ -470,13 +417,11 @@ const handleCopyImage = async () => {
       return
     }
     if (imageDataList.length === 0 && initialRect.height === 0) {
-      console.log('[CAPTURE_DEBUG] Content has no height, no images captured as expected.')
       isCapturingImage.value = false
       return
     }
 
     if (imageDataList.length > 0) {
-      console.log('[CAPTURE_DEBUG] Stitching images...')
       const finalImage = await tabPresenter.stitchImagesWithWatermark(imageDataList, {
         isDark: props.isDark,
         version: appVersion.value,
@@ -488,12 +433,9 @@ const handleCopyImage = async () => {
 
       if (finalImage) {
         window.api.copyImage(finalImage)
-        console.log('[CAPTURE_DEBUG] Final image stitched and copied to clipboard.')
       } else {
         console.error('[CAPTURE_DEBUG] Stitching failed or produced no image.')
       }
-    } else {
-      console.log('[CAPTURE_DEBUG] No images in list to stitch.')
     }
 
   } catch (error) {
@@ -502,10 +444,8 @@ const handleCopyImage = async () => {
     // Restore original scroll behavior in the finally block
     if (scrollContainer && originalScrollBehavior !== undefined) {
       scrollContainer.style.scrollBehavior = originalScrollBehavior
-      console.log(`[CAPTURE_DEBUG] scrollContainer.style.scrollBehavior restored to '${originalScrollBehavior}'`)
     }
     isCapturingImage.value = false
-    console.log('[CAPTURE_DEBUG] handleCopyImage finished.')
   }
 }
 
