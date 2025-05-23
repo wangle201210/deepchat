@@ -132,7 +132,6 @@ export interface IWindowPresenter {
     x?: number
     y?: number
   }): Promise<number | null>
-  getWindow(windowName: string): BrowserWindow | undefined
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
   minimize(windowId: number): void
@@ -278,6 +277,7 @@ export interface IConfigPresenter {
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void
   // 语言设置
   getLanguage(): string
+  setLanguage(language: string): void
   getDefaultProviders(): LLM_PROVIDER[]
   // 代理设置
   getProxyMode(): string

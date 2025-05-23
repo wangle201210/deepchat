@@ -352,6 +352,10 @@
     "closeTab": "Fermez la page d'onglet actuelle",
     "newTab": "Créer un nouvel onglet",
     "newWindow": "Ouvrez une nouvelle fenêtre",
-    "newConversation": "Nouvelle conversation"
+    "newConversation": "Nouvelle conversation",
+    "lastTab": "Passez à la dernière onglet",
+    "nextTab": "Passez à l'onglet suivant",
+    "previousTab": "Passez à l'onglet précédent",
+    "specificTab": "Passez à la page d'onglet spécifiée (1-8)"
   }
 }

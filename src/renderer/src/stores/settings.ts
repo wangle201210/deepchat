@@ -595,11 +595,8 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // 更新语言
   const updateLanguage = async (newLanguage: string) => {
-    await configP.setSetting('language', newLanguage)
+    await configP.setLanguage(newLanguage)
     language.value = newLanguage
-
-    // 更新当前语言
-    locale.value = await configP.getLanguage()
   }
 
   // 更新字体大小级别
@@ -618,6 +615,16 @@ export const useSettingsStore = defineStore('settings', () => {
       providers.value = await configP.getProviders()
       await refreshAllModels()
     })
+
+    // 监听语言变更事件
+    window.electron.ipcRenderer.on(
+      CONFIG_EVENTS.LANGUAGE_CHANGED,
+      async (_event, newLanguage: string) => {
+        language.value = newLanguage
+        locale.value = await configP.getLanguage()
+      }
+    )
+
     // 监听模型列表更新事件
     window.electron.ipcRenderer.on(
       CONFIG_EVENTS.MODEL_LIST_CHANGED,

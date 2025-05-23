@@ -862,7 +862,7 @@ export class SearchManager {
       }
     )
     if (is.dev) {
-      searchWindow.webContents.openDevTools()
+      searchWindow.webContents.openDevTools({ mode: 'detach' })
     }
     this.searchWindows.set(conversationId, searchWindow)
     return searchWindow

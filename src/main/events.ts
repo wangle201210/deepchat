@@ -21,7 +21,8 @@ export const CONFIG_EVENTS = {
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
-  PROXY_RESOLVED: 'config:proxy-resolved'
+  PROXY_RESOLVED: 'config:proxy-resolved',
+  LANGUAGE_CHANGED: 'config:language-changed' // 新增：语言变更事件
 }
 
 // 会话相关事件
@@ -121,7 +122,11 @@ export const SHORTCUT_EVENTS = {
   CREATE_NEW_TAB: 'shortcut:create-new-tab',
   CLOSE_CURRENT_TAB: 'shortcut:close-current-tab',
   GO_SETTINGS: 'shortcut:go-settings',
-  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  SWITCH_TO_NEXT_TAB: 'shortcut:switch-to-next-tab',
+  SWITCH_TO_PREVIOUS_TAB: 'shortcut:switch-to-previous-tab',
+  SWITCH_TO_SPECIFIC_TAB: 'shortcut:switch-to-specific-tab',
+  SWITCH_TO_LAST_TAB: 'shortcut:switch-to-last-tab'
 }
 
 // 标签页相关事件

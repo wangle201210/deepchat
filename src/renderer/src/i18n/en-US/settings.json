@@ -352,6 +352,10 @@
     "closeTab": "Close the current tab page",
     "newTab": "Create a new tab",
     "newWindow": "Open a new window",
-    "newConversation": "New conversation"
+    "newConversation": "New conversation",
+    "nextTab": "Switch to next tab",
+    "previousTab": "Switch to previous tab",
+    "specificTab": "Switch to specific tab (1-8)",
+    "lastTab": "Switch to last tab"
   }
 }

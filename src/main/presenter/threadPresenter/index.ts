@@ -167,6 +167,7 @@ export class ThreadPresenter implements IThreadPresenter {
     eventBus.emit(STREAM_EVENTS.END, msg)
   }
   async handleLLMAgentResponse(msg: LLMAgentEventData) {
+    const currentTime = Date.now()
     const {
       eventId,
       content,
@@ -188,9 +189,9 @@ export class ThreadPresenter implements IThreadPresenter {
     if (state) {
       // 记录第一个token的时间
       if (state.firstTokenTime === null && (content || reasoning_content)) {
-        state.firstTokenTime = Date.now()
+        state.firstTokenTime = currentTime
         await this.messageManager.updateMessageMetadata(eventId, {
-          firstTokenTime: Date.now() - state.startTime
+          firstTokenTime: currentTime - state.startTime
         })
       }
       if (totalUsage) {
@@ -208,7 +209,7 @@ export class ThreadPresenter implements IThreadPresenter {
           type: 'action',
           content: 'common.error.maximumToolCallsReached',
           status: 'success',
-          timestamp: Date.now(),
+          timestamp: currentTime,
           action_type: 'maximum_tool_calls_reached',
           tool_call: {
             id: tool_call_id,
@@ -229,12 +230,12 @@ export class ThreadPresenter implements IThreadPresenter {
       // 处理reasoning_content的时间戳
       if (reasoning_content) {
         if (state.reasoningStartTime === null) {
-          state.reasoningStartTime = Date.now()
+          state.reasoningStartTime = currentTime
           await this.messageManager.updateMessageMetadata(eventId, {
-            reasoningStartTime: Date.now() - state.startTime
+            reasoningStartTime: currentTime - state.startTime
           })
         }
-        state.lastReasoningTime = Date.now()
+        state.lastReasoningTime = currentTime
       }
 
       const lastBlock = state.message.content[state.message.content.length - 1]
@@ -292,7 +293,7 @@ export class ThreadPresenter implements IThreadPresenter {
               if (existingSearchBlock) {
                 // 如果已经存在搜索块，更新其状态和总数
                 existingSearchBlock.status = 'success'
-                existingSearchBlock.timestamp = Date.now()
+                existingSearchBlock.timestamp = currentTime
                 if (existingSearchBlock.extra) {
                   // 累加搜索结果数量
                   existingSearchBlock.extra.total =
@@ -308,7 +309,7 @@ export class ThreadPresenter implements IThreadPresenter {
                   type: 'search',
                   content: '',
                   status: 'success',
-                  timestamp: Date.now(),
+                  timestamp: currentTime,
                   extra: {
                     total: searchResults.length
                   }
@@ -345,7 +346,7 @@ export class ThreadPresenter implements IThreadPresenter {
             type: 'tool_call',
             content: '',
             status: 'loading',
-            timestamp: Date.now(),
+            timestamp: currentTime,
             tool_call: {
               id: tool_call_id,
               name: tool_call_name,
@@ -396,7 +397,7 @@ export class ThreadPresenter implements IThreadPresenter {
           type: 'image',
           content: 'image',
           status: 'success',
-          timestamp: Date.now(),
+          timestamp: currentTime,
           image_data: image_data
         })
       } else if (content) {
@@ -411,7 +412,7 @@ export class ThreadPresenter implements IThreadPresenter {
             type: 'content',
             content: content,
             status: 'loading',
-            timestamp: Date.now()
+            timestamp: currentTime
           })
         }
       }
@@ -420,6 +421,9 @@ export class ThreadPresenter implements IThreadPresenter {
       if (reasoning_content) {
         if (lastBlock && lastBlock.type === 'reasoning_content') {
           lastBlock.content += reasoning_content
+          if (lastBlock.reasoning_time) {
+            lastBlock.reasoning_time.end = currentTime
+          }
         } else {
           if (lastBlock) {
             lastBlock.status = 'success'
@@ -428,7 +432,11 @@ export class ThreadPresenter implements IThreadPresenter {
             type: 'reasoning_content',
             content: reasoning_content,
             status: 'loading',
-            timestamp: Date.now()
+            reasoning_time: {
+              start: currentTime,
+              end: currentTime
+            },
+            timestamp: currentTime
           })
         }
       }
@@ -1138,7 +1146,7 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 4. 准备提示内容
-      const { finalContent, promptTokens } = this.preparePromptContent(
+      const { finalContent, promptTokens } = await this.preparePromptContent(
         conversation,
         userContent,
         contextMessages,
@@ -1266,7 +1274,7 @@ export class ThreadPresenter implements IThreadPresenter {
       const { providerId, modelId, temperature, maxTokens } = conversation.settings
       const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
 
-      const { finalContent, promptTokens } = this.preparePromptContent(
+      const { finalContent, promptTokens } = await this.preparePromptContent(
         conversation,
         'continue',
         contextMessages,
@@ -1438,7 +1446,7 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   // 准备提示内容
-  private preparePromptContent(
+  private async preparePromptContent(
     conversation: CONVERSATION,
     userContent: string,
     contextMessages: Message[],
@@ -1448,10 +1456,10 @@ export class ThreadPresenter implements IThreadPresenter {
     vision: boolean,
     imageFiles: MessageFile[],
     supportsFunctionCall: boolean
-  ): {
+  ): Promise<{
     finalContent: ChatMessage[]
     promptTokens: number
-  } {
+  }> {
     const { systemPrompt, contextLength, artifacts } = conversation.settings
 
     const searchPrompt = searchResults ? generateSearchPrompt(userContent, searchResults) : ''
@@ -1464,9 +1472,14 @@ export class ThreadPresenter implements IThreadPresenter {
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
     const systemPromptTokens = systemPrompt ? approximateTokenSize(systemPrompt ?? '') : 0
     const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
-
+    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+    const mcpToolsTokens = mcpTools.reduce(
+      (acc, tool) => acc + approximateTokenSize(JSON.stringify(tool)),
+      0
+    )
     // 计算剩余可用的上下文长度
-    const reservedTokens = searchPromptTokens + systemPromptTokens + userMessageTokens
+    const reservedTokens =
+      searchPromptTokens + systemPromptTokens + userMessageTokens + mcpToolsTokens
     const remainingContextLength = contextLength - reservedTokens
 
     // 选择合适的上下文消息

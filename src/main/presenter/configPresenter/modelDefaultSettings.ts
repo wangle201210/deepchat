@@ -592,6 +592,28 @@ export const defaultModelsSettings = [
 
   // Claude系列模型配置
   {
+    id: 'claude-opus-4',
+    name: 'Claude Opus 4',
+    temperature: 0.7,
+    maxTokens: 32000,
+    contextLength: 204800,
+    match: ['claude-opus-4', 'claude-opus-4-20250514'],
+    vision: true,
+    functionCall: true,
+    reasoning: true
+  },
+  {
+    id: 'claude-sonnet-4',
+    name: 'Claude Sonnet 4',
+    temperature: 0.7,
+    maxTokens: 64000,
+    contextLength: 204800,
+    match: ['claude-sonnet-4', 'claude-sonnet-4-20250514'],
+    vision: true,
+    functionCall: true,
+    reasoning: true
+  },
+  {
     id: 'claude-3-7-sonnet',
     name: 'Claude 3.7 Sonnet',
     temperature: 1,
@@ -1058,36 +1080,6 @@ export const defaultModelsSettings = [
     match: ['qwen2.5-', 'qwen-2.5-'],
     vision: false,
     functionCall: false,
-    reasoning: false
-  },
-  {
-    id: 'qwen-plus-16k',
-    name: 'Qwen Plus 16K',
-    temperature: 0.7,
-    maxTokens: 16384,
-    contextLength: 131072,
-    match: ['qwen-plus-latest', 'qwen-plus-2025-04-28'],
-    vision: false,
-    functionCall: true,
-    reasoning: true
-  },
-  {
-    id: 'qwen-plus-8k',
-    name: 'Qwen Plus 8K',
-    temperature: 0.7,
-    maxTokens: 8192,
-    contextLength: 131072,
-    match: [
-      'qwen-plus',
-      'qwen-plus-0919',
-      'qwen-plus-2025-01-25',
-      'qwen-plus-0112',
-      'qwen-plus-1220',
-      'qwen-plus-1127',
-      'qwen-plus-1125'
-    ],
-    vision: false,
-    functionCall: true,
     reasoning: false
   },
   {

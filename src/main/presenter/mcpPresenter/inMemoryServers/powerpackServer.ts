@@ -152,7 +152,7 @@ export class PowerpackServer {
 
   // 格式化相对时间
   private formatRelativeTime(userQuery: string, actualTime: string): string {
-    return `${userQuery}的时间是：${actualTime}`
+    return `${userQuery} ${actualTime}`
   }
 
   // 执行Node代码
@@ -241,11 +241,13 @@ export class PowerpackServer {
       return prompts.map((prompt) => ({
         name: prompt.name,
         description: prompt.description,
-        arguments: prompt.parameters ? prompt.parameters.map(param => ({
-          name: param.name,
-          description: param.description,
-          required: !!param.required
-        })) : []
+        arguments: prompt.parameters
+          ? prompt.parameters.map((param) => ({
+              name: param.name,
+              description: param.description,
+              required: !!param.required
+            }))
+          : []
       }))
     } catch (error) {
       return []
@@ -261,7 +263,7 @@ export class PowerpackServer {
     if (!prompt) throw new Error('Prompt not found')
 
     let promptContent = prompt.content
-    
+
     // 替换参数占位符
     if (args && prompt.parameters) {
       // 遍历所有参数，并替换内容中的{{参数名}}

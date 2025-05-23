@@ -8,6 +8,7 @@ import { parseFootnote } from './footnote-parser'
 import { parseHeading } from './heading-parser'
 import { parseThematicBreak } from './thematic-break-parser'
 import { parseAdmonition } from './admonition-parser'
+import { parseMathBlock } from './math-block-parser'
 
 export function parseList(tokens: MarkdownToken[], index: number): [ListNode, number] {
   const token = tokens[index]
@@ -38,20 +39,22 @@ export function parseList(tokens: MarkdownToken[], index: number): [ListNode, nu
           const [blockquoteNode, newIndex] = parseBlockquote(tokens, k)
           itemChildren.push(blockquoteNode)
           k = newIndex
+        } else if (tokens[k].type === 'math_block') {
+          // Parse math block
+          itemChildren.push(parseMathBlock(tokens[k]))
+          k += 1
         } else if (
           tokens[k].type === 'bullet_list_open' ||
           tokens[k].type === 'ordered_list_open'
         ) {
-          // Parse nested list
+          // Handle deeper nested lists
           const [nestedListNode, newIndex] = parseNestedList(tokens, k)
           itemChildren.push(nestedListNode)
           k = newIndex
         } else if (tokens[k].type === 'code_block') {
-          // Parse code block
           itemChildren.push(parseCodeBlock(tokens[k]))
           k += 1
         } else if (tokens[k].type === 'fence') {
-          // Parse fenced code block
           itemChildren.push(parseFence(tokens[k]))
           k += 1
         } else if (tokens[k].type === 'table_open') {
@@ -157,6 +160,10 @@ function parseNestedList(tokens: MarkdownToken[], index: number): [ListNode, num
           k += 1
         } else if (tokens[k].type === 'fence') {
           itemChildren.push(parseFence(tokens[k]))
+          k += 1
+        } else if (tokens[k].type === 'math_block') {
+          // Parse math block in nested lists
+          itemChildren.push(parseMathBlock(tokens[k]))
           k += 1
         } else {
           // Skip other token types in nested lists for simplicity

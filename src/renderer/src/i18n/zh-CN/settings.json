@@ -352,6 +352,10 @@
     "newWindow": "打开新窗口",
     "newTab": "新建标签页",
     "closeTab": "关闭当前标签页",
-    "newConversation": "新会话"
+    "newConversation": "新会话",
+    "nextTab": "切换到下一个标签页",
+    "previousTab": "切换到上一个标签页",
+    "specificTab": "切换到指定标签页 (1-8)",
+    "lastTab": "切换到最后一个标签页"
   }
 }

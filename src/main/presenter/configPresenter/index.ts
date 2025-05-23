@@ -499,6 +499,13 @@ export class ConfigPresenter implements IConfigPresenter {
     return this.getSystemLanguage()
   }
 
+  // 设置应用语言
+  setLanguage(language: string): void {
+    this.setSetting('language', language)
+    // 触发语言变更事件
+    eventBus.emit(CONFIG_EVENTS.LANGUAGE_CHANGED, language)
+  }
+
   // 获取系统语言并匹配支持的语言列表
   private getSystemLanguage(): string {
     const systemLang = app.getLocale()

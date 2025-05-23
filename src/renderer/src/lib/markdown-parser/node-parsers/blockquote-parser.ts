@@ -1,6 +1,7 @@
 import { BlockquoteNode, MarkdownToken, ParsedNode } from '../types'
 import { parseInlineTokens } from '../inline-parsers'
 import { parseList } from './list-parser'
+import { parseMathBlock } from './math-block-parser'
 
 export function parseBlockquote(tokens: MarkdownToken[], index: number): [BlockquoteNode, number] {
   const blockquoteChildren: ParsedNode[] = []
@@ -21,6 +22,10 @@ export function parseBlockquote(tokens: MarkdownToken[], index: number): [Blockq
       const [listNode, newIndex] = parseList(tokens, j)
       blockquoteChildren.push(listNode)
       j = newIndex
+    } else if (tokens[j].type === 'math_block') {
+      // Handle math block
+      blockquoteChildren.push(parseMathBlock(tokens[j]))
+      j += 1
     } else {
       j++
     }

@@ -65,7 +65,8 @@ const eventsToForward: string[] = [
   SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
   SHORTCUT_EVENTS.ZOOM_IN,
   SHORTCUT_EVENTS.ZOOM_OUT,
-  SHORTCUT_EVENTS.ZOOM_RESUME
+  SHORTCUT_EVENTS.ZOOM_RESUME,
+  CONFIG_EVENTS.LANGUAGE_CHANGED
 ]
 export class Presenter implements IPresenter {
   windowPresenter: WindowPresenter
