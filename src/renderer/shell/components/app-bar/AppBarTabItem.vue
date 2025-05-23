@@ -16,7 +16,7 @@
     </div>
     <button
       class="ml-2 opacity-0 transition-opacity duration-200 rounded-full hover:bg-zinc-500/20 p-0.5"
-      :class="[index > 0 ? 'group-hover:opacity-100' : '']"
+      :class="[size > 1 ? 'group-hover:opacity-100 ' : 'pointer-events-none cursor-default']"
       @click.stop="onClose"
     >
       <Icon icon="lucide:x" class="w-3 h-3" />
@@ -52,9 +52,7 @@ const onClick = () => {
 }
 
 const onClose = () => {
-  if (props.index > 0) {
-    emit('close')
-  }
+  emit('close')
 }
 
 const onDragStart = (event: DragEvent) => {
