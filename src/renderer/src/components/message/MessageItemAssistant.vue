@@ -337,7 +337,7 @@ const handleCopyImage = async () => {
     const tabId = window.api.getWebContentsId()
 
     // 找到消息列表的滚动容器
-    const scrollContainer = messageNode.value?.closest('.overflow-y-auto') as HTMLElement
+    const scrollContainer = document.querySelector('.message-list-container') as HTMLElement
     if (!scrollContainer) {
       console.error('找不到滚动容器')
       return
@@ -347,7 +347,7 @@ const handleCopyImage = async () => {
 
     // 定义固定的截图窗口（相对于页面的绝对位置）
     const containerRect = scrollContainer.getBoundingClientRect()
-    const toolbarHeight = 40
+    const toolbarHeight = 30
     const maxSegmentHeight = Math.floor((window.innerHeight - toolbarHeight - 60) * 0.8)
 
     // 固定截图窗口：容器顶部开始，高度为maxSegmentHeight
@@ -475,8 +475,8 @@ const handleCopyImage = async () => {
         height: segment.captureHeight
       }
 
-      if (Math.abs(messageTopInCurrentView - expectedMessageTopInView) > 20) {
-        console.warn(`位置偏差较大，调整截图区域`)
+      if (Math.abs(messageTopInCurrentView - expectedMessageTopInView) > 30) {
+        // console.warn(`位置偏差较大，调整截图区域`)
 
         // 计算偏差
         const positionOffset = messageTopInCurrentView - expectedMessageTopInView
