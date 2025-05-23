@@ -663,7 +663,7 @@ const promptArgsDescription = computed(() => {
           {{ t('settings.mcp.noServersFound') }}
         </div>
 
-        <div v-else class="space-y-4 pb-4 pr-4">
+        <div v-else class="space-y-4 pb-4">
           <!-- 内置服务 -->
           <div v-if="inMemoryServers.length > 0" class="server-item">
             <h4 class="text-sm font-medium mb-2 text-muted-foreground">
