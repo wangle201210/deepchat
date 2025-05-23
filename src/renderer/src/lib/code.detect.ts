@@ -65,7 +65,6 @@ const languages: LanguageDefinition[] = [
       10
     ]
   ],
-  ['py', [/\b(def|print|class|and|or|lambda)\b/g, 10]],
   ['sql', [/\b(SELECT|INSERT|FROM)\b/g, 50]],
   ['pl', [/#!(\/usr)?\/bin\/perl/g, 500], [/\b(use|print)\b|\$/g, 10]],
   ['lua', [/#!(\/usr)?\/bin\/lua/g, 500]],
@@ -92,6 +91,17 @@ const languages: LanguageDefinition[] = [
       500
     ],
     [/\b(-->|--o|--x|=>|\[\]|[{}])\b/g, 10]
+  ],
+  [
+    'py',
+    [/^(import|from)\s+[a-zA-Z_][a-zA-Z0-9_.]*(\s+import)?/gm, 50],
+    [/^def\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(/gm, 100],
+    [
+      /\b(def|print|class|and|or|lambda|if|elif|else|for|while|try|except|finally|with|as|in|not|is)\b/g,
+      10
+    ],
+    [/^\s+[a-zA-Z_][^=]*[=][^=]/gm, 5],
+    [/"""[\s\S]*?"""|'''[\s\S]*?'''/g, 30]
   ]
 ]
 

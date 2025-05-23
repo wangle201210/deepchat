@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full rounded-lg border bg-card text-card-foreground shadow-sm">
+  <div class="w-full rounded-lg border shadow-sm">
     <div class="flex flex-col space-y-1.5 p-4">
       <div class="flex items-center justify-between">
         <h3 class="text-lg font-semibold leading-none tracking-tight">
