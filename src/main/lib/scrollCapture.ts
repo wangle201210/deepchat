@@ -280,12 +280,11 @@ export class ScrollCaptureManager {
 
 /**
  * 垂直拼接多个图片Buffer
- * 这是一个简化的实现，实际应用中可能需要更复杂的图像处理
  */
 export function stitchImagesVertically(
   imageBuffers: Buffer[]
 ): Promise<import('electron').NativeImage> {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
       if (imageBuffers.length === 0) {
         reject(new Error('No images to stitch'))
@@ -297,11 +296,77 @@ export function stitchImagesVertically(
         return
       }
 
-      // 暂时只返回第一张图片
-      // TODO: 实现真正的垂直拼接逻辑
-      console.log(`TODO: Implement proper vertical stitching for ${imageBuffers.length} images`)
-      resolve(nativeImage.createFromBuffer(imageBuffers[0]))
+      console.log(`开始使用Sharp拼接 ${imageBuffers.length} 张图片`)
+
+      const sharp = require('sharp')
+
+      // 获取所有图片的元数据
+      const imageInfos = await Promise.all(
+        imageBuffers.map(async (buffer, index) => {
+          try {
+            const metadata = await sharp(buffer).metadata()
+            console.log(`图片 ${index + 1} 尺寸: ${metadata.width}x${metadata.height}`)
+            return {
+              buffer,
+              width: metadata.width || 0,
+              height: metadata.height || 0,
+              index
+            }
+          } catch (error) {
+            console.error(`获取图片 ${index + 1} 元数据失败:`, error)
+            throw error
+          }
+        })
+      )
+
+      // 计算拼接后的尺寸
+      const maxWidth = Math.max(...imageInfos.map((info) => info.width))
+      const totalHeight = imageInfos.reduce((sum, info) => sum + info.height, 0)
+
+      console.log(`拼接后尺寸: ${maxWidth}x${totalHeight}`)
+
+      // 创建空白画布
+      const canvas = sharp({
+        create: {
+          width: maxWidth,
+          height: totalHeight,
+          channels: 4,
+          background: { r: 255, g: 255, b: 255, alpha: 1 }
+        }
+      })
+
+      // 准备合成操作
+      const composite: Array<{
+        input: Buffer
+        top: number
+        left: number
+      }> = []
+      let currentTop = 0
+
+      for (const imageInfo of imageInfos) {
+        // 计算居中位置
+        const left = Math.floor((maxWidth - imageInfo.width) / 2)
+
+        composite.push({
+          input: imageInfo.buffer,
+          top: currentTop,
+          left: left
+        })
+
+        console.log(`图片 ${imageInfo.index + 1} 将放置在位置 (${left}, ${currentTop})`)
+        currentTop += imageInfo.height
+      }
+
+      // 执行合成
+      const stitchedBuffer = await canvas.composite(composite).png().toBuffer()
+
+      // 创建NativeImage
+      const stitchedImage = nativeImage.createFromBuffer(stitchedBuffer)
+
+      console.log(`成功使用Sharp拼接 ${imageBuffers.length} 张图片`)
+      resolve(stitchedImage)
     } catch (error) {
+      console.error('Sharp拼接图片时出错:', error)
       reject(error)
     }
   })

@@ -315,7 +315,7 @@ const handleAction = (
 
 /**
  * 处理复制图片操作
- * 使用Vue控制滚动，分段截图后拼接
+ * 使用固定截图窗口，滚动内容进行分段截图
  */
 const handleCopyImage = async () => {
   if (isCapturingImage.value) {
@@ -336,46 +336,42 @@ const handleCopyImage = async () => {
     // 获取当前标签页ID
     const tabId = window.api.getWebContentsId()
 
-    // 保存原始滚动位置
-    const originalScrollPosition = {
-      top: document.documentElement.scrollTop || document.body.scrollTop,
-      left: document.documentElement.scrollLeft || document.body.scrollLeft
+    // 找到消息列表的滚动容器
+    const scrollContainer = messageNode.value?.closest('.overflow-y-auto') as HTMLElement
+    if (!scrollContainer) {
+      console.error('找不到滚动容器')
+      return
     }
 
-    // 临时隐藏不需要的元素（可选）
-    const hideSelectors = [
-      '.message-toolbar',
-      '.input-area',
-      '.floating-button',
-      '.overlay',
-      '.modal',
-      '.tooltip'
-    ]
-
-    const hideOperations = await hideElementsTemporarily(hideSelectors)
+    const containerOriginalScrollTop = scrollContainer.scrollTop
 
     console.log('开始分段截图...', initialRect)
 
-    // 计算需要的截图区域（避开顶部工具栏和底部输入框）
-    const toolbarHeight = 40 // 顶部工具栏高度
-    const inputAreaHeight = 60 // 底部输入区域高度
-    const captureRect = {
-      x: initialRect.x,
-      y: toolbarHeight,
-      width: initialRect.width,
-      height: Math.min(initialRect.height, window.innerHeight - toolbarHeight - inputAreaHeight)
+    // 定义固定的截图窗口（相对于页面的绝对位置）
+    const containerRect = scrollContainer.getBoundingClientRect()
+    const toolbarHeight = 40
+    const maxSegmentHeight = Math.floor((window.innerHeight - toolbarHeight - 60) * 0.8)
+
+    // 固定截图窗口：容器顶部开始，高度为maxSegmentHeight
+    const fixedCaptureWindow = {
+      x: containerRect.left,
+      y: containerRect.top,
+      width: containerRect.width,
+      height: Math.min(maxSegmentHeight, containerRect.height)
     }
 
-    // 判断是否需要分段截图
-    const maxSegmentHeight = Math.floor(window.innerHeight * 0.6) // 每段最大高度
-    const needsScrolling = initialRect.height > maxSegmentHeight
+    console.log('固定截图窗口:', fixedCaptureWindow)
+    console.log('消息高度:', initialRect.height, '窗口高度:', fixedCaptureWindow.height)
 
     const imageDataList: string[] = []
+
+    // 判断是否需要分段
+    const needsScrolling = initialRect.height > fixedCaptureWindow.height
 
     if (!needsScrolling) {
       // 不需要滚动，直接截图
       console.log('Single capture')
-      const imageData = await tabPresenter.captureTabArea(tabId, captureRect)
+      const imageData = await tabPresenter.captureTabArea(tabId, fixedCaptureWindow)
       if (imageData) {
         imageDataList.push(imageData)
       }
@@ -383,64 +379,80 @@ const handleCopyImage = async () => {
       // 需要分段截图
       console.log('Multiple segments capture')
 
-      // 计算分段
-      const segments: Array<{
-        x: number
-        y: number
-        width: number
-        height: number
-        scrollY: number
-        segmentIndex: number
-      }> = []
-      let currentY = initialRect.y
-      let segmentIndex = 0
+      // 计算需要多少段
+      const totalSegments = Math.ceil(initialRect.height / fixedCaptureWindow.height)
+      console.log(`总共需要 ${totalSegments} 段`)
 
-      while (currentY < initialRect.y + initialRect.height) {
-        const remainingHeight = initialRect.y + initialRect.height - currentY
-        const segmentHeight = Math.min(maxSegmentHeight, remainingHeight)
+      // 计算消息在容器中的起始位置
+      const messageRect = messageNode.value!.getBoundingClientRect()
+      const messageTopInContainer = messageRect.top - containerRect.top + containerOriginalScrollTop
 
-        segments.push({
-          x: initialRect.x,
-          y: currentY,
-          width: initialRect.width,
-          height: segmentHeight,
-          scrollY: currentY,
-          segmentIndex: segmentIndex++
-        })
+      for (let segmentIndex = 0; segmentIndex < totalSegments; segmentIndex++) {
+        // 计算需要滚动到的位置：让消息的对应部分出现在固定窗口的顶部
+        const segmentOffsetInMessage = segmentIndex * fixedCaptureWindow.height
+        const targetScrollTop = messageTopInContainer + segmentOffsetInMessage
 
-        currentY += segmentHeight
-      }
+        console.log(`第 ${segmentIndex + 1} 段: 计划滚动到 ${targetScrollTop}`)
 
-      for (let i = 0; i < segments.length; i++) {
-        const segment = segments[i]
+        // 记录滚动前的位置
+        const beforeScrollTop = scrollContainer.scrollTop
 
         // 滚动到目标位置
-        document.documentElement.scrollTop = segment.scrollY
+        scrollContainer.scrollTop = targetScrollTop
 
         // 等待滚动完成
         await new Promise((resolve) => setTimeout(resolve, 300))
 
+        // 获取实际滚动后的位置
+        const actualScrollTop = scrollContainer.scrollTop
+        const actualScrollDistance = actualScrollTop - beforeScrollTop
+
+        console.log(
+          `第 ${segmentIndex + 1} 段: 计划滚动 ${targetScrollTop - beforeScrollTop}, 实际滚动 ${actualScrollDistance}`
+        )
+
+        // 如果是最后一段，需要调整截图高度避免重复
+        let captureHeight = fixedCaptureWindow.height
+
+        if (segmentIndex === totalSegments - 1) {
+          // 最后一段：计算剩余的消息高度
+          const remainingMessageHeight =
+            initialRect.height - segmentIndex * fixedCaptureWindow.height
+          captureHeight = Math.min(remainingMessageHeight, fixedCaptureWindow.height)
+          console.log(
+            `最后一段调整高度: ${captureHeight} (剩余消息高度: ${remainingMessageHeight})`
+          )
+        } else if (actualScrollDistance < fixedCaptureWindow.height * 0.5) {
+          // 如果实际滚动距离太少，说明已经到底部了，调整截图高度
+          captureHeight = Math.max(actualScrollDistance, fixedCaptureWindow.height * 0.3)
+          console.log(`滚动距离不足，调整高度: ${captureHeight}`)
+        }
+
+        // 截图区域
+        const captureRect = {
+          x: fixedCaptureWindow.x,
+          y: fixedCaptureWindow.y,
+          width: fixedCaptureWindow.width,
+          height: captureHeight
+        }
+
+        console.log(`第 ${segmentIndex + 1} 段截图区域:`, captureRect)
+
         // 截取当前段
-        const segmentData = await tabPresenter.captureTabArea(tabId, {
-          x: captureRect.x,
-          y: captureRect.y,
-          width: captureRect.width,
-          height: Math.min(segment.height, captureRect.height)
-        })
+        const segmentData = await tabPresenter.captureTabArea(tabId, captureRect)
 
         if (segmentData) {
           imageDataList.push(segmentData)
-          console.log(`Captured segment ${i + 1}/${segments.length}`)
+          console.log(segmentData)
+          console.log(`成功截取第 ${segmentIndex + 1}/${totalSegments} 段`)
+        } else {
+          console.error(`第 ${segmentIndex + 1} 段截图失败`)
         }
       }
     }
 
-    // 恢复隐藏的元素
-    await restoreHiddenElements(hideOperations)
-
     // 恢复原始滚动位置
-    document.documentElement.scrollTop = originalScrollPosition.top
-    document.documentElement.scrollLeft = originalScrollPosition.left
+    scrollContainer.scrollTop = containerOriginalScrollTop
 
     if (imageDataList.length === 0) {
       console.error('没有成功截取任何图片')
@@ -469,37 +481,6 @@ const handleCopyImage = async () => {
   } finally {
     isCapturingImage.value = false
   }
-}
-
-/**
- * 临时隐藏指定元素
- */
-const hideElementsTemporarily = async (selectors: string[]) => {
-  const operations: Array<{ element: Element; originalDisplay: string }> = []
-
-  for (const selector of selectors) {
-    const elements = document.querySelectorAll(selector)
-    elements.forEach((element) => {
-      const htmlElement = element as HTMLElement
-      const originalDisplay = htmlElement.style.display || ''
-      htmlElement.style.display = 'none'
-      operations.push({ element, originalDisplay })
-    })
-  }
-
-  return operations
-}
-
-/**
- * 恢复隐藏的元素
- */
-const restoreHiddenElements = async (
-  operations: Array<{ element: Element; originalDisplay: string }>
-) => {
-  operations.forEach(({ element, originalDisplay }) => {
-    const htmlElement = element as HTMLElement
-    htmlElement.style.display = originalDisplay
-  })
 }
 
 // Expose the handleAction method to parent components
