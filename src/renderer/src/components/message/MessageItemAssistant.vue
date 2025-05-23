@@ -344,10 +344,10 @@ const handleCopyImage = async () => {
       scrollContainer.scrollTop = currentScroll;
       await new Promise(resolve => setTimeout(resolve, 350));
 
-      const actualScrolledTo = scrollContainer.scrollTop;
-      if (Math.abs(actualScrolledTo - currentScroll) > 5 && !(currentScroll === 0 && actualScrolledTo < 5)) { // Allow 0->0.5 without warning
-        console.warn(`[CAPTURE_DEBUG] Iteration ${iteration}: Scroll position mismatch. Requested: ${currentScroll}, Actual: ${actualScrolledTo}.`);
-      }
+      // const actualScrolledTo = scrollContainer.scrollTop;
+      // if (Math.abs(actualScrolledTo - currentScroll) > 5 && !(currentScroll === 0 && actualScrolledTo < 5)) { // Allow 0->0.5 without warning
+      //   console.warn(`[CAPTURE_DEBUG] Iteration ${iteration}: Scroll position mismatch. Requested: ${currentScroll}, Actual: ${actualScrolledTo}.`);
+      // }
 
       const finalInitialRectStateAfterScroll = calculateMessageGroupRect();
       if (!finalInitialRectStateAfterScroll) {
