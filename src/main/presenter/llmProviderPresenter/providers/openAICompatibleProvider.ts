@@ -483,10 +483,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
     // 防止qwen等某些模型以json形式输出结果正文
     // grok系列模型和供应商不需要设置response_format
-    if (
-      !modelId.toLowerCase().includes('grok') &&
-      !this.provider.id.toLowerCase().includes('grok')
-    ) {
+    if (this.provider.id.toLowerCase().includes('dashscrope')) {
       requestParams.response_format = { type: 'text' }
     }
 
