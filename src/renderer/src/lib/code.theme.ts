@@ -4,14 +4,14 @@ import { tags as t } from '@lezer/highlight'
 export const anysphereThemeDark = createTheme({
   theme: 'dark',
   settings: {
-    background: '#181818',
+    background: '#00181818',
     foreground: '#D6D6DD',
     caret: '#D6D6DD',
     selection: '#163761',
     selectionMatch: '#163761',
     lineHighlight: 'rgba(50, 50, 100, 0.05)',
-    gutterBackground: '#181818',
-    gutterForeground: '#535353'
+    gutterBackground: 'rgba(0, 0, 0, 0.3)',
+    gutterForeground: 'rgba(255, 255, 255, 0.3)'
   },
   styles: [
     { tag: [t.comment, t.lineComment, t.blockComment], color: '#6D6D6D', fontStyle: 'italic' },
