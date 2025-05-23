@@ -234,13 +234,13 @@ export class GeminiProvider extends BaseLLMProvider {
   protected async init() {
     if (this.provider.enable) {
       try {
+        this.isInitialized = true
         // 使用静态定义的模型列表，并设置正确的providerId
         this.models = GeminiProvider.GEMINI_MODELS.map((model) => ({
           ...model,
           providerId: this.provider.id
         }))
         await this.autoEnableModelsIfNeeded()
-        this.isInitialized = true
         console.info('Provider initialized successfully:', this.provider.name)
       } catch (error) {
         console.warn('Provider initialization failed:', this.provider.name, error)

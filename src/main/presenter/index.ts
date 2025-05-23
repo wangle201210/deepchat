@@ -158,9 +158,6 @@ export class Presenter implements IPresenter {
   }
 
   init() {
-    if (this.windowPresenter.mainWindow) {
-      // this.llamaCppPresenter.setMainwindow(this.windowPresenter.mainWindow)
-    }
     // 持久化 LLMProviderPresenter 的 Providers 数据
     const providers = this.configPresenter.getProviders()
     this.llmproviderPresenter.setProviders(providers)

@@ -6,7 +6,7 @@
         :key="setting.name"
         :class="[
           'flex flex-row items-center hover:bg-accent gap-2 rounded-lg p-2 cursor-pointer',
-          route.name === setting.name ? 'bg-accent' : ''
+          route.name === setting.name ? 'bg-secondary' : ''
         ]"
         @click="handleClick(setting.path)"
       >
