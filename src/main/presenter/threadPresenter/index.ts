@@ -1004,7 +1004,7 @@ export class ThreadPresenter implements IThreadPresenter {
       })
 
       // 如果不需要搜索，直接返回空结果
-      if (optimizedQuery === '无须搜索') {
+      if (optimizedQuery.includes('无须搜索')) {
         searchBlock.status = 'success'
         searchBlock.content = ''
         await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
@@ -1690,17 +1690,18 @@ export class ThreadPresenter implements IThreadPresenter {
                 tool_call_id: subMsg.tool_call.id,
                 content: subMsg.tool_call.response
               })
-            } else if (subMsg.type === 'content' && subMsg?.content?.trim()) {
-              // 删除强制搜索结果中的引文标记
-              let content = subMsg.content
+            } else if (subMsg.type === 'search') {
+              // 删除强制搜索结果中遗留的[x]引文标记
+              afterSearch = true
+            } else if (subMsg.type === 'content') {
+              // 删除强制搜索结果中遗留的[x]引文标记
+              let content = subMsg.content ?? ''
               if (afterSearch) content = content.replace(/\[\d+\]/g, '')
               resultMessages.push({
                 role: 'assistant',
                 content: content
               })
               afterSearch = false
-            } else if (subMsg.type === 'search') {
-              afterSearch = true
             }
           }
         }
@@ -1724,11 +1725,23 @@ export class ThreadPresenter implements IThreadPresenter {
           // 处理助手消息
           const assistantBlocks = msg.content as AssistantMessageBlock[]
           // 提取文本内容块，同时将工具调用的响应内容提取出来
+          let afterSearch = false
           const textContent = assistantBlocks
-            .filter((block) => block.type === 'content' || block.type === 'tool_call')
+            .filter(
+              (block) =>
+                block.type === 'content' || block.type === 'search' || block.type === 'tool_call'
+            )
             .map((block) => {
-              if (block.type === 'content') {
-                return block.content
+              if (block.type === 'search') {
+                // 删除强制搜索结果中遗留的[x]引文标记
+                afterSearch = true
+                return ''
+              } else if (block.type === 'content') {
+                // 删除强制搜索结果中遗留的[x]引文标记
+                let content = block.content ?? ''
+                if (afterSearch) content = content.replace(/\[\d+\]/g, '')
+                afterSearch = false
+                return content
               } else if (
                 block.type === 'tool_call' &&
                 block.tool_call?.response &&
@@ -1819,82 +1832,90 @@ export class ThreadPresenter implements IThreadPresenter {
     }
   }
 
-  // 合并连续的相同角色消息
+  // 合并连续的相同角色的content，但注意assistant下content不能跟tool_calls合并
   private mergeConsecutiveMessages(messages: ChatMessage[]): ChatMessage[] {
-    const mergedMessages: ChatMessage[] = []
-
-    for (let i = 0; i < messages.length; i++) {
-      const currentMessage = messages[i]
-      if (
-        mergedMessages.length > 0 &&
-        mergedMessages[mergedMessages.length - 1].role === currentMessage.role
-      ) {
-        mergedMessages[mergedMessages.length - 1].content = this.mergeMessageContent(
-          currentMessage.content || '',
-          mergedMessages[mergedMessages.length - 1].content || ''
-        )
-      } else {
-        mergedMessages.push({ ...currentMessage })
-      }
+    if (!messages || messages.length === 0) {
+      return []
     }
 
-    return mergedMessages
-  }
+    const mergedResult: ChatMessage[] = []
+    // 为第一条消息创建一个深拷贝并添加到结果数组
+    mergedResult.push(JSON.parse(JSON.stringify(messages[0])))
 
-  private mergeMessageContent(
-    currentMessageContent: string | ChatMessageContent[],
-    previousMessageContent: string | ChatMessageContent[]
-  ) {
-    let mergedContent: ChatMessageContent[] | string
-    if (Array.isArray(currentMessageContent)) {
-      if (Array.isArray(previousMessageContent)) {
-        mergedContent = [
-          ...(previousMessageContent.filter(
-            (item) => item.type !== 'text'
-          ) as ChatMessageContent[]),
-          {
-            type: 'text',
-            text: `${previousMessageContent
-              .filter((item) => item.type === 'text')
-              .map((item) => item.text)
-              .join('\n')}\n${currentMessageContent
-              .filter((item) => item.type === 'text')
-              .map((item) => item.text)
-              .join('\n')}`
-          },
-          ...(currentMessageContent.filter((item) => item.type !== 'text') as ChatMessageContent[])
-        ] as ChatMessageContent[]
-      } else {
-        mergedContent = [
-          {
-            type: 'text',
-            text: `${previousMessageContent}\n${currentMessageContent
-              .filter((item) => item.type === 'text')
-              .map((item) => item.text)
-              .join('\n')}`
-          },
-          ...(currentMessageContent.filter((item) => item.type !== 'text') as ChatMessageContent[])
-        ]
-      }
-    } else {
-      if (Array.isArray(previousMessageContent)) {
-        mergedContent = [
-          ...(previousMessageContent.filter(
-            (item) => item.type !== 'text'
-          ) as ChatMessageContent[]),
-          {
-            type: 'text',
-            text: `${previousMessageContent
-              .filter((item) => item.type == 'text')
-              .map((item) => item.text)
-              .join(`\n`)}\n${currentMessageContent}`
+    for (let i = 1; i < messages.length; i++) {
+      // 为当前消息创建一个深拷贝
+      const currentMessage = JSON.parse(JSON.stringify(messages[i])) as ChatMessage
+      const lastPushedMessage = mergedResult[mergedResult.length - 1]
+
+      let allowMessagePropertiesMerge = false // 标志是否允许消息属性（如content）合并
+
+      // 步骤 1: 判断消息本身是否允许合并（基于role和tool_calls）
+      if (lastPushedMessage.role === currentMessage.role) {
+        if (currentMessage.role === 'assistant') {
+          // Assistant消息: 仅当两条消息都【不】包含tool_calls时，才允许合并
+          if (!lastPushedMessage.tool_calls && !currentMessage.tool_calls) {
+            allowMessagePropertiesMerge = true
           }
-        ] as ChatMessageContent[]
+        } else {
+          // 其他角色 (user, system): 如果role相同，则允许合并
+          allowMessagePropertiesMerge = true
+        }
+      }
+
+      if (allowMessagePropertiesMerge) {
+        // 步骤 2: 如果消息允许合并，尝试合并其 content 字段
+        const LMC = lastPushedMessage.content // 上一条已推送消息的内容
+        const CMC = currentMessage.content // 当前待处理消息的内容
+
+        let newCombinedContent: string | ChatMessageContent[] | undefined = undefined
+        let contentTypesCompatibleForMerging = false
+
+        if (LMC === undefined && CMC === undefined) {
+          newCombinedContent = undefined
+          contentTypesCompatibleForMerging = true
+        } else if (typeof LMC === 'string' && (typeof CMC === 'string' || CMC === undefined)) {
+          // LMC是string, CMC是string或undefined
+          const sLMC = LMC || ''
+          const sCMC = CMC || ''
+          if (sLMC && sCMC) newCombinedContent = `${sLMC}\n${sCMC}`
+          else newCombinedContent = sLMC || sCMC // 保留有内容的一方
+          if (newCombinedContent === '') newCombinedContent = undefined // 空字符串视为undefined
+          contentTypesCompatibleForMerging = true
+        } else if (Array.isArray(LMC) && (Array.isArray(CMC) || CMC === undefined)) {
+          // LMC是数组, CMC是数组或undefined
+          const arrLMC = LMC
+          const arrCMC = CMC || [] // 如果CMC是undefined, 视为空数组进行合并
+          newCombinedContent = [...arrLMC, ...arrCMC]
+          if (newCombinedContent.length === 0) newCombinedContent = undefined // 空数组视为undefined
+          contentTypesCompatibleForMerging = true
+        } else if (LMC === undefined && CMC !== undefined) {
+          // LMC是undefined, CMC有值 (string或array)
+          newCombinedContent = CMC
+          contentTypesCompatibleForMerging = true
+        } else if (LMC !== undefined && CMC === undefined) {
+          // LMC有值, CMC是undefined -> content保持LMC的值，无需改变
+          newCombinedContent = LMC
+          contentTypesCompatibleForMerging = true // 视为成功合并（当前消息内容被“吸收”）
+        }
+        // 如果LMC和CMC的类型不兼容 (例如一个是string, 另一个是array)，
+        // contentTypesCompatibleForMerging 将保持 false
+
+        if (contentTypesCompatibleForMerging) {
+          lastPushedMessage.content = newCombinedContent
+          // currentMessage 被成功合并，不需单独push
+        } else {
+          // 角色和tool_calls条件允许合并，但内容类型不兼容
+          // 因此，不合并消息，将 currentMessage 作为新消息加入
+          mergedResult.push(currentMessage)
+        }
       } else {
-        mergedContent = `${previousMessageContent}\n${currentMessageContent}`
+        // 角色不同，或者 assistant 消息因 tool_calls 而不允许合并
+        // 将 currentMessage 作为新消息加入
+        mergedResult.push(currentMessage)
       }
     }
-    return mergedContent
+
+    return mergedResult
   }
 
   // 更新生成状态
