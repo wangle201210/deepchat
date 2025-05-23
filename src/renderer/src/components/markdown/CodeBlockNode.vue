@@ -1,7 +1,7 @@
 <template>
   <MermaidBlockNode v-if="isMermaid" :node="node" />
   <div v-else class="my-4 rounded-lg border border-border overflow-hidden shadow-sm">
-    <div class="flex justify-between items-center p-2 bg-gray-100 dark:bg-zinc-800 text-xs">
+    <div class="flex justify-between items-center p-2 bg-muted text-xs">
       <span class="flex items-center space-x-2">
         <Icon :icon="languageIcon" class="w-4 h-4" />
         <span class="text-gray-600 dark:text-gray-400 font-mono font-bold">{{
@@ -32,7 +32,7 @@
     </div>
     <div
       ref="codeEditor"
-      class="min-h-[30px] max-h-[500px] text-xs overflow-auto bg-gray-50 dark:bg-zinc-900 font-mono leading-relaxed"
+      class="min-h-[30px] max-h-[500px] text-xs overflow-auto bg-background font-mono leading-relaxed"
       :data-language="node.language"
     ></div>
   </div>
@@ -268,8 +268,8 @@ watch(
       })
       nextTick(() => {
         if (editorInstance.value) {
-          const view = editorInstance.value.scrollDOM.parentElement!.parentElement!;
-          view.scrollTop = view.scrollHeight;
+          const view = editorInstance.value.scrollDOM.parentElement!.parentElement!
+          view.scrollTop = view.scrollHeight
         }
       })
     } else {
