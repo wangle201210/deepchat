@@ -48,11 +48,14 @@ const messageBlock = ref<HTMLDivElement | null>(null)
 
 const collapse = ref(false)
 const reasoningDuration = computed(() => {
+  let duration: number
   if (props.block.reasoning_time) {
-    return Math.floor((props.block.reasoning_time.end - props.block.reasoning_time.start) / 1000)
+    duration = (props.block.reasoning_time.end - props.block.reasoning_time.start) / 1000
   } else {
-    return Math.floor((props.usage.reasoning_end_time - props.usage.reasoning_start_time) / 1000)
+    duration = (props.usage.reasoning_end_time - props.usage.reasoning_start_time) / 1000
   }
+  // 保留小数点后最多两位，去除尾随的0
+  return parseFloat(duration.toFixed(2))
 })
 
 const md = new MarkdownIt({
