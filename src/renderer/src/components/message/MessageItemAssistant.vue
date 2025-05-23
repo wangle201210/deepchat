@@ -345,8 +345,6 @@ const handleCopyImage = async () => {
 
     const containerOriginalScrollTop = scrollContainer.scrollTop
 
-    console.log('开始分段截图...', initialRect)
-
     // 定义固定的截图窗口（相对于页面的绝对位置）
     const containerRect = scrollContainer.getBoundingClientRect()
     const toolbarHeight = 40
@@ -356,13 +354,18 @@ const handleCopyImage = async () => {
     const fixedCaptureWindow = {
       x: containerRect.left,
       y: containerRect.top,
-      width: containerRect.width,
+      width: containerRect.width - 9, // 避开右侧滚动条
       height: Math.min(maxSegmentHeight, containerRect.height)
     }
 
     console.log('固定截图窗口:', fixedCaptureWindow)
     console.log('消息高度:', initialRect.height, '窗口高度:', fixedCaptureWindow.height)
 
+    console.log('开始分段截图...', {
+      messageHeight: initialRect.height,
+      windowHeight: fixedCaptureWindow.height,
+      avoidScrollbar: true
+    })
     // 计算消息在容器中的起始位置
     const messageRect = messageNode.value!.getBoundingClientRect()
     const messageTopInContainer = messageRect.top - containerRect.top + containerOriginalScrollTop
@@ -402,11 +405,7 @@ const handleCopyImage = async () => {
       // 计算滚动容器的边界
       const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight
 
-      console.log(
-        `规划分段：总高度 ${totalHeight}，段高度 ${segmentHeight}，总段数 ${segmentCount}`
-      )
-      console.log(`滚动容器：当前位置 ${containerOriginalScrollTop}，最大滚动 ${maxScrollTop}`)
-      console.log(`消息位置：在容器中的起始位置 ${messageTopInContainer}`)
+      console.log(`规划 ${segmentCount} 段截图`)
 
       for (let i = 0; i < segmentCount; i++) {
         const messageOffsetStart = i * segmentHeight
@@ -422,9 +421,6 @@ const handleCopyImage = async () => {
 
         // 确保滚动位置不超出容器边界
         if (scrollTop > maxScrollTop) {
-          console.warn(
-            `段 ${i + 1}: 计划滚动位置 ${scrollTop} 超出最大值 ${maxScrollTop}，调整为最大值`
-          )
           scrollTop = maxScrollTop
         }
 
@@ -435,30 +431,19 @@ const handleCopyImage = async () => {
           messageOffsetStart: messageOffsetStart,
           messageOffsetEnd: messageOffsetEnd
         })
-
-        console.log(`段 ${i + 1}:`, {
-          messageOffset: `${messageOffsetStart} - ${messageOffsetEnd}`,
-          scrollTop: scrollTop,
-          captureHeight: actualCaptureHeight,
-          isLastSegment: i === segmentCount - 1,
-          reachesMaxScroll: scrollTop >= maxScrollTop
-        })
       }
 
       return segments
     }
 
     const segmentPlans = planSegments()
-    console.log('分段计划完成:', segmentPlans)
+    console.log('分段计划完成:', segmentPlans.length, '段')
 
     // ===== 执行阶段：按照规划逐一截图 =====
     const imageDataList: string[] = []
 
     for (const segment of segmentPlans) {
-      console.log(`执行第 ${segment.index + 1}/${segmentPlans.length} 段截图`)
-      console.log(`- 滚动到: ${segment.scrollTop}`)
-      console.log(`- 截图高度: ${segment.captureHeight}`)
-      console.log(`- 消息偏移: ${segment.messageOffsetStart} - ${segment.messageOffsetEnd}`)
+      console.log(`截图第 ${segment.index + 1}/${segmentPlans.length} 段`)
 
       // 滚动到目标位置
       scrollContainer.scrollTop = segment.scrollTop
@@ -470,14 +455,8 @@ const handleCopyImage = async () => {
       const actualScrollTop = scrollContainer.scrollTop
       const scrollDiff = Math.abs(actualScrollTop - segment.scrollTop)
 
-      console.log(
-        `- 实际滚动位置: ${actualScrollTop} (计划: ${segment.scrollTop}, 偏差: ${scrollDiff})`
-      )
-
       if (scrollDiff > 10) {
-        console.warn(
-          `滚动位置偏差较大: 计划 ${segment.scrollTop}, 实际 ${actualScrollTop}, 偏差 ${scrollDiff}`
-        )
+        console.warn(`滚动偏差: ${scrollDiff}px`)
       }
 
       // 重新计算消息在当前滚动位置下的实际位置
@@ -485,19 +464,8 @@ const handleCopyImage = async () => {
       const currentContainerRect = scrollContainer.getBoundingClientRect()
       const messageTopInCurrentView = currentMessageRect.top - currentContainerRect.top
 
-      console.log(`- 消息在当前视图中的位置: ${messageTopInCurrentView}`)
-      console.log(
-        `- 消息在当前视图中的范围: ${messageTopInCurrentView} - ${messageTopInCurrentView + currentMessageRect.height}`
-      )
-      console.log(
-        `- 当前段期望截取的消息部分: ${segment.messageOffsetStart} - ${segment.messageOffsetEnd}`
-      )
-
       // 验证当前段是否会截取到正确的消息部分
       const expectedMessageTopInView = -segment.messageOffsetStart
-      console.log(
-        `- 期望的消息顶部位置: ${expectedMessageTopInView}，实际: ${messageTopInCurrentView}`
-      )
 
       // 计算截图区域
       let captureRect = {
@@ -508,19 +476,15 @@ const handleCopyImage = async () => {
       }
 
       if (Math.abs(messageTopInCurrentView - expectedMessageTopInView) > 20) {
-        console.warn(`警告：消息位置偏差较大，需要调整截图区域`)
-        console.warn(`期望消息顶部在视图中的位置: ${expectedMessageTopInView}`)
-        console.warn(`实际消息顶部在视图中的位置: ${messageTopInCurrentView}`)
+        console.warn(`位置偏差较大，调整截图区域`)
 
         // 计算偏差
         const positionOffset = messageTopInCurrentView - expectedMessageTopInView
-        console.warn(`位置偏差: ${positionOffset}px`)
 
         // 调整截图区域：如果消息向下偏移了，需要从更下面的位置开始截图
         if (positionOffset > 0) {
-          // 消息向下偏移，截图区域也需要向下偏移
           const adjustedY = fixedCaptureWindow.y + positionOffset
-          const adjustedHeight = Math.max(segment.captureHeight - positionOffset, 100) // 至少保留100px高度
+          const adjustedHeight = Math.max(segment.captureHeight - positionOffset, 100)
 
           captureRect = {
             x: fixedCaptureWindow.x,
@@ -529,24 +493,20 @@ const handleCopyImage = async () => {
             height: adjustedHeight
           }
 
-          console.warn(`调整截图区域：Y从 ${fixedCaptureWindow.y} 调整为 ${adjustedY}`)
-          console.warn(`调整截图区域：高度从 ${segment.captureHeight} 调整为 ${adjustedHeight}`)
-        } else {
-          // 消息向上偏移，说明滚动超出了预期，这种情况比较复杂，需要特殊处理
-          console.warn(`消息向上偏移 ${Math.abs(positionOffset)}px，使用原始截图区域`)
+          console.warn(
+            `调整Y: ${fixedCaptureWindow.y} -> ${adjustedY}, 高度: ${segment.captureHeight} -> ${adjustedHeight}`
+          )
         }
       }
-
-      console.log(`第 ${segment.index + 1} 段截图区域:`, captureRect)
 
       // 截取当前段
       const segmentData = await tabPresenter.captureTabArea(tabId, captureRect)
 
       if (segmentData) {
         imageDataList.push(segmentData)
-        console.log(`成功截取第 ${segment.index + 1}/${segmentPlans.length} 段`)
+        console.log(`✓ 第 ${segment.index + 1} 段完成`)
       } else {
-        console.error(`第 ${segment.index + 1} 段截图失败`)
+        console.error(`✗ 第 ${segment.index + 1} 段失败`)
       }
     }
 
