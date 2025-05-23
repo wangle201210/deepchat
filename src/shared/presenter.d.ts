@@ -156,6 +156,22 @@ export interface ITabPresenter {
   moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   getWindowTabsData(windowId: number): Promise<Array<TabData>>
   moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
+  captureTabArea(
+    tabId: number,
+    rect: { x: number; y: number; width: number; height: number }
+  ): Promise<string | null>
+  stitchImagesWithWatermark(
+    imageDataList: string[],
+    options?: {
+      isDark?: boolean
+      version?: string
+      texts?: {
+        brand?: string
+        time?: string
+        tip?: string
+      }
+    }
+  ): Promise<string | null>
 }
 
 export interface TabCreateOptions {

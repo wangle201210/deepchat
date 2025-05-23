@@ -16,6 +16,7 @@
     "nextVariant": "切换到下一个版本",
     "copy": "复制回答为Markdown",
     "copyImage": "复制为图片",
+    "capturing": "正在截图...",
     "retry": "重新生成",
     "fork": "分叉到新会话",
     "edit": "编辑消息",
