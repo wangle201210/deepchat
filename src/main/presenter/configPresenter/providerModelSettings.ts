@@ -29,6 +29,28 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   anthropic: {
     models: [
       {
+        id: 'claude-opus-4',
+        name: 'Claude Opus 4',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 204800,
+        match: ['claude-opus-4', 'claude-opus-4-20250514'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'claude-sonnet-4',
+        name: 'Claude Sonnet 4',
+        temperature: 0.7,
+        maxTokens: 64000,
+        contextLength: 204800,
+        match: ['claude-sonnet-4', 'claude-sonnet-4-20250514'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
         id: 'claude-3-7-sonnet',
         name: 'Claude 3.7 Sonnet',
         temperature: 1,
