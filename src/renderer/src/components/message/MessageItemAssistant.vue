@@ -65,6 +65,7 @@
         :current-variant-index="currentVariantIndex"
         :total-variants="totalVariants"
         :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
+        :is-capturing-image="isCapturingImage"
         @retry="handleAction('retry')"
         @delete="handleAction('delete')"
         @copy="handleAction('copy')"
@@ -110,10 +111,8 @@ import MessageInfo from './MessageInfo.vue'
 import { useChatStore } from '@/stores/chat'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
-import { toCanvas } from 'html-to-image'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
-import { addWatermark } from '@/lib/watermark'
 import MessageBlockImage from './MessageBlockImage.vue'
 
 import {
@@ -131,6 +130,7 @@ const devicePresenter = usePresenter('devicePresenter')
 const tabPresenter = usePresenter('tabPresenter')
 
 const appVersion = ref('')
+const isCapturingImage = ref(false)
 
 const props = defineProps<{
   message: AssistantMessage
@@ -200,10 +200,6 @@ onMounted(async () => {
   currentVariantIndex.value = allVariants.value.length
   appVersion.value = await devicePresenter.getAppVersion()
 })
-
-const filterDom = (node: HTMLElement) => {
-  return !node.classList?.contains('message-toolbar')
-}
 
 // 分支会话对话框
 const isForkDialogOpen = ref(false)
@@ -319,23 +315,140 @@ const handleAction = (
 
 /**
  * 处理复制图片操作
- * 使用新的 captureTabWithWatermark 功能
+ * 使用Vue控制滚动，分段截图后拼接
  */
 const handleCopyImage = async () => {
+  if (isCapturingImage.value) {
+    console.log('正在截图中，请稍候...')
+    return
+  }
+
+  isCapturingImage.value = true
+
   try {
-    // 获取当前标签页ID
-    const tabId = window.api.getWebContentsId()
-
-    // 计算截图区域
-    const rect = calculateMessageGroupRect()
-
-    if (!rect) {
+    // 计算初始消息区域
+    const initialRect = calculateMessageGroupRect()
+    if (!initialRect) {
       console.error('无法计算消息区域')
       return
     }
 
-    // 调用新的截图API
-    const result = await tabPresenter.captureTabWithWatermark(tabId, rect, {
+    // 获取当前标签页ID
+    const tabId = window.api.getWebContentsId()
+
+    // 保存原始滚动位置
+    const originalScrollPosition = {
+      top: document.documentElement.scrollTop || document.body.scrollTop,
+      left: document.documentElement.scrollLeft || document.body.scrollLeft
+    }
+
+    // 临时隐藏不需要的元素（可选）
+    const hideSelectors = [
+      '.message-toolbar',
+      '.input-area',
+      '.floating-button',
+      '.overlay',
+      '.modal',
+      '.tooltip'
+    ]
+
+    const hideOperations = await hideElementsTemporarily(hideSelectors)
+
+    console.log('开始分段截图...', initialRect)
+
+    // 计算需要的截图区域（避开顶部工具栏和底部输入框）
+    const toolbarHeight = 40 // 顶部工具栏高度
+    const inputAreaHeight = 60 // 底部输入区域高度
+    const captureRect = {
+      x: initialRect.x,
+      y: toolbarHeight,
+      width: initialRect.width,
+      height: Math.min(initialRect.height, window.innerHeight - toolbarHeight - inputAreaHeight)
+    }
+
+    // 判断是否需要分段截图
+    const maxSegmentHeight = Math.floor(window.innerHeight * 0.6) // 每段最大高度
+    const needsScrolling = initialRect.height > maxSegmentHeight
+
+    const imageDataList: string[] = []
+
+    if (!needsScrolling) {
+      // 不需要滚动，直接截图
+      console.log('Single capture')
+      const imageData = await tabPresenter.captureTabArea(tabId, captureRect)
+      if (imageData) {
+        imageDataList.push(imageData)
+      }
+    } else {
+      // 需要分段截图
+      console.log('Multiple segments capture')
+
+      // 计算分段
+      const segments: Array<{
+        x: number
+        y: number
+        width: number
+        height: number
+        scrollY: number
+        segmentIndex: number
+      }> = []
+      let currentY = initialRect.y
+      let segmentIndex = 0
+
+      while (currentY < initialRect.y + initialRect.height) {
+        const remainingHeight = initialRect.y + initialRect.height - currentY
+        const segmentHeight = Math.min(maxSegmentHeight, remainingHeight)
+
+        segments.push({
+          x: initialRect.x,
+          y: currentY,
+          width: initialRect.width,
+          height: segmentHeight,
+          scrollY: currentY,
+          segmentIndex: segmentIndex++
+        })
+
+        currentY += segmentHeight
+      }
+
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i]
+
+        // 滚动到目标位置
+        document.documentElement.scrollTop = segment.scrollY
+
+        // 等待滚动完成
+        await new Promise((resolve) => setTimeout(resolve, 300))
+
+        // 截取当前段
+        const segmentData = await tabPresenter.captureTabArea(tabId, {
+          x: captureRect.x,
+          y: captureRect.y,
+          width: captureRect.width,
+          height: Math.min(segment.height, captureRect.height)
+        })
+
+        if (segmentData) {
+          imageDataList.push(segmentData)
+          console.log(`Captured segment ${i + 1}/${segments.length}`)
+        }
+      }
+    }
+
+    // 恢复隐藏的元素
+    await restoreHiddenElements(hideOperations)
+
+    // 恢复原始滚动位置
+    document.documentElement.scrollTop = originalScrollPosition.top
+    document.documentElement.scrollLeft = originalScrollPosition.left
+
+    if (imageDataList.length === 0) {
+      console.error('没有成功截取任何图片')
+      return
+    }
+
+    // 拼接图片并添加水印
+    const finalImage = await tabPresenter.stitchImagesWithWatermark(imageDataList, {
       isDark: props.isDark,
       version: appVersion.value,
       texts: {
@@ -344,55 +457,49 @@ const handleCopyImage = async () => {
       }
     })
 
-    if (result) {
+    if (finalImage) {
       // 复制到剪贴板
-      window.api.copyImage(result)
+      window.api.copyImage(finalImage)
       console.log('消息截图已复制到剪贴板')
     } else {
-      console.error('截图失败')
-      // 如果新方法失败，回退到原来的方法
-      await fallbackCopyImage()
+      console.error('图片拼接失败')
     }
   } catch (error) {
     console.error('截图时出错:', error)
-    // 如果新方法失败，回退到原来的方法
-    await fallbackCopyImage()
+  } finally {
+    isCapturingImage.value = false
   }
 }
 
 /**
- * 回退的复制图片方法（原来的实现）
+ * 临时隐藏指定元素
  */
-const fallbackCopyImage = async () => {
-  if (messageNode.value) {
-    try {
-      const canvas = await toCanvas(messageNode.value, {
-        backgroundColor: props.isDark ? '#000000' : '#FFFFFF',
-        filter: filterDom
-      })
+const hideElementsTemporarily = async (selectors: string[]) => {
+  const operations: Array<{ element: Element; originalDisplay: string }> = []
 
-      // 添加水印
-      const canvasWithWatermark = addWatermark(canvas, props.isDark, appVersion.value, t)
-
-      // 转换为Blob并复制
-      canvasWithWatermark.toBlob(
-        (blob) => {
-          if (blob) {
-            const rd = new FileReader()
-            rd.onloadend = () => {
-              const url = rd.result as string
-              window.api.copyImage(url)
-            }
-            rd.readAsDataURL(blob)
-          }
-        },
-        'image/png',
-        1
-      )
-    } catch (error) {
-      console.error('回退截图方法也失败:', error)
-    }
+  for (const selector of selectors) {
+    const elements = document.querySelectorAll(selector)
+    elements.forEach((element) => {
+      const htmlElement = element as HTMLElement
+      const originalDisplay = htmlElement.style.display || ''
+      htmlElement.style.display = 'none'
+      operations.push({ element, originalDisplay })
+    })
   }
+
+  return operations
+}
+
+/**
+ * 恢复隐藏的元素
+ */
+const restoreHiddenElements = async (
+  operations: Array<{ element: Element; originalDisplay: string }>
+) => {
+  operations.forEach(({ element, originalDisplay }) => {
+    const htmlElement = element as HTMLElement
+    htmlElement.style.display = originalDisplay
+  })
 }
 
 // Expose the handleAction method to parent components

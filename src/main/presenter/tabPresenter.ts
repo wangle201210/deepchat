@@ -3,12 +3,13 @@ import { eventBus } from '@/eventbus'
 import { WINDOW_EVENTS, CONFIG_EVENTS, SYSTEM_EVENTS, TAB_EVENTS } from '@/events'
 import { is } from '@electron-toolkit/utils'
 import { ITabPresenter, TabCreateOptions, IWindowPresenter, TabData } from '@shared/presenter'
-import { BrowserWindow, WebContentsView, shell } from 'electron'
+import { BrowserWindow, WebContentsView, shell, nativeImage } from 'electron'
 import { join } from 'path'
 import contextMenu from '@/contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { app } from 'electron'
-import { addWatermarkToNativeImage, WatermarkOptions } from '@/lib/watermark'
+import { addWatermarkToNativeImage } from '@/lib/watermark'
+import { stitchImagesVertically } from '@/lib/scrollCapture'
 
 export class TabPresenter implements ITabPresenter {
   // 全局标签页实例存储
@@ -664,22 +665,19 @@ export class TabPresenter implements ITabPresenter {
   }
 
   /**
-   * 截取标签页指定区域并添加水印
+   * 截取标签页指定区域的简单截图
    * @param tabId 标签页ID
-   * @param rect 截图区域，如果不指定则截取整个页面
-   * @param options 水印选项
+   * @param rect 截图区域
    * @returns 返回base64格式的图片数据，失败时返回null
    */
-  async captureTabWithWatermark(
+  async captureTabArea(
     tabId: number,
-    rect?: { x: number; y: number; width: number; height: number },
-    options: WatermarkOptions = {}
+    rect: { x: number; y: number; width: number; height: number }
   ): Promise<string | null> {
     try {
-      // 获取指定的tab
       const view = this.tabs.get(tabId)
       if (!view || view.webContents.isDestroyed()) {
-        console.error(`captureTabWithWatermark: Tab ${tabId} not found or destroyed`)
+        console.error(`captureTabArea: Tab ${tabId} not found or destroyed`)
         return null
       }
 
@@ -687,20 +685,69 @@ export class TabPresenter implements ITabPresenter {
       const image = await view.webContents.capturePage(rect)
 
       if (image.isEmpty()) {
-        console.error('captureTabWithWatermark: Captured image is empty')
+        console.error('captureTabArea: Captured image is empty')
         return null
       }
 
+      // 转换为base64格式
+      const base64Data = image.toDataURL()
+      return base64Data
+    } catch (error) {
+      console.error('captureTabArea error:', error)
+      return null
+    }
+  }
+
+  /**
+   * 将多张截图拼接成长图并添加水印
+   * @param imageDataList base64格式的图片数据数组
+   * @param options 水印选项
+   * @returns 返回拼接并添加水印后的base64图片数据，失败时返回null
+   */
+  async stitchImagesWithWatermark(
+    imageDataList: string[],
+    options: {
+      isDark?: boolean
+      version?: string
+      texts?: {
+        brand?: string
+        time?: string
+        tip?: string
+      }
+    } = {}
+  ): Promise<string | null> {
+    try {
+      if (imageDataList.length === 0) {
+        console.error('stitchImagesWithWatermark: No images provided')
+        return null
+      }
+
+      // 如果只有一张图片，直接添加水印
+      if (imageDataList.length === 1) {
+        const nativeImageInstance = nativeImage.createFromDataURL(imageDataList[0])
+        const watermarkedImage = await addWatermarkToNativeImage(nativeImageInstance, options)
+        return watermarkedImage.toDataURL()
+      }
+
+      // 将base64图片转换为NativeImage，然后转换为Buffer
+      const imageBuffers = imageDataList.map((data) => {
+        const image = nativeImage.createFromDataURL(data)
+        return image.toPNG()
+      })
+
+      // 拼接图片
+      const stitchedImage = await stitchImagesVertically(imageBuffers)
+
       // 添加水印
-      const watermarkedImage = await addWatermarkToNativeImage(image, options)
+      const watermarkedImage = await addWatermarkToNativeImage(stitchedImage, options)
 
       // 转换为base64格式
       const base64Data = watermarkedImage.toDataURL()
 
-      console.log(`Successfully captured and watermarked tab ${tabId}`)
+      console.log(`Successfully stitched ${imageDataList.length} images with watermark`)
       return base64Data
     } catch (error) {
-      console.error('captureTabWithWatermark error:', error)
+      console.error('stitchImagesWithWatermark error:', error)
       return null
     }
   }

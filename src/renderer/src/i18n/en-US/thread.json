@@ -11,6 +11,7 @@
     "nextVariant": "Switch to the next version",
     "copy": "Copy the answer to Markdown",
     "copyImage": "Copy as an image",
+    "capturing": "Capturing...",
     "retry": "Regenerate",
     "fork": "Fork to a new session",
     "edit": "Edit message",

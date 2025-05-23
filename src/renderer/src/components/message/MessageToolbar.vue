@@ -95,9 +95,11 @@
                 v-show="isAssistant"
                 size="icon"
                 class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent relative"
+                :disabled="isCapturingImage"
                 @click="handleCopyImage"
               >
-                <Icon icon="lucide:images" class="w-3 h-3" />
+                <Icon v-if="isCapturingImage" icon="lucide:loader" class="w-3 h-3 animate-spin" />
+                <Icon v-else icon="lucide:images" class="w-3 h-3" />
                 <span
                   v-if="showCopyImageTip"
                   class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50"
@@ -106,7 +108,9 @@
                 </span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>{{ t('thread.toolbar.copyImage') }}</TooltipContent>
+            <TooltipContent>{{
+              isCapturingImage ? t('thread.toolbar.capturing') : t('thread.toolbar.copyImage')
+            }}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger as-child>
@@ -223,6 +227,7 @@ const props = defineProps<{
   totalVariants?: number
   isEditMode?: boolean
   isInGeneratingThread?: boolean
+  isCapturingImage: boolean
 }>()
 const emit = defineEmits<{
   (e: 'retry'): void

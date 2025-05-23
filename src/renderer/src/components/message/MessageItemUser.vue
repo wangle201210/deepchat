@@ -67,6 +67,7 @@
         :loading="false"
         :is-assistant="false"
         :is-edit-mode="isEditMode"
+        :is-capturing-image="false"
         @delete="handleAction('delete')"
         @copy="handleAction('copy')"
         @edit="startEdit"
