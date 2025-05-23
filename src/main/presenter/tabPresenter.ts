@@ -714,6 +714,8 @@ export class TabPresenter implements ITabPresenter {
         brand?: string
         time?: string
         tip?: string
+        model?: string
+        provider?: string
       }
     } = {}
   ): Promise<string | null> {

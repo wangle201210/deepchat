@@ -3,14 +3,19 @@
     <TooltipProvider>
       <div
         class="w-full h-8 text-xs text-muted-foreground items-center justify-between flex flex-row opacity-0 group-hover:opacity-100 transition-opacity"
-        :class="[isAssistant ? '' : 'flex-row-reverse']">
+        :class="[isAssistant ? '' : 'flex-row-reverse']"
+      >
         <span v-show="!loading" class="flex flex-row gap-3">
           <!-- Edit mode buttons (save/cancel) -->
           <template v-if="isEditMode">
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('save')">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('save')"
+                >
                   <Icon icon="lucide:check" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -18,8 +23,12 @@
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('cancel')">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('cancel')"
+                >
                   <Icon icon="lucide:x" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -31,8 +40,13 @@
           <template v-else>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button v-show="isAssistant && hasVariants" variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('prev')">
+                <Button
+                  v-show="isAssistant && hasVariants"
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('prev')"
+                >
                   <Icon icon="lucide:chevron-left" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -44,8 +58,13 @@
             </span>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button v-show="isAssistant && hasVariants" variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('next')">
+                <Button
+                  v-show="isAssistant && hasVariants"
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('next')"
+                >
                   <Icon icon="lucide:chevron-right" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -53,12 +72,17 @@
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="icon"
+                <Button
+                  variant="ghost"
+                  size="icon"
                   class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent relative"
-                  @click="handleCopy">
+                  @click="handleCopy"
+                >
                   <Icon icon="lucide:copy" class="w-3 h-3" />
-                  <span v-if="showCopyTip"
-                    class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                  <span
+                    v-if="showCopyTip"
+                    class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50"
+                  >
                     {{ t('common.copySuccess') }}
                   </span>
                 </Button>
@@ -67,25 +91,49 @@
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" v-show="isAssistant" size="icon"
+                <Button
+                  variant="ghost"
+                  v-show="isAssistant"
+                  size="icon"
                   class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent relative"
-                  :disabled="isCapturingImage" @click="handleCopyImage">
+                  :disabled="isCapturingImage"
+                  @mousedown="handleCopyImageStart"
+                  @mouseup="handleCopyImageEnd"
+                  @mouseleave="handleCopyImageCancel"
+                >
                   <Icon v-if="isCapturingImage" icon="lucide:loader" class="w-3 h-3 animate-spin" />
                   <Icon v-else icon="lucide:images" class="w-3 h-3" />
-                  <span v-if="showCopyImageTip"
-                    class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50">
+                  <span
+                    v-if="showCopyImageTip"
+                    class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50"
+                  >
                     {{ t('common.copyImageSuccess') }}
+                  </span>
+                  <span
+                    v-if="showCopyFromTopTip"
+                    class="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-background border px-2 py-1 rounded text-xs whitespace-nowrap z-50"
+                  >
+                    {{ t('thread.toolbar.copyFromTopSuccess') }}
                   </span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{{
-                isCapturingImage ? t('thread.toolbar.capturing') : t('thread.toolbar.copyImage')
-                }}</TooltipContent>
+              <TooltipContent>
+                {{
+                  isCapturingImage
+                    ? t('thread.toolbar.capturing')
+                    : t('thread.toolbar.copyImageWithLongPress')
+                }}
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button v-show="isAssistant" variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('retry')">
+                <Button
+                  v-show="isAssistant"
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('retry')"
+                >
                   <Icon icon="lucide:refresh-cw" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -93,8 +141,13 @@
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button v-show="isAssistant && !loading && !isInGeneratingThread" variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('fork')">
+                <Button
+                  v-show="isAssistant && !loading && !isInGeneratingThread"
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('fork')"
+                >
                   <Icon icon="lucide:git-branch" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -102,8 +155,13 @@
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button v-show="!isAssistant && !isEditMode" variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('edit')">
+                <Button
+                  v-show="!isAssistant && !isEditMode"
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('edit')"
+                >
                   <Icon icon="lucide:edit" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -111,8 +169,12 @@
             </Tooltip>
             <Tooltip>
               <TooltipTrigger as-child>
-                <Button variant="ghost" size="icon"
-                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent" @click="emit('delete')">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent"
+                  @click="emit('delete')"
+                >
                   <Icon icon="lucide:trash-2" class="w-3 h-3" />
                 </Button>
               </TooltipTrigger>
@@ -147,6 +209,10 @@ const { t } = useI18n()
 
 const showCopyTip = ref(false)
 const showCopyImageTip = ref(false)
+const showCopyFromTopTip = ref(false)
+
+let copyImagePressTimer: number | null = null
+const LONG_PRESS_DURATION = 800 // 长按时间阈值（毫秒）
 
 const handleCopy = () => {
   emit('copy')
@@ -156,12 +222,36 @@ const handleCopy = () => {
   }, 2000)
 }
 
-const handleCopyImage = () => {
-  emit('copyImage')
-  showCopyImageTip.value = true
-  setTimeout(() => {
-    showCopyImageTip.value = false
-  }, 2000)
+const handleCopyImageStart = () => {
+  copyImagePressTimer = window.setTimeout(() => {
+    // 长按触发：从顶部开始截图
+    emit('copyImageFromTop')
+    showCopyFromTopTip.value = true
+    setTimeout(() => {
+      showCopyFromTopTip.value = false
+    }, 2000)
+    copyImagePressTimer = null
+  }, LONG_PRESS_DURATION)
+}
+
+const handleCopyImageEnd = () => {
+  if (copyImagePressTimer) {
+    // 短按触发：只截图当前消息组
+    window.clearTimeout(copyImagePressTimer)
+    copyImagePressTimer = null
+    emit('copyImage')
+    showCopyImageTip.value = true
+    setTimeout(() => {
+      showCopyImageTip.value = false
+    }, 2000)
+  }
+}
+
+const handleCopyImageCancel = () => {
+  if (copyImagePressTimer) {
+    window.clearTimeout(copyImagePressTimer)
+    copyImagePressTimer = null
+  }
 }
 
 const props = defineProps<{
@@ -192,6 +282,7 @@ const emit = defineEmits<{
   (e: 'save'): void
   (e: 'cancel'): void
   (e: 'fork'): void
+  (e: 'copyImageFromTop'): void
 }>()
 
 const hasTokensPerSecond = computed(() => props.usage.tokens_per_second > 0)
