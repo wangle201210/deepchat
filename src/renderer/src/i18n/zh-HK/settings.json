@@ -324,7 +324,14 @@
     "marketplace": "前往MCP市場一鍵安裝",
     "maxDefaultServersReached": "最多只能設置3個默認服務器",
     "removeDefaultFirst": "請先移除一些默認服務器",
-    "higressMarket": "前往 Higress MCP 安裝"
+    "higressMarket": "前往 Higress MCP 安裝",
+    "technicalDetails": "技術詳情",
+    "httpServer": "HTTP服務器",
+    "localProcess": "本地進程",
+    "restartServer": "重啟服務器",
+    "viewLogs": "查看日誌",
+    "starting": "啟動中",
+    "error": "錯誤"
   },
   "about": {
     "title": "關於我們",

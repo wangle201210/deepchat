@@ -324,7 +324,14 @@
     "marketplace": "MCPマーケットに移動し、ワンクリックでインストールします",
     "maxDefaultServersReached": "せいぜい3つのデフォルトサーバーのみを設定できます",
     "removeDefaultFirst": "最初にいくつかのデフォルトサーバーを削除してください",
-    "higressMarket": "Higress MCPのインストールに移動します"
+    "higressMarket": "Higress MCPのインストールに移動します",
+    "technicalDetails": "技術的詳細",
+    "httpServer": "HTTPサーバー",
+    "localProcess": "ローカルプロセス",
+    "restartServer": "サーバーを再起動",
+    "viewLogs": "ログを表示",
+    "starting": "起動中",
+    "error": "エラー"
   },
   "about": {
     "title": "私たちについて",

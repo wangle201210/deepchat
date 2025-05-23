@@ -66,5 +66,6 @@
   "collapse": "Collapse",
   "expand": "Expand",
   "image": "picture",
-  "add": "Add"
+  "add": "Add",
+  "reset": "Reset"
 }

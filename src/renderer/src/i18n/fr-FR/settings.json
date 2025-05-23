@@ -324,7 +324,14 @@
     "marketplace": "Allez sur MCP Market et installez-le en un seul clic",
     "maxDefaultServersReached": "Seuls 3 serveurs par défaut peuvent être définis au maximum",
     "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut",
-    "higressMarket": "Aller à l'installation de Higress MCP"
+    "higressMarket": "Aller à l'installation de Higress MCP",
+    "technicalDetails": "Détails techniques",
+    "httpServer": "Serveur HTTP",
+    "localProcess": "Processus local",
+    "restartServer": "Redémarrer le serveur",
+    "viewLogs": "Voir les journaux",
+    "starting": "Démarrage",
+    "error": "Erreur"
   },
   "about": {
     "checkUpdate": "Vérifier les mises à jour",

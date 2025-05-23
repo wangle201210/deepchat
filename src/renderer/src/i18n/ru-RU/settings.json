@@ -324,7 +324,14 @@
     "marketplace": "Перейдите на MCP Market и установите его одним щелчком",
     "maxDefaultServersReached": "Только 3 сервера по умолчанию могут быть установлены по максимум",
     "removeDefaultFirst": "Сначала удалите несколько серверов по умолчанию",
-    "higressMarket": "Перейти к установке Higress MCP"
+    "higressMarket": "Перейти к установке Higress MCP",
+    "technicalDetails": "Технические детали",
+    "httpServer": "HTTP сервер",
+    "localProcess": "Локальный процесс",
+    "restartServer": "Перезапустить сервер",
+    "viewLogs": "Просмотр логов",
+    "starting": "Запуск",
+    "error": "Ошибка"
   },
   "about": {
     "title": "О нас",
