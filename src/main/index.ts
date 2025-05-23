@@ -1,12 +1,13 @@
-import { app, BrowserWindow, protocol } from 'electron'
+import { app, protocol } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { presenter } from './presenter'
 import { ProxyMode, proxyConfig } from './presenter/proxyConfig'
 import path from 'path'
 import fs from 'fs'
 import { eventBus } from './eventbus'
-import { WINDOW_EVENTS } from './events'
+import { WINDOW_EVENTS, TRAY_EVENTS } from './events'
 import { setLoggingEnabled } from '@shared/logger'
+import { TrayPresenter } from './presenter/trayPresenter'
 
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required')
 app.commandLine.appendSwitch('webrtc-max-cpu-consumption-percentage', '100')
@@ -24,6 +25,9 @@ if (process.platform === 'darwin') {
 // 初始化 DeepLink 处理
 presenter.deeplinkPresenter.init()
 
+// 初始化托盘
+const trayPresenter = new TrayPresenter()
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -34,7 +38,10 @@ app.whenReady().then(() => {
   const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
   setLoggingEnabled(loggingEnabled)
 
-  console.log('应用程序准备就绪')
+  console.log('app ready')
+
+  // 初始化托盘
+  trayPresenter.init()
 
   // 从配置中读取代理设置并初始化
   const proxyMode = presenter.configPresenter.getProxyMode() as ProxyMode
@@ -48,20 +55,41 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // 创建主窗口
-  presenter.windowPresenter.createMainWindow()
-  presenter.shortcutPresenter.registerShortcuts()
-
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
     // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) {
-      presenter.windowPresenter.createMainWindow()
+    const allWindows = presenter.windowPresenter.getAllWindows()
+    if (allWindows.length === 0) {
+      presenter.windowPresenter.createShellWindow({
+        initialTab: {
+          url: 'local://chat'
+        }
+      })
+    } else {
+      allWindows[0].show()
+    }
+  })
+
+  // 创建主窗口
+  presenter.windowPresenter.createShellWindow({
+    initialTab: {
+      url: 'local://chat'
+    }
+  })
+  presenter.shortcutPresenter.registerShortcuts()
+
+  // 监听显示窗口事件
+  eventBus.on(TRAY_EVENTS.SHOW_WINDOW, () => {
+    if (presenter.windowPresenter.windows.size === 0) {
+      presenter.windowPresenter.createShellWindow({
+        initialTab: {
+          url: 'local://chat'
+        }
+      })
     } else {
       presenter.windowPresenter.mainWindow?.show()
     }
   })
-
   // 监听应用程序获得焦点事件
   app.on('browser-window-focus', () => {
     presenter.shortcutPresenter.registerShortcuts()
@@ -70,8 +98,14 @@ app.whenReady().then(() => {
 
   // 监听应用程序失去焦点事件
   app.on('browser-window-blur', () => {
-    presenter.shortcutPresenter.unregisterShortcuts()
-    eventBus.emit(WINDOW_EVENTS.APP_BLUR)
+    // 检查是否所有窗口都失去了焦点
+    const allWindows = presenter.windowPresenter.getAllWindows()
+    const isAnyWindowFocused = allWindows.some((win) => !win.isDestroyed() && win.isFocused())
+
+    if (!isAnyWindowFocused) {
+      presenter.shortcutPresenter.unregisterShortcuts()
+      eventBus.emit(WINDOW_EVENTS.APP_BLUR)
+    }
   })
 
   protocol.handle('deepcdn', (request) => {
@@ -155,6 +189,7 @@ app.whenReady().then(() => {
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   presenter.destroy()
+  trayPresenter.destroy()
   if (process.platform !== 'darwin') {
     app.quit()
   }
@@ -162,4 +197,5 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   presenter.destroy()
+  trayPresenter.destroy()
 })

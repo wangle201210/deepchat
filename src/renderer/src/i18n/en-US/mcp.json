@@ -27,7 +27,10 @@
     "enabledDescription": "Enable MCP functionality to use tool calls",
     "empty": "Empty",
     "invalidJsonFormat": "Invalid JSON format",
-    "jsonInputPlaceholder": "Enter the parameters in JSON format"
+    "jsonInputPlaceholder": "Enter the parameters in JSON format",
+    "input": "Input Parameters",
+    "type": "Type",
+    "annotations": "Annotations"
   },
   "addServer": "Add a server",
   "addServerDialog": {

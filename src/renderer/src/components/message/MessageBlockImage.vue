@@ -32,13 +32,15 @@
 
     <!-- 全屏图片查看器 -->
     <Dialog :open="showFullImage" @update:open="showFullImage = $event">
-      <DialogContent class="sm:max-w-[800px] p-0 bg-background border-0 shadow-none">
+      <DialogContent class="sm:max-w-[800px] p-3 bg-background border-0 shadow-none">
         <DialogHeader>
           <DialogTitle>
-            {{ t('common.image') }}
+            <div class="flex items-center justify-between">
+              {{ t('common.image') }}
+            </div>
           </DialogTitle>
         </DialogHeader>
-        <div class="relative">
+        <div class="flex items-center justify-center">
           <template v-if="block.image_data">
             <img
               v-if="block.image_data.mimeType === 'deepchat/image-url'"

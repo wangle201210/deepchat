@@ -27,10 +27,8 @@ export function parseMarkdownToStructure(markdown: string, md: MarkdownIt): Pars
 export function processTokens(tokens: MarkdownToken[]): ParsedNode[] {
   const result: ParsedNode[] = []
   let i = 0
-
   while (i < tokens.length) {
     const token = tokens[i]
-
     switch (token.type) {
       case 'heading_open':
         result.push(parseHeading(tokens, i))

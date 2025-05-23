@@ -1,123 +1,117 @@
 <template>
-  <div class="w-full h-full flex flex-col gap-1.5">
-    <!-- 知识库列表 -->
-    <div class="space-y-4 px-2 pb-4">
-      <!-- RAGFlow知识库 -->
-      <div class="border rounded-lg overflow-hidden">
-        <div class="flex items-center p-4 bg-card">
-          <div class="flex-1">
-            <div class="flex items-center">
-              <img src="@/assets/images/ragflow.png" class="h-5 mr-2" />
-              <span class="text-base font-medium">RAGFlow知识库</span>
-            </div>
-            <p class="text-sm text-muted-foreground mt-1">
-              {{ t('settings.knowledgeBase.ragflowDescription') }}
-            </p>
-          </div>
-          <div class="flex items-center gap-2">
-            <!-- MCP开关 -->
-            <TooltipProvider>
-              <Tooltip :delay-duration="200">
-                <TooltipTrigger as-child>
-                  <Switch
-                    :checked="isRagflowMcpEnabled"
-                    :disabled="!mcpStore.mcpEnabled"
-                    @update:checked="toggleRagflowMcpServer"
-                  />
-                </TooltipTrigger>
-                <TooltipContent v-if="!mcpStore.mcpEnabled">
-                  <p>{{ t('settings.mcp.enableToAccess') }}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <Button
-              variant="outline"
-              size="sm"
-              class="flex items-center gap-1"
-              @click="toggleRagflowConfigPanel"
-            >
-              <Icon
-                :icon="isRagflowConfigPanelOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'"
-                class="w-4 h-4"
-              />
-              {{ isRagflowConfigPanelOpen ? t('common.collapse') : t('common.expand') }}
-            </Button>
-          </div>
+  <div class="border rounded-lg overflow-hidden">
+    <div class="flex items-center p-4 bg-card">
+      <div class="flex-1">
+        <div class="flex items-center">
+          <img src="@/assets/images/ragflow.png" class="h-5 mr-2" />
+          <span class="text-base font-medium">RAGFlow知识库</span>
         </div>
+        <p class="text-sm text-muted-foreground mt-1">
+          {{ t('settings.knowledgeBase.ragflowDescription') }}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <!-- MCP开关 -->
+        <TooltipProvider>
+          <Tooltip :delay-duration="200">
+            <TooltipTrigger as-child>
+              <Switch
+                :checked="isRagflowMcpEnabled"
+                :disabled="!mcpStore.mcpEnabled"
+                @update:checked="toggleRagflowMcpServer"
+              />
+            </TooltipTrigger>
+            <TooltipContent v-if="!mcpStore.mcpEnabled">
+              <p>{{ t('settings.mcp.enableToAccess') }}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex items-center gap-1"
+          @click="toggleRagflowConfigPanel"
+        >
+          <Icon
+            :icon="isRagflowConfigPanelOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+            class="w-4 h-4"
+          />
+          {{ isRagflowConfigPanelOpen ? t('common.collapse') : t('common.expand') }}
+        </Button>
+      </div>
+    </div>
 
-        <!-- RAGFlow配置面板 -->
-        <Collapsible v-model:open="isRagflowConfigPanelOpen">
-          <CollapsibleContent>
-            <div class="p-4 border-t space-y-4">
-              <!-- 已添加的配置列表 -->
-              <div v-if="ragflowConfigs.length > 0" class="space-y-3">
-                <div
-                  v-for="(config, index) in ragflowConfigs"
-                  :key="index"
-                  class="p-3 border rounded-md relative"
+    <!-- RAGFlow配置面板 -->
+    <Collapsible v-model:open="isRagflowConfigPanelOpen">
+      <CollapsibleContent>
+        <div class="p-4 border-t space-y-4">
+          <!-- 已添加的配置列表 -->
+          <div v-if="ragflowConfigs.length > 0" class="space-y-3">
+            <div
+              v-for="(config, index) in ragflowConfigs"
+              :key="index"
+              class="p-3 border rounded-md relative"
+            >
+              <div class="absolute top-2 right-2 flex gap-2">
+                <Switch
+                  :checked="config.enabled === true"
+                  size="sm"
+                  @update:checked="toggleConfigEnabled(index, $event)"
+                />
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:text-primary"
+                  @click="editRagflowConfig(index)"
                 >
-                  <div class="absolute top-2 right-2 flex gap-2">
-                    <Switch
-                      class="ml-2"
-                      :checked="config.enabled === true"
-                      @update:checked="toggleConfigEnabled(index, $event)"
-                    />
-                    <button
-                      type="button"
-                      class="text-muted-foreground hover:text-primary"
-                      @click="editRagflowConfig(index)"
-                    >
-                      <Icon icon="lucide:edit" class="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      class="text-muted-foreground hover:text-destructive"
-                      @click="removeRagflowConfig(index)"
-                    >
-                      <Icon icon="lucide:trash-2" class="h-4 w-4" />
-                    </button>
-                  </div>
+                  <Icon icon="lucide:edit" class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:text-destructive"
+                  @click="removeRagflowConfig(index)"
+                >
+                  <Icon icon="lucide:trash-2" class="h-4 w-4" />
+                </button>
+              </div>
 
-                  <div class="grid gap-2">
-                    <div class="flex items-center">
-                      <span class="font-medium text-sm">{{ config.description }}</span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                      <div>
-                        <span class="font-medium">API Key:</span>
-                        <span>{{ config.apiKey.substring(0, 8) + '****' }}</span>
-                      </div>
-                      <div>
-                        <span class="font-medium">Dataset IDs:</span>
-                        <span>{{ config.datasetIds.join(', ') }}</span>
-                      </div>
-                      <div class="col-span-2">
-                        <span class="font-medium">Endpoint:</span>
-                        <span>{{ config.endpoint }}</span>
-                      </div>
-                    </div>
+              <div class="grid gap-2">
+                <div class="flex items-center">
+                  <span class="font-medium text-sm">{{ config.description }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <span class="font-medium">API Key:</span>
+                    <span>{{ config.apiKey.substring(0, 8) + '****' }}</span>
+                  </div>
+                  <div>
+                    <span class="font-medium">Dataset IDs:</span>
+                    <span>{{ config.datasetIds.join(', ') }}</span>
+                  </div>
+                  <div class="col-span-2">
+                    <span class="font-medium">Endpoint:</span>
+                    <span>{{ config.endpoint }}</span>
                   </div>
                 </div>
               </div>
-
-              <!-- 添加配置按钮 -->
-              <div class="flex justify-center">
-                <Button
-                  type="button"
-                  size="sm"
-                  class="w-full flex items-center justify-center gap-2"
-                  variant="outline"
-                  @click="openAddConfig"
-                >
-                  <Icon icon="lucide:plus" class="w-8 h-4" />
-                  {{ t('settings.knowledgeBase.addRagflowConfig') }}
-                </Button>
-              </div>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </div>
-    </div>
+          </div>
+
+          <!-- 添加配置按钮 -->
+          <div class="flex justify-center">
+            <Button
+              type="button"
+              size="sm"
+              class="w-full flex items-center justify-center gap-2"
+              variant="outline"
+              @click="openAddConfig"
+            >
+              <Icon icon="lucide:plus" class="w-8 h-4" />
+              {{ t('settings.knowledgeBase.addRagflowConfig') }}
+            </Button>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
 
     <!-- RAGFlow配置对话框 -->
     <Dialog v-model:open="isRagflowConfigDialogOpen">
@@ -215,7 +209,7 @@ const { toast } = useToast()
 const route = useRoute()
 
 // 对话框状态
-const isRagflowConfigPanelOpen = ref(true)
+const isRagflowConfigPanelOpen = ref(false)
 const isRagflowConfigDialogOpen = ref(false)
 const isEditing = ref(false)
 

@@ -5,6 +5,10 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/chat'
+    },
+    {
+      path: '/chat',
       name: 'chat',
       component: () => import('@/views/ChatTabView.vue'),
       meta: {
@@ -65,6 +69,15 @@ const router = createRouter({
           meta: {
             titleKey: 'routes.settings-mcp',
             icon: 'lucide:server'
+          }
+        },
+        {
+          path: 'prompt',
+          name: 'settings-prompt',
+          component: () => import('@/components/settings/PromptSetting.vue'),
+          meta: {
+            titleKey: 'routes.settings-prompt',
+            icon: 'lucide:book-open-text'
           }
         },
         {

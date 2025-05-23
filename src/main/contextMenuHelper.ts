@@ -3,23 +3,23 @@ import path from 'path'
 import sharp from 'sharp'
 
 interface ContextMenuOptions {
-  window: BrowserWindow
+  webContents: WebContents
   shouldShowMenu?: (event: Electron.Event, params: Electron.ContextMenuParams) => boolean
   labels?: Record<string, string>
   prepend?: (
     defaultActions: MenuItemConstructorOptions[],
     params: Electron.ContextMenuParams,
-    browserWindow: BrowserWindow
+    webContents: WebContents
   ) => MenuItemConstructorOptions[]
   append?: (
     defaultActions: MenuItemConstructorOptions[],
     params: Electron.ContextMenuParams,
-    browserWindow: BrowserWindow
+    webContents: WebContents
   ) => MenuItemConstructorOptions[]
   menu?: (
     defaultActions: MenuItemConstructorOptions[],
     params: Electron.ContextMenuParams,
-    browserWindow: BrowserWindow
+    webContents: WebContents
   ) => MenuItemConstructorOptions[] | Menu
 }
 
@@ -31,23 +31,19 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   const disposables: (() => void)[] = []
   let isDisposed = false
 
-  console.log('contextMenu: 初始化上下文菜单', options.window.id)
+  console.log('contextMenu: initializing context menu', options.webContents.id)
 
-  // 确保 window 参数存在
-  if (!options.window) {
-    console.error('contextMenu: Window 参数缺失')
-    throw new Error('Window is required')
+  // 确保 webContents 参数存在
+  if (!options.webContents) {
+    console.error('contextMenu: WebContents parameter is missing')
+    throw new Error('WebContents is required')
   }
-
-  // 获取 WebContents 实例
-  const getWebContents = (win: BrowserWindow): WebContents => win.webContents
 
   // 处理上下文菜单事件
   const handleContextMenu = (event: Electron.Event, params: Electron.ContextMenuParams) => {
-    console.log('contextMenu: 触发上下文菜单事件', params.x, params.y, params.mediaType)
+    // console.log('contextMenu: trigger', params.x, params.y, params.mediaType)
 
     if (isDisposed) {
-      console.log('contextMenu: 已销毁，忽略事件')
       return
     }
 
@@ -56,7 +52,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
       typeof options.shouldShowMenu === 'function' &&
       options.shouldShowMenu(event, params) === false
     ) {
-      console.log('contextMenu: shouldShowMenu 返回 false，不显示菜单')
       return
     }
 
@@ -70,9 +65,8 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         id: 'copyImage',
         label: options.labels?.copyImage || '复制图片',
         click: () => {
-          const webContents = getWebContents(options.window)
-          webContents.copyImageAt(params.x, params.y)
-          console.log('contextMenu: 复制图片', params.srcURL)
+          options.webContents.copyImageAt(params.x, params.y)
+          console.log('contextMenu: copying image', params.srcURL)
         }
       })
 
@@ -115,7 +109,7 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
               return
             }
 
-            console.log('contextMenu: 开始保存图片到', filePath)
+            console.log('contextMenu: start saving pic', filePath)
 
             // 获取图片数据
             if (isBase64) {
@@ -157,9 +151,9 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
               await sharpInstance.toFile(filePath)
             }
 
-            console.log('contextMenu: 保存图片成功', filePath)
+            console.log('contextMenu: pic saved ', filePath)
           } catch (error) {
-            console.error('contextMenu: 保存图片失败', error)
+            console.error('contextMenu: pic save failed', error)
           }
         }
       })
@@ -206,29 +200,58 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         role: 'copy',
         enabled: true
       })
+
+      // 添加分隔符
+      menuItems.push({ type: 'separator' })
+
+      // 添加翻译选项
+      menuItems.push({
+        id: 'translate',
+        label: options.labels?.translate || '翻译',
+        click: () => {
+          options.webContents.send(
+            'context-menu-translate',
+            params.selectionText,
+            params.x,
+            params.y
+          )
+        }
+      })
+
+      // 添加AI询问选项
+      menuItems.push({
+        id: 'askAI',
+        label: options.labels?.askAI || '询问AI',
+        click: () => {
+          options.webContents.send('context-menu-ask-ai', params.selectionText)
+        }
+      })
     }
 
     // 允许用户在菜单前添加项目
     if (typeof options.prepend === 'function') {
-      const prependItems = options.prepend(menuItems, params, options.window)
+      const prependItems = options.prepend(menuItems, params, options.webContents)
       menuItems = prependItems.concat(menuItems)
     }
 
     // 允许用户在菜单后添加项目
     if (typeof options.append === 'function') {
-      const appendItems = options.append(menuItems, params, options.window)
+      const appendItems = options.append(menuItems, params, options.webContents)
       menuItems = menuItems.concat(appendItems)
     }
 
     // 允许用户完全自定义菜单
     if (typeof options.menu === 'function') {
-      const customMenu = options.menu(menuItems, params, options.window)
+      const customMenu = options.menu(menuItems, params, options.webContents)
 
       if (Array.isArray(customMenu)) {
         menuItems = customMenu
       } else {
         // 如果是一个 Menu 实例，直接显示
-        customMenu.popup({ window: options.window })
+        const window = BrowserWindow.fromWebContents(options.webContents)
+        if (window) {
+          customMenu.popup({ window })
+        }
         return
       }
     }
@@ -240,17 +263,20 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
     if (menuItems.length > 0) {
       try {
         const menu = Menu.buildFromTemplate(menuItems)
-        console.log('contextMenu: 显示菜单')
-        menu.popup({
-          window: options.window,
-          x: params.x,
-          y: params.y
-        })
+        console.log('contextMenu: displaying menu')
+        const window = BrowserWindow.fromWebContents(options.webContents)
+        if (window) {
+          menu.popup({
+            window,
+            x: params.x,
+            y: params.y
+          })
+        }
       } catch (error) {
-        console.error('contextMenu: 创建或显示菜单失败', error)
+        console.error('contextMenu: create error', error)
       }
     } else {
-      console.warn('contextMenu: 没有可用的菜单项，不显示菜单')
+      console.warn('contextMenu: The menu will not be displayed')
     }
   }
 
@@ -283,21 +309,17 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
   }
 
   // 初始化上下文菜单
-  const initialize = (win: BrowserWindow) => {
+  const initialize = (webContents: WebContents) => {
     if (isDisposed) {
-      console.log('contextMenu: 已销毁，不初始化')
       return
     }
 
     try {
-      const webContents = getWebContents(win)
-
       // 添加上下文菜单事件监听器
       webContents.on('context-menu', handleContextMenu)
 
       // 当 WebContents 被销毁时清理
       const cleanup = () => {
-        console.log('contextMenu: WebContents 已销毁，清理事件监听器')
         webContents.removeListener('context-menu', handleContextMenu)
       }
 
@@ -309,21 +331,21 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
         webContents.removeListener('destroyed', cleanup)
       })
     } catch (error) {
-      console.error('contextMenu: 初始化失败', error)
+      console.error('contextMenu: init error', error)
     }
   }
 
-  // 注册窗口
-  initialize(options.window)
+  // 注册 WebContents
+  initialize(options.webContents)
 
   // 返回清理函数
   return () => {
     if (isDisposed) {
-      console.log('contextMenu: 已经销毁，跳过清理')
+      console.log('contextMenu: already disposed, skipping cleanup')
       return
     }
 
-    console.log('contextMenu: 开始清理')
+    console.log('contextMenu: starting cleanup')
     // 清理所有监听器
     for (const dispose of disposables) {
       dispose()
@@ -331,6 +353,6 @@ export default function contextMenu(options: ContextMenuOptions): () => void {
 
     disposables.length = 0
     isDisposed = true
-    console.log('contextMenu: 清理完成')
+    console.log('contextMenu: cleanup completed')
   }
 }

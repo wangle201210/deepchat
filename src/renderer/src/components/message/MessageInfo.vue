@@ -2,7 +2,7 @@
   <div class="flex flex-row items-center gap-2 min-h-5">
     <span class="text-xs font-bold text-muted-foreground">{{ name }}</span>
     <span
-      class="text-xs text-secondary-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+      class="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
       >{{ formattedTime }}</span
     >
   </div>

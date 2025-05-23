@@ -12,6 +12,7 @@
   <a href="https://github.com/ThinkInAIXYZ/deepchat/pulls"><img src="https://img.shields.io/github/issues-pr/ThinkInAIXYZ/deepchat" alt="Pull Requests Badge"/></a>
   <a href="https://github.com/ThinkInAIXYZ/deepchat/issues"><img src="https://img.shields.io/github/issues/ThinkInAIXYZ/deepchat" alt="Issues Badge"/></a>
   <a href="https://github.com/ThinkInAIXYZ/deepchat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ThinkInAIXYZ/deepchat" alt="License Badge"/></a>
+  <a href="https://deepwiki.com/ThinkInAIXYZ/deepchat"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <div align="center">
@@ -20,16 +21,30 @@
 
 ## 📑 目次
 
-- [プロジェクト紹介](#-プロジェクト紹介)
-- [なぜDeepChatを選ぶのか](#-なぜdeepchatを選ぶのか)
-- [機能のショーケース](#-機能のショーケース)
-- [主な機能](#-主な機能)
-- [サポートされているモデルプロバイダー](#-サポートされているモデルプロバイダー)
-- [ユースケース](#-ユースケース)
-- [クイックスタート](#-クイックスタート)
-- [開発ガイド](#-開発ガイド)
-- [コミュニティと貢献](#-コミュニティと貢献)
-- [ライセンス](#-ライセンス)
+- [📑 目次](#-目次)
+- [🚀 プロジェクト紹介](#-プロジェクト紹介)
+- [💡 なぜDeepChatを選ぶのか](#-なぜdeepchatを選ぶのか)
+- [📸 機能のショーケース](#-機能のショーケース)
+  - [推論能力](#推論能力)
+  - [検索拡張](#検索拡張)
+  - [LaTeXサポート](#latexサポート)
+  - [アーティファクトサポート](#アーティファクトサポート)
+- [🔥 主な機能](#-主な機能)
+- [🤖 サポートされているモデルプロバイダー](#-サポートされているモデルプロバイダー)
+  - [OpenAI/Gemini/Anthropic API形式の任意のモデルプロバイダーと互換性あり](#openaigeminianthropic-api形式の任意のモデルプロバイダーと互換性あり)
+- [🔍 ユースケース](#-ユースケース)
+- [📦 クイックスタート](#-クイックスタート)
+  - [ダウンロードとインストール](#ダウンロードとインストール)
+  - [モデルの設定](#モデルの設定)
+  - [会話を開始](#会話を開始)
+- [💻 開発ガイド](#-開発ガイド)
+  - [依存関係のインストール](#依存関係のインストール)
+  - [開発を開始](#開発を開始)
+  - [ビルド](#ビルド)
+- [👥 コミュニティと貢献](#-コミュニティと貢献)
+- [⭐ スター履歴](#-スター履歴)
+- [👨‍💻 貢献者](#-貢献者)
+- [📃 ライセンス](#-ライセンス)
 
 ## 🚀 プロジェクト紹介
 

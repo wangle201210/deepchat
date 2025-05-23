@@ -12,6 +12,7 @@
   <a href="https://github.com/ThinkInAIXYZ/deepchat/pulls"><img src="https://img.shields.io/github/issues-pr/ThinkInAIXYZ/deepchat" alt="Pull Requests Badge"/></a>
   <a href="https://github.com/ThinkInAIXYZ/deepchat/issues"><img src="https://img.shields.io/github/issues/ThinkInAIXYZ/deepchat" alt="Issues Badge"/></a>
   <a href="https://github.com/ThinkInAIXYZ/deepchat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ThinkInAIXYZ/deepchat" alt="License Badge"/></a>
+  <a href="https://deepwiki.com/ThinkInAIXYZ/deepchat"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 <div align="center">
@@ -20,16 +21,30 @@
 
 ## 📑 目录
 
-- [项目简介](#-项目简介)
-- [为什么选择DeepChat](#-为什么选择deepchat)
-- [功能展示](#-功能展示)
-- [主要功能](#-主要功能)
-- [支持的模型提供商](#-支持的模型提供商)
-- [使用场景](#-使用场景)
-- [快速开始](#-快速开始)
-- [开发指南](#-开发指南)
-- [社区与贡献](#-社区与贡献)
-- [许可证](#-许可证)
+- [📑 目录](#-目录)
+- [🚀 项目简介](#-项目简介)
+- [💡 为什么选择DeepChat](#-为什么选择deepchat)
+- [📸 功能展示](#-功能展示)
+  - [推理能力](#推理能力)
+  - [搜索增强](#搜索增强)
+  - [LaTeX支持](#latex支持)
+  - [Artifacts支持](#artifacts支持)
+- [🔥 主要功能](#-主要功能)
+- [🤖 支持的模型提供商](#-支持的模型提供商)
+  - [兼容任何OpenAI/Gemini/Anthropic API格式的模型提供商](#兼容任何openaigeminianthropic-api格式的模型提供商)
+- [🔍 使用场景](#-使用场景)
+- [📦 快速开始](#-快速开始)
+  - [下载安装](#下载安装)
+  - [配置模型](#配置模型)
+  - [开始对话](#开始对话)
+- [💻 开发指南](#-开发指南)
+  - [安装依赖](#安装依赖)
+  - [开始开发](#开始开发)
+  - [构建](#构建)
+- [👥 社区与贡献](#-社区与贡献)
+- [⭐ Star历史](#-star历史)
+- [👨‍💻 贡献者](#-贡献者)
+- [📃 许可证](#-许可证)
 
 ## 🚀 项目简介
 

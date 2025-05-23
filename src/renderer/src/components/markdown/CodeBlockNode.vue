@@ -1,7 +1,7 @@
 <template>
   <MermaidBlockNode v-if="isMermaid" :node="node" />
   <div v-else class="my-4 rounded-lg border border-border overflow-hidden shadow-sm">
-    <div class="flex justify-between items-center p-2 bg-gray-100 dark:bg-zinc-800 text-xs">
+    <div class="flex justify-between items-center p-2 bg-muted text-xs">
       <span class="flex items-center space-x-2">
         <Icon :icon="languageIcon" class="w-4 h-4" />
         <span class="text-gray-600 dark:text-gray-400 font-mono font-bold">{{
@@ -32,14 +32,14 @@
     </div>
     <div
       ref="codeEditor"
-      class="min-h-[30px] max-h-[500px] text-xs overflow-auto bg-gray-50 dark:bg-zinc-900 font-mono leading-relaxed"
+      class="min-h-[30px] max-h-[500px] text-xs overflow-auto bg-background font-mono leading-relaxed"
       :data-language="node.language"
     ></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useThrottleFn } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
@@ -265,6 +265,12 @@ watch(
 
       editorInstance.value.dispatch({
         changes: { from: 0, to: state.doc.length, insert: newCode }
+      })
+      nextTick(() => {
+        if (editorInstance.value) {
+          const view = editorInstance.value.scrollDOM.parentElement!.parentElement!
+          view.scrollTop = view.scrollHeight
+        }
       })
     } else {
       // If editor not yet initialized, create it

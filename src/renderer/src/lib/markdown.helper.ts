@@ -29,6 +29,65 @@ export const getMarkdown = () => {
     breaks: false
   })
 
+  // 配置加粗标记
+  md.inline.ruler.before('emphasis', 'strong', (state, silent) => {
+    let found = false
+    let token
+    let pos = state.pos
+    const max = state.posMax
+    const start = pos
+    const marker = state.src.charCodeAt(pos)
+
+    if (silent) return false
+
+    if (marker !== 0x2a /* * */ && marker !== 0x5f /* _ */) return false
+
+    let scan = pos
+    const mem = pos
+
+    // 查找连续的星号或下划线
+    while (scan < max && state.src.charCodeAt(scan) === marker) {
+      scan++
+    }
+
+    const len = scan - pos
+    if (len < 2) return false
+
+    pos = scan
+    const markerCount = len
+
+    // 查找结束标记
+    while (pos < max) {
+      if (state.src.charCodeAt(pos) === marker) {
+        if (state.src.slice(pos, pos + markerCount).length === markerCount) {
+          found = true
+          break
+        }
+      }
+      pos++
+    }
+
+    if (!found) {
+      state.pos = mem
+      return false
+    }
+
+    if (!silent) {
+      state.pos = start + markerCount
+      token = state.push('strong_open', 'strong', 1)
+      token.markup = marker === 0x2a ? '**' : '__'
+
+      token = state.push('text', '', 0)
+      token.content = state.src.slice(start + markerCount, pos)
+
+      token = state.push('strong_close', 'strong', -1)
+      token.markup = marker === 0x2a ? '**' : '__'
+    }
+
+    state.pos = pos + markerCount
+    return true
+  })
+
   // Apply additional plugins
   md.use(markdownItSub) // H~2~O -> subscript
   md.use(markdownItSup) // 2^10 -> superscript
@@ -37,6 +96,30 @@ export const getMarkdown = () => {
   md.use(markdownItCheckbox) // [ ] and [x] -> checkboxes
   md.use(markdownItIns) // ++inserted++ -> inserted text
   md.use(markdownItFootnote) // 添加脚注支持
+
+  // 添加波浪号处理规则
+  const waveRule = (state: any, silent: boolean) => {
+    const start = state.pos
+
+    if (state.src[start] !== '~') return false
+
+    // 检查是否是数字之间的波浪号
+    const prevChar = state.src[start - 1]
+    const nextChar = state.src[start + 1]
+    if (/\d/.test(prevChar) && /\d/.test(nextChar)) {
+      if (!silent) {
+        const token = state.push('text', '', 0)
+        token.content = '~'
+      }
+      state.pos += 1
+      return true
+    }
+
+    return false
+  }
+
+  // 注册波浪号规则
+  md.inline.ruler.before('sub', 'wave', waveRule)
 
   // 添加警告块支持
   const containers = ['note', 'tip', 'warning', 'danger', 'info', 'caution']
@@ -48,7 +131,7 @@ export const getMarkdown = () => {
   const mathInline = (state: any, silent: boolean) => {
     const delimiters: [string, string][] = [
       ['\\(', '\\)'],
-      ['$$', '$$']
+      ['$', '$']
     ]
 
     for (const [open, close] of delimiters) {
@@ -61,7 +144,7 @@ export const getMarkdown = () => {
       if (!silent) {
         const token = state.push('math_inline', 'math', 0)
         token.content = state.src.slice(start + open.length, end)
-        token.markup = open === '$$' ? '$$' : '\\(\\)'
+        token.markup = open === '$' ? '$' : '\\(\\)'
       }
 
       state.pos = end + close.length
@@ -72,24 +155,43 @@ export const getMarkdown = () => {
 
   // Custom math block rule
   const mathBlock = (state: any, startLine: number, endLine: number, silent: boolean) => {
-    const delimiters: [string, string][] = [
-      ['\\[', '\\]'],
-      ['$$', '$$']
+    const delimiters: [string, string, string][] = [
+      ['\\[', '\\]', 'display'],
+      ['$$', '$$', 'display']
     ]
 
     // Check for math block at the current position
     const startPos = state.bMarks[startLine] + state.tShift[startLine]
-    const lineText = state.src.slice(startPos, state.eMarks[startLine])
+    const maxPos = state.eMarks[startLine]
+    const lineText = state.src.slice(startPos, maxPos)
 
     let matched = false
     let openDelim = '',
-      closeDelim = ''
+      closeDelim = '',
+      type = ''
 
-    for (const [open, close] of delimiters) {
-      if (lineText.startsWith(open)) {
+    for (const [open, close, mathType] of delimiters) {
+      if (lineText.trim().startsWith(open)) {
+        // 找到开始标记后，先检查同一行是否有结束标记
+        const restOfLine = lineText.trim().slice(open.length)
+        if (restOfLine.endsWith(close)) {
+          // 如果在同一行找到结束标记
+          if (!silent) {
+            const token = state.push('math_block', 'math', 0)
+            token.content = restOfLine.slice(0, -close.length).trim()
+            token.markup = open
+            token.info = mathType
+            token.map = [startLine, startLine + 1]
+            token.block = true
+          }
+          state.line = startLine + 1
+          return true
+        }
+
         matched = true
         openDelim = open
         closeDelim = close
+        type = mathType
         break
       }
     }
@@ -99,7 +201,7 @@ export const getMarkdown = () => {
     // Skip if in silent mode
     if (silent) return true
 
-    // Find the closing delimiter
+    // Find the closing delimiter in subsequent lines
     let nextLine = startLine
     let content = ''
     let found = false
@@ -110,16 +212,12 @@ export const getMarkdown = () => {
       const currentLine = state.src.slice(lineStart, lineEnd)
 
       // Check if this line has the closing delimiter
-      if (currentLine.includes(closeDelim)) {
+      if (currentLine.trim().endsWith(closeDelim)) {
         found = true
-        content += state.src.slice(
-          state.bMarks[nextLine] + state.tShift[nextLine],
-          state.src.indexOf(closeDelim, state.bMarks[nextLine])
-        )
         break
       }
 
-      content += currentLine + '\n'
+      content += (content ? '\n' : '') + currentLine
     }
 
     if (!found) return false
@@ -127,7 +225,8 @@ export const getMarkdown = () => {
     // Create the token
     const token = state.push('math_block', 'math', 0)
     token.content = content.trim()
-    token.markup = openDelim === '$$' ? '$$' : '\\[\\]'
+    token.markup = openDelim
+    token.info = type
     token.map = [startLine, nextLine + 1]
     token.block = true
 
@@ -138,19 +237,28 @@ export const getMarkdown = () => {
 
   // Register custom rules
   md.inline.ruler.before('escape', 'math', mathInline)
-  md.block.ruler.before('code', 'math_block', mathBlock, {
-    alt: ['paragraph', 'reference', 'blockquote']
+  md.block.ruler.before('paragraph', 'math_block', mathBlock, {
+    alt: ['paragraph', 'reference', 'blockquote', 'list']
   })
 
   // Add rendering rules
-  md.renderer.rules.math_inline = (tokens, idx) => tokens[idx].content
-  md.renderer.rules.math_block = (tokens, idx) => tokens[idx].content
-  md.renderer.rules.code_block = (tokens, idx) => tokens[idx].content
+  md.renderer.rules.math_inline = (tokens, idx) => {
+    const token = tokens[idx]
+    return `<span class="math-inline">${token.content}</span>`
+  }
+
+  md.renderer.rules.math_block = (tokens, idx) => {
+    const token = tokens[idx]
+    return `<div class="math-block">${token.content}</div>`
+  }
 
   // Configure MathJax
   md.use(mathjax3, {
     tex: {
-      inlineMath: [['\\(', '\\)']],
+      inlineMath: [
+        ['\\(', '\\)'],
+        ['$', '$']
+      ],
       displayMath: [
         ['$$', '$$'],
         ['\\[', '\\]']

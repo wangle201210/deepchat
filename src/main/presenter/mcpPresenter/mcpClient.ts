@@ -130,12 +130,12 @@ export class McpClient {
   // 连接到 MCP 服务器
   async connect(): Promise<void> {
     if (this.isConnected && this.client) {
-      console.info(`MCP服务器 ${this.serverName} 已经在运行中`)
+      console.info(`MCP server ${this.serverName} is already running`)
       return
     }
 
     try {
-      console.info(`正在启动MCP服务器 ${this.serverName}...`, this.serverConfig)
+      console.info(`Starting MCP server ${this.serverName}...`, this.serverConfig)
 
       // 处理 customHeaders 和 AuthProvider
       let authProvider: SimpleOAuthProvider | null = null
@@ -206,9 +206,9 @@ export class McpClient {
             const defaultPaths = this.getDefaultPaths(HOME_DIR)
 
             // 合并所有路径
-            const allPaths = [...defaultPaths, ...existingPaths]
+            const allPaths = [...existingPaths, ...defaultPaths]
             if (this.nodeRuntimePath) {
-              allPaths.push(
+              allPaths.unshift(
                 process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
               )
             }
@@ -238,9 +238,9 @@ export class McpClient {
           const defaultPaths = this.getDefaultPaths(HOME_DIR)
 
           // 合并所有路径
-          const allPaths = [...defaultPaths, ...existingPaths]
+          const allPaths = [...existingPaths, ...defaultPaths]
           if (this.nodeRuntimePath) {
-            allPaths.push(
+            allPaths.unshift(
               process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
             )
           }
@@ -316,8 +316,8 @@ export class McpClient {
       const timeoutPromise = new Promise<void>((_, reject) => {
         this.connectionTimeout = setTimeout(
           () => {
-            console.error(`连接到MCP服务器 ${this.serverName} 超时`)
-            reject(new Error(`连接到MCP服务器 ${this.serverName} 超时`))
+            console.error(`Connection to MCP server ${this.serverName} timed out`)
+            reject(new Error(`Connection to MCP server ${this.serverName} timed out`))
           },
           5 * 60 * 1000
         ) // 5分钟
@@ -334,7 +334,7 @@ export class McpClient {
           }
 
           this.isConnected = true
-          console.info(`MCP服务器 ${this.serverName} 连接成功`)
+          console.info(`MCP server ${this.serverName} connected successfully`)
 
           // 触发服务器状态变更事件
           eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
@@ -343,7 +343,7 @@ export class McpClient {
           })
         })
         .catch((error) => {
-          console.error(`连接到MCP服务器 ${this.serverName} 失败:`, error)
+          console.error(`Failed to connect to MCP server ${this.serverName}:`, error)
           throw error
         })
 
@@ -359,7 +359,7 @@ export class McpClient {
       // 清理资源
       this.cleanupResources()
 
-      console.error(`连接到MCP服务器 ${this.serverName} 失败:`, error)
+      console.error(`Failed to connect to MCP server ${this.serverName}:`, error)
 
       // 触发服务器状态变更事件
       eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
@@ -381,7 +381,7 @@ export class McpClient {
       // 清理资源
       this.cleanupResources()
 
-      console.log(`从MCP服务器断开连接: ${this.serverName}`)
+      console.log(`Disconnected from MCP server: ${this.serverName}`)
 
       // 触发服务器状态变更事件
       eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
@@ -389,7 +389,7 @@ export class McpClient {
         status: 'stopped'
       })
     } catch (error) {
-      console.error(`从MCP服务器 ${this.serverName} 断开连接失败:`, error)
+      console.error(`Failed to disconnect from MCP server ${this.serverName}:`, error)
       throw error
     }
   }
@@ -407,7 +407,7 @@ export class McpClient {
       try {
         this.transport.close()
       } catch (error) {
-        console.error(`关闭MCP transport失败:`, error)
+        console.error(`Failed to close MCP transport:`, error)
       }
     }
 
@@ -456,7 +456,7 @@ export class McpClient {
       }
       return result
     } catch (error) {
-      console.error(`调用MCP工具 ${toolName} 失败:`, error)
+      console.error(`Failed to call MCP tool ${toolName}:`, error)
       // 调用失败，清空工具缓存
       this.cachedTools = null
       throw error
@@ -495,11 +495,11 @@ export class McpClient {
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
       if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
-        console.warn(`服务器 ${this.serverName} 不支持 listTools`)
+        console.warn(`Server ${this.serverName} does not support listTools`)
         this.cachedTools = []
         return this.cachedTools
       } else {
-        console.error(`列出MCP工具失败:`, error)
+        console.error(`Failed to list MCP tools:`, error)
         // 发生其他错误，不清空缓存（保持null），以便下次重试
         throw error
       }
@@ -551,11 +551,11 @@ export class McpClient {
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
       if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
-        console.warn(`服务器 ${this.serverName} 不支持 listPrompts`)
+        console.warn(`Server ${this.serverName} does not support listPrompts`)
         this.cachedPrompts = []
         return this.cachedPrompts
       } else {
-        console.error(`列出MCP提示失败:`, error)
+        console.error(`Failed to list MCP prompts:`, error)
         // 发生其他错误，不清空缓存（保持null），以便下次重试
         throw error
       }
@@ -573,7 +573,6 @@ export class McpClient {
     }
 
     try {
-      // SDK可能没有 getPrompt 方法，需要使用通用的 request
       const response = await this.client.getPrompt({
         name,
         arguments: (args as Record<string, string>) || {}
@@ -586,13 +585,15 @@ export class McpClient {
         Array.isArray(response.messages)
       ) {
         return {
+          id: name,
           name: name, // 从请求参数中获取 name
+          description: response.description || '',
           messages: response.messages as Array<{ role: string; content: { text: string } }>
         }
       }
       throw new Error('无效的获取提示响应格式')
     } catch (error) {
-      console.error(`获取MCP提示 ${name} 失败:`, error)
+      console.error(`Failed to get MCP prompt ${name}:`, error)
       // 获取失败，清空提示缓存
       this.cachedPrompts = null
       throw error
@@ -638,11 +639,11 @@ export class McpClient {
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
       if (errorMessage.includes('Method not found') || errorMessage.includes('not supported')) {
-        console.warn(`服务器 ${this.serverName} 不支持 listResources`)
+        console.warn(`Server ${this.serverName} does not support listResources`)
         this.cachedResources = []
         return this.cachedResources
       } else {
-        console.error(`列出MCP资源失败:`, error)
+        console.error(`Failed to list MCP resources:`, error)
         // 发生其他错误，不清空缓存（保持null），以便下次重试
         throw error
       }
@@ -674,7 +675,7 @@ export class McpClient {
 
       return resource
     } catch (error) {
-      console.error(`读取MCP资源 ${resourceUri} 失败:`, error)
+      console.error(`Failed to read MCP resource ${resourceUri}:`, error)
       // 读取失败，清空资源缓存
       this.cachedResources = null
       throw error
@@ -690,7 +691,7 @@ export async function createMcpClient(serverName: string): Promise<McpClient> {
   // 获取服务器配置
   const serverConfig = servers[serverName]
   if (!serverConfig) {
-    throw new Error(`在配置中未找到MCP服务器 ${serverName}`)
+    throw new Error(`MCP server ${serverName} not found in configuration`)
   }
 
   // 创建并返回 MCP 客户端，传入null作为npmRegistry

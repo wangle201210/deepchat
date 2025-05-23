@@ -21,7 +21,7 @@
           @blur="handleApiHostChange(String($event.target.value))"
           @keyup.enter="handleApiHostChange(apiHost)"
         />
-        <div class="text-xs text-secondary-foreground">
+        <div class="text-xs text-muted-foreground">
           {{
             t('settings.provider.urlFormat', {
               defaultUrl: providerWebsites?.defaultBaseUrl || ''
@@ -74,7 +74,7 @@
             }}
           </Button>
         </div>
-        <div class="text-xs text-secondary-foreground" v-if="!provider.custom">
+        <div class="text-xs text-muted-foreground" v-if="!provider.custom">
           {{ t('settings.provider.getKeyTip') }}
           <a :href="providerWebsites?.apiKey" target="_blank" class="text-primary">{{
             provider.name
@@ -155,7 +155,7 @@
               t('settings.provider.disableAllModels')
             }}
           </Button>
-          <span class="text-xs text-secondary-foreground">
+          <span class="text-xs text-muted-foreground">
             {{ enabledModels.length }}/{{ providerModels.length + customModels.length }}
             {{ t('settings.provider.modelsEnabled') }}
           </span>

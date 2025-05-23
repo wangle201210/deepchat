@@ -27,7 +27,10 @@
     "enabledDescription": "Включить функциональность MCP для использования вызовов инструментов",
     "empty": "Пусто",
     "invalidJsonFormat": "Неверный формат JSON",
-    "jsonInputPlaceholder": "Введите параметры в формате JSON"
+    "jsonInputPlaceholder": "Введите параметры в формате JSON",
+    "input": "Входные параметры",
+    "type": "Тип",
+    "annotations": "Аннотации"
   },
   "addServer": "Добавить сервер",
   "addServerDialog": {

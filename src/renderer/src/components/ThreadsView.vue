@@ -1,13 +1,11 @@
 <template>
-  <div
-    class="w-60 h-full bg-muted overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col"
-  >
+  <div class="w-60 h-full overflow-hidden p-2 space-y-3 flex-shrink-0 border-r flex flex-col">
     <!-- 固定在顶部的"新会话"按钮 -->
     <div class="flex-none">
       <Button
         variant="outline"
         size="sm"
-        class="w-full text-xs text-muted-foreground justify-start gap-2"
+        class="w-full text-xs justify-start gap-2 h-7"
         @click="createNewThread"
       >
         <Icon icon="lucide:pen-line" class="h-4 w-4" />
@@ -19,13 +17,13 @@
     <ScrollArea ref="scrollAreaRef" class="flex-1" @scroll="handleScroll">
       <!-- 最近 -->
       <div v-for="thread in chatStore.threads" :key="thread.dt" class="space-y-1.5 mb-3">
-        <div class="text-xs font-bold text-secondary-foreground px-2">{{ thread.dt }}</div>
+        <div class="text-xs font-bold text-muted-foreground px-2">{{ thread.dt }}</div>
         <ul class="space-y-1.5">
           <ThreadItem
             v-for="dtThread in thread.dtThreads"
             :key="dtThread.id"
             :thread="dtThread"
-            :is-active="dtThread.id === chatStore.activeThreadId"
+            :is-active="dtThread.id === chatStore.getActiveThreadId()"
             :working-status="chatStore.getThreadWorkingStatus(dtThread.id)"
             @select="handleThreadSelect"
             @rename="showRenameDialog(dtThread)"

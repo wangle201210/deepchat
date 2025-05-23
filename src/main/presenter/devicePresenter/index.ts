@@ -199,35 +199,35 @@ export class DevicePresenter implements IDevicePresenter {
     cacheDir: string,
     fileName: string
   ): Promise<string> {
-    // 解析MIME类型和实际的Base64数据
-    const matches = base64Data.match(/^data:([^;]+);base64,(.*)$/)
-    if (!matches || matches.length !== 3) {
-      console.warn('无效的Base64图片数据')
-      return base64Data
-    }
-
-    const mimeType = matches[1]
-    const actualData = matches[2]
-
-    // 确定文件扩展名
-    let extension = 'jpg'
-    if (mimeType.includes('png')) {
-      extension = 'png'
-    } else if (mimeType.includes('gif')) {
-      extension = 'gif'
-    } else if (mimeType.includes('webp')) {
-      extension = 'webp'
-    } else if (mimeType.includes('svg')) {
-      extension = 'svg'
-    }
-
-    const saveFileName = `${fileName}.${extension}`
-    const fullPath = path.join(cacheDir, saveFileName)
-
     try {
-      // 将Base64数据写入文件
-      const buffer = Buffer.from(actualData, 'base64')
-      await fs.promises.writeFile(fullPath, buffer)
+      // 解析MIME类型和实际的Base64数据
+      const matches = base64Data.match(/^data:([^;]+);base64,(.*)$/)
+      if (!matches || matches.length !== 3) {
+        console.warn('无效的Base64图片数据')
+        return base64Data
+      }
+
+      const mimeType = matches[1]
+      const base64Content = matches[2]
+
+      // 根据MIME类型确定文件扩展名
+      let extension = 'jpg'
+      if (mimeType.includes('png')) {
+        extension = 'png'
+      } else if (mimeType.includes('gif')) {
+        extension = 'gif'
+      } else if (mimeType.includes('webp')) {
+        extension = 'webp'
+      } else if (mimeType.includes('svg')) {
+        extension = 'svg'
+      }
+
+      const saveFileName = `${fileName}.${extension}`
+      const fullPath = path.join(cacheDir, saveFileName)
+
+      // 将Base64数据转换为Buffer并保存为图片文件
+      const imageBuffer = Buffer.from(base64Content, 'base64')
+      await fs.promises.writeFile(fullPath, imageBuffer)
 
       // 返回imgcache协议URL
       return `imgcache://${saveFileName}`

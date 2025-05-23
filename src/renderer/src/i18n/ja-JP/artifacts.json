@@ -28,5 +28,10 @@
   "code": "コード",
   "export": "エクスポート",
   "htmlPreviewTitle": "HTMLプレビュー",
-  "svgPreviewTitle": "SVGプレビュー"
+  "svgPreviewTitle": "SVGプレビュー",
+  "copy": "コピー",
+  "copySuccess": "コピー成功",
+  "copySuccessDesc": "クリップボードにコピーしました",
+  "copyFailed": "コピー失敗",
+  "copyFailedDesc": "クリップボードへのコピーに失敗しました"
 }

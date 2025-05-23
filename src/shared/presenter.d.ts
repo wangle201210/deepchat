@@ -42,7 +42,15 @@ export interface Resource {
   blob?: string
 }
 export interface Prompt {
+  id: string
   name: string
+  description: string
+  content?: string
+  parameters?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
 }
 export interface PromptListEntry {
@@ -72,6 +80,13 @@ export interface Tool {
   name: string
   description: string
   inputSchema: Record<string, unknown>
+  annotations?: {
+    title?: string // A human-readable title for the tool.
+    readOnlyHint?: boolean // default false
+    destructiveHint?: boolean // default true
+    idempotentHint?: boolean // default false
+    openWorldHint?: boolean // default true
+  }
 }
 
 export interface ResourceListEntry {
@@ -95,18 +110,73 @@ export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
 }
 
+export interface TabData {
+  id: number
+  title: string
+  isActive: boolean
+  position: number
+  closable: boolean
+  url: string
+  icon?: string
+}
+
 export interface IWindowPresenter {
-  createMainWindow(): BrowserWindow
-  getWindow(windowName: string): BrowserWindow | undefined
+  createShellWindow(options?: {
+    activateTabId?: number
+    initialTab?: {
+      url: string
+      type?: string
+      icon?: string
+    }
+    forMovedTab?: boolean
+    x?: number
+    y?: number
+  }): Promise<number | null>
   mainWindow: BrowserWindow | undefined
   previewFile(filePath: string): void
-  minimize(): void
-  maximize(): void
-  close(): void
-  hide(): void
-  show(): void
-  isMaximized(): boolean
-  isMainWindowFocused(): boolean
+  minimize(windowId: number): void
+  maximize(windowId: number): void
+  close(windowId: number): void
+  hide(windowId: number): void
+  show(windowId?: number): void
+  isMaximized(windowId: number): boolean
+  isMainWindowFocused(windowId: number): boolean
+  sendToAllWindows(channel: string, ...args: unknown[]): void
+  sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  closeWindow(windowId: number, forceClose?: boolean): Promise<void>
+}
+
+export interface ITabPresenter {
+  createTab(windowId: number, url: string, options?: TabCreateOptions): Promise<number | null>
+  closeTab(tabId: number): Promise<boolean>
+  switchTab(tabId: number): Promise<boolean>
+  getTab(tabId: number): Promise<BrowserView | undefined>
+  detachTab(tabId: number): Promise<boolean>
+  attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+  moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
+  getWindowTabsData(windowId: number): Promise<Array<TabData>>
+  moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
+  captureTabArea(
+    tabId: number,
+    rect: { x: number; y: number; width: number; height: number }
+  ): Promise<string | null>
+  stitchImagesWithWatermark(
+    imageDataList: string[],
+    options?: {
+      isDark?: boolean
+      version?: string
+      texts?: {
+        brand?: string
+        time?: string
+        tip?: string
+      }
+    }
+  ): Promise<string | null>
+}
+
+export interface TabCreateOptions {
+  active?: boolean
+  position?: number
 }
 
 export interface ILlamaCppPresenter {
@@ -183,6 +253,7 @@ export interface IPresenter {
   syncPresenter: ISyncPresenter
   deeplinkPresenter: IDeeplinkPresenter
   notificationPresenter: INotificationPresenter
+  tabPresenter: ITabPresenter
   init(): void
   destroy(): void
 }
@@ -222,6 +293,7 @@ export interface IConfigPresenter {
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void
   // 语言设置
   getLanguage(): string
+  setLanguage(language: string): void
   getDefaultProviders(): LLM_PROVIDER[]
   // 代理设置
   getProxyMode(): string
@@ -263,6 +335,16 @@ export interface IConfigPresenter {
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
+  // 主题设置
+  initTheme(): void
+  toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
+  getTheme(): Promise<string>
+  getSystemTheme(): Promise<'dark' | 'light'>
+  getCustomPrompts(): Promise<Prompt[]>
+  setCustomPrompts(prompts: Prompt[]): Promise<void>
+  addCustomPrompt(prompt: Prompt): Promise<void>
+  updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void>
+  deleteCustomPrompt(promptId: string): Promise<void>
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -384,7 +466,11 @@ export type CONVERSATION = {
 
 export interface IThreadPresenter {
   // 基本对话操作
-  createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
+  createConversation(
+    title: string,
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    tabId: number
+  ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>
   renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
@@ -407,8 +493,10 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
-  setActiveConversation(conversationId: string): Promise<void>
-  getActiveConversation(): Promise<CONVERSATION | null>
+  setActiveConversation(conversationId: string, tabId: number): Promise<void>
+  getActiveConversation(tabId: number): Promise<CONVERSATION | null>
+  getActiveConversationId(tabId: number): Promise<string | null>
+  clearActiveThread(tabId: number): Promise<void>
 
   getSearchResults(messageId: string): Promise<SearchResult[]>
   clearAllMessages(conversationId: string): Promise<void>
@@ -430,12 +518,15 @@ export interface IThreadPresenter {
   updateMessageMetadata(messageId: string, metadata: Partial<MESSAGE_METADATA>): Promise<void>
   getMessageExtraInfo(messageId: string, type: string): Promise<Record<string, unknown>[]>
 
+  // popup 操作
+  translateText(text: string, tabId: number): Promise<string>
+  askAI(text: string, tabId: number): Promise<string>
+
   // 上下文控制
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(modelId?: string): Promise<string>
-  clearActiveThread(): Promise<void>
+  summaryTitles(tabId?: number): Promise<string>
   stopMessageGeneration(messageId: string): Promise<void>
   getSearchEngines(): Promise<SearchEngineTemplate[]>
   getActiveSearchEngine(): Promise<SearchEngineTemplate>

@@ -2,7 +2,12 @@
   "loading": "로딩 중...",
   "copy": "복사",
   "paste": "붙여넣기",
-  "copySuccess": "복사 완료!",
+  "copySuccess": "복사 성공",
+  "copySuccessDesc": "클립보드에 복사되었습니다",
+  "copyImageSuccess": "복사 성공",
+  "copyImageSuccessDesc": "이미지가 클립보드에 복사되었습니다",
+  "copyFailed": "복사 실패",
+  "copyFailedDesc": "클립보드에 복사할 수 없습니다",
   "copyCode": "코드 복사",
   "export": "내보내기",
   "newChat": "새 채팅",
@@ -60,5 +65,6 @@
   "watermarkTip": "AI 에서 생성됨",
   "collapse": "접기",
   "expand": "펼치기",
-  "image": "그림"
+  "image": "그림",
+  "add": "새로운"
 }

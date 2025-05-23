@@ -1,5 +1,10 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema
+} from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -10,6 +15,8 @@ import fs from 'fs'
 import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { nanoid } from 'nanoid'
+import { runCode, type CodeFile } from '../pythonRunner'
+import { presenter } from '@/presenter'
 
 // Schema 定义
 const GetTimeArgsSchema = z.object({
@@ -37,6 +44,19 @@ const RunNodeCodeArgsSchema = z.object({
     .describe('Code execution timeout in milliseconds, default 5 seconds')
 })
 
+const RunPythonCodeArgsSchema = z.object({
+  python_code: z
+    .string()
+    .describe(
+      'Python code to execute, should not contain file operations, system settings modification, or external code execution'
+    ),
+  timeout: z
+    .number()
+    .optional()
+    .default(5000)
+    .describe('Code execution timeout in milliseconds, default 5 seconds')
+})
+
 // 限制和安全配置
 const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   // 允许os模块用于系统信息读取，但仍然禁止其他危险模块
@@ -56,6 +76,16 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   /process\.env/gi
 ]
 
+interface PromptDefinition {
+  name: string
+  description: string
+  arguments: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
+}
+
 export class PowerpackServer {
   private server: Server
   private nodeRuntimePath: string | null = null
@@ -68,11 +98,12 @@ export class PowerpackServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/powerpack-server',
-        version: '0.1.0'
+        version: '0.2.0'
       },
       {
         capabilities: {
-          tools: {}
+          tools: {},
+          prompts: {}
         }
       }
     )
@@ -121,7 +152,7 @@ export class PowerpackServer {
 
   // 格式化相对时间
   private formatRelativeTime(userQuery: string, actualTime: string): string {
-    return `${userQuery}的时间是：${actualTime}`
+    return `${userQuery} ${actualTime}`
   }
 
   // 执行Node代码
@@ -177,6 +208,84 @@ export class PowerpackServer {
     }
   }
 
+  // 执行Python代码
+  private async executePythonCode(code: string): Promise<string> {
+    const files: CodeFile[] = [
+      {
+        name: 'main.py',
+        content: code,
+        active: true
+      }
+    ]
+
+    const result = await runCode(files, (level, data) => {
+      console.log(`[${level}] ${data}`)
+    })
+
+    if (result.status === 'success') {
+      return result.output.join('\n')
+    } else {
+      throw new Error(result.error)
+    }
+  }
+
+  // 获取提示词列表
+  private async getPromptsList(): Promise<PromptDefinition[]> {
+    try {
+      const prompts = await presenter.configPresenter.getCustomPrompts()
+
+      if (!prompts || prompts.length === 0) {
+        return []
+      }
+
+      return prompts.map((prompt) => ({
+        name: prompt.name,
+        description: prompt.description,
+        arguments: prompt.parameters
+          ? prompt.parameters.map((param) => ({
+              name: param.name,
+              description: param.description,
+              required: !!param.required
+            }))
+          : []
+      }))
+    } catch (error) {
+      return []
+    }
+  }
+
+  // 获取提示词内容
+  private async getPromptContent(name: string, content: string, args?: Record<string, string>) {
+    const prompts = await presenter.configPresenter.getCustomPrompts()
+    if (!prompts || prompts.length === 0) throw new Error('No prompts found')
+
+    const prompt = prompts.find((p) => p.name === name)
+    if (!prompt) throw new Error('Prompt not found')
+
+    let promptContent = prompt.content
+
+    // 替换参数占位符
+    if (args && prompt.parameters) {
+      // 遍历所有参数，并替换内容中的{{参数名}}
+      for (const param of prompt.parameters) {
+        const value = args[param.name] || ''
+        promptContent = promptContent.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
+      }
+    }
+
+    return {
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: `${promptContent}\n\n${content}`
+          }
+        }
+      ]
+    }
+  }
+
   // 设置请求处理器
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
@@ -214,6 +323,22 @@ export class PowerpackServer {
           inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
         })
       }
+
+      // 添加Python代码执行工具
+      tools.push({
+        name: 'run_python_code',
+        description:
+          'Execute simple Python code in a secure sandbox environment. Suitable for calculations, data analysis, and scientific computing. ' +
+          'The code needs to be output to the print function, and the output content needs to be formatted as a string. ' +
+          'The code will be executed with Python 3.12. ' +
+          'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
+          'Dependencies may be defined via PEP 723 script metadata, e.g. to install "pydantic", the script should startwith a comment of the form:' +
+          `# /// script\n` +
+          `# dependencies = ['pydantic']\n ` +
+          `# ///\n` +
+          `print('hello world').`,
+        inputSchema: zodToJsonSchema(RunPythonCodeArgsSchema)
+      })
 
       return { tools }
     })
@@ -307,6 +432,25 @@ export class PowerpackServer {
             }
           }
 
+          case 'run_python_code': {
+            const parsed = RunPythonCodeArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`无效的代码参数: ${parsed.error}`)
+            }
+
+            const { python_code } = parsed.data
+            const result = await this.executePythonCode(python_code)
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `代码执行结果:\n\n${result}`
+                }
+              ]
+            }
+          }
+
           default:
             throw new Error(`Unknown tool: ${name}`)
         }
@@ -315,6 +459,38 @@ export class PowerpackServer {
         return {
           content: [{ type: 'text', text: `错误: ${errorMessage}` }],
           isError: true
+        }
+      }
+    })
+
+    // 设置提示词列表处理器
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      const prompts = await this.getPromptsList()
+      return { prompts }
+    })
+
+    // 设置提示词获取处理器
+    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      try {
+        const { name, arguments: args } = request.params
+        const response = await this.getPromptContent(name, '', args as Record<string, string>)
+        return {
+          messages: response.messages,
+          _meta: {}
+        }
+      } catch (error) {
+        console.error('获取提示词内容失败:', error)
+        return {
+          messages: [
+            {
+              role: 'system',
+              content: {
+                type: 'text',
+                text: `Error: ${error instanceof Error ? error.message : String(error)}`
+              }
+            }
+          ],
+          _meta: {}
         }
       }
     })

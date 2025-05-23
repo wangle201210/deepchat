@@ -27,6 +27,7 @@ import { jsonrepair } from 'jsonrepair'
 import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
+import sharp from 'sharp'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
 const OPENAI_IMAGE_GENERATION_MODELS = [
@@ -36,6 +37,16 @@ const OPENAI_IMAGE_GENERATION_MODELS = [
   'dall-e-3',
   'dall-e-2'
 ]
+
+// 添加支持的图片尺寸常量
+const SUPPORTED_IMAGE_SIZES = {
+  SQUARE: '1024x1024',
+  LANDSCAPE: '1536x1024',
+  PORTRAIT: '1024x1536'
+} as const
+
+// 添加可设置尺寸的模型列表
+const SIZE_CONFIGURABLE_MODELS = ['gpt-image-1', 'gpt-4o-image', 'gpt-4o-all']
 
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
@@ -178,7 +189,9 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       model: modelId,
       stream: false,
       temperature: temperature,
-      max_tokens: maxTokens
+      ...(modelId.startsWith('o1') || modelId.startsWith('o3') || modelId.startsWith('o4')
+        ? { max_completion_tokens: maxTokens }
+        : { max_tokens: maxTokens })
     }
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) {
@@ -290,20 +303,13 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
         if (imageUrls.length > 0) {
           // 使用 images.edit 接口处理带有图片的请求
-          // console.log(`[coreStream] Editing image with model ${modelId} and prompt: "${prompt}"`)
-          // 获取图片数据
           let imageBuffer: Buffer
 
           if (imageUrls[0].startsWith('imgcache://')) {
-            // 对于imgcache协议，直接从文件系统读取
-
             const filePath = imageUrls[0].slice('imgcache://'.length)
             const fullPath = path.join(app.getPath('userData'), 'images', filePath)
-
-            // 读取文件
             imageBuffer = fs.readFileSync(fullPath)
           } else {
-            // 对于其他URL，使用fetch获取
             const imageResponse = await fetch(imageUrls[0])
             const imageBlob = await imageResponse.blob()
             imageBuffer = Buffer.from(await imageBlob.arrayBuffer())
@@ -311,7 +317,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
           // 创建临时文件
           const imagePath = `/tmp/openai_image_${Date.now()}.png`
-          // 使用 fs 保存图片
           await new Promise<void>((resolve, reject) => {
             fs.writeFile(imagePath, imageBuffer, (err: Error | null) => {
               if (err) {
@@ -324,16 +329,45 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
           // 使用文件路径创建 Readable 流
           const imageFile = fs.createReadStream(imagePath)
-
-          result = await this.openai.images.edit({
+          const params: OpenAI.Images.ImageEditParams = {
             model: modelId,
             image: imageFile,
             prompt: prompt,
-            n: 1,
-            size: '1024x1024',
-            response_format: 'url',
-            quality: 'standard'
-          })
+            n: 1
+          }
+
+          // 如果是支持尺寸配置的模型，检测图片尺寸并设置合适的参数
+          if (SIZE_CONFIGURABLE_MODELS.includes(modelId)) {
+            try {
+              const metadata = await sharp(imageBuffer).metadata()
+              if (metadata.width && metadata.height) {
+                const aspectRatio = metadata.width / metadata.height
+
+                // 根据宽高比选择最接近的尺寸
+                if (Math.abs(aspectRatio - 1) < 0.1) {
+                  // 接近正方形
+                  params.size = SUPPORTED_IMAGE_SIZES.SQUARE
+                } else if (aspectRatio > 1) {
+                  // 横向图片
+                  params.size = SUPPORTED_IMAGE_SIZES.LANDSCAPE
+                } else {
+                  // 纵向图片
+                  params.size = SUPPORTED_IMAGE_SIZES.PORTRAIT
+                }
+              } else {
+                // 如果无法获取宽高，使用默认参数
+                params.size = '1024x1536'
+              }
+              params.quality = 'high'
+            } catch (error) {
+              console.warn('Failed to detect image dimensions, using default size:', error)
+              // 检测失败时使用默认参数
+              params.size = '1024x1536'
+              params.quality = 'high'
+            }
+          }
+
+          result = await this.openai.images.edit(params)
 
           // 清理临时文件
           try {
@@ -344,27 +378,34 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         } else {
           // 使用原来的 images.generate 接口处理没有图片的请求
           console.log(`[coreStream] Generating image with model ${modelId} and prompt: "${prompt}"`)
-          result = await this.openai.images.generate(
-            {
-              model: modelId,
-              prompt: prompt,
-              output_format: 'png',
-              n: 1, // Generate one image
-              size: 'auto', // Default size, consider making configurable
-              response_format: 'url', // Need base64 data
-              quality: 'hd', // Default quality, adjust as needed
-              background: 'transparent' // Optional, based on model support/needs
-            },
-            {
-              timeout: 300_000
-            }
-          )
+          const params: OpenAI.Images.ImageGenerateParams = {
+            model: modelId,
+            prompt: prompt,
+            n: 1,
+            output_format: 'png'
+          }
+          if (modelId === 'gpt-image-1' || modelId === 'gpt-4o-image' || modelId === 'gpt-4o-all') {
+            params.size = '1024x1536'
+            params.quality = 'high'
+          }
+          result = await this.openai.images.generate(params, {
+            timeout: 300_000
+          })
         }
-
-        if (result.data && result.data[0]?.url) {
+        if (result.data && (result.data[0]?.url || result.data[0]?.b64_json)) {
           // 使用devicePresenter缓存图片URL
           try {
-            const imageUrl = result.data[0]?.url
+            let imageUrl: string
+            if (result.data[0]?.b64_json) {
+              // 处理 base64 数据
+              const base64Data = result.data[0].b64_json
+              // 直接使用 devicePresenter 缓存 base64 数据
+              imageUrl = await presenter.devicePresenter.cacheImage(base64Data)
+            } else {
+              // 原有的 URL 处理逻辑
+              imageUrl = result.data[0]?.url
+            }
+
             const cachedUrl = await presenter.devicePresenter.cacheImage(imageUrl)
 
             // 返回缓存后的URL
@@ -375,6 +416,19 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
                 mimeType: 'deepchat/image-url'
               }
             }
+
+            // 处理 usage 信息
+            if (result.usage) {
+              yield {
+                type: 'usage',
+                usage: {
+                  prompt_tokens: result.usage.input_tokens || 0,
+                  completion_tokens: result.usage.output_tokens || 0,
+                  total_tokens: result.usage.total_tokens || 0
+                }
+              }
+            }
+
             yield { type: 'stop', stop_reason: 'complete' }
           } catch (cacheError) {
             // 缓存失败时降级为使用原始URL
@@ -382,14 +436,14 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             yield {
               type: 'image_data',
               image_data: {
-                data: result.data[0]?.url,
+                data: result.data[0]?.url || result.data[0]?.b64_json,
                 mimeType: 'deepchat/image-url'
               }
             }
             yield { type: 'stop', stop_reason: 'complete' }
           }
         } else {
-          console.error('[coreStream] No image data received from API.')
+          console.error('[coreStream] No image data received from API.', result)
           yield { type: 'error', error_message: 'No image data received from API.' }
           yield { type: 'stop', stop_reason: 'error' }
         }
@@ -418,8 +472,21 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       model: modelId,
       stream: true,
       temperature,
-      max_tokens: maxTokens
+      ...(modelId.startsWith('o1') || modelId.startsWith('o3') || modelId.startsWith('o4')
+        ? { max_completion_tokens: maxTokens }
+        : { max_tokens: maxTokens })
     }
+
+    // 添加stream_options，适用于/v1/chat/completions
+    // 诸如qwen等模型需要，如不添加则无法获取token usages
+    requestParams.stream_options = { include_usage: true }
+
+    // 防止qwen等某些模型以json形式输出结果正文
+    // grok系列模型和供应商不需要设置response_format
+    if (this.provider.id.toLowerCase().includes('dashscrope')) {
+      requestParams.response_format = { type: 'text' }
+    }
+
     OPENAI_REASONING_MODELS.forEach((noTempId) => {
       if (modelId.startsWith(noTempId)) delete requestParams.temperature
     })
@@ -504,32 +571,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
             const currentCallState = nativeToolCalls[currentToolCallId]
 
-            // Handle complete tool call in one chunk
-            if (functionName && argumentChunk && !currentCallState.completed) {
-              // console.log(`[coreStream] Handling complete tool call ${currentToolCallId} in one chunk.`)
-              if (!currentCallState.name) {
-                currentCallState.name = functionName
-                yield {
-                  type: 'tool_call_start',
-                  tool_call_id: currentToolCallId,
-                  tool_call_name: functionName
-                }
-              }
-              currentCallState.arguments += argumentChunk
-              yield {
-                type: 'tool_call_chunk',
-                tool_call_id: currentToolCallId,
-                tool_call_arguments_chunk: argumentChunk
-              }
-              currentCallState.completed = true
-              yield {
-                type: 'tool_call_end',
-                tool_call_id: currentToolCallId,
-                tool_call_arguments_complete: currentCallState.arguments
-              }
-              continue
-            }
-
             // Handle incremental updates
             // console.log(`[coreStream] Handling incremental update for ${currentToolCallId}.`)
             if (functionName && !currentCallState.name) {
@@ -573,7 +614,15 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           console.warn(`Unhandled finish reason: ${reasonFromAPI}`)
           stopReason = 'error'
         }
-        continue // Process content within the same chunk if any
+        /*
+        choice {
+          finish_reason: 'stop',
+          delta: { content: '！' },
+          index: 0,
+          logprobs: null
+        }
+        */
+        // continue
       }
       if (!currentContent) continue
 

@@ -1,6 +1,10 @@
 {
   "extends": "@electron-toolkit/tsconfig/tsconfig.web.json",
   "include": [
+    "src/renderer/shell/env.d.ts",
+    "src/renderer/shell/**/*",
+    "src/renderer/shell/**/*.vue",
+    "src/renderer/shell/assets/**/*",
     "src/renderer/src/env.d.ts",
     "src/renderer/src/**/*",
     "src/renderer/src/**/*.vue",
@@ -14,6 +18,9 @@
     "paths": {
       "@/*": [
         "src/renderer/src/*"
+      ],
+      "@shell/*": [
+        "src/renderer/shell/*"
       ],
       "@shared/*": [
         "src/shared/*"

@@ -33,6 +33,7 @@
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="openai">OpenAI</SelectItem>
+                <SelectItem value="openai-responses">OpenAI Responses</SelectItem>
                 <SelectItem value="gemini">Gemini</SelectItem>
                 <SelectItem value="anthropic">Anthropic</SelectItem>
                 <!-- <SelectItem value="ollama">Ollama</SelectItem>
@@ -68,10 +69,7 @@
                 :placeholder="t('settings.provider.dialog.addCustomProvider.baseUrlPlaceholder')"
                 required
               />
-              <div
-                class="text-xs text-secondary-foreground mt-1"
-                v-if="formData.apiType === 'openai'"
-              >
+              <div class="text-xs text-muted-foreground mt-1" v-if="formData.apiType === 'openai'">
                 {{ `${formData.baseUrl ?? ''}/chat/completions` }}
               </div>
             </span>

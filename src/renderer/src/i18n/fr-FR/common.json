@@ -2,7 +2,12 @@
   "enabled": "Activé",
   "disabled": "Désactivé",
   "loading": "Chargement...",
-  "copySuccess": "Copié !",
+  "copySuccess": "Copie réussie",
+  "copySuccessDesc": "Contenu copié dans le presse-papiers",
+  "copyImageSuccess": "Copie réussie",
+  "copyImageSuccessDesc": "Image copiée dans le presse-papiers",
+  "copyFailed": "Échec de la copie",
+  "copyFailedDesc": "Impossible de copier le contenu dans le presse-papiers",
   "copyCode": "Copier le code",
   "copy": "Copier",
   "paste": "Coller",
@@ -60,5 +65,6 @@
   "watermarkTip": "Généré par AI",
   "collapse": "Fermer",
   "expand": "Développer",
-  "image": "image"
+  "image": "image",
+  "add": "Nouveau"
 }

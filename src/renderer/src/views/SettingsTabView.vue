@@ -1,24 +1,20 @@
 <template>
-  <div class="h-full bg-muted dark:bg-background">
-    <div class="w-full h-full p-2">
-      <div class="w-full h-full flex flex-row bg-card rounded-lg border border-border">
-        <div class="w-52 h-full border-r border-border p-2 space-y-2 flex-shrink-0 overflow-y-auto">
-          <div
-            v-for="setting in settings"
-            :key="setting.name"
-            :class="[
-              'flex flex-row items-center hover:bg-accent gap-2 rounded-lg p-2 cursor-pointer',
-              route.name === setting.name ? 'bg-accent' : ''
-            ]"
-            @click="handleClick(setting.path)"
-          >
-            <Icon :icon="setting.icon" class="w-4 h-4 text-muted-foreground" />
-            <span class="text-sm font-medium">{{ t(setting.title) }}</span>
-          </div>
-        </div>
-        <RouterView />
+  <div class="w-full h-full flex flex-row bg-white/80 dark:bg-black/80 md:max-w-[900px] mx-auto">
+    <div class="w-52 h-full border-r border-border p-2 space-y-2 flex-shrink-0 overflow-y-auto">
+      <div
+        v-for="setting in settings"
+        :key="setting.name"
+        :class="[
+          'flex flex-row items-center hover:bg-accent gap-2 rounded-lg p-2 cursor-pointer',
+          route.name === setting.name ? 'bg-accent' : ''
+        ]"
+        @click="handleClick(setting.path)"
+      >
+        <Icon :icon="setting.icon" class="w-4 h-4 text-muted-foreground" />
+        <span class="text-sm font-medium">{{ t(setting.title) }}</span>
       </div>
     </div>
+    <RouterView />
   </div>
 </template>
 
@@ -26,12 +22,14 @@
 import { Icon } from '@iconify/vue'
 import { useRouter } from 'vue-router'
 import { useRoute, RouterView } from 'vue-router'
-import { onMounted, Ref, ref } from 'vue'
+import { onMounted, Ref, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useTitle } from '@vueuse/core'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
+const title = useTitle()
 const settings: Ref<
   {
     title: string
@@ -56,6 +54,27 @@ onMounted(() => {
     }
   })
 })
+
+// 更新标题的函数
+const updateTitle = () => {
+  const currentRoute = route.name as string
+  const currentSetting = settings.value.find((s) => s.name === currentRoute)
+  if (currentSetting) {
+    // 使用i18n翻译标题，中文习惯是不需要破折号
+    title.value = t('routes.settings') + ' - ' + t(currentSetting.title)
+  } else {
+    title.value = t('routes.settings')
+  }
+}
+
+// 监听路由变化
+watch(
+  () => route.name,
+  () => {
+    updateTitle()
+  },
+  { immediate: true }
+)
 
 const handleClick = (path: string) => {
   router.push(path)

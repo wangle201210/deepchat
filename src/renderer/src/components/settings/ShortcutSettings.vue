@@ -3,11 +3,7 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 快捷键列表 -->
       <div class="flex flex-col gap-2">
-        <div
-          v-for="shortcut in shortcuts"
-          :key="shortcut.id"
-          class="flex flex-row p-2 items-center gap-2 px-2"
-        >
+        <div v-for="shortcut in shortcuts" :key="shortcut.id" class="flex flex-row p-2 items-center gap-2 px-2">
           <span class="flex flex-row items-center gap-2 flex-grow w-full">
             <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
@@ -34,10 +30,52 @@ const { t } = useI18n()
 
 const shortcuts = ref([
   {
-    id: 'new_chat',
-    icon: 'lucide:plus',
-    label: 'common.newChat',
+    id: 'new_conversation',
+    icon: 'lucide:plus-square',
+    label: 'settings.shortcuts.newConversation',
     key: 'CommandOrControl+N'
+  },
+  {
+    id: 'new_window',
+    icon: 'lucide:app-window',
+    label: 'settings.shortcuts.newWindow',
+    key: 'CommandOrControl+Shift+N'
+  },
+  {
+    id: 'new_tab',
+    icon: 'lucide:plus',
+    label: 'settings.shortcuts.newTab',
+    key: 'CommandOrControl+T'
+  },
+  {
+    id: 'close_tab',
+    icon: 'lucide:x',
+    label: 'settings.shortcuts.closeTab',
+    key: 'CommandOrControl+W'
+  },
+  {
+    id: 'next_tab',
+    icon: 'lucide:arrow-right',
+    label: 'settings.shortcuts.nextTab',
+    key: 'Control+Tab'
+  },
+  {
+    id: 'previous_tab',
+    icon: 'lucide:arrow-left',
+    label: 'settings.shortcuts.previousTab',
+    key: 'Control+Shift+Tab'
+  },
+  {
+    id: 'number_tabs',
+    icon: 'lucide:list-ordered',
+    label: 'settings.shortcuts.specificTab',
+    key: 'CommandOrControl+1...8'
+  },
+  {
+    id: 'last_tab',
+    icon: 'lucide:move-horizontal',
+    label: 'settings.shortcuts.lastTab',
+    key: 'CommandOrControl+9'
   },
   {
     id: 'zoom_in',
@@ -68,12 +106,6 @@ const shortcuts = ref([
     icon: 'lucide:trash-2',
     label: 'settings.shortcuts.cleanHistory',
     key: 'CommandOrControl+L'
-  },
-  {
-    id: 'hide_window',
-    icon: 'lucide:minimize-2',
-    label: 'settings.shortcuts.hideWindow',
-    key: 'CommandOrControl+W'
   },
   {
     id: 'quit_app',

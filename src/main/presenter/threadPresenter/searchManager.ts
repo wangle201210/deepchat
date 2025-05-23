@@ -5,7 +5,6 @@ import { ContentEnricher } from './contentEnricher'
 import { SearchResult } from '@shared/presenter'
 import { is } from '@electron-toolkit/utils'
 import { presenter } from '@/presenter'
-import { MAIN_WIN } from '../windowPresenter'
 import { eventBus } from '@/eventbus'
 import { CONFIG_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
@@ -15,24 +14,37 @@ const helperPage = path.join(app.getAppPath(), 'resources', 'blankSearch.html')
 
 // 抽取的脚本模板，使用占位符替代选择器
 const EXTRACTOR_SCRIPT_TEMPLATE = `
-  const results = []
-  const items = document.querySelectorAll('{{ITEMS_SELECTOR}}')
+  const results = [];
+  const items = document.querySelectorAll('{{ITEMS_SELECTOR}}');
   items.forEach((item, index) => {
-    const titleEl = item.querySelector('{{TITLE_SELECTOR}}')
-    const linkEl = item.querySelector('{{LINK_SELECTOR}}')
-    const descEl = item.querySelector('{{DESC_SELECTOR}}')
-    const faviconEl = item.querySelector('{{FAVICON_SELECTOR}}')
-    if (titleEl && linkEl) {
-      results.push({
-        title: {{TITLE_EXTRACT}},
-        url: {{URL_EXTRACT}},
-        rank: index + 1,
-        description: descEl ? {{DESC_EXTRACT}} : '',
-        icon: {{ICON_EXTRACT}}
-      })
-    }
-  })
-  return results
+      try {
+          const titleSelectorValue = '{{TITLE_SELECTOR}}';
+          const titleEl = titleSelectorValue ? item.querySelector(titleSelectorValue) : null;
+
+          const linkSelectorValue = '{{LINK_SELECTOR}}';
+          const linkEl = linkSelectorValue ? item.querySelector(linkSelectorValue) : null;
+
+          const descSelectorValue = '{{DESC_SELECTOR}}';
+          const descEl = descSelectorValue ? item.querySelector(descSelectorValue) : null;
+
+          const faviconSelectorValue = '{{FAVICON_SELECTOR}}';
+          const faviconEl = faviconSelectorValue ? item.querySelector(faviconSelectorValue) : null;
+
+          if (titleEl && linkEl) {
+              results.push({
+                  title: {{TITLE_EXTRACT}},
+                  url: {{URL_EXTRACT}},
+                  rank: index + 1,
+                  description: descEl ? {{DESC_EXTRACT}} : '',
+                  icon: {{ICON_EXTRACT}}
+              });
+          }
+      } catch (e) {
+          // 如果修改后仍然出现错误，那么可能是其他未预料到的问题
+          console.error('Error processing item (unexpected with conditional selectors):', e);
+      }
+  });
+  return results;
 `
 
 // 定义选择器配置的接口
@@ -699,7 +711,7 @@ export class SearchManager {
       const [oldestConversationId] = this.searchWindows.keys()
       this.destroySearchWindow(oldestConversationId)
     }
-    const mainWindow = presenter.windowPresenter.getWindow(MAIN_WIN)
+    const mainWindow = presenter.windowPresenter.mainWindow
 
     // 确保mainWindow存在
     if (!mainWindow) {
@@ -850,7 +862,7 @@ export class SearchManager {
       }
     )
     if (is.dev) {
-      searchWindow.webContents.openDevTools()
+      searchWindow.webContents.openDevTools({ mode: 'detach' })
     }
     this.searchWindows.set(conversationId, searchWindow)
     return searchWindow
@@ -876,7 +888,7 @@ export class SearchManager {
       const wasFullScreen = this.wasFullScreen.get(conversationId)
 
       if (originalSize && originalPosition) {
-        const mainWindow = presenter.windowPresenter.getWindow(MAIN_WIN)
+        const mainWindow = presenter.windowPresenter.mainWindow
         if (mainWindow) {
           if (wasFullScreen) {
             // 如果原来是全屏，先恢复原始尺寸和位置，再进入全屏

@@ -60,5 +60,11 @@
   "watermarkTip": "AI生成內容，請謹慎參考",
   "collapse": "收起",
   "expand": "展開",
-  "image": "圖片"
+  "image": "圖片",
+  "add": "新增",
+  "copyFailed": "複製失敗",
+  "copyFailedDesc": "無法複製內容到剪貼板",
+  "copyImageSuccess": "複製成功",
+  "copyImageSuccessDesc": "圖片已復製到剪貼板",
+  "copySuccessDesc": "內容已復製到剪貼板"
 }

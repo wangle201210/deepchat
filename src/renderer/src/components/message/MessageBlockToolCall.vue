@@ -46,7 +46,7 @@
           />
         </div>
       </div>
-      <transition
+      <!-- <transition
         enter-active-class="transition-all duration-200"
         enter-from-class="opacity-0 -translate-y-2"
         enter-to-class="opacity-100 translate-y-0"
@@ -56,18 +56,16 @@
       >
         <div
           v-if="simpleIn"
-          class="flex-row w-full gap-1 bg-muted dark:bg-background text-secondary-foreground transition-colors duration-200 inline-flex max-w-[33rem] items-center cursor-pointer select-none"
+          class="flex-row w-full gap-1 bg-muted dark:bg-background text-muted-foreground transition-colors duration-200 inline-flex max-w-[33rem] items-center cursor-pointer select-none"
         >
           <div class="text-xs inline-flex px-2 py-1 flex-row gap-2 items-center max-w-64">
-            <Icon
-              icon="lucide:arrow-up-from-dot"
-              class="w-3 h-3 text-secondary-foreground shrink-0"
-            />
+            <Icon icon="lucide:arrow-up-from-dot" class="w-3 h-3 text-muted-foreground shrink-0" />
             <span class="truncate">{{ simpleIn }}</span>
           </div>
         </div>
         <div v-else class="h-0"></div>
-      </transition>
+      </transition> -->
+      <div class="h-0"></div>
     </div>
 
     <!-- 详细内容区域 -->
@@ -81,7 +79,7 @@
     >
       <div
         v-if="isExpanded"
-        class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4"
+        class="rounded-lg border bg-card text-card-foreground px-2 py-3 mt-2 mb-4"
       >
         <div class="space-y-4">
           <!-- 参数 -->
@@ -90,7 +88,7 @@
               <Icon icon="lucide:arrow-up-from-dot" class="w-4 h-4 text-muted-foreground" />
               {{ t('toolCall.params') }}
             </h5>
-            <div class="text-sm bg-muted rounded-md p-2">
+            <div class="text-sm rounded-md p-2">
               <JsonObject :data="parseJson(block.tool_call.params)" />
             </div>
           </div>
@@ -117,7 +115,7 @@
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { AssistantMessageBlock } from '@shared/chat'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { JsonObject } from '@/components/json-viewer'
 
 // 创建一个安全的翻译函数
@@ -195,18 +193,18 @@ const parseJson = (jsonStr: string) => {
   }
 }
 
-const simpleIn = computed(() => {
-  if (!props.block.tool_call) return false
-  if (props.block.tool_call.params) {
-    const params = parseJson(props.block.tool_call.params)
-    const strArr: string[] = []
-    for (const key in params) {
-      strArr.push(`${params[key]}`)
-    }
-    return strArr.join(', ')
-  }
-  return ''
-})
+// const simpleIn = computed(() => {
+//   if (!props.block.tool_call) return false
+//   if (props.block.tool_call.params) {
+//     const params = parseJson(props.block.tool_call.params)
+//     const strArr: string[] = []
+//     for (const key in params) {
+//       strArr.push(`${params[key]}`)
+//     }
+//     return strArr.join(', ')
+//   }
+//   return ''
+// })
 </script>
 
 <style scoped>

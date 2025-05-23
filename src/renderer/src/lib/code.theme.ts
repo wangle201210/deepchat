@@ -4,14 +4,14 @@ import { tags as t } from '@lezer/highlight'
 export const anysphereThemeDark = createTheme({
   theme: 'dark',
   settings: {
-    background: '#181818',
+    background: 'rgba(0, 0, 0, 0)',
     foreground: '#D6D6DD',
     caret: '#D6D6DD',
     selection: '#163761',
     selectionMatch: '#163761',
     lineHighlight: 'rgba(50, 50, 100, 0.05)',
-    gutterBackground: '#181818',
-    gutterForeground: '#535353'
+    gutterBackground: 'rgba(0, 0, 0, 0.3)',
+    gutterForeground: 'rgba(255, 255, 255, 0.3)'
   },
   styles: [
     { tag: [t.comment, t.lineComment, t.blockComment], color: '#6D6D6D', fontStyle: 'italic' },
@@ -59,28 +59,29 @@ export const anysphereThemeDark = createTheme({
 export const anysphereThemeLight = createTheme({
   theme: 'light',
   settings: {
-    background: '#ffffff',
-    foreground: '#24292e',
-    caret: '#24292e',
-    selection: '#b3d4fc',
-    selectionMatch: '#b3d4fc',
-    lineHighlight: 'rgba(50, 50, 100, 0.05)',
-    gutterBackground: '#ffffff',
-    gutterForeground: '#6e7781'
+    background: 'rgba(255,255,255,0)',
+    foreground: '#4b5563',
+    caret: '#4b5563',
+    selection: '#e5e7eb',
+    selectionMatch: '#e5e7eb',
+    lineHighlight: 'rgba(156, 163, 175, 0.08)',
+    gutterBackground: 'rgba(255,255,255,0)',
+    gutterForeground: '#9ca3af',
+    gutterBorder: '#e5e7eb'
   },
   styles: [
-    { tag: [t.comment, t.lineComment, t.blockComment], color: '#6a737d', fontStyle: 'italic' },
-    { tag: t.docComment, color: '#6a737d', fontStyle: 'italic', fontWeight: 'bold' },
-    { tag: t.variableName, color: '#24292e' },
-    { tag: [t.propertyName, t.labelName], color: '#6f42c1' },
-    { tag: [t.string, t.character, t.docString], color: '#032f62' },
-    { tag: [t.number, t.integer, t.float], color: '#005cc5' },
-    { tag: [t.bool, t.null, t.atom], color: '#005cc5' },
-    { tag: [t.keyword, t.modifier, t.operatorKeyword], color: '#d73a49' },
-    { tag: [t.controlKeyword, t.controlOperator], color: '#d73a49' },
-    { tag: t.definitionKeyword, color: '#d73a49', fontWeight: 'bold' },
-    { tag: t.moduleKeyword, color: '#d73a49', fontStyle: 'italic' },
-    { tag: t.self, color: '#d73a49', fontStyle: 'italic' },
+    { tag: [t.comment, t.lineComment, t.blockComment], color: '#9ca3af', fontStyle: 'italic' },
+    { tag: t.docComment, color: '#9ca3af', fontStyle: 'italic', fontWeight: 'bold' },
+    { tag: t.variableName, color: '#4b5563' },
+    { tag: [t.propertyName, t.labelName], color: '#7c2d92' },
+    { tag: [t.string, t.character, t.docString], color: '#be185d' },
+    { tag: [t.number, t.integer, t.float], color: '#d97706' },
+    { tag: [t.bool, t.null, t.atom], color: '#0891b2' },
+    { tag: [t.keyword, t.modifier, t.operatorKeyword], color: '#0891b2' },
+    { tag: [t.controlKeyword, t.controlOperator], color: '#0e7490' },
+    { tag: t.definitionKeyword, color: '#0e7490', fontWeight: 'bold' },
+    { tag: t.moduleKeyword, color: '#0e7490', fontStyle: 'italic' },
+    { tag: t.self, color: '#0e7490', fontStyle: 'italic' },
     {
       tag: [
         t.operator,
@@ -90,24 +91,24 @@ export const anysphereThemeLight = createTheme({
         t.compareOperator,
         t.updateOperator
       ],
-      color: '#24292e'
+      color: '#4b5563'
     },
-    { tag: t.definitionOperator, color: '#d73a49' },
-    { tag: [t.className, t.definition(t.typeName), t.typeName], color: '#6f42c1' },
-    { tag: t.namespace, color: '#6f42c1' },
-    { tag: t.typeOperator, color: '#005cc5' },
-    { tag: t.tagName, color: '#22863a', fontWeight: 'bold' },
-    { tag: t.angleBracket, color: '#24292e' },
-    { tag: t.attributeName, color: '#6f42c1' },
-    { tag: t.attributeValue, color: '#032f62' },
-    { tag: t.function(t.variableName), color: '#6f42c1' },
-    { tag: t.macroName, color: '#22863a' },
-    { tag: [t.bracket, t.paren, t.brace], color: '#24292e' },
-    { tag: t.punctuation, color: '#24292e' },
-    { tag: t.invalid, color: '#cb2431', fontStyle: 'italic' },
-    { tag: [t.meta, t.documentMeta, t.annotation], color: '#6a737d' },
-    { tag: t.url, color: '#032f62', textDecoration: 'underline' },
-    { tag: t.color, color: '#005cc5' }
+    { tag: t.definitionOperator, color: '#0e7490' },
+    { tag: [t.className, t.definition(t.typeName), t.typeName], color: '#2563eb' },
+    { tag: t.namespace, color: '#2563eb' },
+    { tag: t.typeOperator, color: '#ea580c' },
+    { tag: t.tagName, color: '#2563eb', fontWeight: 'bold' },
+    { tag: t.angleBracket, color: '#6b7280' },
+    { tag: t.attributeName, color: '#7c3aed' },
+    { tag: t.attributeValue, color: '#be185d' },
+    { tag: t.function(t.variableName), color: '#ea580c' },
+    { tag: t.macroName, color: '#16a34a' },
+    { tag: [t.bracket, t.paren, t.brace], color: '#be185d' },
+    { tag: t.punctuation, color: '#4b5563' },
+    { tag: t.invalid, color: '#dc2626', fontStyle: 'italic' },
+    { tag: [t.meta, t.documentMeta, t.annotation], color: '#9ca3af' },
+    { tag: t.url, color: '#0e7490', textDecoration: 'underline' },
+    { tag: t.color, color: '#d97706' }
   ]
 })
 

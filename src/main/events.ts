@@ -21,7 +21,8 @@ export const CONFIG_EVENTS = {
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
-  PROXY_RESOLVED: 'config:proxy-resolved'
+  PROXY_RESOLVED: 'config:proxy-resolved',
+  LANGUAGE_CHANGED: 'config:language-changed' // 新增：语言变更事件
 }
 
 // 会话相关事件
@@ -39,6 +40,11 @@ export const STREAM_EVENTS = {
   ERROR: 'stream:error' // 替代 stream-error
 }
 
+// 系统相关事件
+export const SYSTEM_EVENTS = {
+  SYSTEM_THEME_UPDATED: 'system:theme-updated'
+}
+
 // 应用更新相关事件
 export const UPDATE_EVENTS = {
   STATUS_CHANGED: 'update:status-changed', // 替代 update-status-changed
@@ -54,7 +60,17 @@ export const WINDOW_EVENTS = {
   APP_FOCUS: 'app:focus',
   APP_BLUR: 'app:blur',
   WINDOW_MAXIMIZED: 'window:maximized',
-  WINDOW_UNMAXIMIZED: 'window:unmaximized'
+  WINDOW_UNMAXIMIZED: 'window:unmaximized',
+  WINDOW_RESIZED: 'window:resized',
+  WINDOW_RESIZE: 'window:resize',
+  WINDOW_CLOSE: 'window:close',
+  WINDOW_CREATED: 'window:created',
+  WINDOW_FOCUSED: 'window:focused',
+  WINDOW_BLURRED: 'window:blurred',
+  WINDOW_ENTER_FULL_SCREEN: 'window:enter-full-screen',
+  WINDOW_LEAVE_FULL_SCREEN: 'window:leave-full-screen',
+  WINDOW_CLOSED: 'window:closed',
+  FIRST_CONTENT_LOADED: 'window:first-content-loaded' // 新增：首次内容加载完成事件
 }
 
 // ollama 相关事件
@@ -69,7 +85,8 @@ export const MCP_EVENTS = {
   CONFIG_CHANGED: 'mcp:config-changed',
   TOOL_CALL_RESULT: 'mcp:tool-call-result',
   SERVER_STATUS_CHANGED: 'mcp:server-status-changed',
-  CLIENT_LIST_UPDATED: 'mcp:client-list-updated'
+  CLIENT_LIST_UPDATED: 'mcp:client-list-updated',
+  INITIALIZED: 'mcp:initialized' // 新增：MCP初始化完成事件
 }
 
 // 同步相关事件
@@ -100,7 +117,27 @@ export const SHORTCUT_EVENTS = {
   ZOOM_IN: 'shortcut:zoom-in',
   ZOOM_OUT: 'shortcut:zoom-out',
   ZOOM_RESUME: 'shortcut:zoom-resume',
+  CREATE_NEW_WINDOW: 'shortcut:create-new-window',
   CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
+  CREATE_NEW_TAB: 'shortcut:create-new-tab',
+  CLOSE_CURRENT_TAB: 'shortcut:close-current-tab',
   GO_SETTINGS: 'shortcut:go-settings',
-  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  SWITCH_TO_NEXT_TAB: 'shortcut:switch-to-next-tab',
+  SWITCH_TO_PREVIOUS_TAB: 'shortcut:switch-to-previous-tab',
+  SWITCH_TO_SPECIFIC_TAB: 'shortcut:switch-to-specific-tab',
+  SWITCH_TO_LAST_TAB: 'shortcut:switch-to-last-tab'
+}
+
+// 标签页相关事件
+export const TAB_EVENTS = {
+  TITLE_UPDATED: 'tab:title-updated', // 标签页标题更新
+  CONTENT_UPDATED: 'tab:content-updated', // 标签页内容更新
+  STATE_CHANGED: 'tab:state-changed', // 标签页状态变化
+  VISIBILITY_CHANGED: 'tab:visibility-changed' // 标签页可见性变化
+}
+
+// 托盘相关事件
+export const TRAY_EVENTS = {
+  SHOW_WINDOW: 'tray:show-window' // 从托盘显示窗口
 }

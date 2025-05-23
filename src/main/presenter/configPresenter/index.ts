@@ -11,9 +11,9 @@ import { SearchEngineTemplate } from '@shared/chat'
 import ElectronStore from 'electron-store'
 import { DEFAULT_PROVIDERS } from './providers'
 import path from 'path'
-import { app, shell } from 'electron'
+import { app, nativeTheme, shell } from 'electron'
 import fs from 'fs'
-import { CONFIG_EVENTS } from '@/events'
+import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { McpConfHelper } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
@@ -46,6 +46,19 @@ interface IModelStore {
   custom_models: MODEL_META[]
 }
 
+// 添加 prompts 相关的类型定义
+interface Prompt {
+  id: string
+  name: string
+  description: string
+  content: string
+  parameters?: Array<{
+    name: string
+    description: string
+    required: boolean
+  }>
+}
+
 const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({
   id: provider.id,
   name: provider.name,
@@ -66,6 +79,7 @@ const MODEL_STATUS_KEY_PREFIX = 'model_status_'
 export class ConfigPresenter implements IConfigPresenter {
   private store: ElectronStore<IAppSettings>
   private providersModelStores: Map<string, ElectronStore<IModelStore>> = new Map()
+  private customPromptsStore: ElectronStore<{ prompts: Prompt[] }>
   private userDataPath: string
   private currentAppVersion: string
   private mcpConfHelper: McpConfHelper // 使用MCP配置助手
@@ -90,6 +104,16 @@ export class ConfigPresenter implements IConfigPresenter {
         lastSyncTime: 0,
         loggingEnabled: false,
         appVersion: this.currentAppVersion
+      }
+    })
+
+    this.initTheme()
+
+    // 初始化 custom prompts 存储
+    this.customPromptsStore = new ElectronStore<{ prompts: Prompt[] }>({
+      name: 'custom_prompts',
+      defaults: {
+        prompts: []
       }
     })
 
@@ -270,13 +294,17 @@ export class ConfigPresenter implements IConfigPresenter {
 
   // 构造模型状态的存储键
   private getModelStatusKey(providerId: string, modelId: string): string {
-    return `${MODEL_STATUS_KEY_PREFIX}${providerId}_${modelId}`
+    // 将 modelId 中的点号替换为连字符
+    const formattedModelId = modelId.replace(/\./g, '-')
+    return `${MODEL_STATUS_KEY_PREFIX}${providerId}_${formattedModelId}`
   }
 
   // 获取模型启用状态
   getModelStatus(providerId: string, modelId: string): boolean {
     const statusKey = this.getModelStatusKey(providerId, modelId)
-    return this.getSetting<boolean>(statusKey) ?? false
+    const status = this.getSetting<boolean>(statusKey)
+    // 如果状态不是布尔值，则返回 true
+    return typeof status === 'boolean' ? status : true
   }
 
   // 设置模型启用状态
@@ -469,6 +497,13 @@ export class ConfigPresenter implements IConfigPresenter {
     }
 
     return this.getSystemLanguage()
+  }
+
+  // 设置应用语言
+  setLanguage(language: string): void {
+    this.setSetting('language', language)
+    // 触发语言变更事件
+    eventBus.emit(CONFIG_EVENTS.LANGUAGE_CHANGED, language)
   }
 
   // 获取系统语言并匹配支持的语言列表
@@ -781,6 +816,93 @@ export class ConfigPresenter implements IConfigPresenter {
 
   setNotificationsEnabled(enabled: boolean): void {
     this.setSetting('notificationsEnabled', enabled)
+  }
+
+  async initTheme() {
+    const theme = this.getSetting<string>('appTheme')
+    if (theme) {
+      nativeTheme.themeSource = theme as 'dark' | 'light'
+    }
+    // 监听系统主题变化
+    nativeTheme.on('updated', () => {
+      // 只有当主题设置为 system 时，才需要通知渲染进程
+      if (nativeTheme.themeSource === 'system') {
+        eventBus.emit(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, nativeTheme.shouldUseDarkColors)
+      }
+    })
+  }
+
+  async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
+    nativeTheme.themeSource = theme
+    this.setSetting('appTheme', theme)
+    return nativeTheme.shouldUseDarkColors
+  }
+
+  async getTheme(): Promise<string> {
+    return this.getSetting<string>('appTheme') || 'system'
+  }
+
+  async getSystemTheme(): Promise<'dark' | 'light'> {
+    return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+  }
+
+  // 获取所有自定义 prompts
+  async getCustomPrompts(): Promise<Prompt[]> {
+    try {
+      return this.customPromptsStore.get('prompts') || []
+    } catch (error) {
+      console.error('Failed to get custom prompts:', error)
+      return []
+    }
+  }
+
+  // 保存自定义 prompts
+  async setCustomPrompts(prompts: Prompt[]): Promise<void> {
+    try {
+      await this.customPromptsStore.set('prompts', prompts)
+    } catch (error) {
+      console.error('Failed to set custom prompts:', error)
+      throw error
+    }
+  }
+
+  // 添加单个 prompt
+  async addCustomPrompt(prompt: Prompt): Promise<void> {
+    try {
+      const prompts = await this.getCustomPrompts()
+      prompts.push(prompt)
+      await this.setCustomPrompts(prompts)
+    } catch (error) {
+      console.error('Failed to add custom prompt:', error)
+      throw error
+    }
+  }
+
+  // 更新单个 prompt
+  async updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void> {
+    try {
+      const prompts = await this.getCustomPrompts()
+      const index = prompts.findIndex((p) => p.id === promptId)
+      if (index !== -1) {
+        prompts[index] = { ...prompts[index], ...updates }
+        await this.setCustomPrompts(prompts)
+      }
+    } catch (error) {
+      console.error('Failed to update custom prompt:', error)
+      throw error
+    }
+  }
+
+  // 删除单个 prompt
+  async deleteCustomPrompt(promptId: string): Promise<void> {
+    try {
+      const prompts = await this.getCustomPrompts()
+      const filteredPrompts = prompts.filter((p) => p.id !== promptId)
+      await this.setCustomPrompts(filteredPrompts)
+    } catch (error) {
+      console.error('Failed to delete custom prompt:', error)
+      throw error
+    }
   }
 }
 

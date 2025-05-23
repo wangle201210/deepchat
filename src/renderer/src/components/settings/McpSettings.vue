@@ -49,7 +49,7 @@
       <div v-if="mcpEnabled" class="border-t h-full">
         <McpConfig />
       </div>
-      <div v-else class="p-4 text-center text-secondary-foreground text-sm">
+      <div v-else class="p-4 text-center text-muted-foreground text-sm">
         {{ t('settings.mcp.enableToAccess') }}
       </div>
     </div>

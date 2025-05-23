@@ -9,10 +9,12 @@
   >
     <div
       v-if="artifactStore.isOpen"
-      class="absolute right-0 top-0 bottom-0 w-[calc(60%_-_104px)] bg-background border-l shadow-lg flex flex-col"
+      class="absolute right-0 top-0 bottom-0 w-[calc(60%_-_104px)] border-l shadow-lg flex flex-col"
     >
       <!-- 顶部导航栏 -->
-      <div class="flex items-center justify-between px-4 h-11 border-b w-full overflow-hidden">
+      <div
+        class="flex items-center justify-between bg-card px-4 h-11 border-b w-full overflow-hidden"
+      >
         <div class="flex items-center gap-2 flex-grow w-0">
           <button class="p-2 hover:bg-accent/50 rounded-md" @click="artifactStore.hideArtifact">
             <Icon icon="lucide:arrow-left" class="w-4 h-4" />
@@ -22,7 +24,7 @@
 
         <div class="flex items-center gap-2">
           <!-- 预览/代码切换按钮组 -->
-          <div class="bg-muted p-0.5 rounded-lg flex items-center">
+          <div class="bg-border p-0.5 rounded-lg flex items-center">
             <button
               class="px-2 py-1 text-xs rounded-md transition-colors"
               :class="
@@ -61,6 +63,16 @@
               @click="exportSVG"
             >
               <Icon icon="lucide:download" class="w-4 h-4" />
+            </Button>
+            <Button
+              v-if="isPreview && artifactStore.currentArtifact?.content"
+              variant="outline"
+              size="sm"
+              class="text-xs h-7"
+              :title="t('artifacts.copy')"
+              @click="copyContent"
+            >
+              <Icon icon="lucide:copy" class="w-4 h-4" />
             </Button>
             <Button
               variant="outline"
@@ -117,11 +129,13 @@ import MermaidArtifact from './MermaidArtifact.vue'
 import mermaid from 'mermaid'
 import { useI18n } from 'vue-i18n'
 import ReactArtifact from './ReactArtifact.vue'
+import { useToast } from '@/components/ui/toast/use-toast'
 
 const artifactStore = useArtifactStore()
 const componentKey = ref(0)
 const isPreview = ref(false)
 const t = useI18n().t
+const { toast } = useToast()
 
 const setPreview = (value: boolean) => {
   isPreview.value = value
@@ -248,6 +262,25 @@ const exportCode = () => {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
+  }
+}
+
+const copyContent = async () => {
+  if (artifactStore.currentArtifact?.content) {
+    try {
+      await navigator.clipboard.writeText(artifactStore.currentArtifact.content)
+      toast({
+        title: t('artifacts.copySuccess'),
+        description: t('artifacts.copySuccessDesc')
+      })
+    } catch (e) {
+      console.error('复制失败', e)
+      toast({
+        title: t('artifacts.copyFailed'),
+        description: t('artifacts.copyFailedDesc'),
+        variant: 'destructive'
+      })
+    }
   }
 }
 </script>

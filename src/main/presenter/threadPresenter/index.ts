@@ -56,7 +56,6 @@ interface GeneratingMessageState {
 }
 
 export class ThreadPresenter implements IThreadPresenter {
-  private activeConversationId: string | null = null
   private sqlitePresenter: ISQLitePresenter
   private messageManager: MessageManager
   private llmProviderPresenter: ILlmProviderPresenter
@@ -66,6 +65,7 @@ export class ThreadPresenter implements IThreadPresenter {
   public searchAssistantModel: MODEL_META | null = null
   public searchAssistantProviderId: string | null = null
   private searchingMessages: Set<string> = new Set()
+  private activeConversationIds: Map<number, string> = new Map()
 
   constructor(
     sqlitePresenter: ISQLitePresenter,
@@ -167,6 +167,7 @@ export class ThreadPresenter implements IThreadPresenter {
     eventBus.emit(STREAM_EVENTS.END, msg)
   }
   async handleLLMAgentResponse(msg: LLMAgentEventData) {
+    const currentTime = Date.now()
     const {
       eventId,
       content,
@@ -188,9 +189,9 @@ export class ThreadPresenter implements IThreadPresenter {
     if (state) {
       // 记录第一个token的时间
       if (state.firstTokenTime === null && (content || reasoning_content)) {
-        state.firstTokenTime = Date.now()
+        state.firstTokenTime = currentTime
         await this.messageManager.updateMessageMetadata(eventId, {
-          firstTokenTime: Date.now() - state.startTime
+          firstTokenTime: currentTime - state.startTime
         })
       }
       if (totalUsage) {
@@ -208,7 +209,7 @@ export class ThreadPresenter implements IThreadPresenter {
           type: 'action',
           content: 'common.error.maximumToolCallsReached',
           status: 'success',
-          timestamp: Date.now(),
+          timestamp: currentTime,
           action_type: 'maximum_tool_calls_reached',
           tool_call: {
             id: tool_call_id,
@@ -229,12 +230,12 @@ export class ThreadPresenter implements IThreadPresenter {
       // 处理reasoning_content的时间戳
       if (reasoning_content) {
         if (state.reasoningStartTime === null) {
-          state.reasoningStartTime = Date.now()
+          state.reasoningStartTime = currentTime
           await this.messageManager.updateMessageMetadata(eventId, {
-            reasoningStartTime: Date.now() - state.startTime
+            reasoningStartTime: currentTime - state.startTime
           })
         }
-        state.lastReasoningTime = Date.now()
+        state.lastReasoningTime = currentTime
       }
 
       const lastBlock = state.message.content[state.message.content.length - 1]
@@ -292,7 +293,7 @@ export class ThreadPresenter implements IThreadPresenter {
               if (existingSearchBlock) {
                 // 如果已经存在搜索块，更新其状态和总数
                 existingSearchBlock.status = 'success'
-                existingSearchBlock.timestamp = Date.now()
+                existingSearchBlock.timestamp = currentTime
                 if (existingSearchBlock.extra) {
                   // 累加搜索结果数量
                   existingSearchBlock.extra.total =
@@ -308,7 +309,7 @@ export class ThreadPresenter implements IThreadPresenter {
                   type: 'search',
                   content: '',
                   status: 'success',
-                  timestamp: Date.now(),
+                  timestamp: currentTime,
                   extra: {
                     total: searchResults.length
                   }
@@ -345,7 +346,7 @@ export class ThreadPresenter implements IThreadPresenter {
             type: 'tool_call',
             content: '',
             status: 'loading',
-            timestamp: Date.now(),
+            timestamp: currentTime,
             tool_call: {
               id: tool_call_id,
               name: tool_call_name,
@@ -396,7 +397,7 @@ export class ThreadPresenter implements IThreadPresenter {
           type: 'image',
           content: 'image',
           status: 'success',
-          timestamp: Date.now(),
+          timestamp: currentTime,
           image_data: image_data
         })
       } else if (content) {
@@ -411,7 +412,7 @@ export class ThreadPresenter implements IThreadPresenter {
             type: 'content',
             content: content,
             status: 'loading',
-            timestamp: Date.now()
+            timestamp: currentTime
           })
         }
       }
@@ -420,6 +421,9 @@ export class ThreadPresenter implements IThreadPresenter {
       if (reasoning_content) {
         if (lastBlock && lastBlock.type === 'reasoning_content') {
           lastBlock.content += reasoning_content
+          if (lastBlock.reasoning_time) {
+            lastBlock.reasoning_time.end = currentTime
+          }
         } else {
           if (lastBlock) {
             lastBlock.status = 'success'
@@ -428,7 +432,11 @@ export class ThreadPresenter implements IThreadPresenter {
             type: 'reasoning_content',
             content: reasoning_content,
             status: 'loading',
-            timestamp: Date.now()
+            reasoning_time: {
+              start: currentTime,
+              end: currentTime
+            },
+            timestamp: currentTime
           })
         }
       }
@@ -482,7 +490,8 @@ export class ThreadPresenter implements IThreadPresenter {
 
   async createConversation(
     title: string,
-    settings: Partial<CONVERSATION_SETTINGS> = {}
+    settings: Partial<CONVERSATION_SETTINGS> = {},
+    tabId: number
   ): Promise<string> {
     console.log('createConversation', title, settings)
     const latestConversation = await this.getLatestConversation()
@@ -490,7 +499,7 @@ export class ThreadPresenter implements IThreadPresenter {
     if (latestConversation) {
       const { list: messages } = await this.getMessages(latestConversation.id, 1, 1)
       if (messages.length === 0) {
-        await this.setActiveConversation(latestConversation.id)
+        await this.setActiveConversation(latestConversation.id, tabId)
         return latestConversation.id
       }
     }
@@ -527,14 +536,17 @@ export class ThreadPresenter implements IThreadPresenter {
       mergedSettings.systemPrompt = settings.systemPrompt
     }
     const conversationId = await this.sqlitePresenter.createConversation(title, mergedSettings)
-    await this.setActiveConversation(conversationId)
+    await this.setActiveConversation(conversationId, tabId)
     return conversationId
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
     await this.sqlitePresenter.deleteConversation(conversationId)
-    if (this.activeConversationId === conversationId) {
-      this.activeConversationId = null
+    // 检查所有 tab 中的活跃会话
+    for (const [tabId, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        this.activeConversationIds.delete(tabId)
+      }
     }
   }
 
@@ -587,21 +599,22 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversationList(page, pageSize)
   }
 
-  async setActiveConversation(conversationId: string): Promise<void> {
+  async setActiveConversation(conversationId: string, tabId: number): Promise<void> {
     const conversation = await this.getConversation(conversationId)
     if (conversation) {
-      this.activeConversationId = conversationId
-      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId })
+      this.activeConversationIds.set(tabId, conversationId)
+      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId, tabId })
     } else {
       throw new Error(`Conversation ${conversationId} not found`)
     }
   }
 
-  async getActiveConversation(): Promise<CONVERSATION | null> {
-    if (!this.activeConversationId) {
+  async getActiveConversation(tabId: number): Promise<CONVERSATION | null> {
+    const conversationId = this.activeConversationIds.get(tabId)
+    if (!conversationId) {
       return null
     }
-    return this.getConversation(this.activeConversationId)
+    return this.getConversation(conversationId)
   }
 
   async getMessages(
@@ -795,17 +808,6 @@ export class ThreadPresenter implements IThreadPresenter {
         }
       )) as AssistantMessage
 
-      this.generatingMessages.set(assistantMessage.id, {
-        message: assistantMessage,
-        conversationId,
-        startTime: Date.now(),
-        firstTokenTime: null,
-        promptTokens: 0,
-        reasoningStartTime: null,
-        reasoningEndTime: null,
-        lastReasoningTime: null
-      })
-
       return assistantMessage
     } catch (error) {
       await this.messageManager.updateMessageStatus(userMessageId, 'error')
@@ -865,6 +867,8 @@ export class ThreadPresenter implements IThreadPresenter {
     4. 保持查询简洁，通常不超过3个关键词, 最多不要超过5个关键词，参考当前搜索引擎的查询习惯重写关键字
 
     直接返回优化后的搜索词，不要有任何额外说明。
+    如果你觉得用户的问题不需要进行搜索，请直接返回“无须搜索”。
+
     如下是之前对话的上下文：
     <context_messages>
     ${contextMessages}
@@ -958,35 +962,37 @@ export class ThreadPresenter implements IThreadPresenter {
             const content = msg.content as UserMessageContent
             return `user: ${content.text}${getFileContext(content.files)}`
           } else if (msg.role === 'assistant') {
-            let finanContent = 'assistant: '
+            let finalContent = 'assistant: '
             const content = msg.content as AssistantMessageBlock[]
             content.forEach((block) => {
               if (block.type === 'content') {
-                finanContent += block.content + '\n'
+                finalContent += block.content + '\n'
               }
               if (block.type === 'search') {
-                finanContent += `search-result: ${JSON.stringify(block.extra)}`
+                finalContent += `search-result: ${JSON.stringify(block.extra)}`
               }
               if (block.type === 'tool_call') {
-                finanContent += `tool_call: ${JSON.stringify(block.tool_call)}`
+                finalContent += `tool_call: ${JSON.stringify(block.tool_call)}`
               }
               if (block.type === 'image') {
-                finanContent += `image: ${block.image_data?.data}`
+                finalContent += `image: ${block.image_data?.data}`
               }
             })
-            return finanContent
+            return finalContent
           } else {
             return JSON.stringify(msg.content)
           }
         })
         .join('\n')
+
       // 检查是否已被取消
       this.throwIfCancelled(messageId)
 
+      // 重写搜索查询
       searchBlock.status = 'optimizing'
       await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
       console.log('optimizing')
-      // 重写搜索查询
+
       const optimizedQuery = await this.rewriteUserSearchQuery(
         query,
         formattedContext,
@@ -996,6 +1002,17 @@ export class ThreadPresenter implements IThreadPresenter {
         console.error('重写搜索查询失败:', err)
         return query
       })
+
+      // 如果不需要搜索，直接返回空结果
+      if (optimizedQuery === '无须搜索') {
+        searchBlock.status = 'success'
+        searchBlock.content = ''
+        await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
+        state.isSearching = false
+        this.searchingMessages.delete(messageId)
+        return []
+      }
+
       // 检查是否已被取消
       this.throwIfCancelled(messageId)
 
@@ -1129,7 +1146,7 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 4. 准备提示内容
-      const { finalContent, promptTokens } = this.preparePromptContent(
+      const { finalContent, promptTokens } = await this.preparePromptContent(
         conversation,
         userContent,
         contextMessages,
@@ -1137,7 +1154,8 @@ export class ThreadPresenter implements IThreadPresenter {
         urlResults,
         userMessage,
         vision,
-        vision ? imageFiles : []
+        vision ? imageFiles : [],
+        modelConfig.functionCall
       )
 
       // 检查是否已被取消
@@ -1253,7 +1271,10 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
 
       // 7. 准备提示内容
-      const { finalContent, promptTokens } = this.preparePromptContent(
+      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+      const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
+
+      const { finalContent, promptTokens } = await this.preparePromptContent(
         conversation,
         'continue',
         contextMessages,
@@ -1261,7 +1282,8 @@ export class ThreadPresenter implements IThreadPresenter {
         [], // 没有 URL 结果
         userMessage,
         false,
-        [] // 没有图片文件
+        [], // 没有图片文件
+        modelConfig.functionCall
       )
 
       // 8. 更新生成状态
@@ -1299,7 +1321,6 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 10. 启动流式生成
-      const { providerId, modelId, temperature, maxTokens } = conversation.settings
       const stream = this.llmProviderPresenter.startStreamCompletion(
         providerId,
         finalContent,
@@ -1425,7 +1446,7 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   // 准备提示内容
-  private preparePromptContent(
+  private async preparePromptContent(
     conversation: CONVERSATION,
     userContent: string,
     contextMessages: Message[],
@@ -1433,11 +1454,12 @@ export class ThreadPresenter implements IThreadPresenter {
     urlResults: SearchResult[],
     userMessage: Message,
     vision: boolean,
-    imageFiles: MessageFile[]
-  ): {
+    imageFiles: MessageFile[],
+    supportsFunctionCall: boolean
+  ): Promise<{
     finalContent: ChatMessage[]
     promptTokens: number
-  } {
+  }> {
     const { systemPrompt, contextLength, artifacts } = conversation.settings
 
     const searchPrompt = searchResults ? generateSearchPrompt(userContent, searchResults) : ''
@@ -1450,9 +1472,14 @@ export class ThreadPresenter implements IThreadPresenter {
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
     const systemPromptTokens = systemPrompt ? approximateTokenSize(systemPrompt ?? '') : 0
     const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
-
+    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+    const mcpToolsTokens = mcpTools.reduce(
+      (acc, tool) => acc + approximateTokenSize(JSON.stringify(tool)),
+      0
+    )
     // 计算剩余可用的上下文长度
-    const reservedTokens = searchPromptTokens + systemPromptTokens + userMessageTokens
+    const reservedTokens =
+      searchPromptTokens + systemPromptTokens + userMessageTokens + mcpToolsTokens
     const remainingContextLength = contextLength - reservedTokens
 
     // 选择合适的上下文消息
@@ -1471,7 +1498,8 @@ export class ThreadPresenter implements IThreadPresenter {
       userContent,
       enrichedUserMessage,
       imageFiles,
-      vision
+      vision,
+      supportsFunctionCall
     )
 
     // 合并连续的相同角色消息
@@ -1549,7 +1577,8 @@ export class ThreadPresenter implements IThreadPresenter {
     userContent: string,
     enrichedUserMessage: string,
     imageFiles: MessageFile[],
-    vision: boolean
+    vision: boolean,
+    supportsFunctionCall: boolean
   ): ChatMessage[] {
     const formattedMessages: ChatMessage[] = []
 
@@ -1564,7 +1593,9 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     // 添加上下文消息
-    formattedMessages.push(...this.addContextMessages(formattedMessages, contextMessages, vision))
+    formattedMessages.push(
+      ...this.addContextMessages(formattedMessages, contextMessages, vision, supportsFunctionCall)
+    )
 
     // 添加当前用户消息
     let finalContent = searchPrompt || userContent
@@ -1610,81 +1641,175 @@ export class ThreadPresenter implements IThreadPresenter {
   private addContextMessages(
     formattedMessages: ChatMessage[],
     contextMessages: Message[],
-    vision: boolean
+    vision: boolean,
+    supportsFunctionCall: boolean
   ): ChatMessage[] {
     const resultMessages = [...formattedMessages]
 
-    contextMessages.forEach((msg) => {
-      if (msg.role === 'user') {
-        // 处理用户消息
-        const msgContent = msg.content as UserMessageContent
-        const msgText = msgContent.content
-          ? this.formatUserMessageContent(msgContent.content)
-          : msgContent.text
-        const userContent = `${msgText}${getFileContext(msgContent.files)}`
-        resultMessages.push({
-          role: 'user',
-          content: userContent
-        })
-      } else if (msg.role === 'assistant') {
-        // 处理助手消息
-        const assistantBlocks = msg.content as AssistantMessageBlock[]
-
-        // 提取文本内容块
-        const textContent = assistantBlocks
-          .filter((block) => block.type === 'content' || block.type === 'tool_call')
-          .map((block) => block.content)
-          .join('\n')
-        // 查找图像块
-        const imageBlocks = assistantBlocks.filter(
-          (block) => block.type === 'image' && block.image_data
-        )
-
-        // 如果没有任何内容，则跳过此消息
-        if (!textContent && imageBlocks.length === 0) {
-          return
-        }
-
-        // 如果有图像，则使用复合内容格式
-        if (vision && imageBlocks.length > 0) {
-          const content: ChatMessageContent[] = []
-
-          // 添加图像内容
-          imageBlocks.forEach((block) => {
-            if (block.image_data) {
-              content.push({
-                type: 'image_url',
-                image_url: {
-                  url: block.image_data.data,
-                  detail: 'auto'
-                }
+    // 对于原生fc模型，支持正确的tool_call response history插入
+    if (supportsFunctionCall) {
+      contextMessages.forEach((msg) => {
+        if (msg.role === 'user') {
+          // 处理用户消息
+          const msgContent = msg.content as UserMessageContent
+          const msgText = msgContent.content
+            ? this.formatUserMessageContent(msgContent.content)
+            : msgContent.text
+          const userContent = `${msgText}${getFileContext(msgContent.files)}`
+          resultMessages.push({
+            role: 'user',
+            content: userContent
+          })
+        } else if (msg.role === 'assistant') {
+          // 处理助手消息
+          const assistantBlocks = msg.content as AssistantMessageBlock[]
+          for (const subMsg of assistantBlocks) {
+            if (
+              subMsg.type === 'tool_call' &&
+              subMsg?.tool_call?.id?.trim() &&
+              subMsg?.tool_call?.name?.trim() &&
+              subMsg?.tool_call?.params?.trim() &&
+              subMsg?.tool_call?.response?.trim()
+            ) {
+              resultMessages.push({
+                role: 'assistant',
+                tool_calls: [
+                  {
+                    id: subMsg.tool_call.id,
+                    type: 'function',
+                    function: {
+                      name: subMsg.tool_call.name,
+                      arguments: subMsg.tool_call.params
+                    }
+                  }
+                ]
+              })
+              resultMessages.push({
+                role: 'tool',
+                tool_call_id: subMsg.tool_call.id,
+                content: subMsg.tool_call.response
+              })
+            } else if (subMsg.type === 'content' && subMsg?.content?.trim()) {
+              resultMessages.push({
+                role: 'assistant',
+                content: subMsg.content
               })
             }
+          }
+        }
+      })
+      return resultMessages
+    } else {
+      // 对于非原生fc模型，支持规范化prompt实现
+      contextMessages.forEach((msg) => {
+        if (msg.role === 'user') {
+          // 处理用户消息
+          const msgContent = msg.content as UserMessageContent
+          const msgText = msgContent.content
+            ? this.formatUserMessageContent(msgContent.content)
+            : msgContent.text
+          const userContent = `${msgText}${getFileContext(msgContent.files)}`
+          resultMessages.push({
+            role: 'user',
+            content: userContent
           })
+        } else if (msg.role === 'assistant') {
+          // 处理助手消息
+          const assistantBlocks = msg.content as AssistantMessageBlock[]
+          // 提取文本内容块，同时将工具调用的响应内容提取出来
+          const textContent = assistantBlocks
+            .filter((block) => block.type === 'content' || block.type === 'tool_call')
+            .map((block) => {
+              if (block.type === 'content') {
+                return block.content
+              } else if (
+                block.type === 'tool_call' &&
+                block.tool_call?.response &&
+                block.tool_call?.params
+              ) {
+                let parsedParams
+                let parsedResponse
 
-          // 添加文本内容
-          if (textContent) {
-            content.push({
-              type: 'text',
-              text: textContent
+                try {
+                  parsedParams = JSON.parse(block.tool_call.params)
+                } catch (e) {
+                  parsedParams = block.tool_call.params // 保留原字符串
+                }
+
+                try {
+                  parsedResponse = JSON.parse(block.tool_call.response)
+                } catch (e) {
+                  parsedResponse = block.tool_call.response // 保留原字符串
+                }
+
+                return (
+                  '<function_call>' +
+                  JSON.stringify({
+                    function_call_result: {
+                      name: block.tool_call.name,
+                      arguments: parsedParams,
+                      response: parsedResponse
+                    }
+                  }) +
+                  '</function_call>'
+                )
+              } else {
+                return '' // 若 tool_call 或 response、params 是 undefined 返回。只是便于调试而已，可以为空。
+              }
             })
+            .join('\n')
+
+          // 查找图像块
+          const imageBlocks = assistantBlocks.filter(
+            (block) => block.type === 'image' && block.image_data
+          )
+
+          // 如果没有任何内容，则跳过此消息
+          if (!textContent && imageBlocks.length === 0) {
+            return
           }
 
-          resultMessages.push({
-            role: 'assistant',
-            content: content
-          })
-        } else {
-          // 仅有文本内容
-          resultMessages.push({
-            role: 'assistant',
-            content: textContent
-          })
-        }
-      }
-    })
+          // 如果有图像，则使用复合内容格式
+          if (vision && imageBlocks.length > 0) {
+            const content: ChatMessageContent[] = []
 
-    return resultMessages
+            // 添加图像内容
+            imageBlocks.forEach((block) => {
+              if (block.image_data) {
+                content.push({
+                  type: 'image_url',
+                  image_url: {
+                    url: block.image_data.data,
+                    detail: 'auto'
+                  }
+                })
+              }
+            })
+
+            // 添加文本内容
+            if (textContent) {
+              content.push({
+                type: 'text',
+                text: textContent
+              })
+            }
+
+            resultMessages.push({
+              role: 'assistant',
+              content: content
+            })
+          } else {
+            // 仅有文本内容
+            resultMessages.push({
+              role: 'assistant',
+              content: textContent
+            })
+          }
+        }
+      })
+
+      return resultMessages
+    }
   }
 
   // 合并连续的相同角色消息
@@ -1852,8 +1977,8 @@ export class ThreadPresenter implements IThreadPresenter {
     await this.messageManager.markMessageAsContextEdge(messageId, isEdge)
   }
 
-  async getActiveConversationId(): Promise<string | null> {
-    return this.activeConversationId
+  async getActiveConversationId(tabId: number): Promise<string | null> {
+    return this.activeConversationIds.get(tabId) || null
   }
 
   private async getLatestConversation(): Promise<CONVERSATION | null> {
@@ -1922,17 +2047,14 @@ export class ThreadPresenter implements IThreadPresenter {
     await Promise.all(messageIds.map((messageId) => this.stopMessageGeneration(messageId)))
   }
 
-  async summaryTitles(providerId?: string, modelId?: string): Promise<string> {
-    const conversation = await this.getActiveConversation()
+  async summaryTitles(tabId?: number): Promise<string> {
+    const conversation = await this.getActiveConversation(tabId || 0)
     if (!conversation) {
       throw new Error('找不到当前对话')
     }
-    let summaryProviderId = providerId
-    if (!modelId || !providerId) {
-      modelId = this.searchAssistantModel?.id
-      summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
-    }
-
+    let summaryProviderId = conversation.settings.providerId
+    const modelId = this.searchAssistantModel?.id
+    summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
     const messages = await this.getContextMessages(conversation.id)
     const messagesWithLength = messages
       .map((msg) => {
@@ -1974,17 +2096,19 @@ export class ThreadPresenter implements IThreadPresenter {
     console.log('-------------> cleanedTitle \n', cleanedTitle)
     return cleanedTitle
   }
-  async clearActiveThread(): Promise<void> {
-    this.activeConversationId = null
-    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED)
+  async clearActiveThread(tabId: number): Promise<void> {
+    this.activeConversationIds.delete(tabId)
+    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED, { tabId })
   }
 
   async clearAllMessages(conversationId: string): Promise<void> {
     await this.messageManager.clearAllMessages(conversationId)
-    // 如果是当前活动会话，需要更新生成状态
-    if (conversationId === this.activeConversationId) {
-      // 停止所有正在生成的消息
-      await this.stopConversationGeneration(conversationId)
+    // 检查所有 tab 中的活跃会话
+    for (const [_, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        // 停止所有正在生成的消息
+        await this.stopConversationGeneration(conversationId)
+      }
     }
   }
 
@@ -2100,6 +2224,129 @@ export class ThreadPresenter implements IThreadPresenter {
       return newConversationId
     } catch (error) {
       console.error('分支会话失败:', error)
+      throw error
+    }
+  }
+
+  // 翻译文本
+  async translateText(text: string, tabId: number): Promise<string> {
+    try {
+      let conversation = await this.getActiveConversation(tabId)
+      if (!conversation) {
+        // 创建一个临时对话用于翻译
+        const defaultProvider = this.configPresenter.getDefaultProviders()[0]
+        const models = await this.llmProviderPresenter.getModelList(defaultProvider.id)
+        const defaultModel = models[0]
+        const conversationId = await this.createConversation(
+          '临时翻译对话',
+          {
+            modelId: defaultModel.id,
+            providerId: defaultProvider.id
+          },
+          tabId
+        )
+        conversation = await this.getConversation(conversationId)
+      }
+
+      const { providerId, modelId } = conversation.settings
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content:
+            '你是一个翻译助手。请将用户输入的文本翻译成中文。只返回翻译结果，不要添加任何其他内容。'
+        },
+        {
+          role: 'user',
+          content: text
+        }
+      ]
+
+      let translatedText = ''
+      const stream = this.llmProviderPresenter.startStreamCompletion(
+        providerId,
+        messages,
+        modelId,
+        'translate-' + Date.now(),
+        0.3,
+        1000
+      )
+
+      for await (const event of stream) {
+        if (event.type === 'response') {
+          const msg = event.data as LLMAgentEventData
+          if (msg.content) {
+            translatedText += msg.content
+          }
+        } else if (event.type === 'error') {
+          const msg = event.data as { eventId: string; error: string }
+          throw new Error(msg.error || '翻译失败')
+        }
+      }
+
+      return translatedText.trim()
+    } catch (error) {
+      console.error('翻译失败:', error)
+      throw error
+    }
+  }
+
+  // AI询问
+  async askAI(text: string, tabId: number): Promise<string> {
+    try {
+      let conversation = await this.getActiveConversation(tabId)
+      if (!conversation) {
+        // 创建一个临时对话用于AI询问
+        const defaultProvider = this.configPresenter.getDefaultProviders()[0]
+        const models = await this.llmProviderPresenter.getModelList(defaultProvider.id)
+        const defaultModel = models[0]
+        const conversationId = await this.createConversation(
+          '临时AI对话',
+          {
+            modelId: defaultModel.id,
+            providerId: defaultProvider.id
+          },
+          tabId
+        )
+        conversation = await this.getConversation(conversationId)
+      }
+
+      const { providerId, modelId } = conversation.settings
+      const messages: ChatMessage[] = [
+        {
+          role: 'system',
+          content: '你是一个AI助手。请简洁地回答用户的问题。'
+        },
+        {
+          role: 'user',
+          content: text
+        }
+      ]
+
+      let aiAnswer = ''
+      const stream = this.llmProviderPresenter.startStreamCompletion(
+        providerId,
+        messages,
+        modelId,
+        'ask-ai-' + Date.now(),
+        0.7,
+        1000
+      )
+
+      for await (const event of stream) {
+        if (event.type === 'response') {
+          const msg = event.data as LLMAgentEventData
+          if (msg.content) {
+            aiAnswer += msg.content
+          }
+        } else if (event.type === 'error') {
+          const msg = event.data as { eventId: string; error: string }
+          throw new Error(msg.error || 'AI回答失败')
+        }
+      }
+
+      return aiAnswer.trim()
+    } catch (error) {
+      console.error('AI询问失败:', error)
       throw error
     }
   }
