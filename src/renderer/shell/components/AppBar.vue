@@ -2,42 +2,26 @@
   <div class="flex flex-row h-10">
     <div
       class="h-10 flex-shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start window-drag-region"
-      :class="['', isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2']"
-    >
+      :class="['', isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2']">
       <!-- App title/content in center -->
-      <Button
-        v-if="isTabContainerOverflowingLeft"
-        variant="ghost"
+      <Button v-if="isTabContainerOverflowingLeft" variant="ghost"
         class="flex-shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
-        @click="scrollTabContainer('left')"
-      >
+        @click="scrollTabContainer('left')">
         <Icon icon="lucide:chevron-left" class="w-4 h-4" />
       </Button>
-      <Button
-        v-if="isTabContainerOverflowingRight"
-        variant="ghost"
+      <Button v-if="isTabContainerOverflowingRight" variant="ghost"
         class="flex-shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
-        @click="scrollTabContainer('right')"
-      >
+        @click="scrollTabContainer('right')">
         <Icon icon="lucide:chevron-right" class="w-4 h-4" />
       </Button>
-      <div
-        ref="tabContainerWrapper"
+      <div ref="tabContainerWrapper"
         class="h-full flex flex-row items-center justify-start overflow-y-hidden overflow-x-auto scrollbar-hide"
-        @scroll="onTabContainerWrapperScroll"
-      >
+        @scroll="onTabContainerWrapperScroll">
         <div ref="tabContainer" class="h-full flex flex-row items-center justify-start gap-1">
-          <AppBarTabItem
-            v-for="(tab, idx) in tabStore.tabs"
-            :key="tab.id"
-            :active="tab.id === tabStore.currentTabId"
-            :size="tabStore.tabs.length"
-            :index="idx"
-            class="window-no-drag-region"
-            @click="tabStore.setCurrentTabId(tab.id)"
-            @close="tabStore.removeTab(tab.id)"
-            @dragstart="onTabDragStart(tab.id, $event)"
-          >
+          <AppBarTabItem v-for="(tab, idx) in tabStore.tabs" :key="tab.id" :active="tab.id === tabStore.currentTabId"
+            :size="tabStore.tabs.length" :index="idx" class="window-no-drag-region"
+            @click="tabStore.setCurrentTabId(tab.id)" @close="tabStore.removeTab(tab.id)"
+            @dragstart="onTabDragStart(tab.id, $event)">
             <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
             {{ tab.title ?? 'DeepChat' }}
           </AppBarTabItem>
@@ -45,29 +29,23 @@
         </div>
       </div>
 
-      <Button
-        variant="ghost"
+      <Button variant="ghost"
         class="flex-shrink-0 text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
-        @click="openNewTab"
-      >
+        @click="openNewTab">
         <Icon icon="lucide:plus" class="w-4 h-4" />
       </Button>
       <div class="flex-1"></div>
 
-      <Button
-        variant="ghost"
+      <Button variant="ghost"
         class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
-        @click="onThemeClick"
-      >
+        @click="onThemeClick">
         <Icon v-if="themeStore.themeMode === 'dark'" icon="lucide:moon" class="w-4 h-4" />
         <Icon v-else-if="themeStore.themeMode === 'light'" icon="lucide:sun" class="w-4 h-4" />
         <Icon v-else icon="lucide:monitor" class="w-4 h-4" />
       </Button>
-      <Button
-        variant="ghost"
+      <Button variant="ghost"
         class="text-xs font-medium px-2 h-7 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
-        @click="openSettings"
-      >
+        @click="openSettings">
         <Icon icon="lucide:settings" class="w-4 h-4" />
       </Button>
       <!-- <Button
@@ -80,23 +58,16 @@
     </div>
 
     <div v-if="!isMacOS" class="flex h-10">
-      <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-zinc-500/20"
-        @click="minimizeWindow"
-      >
+      <button class="inline-flex items-center justify-center h-full w-12 hover:bg-zinc-500/20" @click="minimizeWindow">
         <MinusIcon class="h-4 w-4" />
       </button>
-      <button
-        class="inline-flex items-center justify-center h-full w-12 hover:bg-zinc-500/20"
-        @click="toggleMaximize"
-      >
+      <button class="inline-flex items-center justify-center h-full w-12 hover:bg-zinc-500/20" @click="toggleMaximize">
         <MaximizeIcon v-if="!isMaximized" class="h-4 w-4" />
         <RestoreIcon v-else class="h-4 w-4" />
       </button>
       <button
         class="inline-flex items-center justify-center h-full w-12 hover:bg-destructive hover:text-destructive-foreground"
-        @click="closeWindow"
-      >
+        @click="closeWindow">
         <XIcon class="h-4 w-4" />
       </button>
     </div>
@@ -154,7 +125,7 @@ const isTabContainerOverflowingRight = computed(() => {
   return (
     tabContainerWrapperSize.width.value < tabContainerSize.width.value &&
     tabContainerWrapperScrollLeft.value <
-      (tabContainerWrapper.value?.scrollWidth ?? 0) - tabContainerWrapperSize.width.value
+    (tabContainerWrapper.value?.scrollWidth ?? 0) - tabContainerWrapperSize.width.value
   )
 })
 
@@ -312,11 +283,20 @@ const closeWindow = () => {
 }
 
 const openSettings = () => {
-  tabStore.addTab({
-    name: 'Settings',
-    icon: 'lucide:settings',
-    viewType: 'settings'
-  })
+  // 检查是否已经存在设置标签页
+  const existingSettingsTab = tabStore.tabs.find(tab => tab.url.includes('#/settings'))
+
+  if (existingSettingsTab) {
+    // 如果已经存在设置标签页，切换到该标签页
+    tabStore.setCurrentTabId(existingSettingsTab.id)
+  } else {
+    // 如果不存在设置标签页，创建新的
+    tabStore.addTab({
+      name: 'Settings',
+      icon: 'lucide:settings',
+      viewType: 'settings'
+    })
+  }
 }
 </script>
 
@@ -335,20 +315,25 @@ button {
 
 /* For Webkit-based browsers (Chrome, Safari, newer versions of Edge) */
 .overflow-x-auto::-webkit-scrollbar {
-  height: 4px; /* Adjust as needed for thickness */
+  height: 4px;
+  /* Adjust as needed for thickness */
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: transparent; /* Or a very subtle color like #f1f1f1 or theme background */
+  background: transparent;
+  /* Or a very subtle color like #f1f1f1 or theme background */
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: #a1a1aa; /* Scrollbar thumb color - zinc-400 */
-  border-radius: 2px; /* Rounded corners for the thumb */
+  background: #a1a1aa;
+  /* Scrollbar thumb color - zinc-400 */
+  border-radius: 2px;
+  /* Rounded corners for the thumb */
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
-  background: #71717a; /* Scrollbar thumb color on hover - zinc-500 */
+  background: #71717a;
+  /* Scrollbar thumb color on hover - zinc-500 */
 }
 
 /* For Firefox - already handled by inline style for simplicity, can also be moved here */
