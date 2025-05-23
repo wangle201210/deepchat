@@ -6,7 +6,7 @@
           <th
             v-for="(cell, index) in node.header.cells"
             :key="'header-' + index"
-            class="p-2 text-left font-semibold bg-gray-100 dark:bg-zinc-900 dark:border-zinc-800 whitespace-nowrap"
+            class="p-2 text-left font-semibold border-border bg-muted whitespace-nowrap"
             :class="{
               'border-r ': index < node.header.cells.length - 1
             }"
@@ -25,8 +25,8 @@
           v-for="(row, rowIndex) in node.rows"
           :key="'row-' + rowIndex"
           :class="[
-            rowIndex % 2 === 1 ? 'bg-gray-100 dark:bg-zinc-900 dark:border-zinc-800' : '',
-            rowIndex < node.rows.length - 1 ? 'border-b dark:border-zinc-800' : ''
+            rowIndex % 2 === 1 ? 'bg-muted' : '',
+            rowIndex < node.rows.length - 1 ? 'border-b ' : ''
           ]"
         >
           <td
