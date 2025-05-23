@@ -1662,6 +1662,7 @@ export class ThreadPresenter implements IThreadPresenter {
           })
         } else if (msg.role === 'assistant') {
           // 处理助手消息
+          let afterSearch = false
           const assistantBlocks = msg.content as AssistantMessageBlock[]
           for (const subMsg of assistantBlocks) {
             if (
@@ -1690,10 +1691,16 @@ export class ThreadPresenter implements IThreadPresenter {
                 content: subMsg.tool_call.response
               })
             } else if (subMsg.type === 'content' && subMsg?.content?.trim()) {
+              // 删除强制搜索结果中的引文标记
+              let content = subMsg.content
+              if (afterSearch) content = content.replace(/\[\d+\]/g, '')
               resultMessages.push({
                 role: 'assistant',
-                content: subMsg.content
+                content: content
               })
+              afterSearch = false
+            } else if (subMsg.type === 'search') {
+              afterSearch = true
             }
           }
         }
