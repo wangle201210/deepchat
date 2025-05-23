@@ -1,33 +1,78 @@
 <template>
-  <div ref="messageNode" :class="['flex flex-row py-4 pl-4 pr-11 group gap-2 w-full', 'justify-start']">
-    <ModelIcon :model-id="message.model_id" custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
-      :alt="message.role" />
+  <div
+    ref="messageNode"
+    :data-message-id="message.id"
+    :class="['flex flex-row py-4 pl-4 pr-11 group gap-2 w-full', 'justify-start']"
+  >
+    <ModelIcon
+      :model-id="message.model_id"
+      custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
+      :alt="message.role"
+    />
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
-      <div v-if="currentContent.length === 0" class="flex flex-row items-center gap-2 text-xs text-muted-foreground">
+      <div
+        v-if="currentContent.length === 0"
+        class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
+      >
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
-          <MessageBlockContent v-if="block.type === 'content'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" :is-search-result="isSearchResult" />
-          <MessageBlockThink v-else-if="block.type === 'reasoning_content'" :block="block" :usage="message.usage" />
-          <MessageBlockSearch v-else-if="block.type === 'search'" :message-id="message.id" :block="block" />
-          <MessageBlockToolCall v-else-if="block.type === 'tool_call'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" />
-          <MessageBlockAction v-else-if="block.type === 'action'" :message-id="message.id"
-            :conversation-id="currentThreadId" :block="block" />
-          <MessageBlockImage v-else-if="block.type === 'image'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" />
+          <MessageBlockContent
+            v-if="block.type === 'content'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+            :is-search-result="isSearchResult"
+          />
+          <MessageBlockThink
+            v-else-if="block.type === 'reasoning_content'"
+            :block="block"
+            :usage="message.usage"
+          />
+          <MessageBlockSearch
+            v-else-if="block.type === 'search'"
+            :message-id="message.id"
+            :block="block"
+          />
+          <MessageBlockToolCall
+            v-else-if="block.type === 'tool_call'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
+          <MessageBlockAction
+            v-else-if="block.type === 'action'"
+            :message-id="message.id"
+            :conversation-id="currentThreadId"
+            :block="block"
+          />
+          <MessageBlockImage
+            v-else-if="block.type === 'image'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </template>
       </div>
-      <MessageToolbar :loading="message.status === 'pending'" :usage="message.usage" :is-assistant="true"
-        :current-variant-index="currentVariantIndex" :total-variants="totalVariants"
-        :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)" @retry="handleAction('retry')"
-        @delete="handleAction('delete')" @copy="handleAction('copy')" @copyImage="handleAction('copyImage')"
-        @prev="handleAction('prev')" @next="handleAction('next')" @fork="handleAction('fork')" />
+      <MessageToolbar
+        :loading="message.status === 'pending'"
+        :usage="message.usage"
+        :is-assistant="true"
+        :current-variant-index="currentVariantIndex"
+        :total-variants="totalVariants"
+        :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
+        @retry="handleAction('retry')"
+        @delete="handleAction('delete')"
+        @copy="handleAction('copy')"
+        @copyImage="handleAction('copyImage')"
+        @prev="handleAction('prev')"
+        @next="handleAction('next')"
+        @fork="handleAction('fork')"
+      />
     </div>
   </div>
 
@@ -83,6 +128,7 @@ import { Button } from '@/components/ui/button'
 import { usePresenter } from '@/composables/usePresenter'
 
 const devicePresenter = usePresenter('devicePresenter')
+const tabPresenter = usePresenter('tabPresenter')
 
 const appVersion = ref('')
 
@@ -104,10 +150,12 @@ const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
 const allVariants = computed(() => {
   const messageVariants = props.message.variants || []
   const combinedVariants = messageVariants.map((variant) => {
-    const cachedVariant = Array.from(chatStore.getGeneratingMessagesCache().values()).find((cached) => {
-      const msg = cached.message as AssistantMessage
-      return msg.is_variant && msg.id === variant.id
-    })
+    const cachedVariant = Array.from(chatStore.getGeneratingMessagesCache().values()).find(
+      (cached) => {
+        const msg = cached.message as AssistantMessage
+        return msg.is_variant && msg.id === variant.id
+      }
+    )
     return cachedVariant ? cachedVariant.message : variant
   })
   return combinedVariants
@@ -181,6 +229,61 @@ const confirmFork = async () => {
   }
 }
 
+/**
+ * 查找用户消息DOM元素
+ * 通过parentId查找对应的用户消息
+ */
+const findUserMessageElement = (): HTMLElement | null => {
+  if (!props.message.parentId) return null
+
+  // 在DOM中查找包含用户消息ID的元素
+  const userMessageSelector = `[data-message-id="${props.message.parentId}"]`
+  return document.querySelector(userMessageSelector) as HTMLElement
+}
+
+/**
+ * 计算包含用户消息和助手消息的整体范围
+ */
+const calculateMessageGroupRect = (): {
+  x: number
+  y: number
+  width: number
+  height: number
+} | null => {
+  const userMessageElement = findUserMessageElement()
+  const assistantMessageElement = messageNode.value
+
+  if (!userMessageElement || !assistantMessageElement) {
+    // 如果找不到用户消息，只截取当前助手消息
+    if (assistantMessageElement) {
+      const rect = assistantMessageElement.getBoundingClientRect()
+      return {
+        x: Math.round(rect.x),
+        y: Math.round(rect.y),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height)
+      }
+    }
+    return null
+  }
+
+  const userRect = userMessageElement.getBoundingClientRect()
+  const assistantRect = assistantMessageElement.getBoundingClientRect()
+
+  // 计算包含两个消息的最小矩形
+  const left = Math.min(userRect.left, assistantRect.left)
+  const top = Math.min(userRect.top, assistantRect.top)
+  const right = Math.max(userRect.right, assistantRect.right)
+  const bottom = Math.max(userRect.bottom, assistantRect.bottom)
+
+  return {
+    x: Math.round(left),
+    y: Math.round(top),
+    width: Math.round(right - left),
+    height: Math.round(bottom - top)
+  }
+}
+
 const handleAction = (
   action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'copyImage' | 'fork'
 ) => {
@@ -208,37 +311,87 @@ const handleAction = (
       currentVariantIndex.value++
     }
   } else if (action === 'copyImage') {
-    if (messageNode.value) {
-      toCanvas(messageNode.value, {
-        backgroundColor: props.isDark ? '#000000' : '#FFFFFF',
-        filter: filterDom
-      }).then((canvas) => {
-        // 添加水印
-        const canvasWithWatermark = addWatermark(
-          canvas,
-          props.isDark,
-          appVersion.value, // 添加版本号水印
-          t
-        )
-        // 转换为Blob
-        canvasWithWatermark.toBlob(
-          (blob) => {
-            if (blob) {
-              const rd = new FileReader()
-              rd.onloadend = () => {
-                const url = rd.result as string
-                window.api.copyImage(url)
-              }
-              rd.readAsDataURL(blob)
-            }
-          },
-          'image/png',
-          1
-        )
-      })
-    }
+    handleCopyImage()
   } else if (action === 'fork') {
     showForkDialog()
+  }
+}
+
+/**
+ * 处理复制图片操作
+ * 使用新的 captureTabWithWatermark 功能
+ */
+const handleCopyImage = async () => {
+  try {
+    // 获取当前标签页ID
+    const tabId = window.api.getWebContentsId()
+
+    // 计算截图区域
+    const rect = calculateMessageGroupRect()
+
+    if (!rect) {
+      console.error('无法计算消息区域')
+      return
+    }
+
+    // 调用新的截图API
+    const result = await tabPresenter.captureTabWithWatermark(tabId, rect, {
+      isDark: props.isDark,
+      version: appVersion.value,
+      texts: {
+        brand: 'DeepChat',
+        tip: t('common.watermarkTip')
+      }
+    })
+
+    if (result) {
+      // 复制到剪贴板
+      window.api.copyImage(result)
+      console.log('消息截图已复制到剪贴板')
+    } else {
+      console.error('截图失败')
+      // 如果新方法失败，回退到原来的方法
+      await fallbackCopyImage()
+    }
+  } catch (error) {
+    console.error('截图时出错:', error)
+    // 如果新方法失败，回退到原来的方法
+    await fallbackCopyImage()
+  }
+}
+
+/**
+ * 回退的复制图片方法（原来的实现）
+ */
+const fallbackCopyImage = async () => {
+  if (messageNode.value) {
+    try {
+      const canvas = await toCanvas(messageNode.value, {
+        backgroundColor: props.isDark ? '#000000' : '#FFFFFF',
+        filter: filterDom
+      })
+
+      // 添加水印
+      const canvasWithWatermark = addWatermark(canvas, props.isDark, appVersion.value, t)
+
+      // 转换为Blob并复制
+      canvasWithWatermark.toBlob(
+        (blob) => {
+          if (blob) {
+            const rd = new FileReader()
+            rd.onloadend = () => {
+              const url = rd.result as string
+              window.api.copyImage(url)
+            }
+            rd.readAsDataURL(blob)
+          }
+        },
+        'image/png',
+        1
+      )
+    } catch (error) {
+      console.error('回退截图方法也失败:', error)
+    }
   }
 }
 

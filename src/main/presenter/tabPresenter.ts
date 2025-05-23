@@ -8,6 +8,7 @@ import { join } from 'path'
 import contextMenu from '@/contextMenuHelper'
 import { getContextMenuLabels } from '@shared/i18n'
 import { app } from 'electron'
+import { addWatermarkToNativeImage, WatermarkOptions } from '@/lib/watermark'
 
 export class TabPresenter implements ITabPresenter {
   // 全局标签页实例存储
@@ -660,5 +661,47 @@ export class TabPresenter implements ITabPresenter {
     this.notifyWindowTabsUpdate(originalWindowId) // Notify original window
     this.notifyWindowTabsUpdate(newWindowId) // Notify new window
     return true
+  }
+
+  /**
+   * 截取标签页指定区域并添加水印
+   * @param tabId 标签页ID
+   * @param rect 截图区域，如果不指定则截取整个页面
+   * @param options 水印选项
+   * @returns 返回base64格式的图片数据，失败时返回null
+   */
+  async captureTabWithWatermark(
+    tabId: number,
+    rect?: { x: number; y: number; width: number; height: number },
+    options: WatermarkOptions = {}
+  ): Promise<string | null> {
+    try {
+      // 获取指定的tab
+      const view = this.tabs.get(tabId)
+      if (!view || view.webContents.isDestroyed()) {
+        console.error(`captureTabWithWatermark: Tab ${tabId} not found or destroyed`)
+        return null
+      }
+
+      // 使用Electron的capturePage API进行截图
+      const image = await view.webContents.capturePage(rect)
+
+      if (image.isEmpty()) {
+        console.error('captureTabWithWatermark: Captured image is empty')
+        return null
+      }
+
+      // 添加水印
+      const watermarkedImage = await addWatermarkToNativeImage(image, options)
+
+      // 转换为base64格式
+      const base64Data = watermarkedImage.toDataURL()
+
+      console.log(`Successfully captured and watermarked tab ${tabId}`)
+      return base64Data
+    } catch (error) {
+      console.error('captureTabWithWatermark error:', error)
+      return null
+    }
   }
 }
