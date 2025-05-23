@@ -9,7 +9,7 @@
     />
 
     <!-- 输入框区域 -->
-    <div class="flex-none p-2">
+    <div class="flex-none px-2 pb-2">
       <ChatInput
         :disabled="!chatStore.getActiveThreadId() || isGenerating"
         @send="handleSend"
