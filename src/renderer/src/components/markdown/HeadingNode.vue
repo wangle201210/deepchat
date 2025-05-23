@@ -71,19 +71,19 @@ const nodeComponents = {
 
 <style scoped>
 .heading-node {
-  @apply font-semibold leading-tight;
+  @apply font-medium leading-tight;
 }
 
 .heading-1 {
-  @apply mt-6 mb-2 text-4xl;
+  @apply mt-6 mb-2 text-xl;
 }
 
 .heading-2 {
-  @apply mt-5 mb-2 text-2xl;
+  @apply mt-5 mb-2 text-lg;
 }
 
 .heading-3 {
-  @apply mt-4 mb-2 text-xl;
+  @apply mt-4 mb-2 text-base;
 }
 
 .heading-4 {
