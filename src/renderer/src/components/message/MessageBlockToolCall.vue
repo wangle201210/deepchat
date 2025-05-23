@@ -79,7 +79,7 @@
     >
       <div
         v-if="isExpanded"
-        class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4"
+        class="rounded-lg border bg-card text-card-foreground px-2 py-3 mt-2 mb-4"
       >
         <div class="space-y-4">
           <!-- 参数 -->
@@ -88,7 +88,7 @@
               <Icon icon="lucide:arrow-up-from-dot" class="w-4 h-4 text-muted-foreground" />
               {{ t('toolCall.params') }}
             </h5>
-            <div class="text-sm bg-muted rounded-md p-2">
+            <div class="text-sm rounded-md p-2">
               <JsonObject :data="parseJson(block.tool_call.params)" />
             </div>
           </div>
