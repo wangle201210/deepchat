@@ -9,7 +9,6 @@ export class GrokProvider extends OpenAICompatibleProvider {
   // private static readonly IMAGE_ENDPOINT = '/images/generations'
 
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
-    console.log('init grok provider')
     super(provider, configPresenter)
   }
 

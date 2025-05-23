@@ -446,6 +446,7 @@ export class TabPresenter implements ITabPresenter {
 
     // 页面加载完成
     if (isFirstTab) {
+      eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW)
       webContents.once('did-finish-load', () => {
         eventBus.emit(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
       })
