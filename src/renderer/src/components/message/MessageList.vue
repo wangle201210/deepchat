@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full relative min-h-0">
-    <div ref="messagesContainer" class="relative flex-1 overflow-y-auto scroll-smooth w-full h-full"
-      @scroll="handleScroll">
+    <div ref="messagesContainer"
+      class="message-list-container relative flex-1 overflow-y-auto scroll-smooth w-full h-full" @scroll="handleScroll">
       <div ref="messageList" class="w-full max-w-full break-all xl:max-w-4xl mx-auto transition-opacity duration-300"
         :class="{ 'opacity-0': !visible }">
         <template v-for="(msg, index) in messages" :key="msg.id">

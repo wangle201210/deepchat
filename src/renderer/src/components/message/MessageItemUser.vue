@@ -1,5 +1,9 @@
 <template>
-  <div v-show="!message.content.continue" :class="['flex flex-row-reverse group p-4 pl-11 gap-2']">
+  <div
+    v-show="!message.content.continue"
+    :data-message-id="message.id"
+    class="flex flex-row-reverse group p-4 pl-11 gap-2 user-message-item"
+  >
     <!-- 头像 -->
     <div class="w-5 h-5 bg-muted rounded-md overflow-hidden">
       <img v-if="message.avatar" :src="message.avatar" class="w-full h-full" :alt="message.role" />
@@ -63,6 +67,7 @@
         :loading="false"
         :is-assistant="false"
         :is-edit-mode="isEditMode"
+        :is-capturing-image="false"
         @delete="handleAction('delete')"
         @copy="handleAction('copy')"
         @edit="startEdit"
