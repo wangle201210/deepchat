@@ -246,11 +246,11 @@ const savePrompt = async () => {
   if (!form.name || !form.content) return
   if (editingIdx.value === null) {
     // 新增
-    const newPrompt = { ...form, id: Date.now().toString() }
+    const newPrompt = { ...toRaw(form), id: Date.now().toString() }
     await promptsStore.addPrompt(newPrompt)
   } else {
     // 编辑
-    await promptsStore.updatePrompt(form.id, form)
+    await promptsStore.updatePrompt(form.id, toRaw(form))
   }
   openAddDialog.value = false
   resetForm()
