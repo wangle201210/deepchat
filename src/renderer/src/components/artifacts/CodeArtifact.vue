@@ -139,6 +139,7 @@ const displayLanguage = computed(() => {
     markdown: 'Markdown',
     bash: 'Bash',
     shell: 'Shell',
+    powershell: 'PowerShell',
     dockerfile: 'Dockerfile',
     vue: 'Vue',
     react: 'React',
@@ -146,6 +147,9 @@ const displayLanguage = computed(() => {
     svg: 'SVG',
     mermaid: 'Mermaid',
     text: 'Plain Text',
+    http: 'HTTP',
+    uri: 'URI',
+    dos: 'DOS Batch',
     '': 'Plain Text'
   }
   return displayNames[lang] || lang.charAt(0).toUpperCase() + lang.slice(1)
