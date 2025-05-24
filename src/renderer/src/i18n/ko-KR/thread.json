@@ -14,7 +14,10 @@
     "retry": "재생",
     "fork": "새로운 세션에 포크",
     "edit": "메시지 편집",
-    "delete": "메시지 삭제"
+    "delete": "메시지 삭제",
+    "capturing": "스크린 샷 ...",
+    "copyFromTopSuccess": "전체 세션 이미지가 복사되었습니다",
+    "copyImageWithLongPress": "이미지로 복사합니다 (상단에서 가로 쳐기 시작하려면 긴 누르기)"
   },
   "message": {
     "toolbar": {

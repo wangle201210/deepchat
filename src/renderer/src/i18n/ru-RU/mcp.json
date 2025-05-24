@@ -161,6 +161,10 @@
     "fastGptKnowledge": {
       "name": "Поиск в базе знаний FastGPT",
       "desc": "Служба поиска в базе знаний FastGPT, может выполнять поиск по содержимому базы знаний FastGPT"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "DeepChat встроенный заказ",
+      "name": "Пользовательские быстрые слова"
     }
   },
   "prompts": {
