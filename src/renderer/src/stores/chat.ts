@@ -366,7 +366,7 @@ export const useChatStore = defineStore('chat', () => {
     tool_call_server_name?: string
     tool_call_server_icons?: string
     tool_call_server_description?: string
-    tool_call?: 'start' | 'end' | 'error'
+    tool_call?: 'start' | 'end' | 'error' | 'update' | 'running'
     totalUsage?: {
       prompt_tokens: number
       completion_tokens: number
@@ -409,7 +409,7 @@ export const useChatStore = defineStore('chat', () => {
           })
         } else if (msg.tool_call) {
           if (msg.tool_call === 'start') {
-            // 创建新的工具调用块
+            // 工具调用开始解析参数 - 创建新的工具调用块
             const lastBlock = curMsg.content[curMsg.content.length - 1]
             if (lastBlock) {
               lastBlock.status = 'success'
@@ -418,7 +418,7 @@ export const useChatStore = defineStore('chat', () => {
             curMsg.content.push({
               type: 'tool_call',
               content: '',
-              status: 'loading',
+              status: 'loading', // 使用loading状态表示正在解析参数
               timestamp: Date.now(),
               tool_call: {
                 id: msg.tool_call_id,
@@ -429,6 +429,62 @@ export const useChatStore = defineStore('chat', () => {
                 server_description: msg.tool_call_server_description
               }
             })
+          } else if (msg.tool_call === 'update') {
+            // 实时更新工具调用参数
+            const existingToolCallBlock = curMsg.content.find(
+              (block) =>
+                block.type === 'tool_call' &&
+                ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
+                  block.tool_call?.name === msg.tool_call_name) &&
+                block.status === 'loading'
+            )
+            if (
+              existingToolCallBlock &&
+              existingToolCallBlock.type === 'tool_call' &&
+              existingToolCallBlock.tool_call
+            ) {
+              // 更新参数内容
+              existingToolCallBlock.tool_call.params = msg.tool_call_params || ''
+            }
+          } else if (msg.tool_call === 'running') {
+            // 工具开始执行 - 查找对应的工具调用块并更新状态
+            const existingToolCallBlock = curMsg.content.find(
+              (block) =>
+                block.type === 'tool_call' &&
+                ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
+                  block.tool_call?.name === msg.tool_call_name) &&
+                block.status === 'loading'
+            )
+            if (existingToolCallBlock && existingToolCallBlock.type === 'tool_call') {
+              // 保持loading状态，但可以添加执行中的标识
+              existingToolCallBlock.status = 'loading'
+              if (existingToolCallBlock.tool_call) {
+                // 确保参数是最新的
+                existingToolCallBlock.tool_call.params =
+                  msg.tool_call_params || existingToolCallBlock.tool_call.params
+              }
+            } else {
+              // 如果没有找到现有的工具调用块，创建一个新的（兼容旧逻辑）
+              const lastBlock = curMsg.content[curMsg.content.length - 1]
+              if (lastBlock) {
+                lastBlock.status = 'success'
+              }
+
+              curMsg.content.push({
+                type: 'tool_call',
+                content: '',
+                status: 'loading',
+                timestamp: Date.now(),
+                tool_call: {
+                  id: msg.tool_call_id,
+                  name: msg.tool_call_name,
+                  params: msg.tool_call_params || '',
+                  server_name: msg.tool_call_server_name,
+                  server_icons: msg.tool_call_server_icons,
+                  server_description: msg.tool_call_server_description
+                }
+              })
+            }
           } else if (msg.tool_call === 'end' || msg.tool_call === 'error') {
             // 查找对应的工具调用块
             const existingToolCallBlock = curMsg.content.find(

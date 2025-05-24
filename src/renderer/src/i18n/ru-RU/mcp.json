@@ -165,6 +165,10 @@
     "deepchat-inmemory/custom-prompts-server": {
       "desc": "DeepChat встроенный заказ",
       "name": "Пользовательские быстрые слова"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "Встроенная подробная исследовательская служба DeepChat на основе поиска BOCHA (обратите внимание, что необходимы для использования длинных контекстов, а модели с недостаточным контекстом могут потерпеть неудачу)",
+      "name": "DeepResearch"
     }
   },
   "prompts": {
