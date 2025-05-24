@@ -5,6 +5,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { presenter } from '@/presenter'
+import { eventBus } from '@/eventbus'
+import { CONFIG_EVENTS } from '@/events'
 
 interface PromptDefinition {
   name: string
@@ -18,6 +20,7 @@ interface PromptDefinition {
 
 export class CustomPromptsServer {
   private server: Server
+  private promptsCache: PromptDefinition[] | null = null
 
   constructor() {
     // 创建服务器实例
@@ -35,6 +38,9 @@ export class CustomPromptsServer {
 
     // 设置请求处理器
     this.setupRequestHandlers()
+    
+    // 监听自定义提示词变更事件
+    this.setupEventListeners()
   }
 
   // 启动服务器
@@ -42,16 +48,29 @@ export class CustomPromptsServer {
     this.server.connect(transport)
   }
 
+  // 设置事件监听器
+  private setupEventListeners(): void {
+    eventBus.on(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED, () => {
+      this.promptsCache = null
+    })
+  }
+
   // 获取提示词列表
   private async getPromptsList(): Promise<PromptDefinition[]> {
+    // 如果有缓存，直接返回
+    if (this.promptsCache !== null) {
+      return this.promptsCache
+    }
+
     try {
       const prompts = await presenter.configPresenter.getCustomPrompts()
 
       if (!prompts || prompts.length === 0) {
+        this.promptsCache = []
         return []
       }
 
-      return prompts.map((prompt) => ({
+      this.promptsCache = prompts.map((prompt) => ({
         name: prompt.name,
         description: prompt.description,
         arguments: prompt.parameters
@@ -62,7 +81,10 @@ export class CustomPromptsServer {
             }))
           : []
       }))
+
+      return this.promptsCache
     } catch (error) {
+      this.promptsCache = []
       return []
     }
   }
@@ -117,7 +139,6 @@ export class CustomPromptsServer {
           _meta: {}
         }
       } catch (error) {
-        console.error('获取提示词内容失败:', error)
         return {
           messages: [
             {
@@ -132,5 +153,10 @@ export class CustomPromptsServer {
         }
       }
     })
+  }
+
+  // 提供对server的访问方法，供外部调用
+  public getServer(): Server {
+    return this.server
   }
 }

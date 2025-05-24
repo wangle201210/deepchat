@@ -18,6 +18,8 @@ import { IConfigPresenter } from '@shared/presenter'
 import { getErrorMessageLabels } from '@shared/i18n'
 import { OpenAI } from 'openai'
 import { ToolListUnion, Type, FunctionDeclaration } from '@google/genai'
+import { CONFIG_EVENTS } from '@/events'
+import { presenter } from '@/presenter'
 
 // 定义MCP工具接口
 interface MCPTool {
@@ -85,21 +87,19 @@ export class McpPresenter implements IMCPPresenter {
   constructor(configPresenter?: IConfigPresenter) {
     console.log('Initializing MCP Presenter')
 
-    // 如果提供了configPresenter实例，则使用它，否则保持与当前方式兼容
-    if (configPresenter) {
-      this.configPresenter = configPresenter
-    } else {
-      // 这里需要处理项目环境下的循环引用问题，通过延迟初始化解决
-      // McpPresenter会在Presenter初始化过程中创建，此时presenter还不可用
-      // 我们在initialize方法中会设置configPresenter
-      this.configPresenter = {} as IConfigPresenter
-    }
-
+    this.configPresenter = configPresenter || presenter.configPresenter
     this.serverManager = new ServerManager(this.configPresenter)
     this.toolManager = new ToolManager(this.configPresenter, this.serverManager)
 
-    // 应用启动时初始化
-    this.initialize()
+    // 监听自定义提示词服务器检查事件
+    eventBus.on(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED, async () => {
+      await this.checkAndManageCustomPromptsServer()
+    })
+
+    // 延迟初始化，确保其他组件已经准备好
+    setTimeout(() => {
+      this.initialize()
+    }, 1000)
   }
 
   private async initialize() {
@@ -170,6 +170,9 @@ export class McpPresenter implements IMCPPresenter {
       this.isInitialized = true
       console.log('[MCP] Initialization completed')
       eventBus.emit(MCP_EVENTS.INITIALIZED)
+      
+      // 检查并管理自定义提示词服务器
+      await this.checkAndManageCustomPromptsServer()
     } catch (error) {
       console.error('[MCP] Initialization failed:', error)
       // 即使初始化失败也标记为已完成，避免系统卡在未初始化状态
@@ -181,6 +184,52 @@ export class McpPresenter implements IMCPPresenter {
   // 添加获取初始化状态的方法
   isReady(): boolean {
     return this.isInitialized
+  }
+
+  // 检查并管理自定义提示词服务器
+  private async checkAndManageCustomPromptsServer(): Promise<void> {
+    const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server'
+    
+    try {
+      // 获取当前自定义提示词
+      const customPrompts = await this.configPresenter.getCustomPrompts()
+      const hasCustomPrompts = customPrompts && customPrompts.length > 0
+      
+      // 检查服务器是否正在运行
+      const isServerRunning = this.serverManager.isServerRunning(customPromptsServerName)
+      
+      if (hasCustomPrompts && !isServerRunning) {
+        // 有自定义提示词但服务器未运行，启动服务器
+        try {
+          await this.serverManager.startServer(customPromptsServerName)
+          eventBus.emit(MCP_EVENTS.SERVER_STARTED, customPromptsServerName)
+        } catch (error) {
+          // 启动失败
+        }
+      } else if (!hasCustomPrompts && isServerRunning) {
+        // 没有自定义提示词但服务器正在运行，停止服务器
+        try {
+          await this.serverManager.stopServer(customPromptsServerName)
+          eventBus.emit(MCP_EVENTS.SERVER_STOPPED, customPromptsServerName)
+        } catch (error) {
+          // 停止失败
+        }
+      } else if (hasCustomPrompts && isServerRunning) {
+        // 有自定义提示词且服务器正在运行，重启服务器以刷新缓存
+        try {
+          await this.serverManager.stopServer(customPromptsServerName)
+          await this.serverManager.startServer(customPromptsServerName)
+          eventBus.emit(MCP_EVENTS.SERVER_STARTED, customPromptsServerName)
+        } catch (error) {
+          // 重启失败
+        }
+      }
+      
+      // 通知客户端列表已更新
+      eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
+    } catch (error) {
+      // 处理错误
+    }
   }
 
   // 获取MCP服务器配置
