@@ -1,4 +1,4 @@
-/** 
+/**
  * @module detectLanguage
  * (Language detector)
  */
@@ -36,16 +36,16 @@ type LanguageFeature = [RegExp, number]
 type LanguageDefinition = [CodeLanguage, ...LanguageFeature[]]
 
 const SHEBANG_MAP: Array<[RegExp, CodeLanguage]> = [
-  [/\b(bash|sh)\b/i, 'bash'],
-  [/\b(node|nodejs|iojs)\b/i, 'js'],
-  [/\b(python|python3|py)\b/i, 'py'],
-  [/\b(powershell|pwsh|posh)\b/i, 'powershell']
+  [/\b(bash|sh)\b/gi, 'bash'],
+  [/\b(node|nodejs|iojs)\b/gi, 'js'],
+  [/\b(python|python3|py)\b/gi, 'py'],
+  [/\b(powershell|pwsh|posh)\b/gi, 'powershell']
 ]
 
 const languages: LanguageDefinition[] = [
   [
     'bash',
-    [/^#!.*\b(bash|sh)\b/i, 500],
+    [/^#!.*\b(bash|sh)\b/gi, 500],
     [
       /(^|\s)(if|elif|then|fi|for|while|do|done|function|source|exit|read|cat|grep|sed|awk|cut|tr|wc|ps|kill|sleep|mkdir|rm|cp|mv|ls|pwd|chmod|chown|tar|zip|unzip|which|find|expr|test|[[|]]|&&|\|\||\$[0-9])\b/gi,
       5
@@ -53,10 +53,10 @@ const languages: LanguageDefinition[] = [
   ],
   [
     'dos',
-    [/^@echo off/i, 500],
-    [/^\s*rem\b/i, 500],
+    [/^@echo off/gi, 500],
+    [/^\s*rem\b/gi, 500],
     [
-      /^\s*(goto|call|start|setlocal|endlocal|ping|net|copy|del|move|dir|md|rd|ren|type|findstr|choice|timeout|cls|title|color|path|assoc|ftype|start|reg|tasklist|taskkill|wmic|powershell|cmd|echo)\b/i,
+      /^\s*(goto|call|start|setlocal|endlocal|ping|net|copy|del|move|dir|md|rd|ren|type|findstr|choice|timeout|cls|title|color|path|assoc|ftype|start|reg|tasklist|taskkill|wmic|powershell|cmd|echo)\b/gi,
       10
     ]
   ],
@@ -70,12 +70,12 @@ const languages: LanguageDefinition[] = [
   ],
   [
     'powershell',
-    [/^#requires -version/i, 500],
-    [/^param\s*$$/i, 400],
-    [/^(function|filter|class)\s+/i, 300],
-    [/^Write-(Host|Output|Warning|Error)/i, 200],
-    [/^\$(args|PSVersionTable|MyInvocation|PSScriptRoot)/i, 150],
-    [/^\s*(if|foreach|for|while|switch|try|catch|finally|return|continue|break)\b/i, 50]
+    [/^#requires -version/gi, 500],
+    [/^param\s*$$/gi, 400],
+    [/^(function|filter|class)\s+/gi, 300],
+    [/^Write-(Host|Output|Warning|Error)/gi, 200],
+    [/^\$(args|PSVersionTable|MyInvocation|PSScriptRoot)/gi, 150],
+    [/^\s*(if|foreach|for|while|switch|try|catch|finally|return|continue|break)\b/gi, 50]
   ],
   [
     'http',
@@ -83,7 +83,7 @@ const languages: LanguageDefinition[] = [
     [/^(GET|HEAD|POST|PUT|DELETE|PATCH|CONNECT|OPTIONS|TRACE)\s+\S+\s+HTTP\/\d\.\d$/gim, 600],
     [/^Host:\s+\S+/gim, 50],
     [/^User-Agent:/gim, 20],
-    [/^(GET|POST|PUT|DELETE)\s+\//i, 40]
+    [/^(GET|POST|PUT|DELETE)\s+\//gi, 40]
   ],
   ['html', [/<\/?[a-z-]+[^\n>]*>/g, 10], [/^\s+<!DOCTYPE\s+html/gi, 500]],
   [
@@ -113,7 +113,7 @@ const languages: LanguageDefinition[] = [
     [/\bfile:\/\/(?:localhost|[^?\s'"<>]+)/gi, 120],
     [/\bmailto:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/gi, 120],
     [/(https?:\/\/|www\.)[^\s'"<>]+/gi, 180], // 支持无 scheme 的 www 网址
-    [/\b(https?|ftps?|wss?|file|telnet|ldap|xmpp|irc|nntp|news|gopher)\b:/i, 50]
+    [/\b(https?|ftps?|wss?|file|telnet|ldap|xmpp|irc|nntp|news|gopher)\b:/gi, 50]
   ],
   ['css', [/^(@import|@page|@media|(\.|#)[a-z]+)/gim, 20]],
   [
@@ -140,7 +140,7 @@ const languages: LanguageDefinition[] = [
   [
     'mermaid',
     [
-      /(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap)/i,
+      /(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap)/gi,
       500
     ]
   ]
@@ -177,13 +177,13 @@ export const detectLanguage = (code: string): CodeLanguage => {
   }
 
   // Step 1: Exclude certain languages based on content
-  if (/^@echo off/i.test(code) || /^\s*rem\b/i.test(code)) {
+  if (/^@echo off/gi.test(code) || /^\s*rem\b/gi.test(code)) {
     return 'dos'
   }
-  if (/^#requires -version/i.test(code)) {
+  if (/^#requires -version/gi.test(code)) {
     return 'powershell'
   }
-  if (/^param\s*$$/i.test(code)) {
+  if (/^param\s*$$/gi.test(code)) {
     return 'powershell'
   }
 

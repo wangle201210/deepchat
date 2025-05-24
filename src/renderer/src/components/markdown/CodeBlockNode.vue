@@ -218,7 +218,7 @@ const createEditor = () => {
         doc: props.node.code,
         extensions
       }),
-      parent: codeEditor.value
+      parent: codeEditor.value as HTMLElement
     })
     editorInstance.value = editorView
     console.log(`Editor initialized for language: ${codeLanguage.value}`)

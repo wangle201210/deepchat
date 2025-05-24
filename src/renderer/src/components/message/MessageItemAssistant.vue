@@ -127,7 +127,6 @@ import { Button } from '@/components/ui/button'
 
 const props = defineProps<{
   message: AssistantMessage
-  isDark: boolean
   isCapturingImage: boolean
 }>()
 

@@ -7,7 +7,7 @@
     >
       <div
         ref="messageList"
-        class="w-full max-w-full break-all xl:max-w-4xl mx-auto transition-opacity duration-300"
+        class="w-full break-all max-w-4xl mx-auto transition-opacity duration-300"
         :class="{ 'opacity-0': !visible }"
       >
         <template v-for="(msg, index) in messages" :key="msg.id">
@@ -15,7 +15,6 @@
             v-if="msg.role === 'assistant'"
             :key="index"
             :ref="setAssistantRef(index)"
-            :is-dark="themeStore.isDark"
             :message="msg as AssistantMessage"
             :is-capturing-image="isCapturingImage"
             @copy-image="handleCopyImage"
@@ -250,7 +249,7 @@ const handleCopyImage = async (
     container: '.message-list-container',
     getTargetRect,
     watermark: {
-      isDark: themeStore.isDark,
+      isDark: themeStore.isDark.value,
       version: appVersion.value,
       texts: {
         brand: 'DeepChat',

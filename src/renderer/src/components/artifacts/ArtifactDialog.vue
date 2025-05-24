@@ -9,7 +9,7 @@
   >
     <div
       v-if="artifactStore.isOpen"
-      class="absolute right-0 top-0 bottom-0 w-[calc(60%_-_104px)] border-l shadow-lg flex flex-col"
+      class="absolute right-0 top-0 bottom-0 w-[calc(60%_-_104px)] border-l shadow-lg flex flex-col max-lg:!w-3/4 max-lg:dark:!bg-black"
     >
       <!-- 顶部导航栏 -->
       <div
