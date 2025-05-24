@@ -17,6 +17,7 @@ import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events'
 import { IConfigPresenter } from '@shared/presenter'
 import { getErrorMessageLabels } from '@shared/i18n'
 import { OpenAI } from 'openai'
+import { ToolListUnion, Type, FunctionDeclaration } from '@google/genai'
 
 // 定义MCP工具接口
 interface MCPTool {
@@ -72,18 +73,6 @@ interface AnthropicTool {
     properties: Record<string, Record<string, unknown>>
     required: string[]
   }
-}
-
-interface GeminiTool {
-  functionDeclarations: {
-    name: string
-    description: string
-    parameters?: {
-      type: string
-      properties: Record<string, Record<string, unknown>>
-      required: string[]
-    }
-  }[]
 }
 
 // 完整版的 McpPresenter 实现
@@ -671,7 +660,7 @@ export class McpPresenter implements IMCPPresenter {
   async mcpToolsToGeminiTools(
     mcpTools: MCPToolDefinition[] | undefined,
     serverName: string
-  ): Promise<GeminiTool[]> {
+  ): Promise<ToolListUnion> {
     if (!mcpTools || mcpTools.length === 0) {
       return []
     }
@@ -743,21 +732,13 @@ export class McpPresenter implements IMCPPresenter {
       }
 
       // 准备函数声明结构
-      const functionDeclaration = {
+      const functionDeclaration: FunctionDeclaration = {
         name: tool.id,
         description: tool.description
-      } as {
-        name: string
-        description: string
-        parameters?: {
-          type: string
-          properties: Record<string, Record<string, unknown>>
-          required: string[]
-        }
       }
       if (Object.keys(processedProperties).length > 0) {
         functionDeclaration.parameters = {
-          type: 'object',
+          type: Type.OBJECT,
           properties: processedProperties,
           required: tool.inputSchema.required || []
         }
