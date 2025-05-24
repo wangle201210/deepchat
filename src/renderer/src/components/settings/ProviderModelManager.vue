@@ -1,0 +1,71 @@
+<template>
+  <div class="flex flex-col items-start gap-2">
+    <Label :for="`${provider.id}-model`" class="flex-1 cursor-pointer">{{
+      t('settings.provider.modelList')
+    }}</Label>
+    <div class="flex flex-row gap-2 items-center">
+      <Button
+        variant="outline"
+        size="xs"
+        class="text-xs text-normal rounded-lg"
+        @click="$emit('show-model-list-dialog')"
+      >
+        <Icon icon="lucide:list-check" class="w-4 h-4 text-muted-foreground" />{{
+          t('settings.provider.enableModels')
+        }}
+      </Button>
+      <Button
+        variant="outline"
+        size="xs"
+        class="text-xs text-normal rounded-lg"
+        @click="$emit('disable-all-models')"
+        :disabled="enabledModels.length === 0"
+      >
+        <Icon icon="lucide:x-circle" class="w-4 h-4 text-muted-foreground" />{{
+          t('settings.provider.disableAllModels')
+        }}
+      </Button>
+      <span class="text-xs text-muted-foreground">
+        {{ enabledModels.length }}/{{ totalModelsCount }}
+        {{ t('settings.provider.modelsEnabled') }}
+      </span>
+    </div>
+    <div class="flex flex-col w-full border overflow-hidden rounded-lg">
+      <ModelConfigItem
+        v-for="model in enabledModels"
+        :key="model.id"
+        :model-name="model.name"
+        :model-id="model.id"
+        :group="model.group"
+        :enabled="model.enabled ?? false"
+        :vision="model.vision ?? false"
+        :function-call="model.functionCall ?? false"
+        :reasoning="model.reasoning ?? false"
+        @enabled-change="$emit('model-enabled-change', model, $event)"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Icon } from '@iconify/vue'
+import ModelConfigItem from './ModelConfigItem.vue'
+import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
+
+const { t } = useI18n()
+
+defineProps<{
+  provider: LLM_PROVIDER
+  enabledModels: RENDERER_MODEL_META[]
+  totalModelsCount: number
+}>()
+
+defineEmits<{
+  'show-model-list-dialog': []
+  'disable-all-models': []
+  'model-enabled-change': [model: RENDERER_MODEL_META, enabled: boolean]
+}>()
+</script>

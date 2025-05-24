@@ -27,8 +27,8 @@
           <Button
             variant="outline"
             size="icon"
-            @click="openAddSearchEngineDialog"
             :title="t('settings.common.addCustomSearchEngine')"
+            @click="openAddSearchEngineDialog"
           >
             <Icon icon="lucide:plus" class="w-4 h-4" />
           </Button>
@@ -36,8 +36,8 @@
             v-if="isCurrentEngineCustom"
             variant="outline"
             size="icon"
-            @click="currentEngine && openDeleteSearchEngineDialog(currentEngine)"
             :title="t('settings.common.deleteCustomSearchEngine')"
+            @click="currentEngine && openDeleteSearchEngineDialog(currentEngine)"
           >
             <Icon icon="lucide:trash-2" class="w-4 h-4 text-destructive" />
           </Button>
@@ -45,8 +45,8 @@
             v-if="isCurrentEngineCustom"
             variant="outline"
             size="icon"
-            @click="openTestSearchEngineDialog"
             :title="t('settings.common.testSearchEngine')"
+            @click="openTestSearchEngineDialog"
           >
             <Icon icon="lucide:flask-conical" class="w-4 h-4" />
           </Button>
@@ -446,6 +446,7 @@ const validateProxyUrl = () => {
 
   const urlPattern =
     /^(http|https):\/\/(?:([^:@\/]+)(?::([^@\/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
+
   const isValid = urlPattern.test(customProxyUrl.value)
 
   showUrlError.value = !isValid
