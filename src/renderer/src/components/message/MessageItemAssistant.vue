@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="messageNode"
     :data-message-id="message.id"
     class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
   >
@@ -100,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, useTemplateRef } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { AssistantMessage, AssistantMessageBlock } from '@shared/chat'
 import MessageBlockContent from './MessageBlockContent.vue'
 import MessageBlockThink from './MessageBlockThink.vue'
@@ -135,8 +134,6 @@ const props = defineProps<{
 const chatStore = useChatStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
-
-const messageNode = useTemplateRef('messageNode')
 
 // 定义事件
 const emit = defineEmits<{
