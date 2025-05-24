@@ -24,11 +24,6 @@
 - [📑 Table of Contents](#-table-of-contents)
 - [🚀 Project Introduction](#-project-introduction)
 - [💡 Why Choose DeepChat](#-why-choose-deepchat)
-- [📸 Feature Showcase](#-feature-showcase)
-  - [Reasoning Capabilities](#reasoning-capabilities)
-  - [Search Enhancement](#search-enhancement)
-  - [LaTeX Support](#latex-support)
-  - [Artifacts Support](#artifacts-support)
 - [🔥 Main Features](#-main-features)
 - [🤖 Supported Model Providers](#-supported-model-providers)
   - [Compatible with any model provider in OpenAI/Gemini/Anthropic API format](#compatible-with-any-model-provider-in-openaigeminianthropic-api-format)
@@ -52,6 +47,19 @@ DeepChat is a powerful open-source AI chat platform providing a unified interfac
 
 As a cross-platform AI assistant application, DeepChat not only supports basic chat functionality but also offers advanced features such as search enhancement, tool calling, and multimodal interaction, making AI capabilities more accessible and efficient.
 
+<table align="center">
+  <tr>
+    <td align="center" style="padding: 10px;">
+      <img src='https://github.com/user-attachments/assets/5df4ed93-e4b5-4430-a1e3-bd9beba79e64' alt="DeepChat Light Mode" width="400"/>
+      <br/>
+    </td>
+    <td align="center" style="padding: 10px;">
+      <img src='https://github.com/user-attachments/assets/79be4873-f80e-43a9-bfac-e1efb246ea99' alt="DeepChat Dark Mode" width="400"/>
+      <br/>
+    </td>
+  </tr>
+</table>
+
 ## 💡 Why Choose DeepChat
 
 Compared to other AI chat tools, DeepChat offers the following unique advantages:
@@ -62,32 +70,6 @@ Compared to other AI chat tools, DeepChat offers the following unique advantages
 - **Advanced Tool Calling**: Built-in MCP support enables code execution, web access, and other tools without additional configuration
 - **Privacy-Focused**: Local data storage and network proxy support reduce the risk of information leakage
 - **Business-Friendly**: Embraces open source under the Apache License 2.0, suitable for both commercial and personal use
-
-## 📸 Feature Showcase
-
-### Reasoning Capabilities
-
-<p align='center'>
-<img src='./build/screen.jpg' alt="DeepChat AI chat interface and reasoning functionality showcase"/>
-</p>
-
-### Search Enhancement
-
-<p align='center'>
-<img src='./build/screen.search.jpg' alt="DeepChat search enhancement functionality showcase"/>
-</p>
-
-### LaTeX Support
-
-<p align='center'>
-<img src='./build/screen.latex.jpg' alt="DeepChat LaTeX formula rendering functionality showcase"/>
-</p>
-
-### Artifacts Support
-
-<p align='center'>
-<img src='./build/screen.artifacts.jpg' alt="DeepChat Artifacts multimedia rendering functionality showcase"/>
-</p>
 
 ## 🔥 Main Features
 
@@ -138,8 +120,8 @@ Compared to other AI chat tools, DeepChat offers the following unique advantages
       <a href="https://www.siliconflow.cn/">Silicon</a>
     </td>
     <td>
-      <img src="./src/renderer/src/assets/llm-icons/qwen-color.svg" width="50" height="50" alt="QwenLM Icon"><br/>
-      <a href="https://chat.qwenlm.ai">QwenLM</a>
+      <img src="./src/renderer/src/assets/llm-icons/alibabacloud-color.svg" width="50" height="50" alt="DashScope Icon"><br/>
+      <a href="https://www.aliyun.com/product/bailian">DashScope</a>
     </td>
   </tr>
   <tr align="center">
@@ -196,6 +178,25 @@ Compared to other AI chat tools, DeepChat offers the following unique advantages
       <a href="https://x.ai/">Grok</a>
     </td>
   </tr>
+  <tr align="center">
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/zhipu-color.svg" width="50" height="50" alt="Zhipu Icon"><br/>
+      <a href="https://open.bigmodel.cn/">Zhipu</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/lmstudio.svg" width="50" height="50" alt="LM Studio Icon"><br/>
+      <a href="https://lmstudio.ai/">LM Studio</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/aihubmix.png" width="50" height="50" alt="AIHubMix Icon"><br/>
+      <a href="https://aihubmix.com/">AIHubMix</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/hunyuan-color.svg" width="50" height="50" alt="Hunyuan Icon"><br/>
+      <a href="https://cloud.tencent.com/product/hunyuan">Hunyuan</a>
+    </td>
+  </tr>
+
 </table>
 
 ### Compatible with any model provider in OpenAI/Gemini/Anthropic API format

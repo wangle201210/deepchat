@@ -2,9 +2,9 @@
 <img src='./build/icon.png' width="150" height="150" alt="DeepChat AI アシスタントアイコン" />
 </p>
 
-<h1 align="center">DeepChat - パワフルなオープンソースマルチモデルAIチャットプラットフォーム</h1>
+<h1 align="center">DeepChat - 強力なオープンソースマルチモデルAIチャットプラットフォーム</h1>
 
-<p align="center">DeepChatは、強力な検索機能とツール呼び出し機能を備えた、複数のクラウドおよびローカルの大規模言語モデルをサポートする機能豊富なオープンソースAIチャットプラットフォームです。</p>
+<p align="center">DeepChatは、複数のクラウドおよびローカル大規模言語モデルをサポートする機能豊富なオープンソースAIチャットプラットフォームです。強力な検索強化機能とツール呼び出し機能を提供します。</p>
 
 <p align="center">
   <a href="https://github.com/ThinkInAIXYZ/deepchat/stargazers"><img src="https://img.shields.io/github/stars/ThinkInAIXYZ/deepchat" alt="Stars Badge"/></a>
@@ -24,11 +24,6 @@
 - [📑 目次](#-目次)
 - [🚀 プロジェクト紹介](#-プロジェクト紹介)
 - [💡 なぜDeepChatを選ぶのか](#-なぜdeepchatを選ぶのか)
-- [📸 機能のショーケース](#-機能のショーケース)
-  - [推論能力](#推論能力)
-  - [検索拡張](#検索拡張)
-  - [LaTeXサポート](#latexサポート)
-  - [アーティファクトサポート](#アーティファクトサポート)
 - [🔥 主な機能](#-主な機能)
 - [🤖 サポートされているモデルプロバイダー](#-サポートされているモデルプロバイダー)
   - [OpenAI/Gemini/Anthropic API形式の任意のモデルプロバイダーと互換性あり](#openaigeminianthropic-api形式の任意のモデルプロバイダーと互換性あり)
@@ -50,7 +45,20 @@
 
 DeepChatは、様々な大規模言語モデルと対話するための統一されたインターフェースを提供する強力なオープンソースAIチャットプラットフォームです。OpenAI、Gemini、AnthropicなどのクラウドAPIや、ローカルにデプロイされたOllamaモデルを使用する場合でも、DeepChatはスムーズなユーザー体験を提供します。
 
-クロスプラットフォームAIアシスタントアプリケーションとして、DeepChatは基本的なチャット機能をサポートするだけでなく、検索拡張、ツール呼び出し、マルチモーダル対話などの高度な機能も提供し、AI機能をより身近で効率的なものにします。
+クロスプラットフォームAIアシスタントアプリケーションとして、DeepChatは基本的なチャット機能をサポートするだけでなく、検索強化、ツール呼び出し、マルチモーダル対話などの高度な機能も提供し、AI機能をより身近で効率的なものにします。
+
+<table align="center">
+  <tr>
+    <td align="center" style="padding: 10px;">
+      <img src='https://github.com/user-attachments/assets/49b32cf8-f114-485f-886e-27e4ac273afa' alt="DeepChat ライトモード" width="400"/>
+      <br/>
+    </td>
+    <td align="center" style="padding: 10px;">
+      <img src='https://github.com/user-attachments/assets/1a540ef5-7598-4476-ab32-36cbad306484' alt="DeepChat ダークモード" width="400"/>
+      <br/>
+    </td>
+  </tr>
+</table>
 
 ## 💡 なぜDeepChatを選ぶのか
 
@@ -58,36 +66,10 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
 
 - **統一されたマルチモデル管理**: 1つのアプリケーションでほぼすべての主要なLLMをサポートし、複数のアプリを切り替える必要がありません
 - **シームレスなローカルモデル統合**: 組み込みのOllamaサポートにより、コマンドライン操作なしでローカルモデルを管理・使用できます
-- **強力な検索拡張**: 複数の検索エンジンをサポートし、AIの応答をより正確でタイムリーにします
+- **強力な検索強化**: 複数の検索エンジンをサポートし、AIの応答をより正確でタイムリーにします
 - **高度なツール呼び出し**: 組み込みのMCPサポートにより、追加設定なしでコード実行、ウェブアクセス、その他のツールを利用可能です
 - **プライバシー重視**: ローカルデータストレージとネットワークプロキシのサポートにより、情報漏洩のリスクを軽減します
 - **ビジネスフレンドリー**: Apache License 2.0の下でオープンソース化され、商用・個人利用の両方に適しています
-
-## 📸 機能のショーケース
-
-### 推論能力
-
-<p align='center'>
-<img src='./build/screen.jpg' alt="DeepChat AIチャットインターフェースと推論機能のショーケース"/>
-</p>
-
-### 検索拡張
-
-<p align='center'>
-<img src='./build/screen.search.jpg' alt="DeepChat検索拡張機能のショーケース"/>
-</p>
-
-### LaTeXサポート
-
-<p align='center'>
-<img src='./build/screen.latex.jpg' alt="DeepChat LaTeX数式レンダリング機能のショーケース"/>
-</p>
-
-### アーティファクトサポート
-
-<p align='center'>
-<img src='./build/screen.artifacts.jpg' alt="DeepChatアーティファクトマルチメディアレンダリング機能のショーケース"/>
-</p>
 
 ## 🔥 主な機能
 
@@ -102,11 +84,11 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
   - メッセージは複数のバリエーションを生成するためのリトライをサポート。会話は自由にフォーク可能で、常に適切な思考の流れを確保
   - 画像、Mermaidダイアグラム、その他のマルチモーダルコンテンツのレンダリングをサポート。Geminiのテキストから画像生成機能を含む
   - 検索結果などの外部情報ソースをコンテンツ内でハイライト表示
-- 🔍 **強力な検索拡張機能**
+- 🔍 **強力な検索強化機能**
   - MCPモードでBrave Searchなどの主要な検索APIを組み込み、モデルが検索のタイミングを賢く判断
   - ユーザーのウェブブラウジングをシミュレートすることで、Google、Bing、Baidu、Sogou公式アカウント検索などの主要検索エンジンをサポート
   - あらゆる検索エンジンの読み取りをサポート。検索アシスタントモデルを設定するだけで、内部ネットワーク、APIなしのエンジン、垂直ドメイン検索エンジンなど、様々な情報ソースをモデルに接続可能
-- 🔧 **優れたMCP（Model Controller Platform）サポート**
+- 🔧 **優れたMCP（モデル制御プラットフォーム）サポート**
   - 非常にユーザーフレンドリーな設定インターフェース
   - 美しく明確なツール呼び出し表示
   - ツールパラメータとリターンデータの自動フォーマット機能を備えた詳細なツール呼び出しデバッグウィンドウ
@@ -119,7 +101,7 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
 - 🔗 **豊富なDeepLinkサポート**: リンクを通じて会話を開始し、他のアプリケーションとシームレスに統合。MCPサービスのワンクリックインストールもサポートし、シンプルさとスピードを実現
 - 🚑 **セキュリティ重視の設計**: チャットデータと設定データに暗号化インターフェースとコード難読化機能を備える
 - 🛡️ **プライバシー保護**: スクリーン投影の非表示、ネットワークプロキシなどのプライバシー保護方法をサポートし、情報漏洩のリスクを軽減
-- 💰 **ビジネスフレンドリー**、オープンソースを採用し、Apache License 2.0プロトコルに基づく
+- 💰 **ビジネスフレンドリー**: オープンソースを採用し、Apache License 2.0ライセンスに基づく
 
 ## 🤖 サポートされているモデルプロバイダー
 
@@ -138,8 +120,8 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
       <a href="https://www.siliconflow.cn/">Silicon</a>
     </td>
     <td>
-      <img src="./src/renderer/src/assets/llm-icons/qwen-color.svg" width="50" height="50" alt="QwenLM Icon"><br/>
-      <a href="https://chat.qwenlm.ai">QwenLM</a>
+      <img src="./src/renderer/src/assets/llm-icons/alibabacloud-color.svg" width="50" height="50" alt="DashScope Icon"><br/>
+      <a href="https://www.aliyun.com/product/bailian">DashScope</a>
     </td>
   </tr>
   <tr align="center">
@@ -196,6 +178,25 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
       <a href="https://x.ai/">Grok</a>
     </td>
   </tr>
+  <tr align="center">
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/zhipu-color.svg" width="50" height="50" alt="Zhipu Icon"><br/>
+      <a href="https://open.bigmodel.cn/">Zhipu</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/lmstudio.svg" width="50" height="50" alt="LM Studio Icon"><br/>
+      <a href="https://lmstudio.ai/">LM Studio</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/aihubmix.png" width="50" height="50" alt="AIHubMix Icon"><br/>
+      <a href="https://aihubmix.com/">AIHubMix</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/hunyuan-color.svg" width="50" height="50" alt="Hunyuan Icon"><br/>
+      <a href="https://cloud.tencent.com/product/hunyuan">Hunyuan</a>
+    </td>
+  </tr>
+
 </table>
 
 ### OpenAI/Gemini/Anthropic API形式の任意のモデルプロバイダーと互換性あり
@@ -204,7 +205,7 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
 
 DeepChatは様々なAIアプリケーションシナリオに適しています：
 
-- **日常のアシスタント**: 質問への回答、提案の提供、文章作成の支援
+- **日常アシスタント**: 質問への回答、提案の提供、文章作成の支援
 - **開発支援**: コード生成、デバッグ、技術的問題の解決
 - **学習ツール**: 概念の説明、知識の探求、学習ガイダンス
 - **コンテンツ作成**: コピーライティング、クリエイティブなインスピレーション、コンテンツの最適化

@@ -24,11 +24,6 @@
 - [📑 目录](#-目录)
 - [🚀 项目简介](#-项目简介)
 - [💡 为什么选择DeepChat](#-为什么选择deepchat)
-- [📸 功能展示](#-功能展示)
-  - [推理能力](#推理能力)
-  - [搜索增强](#搜索增强)
-  - [LaTeX支持](#latex支持)
-  - [Artifacts支持](#artifacts支持)
 - [🔥 主要功能](#-主要功能)
 - [🤖 支持的模型提供商](#-支持的模型提供商)
   - [兼容任何OpenAI/Gemini/Anthropic API格式的模型提供商](#兼容任何openaigeminianthropic-api格式的模型提供商)
@@ -52,6 +47,18 @@ DeepChat是一个功能强大的开源AI聊天平台，为用户提供与多种�
 
 作为一个跨平台的AI助手应用，DeepChat不仅支持基础的聊天功能，还提供了搜索增强、工具调用、多模态交互等高级特性，让AI能力的应用更加便捷和高效。
 
+<table align="center">
+  <tr>
+    <td align="center" style="padding: 10px;">
+      <img src='https://github.com/user-attachments/assets/086c4545-6d07-497d-9655-106d00e82ae6' alt="DeepChat Light" width="400"/>
+      <br/>
+    </td>
+    <td align="center" style="padding: 10px;">
+      <img src='https://github.com/user-attachments/assets/5c3a5e7a-ebe6-4833-8809-9982d8541190' alt="DeepChat Dark" width="400"/>
+      <br/>
+    </td>
+  </tr>
+</table>
 ## 💡 为什么选择DeepChat
 
 与其他AI聊天工具相比，DeepChat具有以下独特优势：
@@ -62,32 +69,6 @@ DeepChat是一个功能强大的开源AI聊天平台，为用户提供与多种�
 - **高级工具调用**：内置MCP支持，无需额外配置即可使用代码执行、网络访问等工具
 - **注重隐私保护**：本地数据存储，支持网络代理，减少信息泄露风险
 - **开源友好**：基于Apache License 2.0协议，适合商业和个人使用
-
-## 📸 功能展示
-
-### 推理能力
-
-<p align='center'>
-<img src='./build/screen.jpg' alt="DeepChat AI聊天界面与推理功能展示"/>
-</p>
-
-### 搜索增强
-
-<p align='center'>
-<img src='./build/screen.search.jpg' alt="DeepChat搜索增强功能展示"/>
-</p>
-
-### LaTeX支持
-
-<p align='center'>
-<img src='./build/screen.latex.jpg' alt="DeepChat LaTeX公式渲染功能展示"/>
-</p>
-
-### Artifacts支持
-
-<p align='center'>
-<img src='./build/screen.artifacts.jpg' alt="DeepChat Artifacts多媒体渲染功能展示"/>
-</p>
 
 ## 🔥 主要功能
 
@@ -138,8 +119,8 @@ DeepChat是一个功能强大的开源AI聊天平台，为用户提供与多种�
       <a href="https://www.siliconflow.cn/">Silicon</a>
     </td>
     <td>
-      <img src="./src/renderer/src/assets/llm-icons/qwen-color.svg" width="50" height="50" alt="QwenLM图标"><br/>
-      <a href="https://chat.qwenlm.ai">QwenLM</a>
+      <img src="./src/renderer/src/assets/llm-icons/alibabacloud-color.svg" width="50" height="50" alt="DashScope图标"><br/>
+      <a href="https://www.aliyun.com/product/bailian">DashScope</a>
     </td>
   </tr>
   <tr align="center">
@@ -196,6 +177,25 @@ DeepChat是一个功能强大的开源AI聊天平台，为用户提供与多种�
       <a href="https://x.ai/">Grok</a>
     </td>
   </tr>
+  <tr align="center">
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/zhipu-color.svg" width="50" height="50" alt="智谱图标"><br/>
+      <a href="https://open.bigmodel.cn/">智谱</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/lmstudio.svg" width="50" height="50" alt="LM Studio图标"><br/>
+      <a href="https://lmstudio.ai/">LM Studio</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/aihubmix.png" width="50" height="50" alt="AIHubMix图标"><br/>
+      <a href="https://aihubmix.com/">AIHubMix</a>
+    </td>
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/hunyuan-color.svg" width="50" height="50" alt="混元图标"><br/>
+      <a href="https://cloud.tencent.com/product/hunyuan">混元</a>
+    </td>
+  </tr>
+
 </table>
 
 ### 兼容任何OpenAI/Gemini/Anthropic API格式的模型提供商
