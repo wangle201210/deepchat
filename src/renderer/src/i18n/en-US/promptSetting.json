@@ -17,6 +17,7 @@
   "exportFailed": "Export failed",
   "importSuccess": "Import successful",
   "importFailed": "Import failed",
+  "importStats": "Added {added}, updated {updated} prompts",
   "parameters": "Parameters",
   "addParameter": "Add Parameter",
   "noParameters": "No parameters",
