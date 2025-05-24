@@ -17,6 +17,7 @@
   "exportFailed": "Ошибка экспорта",
   "importSuccess": "Импорт успешен",
   "importFailed": "Ошибка импорта",
+  "importStats": "Добавлено {added}, обновлено {updated} промптов",
   "parameters": "Параметры",
   "addParameter": "Добавить параметр",
   "noParameters": "Нет параметров",

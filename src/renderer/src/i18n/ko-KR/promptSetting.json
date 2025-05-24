@@ -17,6 +17,7 @@
   "exportFailed": "내보내기 실패",
   "importSuccess": "가져오기 성공",
   "importFailed": "가져오기 실패",
+  "importStats": "{added}개 추가, {updated}개 프롬프트 업데이트됨",
   "parameters": "매개변수",
   "addParameter": "매개변수 추가",
   "noParameters": "매개변수 없음",

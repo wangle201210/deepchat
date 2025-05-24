@@ -324,23 +324,70 @@ const importPrompts = () => {
         try {
           const content = event.target?.result as string
           const importedPrompts = JSON.parse(content)
+          
           if (Array.isArray(importedPrompts)) {
-            await promptsStore.savePrompts(importedPrompts)
+            // 获取当前所有提示词
+            const currentPrompts = [...prompts.value]
+            
+            // 创建一个 Map 来快速查找现有提示词
+            const currentPromptsMap = new Map(currentPrompts.map(p => [p.id, p]))
+            
+            let updatedCount = 0
+            let addedCount = 0
+            
+            // 处理导入的每个提示词
+            for (const importedPrompt of importedPrompts) {
+              if (!importedPrompt.id) {
+                // 如果导入的提示词没有ID，生成一个新的ID
+                importedPrompt.id = Date.now().toString() + Math.random().toString(36).substr(2, 9)
+              }
+              
+              if (currentPromptsMap.has(importedPrompt.id)) {
+                // 如果ID已存在，更新现有提示词
+                const index = currentPrompts.findIndex(p => p.id === importedPrompt.id)
+                if (index !== -1) {
+                  currentPrompts[index] = importedPrompt
+                  updatedCount++
+                }
+              } else {
+                // 如果ID不存在，添加新提示词
+                currentPrompts.push(importedPrompt)
+                addedCount++
+              }
+            }
+            
+            // 保存合并后的提示词
+            // 使用 toRaw 处理响应式对象，避免克隆错误
+            const rawPrompts = currentPrompts.map(prompt => toRaw(prompt))
+            await promptsStore.savePrompts(rawPrompts)
             await loadPrompts()
+            
             toast({
               title: t('promptSetting.importSuccess'),
+              description: `${t('promptSetting.importStats', { added: addedCount, updated: updatedCount })}`,
               variant: 'default'
             })
           } else {
-            throw new Error('Invalid format')
+            throw new Error('Invalid format: not an array')
           }
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error)
           toast({
             title: t('promptSetting.importFailed'),
+            description: `错误: ${errorMessage}`,
             variant: 'destructive'
           })
         }
       }
+      
+      reader.onerror = () => {
+        toast({
+          title: t('promptSetting.importFailed'),
+          description: '文件读取失败',
+          variant: 'destructive'
+        })
+      }
+      
       reader.readAsText(file)
     }
   }

@@ -17,6 +17,7 @@
   "exportFailed": "導出失敗",
   "importSuccess": "導入成功",
   "importFailed": "導入失敗",
+  "importStats": "新增了 {added} 個，更新了 {updated} 個提示詞",
   "parameters": "參數",
   "addParameter": "添加參數",
   "noParameters": "暫無參數",
