@@ -161,6 +161,10 @@
     "fastGptKnowledge": {
       "name": "FastGPT知識庫檢索",
       "desc": "FastGPT知識庫檢索服務，可以對FastGPT知識庫內容進行檢索"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "DeepChat內置自定義提示詞服務",
+      "name": "自定義提示詞"
     }
   },
   "prompts": {

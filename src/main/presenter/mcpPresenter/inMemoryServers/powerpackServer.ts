@@ -1,10 +1,5 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  ListPromptsRequestSchema,
-  GetPromptRequestSchema
-} from '@modelcontextprotocol/sdk/types.js'
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
@@ -16,7 +11,6 @@ import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { nanoid } from 'nanoid'
 import { runCode, type CodeFile } from '../pythonRunner'
-import { presenter } from '@/presenter'
 
 // Schema 定义
 const GetTimeArgsSchema = z.object({
@@ -76,16 +70,6 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   /process\.env/gi
 ]
 
-interface PromptDefinition {
-  name: string
-  description: string
-  arguments: Array<{
-    name: string
-    description: string
-    required: boolean
-  }>
-}
-
 export class PowerpackServer {
   private server: Server
   private nodeRuntimePath: string | null = null
@@ -102,8 +86,7 @@ export class PowerpackServer {
       },
       {
         capabilities: {
-          tools: {},
-          prompts: {}
+          tools: {}
         }
       }
     )
@@ -226,63 +209,6 @@ export class PowerpackServer {
       return result.output.join('\n')
     } else {
       throw new Error(result.error)
-    }
-  }
-
-  // 获取提示词列表
-  private async getPromptsList(): Promise<PromptDefinition[]> {
-    try {
-      const prompts = await presenter.configPresenter.getCustomPrompts()
-
-      if (!prompts || prompts.length === 0) {
-        return []
-      }
-
-      return prompts.map((prompt) => ({
-        name: prompt.name,
-        description: prompt.description,
-        arguments: prompt.parameters
-          ? prompt.parameters.map((param) => ({
-              name: param.name,
-              description: param.description,
-              required: !!param.required
-            }))
-          : []
-      }))
-    } catch (error) {
-      return []
-    }
-  }
-
-  // 获取提示词内容
-  private async getPromptContent(name: string, content: string, args?: Record<string, string>) {
-    const prompts = await presenter.configPresenter.getCustomPrompts()
-    if (!prompts || prompts.length === 0) throw new Error('No prompts found')
-
-    const prompt = prompts.find((p) => p.name === name)
-    if (!prompt) throw new Error('Prompt not found')
-
-    let promptContent = prompt.content
-
-    // 替换参数占位符
-    if (args && prompt.parameters) {
-      // 遍历所有参数，并替换内容中的{{参数名}}
-      for (const param of prompt.parameters) {
-        const value = args[param.name] || ''
-        promptContent = promptContent.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
-      }
-    }
-
-    return {
-      messages: [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            text: `${promptContent}\n\n${content}`
-          }
-        }
-      ]
     }
   }
 
@@ -459,38 +385,6 @@ export class PowerpackServer {
         return {
           content: [{ type: 'text', text: `错误: ${errorMessage}` }],
           isError: true
-        }
-      }
-    })
-
-    // 设置提示词列表处理器
-    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
-      const prompts = await this.getPromptsList()
-      return { prompts }
-    })
-
-    // 设置提示词获取处理器
-    this.server.setRequestHandler(GetPromptRequestSchema, async (request) => {
-      try {
-        const { name, arguments: args } = request.params
-        const response = await this.getPromptContent(name, '', args as Record<string, string>)
-        return {
-          messages: response.messages,
-          _meta: {}
-        }
-      } catch (error) {
-        console.error('获取提示词内容失败:', error)
-        return {
-          messages: [
-            {
-              role: 'system',
-              content: {
-                type: 'text',
-                text: `Error: ${error instanceof Error ? error.message : String(error)}`
-              }
-            }
-          ],
-          _meta: {}
         }
       }
     })

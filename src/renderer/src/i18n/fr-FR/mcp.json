@@ -161,6 +161,10 @@
     "fastGptKnowledge": {
       "name": "Recherche dans la base de connaissances FastGPT",
       "desc": "Service de recherche dans la base de connaissances FastGPT, peut rechercher le contenu de la base de connaissances FastGPT"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "Service de mot invite personnalisé intégré Deepchat intégré",
+      "name": "Mots rapides personnalisés"
     }
   },
   "prompts": {

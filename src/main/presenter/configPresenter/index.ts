@@ -14,7 +14,7 @@ import path from 'path'
 import { app, nativeTheme, shell } from 'electron'
 import fs from 'fs'
 import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
-import { McpConfHelper } from './mcpConfHelper'
+import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
 import { defaultModelsSettings } from './modelDefaultSettings'
@@ -703,8 +703,28 @@ export class ConfigPresenter implements IConfigPresenter {
   // ===================== MCP配置相关方法 =====================
 
   // 获取MCP服务器配置
-  getMcpServers(): Promise<Record<string, MCPServerConfig>> {
-    return this.mcpConfHelper.getMcpServers()
+  async getMcpServers(): Promise<Record<string, MCPServerConfig>> {
+    const servers = await this.mcpConfHelper.getMcpServers()
+
+    // 检查是否有自定义提示词，如果有则添加 custom-prompts-server
+    try {
+      const customPrompts = await this.getCustomPrompts()
+      if (customPrompts && customPrompts.length > 0) {
+        const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server'
+        const systemServers = SYSTEM_INMEM_MCP_SERVERS[customPromptsServerName]
+
+        if (systemServers && !servers[customPromptsServerName]) {
+          servers[customPromptsServerName] = systemServers
+          servers[customPromptsServerName].disable = false
+          servers[customPromptsServerName].autoApprove = ['all']
+          console.log('检测到自定义提示词，添加 custom-prompts-server')
+        }
+      }
+    } catch (error) {
+      console.log('检查自定义提示词时出错:', error)
+    }
+
+    return servers
   }
 
   // 设置MCP服务器配置

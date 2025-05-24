@@ -161,6 +161,10 @@
     "fastGptKnowledge": {
       "name": "FastGPT知識ベース検索",
       "desc": "FastGPT知識ベース検索サービス、FastGPT知識ベースのコンテンツを検索できます"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "Deepchatビルトインカスタムプロンプトワードサービス",
+      "name": "カスタムプロンプトワード"
     }
   },
   "prompts": {
