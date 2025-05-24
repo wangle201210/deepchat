@@ -9,6 +9,7 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { proxyConfig } from '@/presenter/proxyConfig'
+import { presenter } from '@/presenter'
 
 // Schema definitions for deep research tool
 const DeepResearchArgsSchema = z.object({
@@ -141,10 +142,6 @@ const DeepResearchArgsSchema = z.object({
     .string()
     .optional()
     .describe('Custom prompt for LLM documentation generation.'),
-  output_path: z
-    .string()
-    .optional()
-    .describe('Path where generated research documents should be saved.'),
   hardware_acceleration: z
     .boolean()
     .optional()
@@ -276,7 +273,7 @@ class WebCrawler {
       // 并发处理当前批次的URL
       const batchPromises = batch.map(({ url, depth }) =>
         this.crawlSinglePage(url, depth).catch((error) => {
-          console.error(`爬取失败 ${url}:`, error.message)
+          console.error(`Failed to crawl ${url}:`, error.message)
           return null
         })
       )
@@ -360,7 +357,7 @@ class WebCrawler {
       }
     } catch (error: unknown) {
       const err = error as Error
-      console.error(`爬取页面失败 ${url}:`, err.message)
+      console.error(`Failed to crawl page ${url}:`, err.message)
       return null
     }
   }
@@ -530,7 +527,7 @@ export class DeepResearchServer {
   constructor(env?: Record<string, unknown>) {
     // 只检查博查API密钥
     if (!env?.BOCHA_API_KEY) {
-      throw new Error('需要提供BOCHA_API_KEY')
+      throw new Error('BOCHA_API_KEY is required')
     }
     this.bochaApiKey = env.BOCHA_API_KEY as string
 
@@ -589,22 +586,11 @@ export class DeepResearchServer {
         const researchArgs = parsed.data
 
         // 确定文档生成提示
-        let finalDocumentationPrompt = DEFAULT_DOCUMENTATION_PROMPT
-        if (researchArgs.documentation_prompt) {
-          finalDocumentationPrompt = researchArgs.documentation_prompt
-        }
-
-        // 确定输出路径
-        let finalOutputPath = ''
-        if (researchArgs.output_path) {
-          finalOutputPath = researchArgs.output_path
-        } else {
-          const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '')
-          finalOutputPath = `./research/${timestamp}`
-        }
+        const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN'
+        const finalDocumentationPrompt = `${DEFAULT_DOCUMENTATION_PROMPT}\nUser's current system language is ${locale}, please respond in the system language unless specified otherwise.`
 
         try {
-          console.log('使用博查搜索进行深度研究')
+          console.log('Starting deep research using Bocha Search')
           const results = await this.performDeepResearch(researchArgs)
 
           const outputText = JSON.stringify(
@@ -612,8 +598,7 @@ export class DeepResearchServer {
               documentation_instructions: finalDocumentationPrompt,
               original_query: researchArgs.query,
               search_summary: results.summary,
-              research_data: results.results,
-              output_path: finalOutputPath
+              research_data: results.results
             },
             null,
             2
@@ -637,8 +622,7 @@ export class DeepResearchServer {
             {
               documentation_instructions: finalDocumentationPrompt,
               error: errorMessage,
-              original_query: researchArgs.query,
-              output_path: finalOutputPath
+              original_query: researchArgs.query
             },
             null,
             2
@@ -695,7 +679,7 @@ export class DeepResearchServer {
         timeout: args.crawl_timeout || 180
       }
 
-      console.log(`开始深度爬取 ${searchResults.results.length} 个搜索结果...`)
+      console.log(`Starting deep crawl for ${searchResults.results.length} search results...`)
 
       const enhancedResults: CombinedResult[] = []
 
@@ -715,7 +699,7 @@ export class DeepResearchServer {
           }
         } catch (error: unknown) {
           const err = error as Error
-          console.error(`爬取错误 ${result.original_url}:`, err.message)
+          console.error(`Crawl error for ${result.original_url}:`, err.message)
           return {
             ...result,
             crawl_errors: [`Failed to crawl ${result.original_url}: ${err.message}`]
@@ -730,10 +714,10 @@ export class DeepResearchServer {
         (sum, result) => sum + result.crawled_data.length,
         0
       )
-      const enhancedSummary = `${searchResults.summary} 深度爬取获得 ${totalCrawledPages} 个页面内容。`
+      const enhancedSummary = `${searchResults.summary} Deep crawling obtained ${totalCrawledPages} page contents.`
 
       console.log(
-        `深度研究完成: ${enhancedResults.length} 个搜索结果，${totalCrawledPages} 个爬取页面`
+        `Deep research completed: ${enhancedResults.length} search results, ${totalCrawledPages} crawled pages`
       )
 
       return {
@@ -742,8 +726,8 @@ export class DeepResearchServer {
       }
     } catch (error: unknown) {
       const axiosError = error as { response?: { data?: { error?: string } }; message?: string }
-      console.error('深度研究错误:', axiosError.message)
-      throw new Error(`深度研究失败: ${axiosError.message}`)
+      console.error('Deep research error:', axiosError.message)
+      throw new Error(`Deep research failed: ${axiosError.message}`)
     }
   }
 
