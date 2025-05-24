@@ -1,15 +1,15 @@
-/**
- * @module detect
+/** 
+ * @module detectLanguage
  * (Language detector)
- */
-
-/**
- * Supported language identifiers
  */
 export type CodeLanguage =
   | 'bash'
-  | 'html'
+  | 'dos'
+  | 'go'
+  | 'powershell'
+  | 'plain'
   | 'http'
+  | 'html'
   | 'js'
   | 'ts'
   | 'py'
@@ -25,107 +25,192 @@ export type CodeLanguage =
   | 'xml'
   | 'c'
   | 'rs'
-  | 'go'
   | 'java'
   | 'asm'
   | 'json'
   | 'yaml'
   | 'toml'
   | 'mermaid'
-  | 'plain'
 
-/**
- * Language detection feature with pattern and score
- */
 type LanguageFeature = [RegExp, number]
-
-/**
- * Language definition with identifier and detection features
- */
 type LanguageDefinition = [CodeLanguage, ...LanguageFeature[]]
 
-/**
- * Language detection definitions
- */
+const SHEBANG_MAP: Array<[RegExp, CodeLanguage]> = [
+  [/\b(bash|sh)\b/i, 'bash'],
+  [/\b(node|nodejs|iojs)\b/i, 'js'],
+  [/\b(python|python3|py)\b/i, 'py'],
+  [/\b(powershell|pwsh|posh)\b/i, 'powershell']
+]
+
 const languages: LanguageDefinition[] = [
-  ['bash', [/#!(\/usr)?\/bin\/bash/g, 500], [/\b(if|elif|then|fi|echo)\b|\$/g, 10]],
-  ['html', [/<\/?[a-z-]+[^\n>]*>/g, 10], [/^\s+<!DOCTYPE\s+html/g, 500]],
-  ['http', [/^(GET|HEAD|POST|PUT|DELETE|PATCH|HTTP)\b/g, 500]],
+  [
+    'bash',
+    [/^#!.*\b(bash|sh)\b/i, 500],
+    [
+      /(^|\s)(if|elif|then|fi|for|while|do|done|function|source|exit|read|cat|grep|sed|awk|cut|tr|wc|ps|kill|sleep|mkdir|rm|cp|mv|ls|pwd|chmod|chown|tar|zip|unzip|which|find|expr|test|[[|]]|&&|\|\||\$[0-9])\b/gi,
+      5
+    ]
+  ],
+  [
+    'dos',
+    [/^@echo off/i, 500],
+    [/^\s*rem\b/i, 500],
+    [
+      /^\s*(goto|call|start|setlocal|endlocal|ping|net|copy|del|move|dir|md|rd|ren|type|findstr|choice|timeout|cls|title|color|path|assoc|ftype|start|reg|tasklist|taskkill|wmic|powershell|cmd|echo)\b/i,
+      10
+    ]
+  ],
+  [
+    'go',
+    [/\bpackage\s+main\b/gi, 500],
+    [/\bimport\s+$$.*$$/gi, 400],
+    [/\bfunc\s+\w+\s*$$/gi, 300],
+    [/\bfmt\.(Print(ln)?|Sprint)/gi, 200],
+    [/\btype\s+\w+\s+struct\s*{/gi, 100]
+  ],
+  [
+    'powershell',
+    [/^#requires -version/i, 500],
+    [/^param\s*$$/i, 400],
+    [/^(function|filter|class)\s+/i, 300],
+    [/^Write-(Host|Output|Warning|Error)/i, 200],
+    [/^\$(args|PSVersionTable|MyInvocation|PSScriptRoot)/i, 150],
+    [/^\s*(if|foreach|for|while|switch|try|catch|finally|return|continue|break)\b/i, 50]
+  ],
+  [
+    'http',
+    // 降低高分特征值，防止压制 uri
+    [/^(GET|HEAD|POST|PUT|DELETE|PATCH|CONNECT|OPTIONS|TRACE)\s+\S+\s+HTTP\/\d\.\d$/gim, 600],
+    [/^Host:\s+\S+/gim, 50],
+    [/^User-Agent:/gim, 20],
+    [/^(GET|POST|PUT|DELETE)\s+\//i, 40]
+  ],
+  ['html', [/<\/?[a-z-]+[^\n>]*>/g, 10], [/^\s+<!DOCTYPE\s+html/gi, 500]],
   [
     'js',
     [
-      /\b(console|await|async|function|export|import|this|class|for|let|const|map|join|require)\b/g,
+      /\b(console|await|async|function|export|import|this|class|for|let|const|map|join|require)\b/gi,
       10
     ]
   ],
   [
     'ts',
     [
-      /\b(console|await|async|function|export|import|this|class|for|let|const|map|join|require|implements|interface|namespace)\b/g,
+      /\b(console|await|async|function|export|import|this|class|for|let|const|map|join|require|implements|interface|namespace)\b/gi,
       10
     ]
   ],
-  ['sql', [/\b(SELECT|INSERT|FROM)\b/g, 50]],
-  ['pl', [/#!(\/usr)?\/bin\/perl/g, 500], [/\b(use|print)\b|\$/g, 10]],
-  ['lua', [/#!(\/usr)?\/bin\/lua/g, 500]],
+  ['sql', [/\b(SELECT|INSERT|FROM)\b/gi, 50]],
+  ['pl', [/#!(\/usr)?\/bin\/perl/gi, 500], [/\b(use|print)\b|\$/gi, 10]],
+  ['lua', [/#!(\/usr)?\/bin\/lua/gi, 500]],
   ['make', [/\b(ifneq|endif|if|elif|then|fi|echo|.PHONY|^[a-z]+ ?:$)\b|\$/gm, 10]],
-  ['uri', [/https?:|mailto:|tel:|ftp:/g, 30]],
-  ['css', [/^(@import|@page|@media|(\.|#)[a-z]+)/gm, 20]],
-  ['diff', [/^[+><-]/gm, 10], [/^@@ ?[-+,0-9 ]+ ?@@/gm, 25]],
-  ['md', [/^(>|\t\*|\t\d+.|#{1,6} |-\s+|\*\s+)/gm, 25], [/\[.*\](.*)/g, 10]],
-  ['docker', [/^(FROM|ENTRYPOINT|RUN)/gm, 500]],
-  ['xml', [/<\/?[a-z-]+[^\n>]*>/g, 10], [/^<\?xml/g, 500]],
-  ['c', [/#include\b|\bprintf\s+\(/g, 100]],
-  ['rs', [/^\s+(use|fn|mut|match)\b/gm, 100]],
-  ['go', [/\b(func|fmt|package)\b/g, 100]],
-  ['java', [/^import\s+java/gm, 500]],
-  ['asm', [/^(section|global main|extern|\t(call|mov|ret))/gm, 100]],
-  ['css', [/^(@import|@page|@media|(\.|#)[a-z]+)/gm, 20]],
-  ['json', [/\b(true|false|null|\{})\b|"[^"]+":/g, 10]],
+  [
+    'uri',
+    // 提升基础正则得分
+    [/[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s'"<>]+/gi, 200],
+    [/\bdata:(?:[a-zA-Z0-9+.-]+\/[a-zA-Z0-9+.-]+)?;base64,[a-zA-Z0-9+/=]+\b/gi, 150],
+    [/\b(urn:[a-zA-Z0-9][a-zA-Z0-9\-+:.]*)\b/gi, 100],
+    [/\bfile:\/\/(?:localhost|[^?\s'"<>]+)/gi, 120],
+    [/\bmailto:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/gi, 120],
+    [/(https?:\/\/|www\.)[^\s'"<>]+/gi, 180], // 支持无 scheme 的 www 网址
+    [/\b(https?|ftps?|wss?|file|telnet|ldap|xmpp|irc|nntp|news|gopher)\b:/i, 50]
+  ],
+  ['css', [/^(@import|@page|@media|(\.|#)[a-z]+)/gim, 20]],
+  [
+    'diff',
+    [/^[+]\s[^\n]/gm, 50],
+    [/^[-]\s[^\n]/gm, 50],
+    [/^[<]\s[^\n]/gm, 40],
+    [/^[>]\s[^\n]/gm, 40],
+    [/^@@\s+[-+,0-9\s]+@@/gm, 100],
+    [/^---\s+a\//gm, 80],
+    [/^\+\+\+\s+b\//gm, 80],
+    [/^index\s+[a-f0-9]+\.\.[a-f0-9]+\s+/gm, 60]
+  ],
+  ['md', [/^(>|\t\*|\t\d+.|#{1,6} |-\s+|\*\s+)/gim, 25], [/\[.*\](.*)/gi, 10]],
+  ['docker', [/^(FROM|ENTRYPOINT|RUN)/gim, 500]],
+  ['xml', [/<\/?[a-z-]+[^\n>]*>/g, 10], [/^<\?xml/gi, 500]],
+  ['c', [/#include\b|\bprintf\s+\(/gi, 100]],
+  ['rs', [/^\s+(use|fn|mut|match)\b/gim, 100]],
+  ['java', [/^import\s+java/gi, 500]],
+  ['asm', [/^(section|global main|extern|\t(call|mov|ret))/gim, 100]],
+  ['json', [/\b(true|false|null|\{})\b|"[^"]+":/gi, 10]],
   ['yaml', [/^(\s+)?[a-z][a-z0-9]*:/gim, 10]],
-  ['toml', [/^\s*\[.*\]\s*$/gm, 100], [/^\s*[a-zA-Z0-9_-]+ *= */gm, 20]],
+  ['toml', [/^\s*\[.*\]\s*$/gim, 100], [/^\s*[a-zA-Z0-9_-]+ *= */gi, 20]],
   [
     'mermaid',
     [
-      /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap)/gm,
+      /(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|mindmap)/i,
       500
-    ],
-    [/\b(-->|--o|--x|=>|\[\]|[{}])\b/g, 10]
-  ],
-  [
-    'py',
-    [/^(import|from)\s+[a-zA-Z_][a-zA-Z0-9_.]*(\s+import)?/gm, 50],
-    [/^def\s+[a-zA-Z_][a-zA-Z0-9_]*\s*\(/gm, 100],
-    [
-      /\b(def|print|class|and|or|lambda|if|elif|else|for|while|try|except|finally|with|as|in|not|is)\b/g,
-      10
-    ],
-    [/^\s+[a-zA-Z_][^=]*[=][^=]/gm, 5],
-    [/"""[\s\S]*?"""|'''[\s\S]*?'''/g, 30]
+    ]
   ]
 ]
 
 /**
- * Try to find the language the given code belongs to
+ * Detect the language of a given code snippet.
  *
- * @param {string} code The code to analyze
- * @returns {CodeLanguage} The detected language of the code
+ * @param code The code to analyze
+ * @returns {CodeLanguage} The detected language
  */
 export const detectLanguage = (code: string): CodeLanguage => {
-  return (
-    languages
-      .map(
-        ([lang, ...features]) =>
-          [
-            lang,
-            features.reduce(
-              (acc: number, [match, score]: LanguageFeature) =>
-                acc + [...code.matchAll(match)].length * score,
-              0
-            )
-          ] as [CodeLanguage, number]
-      )
-      .filter(([, score]) => score > 20)
-      .sort((a, b) => b[1] - a[1])[0]?.[0] || 'plain'
-  )
+  const firstLine = code.trimStart().split('\n')[0]
+
+  // Step 0: Early return for shebang lines
+  if (firstLine.startsWith('#!')) {
+    for (const [re, lang] of SHEBANG_MAP) {
+      if (re.test(firstLine)) {
+        return lang
+      }
+    }
+  }
+
+  // Step 0.5: Early return for URI patterns
+  const trimmed = code.trim()
+  if (
+    /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s'"<>]+/m.test(trimmed) ||
+    /^mailto:[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/m.test(trimmed) ||
+    /^data:(?:[a-zA-Z0-9+.-]+\/[a-zA-Z0-9+.-]+)?;base64,[a-zA-Z0-9+/=]+/m.test(trimmed) ||
+    /^urn:[a-zA-Z0-9][a-zA-Z0-9\-+:.]*$/m.test(trimmed) ||
+    /(https?:\/\/|www\.)[^\s'"<>]+/m.test(trimmed)
+  ) {
+    return 'uri'
+  }
+
+  // Step 1: Exclude certain languages based on content
+  if (/^@echo off/i.test(code) || /^\s*rem\b/i.test(code)) {
+    return 'dos'
+  }
+  if (/^#requires -version/i.test(code)) {
+    return 'powershell'
+  }
+  if (/^param\s*$$/i.test(code)) {
+    return 'powershell'
+  }
+
+  // Step 2: Score-based detection
+  const scored: [CodeLanguage, number][] = []
+  for (const [lang, ...features] of languages) {
+    let score = 0
+    for (const [re, val] of features) {
+      score += [...code.matchAll(re)].length * val
+    }
+    if (score > 0) {
+      scored.push([lang, score])
+    }
+  }
+
+  // Step 3: Apply minimum threshold based on code length
+  const minScore = code.length < 20 ? 10 : 50
+  const candidates = scored.filter(([, score]) => score > minScore)
+
+  // Step 4: Special handling for http vs uri
+  const httpScore = scored.find(([lang]) => lang === 'http')?.[1] ?? 0
+  const uriScore = scored.find(([lang]) => lang === 'uri')?.[1] ?? 0
+
+  if (httpScore > 0 && httpScore >= uriScore * 0.8) {
+    return 'http'
+  }
+
+  if (candidates.length === 0) return 'plain'
+  return candidates.sort((a, b) => b[1] - a[1])[0]?.[0] || 'plain'
 }
