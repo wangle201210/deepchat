@@ -7,6 +7,7 @@ import { PowerpackServer } from './powerpackServer'
 import { DifyKnowledgeServer } from './difyKnowledgeServer'
 import { RagflowKnowledgeServer } from './ragflowKnowledgeServer'
 import { FastGptKnowledgeServer } from './fastGptKnowledgeServer'
+import { CustomPromptsServer } from './customPromptsServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -62,6 +63,8 @@ export function getInMemoryServer(
           }[]
         }
       )
+    case 'deepchat-inmemory/custom-prompts-server':
+      return new CustomPromptsServer()
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

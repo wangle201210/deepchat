@@ -14,7 +14,10 @@
     "retry": "再生",
     "fork": "新しいセッションへのフォーク",
     "edit": "メッセージを編集します",
-    "delete": "メッセージを削除します"
+    "delete": "メッセージを削除します",
+    "capturing": "スクリーンショット...",
+    "copyFromTopSuccess": "完全なセッション画像がコピーされました",
+    "copyImageWithLongPress": "画像としてコピーします（上から傍受するために長いプレス）"
   },
   "message": {
     "toolbar": {

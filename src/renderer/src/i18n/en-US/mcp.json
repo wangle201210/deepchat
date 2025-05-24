@@ -161,6 +161,10 @@
     "fastGptKnowledge": {
       "name": "FastGPT Knowledge Base Search",
       "desc": "FastGPT knowledge base search service, can search FastGPT knowledge base content"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "DeepChat built-in custom prompt word service",
+      "name": "Custom prompt words"
     }
   },
   "prompts": {

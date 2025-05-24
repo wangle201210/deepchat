@@ -28,7 +28,6 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     env: {},
     disable: true
   },
-  // 还有问题，暂时不开放
   Artifacts: {
     args: [],
     descriptions: 'DeepChat内置 artifacts mcp服务',
@@ -160,6 +159,19 @@ const DEFAULT_MCP_SERVERS = {
   },
   defaultServers: ['Artifacts'], // 默认服务器列表
   mcpEnabled: false // 默认关闭MCP功能
+}
+// 这部分mcp有系统逻辑判断是否启用，不受用户配置控制，受软件环境控制
+export const SYSTEM_INMEM_MCP_SERVERS: Record<string, MCPServerConfig> = {
+  'deepchat-inmemory/custom-prompts-server': {
+    command: 'deepchat-inmemory/custom-prompts-server',
+    args: [],
+    env: {},
+    descriptions: 'DeepChat内置自定义提示词服务',
+    icons: '📝',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    disable: false
+  }
 }
 
 export class McpConfHelper {
