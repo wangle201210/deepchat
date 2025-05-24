@@ -12,7 +12,7 @@
           <template #item="{ element: provider }">
             <div
               :class="[
-                'flex flex-row items-center gap-2 rounded-lg p-2 cursor-pointer group',
+                'flex flex-row hover:bg-accent  items-center gap-2 rounded-lg p-2 cursor-pointer group',
                 route.params?.providerId === provider.id
                   ? 'bg-secondary text-secondary-foreground'
                   : ''
