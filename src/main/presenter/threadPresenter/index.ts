@@ -1537,6 +1537,9 @@ export class ThreadPresenter implements IThreadPresenter {
     const selectedMessages: Message[] = []
 
     for (const msg of messages) {
+      if (msg.status !== 'sent') {
+        continue
+      }
       const msgContent = msg.role === 'user' ? (msg.content as UserMessageContent) : null
       const msgText = msgContent
         ? msgContent.text ||
@@ -1564,7 +1567,9 @@ export class ThreadPresenter implements IThreadPresenter {
         break
       }
     }
-
+    while (selectedMessages.length > 0 && selectedMessages[0].role !== 'user') {
+      selectedMessages.shift()
+    }
     return selectedMessages
   }
 
