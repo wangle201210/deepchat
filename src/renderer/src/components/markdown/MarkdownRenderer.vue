@@ -39,5 +39,11 @@ const parsedNodes = computed<ParsedNode[]>(() => {
   li p {
     @apply py-0 my-0;
   }
+  hr {
+    margin-block-start: 0.5em;
+    margin-block-end: 0.5em;
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+  }
 }
 </style>
