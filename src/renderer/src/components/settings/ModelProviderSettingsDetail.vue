@@ -1,302 +1,76 @@
 <template>
   <section class="w-full h-full">
-    <div class="w-full h-full p-2 flex flex-col gap-2 overflow-y-auto">
-      <div class="flex flex-col items-start p-2 gap-2">
-        <div class="flex justify-between items-center w-full">
-          <Label :for="`${provider.id}-url`" class="flex-1 cursor-pointer">API URL</Label>
-          <Button
-            v-if="provider.custom"
-            variant="destructive"
-            size="sm"
-            class="text-xs rounded-lg"
-            @click="showDeleteProviderDialog = true"
-          >
-            <Icon icon="lucide:trash-2" class="w-4 h-4 mr-1" />{{ t('settings.provider.delete') }}
-          </Button>
-        </div>
-        <Input
-          :id="`${provider.id}-url`"
-          v-model="apiHost"
-          :placeholder="t('settings.provider.urlPlaceholder')"
-          @blur="handleApiHostChange(String($event.target.value))"
-          @keyup.enter="handleApiHostChange(apiHost)"
+    <ScrollArea class="w-full h-full p-2 flex flex-col gap-2">
+      <div class="flex flex-col gap-4 p-2">
+        <!-- 基础API配置 -->
+        <ProviderApiConfig
+          :provider="provider"
+          :provider-websites="providerWebsites"
+          @api-host-change="handleApiHostChange"
+          @api-key-change="handleApiKeyChange"
+          @validate-key="handleApiKeyEnter"
+          @delete-provider="showDeleteProviderDialog = true"
         />
-        <div class="text-xs text-muted-foreground">
-          {{
-            t('settings.provider.urlFormat', {
-              defaultUrl: providerWebsites?.defaultBaseUrl || ''
-            })
-          }}
-        </div>
-      </div>
-      <div v-if="provider.id === 'azure-openai'" class="flex flex-col items-start p-2 gap-2">
-        <Label :for="`${provider.id}-azure-api-version`" class="flex-1 cursor-pointer">{{
-          t('settings.provider.azureApiVersion', 'API Version')
-        }}</Label>
-        <Input
-          :id="`${provider.id}-azure-api-version`"
-          v-model="azureApiVersion"
-          placeholder="e.g., 2024-02-01"
-          @blur="handleAzureApiVersionChange(String($event.target.value))"
-          @keyup.enter="handleAzureApiVersionChange(azureApiVersion)"
+
+        <!-- Azure特殊配置 -->
+        <AzureProviderConfig
+          v-if="provider.id === 'azure-openai'"
+          :provider="provider"
+          :initial-value="azureApiVersion"
+          @api-version-change="handleAzureApiVersionChange"
+        />
+
+        <!-- Gemini安全设置 -->
+        <GeminiSafetyConfig
+          v-if="provider.id === 'gemini'"
+          :provider="provider"
+          :initial-safety-levels="geminiSafetyLevels"
+          @safety-setting-change="handleSafetySettingChange"
+        />
+
+        <!-- 模型管理 -->
+        <ProviderModelManager
+          :provider="provider"
+          :enabled-models="enabledModels"
+          :total-models-count="providerModels.length + customModels.length"
+          @show-model-list-dialog="showModelListDialog = true"
+          @disable-all-models="disableAllModelsConfirm"
+          @model-enabled-change="handleModelEnabledChange"
         />
       </div>
-      <div class="flex flex-col items-start p-2 gap-2">
-        <Label :for="`${provider.id}-apikey`" class="flex-1 cursor-pointer">API Key</Label>
-        <Input
-          :id="`${provider.id}-apikey`"
-          v-model="apiKey"
-          type="password"
-          :placeholder="t('settings.provider.keyPlaceholder')"
-          @blur="handleApiKeyChange(String($event.target.value))"
-          @keyup.enter="handleApiKeyEnter(apiKey)"
-        />
-        <div class="flex flex-row gap-2">
-          <Button
-            variant="outline"
-            size="xs"
-            class="text-xs text-normal rounded-lg"
-            @click="validateApiKey"
-          >
-            <Icon icon="lucide:check-check" class="w-4 h-4 text-muted-foreground" />{{
-              t('settings.provider.verifyKey')
-            }}
-          </Button>
-          <Button
-            variant="outline"
-            size="xs"
-            class="text-xs text-normal rounded-lg"
-            v-if="!provider.custom && provider.id !== 'doubao'"
-            @click="openProviderWebsite"
-          >
-            <Icon icon="lucide:hand-helping" class="w-4 h-4 text-muted-foreground" />{{
-              t('settings.provider.howToGet')
-            }}
-          </Button>
-        </div>
-        <div class="text-xs text-muted-foreground" v-if="!provider.custom">
-          {{ t('settings.provider.getKeyTip') }}
-          <a :href="providerWebsites?.apiKey" target="_blank" class="text-primary">{{
-            provider.name
-          }}</a>
-          {{ t('settings.provider.getKeyTipEnd') }}
-        </div>
-      </div>
-      <div
-        v-if="provider.id === 'gemini'"
-        class="flex flex-col items-start p-2 gap-2 border rounded-lg"
-      >
-        <Accordion type="single" collapsible class="w-full">
-          <AccordionItem value="safety-settings">
-            <AccordionTrigger class="text-sm font-medium">{{
-              t('settings.provider.safety.title', 'Safety Settings')
-            }}</AccordionTrigger>
-            <AccordionContent class="pt-4 px-1">
-              <div class="flex flex-col gap-4">
-                <div
-                  v-for="(setting, key) in safetyCategories"
-                  :key="key"
-                  class="flex flex-col gap-2"
-                >
-                  <div class="flex justify-between items-center">
-                    <Label :for="`${provider.id}-safety-${key}`" class="text-sm cursor-pointer">{{
-                      t(setting.label, key.charAt(0).toUpperCase() + key.slice(1))
-                    }}</Label>
-                    <span class="text-sm text-muted-foreground">{{
-                      t(
-                        levelLabels[geminiSafetyLevels[key]],
-                        `${levelToValueMap[geminiSafetyLevels[key]]}`
-                      )
-                    }}</span>
-                  </div>
-                  <Slider
-                    :id="`${provider.id}-safety-${key}`"
-                    :model-value="[geminiSafetyLevels[key]]"
-                    :min="0"
-                    :max="3"
-                    :step="1"
-                    class="w-full"
-                    @update:model-value="
-                      (event) =>
-                        event &&
-                        event[0] !== undefined &&
-                        handleSafetySettingChange(key as SafetyCategoryKey, event[0])
-                    "
-                  />
-                </div>
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-      </div>
-      <div class="flex flex-col items-start p-2 gap-2">
-        <Label :for="`${provider.id}-model`" class="flex-1 cursor-pointer">{{
-          t('settings.provider.modelList')
-        }}</Label>
-        <div class="flex flex-row gap-2 items-center">
-          <Button
-            variant="outline"
-            size="xs"
-            class="text-xs text-normal rounded-lg"
-            @click="showModelListDialog = true"
-          >
-            <Icon icon="lucide:list-check" class="w-4 h-4 text-muted-foreground" />{{
-              t('settings.provider.enableModels')
-            }}
-          </Button>
-          <Button
-            variant="outline"
-            size="xs"
-            class="text-xs text-normal rounded-lg"
-            @click="disableAllModelsConfirm"
-            :disabled="enabledModels.length === 0"
-          >
-            <Icon icon="lucide:x-circle" class="w-4 h-4 text-muted-foreground" />{{
-              t('settings.provider.disableAllModels')
-            }}
-          </Button>
-          <span class="text-xs text-muted-foreground">
-            {{ enabledModels.length }}/{{ providerModels.length + customModels.length }}
-            {{ t('settings.provider.modelsEnabled') }}
-          </span>
-        </div>
-        <div class="flex flex-col w-full border overflow-hidden rounded-lg">
-          <ModelConfigItem
-            v-for="model in enabledModels"
-            :key="model.id"
-            :model-name="model.name"
-            :model-id="model.id"
-            :group="model.group"
-            :enabled="model.enabled ?? false"
-            :vision="model.vision ?? false"
-            :function-call="model.functionCall ?? false"
-            :reasoning="model.reasoning ?? false"
-            @enabled-change="handleModelEnabledChange(model, $event)"
-          />
-        </div>
-      </div>
-    </div>
+    </ScrollArea>
 
-    <Dialog v-model:open="showConfirmDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{ t('settings.provider.dialog.disableModel.title') }}</DialogTitle>
-        </DialogHeader>
-        <div class="py-4">
-          {{ t('settings.provider.dialog.disableModel.content', { name: modelToDisable?.name }) }}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="showConfirmDialog = false">{{
-            t('dialog.cancel')
-          }}</Button>
-          <Button variant="destructive" @click="confirmDisable">{{
-            t('settings.provider.dialog.disableModel.confirm')
-          }}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog v-model:open="showModelListDialog">
-      <DialogContent class="max-w-2xl p-0 pb-4 gap-2 flex flex-col">
-        <DialogHeader class="p-0">
-          <DialogTitle class="p-4">{{
-            t('settings.provider.dialog.configModels.title')
-          }}</DialogTitle>
-        </DialogHeader>
-        <div class="px-4 py-2 flex-1 h-0 max-h-80 overflow-y-auto">
-          <ProviderModelList
-            :provider-models="[{ providerId: provider.id, models: providerModels }]"
-            :custom-models="customModels"
-            :providers="[{ id: provider.id, name: provider.name }]"
-            @enabled-change="handleModelEnabledChange"
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
-    <Dialog v-model:open="showCheckModelDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{
-            t(
-              checkResult
-                ? 'settings.provider.dialog.verify.success'
-                : 'settings.provider.dialog.verify.failed'
-            )
-          }}</DialogTitle>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" @click="showCheckModelDialog = false">{{
-            t('dialog.close')
-          }}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog v-model:open="showDisableAllConfirmDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{ t('settings.provider.dialog.disableAllModels.title') }}</DialogTitle>
-        </DialogHeader>
-        <div class="py-4">
-          {{ t('settings.provider.dialog.disableAllModels.content', { name: provider.name }) }}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="showDisableAllConfirmDialog = false">{{
-            t('dialog.cancel')
-          }}</Button>
-          <Button variant="destructive" @click="confirmDisableAll">{{
-            t('settings.provider.dialog.disableAllModels.confirm')
-          }}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-
-    <Dialog v-model:open="showDeleteProviderDialog">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{ t('settings.provider.dialog.deleteProvider.title') }}</DialogTitle>
-        </DialogHeader>
-        <div class="py-4">
-          {{ t('settings.provider.dialog.deleteProvider.content', { name: provider.name }) }}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" @click="showDeleteProviderDialog = false">{{
-            t('dialog.cancel')
-          }}</Button>
-          <Button variant="destructive" @click="confirmDeleteProvider">{{
-            t('settings.provider.dialog.deleteProvider.confirm')
-          }}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <!-- 对话框容器 -->
+    <ProviderDialogContainer
+      :provider="provider"
+      :provider-models="providerModels"
+      :custom-models="customModels"
+      :model-to-disable="modelToDisable"
+      :check-result="checkResult"
+      v-model:show-confirm-dialog="showConfirmDialog"
+      v-model:show-model-list-dialog="showModelListDialog"
+      v-model:show-check-model-dialog="showCheckModelDialog"
+      v-model:show-disable-all-confirm-dialog="showDisableAllConfirmDialog"
+      v-model:show-delete-provider-dialog="showDeleteProviderDialog"
+      @confirm-disable-model="confirmDisable"
+      @model-enabled-change="handleModelEnabledChange"
+      @confirm-disable-all-models="confirmDisableAll"
+      @confirm-delete-provider="confirmDeleteProvider"
+    />
   </section>
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import { computed, ref, watch, reactive } from 'vue'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Icon } from '@iconify/vue'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog'
-import ProviderModelList from './ProviderModelList.vue'
 import { useSettingsStore } from '@/stores/settings'
 import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
-import ModelConfigItem from './ModelConfigItem.vue'
-import { Slider } from '@/components/ui/slider'
-import {
-  Accordion,
-  AccordionItem,
-  AccordionContent,
-  AccordionTrigger
-} from '@/components/ui/accordion'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import ProviderApiConfig from './ProviderApiConfig.vue'
+import AzureProviderConfig from './AzureProviderConfig.vue'
+import GeminiSafetyConfig from './GeminiSafetyConfig.vue'
+import ProviderModelManager from './ProviderModelManager.vue'
+import ProviderDialogContainer from './ProviderDialogContainer.vue'
+import { levelToValueMap, safetyCategories } from '@/lib/gemini'
 
 interface ProviderWebsites {
   official: string
@@ -306,7 +80,7 @@ interface ProviderWebsites {
   defaultBaseUrl: string
 }
 
-// Define safety categories and mapping
+// Define safety types for Gemini safety handling
 type SafetyCategoryKey = 'harassment' | 'hateSpeech' | 'sexuallyExplicit' | 'dangerousContent'
 type SafetySettingValue =
   | 'BLOCK_NONE'
@@ -315,39 +89,6 @@ type SafetySettingValue =
   | 'BLOCK_ONLY_HIGH'
   | 'HARM_BLOCK_THRESHOLD_UNSPECIFIED'
 
-const safetyCategories: Record<
-  SafetyCategoryKey,
-  { label: string; harmCategory: string; defaultLevel: number }
-> = {
-  harassment: {
-    label: 'settings.provider.safety.harassment',
-    harmCategory: 'HARM_CATEGORY_HARASSMENT',
-    defaultLevel: 0
-  },
-  hateSpeech: {
-    label: 'settings.provider.safety.hateSpeech',
-    harmCategory: 'HARM_CATEGORY_HATE_SPEECH',
-    defaultLevel: 0
-  },
-  sexuallyExplicit: {
-    label: 'settings.provider.safety.sexuallyExplicit',
-    harmCategory: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-    defaultLevel: 0
-  },
-  dangerousContent: {
-    label: 'settings.provider.safety.dangerousContent',
-    harmCategory: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-    defaultLevel: 0
-  }
-}
-
-const levelToValueMap: Record<number, SafetySettingValue> = {
-  0: 'BLOCK_NONE',
-  1: 'BLOCK_LOW_AND_ABOVE',
-  2: 'BLOCK_MEDIUM_AND_ABOVE',
-  3: 'BLOCK_ONLY_HIGH'
-}
-
 const valueToLevelMap: Record<SafetySettingValue, number> = {
   BLOCK_NONE: 0,
   BLOCK_LOW_AND_ABOVE: 1,
@@ -355,15 +96,6 @@ const valueToLevelMap: Record<SafetySettingValue, number> = {
   BLOCK_ONLY_HIGH: 3,
   HARM_BLOCK_THRESHOLD_UNSPECIFIED: 2 // Default to level 2 if unspecified
 }
-
-const levelLabels: Record<number, string> = {
-  0: 'settings.provider.safety.blockNone',
-  1: 'settings.provider.safety.blockSome', // BLOCK_LOW_AND_ABOVE
-  2: 'settings.provider.safety.blockMost', // BLOCK_MEDIUM_AND_ABOVE
-  3: 'settings.provider.safety.blockHighest' // BLOCK_ONLY_HIGH
-}
-
-const { t } = useI18n()
 
 const props = defineProps<{
   provider: LLM_PROVIDER
@@ -556,12 +288,6 @@ const confirmDeleteProvider = async () => {
     showDeleteProviderDialog.value = false
   } catch (error) {
     console.error('删除供应商失败:', error)
-  }
-}
-const openProviderWebsite = () => {
-  const url = providerWebsites.value?.apiKey
-  if (url) {
-    window.open(url, '_blank')
   }
 }
 
