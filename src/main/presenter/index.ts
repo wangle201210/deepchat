@@ -141,7 +141,10 @@ export class Presenter implements IPresenter {
           const [msg] = payload
           console.log(eventName, msg) // 记录日志
           this.windowPresenter.sendToAllWindows(eventName, msg)
-        } else if (eventName === DEEPLINK_EVENTS.MCP_INSTALL) {
+        } else if (
+          eventName === DEEPLINK_EVENTS.MCP_INSTALL ||
+          eventName === DEEPLINK_EVENTS.START
+        ) {
           // 特殊处理：向默认标签页发送消息，并切换到目标标签页
           const [msg] = payload
           console.log(eventName, msg) // 记录日志
