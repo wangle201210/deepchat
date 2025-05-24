@@ -125,17 +125,11 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { usePresenter } from '@/composables/usePresenter'
-import { usePageCapture } from '@/composables/usePageCapture'
-
-const devicePresenter = usePresenter('devicePresenter')
-
-const appVersion = ref('')
-const { isCapturing: isCapturingImage, captureAndCopy } = usePageCapture()
 
 const props = defineProps<{
   message: AssistantMessage
   isDark: boolean
+  isCapturingImage: boolean
 }>()
 
 const chatStore = useChatStore()
@@ -143,6 +137,16 @@ const currentVariantIndex = ref(0)
 const { t } = useI18n()
 
 const messageNode = useTemplateRef('messageNode')
+
+// 定义事件
+const emit = defineEmits<{
+  copyImage: [
+    messageId: string,
+    parentId: string | undefined,
+    fromTop: boolean,
+    modelInfo: { model_name: string; model_provider: string }
+  ]
+}>()
 
 // 获取当前会话ID
 const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
@@ -199,7 +203,6 @@ const isSearchResult = computed(() => {
 
 onMounted(async () => {
   currentVariantIndex.value = allVariants.value.length
-  appVersion.value = await devicePresenter.getAppVersion()
 })
 
 // 分支会话对话框
@@ -223,100 +226,6 @@ const confirmFork = async () => {
     isForkDialogOpen.value = false
   } catch (error) {
     console.error('创建对话分支失败:', error)
-  }
-}
-
-/**
- * 查找用户消息DOM元素
- * 通过parentId查找对应的用户消息
- */
-const findUserMessageElement = (): HTMLElement | null => {
-  if (!props.message.parentId) return null
-
-  // 在DOM中查找包含用户消息ID的元素
-  const userMessageSelector = `[data-message-id="${props.message.parentId}"]`
-  return document.querySelector(userMessageSelector) as HTMLElement
-}
-
-/**
- * 计算包含用户消息和助手消息的整体范围
- */
-const calculateMessageGroupRect = (): {
-  x: number
-  y: number
-  width: number
-  height: number
-} | null => {
-  const userMessageElement = findUserMessageElement()
-  const assistantMessageElement = messageNode.value
-
-  if (!userMessageElement || !assistantMessageElement) {
-    // 如果找不到用户消息，只截取当前助手消息
-    if (assistantMessageElement) {
-      const rect = assistantMessageElement.getBoundingClientRect()
-      const assistantOnlyRect = {
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width: Math.round(rect.width),
-        height: Math.round(rect.height)
-      }
-      return assistantOnlyRect
-    }
-    return null
-  }
-
-  const userRect = userMessageElement.getBoundingClientRect()
-  const assistantRect = assistantMessageElement.getBoundingClientRect()
-
-  const left = Math.min(userRect.left, assistantRect.left)
-  const top = Math.min(userRect.top, assistantRect.top)
-  const right = Math.max(userRect.right, assistantRect.right)
-  const bottom = Math.max(userRect.bottom, assistantRect.bottom)
-
-  const combinedRect = {
-    x: Math.round(left),
-    y: Math.round(top),
-    width: Math.round(right - left),
-    height: Math.round(bottom - top)
-  }
-  return combinedRect
-}
-
-/**
- * 计算从会话顶部到当前消息的整体范围
- */
-const calculateFromTopToCurrentRect = (): {
-  x: number
-  y: number
-  width: number
-  height: number
-} | null => {
-  const currentMessageElement = messageNode.value
-  if (!currentMessageElement) return null
-
-  const container = document.querySelector('.message-list-container')
-  if (!container) return null
-
-  // 获取容器内的所有消息元素
-  const allMessages = container.querySelectorAll('[data-message-id]')
-  if (allMessages.length === 0) return null
-
-  // 找到第一条消息和当前消息
-  const firstMessage = allMessages[0] as HTMLElement
-  const currentRect = currentMessageElement.getBoundingClientRect()
-  const firstRect = firstMessage.getBoundingClientRect()
-
-  // 计算范围
-  const left = Math.min(firstRect.left, currentRect.left)
-  const top = Math.min(firstRect.top, currentRect.top)
-  const right = Math.max(firstRect.right, currentRect.right)
-  const bottom = Math.max(firstRect.bottom, currentRect.bottom)
-
-  return {
-    x: Math.round(left),
-    y: Math.round(top),
-    width: Math.round(right - left),
-    height: Math.round(bottom - top)
   }
 }
 
@@ -347,39 +256,17 @@ const handleAction = (
       currentVariantIndex.value++
     }
   } else if (action === 'copyImage') {
-    handleCopyImage(false) // 默认只截取当前消息组
+    emit('copyImage', props.message.id, props.message.parentId, false, {
+      model_name: props.message.model_name,
+      model_provider: props.message.model_provider
+    })
   } else if (action === 'copyImageFromTop') {
-    handleCopyImage(true) // 从顶部开始截取到当前消息
+    emit('copyImage', props.message.id, props.message.parentId, true, {
+      model_name: props.message.model_name,
+      model_provider: props.message.model_provider
+    })
   } else if (action === 'fork') {
     showForkDialog()
-  }
-}
-
-/**
- * 处理复制图片操作
- * 使用 usePageCapture composable 进行截图
- * @param fromTop 是否从会话顶部开始截取到当前消息，默认为 false
- */
-const handleCopyImage = async (fromTop: boolean = false) => {
-  const getTargetRect = fromTop ? calculateFromTopToCurrentRect : calculateMessageGroupRect
-
-  const success = await captureAndCopy({
-    container: '.message-list-container',
-    getTargetRect,
-    watermark: {
-      isDark: props.isDark,
-      version: appVersion.value,
-      texts: {
-        brand: 'DeepChat',
-        tip: t('common.watermarkTip'),
-        model: props.message.model_name,
-        provider: props.message.model_provider
-      }
-    }
-  })
-
-  if (!success) {
-    console.error('截图复制失败')
   }
 }
 

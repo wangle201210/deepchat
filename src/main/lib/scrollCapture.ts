@@ -1,4 +1,5 @@
-import { WebContentsView, nativeImage } from 'electron'
+import { NativeImage, WebContentsView, nativeImage } from 'electron'
+import sharp from 'sharp'
 
 export interface ScrollCaptureOptions {
   hideElements?: string[] // CSS选择器数组，用于隐藏特定元素
@@ -281,93 +282,80 @@ export class ScrollCaptureManager {
 /**
  * 垂直拼接多个图片Buffer
  */
-export function stitchImagesVertically(
-  imageBuffers: Buffer[]
-): Promise<import('electron').NativeImage> {
-  return new Promise(async (resolve, reject) => {
-    try {
-      if (imageBuffers.length === 0) {
-        reject(new Error('No images to stitch'))
-        return
-      }
+export async function stitchImagesVertically(imageBuffers: Buffer[]): Promise<NativeImage> {
+  if (imageBuffers.length === 0) {
+    throw new Error('No images to stitch')
+  }
 
-      if (imageBuffers.length === 1) {
-        resolve(nativeImage.createFromBuffer(imageBuffers[0]))
-        return
-      }
+  if (imageBuffers.length === 1) {
+    return nativeImage.createFromBuffer(imageBuffers[0])
+  }
 
-      console.log(`开始使用Sharp拼接 ${imageBuffers.length} 张图片`)
+  console.log(`Starting to stitch ${imageBuffers.length} images using Sharp`)
 
-      const sharp = require('sharp')
-
-      // 获取所有图片的元数据
-      const imageInfos = await Promise.all(
-        imageBuffers.map(async (buffer, index) => {
-          try {
-            const metadata = await sharp(buffer).metadata()
-            console.log(`图片 ${index + 1} 尺寸: ${metadata.width}x${metadata.height}`)
-            return {
-              buffer,
-              width: metadata.width || 0,
-              height: metadata.height || 0,
-              index
-            }
-          } catch (error) {
-            console.error(`获取图片 ${index + 1} 元数据失败:`, error)
-            throw error
-          }
-        })
-      )
-
-      // 计算拼接后的尺寸
-      const maxWidth = Math.max(...imageInfos.map((info) => info.width))
-      const totalHeight = imageInfos.reduce((sum, info) => sum + info.height, 0)
-
-      console.log(`拼接后尺寸: ${maxWidth}x${totalHeight}`)
-
-      // 创建空白画布
-      const canvas = sharp({
-        create: {
-          width: maxWidth,
-          height: totalHeight,
-          channels: 4,
-          background: { r: 255, g: 255, b: 255, alpha: 1 }
+  // 获取所有图片的元数据
+  const imageInfos = await Promise.all(
+    imageBuffers.map(async (buffer, index) => {
+      try {
+        const metadata = await sharp(buffer).metadata()
+        console.log(`Image ${index + 1} dimensions: ${metadata.width}x${metadata.height}`)
+        return {
+          buffer,
+          width: metadata.width || 0,
+          height: metadata.height || 0,
+          index
         }
-      })
-
-      // 准备合成操作
-      const composite: Array<{
-        input: Buffer
-        top: number
-        left: number
-      }> = []
-      let currentTop = 0
-
-      for (const imageInfo of imageInfos) {
-        // 计算居中位置
-        const left = Math.floor((maxWidth - imageInfo.width) / 2)
-
-        composite.push({
-          input: imageInfo.buffer,
-          top: currentTop,
-          left: left
-        })
-
-        console.log(`图片 ${imageInfo.index + 1} 将放置在位置 (${left}, ${currentTop})`)
-        currentTop += imageInfo.height
+      } catch (error) {
+        console.error(`Failed to get metadata for image ${index + 1}:`, error)
+        throw error
       }
+    })
+  )
 
-      // 执行合成
-      const stitchedBuffer = await canvas.composite(composite).png().toBuffer()
+  // 计算拼接后的尺寸
+  const maxWidth = Math.max(...imageInfos.map((info) => info.width))
+  const totalHeight = imageInfos.reduce((sum, info) => sum + info.height, 0)
 
-      // 创建NativeImage
-      const stitchedImage = nativeImage.createFromBuffer(stitchedBuffer)
+  console.log(`Stitched image dimensions: ${maxWidth}x${totalHeight}`)
 
-      console.log(`成功使用Sharp拼接 ${imageBuffers.length} 张图片`)
-      resolve(stitchedImage)
-    } catch (error) {
-      console.error('Sharp拼接图片时出错:', error)
-      reject(error)
+  // 创建空白画布
+  const canvas = sharp({
+    create: {
+      width: maxWidth,
+      height: totalHeight,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 }
     }
   })
+
+  // 准备合成操作
+  const composite: Array<{
+    input: Buffer
+    top: number
+    left: number
+  }> = []
+  let currentTop = 0
+
+  for (const imageInfo of imageInfos) {
+    // 计算居中位置
+    const left = Math.floor((maxWidth - imageInfo.width) / 2)
+
+    composite.push({
+      input: imageInfo.buffer,
+      top: currentTop,
+      left: left
+    })
+
+    console.log(`Image ${imageInfo.index + 1} will be placed at position (${left}, ${currentTop})`)
+    currentTop += imageInfo.height
+  }
+
+  // 执行合成
+  const stitchedBuffer = await canvas.composite(composite).png().toBuffer()
+
+  // 创建NativeImage
+  const stitchedImage = nativeImage.createFromBuffer(stitchedBuffer)
+
+  console.log(`Successfully stitched ${imageBuffers.length} images using Sharp`)
+  return stitchedImage
 }
