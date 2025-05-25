@@ -1015,7 +1015,7 @@ export interface LLMAgentEventData {
   tool_call_server_description?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tool_call_response_raw?: any
-  tool_call?: 'start' | 'end' | 'error'
+  tool_call?: 'start' | 'running' | 'end' | 'error' | 'update'
   totalUsage?: {
     prompt_tokens: number
     completion_tokens: number

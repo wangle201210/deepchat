@@ -138,6 +138,19 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
       ]
     },
     disable: false
+  },
+  'deepchat-inmemory/deep-research-server': {
+    args: [],
+    descriptions:
+      'DeepChat内置深度研究服务，使用博查搜索(注意该服务需要较长的上下文模型，请勿在短上下文的模型中使用)',
+    icons: '🔬',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'deepchat-inmemory/deep-research-server',
+    env: {
+      BOCHA_API_KEY: 'YOUR_BOCHA_API_KEY'
+    },
+    disable: false
   }
 }
 

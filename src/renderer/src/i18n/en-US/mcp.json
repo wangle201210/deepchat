@@ -165,6 +165,10 @@
     "deepchat-inmemory/custom-prompts-server": {
       "desc": "DeepChat built-in custom prompt word service",
       "name": "Custom prompt words"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "DeepChat built-in in-depth research service based on Bocha Search (note that long context models are required to be used, and models with insufficient context may fail)",
+      "name": "DeepResearch"
     }
   },
   "prompts": {

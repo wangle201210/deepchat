@@ -185,6 +185,10 @@
     "deepchat-inmemory/custom-prompts-server": {
       "desc": "DeepChat內置自定義提示詞服務",
       "name": "自定義提示詞"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "基於博查搜索的DeepChat內置深度研究服務，（注意需要長上下文模型才能使用，上下文不足的模型可能會失敗）",
+      "name": "DeepResearch"
     }
   },
   "prompts": {
