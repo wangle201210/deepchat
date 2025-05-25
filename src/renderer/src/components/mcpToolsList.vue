@@ -32,7 +32,10 @@ const getTools = (serverName: string) => {
 const onServerToggle = (serverName: string) => {
   mcpStore.toggleServer(serverName)
 }
-
+// 获取内置服务器的本地化名称和描述
+const getLocalizedServerName = (serverName: string) => {
+  return t(`mcp.inmemory.${serverName}.name`, serverName)
+}
 // 生命周期钩子
 onMounted(async () => {
   if (mcpEnabled.value) {
@@ -121,8 +124,13 @@ onMounted(async () => {
           <div v-else-if="mcpEnabled" class="divide-y">
             <div v-for="server in mcpStore.serverList" :key="server.name" class="w-full">
               <div class="p-2 hover:bg-accent flex items-center w-full">
-                <span class="mr-2">{{ server.icons }}</span
-                ><span class="flex-grow truncate text-left text-sm">{{ server.name }}</span>
+                <span class="mr-2">{{ server.icons }}</span>
+                <span
+                  v-if="server.type === 'inmemory'"
+                  class="flex-grow truncate text-left text-sm"
+                  >{{ getLocalizedServerName(server.name) }}</span
+                >
+                <span v-else class="flex-grow truncate text-left text-sm">{{ server.name }}</span>
                 <Popover>
                   <PopoverTrigger>
                     <Badge
