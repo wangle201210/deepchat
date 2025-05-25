@@ -1,10 +1,10 @@
 <template>
   <div class="w-full h-full flex-row flex">
     <div
-      :class="{
-        'flex-1 w-0 h-full transition-all duration-200': true,
-        'mr-[calc(60%_-_104px)]': artifactStore.isOpen && route.name === 'chat'
-      }"
+      :class="[
+        'flex-1 w-0 h-full transition-all duration-200 max-lg:!mr-0',
+        artifactStore.isOpen && route.name === 'chat' ? 'mr-[calc(60%_-_104px)]' : ''
+      ]"
     >
       <div class="flex h-full">
         <!-- 左侧会话列表 -->
@@ -14,7 +14,12 @@
           enter-from-class="-translate-x-full opacity-0"
           leave-to-class="-translate-x-full opacity-0"
         >
-          <ThreadsView v-show="chatStore.isSidebarOpen" class="transform" />
+          <div
+            v-if="chatStore.isSidebarOpen"
+            class="w-60 max-w-60 h-full fixed left-0 z-20 lg:relative"
+          >
+            <ThreadsView class="transform" />
+          </div>
         </Transition>
 
         <!-- 主聊天区域 -->

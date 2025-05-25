@@ -22,7 +22,9 @@ export const CONFIG_EVENTS = {
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
   PROXY_RESOLVED: 'config:proxy-resolved',
-  LANGUAGE_CHANGED: 'config:language-changed' // 新增：语言变更事件
+  LANGUAGE_CHANGED: 'config:language-changed', // 新增：语言变更事件
+  CUSTOM_PROMPTS_CHANGED: 'config:custom-prompts-changed', // 新增：自定义提示词变更事件
+  CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED: 'config:custom-prompts-server-check-required' // 新增：需要检查自定义提示词服务器事件
 }
 
 // 会话相关事件

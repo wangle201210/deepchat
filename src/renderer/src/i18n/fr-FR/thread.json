@@ -14,7 +14,10 @@
     "retry": "Régénérer",
     "fork": "Fourche à une nouvelle session",
     "edit": "Modifier le message",
-    "delete": "Supprimer le message"
+    "delete": "Supprimer le message",
+    "capturing": "Capture d'écran ...",
+    "copyFromTopSuccess": "Image de session complète copiée",
+    "copyImageWithLongPress": "Copier en tant qu'image (appuyez sur longue pour commencer à intercepter du haut)"
   },
   "message": {
     "toolbar": {

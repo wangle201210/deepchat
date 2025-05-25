@@ -1,38 +1,42 @@
 <template>
   <div class="w-full h-full flex flex-row">
-    <ScrollArea class="w-64 border-r h-full space-y-2 p-2">
-      <draggable
-        v-model="sortedProviders"
-        item-key="id"
-        handle=".drag-handle"
-        @end="handleDragEnd"
-        class="space-y-2"
-      >
-        <template #item="{ element: provider }">
-          <div
-            :class="[
-              'flex flex-row items-center hover:bg-accent gap-2 rounded-lg p-2 cursor-pointer group',
-              route.params?.providerId === provider.id ? 'bg-accent' : ''
-            ]"
-            @click="setActiveProvider(provider.id)"
-          >
-            <Icon
-              icon="lucide:grip-vertical"
-              class="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-move drag-handle"
-            />
-            <ModelIcon :model-id="provider.id" :custom-class="'w-4 h-4 text-muted-foreground'" />
-            <span class="text-sm font-medium flex-1">{{ t(provider.name) }}</span>
-            <Switch :checked="provider.enable" @click.stop="toggleProviderStatus(provider)" />
-          </div>
-        </template>
-      </draggable>
+    <ScrollArea class="w-64 border-r h-full px-2">
+      <div class="py-2">
+        <draggable
+          v-model="sortedProviders"
+          item-key="id"
+          handle=".drag-handle"
+          class="space-y-2"
+          @end="handleDragEnd"
+        >
+          <template #item="{ element: provider }">
+            <div
+              :class="[
+                'flex flex-row hover:bg-accent  items-center gap-2 rounded-lg p-2 cursor-pointer group',
+                route.params?.providerId === provider.id
+                  ? 'bg-secondary text-secondary-foreground'
+                  : ''
+              ]"
+              @click="setActiveProvider(provider.id)"
+            >
+              <Icon
+                icon="lucide:grip-vertical"
+                class="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-move drag-handle"
+              />
+              <ModelIcon :model-id="provider.id" :custom-class="'w-4 h-4 text-muted-foreground'" />
+              <span class="text-sm font-medium flex-1">{{ t(provider.name) }}</span>
+              <Switch :checked="provider.enable" @click.stop="toggleProviderStatus(provider)" />
+            </div>
+          </template>
+        </draggable>
 
-      <div
-        class="flex flex-row items-center gap-2 rounded-lg p-2 cursor-pointer hover:bg-accent mt-2"
-        @click="openAddProviderDialog"
-      >
-        <Icon icon="lucide:plus" class="w-4 h-4 text-muted-foreground" />
-        <span class="text-sm font-medium">{{ t('settings.provider.addCustomProvider') }}</span>
+        <div
+          class="flex flex-row items-center gap-2 rounded-lg p-2 cursor-pointer hover:bg-accent mt-2"
+          @click="openAddProviderDialog"
+        >
+          <Icon icon="lucide:plus" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.provider.addCustomProvider') }}</span>
+        </div>
       </div>
     </ScrollArea>
     <template v-if="activeProvider">

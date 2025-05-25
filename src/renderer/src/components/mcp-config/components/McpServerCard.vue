@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { useI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
 
@@ -48,7 +47,7 @@ const props = defineProps<Props>()
 defineEmits<Emits>()
 
 const { t } = useI18n()
-const isDetailsOpen = ref(false)
+const isDescriptionExpanded = ref(false)
 
 const getLocalizedServerName = (serverName: string) => {
   return t(`mcp.inmemory.${serverName}.name`, serverName)
@@ -65,236 +64,190 @@ const serverStatus = computed(() => {
   if (props.server.isRunning) return 'running'
   return 'stopped'
 })
+
+// 计算状态样式
+const statusConfig = computed(() => {
+  switch (serverStatus.value) {
+    case 'running':
+      return {
+        dot: 'bg-green-500',
+        text: t('settings.mcp.running'),
+        color: 'text-green-600 dark:text-green-400'
+      }
+    case 'loading':
+      return {
+        dot: 'bg-blue-500 animate-pulse',
+        text: t('settings.mcp.starting'),
+        color: 'text-blue-600 dark:text-blue-400'
+      }
+    case 'error':
+      return {
+        dot: 'bg-red-500',
+        text: t('settings.mcp.error'),
+        color: 'text-red-600 dark:text-red-400'
+      }
+    default:
+      return {
+        dot: 'bg-gray-400',
+        text: t('settings.mcp.stopped'),
+        color: 'text-muted-foreground'
+      }
+  }
+})
+
+// 获取服务器类型图标
+const typeIcon = computed(() => {
+  return props.server.type === 'http' ? 'lucide:globe' : 'lucide:terminal'
+})
+
+// 获取完整描述
+const fullDescription = computed(() => {
+  return props.isBuiltIn
+    ? getLocalizedServerDesc(props.server.name, props.server.descriptions)
+    : props.server.descriptions
+})
+
+// 判断描述是否需要展开功能
+const needsExpansion = computed(() => {
+  return fullDescription.value.length > 50
+})
 </script>
 
 <template>
   <div
-    class="bg-card border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-input"
+    class="bg-card px-4 py-2 shadow-sm border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary group"
   >
-    <!-- 主要内容 -->
-    <div class="p-3">
-      <div class="flex items-start justify-between">
-        <!-- 左侧：服务器信息 -->
-        <div class="flex items-start space-x-3 flex-1 min-w-0">
-          <!-- 图标 -->
-          <div class="text-xl flex-shrink-0 mt-0.5">{{ server.icons }}</div>
+    <!-- 头部：图标、名称、状态、菜单 -->
+    <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center space-x-2 flex-1 min-w-0">
+        <!-- 服务器图标 -->
+        <div class="text-lg flex-shrink-0">{{ server.icons }}</div>
 
-          <!-- 信息 -->
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center space-x-2 mb-1">
-              <h3 class="text-sm font-medium truncate">
-                {{ isBuiltIn ? getLocalizedServerName(server.name) : server.name }}
-              </h3>
-
-              <!-- 标识徽章 -->
-              <div class="flex items-center space-x-1">
-                <Badge v-if="isBuiltIn" variant="outline" class="text-xs h-4 px-1.5">
-                  {{ t('settings.mcp.builtIn') }}
-                </Badge>
-                <TooltipProvider v-if="server.isDefault">
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Icon icon="lucide:star" class="w-3.5 h-3.5 text-orange-500" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p class="text-xs">{{ t('settings.mcp.default') }}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-
-            <!-- 描述 -->
-            <p class="text-xs text-muted-foreground line-clamp-2 mb-2">
-              {{
-                isBuiltIn
-                  ? getLocalizedServerDesc(server.name, server.descriptions)
-                  : server.descriptions
-              }}
-            </p>
-
-            <!-- 状态 -->
-            <div class="flex items-center space-x-2">
-              <div class="flex items-center space-x-1.5">
-                <div
-                  :class="[
-                    'w-2 h-2 rounded-full',
-                    serverStatus === 'running'
-                      ? 'bg-green-500'
-                      : serverStatus === 'loading'
-                        ? 'bg-blue-500 animate-pulse'
-                        : serverStatus === 'error'
-                          ? 'bg-red-500'
-                          : 'bg-gray-400'
-                  ]"
-                />
-                <span
-                  class="text-xs"
-                  :class="[
-                    serverStatus === 'running'
-                      ? 'text-green-600 dark:text-green-400'
-                      : serverStatus === 'loading'
-                        ? 'text-blue-600 dark:text-blue-400'
-                        : serverStatus === 'error'
-                          ? 'text-red-600 dark:text-red-400'
-                          : 'text-muted-foreground'
-                  ]"
-                >
-                  {{
-                    serverStatus === 'running'
-                      ? t('settings.mcp.running')
-                      : serverStatus === 'loading'
-                        ? t('settings.mcp.starting')
-                        : serverStatus === 'error'
-                          ? t('settings.mcp.error')
-                          : t('settings.mcp.stopped')
-                  }}
-                </span>
-              </div>
-
-              <!-- 错误提示 -->
-              <TooltipProvider v-if="server.errorMessage">
-                <Tooltip>
-                  <TooltipTrigger>
-                    <Icon icon="lucide:alert-circle" class="w-3.5 h-3.5 text-red-500" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p class="text-xs max-w-xs">{{ server.errorMessage }}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </div>
-
-        <!-- 右侧：控制区域 -->
-        <div class="flex items-center space-x-2 shrink-0 ml-3">
-          <!-- 启用开关 -->
-          <div class="flex items-center space-x-1.5">
-            <Switch
-              :checked="server.isRunning"
-              :disabled="disabled || isLoading"
-              @update:checked="$emit('toggle')"
-            />
-          </div>
-
-          <!-- 设为默认按钮 -->
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger as-child>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-7 w-7"
-                  :class="
-                    server.isDefault
-                      ? 'text-orange-500 hover:text-orange-600'
-                      : 'text-muted-foreground hover:text-foreground'
-                  "
-                  :disabled="disabled"
-                  @click="$emit('toggleDefault')"
-                >
-                  <Icon
-                    :icon="server.isDefault ? 'lucide:star' : 'lucide:star-off'"
-                    class="h-3.5 w-3.5"
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p class="text-xs">
-                  {{
-                    server.isDefault
-                      ? t('settings.mcp.removeDefault')
-                      : t('settings.mcp.setAsDefault')
-                  }}
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <!-- 更多操作菜单 -->
-          <DropdownMenu>
-            <DropdownMenuTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7">
-                <Icon icon="lucide:more-horizontal" class="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem @click="$emit('edit')" :disabled="disabled">
-                <Icon icon="lucide:edit-3" class="h-4 w-4 mr-2" />
-                {{ t('settings.mcp.editServer') }}
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                v-if="server.isRunning"
-                @click="$emit('restart')"
-                :disabled="disabled || isLoading"
-              >
-                <Icon icon="lucide:rotate-cw" class="h-4 w-4 mr-2" />
-                {{ t('settings.mcp.restartServer') }}
-              </DropdownMenuItem>
-              <DropdownMenuItem @click="$emit('viewLogs')" :disabled="disabled">
-                <Icon icon="lucide:file-text" class="h-4 w-4 mr-2" />
-                {{ t('settings.mcp.viewLogs') }}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator v-if="!isBuiltIn" />
-              <DropdownMenuItem
-                v-if="!isBuiltIn"
-                @click="$emit('remove')"
-                :disabled="disabled"
-                class="text-destructive focus:text-destructive"
-              >
-                <Icon icon="lucide:trash-2" class="h-4 w-4 mr-2" />
-                {{ t('settings.mcp.removeServer') }}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <!-- 名称 -->
+        <h3 class="text-sm font-bold truncate flex-1">
+          {{ isBuiltIn ? getLocalizedServerName(server.name) : server.name }}
+        </h3>
       </div>
+
+      <!-- 操作菜单 -->
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+          >
+            <Icon icon="lucide:more-horizontal" class="h-3 w-3" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem @click="$emit('edit')" :disabled="disabled">
+            <Icon icon="lucide:edit-3" class="h-4 w-4 mr-2" />
+            {{ t('settings.mcp.editServer') }}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem @click="$emit('toggleDefault')" :disabled="disabled">
+            <Icon
+              :icon="server.isDefault ? 'lucide:power-off' : 'lucide:power'"
+              class="h-4 w-4 mr-2"
+            />
+            {{
+              server.isDefault ? t('settings.mcp.removeDefault') : t('settings.mcp.setAsDefault')
+            }}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator v-if="!isBuiltIn" />
+          <DropdownMenuItem
+            v-if="!isBuiltIn"
+            @click="$emit('remove')"
+            :disabled="disabled"
+            class="text-destructive focus:text-destructive"
+          >
+            <Icon icon="lucide:trash-2" class="h-4 w-4 mr-2" />
+            {{ t('settings.mcp.removeServer') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
 
-    <!-- 可展开的技术详情 -->
-    <Collapsible v-model:open="isDetailsOpen">
-      <div class="border-t border-border bg-muted">
-        <CollapsibleTrigger
-          class="w-full px-3 py-2 flex items-center justify-between text-xs text-muted-foreground hover:bg-muted/30 transition-colors"
-        >
-          <span>{{ t('settings.mcp.technicalDetails') }}</span>
-          <Icon
-            icon="lucide:chevron-down"
-            class="h-3 w-3 transition-transform"
-            :class="isDetailsOpen ? 'rotate-180' : ''"
-          />
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <div class="px-3 pb-3 space-y-2">
-            <!-- 服务器类型 -->
-            <div class="flex items-center space-x-2 text-xs">
-              <Icon
-                :icon="server.type === 'http' ? 'lucide:globe' : 'lucide:terminal'"
-                class="h-3 w-3 text-muted-foreground"
-              />
-              <span class="text-muted-foreground">
-                {{
-                  server.type === 'http'
-                    ? t('settings.mcp.httpServer')
-                    : t('settings.mcp.localProcess')
-                }}
-              </span>
-            </div>
+    <!-- 类型和标识 -->
+    <div class="flex items-center space-x-2 mb-2">
+      <!-- 服务器类型 -->
+      <Badge variant="outline" class="text-xs h-4 px-1.5">
+        {{ server.type === 'http' ? 'HTTP' : 'Local' }}
+      </Badge>
 
-            <!-- 命令/URL -->
-            <div class="bg-secondary rounded-md p-2">
-              <code class="text-xs font-mono text-secondary-foreground break-all">
-                {{
-                  server.type === 'http'
-                    ? server.baseUrl
-                    : `${server.command} ${server.args.join(' ')}`
-                }}
-              </code>
-            </div>
-          </div>
-        </CollapsibleContent>
+      <!-- 内置标识 -->
+      <Badge v-if="isBuiltIn" variant="outline" class="text-xs h-4 px-1.5">
+        {{ t('settings.mcp.builtIn') }}
+      </Badge>
+
+      <!-- 默认启动标识 -->
+      <TooltipProvider v-if="server.isDefault">
+        <Tooltip>
+          <TooltipTrigger>
+            <Icon icon="lucide:zap" class="h-3 w-3 text-orange-500" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p class="text-xs">{{ t('settings.mcp.default') }}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    </div>
+
+    <!-- 描述 -->
+    <div class="mb-2">
+      <p
+        class="text-xs text-secondary-foreground cursor-pointer overflow-hidden leading-5"
+        :class="[
+          !isDescriptionExpanded ? 'line-clamp-1' : '',
+          needsExpansion ? 'hover:text-foreground transition-colors' : ''
+        ]"
+        style="min-height: 1rem"
+        @click="needsExpansion && (isDescriptionExpanded = !isDescriptionExpanded)"
+      >
+        {{ fullDescription }}
+      </p>
+      <Button
+        variant="link"
+        size="sm"
+        class="h-auto p-0 text-xs mt-1 hover:no-underline gap-1 opacity-0"
+        :class="[needsExpansion ? 'opacity-100' : 'opacity-0']"
+        @click="isDescriptionExpanded = !isDescriptionExpanded"
+      >
+        <Icon
+          :icon="isDescriptionExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+          class="h-3 w-3"
+        />
+        {{ isDescriptionExpanded ? t('common.collapse') : t('common.expand') }}
+      </Button>
+    </div>
+
+    <!-- 底部控制 -->
+    <div class="flex items-center justify-between">
+      <!-- 状态 -->
+      <div class="flex items-center space-x-1.5">
+        <div :class="['w-2 h-2 rounded-full', statusConfig.dot]" />
+        <span :class="['text-xs', statusConfig.color]">
+          {{ statusConfig.text }}
+        </span>
+
+        <!-- 错误提示 -->
+        <TooltipProvider v-if="server.errorMessage">
+          <Tooltip>
+            <TooltipTrigger>
+              <Icon icon="lucide:alert-circle" class="w-3 h-3 text-red-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p class="text-xs max-w-xs">{{ server.errorMessage }}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
-    </Collapsible>
+      <Switch
+        :checked="server.isRunning"
+        :disabled="disabled || isLoading"
+        @update:checked="$emit('toggle')"
+      />
+    </div>
   </div>
 </template>

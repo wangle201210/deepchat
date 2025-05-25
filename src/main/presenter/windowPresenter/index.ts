@@ -486,4 +486,85 @@ export class WindowPresenter implements IWindowPresenter {
     }
     return false
   }
+
+  /**
+   * 向默认标签页发送消息
+   * 优先级：当前聚焦窗口的激活标签页 > 第一个窗口的激活标签页 > 第一个窗口的第一个标签页
+   * @param channel 消息通道
+   * @param switchToTarget 是否切换到目标窗口和标签页，默认false
+   * @param args 消息参数
+   * @returns 是否发送成功
+   */
+  async sendTodefaultTab(
+    channel: string,
+    switchToTarget: boolean = false,
+    ...args: unknown[]
+  ): Promise<boolean> {
+    try {
+      // 优先使用当前聚焦的窗口
+      let targetWindow = this.getFocusedWindow()
+      let windowId: number
+
+      if (targetWindow && !targetWindow.isDestroyed()) {
+        windowId = targetWindow.id
+        console.log(`使用聚焦窗口 ${windowId}`)
+      } else {
+        // 如果没有聚焦窗口，使用第一个可用窗口
+        const windows = this.getAllWindows()
+        if (windows.length === 0) {
+          console.warn('没有可用的窗口来发送消息')
+          return false
+        }
+        targetWindow = windows[0]
+        windowId = targetWindow.id
+        console.log(`使用第一个窗口 ${windowId}`)
+      }
+
+      // 获取窗口的所有标签页
+      const tabsData = await presenter.tabPresenter.getWindowTabsData(windowId)
+      if (tabsData.length === 0) {
+        console.warn(`窗口 ${windowId} 没有标签页`)
+        return false
+      }
+
+      // 优先获取激活的标签页，如果没有激活标签页则获取第一个标签页
+      const targetTabData = tabsData.find((tab) => tab.isActive) || tabsData[0]
+      const targetTab = await presenter.tabPresenter.getTab(targetTabData.id)
+
+      if (targetTab && !targetTab.webContents.isDestroyed()) {
+        // 向目标标签页发送消息
+        targetTab.webContents.send(channel, ...args)
+        console.log(`消息已发送到窗口 ${windowId} 的标签页 ${targetTabData.id}`)
+
+        // 如果需要切换到目标窗口和标签页
+        if (switchToTarget) {
+          try {
+            // 激活目标窗口
+            if (targetWindow && !targetWindow.isDestroyed()) {
+              targetWindow.show()
+              targetWindow.focus()
+              console.log(`已切换到窗口 ${windowId}`)
+            }
+
+            // 激活目标标签页（如果它不是当前激活的）
+            if (!targetTabData.isActive) {
+              await presenter.tabPresenter.switchTab(targetTabData.id)
+              console.log(`已切换到标签页 ${targetTabData.id}`)
+            }
+          } catch (error) {
+            console.error('切换到目标窗口和标签页时出错:', error)
+            // 即使切换失败，消息发送仍然成功，所以返回true
+          }
+        }
+
+        return true
+      } else {
+        console.warn(`目标标签页 ${targetTabData.id} 不可用或已销毁`)
+        return false
+      }
+    } catch (error) {
+      console.error('向默认标签页发送消息时出错:', error)
+      return false
+    }
+  }
 }
