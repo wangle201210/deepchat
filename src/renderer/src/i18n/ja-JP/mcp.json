@@ -169,6 +169,10 @@
     "deepchat-inmemory/deep-research-server": {
       "desc": "Bocha検索に基づくDeepchatビルトイン詳細な研究サービス（長いコンテキストモデルを使用する必要があり、コンテキストが不十分なモデルが失敗する可能性があることに注意してください）",
       "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "自動テンプレートプロンプト",
+      "desc": "ユーザー入力に基づいて最適なカスタムプロンプトを自動的に選択し、プロンプトテンプレートをインテリジェントに埋め込みます。"
     }
   },
   "prompts": {

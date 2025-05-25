@@ -169,6 +169,10 @@
     "deepchat-inmemory/deep-research-server": {
       "desc": "DeepChat built-in in-depth research service based on Bocha Search (note that long context models are required to be used, and models with insufficient context may fail)",
       "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "Auto Template Prompting",
+      "desc": "Automatically selects the most suitable custom prompt based on user input and intelligently fills the prompt template."
     }
   },
   "prompts": {

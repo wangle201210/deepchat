@@ -9,6 +9,7 @@ import { RagflowKnowledgeServer } from './ragflowKnowledgeServer'
 import { FastGptKnowledgeServer } from './fastGptKnowledgeServer'
 import { CustomPromptsServer } from './customPromptsServer'
 import { DeepResearchServer } from './deepResearchServer'
+import { AutoPromptingServer } from './autoPromptingServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -70,6 +71,8 @@ export function getInMemoryServer(
       return new CustomPromptsServer()
     case 'deepchat-inmemory/deep-research-server':
       return new DeepResearchServer(env)
+    case 'deepchat-inmemory/auto-prompting-server':
+      return new AutoPromptingServer()
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

@@ -189,6 +189,10 @@
     "deepchat-inmemory/deep-research-server": {
       "desc": "基於博查搜索的DeepChat內置深度研究服務，（注意需要長上下文模型才能使用，上下文不足的模型可能會失敗）",
       "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "自動模板提示詞",
+      "desc": "依據使用者輸入自動選擇最合適的自訂提示詞，並智慧填入提示詞模板"
     }
   },
   "prompts": {

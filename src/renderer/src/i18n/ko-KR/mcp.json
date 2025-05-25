@@ -169,6 +169,10 @@
     "deepchat-inmemory/deep-research-server": {
       "desc": "Bocha 검색을 기반으로 한 DeepChat 내장 내장 연구 서비스 (긴 컨텍스트 모델을 사용해야하고 컨텍스트가 불충분 한 모델이 실패 할 수 있습니다)",
       "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "자동 템플릿 프롬프트",
+      "desc": "사용자 입력을 기반으로 가장 적합한 사용자 정의 프롬프트를 자동으로 선택하고, 프롬프트 템플릿을 지능적으로 채웁니다."
     }
   },
   "prompts": {

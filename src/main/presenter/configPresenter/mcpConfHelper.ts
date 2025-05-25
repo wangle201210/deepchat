@@ -151,6 +151,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
       BOCHA_API_KEY: 'YOUR_BOCHA_API_KEY'
     },
     disable: false
+  },
+  'deepchat-inmemory/auto-prompting-server': {
+    args: [],
+    descriptions: 'DeepChat内置自动模板提示词服务',
+    icons: '📜',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'deepchat-inmemory/auto-prompting-server',
+    env: {},
+    disable: false
   }
 }
 
