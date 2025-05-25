@@ -61,6 +61,7 @@ export interface CaptureConfig {
    * 容器顶部预留空间（如工具栏高度），默认为 44
    */
   containerHeaderOffset?: number
+  isHTMLIframe?: boolean
 }
 
 export interface CaptureResult {
@@ -84,6 +85,70 @@ export function usePageCapture() {
   }
 
   /**
+   * 执行滚动操作，支持普通元素和 iframe
+   */
+  const performScroll = (
+    scrollContainer: HTMLElement,
+    scrollTop: number,
+    isIframe: boolean = false
+  ): void => {
+    if (isIframe && scrollContainer.tagName.toLowerCase() === 'iframe') {
+      const iframe = scrollContainer as HTMLIFrameElement
+      if (iframe.contentWindow) {
+        iframe.contentWindow.scrollTo(0, scrollTop)
+      }
+    } else {
+      scrollContainer.scrollTop = scrollTop
+    }
+  }
+
+  /**
+   * 获取滚动位置，支持普通元素和 iframe
+   */
+  const getScrollTop = (scrollContainer: HTMLElement, isIframe: boolean = false): number => {
+    if (isIframe && scrollContainer.tagName.toLowerCase() === 'iframe') {
+      const iframe = scrollContainer as HTMLIFrameElement
+      if (iframe.contentWindow) {
+        return iframe.contentWindow.scrollY || iframe.contentWindow.pageYOffset || 0
+      }
+    }
+    return scrollContainer.scrollTop
+  }
+
+  /**
+   * 获取滚动容器的最大滚动高度
+   */
+  const getMaxScrollTop = (scrollContainer: HTMLElement, isIframe: boolean = false): number => {
+    if (isIframe && scrollContainer.tagName.toLowerCase() === 'iframe') {
+      const iframe = scrollContainer as HTMLIFrameElement
+      if (iframe.contentWindow && iframe.contentDocument) {
+        const doc = iframe.contentDocument
+        return Math.max(
+          doc.body.scrollHeight - iframe.contentWindow.innerHeight,
+          doc.documentElement.scrollHeight - iframe.contentWindow.innerHeight
+        )
+      }
+    }
+    return scrollContainer.scrollHeight - scrollContainer.clientHeight
+  }
+
+  /**
+   * 获取 iframe 内容的实际高度
+   */
+  const getIframeContentHeight = (iframe: HTMLIFrameElement): number => {
+    if (iframe.contentDocument) {
+      const doc = iframe.contentDocument
+      return Math.max(
+        doc.body.scrollHeight || 0,
+        doc.documentElement.scrollHeight || 0,
+        doc.body.offsetHeight || 0,
+        doc.documentElement.offsetHeight || 0
+      )
+    }
+    return 0
+  }
+
+  /**
    * 执行页面区域截图
    * @param config 截图配置
    * @returns 返回截图结果
@@ -104,7 +169,8 @@ export function usePageCapture() {
         captureDelay = 350,
         maxIterations = 30,
         scrollbarOffset = 20,
-        containerHeaderOffset = 44
+        containerHeaderOffset = 44,
+        isHTMLIframe = false
       } = config
 
       // 获取初始目标区域
@@ -126,12 +192,23 @@ export function usePageCapture() {
         return { success: false, error: '无法找到滚动容器' }
       }
 
+      // 对于 iframe，我们需要获取其内容的实际高度
+      let targetContentHeight = initialRect.height
+      if (isHTMLIframe && scrollContainer.tagName.toLowerCase() === 'iframe') {
+        const iframe = scrollContainer as HTMLIFrameElement
+        const iframeContentHeight = getIframeContentHeight(iframe)
+        if (iframeContentHeight > 0) {
+          // 使用 iframe 内容的实际高度作为截图目标高度
+          targetContentHeight = iframeContentHeight
+        }
+      }
+
       // 保存原始滚动行为并设置为指定行为
       originalScrollBehavior = scrollContainer.style.scrollBehavior
       scrollContainer.style.scrollBehavior = scrollBehavior
 
       // 记录容器原始滚动位置
-      const containerOriginalScrollTop = scrollContainer.scrollTop
+      const containerOriginalScrollTop = getScrollTop(scrollContainer, isHTMLIframe)
       const containerRect = scrollContainer.getBoundingClientRect()
 
       // 计算可见截图窗口
@@ -143,13 +220,13 @@ export function usePageCapture() {
         height: captureWindowVisibleHeight
       }
 
-      const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight
+      const maxScrollTop = getMaxScrollTop(scrollContainer, isHTMLIframe)
       const imageDataList: string[] = []
       let totalCapturedContentHeight = 0
       let iteration = 0
 
       // 分段截图循环
-      while (totalCapturedContentHeight < initialRect.height && iteration < maxIterations) {
+      while (totalCapturedContentHeight < targetContentHeight && iteration < maxIterations) {
         iteration++
 
         // 重新获取当前目标区域（可能因滚动而变化）
@@ -163,14 +240,14 @@ export function usePageCapture() {
         const targetContentSegmentTopInCurrentInitialRectY =
           currentActualInitialRect.y + totalCapturedContentHeight
         const scrollTopTarget =
-          scrollContainer.scrollTop +
+          getScrollTop(scrollContainer, isHTMLIframe) +
           targetContentSegmentTopInCurrentInitialRectY -
           fixedCaptureWindow.y
 
         const currentScroll = Math.max(0, Math.min(scrollTopTarget, maxScrollTop))
 
         // 执行滚动
-        scrollContainer.scrollTop = currentScroll
+        performScroll(scrollContainer, currentScroll, isHTMLIframe)
         await new Promise((resolve) => setTimeout(resolve, captureDelay))
 
         // 重新获取滚动后的目标区域
@@ -192,20 +269,20 @@ export function usePageCapture() {
         if (contentOffsetYInCaptureWindow < 0) {
           captureStartYInWindow = 0
           heightToCaptureFromSegment = Math.min(
-            initialRect.height - totalCapturedContentHeight + contentOffsetYInCaptureWindow,
+            targetContentHeight - totalCapturedContentHeight + contentOffsetYInCaptureWindow,
             fixedCaptureWindow.height
           )
         } else {
           captureStartYInWindow = contentOffsetYInCaptureWindow
           heightToCaptureFromSegment = Math.min(
-            initialRect.height - totalCapturedContentHeight,
+            targetContentHeight - totalCapturedContentHeight,
             fixedCaptureWindow.height - contentOffsetYInCaptureWindow
           )
         }
 
         heightToCaptureFromSegment = Math.max(0, heightToCaptureFromSegment)
 
-        if (heightToCaptureFromSegment < 1 && initialRect.height > totalCapturedContentHeight) {
+        if (heightToCaptureFromSegment < 1 && targetContentHeight > totalCapturedContentHeight) {
           break
         }
 
@@ -235,11 +312,11 @@ export function usePageCapture() {
       }
 
       // 恢复原始滚动位置
-      scrollContainer.scrollTop = containerOriginalScrollTop
+      performScroll(scrollContainer, containerOriginalScrollTop, isHTMLIframe)
 
       // 检查是否有截图数据
       if (imageDataList.length === 0) {
-        if (initialRect.height > 0) {
+        if (targetContentHeight > 0) {
           return { success: false, error: '截图失败，未能捕获任何图像数据' }
         }
         return { success: false, error: '目标区域高度为0，无需截图' }

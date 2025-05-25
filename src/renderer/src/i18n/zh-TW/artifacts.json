@@ -35,5 +35,6 @@
   "copyFailed": "複製失敗",
   "copyFailedDesc": "無法複製內容到剪貼簿",
   "copyAsImage": "複製為圖片",
-  "copyImageSuccessDesc": "圖片已復製到剪貼板"
+  "copyImageSuccessDesc": "圖片已復製到剪貼板",
+  "copyImageFailedDesc": "無法複製圖片到剪貼板"
 }

@@ -75,7 +75,11 @@
               <Icon icon="lucide:copy" class="w-4 h-4" />
             </Button>
             <Button
-              v-if="isPreview"
+              v-if="
+                isPreview &&
+                artifactStore.currentArtifact?.type !== 'text/html' &&
+                artifactStore.currentArtifact?.type !== 'application/vnd.ant.react'
+              "
               variant="outline"
               size="sm"
               class="text-xs h-7"
@@ -310,10 +314,28 @@ const copyContent = async () => {
 const handleCopyAsImage = async () => {
   if (!artifactStore.currentArtifact) return
 
+  // 检查是否是 iframe 类型的 artifact (HTML 或 React)
+  const isIframeArtifact =
+    artifactStore.currentArtifact.type === 'text/html' ||
+    artifactStore.currentArtifact.type === 'application/vnd.ant.react'
+
+  let containerSelector: string
+  let targetSelector: string
+
+  if (isIframeArtifact) {
+    // 对于 iframe 类型，我们使用 iframe 元素作为滚动容器
+    containerSelector = '.html-iframe-wrapper'
+    targetSelector = '.html-iframe-wrapper'
+  } else {
+    // 非 iframe 类型使用默认配置
+    containerSelector = '.artifact-dialog-content'
+    targetSelector = '.artifact-dialog-content'
+  }
+
   const success = await captureAndCopy({
-    container: '.artifact-dialog-content',
+    container: containerSelector,
     getTargetRect: () => {
-      const element = document.querySelector('.artifact-dialog-content')
+      const element = document.querySelector(targetSelector)
       if (!element) return null
       const rect = element.getBoundingClientRect()
       return {
@@ -323,6 +345,7 @@ const handleCopyAsImage = async () => {
         height: Math.round(rect.height)
       }
     },
+    isHTMLIframe: isIframeArtifact,
     watermark: {
       isDark: themeStore.isDark,
       version: appVersion.value,

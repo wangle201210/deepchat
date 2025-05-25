@@ -1,9 +1,9 @@
 <template>
-  <div class="w-full h-full">
+  <div class="w-full h-full overflow-auto">
     <iframe
       ref="iframeRef"
       :srcdoc="htmlContent"
-      class="w-full h-full min-h-[400px]"
+      class="w-full h-full min-h-[400px] html-iframe-wrapper"
       sandbox="allow-scripts allow-same-origin"
     ></iframe>
   </div>
@@ -29,13 +29,7 @@ const iframeRef = ref<HTMLIFrameElement>()
 onMounted(() => {
   if (props.isPreview && iframeRef.value) {
     const iframe = iframeRef.value
-    iframe.onload = () => {
-      // 调整 iframe 高度以适应内容
-      const height = iframe.contentWindow?.document.documentElement.scrollHeight
-      if (height) {
-        iframe.style.height = `${height}px`
-      }
-    }
+    iframe.onload = () => {}
   }
 })
 const htmlContent = computed(() => {
