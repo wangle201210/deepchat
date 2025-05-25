@@ -84,13 +84,14 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: workflow-${{ github.event.inputs.workflow_id }}
-          name: DeepChat Build ${{ github.event.inputs.workflow_id }}
+          name: DeepChat V0.2.0
           draft: true
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
             release_assets/*
           body: |
-            🚀 DeepChat 构建版本 - Workflow ID: ${{ github.event.inputs.workflow_id }}
+            # 🚀 DeepChat 0.2.0 正式发布 | 重新定义你的 AI 对话体验！
+            —— 不再是简单的 ChatBot，而是你的自然语言 Agent  工具🌟
 
             📦 **构建信息**
             - Workflow ID: `${{ github.event.inputs.workflow_id }}`
@@ -98,6 +99,18 @@ jobs:
             - 预发布: `${{ github.event.inputs.prerelease }}`
             - 构建时间: `${{ github.run_id }}`
 
-            ⚠️ **注意**: 这是一个草稿版本，请在验证后手动发布。
+            🔥 为什么选择 DeepChat？
+
+            ✅ **商业友好**：基于原版 [Apache License 2.0](https://github.com/ThinkInAIXYZ/deepchat/blob/main/LICENSE) 开源，无任何协议外的额外约束，面向开源。
+            ✅ **开箱即用**：极简配置，即刻开启你的智能对话之旅。
+            ✅ **极致灵活**：自由切换模型，自定义模型源，满足你多样化的对话和探索需求。
+            ✅ **体验绝佳**：LaTeX 公式渲染、代码高亮、Markdown 支持，模型对话从未如此顺畅。
+            ✅ **持续进化**：我们倾听用户反馈，不断迭代更新，为你带来更卓越的 AI 对话体验。
+
+            📥 立即体验未来
+
+            💬 反馈有礼：欢迎提交你的宝贵建议，加入 VIP 用户社群，与我们一同塑造 DeepChat 的未来！
+            <img width="400px" src="https://github.com/user-attachments/assets/2ebc21e8-3eef-4a11-b3ab-de28e8f9d9c0"/>
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
