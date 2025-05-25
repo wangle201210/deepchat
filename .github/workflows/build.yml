@@ -50,6 +50,7 @@ jobs:
           path: |
             dist/*
             !dist/win-unpacked
+            !dist/win-arm64-unpacked
 
   build-linux:
     if: github.event.inputs.platform == 'all' || contains(github.event.inputs.platform, 'linux')
