@@ -356,6 +356,36 @@ export class ThreadPresenter implements IThreadPresenter {
               server_description: tool_call_server_description
             }
           })
+        } else if (tool_call === 'update') {
+          // 更新工具调用参数
+          const toolCallBlock = state.message.content.find(
+            (block) =>
+              block.type === 'tool_call' &&
+              block.tool_call?.id === tool_call_id &&
+              block.status === 'loading'
+          )
+
+          if (toolCallBlock && toolCallBlock.type === 'tool_call' && toolCallBlock.tool_call) {
+            toolCallBlock.tool_call.params = tool_call_params || ''
+          }
+        } else if (tool_call === 'running') {
+          // 工具调用正在执行
+          const toolCallBlock = state.message.content.find(
+            (block) =>
+              block.type === 'tool_call' &&
+              block.tool_call?.id === tool_call_id &&
+              block.status === 'loading'
+          )
+
+          if (toolCallBlock && toolCallBlock.type === 'tool_call') {
+            // 保持 loading 状态，但更新工具信息
+            if (toolCallBlock.tool_call) {
+              toolCallBlock.tool_call.params = tool_call_params || ''
+              toolCallBlock.tool_call.server_name = tool_call_server_name
+              toolCallBlock.tool_call.server_icons = tool_call_server_icons
+              toolCallBlock.tool_call.server_description = tool_call_server_description
+            }
+          }
         } else if (tool_call === 'end' || tool_call === 'error') {
           // 查找对应的工具调用块
           const toolCallBlock = state.message.content.find(
@@ -1304,7 +1334,18 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_server_icons: toolCall.server_icons,
           tool_call_server_description: toolCall.server_description
         })
-
+        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+          eventId: state.message.id,
+          content: '',
+          tool_call: 'running',
+          tool_call_id: toolCall.id,
+          tool_call_name: toolCall.name,
+          tool_call_params: toolCall.params,
+          tool_call_response: toolCallResponse.content,
+          tool_call_server_name: toolCall.server_name,
+          tool_call_server_icons: toolCall.server_icons,
+          tool_call_server_description: toolCall.server_description
+        })
         eventBus.emit(STREAM_EVENTS.RESPONSE, {
           eventId: state.message.id,
           content: '',
@@ -2137,7 +2178,7 @@ export class ThreadPresenter implements IThreadPresenter {
   async clearAllMessages(conversationId: string): Promise<void> {
     await this.messageManager.clearAllMessages(conversationId)
     // 检查所有 tab 中的活跃会话
-    for (const [_, activeId] of this.activeConversationIds.entries()) {
+    for (const [, activeId] of this.activeConversationIds.entries()) {
       if (activeId === conversationId) {
         // 停止所有正在生成的消息
         await this.stopConversationGeneration(conversationId)
