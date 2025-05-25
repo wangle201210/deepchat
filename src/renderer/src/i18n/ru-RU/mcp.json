@@ -2,7 +2,8 @@
   "tools": {
     "searchPlaceholder": "Поиск инструментов...",
     "noToolsAvailable": "Нет доступных инструментов",
-    "selectTool": "Выберите инструмент для отладки слева",
+    "toolList": "Список инструментов",
+    "functionDescription": "Описание функции",
     "path": "Путь",
     "pathPlaceholder": "Введите путь к файлу",
     "searchPattern": "Шаблон поиска",

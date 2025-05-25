@@ -223,6 +223,7 @@
       "resources": "資源"
     },
     "serverList": "伺服器列表",
+    "totalServers": "伺服器總數",
     "addServer": "新增伺服器",
     "running": "運行中",
     "stopped": "已停止",
@@ -301,6 +302,7 @@
     "default": "預設",
     "setAsDefault": "設為預設伺服器",
     "removeServer": "刪除伺服器",
+    "autoStart": "自啟動",
     "confirmRemoveServer": "確定要刪除伺服器 {name} 嗎？此操作無法撤銷。",
     "removeServerDialog": {
       "title": "刪除伺服器"

@@ -223,6 +223,7 @@
       "resources": "Resources"
     },
     "serverList": "Liste des serveurs",
+    "totalServers": "Total des serveurs",
     "addServer": "Ajouter un serveur",
     "running": "En cours d'exécution",
     "stopped": "Arrêté",
@@ -312,6 +313,8 @@
     "isDefault": "Serveur par défaut",
     "removeDefault": "Supprimer par défaut",
     "removeServer": "Supprimer le serveur",
+    "autoStart": "Démarrage automatique",
+    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {name} ? Cette action ne peut pas être annulée.",
     "removeServerDialog": {
       "title": "Supprimer le serveur"
     },

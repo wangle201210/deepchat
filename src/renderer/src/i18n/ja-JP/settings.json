@@ -223,6 +223,7 @@
       "resources": "リソース"
     },
     "serverList": "サーバーリスト",
+    "totalServers": "サーバー総数",
     "addServer": "サーバーを追加",
     "running": "実行中",
     "stopped": "停止中",
@@ -301,7 +302,8 @@
     "default": "デフォルト",
     "setAsDefault": "デフォルトに設定",
     "removeServer": "サーバーを削除",
-    "confirmRemoveServer": "サーバー {name} を削除してもよろしいですか？この操作は取り消せません。",
+    "autoStart": "自動起動",
+    "confirmRemoveServer": "サーバー {name} を削除してもよろしいですか？この操作は元に戻せません。",
     "removeServerDialog": {
       "title": "サーバーを削除"
     },

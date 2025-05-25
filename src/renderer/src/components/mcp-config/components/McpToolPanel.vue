@@ -4,28 +4,68 @@ import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { useMcpStore } from '@/stores/mcp'
 import { useI18n } from 'vue-i18n'
 import McpJsonViewer from './McpJsonViewer.vue'
 import type { MCPToolDefinition } from '@shared/presenter'
+
+interface Props {
+  serverName: string
+}
+
+// interface Emits {
+//   (e: 'update:open', value: boolean): void
+// }
+
+const props = defineProps<Props>()
+const open = defineModel<boolean>('open')
+//  const emit = defineEmits<Emits>()
 
 const mcpStore = useMcpStore()
 const { t } = useI18n()
 
 // 本地状态
 const selectedTool = ref<MCPToolDefinition | null>(null)
+const selectedToolName = ref<string>('')
 const localToolInputs = ref<Record<string, string>>({})
 const localToolResults = ref<Record<string, string>>({})
 const jsonError = ref<Record<string, boolean>>({})
+const isDescriptionExpanded = ref(false)
+const isParametersExpanded = ref(false)
+
+// 计算属性：获取当前服务器的工具
+const serverTools = computed(() => {
+  return mcpStore.tools.filter((tool) => tool.server.name === props.serverName)
+})
+
+watch(open, (newOpen) => {
+  if (newOpen) {
+    selectedToolName.value = ''
+  }
+})
 
 // 当选择工具时，初始化本地输入
-watch(selectedTool, (newTool) => {
-  if (newTool) {
-    const toolName = newTool.function.name
-    if (!localToolInputs.value[toolName]) {
-      localToolInputs.value[toolName] = '{}'
+watch(selectedToolName, (newToolName) => {
+  if (newToolName) {
+    const tool = serverTools.value.find((t) => t.function.name === newToolName)
+    selectedTool.value = tool || null
+    if (!localToolInputs.value[newToolName]) {
+      localToolInputs.value[newToolName] = '{}'
     }
-    jsonError.value[toolName] = false
+    jsonError.value[newToolName] = false
+    // 重置折叠状态
+    isDescriptionExpanded.value = false
+    isParametersExpanded.value = false
+  } else {
+    selectedTool.value = null
   }
 })
 
@@ -39,11 +79,6 @@ const validateJson = (input: string, toolName: string): boolean => {
     jsonError.value[toolName] = true
     return false
   }
-}
-
-// 选择工具
-const selectTool = (tool: MCPToolDefinition) => {
-  selectedTool.value = tool
 }
 
 // 调用工具
@@ -96,210 +131,244 @@ const toolParametersDescription = computed(() => {
     annotations: prop.annotations
   }))
 })
+
+// 选择工具的处理函数
+const selectTool = (tool: MCPToolDefinition) => {
+  selectedToolName.value = tool.function.name
+}
 </script>
 
 <template>
-  <div class="h-full grid grid-cols-[280px_1fr] gap-6 overflow-hidden">
-    <!-- 左侧工具列表 -->
-    <div class="h-full flex flex-col overflow-hidden">
-      <div class="mb-4">
-        <h3 class="text-sm font-medium text-foreground mb-2">
-          {{ t('mcp.tools.availableTools') }}
-        </h3>
-        <p class="text-xs text-muted-foreground">{{ t('mcp.tools.selectToolToDebug') }}</p>
-      </div>
+  <Sheet v-model:open="open">
+    <SheetContent
+      side="right"
+      class="w-4/5 min-w-[80vw] max-w-[80vw] p-0 bg-white dark:bg-black h-screen flex flex-col gap-0"
+    >
+      <SheetHeader class="px-4 py-3 border-b bg-card flex-shrink-0">
+        <SheetTitle class="flex items-center space-x-2">
+          <Icon icon="lucide:wrench" class="h-5 w-5 text-primary" />
+          <span>{{ t('mcp.tools.title') }} - {{ serverName }}</span>
+        </SheetTitle>
+      </SheetHeader>
 
-      <ScrollArea class="flex-1">
-        <div v-if="mcpStore.toolsLoading" class="flex justify-center py-8">
-          <Icon icon="lucide:loader" class="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-
-        <div v-else-if="mcpStore.tools.length === 0" class="text-center py-8">
-          <div
-            class="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-3"
-          >
-            <Icon icon="lucide:wrench" class="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p class="text-sm text-muted-foreground">{{ t('mcp.tools.noToolsAvailable') }}</p>
-        </div>
-
-        <div v-else class="space-y-2">
-          <div
-            v-for="tool in mcpStore.tools"
-            :key="tool.function.name"
-            class="group p-3 rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-border hover:bg-accent/50"
-            :class="{
-              'bg-accent border-border': selectedTool?.function.name === tool.function.name
-            }"
-            @click="selectTool(tool)"
-          >
-            <div class="flex items-start space-x-2">
-              <Icon
-                icon="lucide:function-square"
-                class="h-4 w-4 text-primary mt-0.5 flex-shrink-0"
-              />
-              <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-medium text-foreground truncate">
-                  {{ tool.function.name }}
-                </h4>
-                <p class="text-xs text-muted-foreground line-clamp-2 mt-1">
-                  {{ tool.function.description || t('mcp.tools.noDescription') }}
-                </p>
-                <div class="flex items-center mt-2 space-x-1">
-                  <Badge variant="outline" class="text-xs">
-                    {{ tool.server.name }}
-                  </Badge>
+      <div class="flex flex-col flex-1 overflow-hidden">
+        <!-- 小屏幕：工具选择下拉菜单 -->
+        <div class="flex-shrink-0 px-4 py-4 lg:hidden">
+          <Select v-model="selectedToolName">
+            <SelectTrigger class="w-full">
+              <SelectValue :placeholder="t('mcp.tools.selectToolToDebug')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="tool in serverTools"
+                :key="tool.function.name"
+                :value="tool.function.name"
+              >
+                <div class="flex items-center space-x-2">
+                  <Icon icon="lucide:function-square" class="h-3 w-3 text-primary" />
+                  <span>{{ tool.function.name }}</span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </ScrollArea>
-    </div>
-
-    <!-- 右侧操作区域 -->
-    <div class="h-full flex flex-col overflow-hidden">
-      <div v-if="!selectedTool" class="flex items-center justify-center h-full">
-        <div class="text-center">
-          <div
-            class="mx-auto w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-4"
-          >
-            <Icon icon="lucide:mouse-pointer-click" class="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 class="text-lg font-medium text-foreground mb-2">{{ t('mcp.tools.selectTool') }}</h3>
-          <p class="text-sm text-muted-foreground">{{ t('mcp.tools.selectToolDescription') }}</p>
-        </div>
-      </div>
-
-      <div v-else class="h-full flex flex-col overflow-hidden">
-        <!-- 工具信息头部 -->
-        <div class="flex-shrink-0 pb-4 border-b">
-          <div class="flex items-start space-x-3">
-            <div class="p-2 bg-primary/10 rounded-lg">
-              <Icon icon="lucide:function-square" class="h-5 w-5 text-primary" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <h2 class="text-lg font-semibold text-foreground">
-                {{ selectedTool.function.name }}
-              </h2>
-              <p class="text-sm text-muted-foreground mt-1">
-                {{ selectedTool.function.description || t('mcp.tools.noDescription') }}
-              </p>
-              <div class="flex items-center mt-2 space-x-2">
-                <Badge variant="outline">{{ selectedTool.server.name }}</Badge>
-              </div>
-            </div>
-          </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <ScrollArea class="flex-1 mt-4">
-          <div class="space-y-6">
-            <!-- 工具参数说明 -->
-            <div v-if="toolParametersDescription.length > 0">
-              <h3 class="text-sm font-medium text-foreground mb-3">
-                {{ t('mcp.tools.parameters') }}
-              </h3>
-              <div class="space-y-3">
-                <div
-                  v-for="param in toolParametersDescription"
-                  :key="param.name"
-                  class="p-3 bg-muted/30 rounded-lg border border-border/30"
-                >
-                  <div class="flex items-center space-x-2 mb-1">
-                    <code class="text-sm font-mono font-medium text-foreground">{{
-                      param.name
-                    }}</code>
-                    <Badge v-if="param.required" variant="destructive" class="text-xs">
-                      {{ t('mcp.tools.required') }}
-                    </Badge>
-                    <Badge variant="outline" class="text-xs">{{ param.type }}</Badge>
-                  </div>
-                  <p v-if="param.description" class="text-xs text-muted-foreground mb-2">
-                    {{ param.description }}
-                  </p>
-                  <div v-if="param.annotations" class="text-xs text-muted-foreground">
-                    <strong>{{ t('mcp.tools.annotations') }}:</strong>
-                    {{ JSON.stringify(param.annotations) }}
-                  </div>
-                </div>
-              </div>
+        <!-- 大屏幕：左右分列布局 -->
+        <div class="flex-1 flex overflow-hidden min-h-0">
+          <!-- 左侧工具列表 (仅大屏幕显示) -->
+          <div class="hidden lg:flex lg:w-1/3 lg:border-r lg:flex-col">
+            <div class="p-4 border-b flex-shrink-0">
+              <h3 class="text-sm font-medium text-foreground">{{ t('mcp.tools.toolList') }}</h3>
             </div>
-
-            <!-- 工具参数输入 -->
-            <div>
-              <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-medium text-foreground">{{ t('mcp.tools.input') }}</h3>
+            <ScrollArea class="flex-1 min-h-0">
+              <div class="p-2 space-y-1">
                 <Button
+                  v-for="tool in serverTools"
+                  :key="tool.function.name"
                   variant="ghost"
-                  size="sm"
-                  class="h-7 text-xs"
-                  @click="formatToolInput(selectedTool.function.name)"
+                  class="w-full justify-start h-auto p-3 text-left"
+                  :class="{
+                    'bg-accent text-accent-foreground': selectedToolName === tool.function.name
+                  }"
+                  @click="selectTool(tool)"
                 >
-                  <Icon icon="lucide:align-left" class="mr-1 h-3 w-3" />
-                  {{ t('common.format') }}
+                  <div class="flex items-start space-x-2 w-full">
+                    <Icon
+                      icon="lucide:function-square"
+                      class="h-4 w-4 text-primary mt-0.5 flex-shrink-0"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-sm truncate">{{ tool.function.name }}</div>
+                    </div>
+                  </div>
                 </Button>
               </div>
+            </ScrollArea>
+          </div>
 
-              <div class="relative">
-                <textarea
-                  v-model="localToolInputs[selectedTool.function.name]"
-                  class="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  :class="{ 'border-destructive': jsonError[selectedTool.function.name] }"
-                  placeholder="{}"
-                  @input="
-                    validateJson(
-                      localToolInputs[selectedTool.function.name],
-                      selectedTool.function.name
-                    )
-                  "
-                />
+          <!-- 右侧详情区域 -->
+          <div class="flex-1 flex flex-col overflow-hidden lg:w-2/3 min-h-0">
+            <div v-if="!selectedTool" class="flex items-center justify-center h-full">
+              <div class="text-center">
                 <div
-                  v-if="jsonError[selectedTool.function.name]"
-                  class="absolute right-3 top-3 text-xs text-destructive"
+                  class="mx-auto w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mb-3"
                 >
-                  {{ t('mcp.tools.invalidJson') }}
+                  <Icon icon="lucide:mouse-pointer-click" class="h-5 w-5 text-muted-foreground" />
                 </div>
+                <h3 class="text-base font-medium text-foreground mb-2">
+                  {{ t('mcp.tools.selectToolToDebug') }}
+                </h3>
               </div>
-              <p class="text-xs text-muted-foreground mt-2">
-                {{ t('mcp.tools.inputHint') }}
-              </p>
             </div>
 
-            <!-- 执行按钮 -->
-            <div>
-              <Button
-                class="w-full"
-                :disabled="
-                  mcpStore.toolLoadingStates[selectedTool.function.name] ||
-                  jsonError[selectedTool.function.name]
-                "
-                @click="callTool(selectedTool.function.name)"
-              >
-                <Icon
-                  v-if="mcpStore.toolLoadingStates[selectedTool.function.name]"
-                  icon="lucide:loader"
-                  class="mr-2 h-4 w-4 animate-spin"
-                />
-                <Icon v-else icon="lucide:play" class="mr-2 h-4 w-4" />
-                {{
-                  mcpStore.toolLoadingStates[selectedTool.function.name]
-                    ? t('mcp.tools.runningTool')
-                    : t('mcp.tools.executeButton')
-                }}
-              </Button>
-            </div>
+            <div v-else class="h-full flex flex-col overflow-hidden min-h-0">
+              <ScrollArea class="flex-1 min-h-0">
+                <div class="px-4 py-4 space-y-4 pb-8">
+                  <!-- 工具信息 -->
+                  <div>
+                    <div class="flex items-center space-x-2 mb-2">
+                      <Icon icon="lucide:function-square" class="h-5 w-5 text-primary" />
+                      <h2 class="text-lg font-semibold">
+                        {{ t('mcp.tools.functionDescription') }}
+                      </h2>
+                    </div>
+                    <p class="text-sm text-secondary-foreground">
+                      {{ selectedTool.function.description || selectedTool.function.name }}
+                    </p>
+                  </div>
 
-            <!-- 结果显示 -->
-            <div v-if="localToolResults[selectedTool.function.name]">
-              <McpJsonViewer
-                :content="localToolResults[selectedTool.function.name]"
-                :title="t('mcp.tools.resultTitle')"
-                readonly
-              />
+                  <!-- 工具参数说明（可折叠） -->
+                  <div v-if="toolParametersDescription.length > 0" class="border rounded-lg">
+                    <Button
+                      variant="ghost"
+                      class="w-full justify-between p-3 h-auto"
+                      @click="isParametersExpanded = !isParametersExpanded"
+                    >
+                      <span class="font-medium"
+                        >{{ t('mcp.tools.parameters') }} ({{
+                          toolParametersDescription.length
+                        }})</span
+                      >
+                      <Icon
+                        :icon="isParametersExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+                        class="h-4 w-4"
+                      />
+                    </Button>
+                    <div v-if="isParametersExpanded" class="px-3 pb-3 space-y-2">
+                      <div
+                        v-for="param in toolParametersDescription"
+                        :key="param.name"
+                        class="p-2 bg-muted/30 rounded-md border border-border/30"
+                      >
+                        <div class="flex items-center space-x-1 mb-1">
+                          <code class="text-xs font-mono font-medium text-foreground">{{
+                            param.name
+                          }}</code>
+                          <Badge
+                            v-if="param.required"
+                            variant="destructive"
+                            class="text-xs px-1 py-0"
+                          >
+                            {{ t('mcp.tools.required') }}
+                          </Badge>
+                          <Badge variant="outline" class="text-xs px-1 py-0">{{
+                            param.type
+                          }}</Badge>
+                        </div>
+                        <p v-if="param.description" class="text-xs text-muted-foreground">
+                          {{ param.description }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 工具参数输入（调试区域） -->
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <h3 class="text-sm font-medium text-foreground">
+                        {{ t('mcp.tools.input') }}
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        class="h-6 text-xs px-2"
+                        @click="formatToolInput(selectedTool.function.name)"
+                      >
+                        <Icon icon="lucide:align-left" class="mr-1 h-3 w-3" />
+                        {{ t('common.format') }}
+                      </Button>
+                    </div>
+
+                    <div class="relative">
+                      <textarea
+                        v-model="localToolInputs[selectedTool.function.name]"
+                        class="flex h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        :class="{ 'border-destructive': jsonError[selectedTool.function.name] }"
+                        placeholder="{}"
+                        @input="
+                          validateJson(
+                            localToolInputs[selectedTool.function.name],
+                            selectedTool.function.name
+                          )
+                        "
+                      />
+                      <div
+                        v-if="jsonError[selectedTool.function.name]"
+                        class="absolute right-3 top-3 text-xs text-destructive"
+                      >
+                        {{ t('mcp.tools.invalidJson') }}
+                      </div>
+                    </div>
+                    <p class="text-xs text-muted-foreground">
+                      {{ t('mcp.tools.inputHint') }}
+                    </p>
+
+                    <!-- 执行按钮 -->
+                    <Button
+                      class="w-full"
+                      :disabled="
+                        mcpStore.toolLoadingStates[selectedTool.function.name] ||
+                        jsonError[selectedTool.function.name]
+                      "
+                      @click="callTool(selectedTool.function.name)"
+                    >
+                      <Icon
+                        v-if="mcpStore.toolLoadingStates[selectedTool.function.name]"
+                        icon="lucide:loader"
+                        class="mr-2 h-4 w-4 animate-spin"
+                      />
+                      <Icon v-else icon="lucide:play" class="mr-2 h-4 w-4" />
+                      {{
+                        mcpStore.toolLoadingStates[selectedTool.function.name]
+                          ? t('mcp.tools.runningTool')
+                          : t('mcp.tools.executeButton')
+                      }}
+                    </Button>
+                  </div>
+
+                  <!-- 结果显示 -->
+                  <div v-if="localToolResults[selectedTool.function.name]">
+                    <McpJsonViewer
+                      :content="localToolResults[selectedTool.function.name]"
+                      :title="t('mcp.tools.resultTitle')"
+                      readonly
+                    />
+                  </div>
+                </div>
+              </ScrollArea>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </div>
-    </div>
-  </div>
+    </SheetContent>
+  </Sheet>
 </template>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

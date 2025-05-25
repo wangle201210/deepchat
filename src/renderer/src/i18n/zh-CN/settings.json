@@ -182,7 +182,8 @@
     },
     "serverList": "服务器列表",
     "totalServers": "服务器总数",
-    "addServer": "添加服务器"
+    "addServer": "添加服务器",
+    "autoStart": "自启动"
   },
   "knowledgeBase": {
     "title": "知识库设置",
@@ -313,6 +314,7 @@
     "default": "默认",
     "setAsDefault": "设为默认服务器",
     "removeServer": "删除服务器",
+    "autoStart": "自启动",
     "confirmRemoveServer": "确定要删除服务器 {name} 吗？此操作无法撤销。",
     "removeServerDialog": {
       "title": "删除服务器"

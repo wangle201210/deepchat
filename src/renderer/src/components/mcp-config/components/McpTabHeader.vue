@@ -1,12 +1,13 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 
 interface Props {
-  activeTab: 'servers' | 'tools' | 'prompts' | 'resources'
+  activeTab: 'servers' | 'prompts' | 'resources'
 }
 
 interface Emits {
-  (e: 'update:activeTab', value: 'servers' | 'tools' | 'prompts' | 'resources'): void
+  (e: 'update:activeTab', value: 'servers' | 'prompts' | 'resources'): void
 }
 
 defineProps<Props>()
@@ -16,7 +17,6 @@ const { t } = useI18n()
 
 const tabs = [
   { id: 'servers' as const, label: 'settings.mcp.tabs.servers', icon: 'lucide:server' },
-  { id: 'tools' as const, label: 'settings.mcp.tabs.tools', icon: 'lucide:wrench' },
   { id: 'prompts' as const, label: 'settings.mcp.tabs.prompts', icon: 'lucide:message-square' },
   { id: 'resources' as const, label: 'settings.mcp.tabs.resources', icon: 'lucide:folder' }
 ]

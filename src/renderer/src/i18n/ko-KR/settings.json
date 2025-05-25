@@ -223,6 +223,7 @@
       "resources": "의지"
     },
     "serverList": "서버 목록",
+    "totalServers": "총 서버 수",
     "addServer": "서버 추가",
     "running": "실행 중",
     "stopped": "중지됨",
@@ -302,6 +303,7 @@
     "default": "기본",
     "setAsDefault": "기본 설정",
     "removeServer": "서버 삭제",
+    "autoStart": "자동 시작",
     "confirmRemoveServer": "서버 {name}을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
     "removeServerDialog": {
       "title": "서버 삭제"

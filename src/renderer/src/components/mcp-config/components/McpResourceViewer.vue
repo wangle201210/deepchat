@@ -1,26 +1,58 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { useMcpStore } from '@/stores/mcp'
-import { useI18n } from 'vue-i18n'
 import McpJsonViewer from './McpJsonViewer.vue'
 import type { ResourceListEntry } from '@shared/presenter'
 
+interface Props {
+  serverName?: string
+}
+
+const props = defineProps<Props>()
+const open = defineModel<boolean>('open')
+
 const mcpStore = useMcpStore()
-const { t } = useI18n()
 
 // 本地状态
 const selectedResource = ref<string>('')
 const resourceContent = ref<string>('')
 const resourceLoading = ref(false)
 
+// 计算属性：获取当前服务器的资源（如果指定了服务器）
+const serverResources = computed(() => {
+  if (props.serverName) {
+    return mcpStore.resources.filter((resource) => resource.client.name === props.serverName)
+  }
+  return mcpStore.resources
+})
+
+watch(open, (newOpen) => {
+  if (newOpen) {
+    selectedResource.value = ''
+    resourceContent.value = ''
+  }
+})
+
+// 当选择资源时，清空内容
+watch(selectedResource, () => {
+  resourceContent.value = ''
+})
+
 // 选择Resource
 const selectResource = (resource: ResourceListEntry) => {
   selectedResource.value = resource.uri
-  resourceContent.value = ''
 }
 
 // 加载资源内容
@@ -31,13 +63,19 @@ const loadResourceContent = async (resource: ResourceListEntry) => {
     resourceLoading.value = true
     const result = await mcpStore.readResource(resource)
 
-    // 类型断言和检查
-    if (result && typeof result === 'object' && 'content' in result) {
-      const typedResult = result as { content: unknown }
-      resourceContent.value =
-        typeof typedResult.content === 'string'
-          ? typedResult.content
-          : JSON.stringify(typedResult.content, null, 2)
+    // 处理返回结果
+    if (result && typeof result === 'object') {
+      if ('text' in result && result.text) {
+        resourceContent.value = result.text
+      } else if ('content' in result) {
+        const typedResult = result as { content: unknown }
+        resourceContent.value =
+          typeof typedResult.content === 'string'
+            ? typedResult.content
+            : JSON.stringify(typedResult.content, null, 2)
+      } else {
+        resourceContent.value = JSON.stringify(result, null, 2)
+      }
     } else {
       resourceContent.value = typeof result === 'string' ? result : JSON.stringify(result, null, 2)
     }
@@ -51,7 +89,7 @@ const loadResourceContent = async (resource: ResourceListEntry) => {
 
 // 添加计算属性：获取当前选中的资源对象
 const selectedResourceObj = computed(() => {
-  return mcpStore.resources.find((r) => r.uri === selectedResource.value)
+  return serverResources.value.find((r) => r.uri === selectedResource.value)
 })
 
 // 获取资源类型图标
@@ -78,149 +116,186 @@ const getResourceType = (uri: string) => {
 </script>
 
 <template>
-  <div class="h-full grid grid-cols-[280px_1fr] gap-6 overflow-hidden">
-    <!-- 左侧资源列表 -->
-    <div class="h-full flex flex-col overflow-hidden">
-      <div class="mb-4">
-        <h3 class="text-sm font-medium text-foreground mb-2">
-          {{ t('mcp.resources.availableResources') }}
-        </h3>
-        <p class="text-xs text-muted-foreground">{{ t('mcp.resources.selectResourceToView') }}</p>
-      </div>
+  <Sheet v-model:open="open">
+    <SheetContent
+      side="right"
+      class="w-4/5 min-w-[80vw] max-w-[80vw] p-0 bg-white dark:bg-black h-screen flex flex-col gap-0"
+    >
+      <SheetHeader class="px-4 py-3 border-b bg-card flex-shrink-0">
+        <SheetTitle class="flex items-center space-x-2">
+          <Icon icon="lucide:folder" class="h-5 w-5 text-primary" />
+          <span>{{ props.serverName ? `${props.serverName} Resources` : 'MCP Resources' }}</span>
+        </SheetTitle>
+      </SheetHeader>
 
-      <ScrollArea class="flex-1">
-        <div v-if="mcpStore.toolsLoading" class="flex justify-center py-8">
-          <Icon icon="lucide:loader" class="h-6 w-6 animate-spin text-muted-foreground" />
+      <div class="flex flex-col flex-1 overflow-hidden">
+        <!-- 小屏幕：资源选择下拉菜单 -->
+        <div class="flex-shrink-0 px-4 py-4 lg:hidden">
+          <Select v-model="selectedResource">
+            <SelectTrigger class="w-full">
+              <SelectValue placeholder="Select a resource" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem
+                v-for="resource in serverResources"
+                :key="resource.uri"
+                :value="resource.uri"
+              >
+                {{ resource.name || resource.uri }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div v-else-if="mcpStore.resources.length === 0" class="text-center py-8">
-          <div
-            class="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-3"
-          >
-            <Icon icon="lucide:folder" class="h-6 w-6 text-muted-foreground" />
-          </div>
-          <p class="text-sm text-muted-foreground">{{ t('mcp.resources.noResourcesAvailable') }}</p>
-        </div>
+        <!-- 大屏幕：左右分列布局 -->
+        <div class="flex-1 flex overflow-hidden min-h-0">
+          <!-- 左侧资源列表 (仅大屏幕显示) -->
+          <div class="hidden lg:flex lg:w-1/3 lg:border-r lg:flex-col">
+            <ScrollArea class="flex-1 min-h-0">
+              <div v-if="mcpStore.toolsLoading" class="flex justify-center py-8">
+                <Icon icon="lucide:loader" class="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
 
-        <div v-else class="space-y-2">
-          <div
-            v-for="resource in mcpStore.resources"
-            :key="resource.uri"
-            class="group p-3 rounded-lg cursor-pointer transition-all duration-200 border border-transparent hover:border-border hover:bg-accent/50"
-            :class="{ 'bg-accent border-border': selectedResource === resource.uri }"
-            @click="selectResource(resource)"
-          >
-            <div class="flex items-start space-x-2">
-              <Icon
-                :icon="getResourceIcon(resource.uri)"
-                class="h-4 w-4 text-primary mt-0.5 flex-shrink-0"
-              />
-              <div class="flex-1 min-w-0">
-                <h4 class="text-sm font-medium text-foreground truncate">
-                  {{ resource.name || resource.uri }}
-                </h4>
-                <p class="text-xs text-muted-foreground truncate mt-1">
-                  {{ resource.uri }}
-                </p>
-                <div class="flex items-center mt-2 space-x-1">
-                  <Badge variant="outline" class="text-xs">
-                    {{ resource.client.name }}
-                  </Badge>
-                  <Badge variant="secondary" class="text-xs">
-                    {{ getResourceType(resource.uri) }}
-                  </Badge>
+              <div v-else-if="serverResources.length === 0" class="text-center py-8">
+                <div
+                  class="mx-auto w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mb-3"
+                >
+                  <Icon icon="lucide:folder" class="h-5 w-5 text-muted-foreground" />
                 </div>
+                <p class="text-sm text-muted-foreground">No resources available</p>
+              </div>
+
+              <div v-else class="p-2 space-y-1">
+                <Button
+                  v-for="resource in serverResources"
+                  :key="resource.uri"
+                  variant="ghost"
+                  class="w-full justify-start h-auto p-3 text-left"
+                  :class="{
+                    'bg-accent text-accent-foreground': selectedResource === resource.uri
+                  }"
+                  @click="selectResource(resource)"
+                >
+                  <div class="flex items-start space-x-2 w-full">
+                    <Icon
+                      :icon="getResourceIcon(resource.uri)"
+                      class="h-4 w-4 text-primary mt-0.5 flex-shrink-0"
+                    />
+                    <div class="flex-1 min-w-0">
+                      <div class="font-medium text-sm truncate">
+                        {{ resource.name || resource.uri }}
+                      </div>
+                      <div class="text-xs text-muted-foreground truncate mt-1">
+                        {{ resource.uri }}
+                      </div>
+                      <div class="flex items-center mt-2 space-x-1">
+                        <Badge variant="outline" class="text-xs">
+                          {{ resource.client.name }}
+                        </Badge>
+                        <Badge variant="secondary" class="text-xs">
+                          {{ getResourceType(resource.uri) }}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </ScrollArea>
+          </div>
+
+          <!-- 右侧详情区域 -->
+          <div class="flex-1 flex flex-col overflow-hidden lg:w-2/3 min-h-0">
+            <div v-if="!selectedResourceObj" class="flex items-center justify-center h-full">
+              <div class="text-center">
+                <div
+                  class="mx-auto w-12 h-12 bg-muted/30 rounded-full flex items-center justify-center mb-3"
+                >
+                  <Icon icon="lucide:mouse-pointer-click" class="h-5 w-5 text-muted-foreground" />
+                </div>
+                <h3 class="text-base font-medium text-foreground mb-2">Select a resource</h3>
               </div>
             </div>
-          </div>
-        </div>
-      </ScrollArea>
-    </div>
 
-    <!-- 右侧操作区域 -->
-    <div class="h-full flex flex-col overflow-hidden">
-      <div v-if="!selectedResource" class="flex items-center justify-center h-full">
-        <div class="text-center">
-          <div
-            class="mx-auto w-20 h-20 bg-muted/30 rounded-full flex items-center justify-center mb-4"
-          >
-            <Icon icon="lucide:mouse-pointer-click" class="h-8 w-8 text-muted-foreground" />
+            <div v-else class="h-full flex flex-col overflow-hidden min-h-0">
+              <ScrollArea class="flex-1 min-h-0">
+                <div class="px-4 py-4 space-y-4 pb-8">
+                  <!-- 资源信息 -->
+                  <div>
+                    <div class="flex items-center space-x-2 mb-2">
+                      <Icon
+                        :icon="getResourceIcon(selectedResourceObj.uri)"
+                        class="h-5 w-5 text-primary"
+                      />
+                      <h2 class="text-lg font-semibold">
+                        {{ selectedResourceObj.name || selectedResourceObj.uri }}
+                      </h2>
+                    </div>
+                    <p class="text-sm text-secondary-foreground">
+                      {{ selectedResourceObj.description || 'No description available' }}
+                    </p>
+                    <div class="flex items-center mt-2 space-x-2">
+                      <Badge variant="outline">{{ selectedResourceObj.client.name }}</Badge>
+                      <Badge variant="secondary">{{
+                        getResourceType(selectedResourceObj.uri)
+                      }}</Badge>
+                    </div>
+                  </div>
+
+                  <!-- 资源URI -->
+                  <div class="space-y-2">
+                    <h3 class="text-sm font-medium text-foreground">Resource URI</h3>
+                    <div class="p-2 bg-muted/30 rounded-md border border-border/30">
+                      <code class="text-xs font-mono text-foreground break-all">{{
+                        selectedResourceObj.uri
+                      }}</code>
+                    </div>
+                  </div>
+
+                  <!-- 加载资源按钮 -->
+                  <div>
+                    <Button
+                      class="w-full"
+                      :disabled="resourceLoading"
+                      @click="loadResourceContent(selectedResourceObj as ResourceListEntry)"
+                    >
+                      <Icon
+                        v-if="resourceLoading"
+                        icon="lucide:loader"
+                        class="mr-2 h-4 w-4 animate-spin"
+                      />
+                      <Icon v-else icon="lucide:download" class="mr-2 h-4 w-4" />
+                      {{ resourceLoading ? 'Loading...' : 'Load Content' }}
+                    </Button>
+                  </div>
+
+                  <!-- 资源内容显示 -->
+                  <div v-if="resourceContent || resourceLoading">
+                    <McpJsonViewer
+                      :content="resourceContent"
+                      :loading="resourceLoading"
+                      title="Resource Content"
+                      readonly
+                    />
+                  </div>
+
+                  <!-- 空状态 -->
+                  <div v-else class="text-center py-12">
+                    <div
+                      class="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-4"
+                    >
+                      <Icon icon="lucide:file-text" class="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h3 class="text-sm font-medium text-foreground mb-2">No content loaded</h3>
+                    <p class="text-xs text-muted-foreground">
+                      Click "Load Content" to view the resource
+                    </p>
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
           </div>
-          <h3 class="text-lg font-medium text-foreground mb-2">
-            {{ t('mcp.resources.selectResource') }}
-          </h3>
-          <p class="text-sm text-muted-foreground">
-            {{ t('mcp.resources.selectResourceDescription') }}
-          </p>
         </div>
       </div>
-
-      <div v-else class="h-full flex flex-col overflow-hidden">
-        <!-- 资源信息头部 -->
-        <div class="flex-shrink-0 pb-4 border-b">
-          <div class="flex items-start space-x-3">
-            <div class="p-2 bg-primary/10 rounded-lg">
-              <Icon :icon="getResourceIcon(selectedResource)" class="h-5 w-5 text-primary" />
-            </div>
-            <div class="flex-1 min-w-0">
-              <h2 class="text-lg font-semibold text-foreground truncate">
-                {{ selectedResourceObj?.name || selectedResource }}
-              </h2>
-              <p class="text-sm text-muted-foreground mt-1 truncate">
-                {{ selectedResource }}
-              </p>
-              <div class="flex items-center mt-2 space-x-2">
-                <Badge variant="outline">{{ selectedResourceObj?.client.name }}</Badge>
-                <Badge variant="secondary">{{ getResourceType(selectedResource) }}</Badge>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <ScrollArea class="flex-1 mt-4">
-          <div class="space-y-6">
-            <!-- 加载资源按钮 -->
-            <div>
-              <Button
-                class="w-full"
-                :disabled="resourceLoading"
-                @click="loadResourceContent(selectedResourceObj as ResourceListEntry)"
-              >
-                <Icon
-                  v-if="resourceLoading"
-                  icon="lucide:loader"
-                  class="mr-2 h-4 w-4 animate-spin"
-                />
-                <Icon v-else icon="lucide:download" class="mr-2 h-4 w-4" />
-                {{ resourceLoading ? t('mcp.resources.loading') : t('mcp.resources.loadContent') }}
-              </Button>
-            </div>
-
-            <!-- 资源内容显示 -->
-            <div v-if="resourceContent || resourceLoading">
-              <McpJsonViewer
-                :content="resourceContent"
-                :loading="resourceLoading"
-                :title="t('mcp.resources.contentTitle')"
-                readonly
-              />
-            </div>
-
-            <!-- 空状态 -->
-            <div v-else class="text-center py-12">
-              <div
-                class="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-4"
-              >
-                <Icon icon="lucide:file-text" class="h-6 w-6 text-muted-foreground" />
-              </div>
-              <h3 class="text-sm font-medium text-foreground mb-2">
-                {{ t('mcp.resources.noContentLoaded') }}
-              </h3>
-              <p class="text-xs text-muted-foreground">{{ t('mcp.resources.clickLoadToView') }}</p>
-            </div>
-          </div>
-        </ScrollArea>
-      </div>
-    </div>
-  </div>
+    </SheetContent>
+  </Sheet>
 </template>

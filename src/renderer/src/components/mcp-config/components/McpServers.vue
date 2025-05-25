@@ -19,6 +19,9 @@ import { useToast } from '@/components/ui/toast'
 import { useRouter } from 'vue-router'
 import McpServerCard from './McpServerCard.vue'
 import McpServerForm from '../mcpServerForm.vue'
+import McpToolPanel from './McpToolPanel.vue'
+import McpPromptPanel from './McpPromptPanel.vue'
+import McpResourceViewer from './McpResourceViewer.vue'
 import type { MCPServerConfig } from '@shared/presenter'
 
 const mcpStore = useMcpStore()
@@ -32,7 +35,13 @@ const isAddServerDialogOpen = ref(false)
 const isEditServerDialogOpen = ref(false)
 const isResetConfirmDialogOpen = ref(false)
 const isRemoveConfirmDialogOpen = ref(false)
+const isToolPanelOpen = ref(false)
+const isPromptPanelOpen = ref(false)
+const isResourceViewerOpen = ref(false)
 const selectedServer = ref<string>('')
+const selectedServerForTools = ref<string>('')
+const selectedServerForPrompts = ref<string>('')
+const selectedServerForResources = ref<string>('')
 
 // 计算属性：区分内置服务和普通服务
 const inMemoryServers = computed(() => {
@@ -48,6 +57,21 @@ const regularServers = computed(() => {
     return config?.type !== 'inmemory'
   })
 })
+
+// 计算属性：获取每个服务器的工具数量
+const getServerToolsCount = (serverName: string) => {
+  return mcpStore.tools.filter((tool) => tool.server.name === serverName).length
+}
+
+// 计算属性：获取每个服务器的prompts数量
+const getServerPromptsCount = (serverName: string) => {
+  return mcpStore.prompts.filter((prompt) => prompt.client.name === serverName).length
+}
+
+// 计算属性：获取每个服务器的resources数量
+const getServerResourcesCount = (serverName: string) => {
+  return mcpStore.resources.filter((resource) => resource.client.name === serverName).length
+}
 
 // 事件处理函数
 const handleAddServer = async (serverName: string, serverConfig: MCPServerConfig) => {
@@ -153,12 +177,33 @@ const openEditServerDialog = (serverName: string) => {
   selectedServer.value = serverName
   isEditServerDialogOpen.value = true
 }
+
+const handleViewTools = async (serverName: string) => {
+  selectedServerForTools.value = serverName
+  // 确保工具已加载
+  await mcpStore.loadTools()
+  isToolPanelOpen.value = true
+}
+
+const handleViewPrompts = async (serverName: string) => {
+  selectedServerForPrompts.value = serverName
+  // 确保提示模板已加载
+  await mcpStore.loadPrompts()
+  isPromptPanelOpen.value = true
+}
+
+const handleViewResources = async (serverName: string) => {
+  selectedServerForResources.value = serverName
+  // 确保资源已加载
+  await mcpStore.loadResources()
+  isResourceViewerOpen.value = true
+}
 </script>
 
 <template>
   <div class="h-full flex flex-col">
     <!-- 服务器列表 - 占满主要空间 -->
-    <ScrollArea class="flex-1 px-3 pt-2">
+    <ScrollArea class="flex-1 px-3">
       <div v-if="mcpStore.configLoading" class="flex justify-center py-8">
         <div class="text-center">
           <Icon
@@ -183,7 +228,7 @@ const openEditServerDialog = (serverName: string) => {
         </p>
       </div>
 
-      <div v-else class="space-y-4 pb-3">
+      <div v-else class="space-y-4 py-3">
         <!-- 内置服务 -->
         <div v-if="inMemoryServers.length > 0">
           <div class="flex items-center space-x-2 mb-3">
@@ -195,9 +240,7 @@ const openEditServerDialog = (serverName: string) => {
               {{ inMemoryServers.length }}
             </div>
           </div>
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <McpServerCard
               v-for="server in inMemoryServers"
               :key="server.name"
@@ -205,9 +248,15 @@ const openEditServerDialog = (serverName: string) => {
               :is-built-in="true"
               :is-loading="mcpStore.serverLoadingStates[server.name]"
               :disabled="mcpStore.configLoading"
+              :tools-count="getServerToolsCount(server.name)"
+              :prompts-count="getServerPromptsCount(server.name)"
+              :resources-count="getServerResourcesCount(server.name)"
               @toggle="handleToggleServer(server.name)"
               @toggle-default="handleToggleDefaultServer(server.name)"
               @edit="openEditServerDialog(server.name)"
+              @view-tools="handleViewTools(server.name)"
+              @view-prompts="handleViewPrompts(server.name)"
+              @view-resources="handleViewResources(server.name)"
             />
           </div>
         </div>
@@ -223,9 +272,7 @@ const openEditServerDialog = (serverName: string) => {
               {{ regularServers.length }}
             </div>
           </div>
-          <div
-            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3"
-          >
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <McpServerCard
               v-for="server in regularServers"
               :key="server.name"
@@ -233,10 +280,16 @@ const openEditServerDialog = (serverName: string) => {
               :is-built-in="false"
               :is-loading="mcpStore.serverLoadingStates[server.name]"
               :disabled="mcpStore.configLoading"
+              :tools-count="getServerToolsCount(server.name)"
+              :prompts-count="getServerPromptsCount(server.name)"
+              :resources-count="getServerResourcesCount(server.name)"
               @toggle="handleToggleServer(server.name)"
               @toggle-default="handleToggleDefaultServer(server.name)"
               @edit="openEditServerDialog(server.name)"
               @remove="handleRemoveServer(server.name)"
+              @view-tools="handleViewTools(server.name)"
+              @view-prompts="handleViewPrompts(server.name)"
+              @view-resources="handleViewResources(server.name)"
             />
           </div>
         </div>
@@ -355,5 +408,17 @@ const openEditServerDialog = (serverName: string) => {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <!-- 工具调试弹窗 -->
+    <McpToolPanel v-model:open="isToolPanelOpen" :server-name="selectedServerForTools" />
+
+    <!-- 提示模板调试弹窗 -->
+    <McpPromptPanel v-model:open="isPromptPanelOpen" :server-name="selectedServerForPrompts" />
+
+    <!-- 资源查看器弹窗 -->
+    <McpResourceViewer
+      v-model:open="isResourceViewerOpen"
+      :server-name="selectedServerForResources"
+    />
   </div>
 </template>

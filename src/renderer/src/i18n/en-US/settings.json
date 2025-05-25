@@ -314,6 +314,7 @@
     "default": "Default",
     "setAsDefault": "Set as Default",
     "removeServer": "Remove Server",
+    "autoStart": "Auto Start",
     "confirmRemoveServer": "Are you sure you want to delete server {name}? This action cannot be undone.",
     "removeServerDialog": {
       "title": "Delete Server"

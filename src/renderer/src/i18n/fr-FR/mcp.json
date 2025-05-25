@@ -2,7 +2,8 @@
   "tools": {
     "searchPlaceholder": "Rechercher des outils...",
     "noToolsAvailable": "Aucun outil disponible",
-    "selectTool": "Veuillez sélectionner un outil à déboguer à gauche",
+    "toolList": "Liste des outils",
+    "functionDescription": "Description de la fonction",
     "path": "Chemin",
     "pathPlaceholder": "Entrez le chemin du fichier",
     "searchPattern": "Modèle de recherche",

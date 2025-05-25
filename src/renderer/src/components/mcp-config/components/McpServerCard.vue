@@ -12,7 +12,8 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import { useI18n } from 'vue-i18n'
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick, onMounted, watch } from 'vue'
+import { Separator } from '@/components/ui/separator'
 
 interface ServerInfo {
   name: string
@@ -32,6 +33,9 @@ interface Props {
   isBuiltIn?: boolean
   isLoading?: boolean
   disabled?: boolean
+  toolsCount?: number
+  promptsCount?: number
+  resourcesCount?: number
 }
 
 interface Emits {
@@ -41,6 +45,9 @@ interface Emits {
   (e: 'remove'): void
   (e: 'viewLogs'): void
   (e: 'restart'): void
+  (e: 'viewTools'): void
+  (e: 'viewPrompts'): void
+  (e: 'viewResources'): void
 }
 
 const props = defineProps<Props>()
@@ -48,6 +55,8 @@ defineEmits<Emits>()
 
 const { t } = useI18n()
 const isDescriptionExpanded = ref(false)
+const descriptionRef = ref<HTMLElement>()
+const needsExpansion = ref(false)
 
 const getLocalizedServerName = (serverName: string) => {
   return t(`mcp.inmemory.${serverName}.name`, serverName)
@@ -95,11 +104,6 @@ const statusConfig = computed(() => {
   }
 })
 
-// 获取服务器类型图标
-const typeIcon = computed(() => {
-  return props.server.type === 'http' ? 'lucide:globe' : 'lucide:terminal'
-})
-
 // 获取完整描述
 const fullDescription = computed(() => {
   return props.isBuiltIn
@@ -107,147 +111,194 @@ const fullDescription = computed(() => {
     : props.server.descriptions
 })
 
-// 判断描述是否需要展开功能
-const needsExpansion = computed(() => {
-  return fullDescription.value.length > 50
+// 检查文本是否溢出
+const checkTextOverflow = async () => {
+  await nextTick()
+  if (!descriptionRef.value) return
+
+  const element = descriptionRef.value
+  // 检查是否有文本溢出（scrollHeight > clientHeight）
+  needsExpansion.value = element.scrollHeight > element.clientHeight
+}
+
+// 监听描述变化，重新检查是否需要展开
+onMounted(() => {
+  checkTextOverflow()
+})
+
+// 当描述内容变化时重新检查
+const watchDescription = computed(() => fullDescription.value)
+watch(watchDescription, () => {
+  checkTextOverflow()
 })
 </script>
 
 <template>
   <div
-    class="bg-card px-4 py-2 shadow-sm border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary group"
+    class="bg-card shadow-sm border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary group"
   >
-    <!-- 头部：图标、名称、状态、菜单 -->
-    <div class="flex items-center justify-between mb-3">
-      <div class="flex items-center space-x-2 flex-1 min-w-0">
-        <!-- 服务器图标 -->
-        <div class="text-lg flex-shrink-0">{{ server.icons }}</div>
+    <div class="px-4 py-2">
+      <!-- 头部：图标、名称、状态、菜单 -->
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-2 flex-1 min-w-0">
+          <!-- 服务器图标 -->
+          <div class="text-lg flex-shrink-0">{{ server.icons }}</div>
 
-        <!-- 名称 -->
-        <h3 class="text-sm font-bold truncate flex-1">
-          {{ isBuiltIn ? getLocalizedServerName(server.name) : server.name }}
-        </h3>
+          <!-- 名称 -->
+          <h3 class="text-sm font-bold truncate flex-1">
+            {{ isBuiltIn ? getLocalizedServerName(server.name) : server.name }}
+          </h3>
+        </div>
+
+        <!-- 操作菜单 -->
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            >
+              <Icon icon="lucide:more-horizontal" class="h-3 w-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem @click="$emit('edit')" :disabled="disabled">
+              <Icon icon="lucide:edit-3" class="h-4 w-4 mr-2" />
+              {{ t('settings.mcp.editServer') }}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem @click="$emit('toggleDefault')" :disabled="disabled">
+              <Icon
+                :icon="server.isDefault ? 'lucide:power-off' : 'lucide:power'"
+                class="h-4 w-4 mr-2"
+              />
+              {{
+                server.isDefault ? t('settings.mcp.removeDefault') : t('settings.mcp.setAsDefault')
+              }}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator v-if="!isBuiltIn" />
+            <DropdownMenuItem
+              v-if="!isBuiltIn"
+              @click="$emit('remove')"
+              :disabled="disabled"
+              class="text-destructive focus:text-destructive"
+            >
+              <Icon icon="lucide:trash-2" class="h-4 w-4 mr-2" />
+              {{ t('settings.mcp.removeServer') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      <!-- 操作菜单 -->
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-          >
-            <Icon icon="lucide:more-horizontal" class="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem @click="$emit('edit')" :disabled="disabled">
-            <Icon icon="lucide:edit-3" class="h-4 w-4 mr-2" />
-            {{ t('settings.mcp.editServer') }}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem @click="$emit('toggleDefault')" :disabled="disabled">
-            <Icon
-              :icon="server.isDefault ? 'lucide:power-off' : 'lucide:power'"
-              class="h-4 w-4 mr-2"
-            />
-            {{
-              server.isDefault ? t('settings.mcp.removeDefault') : t('settings.mcp.setAsDefault')
-            }}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator v-if="!isBuiltIn" />
-          <DropdownMenuItem
-            v-if="!isBuiltIn"
-            @click="$emit('remove')"
-            :disabled="disabled"
-            class="text-destructive focus:text-destructive"
-          >
-            <Icon icon="lucide:trash-2" class="h-4 w-4 mr-2" />
-            {{ t('settings.mcp.removeServer') }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <!-- 类型和标识 -->
+      <div class="flex items-center space-x-2 mb-2">
+        <!-- 服务器类型 -->
+        <Badge variant="outline" class="text-xs h-4 px-1.5">
+          {{ server.type === 'http' ? 'HTTP' : 'Local' }}
+        </Badge>
+
+        <!-- 默认启动标识 -->
+        <Badge v-if="server.isDefault" variant="default" class="text-xs h-4 px-1.5">
+          {{ t('settings.mcp.default') }}
+        </Badge>
+      </div>
+
+      <!-- 描述 -->
+      <div class="mb-2">
+        <p
+          class="text-xs text-secondary-foreground cursor-pointer overflow-hidden leading-5"
+          :class="[
+            !isDescriptionExpanded ? 'line-clamp-1' : '',
+            needsExpansion ? 'hover:text-foreground transition-colors' : ''
+          ]"
+          style="min-height: 1rem"
+          @click="needsExpansion && (isDescriptionExpanded = !isDescriptionExpanded)"
+          ref="descriptionRef"
+        >
+          {{ fullDescription }}
+        </p>
+        <Button
+          variant="link"
+          size="sm"
+          class="h-auto p-0 text-xs mt-1 hover:no-underline gap-1"
+          :class="[needsExpansion ? 'opacity-100' : 'opacity-0 pointer-events-none']"
+          @click="isDescriptionExpanded = !isDescriptionExpanded"
+        >
+          <Icon
+            :icon="isDescriptionExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+            class="h-3 w-3"
+          />
+          {{ isDescriptionExpanded ? t('common.collapse') : t('common.expand') }}
+        </Button>
+      </div>
+
+      <!-- 底部控制 -->
+      <div class="flex items-center justify-between">
+        <!-- 状态 -->
+        <div class="flex items-center space-x-1.5">
+          <div :class="['w-2 h-2 rounded-full', statusConfig.dot]" />
+          <span :class="['text-xs', statusConfig.color]">
+            {{ statusConfig.text }}
+          </span>
+
+          <!-- 错误提示 -->
+          <TooltipProvider v-if="server.errorMessage">
+            <Tooltip>
+              <TooltipTrigger>
+                <Icon icon="lucide:alert-circle" class="w-3 h-3 text-red-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p class="text-xs max-w-xs">{{ server.errorMessage }}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <Switch
+            :checked="server.isRunning"
+            :disabled="disabled || isLoading"
+            @update:checked="$emit('toggle')"
+          />
+        </div>
+      </div>
     </div>
-
-    <!-- 类型和标识 -->
-    <div class="flex items-center space-x-2 mb-2">
-      <!-- 服务器类型 -->
-      <Badge variant="outline" class="text-xs h-4 px-1.5">
-        {{ server.type === 'http' ? 'HTTP' : 'Local' }}
-      </Badge>
-
-      <!-- 内置标识 -->
-      <Badge v-if="isBuiltIn" variant="outline" class="text-xs h-4 px-1.5">
-        {{ t('settings.mcp.builtIn') }}
-      </Badge>
-
-      <!-- 默认启动标识 -->
-      <TooltipProvider v-if="server.isDefault">
-        <Tooltip>
-          <TooltipTrigger>
-            <Icon icon="lucide:zap" class="h-3 w-3 text-orange-500" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p class="text-xs">{{ t('settings.mcp.default') }}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-
-    <!-- 描述 -->
-    <div class="mb-2">
-      <p
-        class="text-xs text-secondary-foreground cursor-pointer overflow-hidden leading-5"
-        :class="[
-          !isDescriptionExpanded ? 'line-clamp-1' : '',
-          needsExpansion ? 'hover:text-foreground transition-colors' : ''
-        ]"
-        style="min-height: 1rem"
-        @click="needsExpansion && (isDescriptionExpanded = !isDescriptionExpanded)"
-      >
-        {{ fullDescription }}
-      </p>
+    <div class="flex flex-row bg-muted h-9 items-center">
+      <!-- 工具按钮 -->
       <Button
-        variant="link"
-        size="sm"
-        class="h-auto p-0 text-xs mt-1 hover:no-underline gap-1 opacity-0"
-        :class="[needsExpansion ? 'opacity-100' : 'opacity-0']"
-        @click="isDescriptionExpanded = !isDescriptionExpanded"
+        v-if="toolsCount !== undefined"
+        variant="ghost"
+        class="h-full flex-1 text-xs hover:bg-secondary rounded-none"
+        :disabled="disabled || toolsCount === 0"
+        @click="$emit('viewTools')"
       >
-        <Icon
-          :icon="isDescriptionExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
-          class="h-3 w-3"
-        />
-        {{ isDescriptionExpanded ? t('common.collapse') : t('common.expand') }}
+        <Icon icon="lucide:wrench" class="h-3 w-3 mr-1" />
+        {{ toolsCount }}
       </Button>
-    </div>
-
-    <!-- 底部控制 -->
-    <div class="flex items-center justify-between">
-      <!-- 状态 -->
-      <div class="flex items-center space-x-1.5">
-        <div :class="['w-2 h-2 rounded-full', statusConfig.dot]" />
-        <span :class="['text-xs', statusConfig.color]">
-          {{ statusConfig.text }}
-        </span>
-
-        <!-- 错误提示 -->
-        <TooltipProvider v-if="server.errorMessage">
-          <Tooltip>
-            <TooltipTrigger>
-              <Icon icon="lucide:alert-circle" class="w-3 h-3 text-red-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p class="text-xs max-w-xs">{{ server.errorMessage }}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      <Switch
-        :checked="server.isRunning"
-        :disabled="disabled || isLoading"
-        @update:checked="$emit('toggle')"
-      />
+      <!-- 提示词按钮 -->
+      <Separator orientation="vertical" class="h-5" />
+      <Button
+        v-if="promptsCount !== undefined"
+        variant="ghost"
+        class="h-full flex-1 text-xs hover:bg-secondary rounded-none"
+        :disabled="disabled || promptsCount === 0"
+        @click="$emit('viewPrompts')"
+      >
+        <Icon icon="lucide:message-square-quote" class="h-3 w-3 mr-1" />
+        {{ promptsCount }}
+      </Button>
+      <Separator orientation="vertical" class="h-5" />
+      <!-- 资源按钮 -->
+      <Button
+        v-if="resourcesCount !== undefined"
+        variant="ghost"
+        class="h-full flex-1 text-xs hover:bg-secondary rounded-none"
+        :disabled="disabled || resourcesCount === 0"
+        @click="$emit('viewResources')"
+      >
+        <Icon icon="lucide:folder" class="h-3 w-3 mr-1" />
+        {{ resourcesCount }}
+      </Button>
     </div>
   </div>
 </template>

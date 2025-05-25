@@ -1,5 +1,5 @@
 export { default as McpTabHeader } from './McpTabHeader.vue'
-export { default as McpServerTab } from './McpServerTab.vue'
+export { default as McpServers } from './McpServers.vue'
 export { default as McpServerCard } from './McpServerCard.vue'
 export { default as McpToolPanel } from './McpToolPanel.vue'
 export { default as McpPromptPanel } from './McpPromptPanel.vue'
