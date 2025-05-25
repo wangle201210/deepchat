@@ -102,7 +102,7 @@
       </div>
 
       <!-- 内容区域 -->
-      <div class="flex-1 overflow-auto h-0">
+      <div class="flex-1 overflow-auto h-0 artifact-scroll-container">
         <template v-if="isPreview">
           <component
             :is="artifactComponent"
@@ -328,7 +328,7 @@ const handleCopyAsImage = async () => {
     targetSelector = '.html-iframe-wrapper'
   } else {
     // 非 iframe 类型使用默认配置
-    containerSelector = '.artifact-dialog-content'
+    containerSelector = '.artifact-scroll-container'
     targetSelector = '.artifact-dialog-content'
   }
 
