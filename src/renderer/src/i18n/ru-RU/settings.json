@@ -223,6 +223,7 @@
       "resources": "ресурс"
     },
     "serverList": "Список серверов",
+    "totalServers": "Всего серверов",
     "addServer": "Добавить сервер",
     "running": "Запущен",
     "stopped": "Остановлен",
@@ -302,6 +303,7 @@
     "default": "По умолчанию",
     "setAsDefault": "Установить по умолчанию",
     "removeServer": "Удалить сервер",
+    "autoStart": "Автозапуск",
     "confirmRemoveServer": "Вы уверены, что хотите удалить сервер {name}? Это действие нельзя отменить.",
     "removeServerDialog": {
       "title": "Удалить сервер"
@@ -324,7 +326,14 @@
     "marketplace": "Перейдите на MCP Market и установите его одним щелчком",
     "maxDefaultServersReached": "Только 3 сервера по умолчанию могут быть установлены по максимум",
     "removeDefaultFirst": "Сначала удалите несколько серверов по умолчанию",
-    "higressMarket": "Перейти к установке Higress MCP"
+    "higressMarket": "Перейти к установке Higress MCP",
+    "technicalDetails": "Технические детали",
+    "httpServer": "HTTP сервер",
+    "localProcess": "Локальный процесс",
+    "restartServer": "Перезапустить сервер",
+    "viewLogs": "Просмотр логов",
+    "starting": "Запуск",
+    "error": "Ошибка"
   },
   "about": {
     "title": "О нас",

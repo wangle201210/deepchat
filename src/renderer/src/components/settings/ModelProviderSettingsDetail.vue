@@ -42,16 +42,16 @@
 
     <!-- 对话框容器 -->
     <ProviderDialogContainer
-      :provider="provider"
-      :provider-models="providerModels"
-      :custom-models="customModels"
-      :model-to-disable="modelToDisable"
-      :check-result="checkResult"
       v-model:show-confirm-dialog="showConfirmDialog"
       v-model:show-model-list-dialog="showModelListDialog"
       v-model:show-check-model-dialog="showCheckModelDialog"
       v-model:show-disable-all-confirm-dialog="showDisableAllConfirmDialog"
       v-model:show-delete-provider-dialog="showDeleteProviderDialog"
+      :provider="provider"
+      :provider-models="providerModels"
+      :custom-models="customModels"
+      :model-to-disable="modelToDisable"
+      :check-result="checkResult"
       @confirm-disable-model="confirmDisable"
       @model-enabled-change="handleModelEnabledChange"
       @confirm-disable-all-models="confirmDisableAll"

@@ -64,9 +64,11 @@
   "languageSystem": "システムに従ってください",
   "watermarkTip": "AIで生成されました",
   "collapse": "折りたたむ",
-  "expand": "展開する",
+  "expand": "展開",
   "image": "写真",
-  "add": "新しい",
+  "add": "追加",
+  "reset": "リセット",
+  "format": "フォーマット",
   "edit": "編集",
   "delete": "削除"
 }

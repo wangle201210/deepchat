@@ -11,7 +11,7 @@ i18n:
   locales: ['zh-CN','en-US','ko-KR','ru-RU','zh-HK','fr-FR']
 
 # 国际化开发指南
-
+R
 ## 多语言支持
 
 本项目支持多语言，包括：
@@ -31,7 +31,7 @@ i18n:
 
 ## 文件结构
 
-- 语言文件位于 `src/renderer/src/locales/` 目录
+- 语言文件位于 `src/renderer/src/i18n/` 目录
 - 每种语言都有独立的 JSON 文件
 - 共享的翻译键值放在 `common.json` 中
 

@@ -66,7 +66,9 @@
   "collapse": "접기",
   "expand": "펼치기",
   "image": "그림",
-  "add": "새로운",
+  "add": "추가",
+  "reset": "재설정",
+  "format": "형식",
   "edit": "편집",
   "delete": "삭제"
 }

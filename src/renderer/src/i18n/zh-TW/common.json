@@ -68,5 +68,6 @@
   "copyFailedDesc": "無法複製內容到剪貼板",
   "copyImageSuccess": "複製成功",
   "copyImageSuccessDesc": "圖片已復製到剪貼板",
-  "copySuccessDesc": "內容已復製到剪貼板"
+  "copySuccessDesc": "內容已復製到剪貼板",
+  "reset": "重置"
 }

@@ -223,6 +223,7 @@
       "resources": "Resources"
     },
     "serverList": "Liste des serveurs",
+    "totalServers": "Total des serveurs",
     "addServer": "Ajouter un serveur",
     "running": "En cours d'exécution",
     "stopped": "Arrêté",
@@ -312,6 +313,8 @@
     "isDefault": "Serveur par défaut",
     "removeDefault": "Supprimer par défaut",
     "removeServer": "Supprimer le serveur",
+    "autoStart": "Démarrage automatique",
+    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {name} ? Cette action ne peut pas être annulée.",
     "removeServerDialog": {
       "title": "Supprimer le serveur"
     },
@@ -324,7 +327,14 @@
     "marketplace": "Allez sur MCP Market et installez-le en un seul clic",
     "maxDefaultServersReached": "Seuls 3 serveurs par défaut peuvent être définis au maximum",
     "removeDefaultFirst": "Veuillez supprimer d'abord certains serveurs par défaut",
-    "higressMarket": "Aller à l'installation de Higress MCP"
+    "higressMarket": "Aller à l'installation de Higress MCP",
+    "technicalDetails": "Détails techniques",
+    "httpServer": "Serveur HTTP",
+    "localProcess": "Processus local",
+    "restartServer": "Redémarrer le serveur",
+    "viewLogs": "Voir les journaux",
+    "starting": "Démarrage",
+    "error": "Erreur"
   },
   "about": {
     "checkUpdate": "Vérifier les mises à jour",

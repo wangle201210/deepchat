@@ -179,7 +179,10 @@
     "azureApiVersion": "API Version",
     "safety": {
       "title": "Safety settings"
-    }
+    },
+    "serverList": "Server List",
+    "totalServers": "Total Servers",
+    "addServer": "Add Server"
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",
@@ -217,6 +220,13 @@
     "enabledDescription": "Enable or disable MCP functionality and tools",
     "enableToAccess": "Please enable MCP to access configuration options",
     "marketplace": "Go to the MCP Market for one-click installation",
+    "technicalDetails": "Technical Details",
+    "httpServer": "HTTP Server",
+    "localProcess": "Local Process",
+    "restartServer": "Restart Server",
+    "viewLogs": "View Logs",
+    "starting": "Starting",
+    "error": "Error",
     "tabs": {
       "servers": "Servers",
       "tools": "Tools",
@@ -224,6 +234,7 @@
       "resources": "Resources"
     },
     "serverList": "Server List",
+    "totalServers": "Total Servers",
     "addServer": "Add Server",
     "running": "Running",
     "stopped": "Stopped",
@@ -303,6 +314,7 @@
     "default": "Default",
     "setAsDefault": "Set as Default",
     "removeServer": "Remove Server",
+    "autoStart": "Auto Start",
     "confirmRemoveServer": "Are you sure you want to delete server {name}? This action cannot be undone.",
     "removeServerDialog": {
       "title": "Delete Server"

@@ -95,7 +95,8 @@
   "tools": {
     "searchPlaceholder": "도구 검색...",
     "noToolsAvailable": "사용 가능한 도구 없음",
-    "selectTool": "왼쪽에서 디버깅할 도구를 선택하세요",
+    "toolList": "도구 목록",
+    "functionDescription": "기능 설명",
     "path": "경로",
     "pathPlaceholder": "파일 경로 입력",
     "searchPattern": "검색 패턴",

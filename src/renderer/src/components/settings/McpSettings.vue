@@ -47,7 +47,7 @@
     <!-- MCP配置 -->
     <div class="flex-grow overflow-y-auto">
       <div v-if="mcpEnabled" class="border-t h-full">
-        <McpConfig />
+        <McpServers />
       </div>
       <div v-else class="p-4 text-center text-muted-foreground text-sm">
         {{ t('settings.mcp.enableToAccess') }}
@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { computed } from 'vue'
-import McpConfig from '@/components/mcp-config/mcpConfig.vue'
+import McpServers from '@/components/mcp-config/components/McpServers.vue'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
