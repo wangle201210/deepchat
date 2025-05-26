@@ -4,7 +4,7 @@ import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import {
   Select,
   SelectContent,
@@ -176,6 +176,9 @@ const promptArgsDescription = computed(() => {
           <Icon icon="lucide:message-square-text" class="h-5 w-5 text-primary" />
           <span>{{ props.serverName ? `${props.serverName}` : '' }}</span>
         </SheetTitle>
+        <SheetDescription>
+          {{ t('mcp.prompts.dialogDescription') }}
+        </SheetDescription>
       </SheetHeader>
 
       <div class="flex flex-col flex-1 overflow-hidden">

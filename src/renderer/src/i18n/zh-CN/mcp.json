@@ -207,18 +207,21 @@
     "noDescription": "暂无描述",
     "selectPrompt": "此处展示选中的Prompt",
     "parameters": "Prompt 参数",
+    "input": "输入参数",
     "runningPrompt": "Prompt 获取中",
     "executeButton": "点击获取",
     "resultTitle": "Prompt 详情",
     "resetToDefault": "重置为默认参数",
     "invalidJson": "无效的 JSON 格式",
-    "parametersHint": "请输入 JSON 格式的参数，支持自动格式化"
+    "parametersHint": "请输入 JSON 格式的参数，支持自动格式化",
+    "dialogDescription": "调试和测试MCP服务器提供的提示模板"
   },
   "resources": {
     "noResourcesAvailable": "暂无 Resources",
     "selectResource": "此处展示 Resources 内容",
     "loading": "加载中",
     "loadContent": "获取 Resource 内容",
-    "pleaseSelect": "点击获取展示Resources详情"
+    "pleaseSelect": "点击获取展示Resources详情",
+    "dialogDescription": "浏览和查看MCP服务器提供的资源"
   }
 }

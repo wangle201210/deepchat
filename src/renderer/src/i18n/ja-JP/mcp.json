@@ -181,19 +181,22 @@
     "noDescription": "まだ説明はありません",
     "selectPrompt": "ここに示されています",
     "parameters": "プロンプトパラメーター",
+    "input": "入力パラメーター",
     "runningPrompt": "プロンプトが取得されています",
     "executeButton": "クリックして取得します",
     "resultTitle": "詳細を迅速にします",
     "invalidJson": "無効なJSON形式",
     "parametersHint": "JSON形式のパラメーターを入力してください。自動フォーマットをサポートしてください",
-    "resetToDefault": "デフォルトのパラメーターにリセットします"
+    "resetToDefault": "デフォルトのパラメーターにリセットします",
+    "dialogDescription": "MCPサーバーが提供するプロンプトをデバッグおよびテストします"
   },
   "resources": {
     "noResourcesAvailable": "なしリソース",
     "selectResource": "ここにリソースのコンテンツを表示します",
     "loading": "読み込み",
     "loadContent": "リソースコンテンツを取得します",
-    "pleaseSelect": "クリックして表示リソースの詳細を取得します"
+    "pleaseSelect": "クリックして表示リソースの詳細を取得します",
+    "dialogDescription": "MCPサーバーが提供するリソースを参照および表示します"
   },
   "errors": {
     "loadConfigFailed": "MCP設定の読み込みに失敗しました",

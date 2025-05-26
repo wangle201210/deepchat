@@ -4,7 +4,7 @@ import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import {
   Select,
   SelectContent,
@@ -149,6 +149,9 @@ const selectTool = (tool: MCPToolDefinition) => {
           <Icon icon="lucide:wrench" class="h-5 w-5 text-primary" />
           <span>{{ t('mcp.tools.title') }} - {{ serverName }}</span>
         </SheetTitle>
+        <SheetDescription>
+          {{ t('mcp.tools.dialogDescription') }}
+        </SheetDescription>
       </SheetHeader>
 
       <div class="flex flex-col flex-1 overflow-hidden">
