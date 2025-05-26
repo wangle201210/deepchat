@@ -181,6 +181,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "Auto Template Prompting",
       "desc": "Automatically selects the most suitable custom prompt based on user input and intelligently fills the prompt template."
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "Conversation History Search",
+      "desc": "DeepChat built-in conversation history search service, can search historical conversation records and message contents"
     }
   },
   "prompts": {
