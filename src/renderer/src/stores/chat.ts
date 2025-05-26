@@ -98,6 +98,22 @@ export const useChatStore = defineStore('chat', () => {
       isLoading.value = true
       const result = await threadP.getConversationList(page, pageSize.value)
 
+      // Sort conversations: Pinned first, then by date
+      result.list.sort((a, b) => {
+        // Treat is_pinned undefined as 0 (not pinned)
+        const aIsPinned = a.is_pinned === 1;
+        const bIsPinned = b.is_pinned === 1;
+
+        if (aIsPinned && !bIsPinned) {
+          return -1; // a comes first
+        }
+        if (!aIsPinned && bIsPinned) {
+          return 1; // b comes first
+        }
+        // If both have the same pinned status, sort by updatedAt
+        return b.updatedAt - a.updatedAt;
+      });
+
       // 按日期分组处理会话列表
       const groupedThreads: Map<string, CONVERSATION[]> = new Map()
 
@@ -106,6 +122,9 @@ export const useChatStore = defineStore('chat', () => {
         if (!groupedThreads.has(date)) {
           groupedThreads.set(date, [])
         }
+        // Ensure is_pinned is part of the conversation object
+        // The spread operator `...conv` already includes `is_pinned` if it exists.
+        // Explicitly setting `is_pinned: conv.is_pinned` is redundant but harmless.
         groupedThreads.get(date)?.push({
           ...conv
         })
