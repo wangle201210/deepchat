@@ -2,7 +2,9 @@
   "actions": {
     "rename": "Rename",
     "delete": "Delete",
-    "cleanMessages": "Clean Messages"
+    "cleanMessages": "Clean Messages",
+    "pin": "Pin",
+    "unpin": "Unpin"
   },
   "toolbar": {
     "save": "save",

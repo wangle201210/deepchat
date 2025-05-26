@@ -2,7 +2,9 @@
   "actions": {
     "rename": "重命名",
     "delete": "删除",
-    "cleanMessages": "清空消息"
+    "cleanMessages": "清空消息",
+    "pin": "置顶",
+    "unpin": "取消置顶"
   },
   "message": {
     "toolbar": {
