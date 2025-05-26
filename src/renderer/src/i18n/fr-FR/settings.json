@@ -296,7 +296,11 @@
       "invalidKeyValueFormat": "Format d'en-tête de demande incorrect, veuillez vérifier si l'entrée est correcte.",
       "npmRegistry": "Registre NPM personnalisé",
       "npmRegistryPlaceholder": "Configurez un registre NPM personnalisé, laissez le système pour sélectionner automatiquement le plus rapide",
-      "browseHigress": "Voir Higress MCP Marketplace"
+      "browseHigress": "Voir Higress MCP Marketplace",
+      "selectFolderError": "Erreur de sélection du dossier",
+      "folders": "Dossiers autorisés à accéder",
+      "addFolder": "Ajouter un dossier",
+      "noFoldersSelected": "Aucun dossier n'a été sélectionné"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -308,7 +312,7 @@
       "description": "Êtes-vous sûr de vouloir supprimer le serveur {nom}? Cette opération ne peut pas être annulée.",
       "title": "Confirmer la suppression"
     },
-    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {nom}? Cette opération ne peut pas être annulée.",
+    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {name} ? Cette action ne peut pas être annulée.",
     "customServers": "Services personnalisés",
     "default": "défaut",
     "deleteServer": "Supprimer le serveur",
@@ -317,7 +321,6 @@
     "removeDefault": "Supprimer par défaut",
     "removeServer": "Supprimer le serveur",
     "autoStart": "Démarrage automatique",
-    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {name} ? Cette action ne peut pas être annulée.",
     "removeServerDialog": {
       "title": "Supprimer le serveur"
     },

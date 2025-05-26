@@ -88,7 +88,12 @@
     "configImported": "配置导入成功",
     "parseError": "解析错误",
     "skipToManual": "跳过至手动配置",
-    "parseAndContinue": "解析并继续"
+    "parseAndContinue": "解析并继续",
+    "folders": "文件夹列表",
+    "addFolder": "添加文件夹",
+    "selectFolder": "选择文件夹",
+    "selectFolderError": "选择文件夹失败",
+    "noFoldersSelected": "未选择任何文件夹"
   },
   "deleteServer": "删除服务器",
   "editServer": "编辑服务器",
