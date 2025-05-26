@@ -304,7 +304,11 @@
       "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct.",
       "npmRegistry": "Custom NPM Registry",
       "npmRegistryPlaceholder": "Set up a custom NPM Registry, leave the system to automatically select the fastest one",
-      "browseHigress": "View Higress MCP Marketplace"
+      "browseHigress": "View Higress MCP Marketplace",
+      "selectFolderError": "Folder selection error",
+      "folders": "Folders allowed to access",
+      "addFolder": "Add folder",
+      "noFoldersSelected": "No folders were selected"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
