@@ -31,7 +31,15 @@
     "jsonInputPlaceholder": "JSON形式でパラメーターを入力します",
     "input": "パラメータ入力",
     "type": "タイプ",
-    "annotations": "注釈"
+    "annotations": "注釈",
+    "selectToolToDebug": "デバッグするツールを選択",
+    "dialogDescription": "MCPサーバーが提供するツールのデバッグとテスト",
+    "toolsCount": "ツール",
+    "availableTools": "利用可能なツール",
+    "invalidJson": "無効なJSON形式",
+    "inputHint": "JSON形式でパラメータを入力してください",
+    "required": "必須",
+    "noDescription": "説明なし"
   },
   "addServer": "サーバーを追加します",
   "addServerDialog": {

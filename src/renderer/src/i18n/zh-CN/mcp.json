@@ -150,7 +150,8 @@
     "enabledDescription": "启用MCP功能以使用工具调用",
     "jsonInputPlaceholder": "输入JSON格式的参数",
     "type": "类型",
-    "annotations": "注解"
+    "annotations": "注解",
+    "empty": "空"
   },
   "inmemory": {
     "bochaSearch": {

@@ -336,7 +336,8 @@
     "builtInServerCannotBeRemoved": "内置服务不能被删除，仅支持修改参数和环境变量",
     "maxDefaultServersReached": "最多只能设置3个默认服务器",
     "removeDefaultFirst": "请先移除一些默认服务器",
-    "higressMarket": "前往 Higress MCP 安装"
+    "higressMarket": "前往 Higress MCP 安装",
+    "totalServers": "服务器总数"
   },
   "about": {
     "title": "关于我们",
