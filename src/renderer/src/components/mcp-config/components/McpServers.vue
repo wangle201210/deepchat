@@ -358,6 +358,9 @@ const handleViewResources = async (serverName: string) => {
                 <DialogTitle class="text-base">{{
                   t('settings.mcp.addServerDialog.title')
                 }}</DialogTitle>
+                <DialogDescription class="text-sm">
+                  {{ t('settings.mcp.addServerDialog.description') }}
+                </DialogDescription>
               </DialogHeader>
               <McpServerForm
                 :default-json-config="settingsStore.mcpInstallCache || undefined"
@@ -376,6 +379,9 @@ const handleViewResources = async (serverName: string) => {
           <DialogTitle class="text-base">{{
             t('settings.mcp.editServerDialog.title')
           }}</DialogTitle>
+          <DialogDescription class="text-sm">
+            {{ t('settings.mcp.editServerDialog.description') }}
+          </DialogDescription>
         </DialogHeader>
         <McpServerForm
           v-if="selectedServer && mcpStore.config.mcpServers[selectedServer]"

@@ -4,7 +4,7 @@ import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import {
   Select,
   SelectContent,
@@ -13,6 +13,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { useMcpStore } from '@/stores/mcp'
+import { useI18n } from 'vue-i18n'
 import McpJsonViewer from './McpJsonViewer.vue'
 import type { ResourceListEntry } from '@shared/presenter'
 
@@ -24,6 +25,7 @@ const props = defineProps<Props>()
 const open = defineModel<boolean>('open')
 
 const mcpStore = useMcpStore()
+const { t } = useI18n()
 
 // 本地状态
 const selectedResource = ref<string>('')
@@ -124,6 +126,9 @@ const getResourceType = (uri: string) => {
           <Icon icon="lucide:folder" class="h-5 w-5 text-primary" />
           <span>{{ props.serverName ? `${props.serverName} Resources` : 'MCP Resources' }}</span>
         </SheetTitle>
+        <SheetDescription>
+          {{ t('mcp.resources.dialogDescription') }}
+        </SheetDescription>
       </SheetHeader>
 
       <div class="flex flex-col flex-1 overflow-hidden">
