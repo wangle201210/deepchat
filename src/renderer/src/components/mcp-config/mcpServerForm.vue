@@ -26,10 +26,12 @@ import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
 import type { RENDERER_MODEL_META } from '@shared/presenter'
 import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from './const'
+import { usePresenter } from '@/composables/usePresenter'
 
 const { t } = useI18n()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
+const devicePresenter = usePresenter('devicePresenter')
 
 const props = defineProps<{
   serverName?: string
@@ -63,6 +65,10 @@ const selectedImageModelProvider = ref('')
 const isInMemoryType = computed(() => type.value === 'inmemory')
 // 判断是否是imageServer
 const isImageServer = computed(() => isInMemoryType.value && name.value === 'imageServer')
+// 判断是否是buildInFileSystem
+const isBuildInFileSystem = computed(
+  () => isInMemoryType.value && name.value === 'buildInFileSystem'
+)
 // 判断字段是否只读(inmemory类型除了args和env外都是只读的)
 const isFieldReadOnly = computed(() => props.editMode && isInMemoryType.value)
 
@@ -73,7 +79,7 @@ const formatJsonHeaders = (headers: Record<string, string>): string => {
     .join('\n')
 }
 // 处理模型选择
-const handleImageModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
+const handleImageModelSelect = (model: RENDERER_MODEL_META, providerId: string): void => {
   selectedImageModel.value = model
   selectedImageModelProvider.value = providerId
   // 将provider和modelId以空格分隔拼接成args的值
@@ -118,10 +124,15 @@ const jsonConfig = ref('')
 const showBaseUrl = computed(() => type.value === 'sse' || type.value === 'http')
 // 添加计算属性来控制命令相关字段的显示
 const showCommandFields = computed(() => type.value === 'stdio')
-// 控制参数输入框的显示 (stdio 或 非imageServer的inmemory)
+// 控制参数输入框的显示 (stdio 或 非imageServer且非buildInFileSystem的inmemory)
 const showArgsInput = computed(
-  () => showCommandFields.value || (isInMemoryType.value && !isImageServer.value)
+  () =>
+    showCommandFields.value ||
+    (isInMemoryType.value && !isImageServer.value && !isBuildInFileSystem.value)
 )
+
+// 控制文件夹选择界面的显示 (仅针对 buildInFileSystem)
+const showFolderSelector = computed(() => isBuildInFileSystem.value)
 
 // 当命令是npx或node时，显示npmRegistry输入框
 const showNpmRegistryInput = computed(() => {
@@ -129,7 +140,7 @@ const showNpmRegistryInput = computed(() => {
 })
 
 // 当选择 all 时，自动选中其他权限
-const handleAutoApproveAllChange = (checked: boolean) => {
+const handleAutoApproveAllChange = (checked: boolean): void => {
   if (checked) {
     autoApproveRead.value = true
     autoApproveWrite.value = true
@@ -137,7 +148,7 @@ const handleAutoApproveAllChange = (checked: boolean) => {
 }
 
 // JSON配置解析
-const parseJsonConfig = () => {
+const parseJsonConfig = (): void => {
   try {
     const parsedConfig = JSON.parse(jsonConfig.value)
     if (!parsedConfig.mcpServers || typeof parsedConfig.mcpServers !== 'object') {
@@ -207,7 +218,7 @@ const parseJsonConfig = () => {
 }
 
 // 切换到详细表单
-const goToDetailedForm = () => {
+const goToDetailedForm = (): void => {
   currentStep.value = 'detailed'
 }
 
@@ -227,7 +238,7 @@ const isEnvValid = computed(() => {
     if (!env.value.trim()) return true // Allow empty env
     JSON.parse(env.value)
     return true
-  } catch (error) {
+  } catch {
     return false
   }
 })
@@ -276,14 +287,53 @@ const argumentsList = ref<string[]>([])
 const currentArgumentInput = ref('')
 const argsInputRef = ref<HTMLInputElement | null>(null) // 用于聚焦输入框
 
+// 文件夹选择相关状态 (用于 buildInFileSystem)
+const foldersList = ref<string[]>([])
+
+// 添加文件夹选择方法
+const addFolder = async (): Promise<void> => {
+  try {
+    const result = await devicePresenter.selectDirectory()
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const selectedPath = result.filePaths[0]
+      if (!foldersList.value.includes(selectedPath)) {
+        foldersList.value.push(selectedPath)
+      }
+    }
+  } catch (error) {
+    console.error('选择文件夹失败:', error)
+    toast({
+      title: t('settings.mcp.serverForm.selectFolderError'),
+      description: String(error),
+      variant: 'destructive'
+    })
+  }
+}
+
+// 移除文件夹
+const removeFolder = (index: number): void => {
+  foldersList.value.splice(index, 1)
+}
+
 // 监听外部 args 变化，更新内部列表
 watch(
   args,
   (newArgs) => {
-    if (newArgs) {
-      argumentsList.value = newArgs.split(/\s+/).filter(Boolean)
+    if (isBuildInFileSystem.value) {
+      // 对于 buildInFileSystem，args 是文件夹路径列表
+      if (newArgs) {
+        foldersList.value = newArgs.split(/\s+/).filter(Boolean)
+      } else {
+        foldersList.value = []
+      }
     } else {
-      argumentsList.value = []
+      // 对于其他类型，使用标签式输入
+      if (newArgs) {
+        argumentsList.value = newArgs.split(/\s+/).filter(Boolean)
+      } else {
+        argumentsList.value = []
+      }
     }
   },
   { immediate: true }
@@ -293,13 +343,26 @@ watch(
 watch(
   argumentsList,
   (newList) => {
-    args.value = newList.join(' ')
+    if (!isBuildInFileSystem.value) {
+      args.value = newList.join(' ')
+    }
+  },
+  { deep: true }
+)
+
+// 监听文件夹列表变化，更新外部 args 字符串
+watch(
+  foldersList,
+  (newList) => {
+    if (isBuildInFileSystem.value) {
+      args.value = newList.join(' ')
+    }
   },
   { deep: true }
 )
 
 // 添加参数到列表
-const addArgument = () => {
+const addArgument = (): void => {
   const value = currentArgumentInput.value.trim()
   if (value) {
     argumentsList.value.push(value)
@@ -308,12 +371,12 @@ const addArgument = () => {
 }
 
 // 移除指定索引的参数
-const removeArgument = (index: number) => {
+const removeArgument = (index: number): void => {
   argumentsList.value.splice(index, 1)
 }
 
 // 处理输入框键盘事件
-const handleArgumentInputKeydown = (event: KeyboardEvent) => {
+const handleArgumentInputKeydown = (event: KeyboardEvent): void => {
   switch (event.key) {
     case 'Enter':
     case ' ': // 按下空格也添加
@@ -331,12 +394,12 @@ const handleArgumentInputKeydown = (event: KeyboardEvent) => {
 }
 
 // 点击容器时聚焦输入框
-const focusArgsInput = () => {
+const focusArgsInput = (): void => {
   argsInputRef.value?.focus()
 }
 
 // 提交表单
-const handleSubmit = () => {
+const handleSubmit = (): void => {
   if (!isFormValid.value) return
 
   // 处理自动授权设置
@@ -522,12 +585,12 @@ watch(
 )
 
 // 打开MCP Marketplace
-const openMcpMarketplace = () => {
+const openMcpMarketplace = (): void => {
   window.open(MCP_MARKETPLACE_URL, '_blank')
 }
 
 // 打开Higress MCP Marketplace
-const openHigressMcpMarketplace = () => {
+const openHigressMcpMarketplace = (): void => {
   window.open(HIGRESS_MCP_MARKETPLACE_URL, '_blank')
 }
 
@@ -728,6 +791,52 @@ HTTP-Referer=deepchatai.cn`
               <ModelSelect @update:model="handleImageModelSelect" />
             </PopoverContent>
           </Popover>
+        </div>
+
+        <!-- 文件夹选择 (特殊处理 buildInFileSystem) -->
+        <div v-if="showFolderSelector" class="space-y-2">
+          <Label class="text-xs text-muted-foreground">
+            {{ t('settings.mcp.serverForm.folders') || '可访问的文件夹' }}
+          </Label>
+          <div class="space-y-2">
+            <!-- 文件夹列表 -->
+            <div
+              v-for="(folder, index) in foldersList"
+              :key="index"
+              class="flex items-center justify-between p-2 border border-input rounded-md bg-background"
+            >
+              <span class="text-sm truncate flex-1 mr-2" :title="folder">{{ folder }}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="h-6 w-6 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                @click="removeFolder(index)"
+              >
+                <X class="h-3 w-3" />
+              </Button>
+            </div>
+
+            <!-- 添加文件夹按钮 -->
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="w-full flex items-center gap-2"
+              @click="addFolder"
+            >
+              <Icon icon="lucide:folder-plus" class="h-4 w-4" />
+              {{ t('settings.mcp.serverForm.addFolder') || '添加文件夹' }}
+            </Button>
+
+            <!-- 空状态提示 -->
+            <div
+              v-if="foldersList.length === 0"
+              class="text-xs text-muted-foreground text-center py-4"
+            >
+              {{ t('settings.mcp.serverForm.noFoldersSelected') || '未选择任何文件夹' }}
+            </div>
+          </div>
         </div>
         <!-- 参数 (标签式输入 for stdio/inmemory) -->
         <div v-else-if="showArgsInput" class="space-y-2">

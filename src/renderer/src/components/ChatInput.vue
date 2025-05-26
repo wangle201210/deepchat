@@ -181,6 +181,7 @@ import FileItem from './FileItem.vue'
 import { useChatStore } from '@/stores/chat'
 import {
   MessageFile,
+  UserMessageCodeBlock,
   UserMessageContent,
   UserMessageMentionBlock,
   UserMessageTextBlock
@@ -408,7 +409,7 @@ const handleFileSelect = async (e: Event) => {
 }
 
 const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
-  const blocks: (UserMessageMentionBlock | UserMessageTextBlock)[] = []
+  const blocks: (UserMessageMentionBlock | UserMessageTextBlock | UserMessageCodeBlock)[] = []
   if (docJSON.type === 'doc') {
     for (const [idx, block] of (docJSON.content ?? []).entries()) {
       if (block.type === 'paragraph') {
@@ -507,6 +508,13 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
         if (idx < (docJSON.content?.length ?? 0) - 1 && idx > 0) {
           blocks.push({ type: 'text', content: '\n' })
         }
+      } else if (block.type === 'codeBlock') {
+        console.log('push code block', block)
+        blocks.push({
+          type: 'code',
+          content: block.content?.[0]?.text ?? '',
+          language: block.content?.[0]?.attrs?.language ?? 'text'
+        })
       }
     }
   }
@@ -516,6 +524,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
 const emitSend = async () => {
   if (inputText.value.trim()) {
     const blocks = await tiptapJSONtoMessageBlock(editor.getJSON())
+
     const messageContent: UserMessageContent = {
       text: inputText.value.trim(),
       files: selectedFiles.value,
@@ -524,7 +533,7 @@ const emitSend = async () => {
       think: settings.value.deepThinking,
       content: blocks
     }
-    // console.log(messageContent)
+    console.log(JSON.stringify(blocks), JSON.stringify(messageContent.content))
 
     emit('send', messageContent)
     inputText.value = ''

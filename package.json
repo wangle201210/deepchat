@@ -35,6 +35,7 @@
     "installRuntime:mac:x64": "tiny-runtime-injector -d runtime/node -n v22.15.0 -a x64 -p darwin --no-docs --no-dev --no-sourcemaps",
     "installRuntime:linux:x64": "tiny-runtime-injector -d runtime/node -n v22.15.0 -a x64 -p linux --no-docs --no-dev --no-sourcemaps",
     "installRuntime:linux:arm64": "tiny-runtime-injector -d runtime/node -n v22.15.0 -a arm64 -p linux --no-docs --no-dev --no-sourcemaps",
+    "i18n": "i18n-check -s en-US -f i18next --locales src/renderer/src/i18n",
     "cleanRuntime": "rm -rf runtime/node"
   },
   "dependencies": {
@@ -83,6 +84,7 @@
     "@iconify-json/vscode-icons": "^1.2.20",
     "@iconify/vue": "^4.3.0",
     "@lezer/highlight": "^1.2.1",
+    "@lingual/i18n-check": "^0.8.4",
     "@radix-icons/vue": "^1.0.0",
     "@rushstack/eslint-patch": "^1.10.3",
     "@tailwindcss/typography": "^0.5.16",

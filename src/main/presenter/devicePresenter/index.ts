@@ -10,7 +10,7 @@ import axios from 'axios'
 const execAsync = promisify(exec)
 
 export class DevicePresenter implements IDevicePresenter {
-  static getDefaultHeaders() {
+  static getDefaultHeaders(): Record<string, string> {
     return {
       'HTTP-Referer': 'https://deepchatai.cn',
       'X-Title': 'DeepChat'
@@ -249,7 +249,7 @@ export class DevicePresenter implements IDevicePresenter {
       if (response === 0) {
         try {
           const dbPath = path.join(app.getPath('userData'), 'app_db')
-          const removeDirectory = (dirPath: string) => {
+          const removeDirectory = (dirPath: string): void => {
             if (fs.existsSync(dirPath)) {
               fs.readdirSync(dirPath).forEach((file) => {
                 const currentPath = path.join(dirPath, file)

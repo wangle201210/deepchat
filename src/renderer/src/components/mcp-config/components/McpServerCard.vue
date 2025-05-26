@@ -167,7 +167,7 @@ watch(watchDescription, () => {
               {{ t('settings.mcp.editServer') }}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem :disabled="disabled" @click="$emit('toggleDefault')">
+            <DropdownMenuItem @click="$emit('toggleDefault')" :disabled="disabled">
               <Icon
                 :icon="server.isDefault ? 'lucide:power-off' : 'lucide:power'"
                 class="h-4 w-4 mr-2"
@@ -179,9 +179,9 @@ watch(watchDescription, () => {
             <DropdownMenuSeparator v-if="!isBuiltIn" />
             <DropdownMenuItem
               v-if="!isBuiltIn"
+              @click="$emit('remove')"
               :disabled="disabled"
               class="text-destructive focus:text-destructive"
-              @click="$emit('remove')"
             >
               <Icon icon="lucide:trash-2" class="h-4 w-4 mr-2" />
               {{ t('settings.mcp.removeServer') }}
@@ -206,7 +206,6 @@ watch(watchDescription, () => {
       <!-- 描述 -->
       <div class="mb-2">
         <p
-          ref="descriptionRef"
           class="text-xs text-secondary-foreground cursor-pointer overflow-hidden leading-5 break-all"
           :class="[
             !isDescriptionExpanded ? 'line-clamp-1' : '',
@@ -214,6 +213,7 @@ watch(watchDescription, () => {
           ]"
           style="min-height: 1rem"
           @click="needsExpansion && (isDescriptionExpanded = !isDescriptionExpanded)"
+          ref="descriptionRef"
         >
           {{ fullDescription }}
         </p>

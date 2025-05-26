@@ -179,7 +179,10 @@
     "azureApiVersion": "API 버전",
     "safety": {
       "title": "보안 설정"
-    }
+    },
+    "serverList": "서버 목록",
+    "totalServers": "총 서버 수",
+    "addServer": "서버 추가"
   },
   "knowledgeBase": {
     "title": "지식 베이스 설정",
@@ -293,7 +296,11 @@
       "invalidKeyValueFormat": "잘못된 요청 헤더 형식, 입력이 올바른지 확인하십시오.",
       "npmRegistry": "사용자 정의 NPM 레지스트리",
       "npmRegistryPlaceholder": "사용자 정의 NPM 레지스트리를 설정하고 시스템을 남겨두고 가장 빠른 것을 자동으로 선택하십시오.",
-      "browseHigress": "Higress MCP Marketplace를보십시오"
+      "browseHigress": "Higress MCP Marketplace를보십시오",
+      "selectFolderError": "폴더 선택 오류",
+      "folders": "폴더에 액세스 할 수 있습니다",
+      "addFolder": "폴더를 추가하십시오",
+      "noFoldersSelected": "폴더가 선택되지 않았습니다"
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",

@@ -304,7 +304,11 @@
       "invalidKeyValueFormat": "错误的请求头格式，请检查输入是否正确",
       "npmRegistry": "自定义NPM Registry",
       "npmRegistryPlaceholder": "设置自定义NPM Registry,留空系统会自动选择最快的一个",
-      "browseHigress": "浏览 Higress MCP 市场"
+      "browseHigress": "浏览 Higress MCP 市场",
+      "selectFolderError": "文件夹选择错误",
+      "folders": "允许访问的文件夹",
+      "addFolder": "添加文件夹",
+      "noFoldersSelected": "未选择任何文件夹"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",
@@ -336,7 +340,8 @@
     "builtInServerCannotBeRemoved": "内置服务不能被删除，仅支持修改参数和环境变量",
     "maxDefaultServersReached": "最多只能设置3个默认服务器",
     "removeDefaultFirst": "请先移除一些默认服务器",
-    "higressMarket": "前往 Higress MCP 安装"
+    "higressMarket": "前往 Higress MCP 安装",
+    "totalServers": "服务器总数"
   },
   "about": {
     "title": "关于我们",

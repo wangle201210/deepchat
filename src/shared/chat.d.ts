@@ -48,6 +48,7 @@ export type UserMessageTextBlock = {
 export type UserMessageCodeBlock = {
   type: 'code'
   content: string
+  language: string
 }
 
 export type UserMessageMentionBlock = {
@@ -66,7 +67,6 @@ export type UserMessageContent = {
   think: boolean
   search: boolean
   text: string
-
   content?: (UserMessageTextBlock | UserMessageMentionBlock | UserMessageCodeBlock)[]
 }
 
