@@ -84,13 +84,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: workflow-${{ github.event.inputs.workflow_id }}
-          name: DeepChat V0.2.0
+          name: DeepChat V${{ steps.get_version.outputs.version }}
           draft: true
           prerelease: ${{ github.event.inputs.prerelease }}
           files: |
             release_assets/*
           body: |
-            # 🚀 DeepChat 0.2.0 正式发布 | 重新定义你的 AI 对话体验！
+            # 🚀 DeepChat ${{ steps.get_version.outputs.version }} 正式发布 | 重新定义你的 AI 对话体验！
             —— 不再是简单的 ChatBot，而是你的自然语言 Agent  工具🌟
 
             📦 **构建信息**
