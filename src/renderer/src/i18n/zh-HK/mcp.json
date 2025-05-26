@@ -31,7 +31,15 @@
     "jsonInputPlaceholder": "輸入JSON格式的參數",
     "input": "輸入參數",
     "type": "類型",
-    "annotations": "註解"
+    "annotations": "註解",
+    "selectToolToDebug": "選擇要調試的工具",
+    "dialogDescription": "調試和測試 MCP 服務器提供的工具",
+    "toolsCount": "工具",
+    "availableTools": "可用工具",
+    "invalidJson": "無效的 JSON 格式",
+    "inputHint": "請以 JSON 格式輸入參數",
+    "required": "必填",
+    "noDescription": "無描述"
   },
   "addServer": "添加服務器",
   "addServerDialog": {

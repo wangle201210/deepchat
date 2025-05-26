@@ -179,7 +179,10 @@
     "azureApiVersion": "Версия API",
     "safety": {
       "title": "Настройки безопасности"
-    }
+    },
+    "serverList": "Список серверов",
+    "totalServers": "Всего серверов",
+    "addServer": "Добавить сервер"
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",

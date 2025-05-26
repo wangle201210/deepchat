@@ -179,7 +179,10 @@
     "azureApiVersion": "API 版本",
     "safety": {
       "title": "安全設置"
-    }
+    },
+    "serverList": "服務器列表",
+    "totalServers": "服務器總數",
+    "addServer": "添加服務器"
   },
   "knowledgeBase": {
     "fastgptTitle": "FastGPT知識庫",

@@ -31,7 +31,15 @@
     "jsonInputPlaceholder": "Введите параметры в формате JSON",
     "input": "Входные параметры",
     "type": "Тип",
-    "annotations": "Аннотации"
+    "annotations": "Аннотации",
+    "selectToolToDebug": "Выберите инструмент для отладки",
+    "dialogDescription": "Отладка и тестирование инструментов, предоставляемых серверами MCP",
+    "toolsCount": "инструменты",
+    "availableTools": "Доступные инструменты",
+    "invalidJson": "Неверный формат JSON",
+    "inputHint": "Пожалуйста, введите параметры в формате JSON",
+    "required": "Обязательно",
+    "noDescription": "Нет описания"
   },
   "addServer": "Добавить сервер",
   "addServerDialog": {

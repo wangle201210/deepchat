@@ -124,7 +124,15 @@
     "jsonInputPlaceholder": "JSON 형식의 매개 변수를 입력하십시오",
     "input": "매개 변수를 입력하십시오",
     "type": "유형",
-    "annotations": "주석"
+    "annotations": "주석",
+    "selectToolToDebug": "디버그할 도구 선택",
+    "dialogDescription": "MCP 서버에서 제공하는 도구 디버그 및 테스트",
+    "toolsCount": "도구",
+    "availableTools": "사용 가능한 도구",
+    "invalidJson": "잘못된 JSON 형식",
+    "inputHint": "JSON 형식으로 매개변수를 입력하세요",
+    "required": "필수",
+    "noDescription": "설명 없음"
   },
   "inmemory": {
     "Artifacts": {

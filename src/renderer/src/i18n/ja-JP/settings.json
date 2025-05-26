@@ -179,7 +179,10 @@
     "azureApiVersion": "APIバージョン",
     "safety": {
       "title": "セキュリティ設定"
-    }
+    },
+    "serverList": "サーバーリスト",
+    "totalServers": "サーバー総数",
+    "addServer": "サーバーを追加"
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",

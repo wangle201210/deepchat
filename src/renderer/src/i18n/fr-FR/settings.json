@@ -179,7 +179,10 @@
     "azureApiVersion": "Version API",
     "safety": {
       "title": "Paramètres de sécurité"
-    }
+    },
+    "serverList": "Liste des serveurs",
+    "totalServers": "Total des serveurs",
+    "addServer": "Ajouter un serveur"
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
