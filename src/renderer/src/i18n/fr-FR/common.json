@@ -66,5 +66,7 @@
   "collapse": "Fermer",
   "expand": "Développer",
   "image": "image",
-  "add": "Nouveau"
+  "add": "Nouveau",
+  "edit": "Modifier",
+  "delete": "Supprimer"
 }

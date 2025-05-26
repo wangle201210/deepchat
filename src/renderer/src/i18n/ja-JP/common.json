@@ -66,5 +66,7 @@
   "collapse": "折りたたむ",
   "expand": "展開する",
   "image": "写真",
-  "add": "新しい"
+  "add": "新しい",
+  "edit": "編集",
+  "delete": "削除"
 }

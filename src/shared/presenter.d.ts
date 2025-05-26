@@ -52,6 +52,10 @@ export interface Prompt {
     required: boolean
   }>
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
+  enabled?: boolean // 是否启用
+  source?: 'local' | 'imported' | 'builtin' // 来源类型
+  createdAt?: number // 创建时间
+  updatedAt?: number // 更新时间
 }
 export interface PromptListEntry {
   name: string

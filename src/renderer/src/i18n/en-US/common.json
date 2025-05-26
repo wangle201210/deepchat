@@ -66,5 +66,7 @@
   "collapse": "Collapse",
   "expand": "Expand",
   "image": "picture",
-  "add": "Add"
+  "add": "Add",
+  "edit": "Edit",
+  "delete": "Delete"
 }

@@ -66,5 +66,7 @@
   "watermarkTip": "AI生成内容，请谨慎参考",
   "collapse": "收起",
   "expand": "展开",
-  "add": "新增"
+  "add": "新增",
+  "edit": "编辑",
+  "delete": "删除"
 }
