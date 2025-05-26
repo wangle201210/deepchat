@@ -135,7 +135,8 @@ watch(watchDescription, () => {
 
 <template>
   <div
-    class="bg-card shadow-sm border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary group">
+    class="bg-card shadow-sm border rounded-lg overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary group"
+  >
     <div class="px-4 py-2">
       <!-- 头部：图标、名称、状态、菜单 -->
       <div class="flex items-center justify-between mb-3">
@@ -152,8 +153,11 @@ watch(watchDescription, () => {
         <!-- 操作菜单 -->
         <DropdownMenu>
           <DropdownMenuTrigger as-child>
-            <Button variant="ghost" size="icon"
-              class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+            >
               <Icon icon="lucide:more-horizontal" class="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -164,14 +168,21 @@ watch(watchDescription, () => {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem @click="$emit('toggleDefault')" :disabled="disabled">
-              <Icon :icon="server.isDefault ? 'lucide:power-off' : 'lucide:power'" class="h-4 w-4 mr-2" />
+              <Icon
+                :icon="server.isDefault ? 'lucide:power-off' : 'lucide:power'"
+                class="h-4 w-4 mr-2"
+              />
               {{
                 server.isDefault ? t('settings.mcp.removeDefault') : t('settings.mcp.setAsDefault')
               }}
             </DropdownMenuItem>
             <DropdownMenuSeparator v-if="!isBuiltIn" />
-            <DropdownMenuItem v-if="!isBuiltIn" @click="$emit('remove')" :disabled="disabled"
-              class="text-destructive focus:text-destructive">
+            <DropdownMenuItem
+              v-if="!isBuiltIn"
+              @click="$emit('remove')"
+              :disabled="disabled"
+              class="text-destructive focus:text-destructive"
+            >
               <Icon icon="lucide:trash-2" class="h-4 w-4 mr-2" />
               {{ t('settings.mcp.removeServer') }}
             </DropdownMenuItem>
@@ -194,17 +205,29 @@ watch(watchDescription, () => {
 
       <!-- 描述 -->
       <div class="mb-2">
-        <p class="text-xs text-secondary-foreground cursor-pointer overflow-hidden leading-5 break-all" :class="[
-          !isDescriptionExpanded ? 'line-clamp-1' : '',
-          needsExpansion ? 'hover:text-foreground transition-colors' : ''
-        ]" style="min-height: 1rem" @click="needsExpansion && (isDescriptionExpanded = !isDescriptionExpanded)"
-          ref="descriptionRef">
+        <p
+          class="text-xs text-secondary-foreground cursor-pointer overflow-hidden leading-5 break-all"
+          :class="[
+            !isDescriptionExpanded ? 'line-clamp-1' : '',
+            needsExpansion ? 'hover:text-foreground transition-colors' : ''
+          ]"
+          style="min-height: 1rem"
+          @click="needsExpansion && (isDescriptionExpanded = !isDescriptionExpanded)"
+          ref="descriptionRef"
+        >
           {{ fullDescription }}
         </p>
-        <Button variant="link" size="sm" class="h-auto p-0 text-xs mt-1 hover:no-underline gap-1"
+        <Button
+          variant="link"
+          size="sm"
+          class="h-auto p-0 text-xs mt-1 hover:no-underline gap-1"
           :class="[needsExpansion ? 'opacity-100' : 'opacity-0 pointer-events-none']"
-          @click="isDescriptionExpanded = !isDescriptionExpanded">
-          <Icon :icon="isDescriptionExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3 w-3" />
+          @click="isDescriptionExpanded = !isDescriptionExpanded"
+        >
+          <Icon
+            :icon="isDescriptionExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+            class="h-3 w-3"
+          />
           {{ isDescriptionExpanded ? t('common.collapse') : t('common.expand') }}
         </Button>
       </div>
@@ -232,31 +255,47 @@ watch(watchDescription, () => {
         </div>
 
         <div class="flex items-center space-x-2">
-          <Switch :checked="server.isRunning" :disabled="disabled || isLoading" @update:checked="$emit('toggle')" />
+          <Switch
+            :checked="server.isRunning"
+            :disabled="disabled || isLoading"
+            @update:checked="$emit('toggle')"
+          />
         </div>
       </div>
     </div>
     <div class="flex flex-row bg-muted h-9 items-center">
       <!-- 工具按钮 -->
-      <Button v-if="toolsCount !== undefined" variant="ghost"
-        class="h-full flex-1 text-xs hover:bg-secondary rounded-none" :disabled="disabled || toolsCount === 0"
-        @click="$emit('viewTools')">
+      <Button
+        v-if="toolsCount !== undefined"
+        variant="ghost"
+        class="h-full flex-1 text-xs hover:bg-secondary rounded-none"
+        :disabled="disabled || toolsCount === 0"
+        @click="$emit('viewTools')"
+      >
         <Icon icon="lucide:wrench" class="h-3 w-3 mr-1" />
         {{ toolsCount }}
       </Button>
       <!-- 提示词按钮 -->
       <Separator orientation="vertical" class="h-5" />
-      <Button v-if="promptsCount !== undefined" variant="ghost"
-        class="h-full flex-1 text-xs hover:bg-secondary rounded-none" :disabled="disabled || promptsCount === 0"
-        @click="$emit('viewPrompts')">
+      <Button
+        v-if="promptsCount !== undefined"
+        variant="ghost"
+        class="h-full flex-1 text-xs hover:bg-secondary rounded-none"
+        :disabled="disabled || promptsCount === 0"
+        @click="$emit('viewPrompts')"
+      >
         <Icon icon="lucide:message-square-quote" class="h-3 w-3 mr-1" />
         {{ promptsCount }}
       </Button>
       <Separator orientation="vertical" class="h-5" />
       <!-- 资源按钮 -->
-      <Button v-if="resourcesCount !== undefined" variant="ghost"
-        class="h-full flex-1 text-xs hover:bg-secondary rounded-none" :disabled="disabled || resourcesCount === 0"
-        @click="$emit('viewResources')">
+      <Button
+        v-if="resourcesCount !== undefined"
+        variant="ghost"
+        class="h-full flex-1 text-xs hover:bg-secondary rounded-none"
+        :disabled="disabled || resourcesCount === 0"
+        @click="$emit('viewResources')"
+      >
         <Icon icon="lucide:folder" class="h-3 w-3 mr-1" />
         {{ resourcesCount }}
       </Button>

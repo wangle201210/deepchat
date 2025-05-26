@@ -41,12 +41,16 @@
             }"
           ></textarea>
         </div>
-        <div
-          v-else
-          ref="originalContent"
-          class="text-sm whitespace-pre-wrap break-all"
-          v-html="displayText"
-        ></div>
+        <div v-else ref="originalContent">
+          <!-- 使用结构化内容渲染 -->
+          <MessageContent
+            v-if="message.content.content && message.content.content.length > 0"
+            :content="message.content.content"
+            @mention-click="handleMentionClick"
+          />
+          <!-- 使用纯文本渲染 -->
+          <MessageTextContent v-else :content="message.content.text || ''" />
+        </div>
         <!-- <div
           v-else-if="message.content.continue"
           class="text-sm whitespace-pre-wrap break-all flex flex-row flex-wrap items-center gap-2"
@@ -79,11 +83,13 @@
 </template>
 
 <script setup lang="ts">
-import { UserMessage } from '@shared/chat'
+import { UserMessage, UserMessageMentionBlock } from '@shared/chat'
 import { Icon } from '@iconify/vue'
 import MessageInfo from './MessageInfo.vue'
 import FileItem from '../FileItem.vue'
 import MessageToolbar from './MessageToolbar.vue'
+import MessageContent from './MessageContent.vue'
+import MessageTextContent from './MessageTextContent.vue'
 import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
 import { ref, watch, onMounted } from 'vue'
@@ -99,37 +105,9 @@ const props = defineProps<{
 const isEditMode = ref(false)
 const editedText = ref('')
 const originalText = ref('')
-const displayText = ref('')
 const originalContent = ref(null)
 const originalContentHeight = ref(0)
 const originalContentWidth = ref(0)
-
-// Initialize display text with message content
-
-const formatDisplayText = () => {
-  if (props.message.content.content) {
-    displayText.value = props.message.content.content
-      .map((block) => {
-        if (block.type === 'mention') {
-          return `<span class=" cursor-pointer px-1.5 py-0.5 text-xs rounded-md bg-blue-200/80 dark:bg-secondary text-foreground inline-block max-w-64 align-sub !truncate">${block.content}</span>`
-        } else {
-          return block.content
-        }
-      })
-      .join('')
-  } else {
-    displayText.value = props.message.content.text
-  }
-}
-formatDisplayText()
-
-// Update displayText whenever message content changes
-watch(
-  () => props.message.content.text,
-  (newText) => {
-    displayText.value = newText
-  }
-)
 
 onMounted(() => {
   if (originalContent.value) {
@@ -177,9 +155,6 @@ const saveEdit = async () => {
     // Update the message in the database using editMessage method
     await threadPresenter.editMessage(props.message.id, JSON.stringify(newContent))
 
-    // Update local display text instead of mutating props
-    displayText.value = editedText.value
-
     // Emit retry event for MessageItemAssistant to handle
     emit('retry')
 
@@ -201,5 +176,10 @@ const handleAction = (action: 'delete' | 'copy') => {
   } else if (action === 'copy') {
     window.api.copyText(props.message.content.text)
   }
+}
+
+const handleMentionClick = (block: UserMessageMentionBlock) => {
+  // 处理 mention 点击事件，可以根据需要实现具体逻辑
+  console.log('Mention clicked:', block)
 }
 </script>
