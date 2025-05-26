@@ -2,7 +2,7 @@ import { FileMetaData } from './presenter'
 
 export type Message = {
   id: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   content: UserMessageContent | AssistantMessageBlock[]
   role: MESSAGE_ROLE
   timestamp: number

@@ -436,7 +436,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
                 fetchingMcpEntry.value = true
                 // console.log(subBlock.attrs?.content)
                 const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntry
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 const mcpEntryResult = await mcpStore.readResource(mcpEntry)
 
                 if (mcpEntryResult.blob) {

@@ -1,6 +1,10 @@
 <template>
   <div class="mermaid-artifact artifact-dialog-content">
-    <div v-if="props.isPreview" ref="mermaidRef" class="mermaid h-full flex items-center justify-center"></div>
+    <div
+      v-if="props.isPreview"
+      ref="mermaidRef"
+      class="mermaid h-full flex items-center justify-center"
+    ></div>
     <div v-else class="h-full p-4">
       <pre class="rounded-lg bg-muted p-4 h-full"><code>{{ props.block.content }}</code></pre>
     </div>
@@ -32,7 +36,7 @@ onMounted(() => {
     securityLevel: 'loose',
     fontFamily: 'inherit'
   })
-  
+
   // 初始渲染
   if (props.isPreview) {
     nextTick(() => renderDiagram())
@@ -45,7 +49,7 @@ const renderDiagram = async () => {
   try {
     // 清空之前的内容
     mermaidRef.value.innerHTML = props.block.content
-    
+
     // 使用 mermaid API 重新渲染
     await mermaid.run({
       nodes: [mermaidRef.value]
@@ -103,7 +107,9 @@ pre {
 }
 
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
   font-size: 0.875rem;
   line-height: 1.5;
   height: 100%;

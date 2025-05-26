@@ -291,7 +291,7 @@ const isFirstStep = computed(() => currentStep.value === 0)
                 <div class="flex flex-col gap-2">
                   <Label for="api-url">{{ t('welcome.provider.apiUrl') }}</Label>
                   <Input id="api-url" v-model="baseUrl" placeholder="Enter API URL" />
-                  <div class="text-xs text-muted-foreground" v-if="selectedProvider !== 'gemini'">
+                  <div v-if="selectedProvider !== 'gemini'" class="text-xs text-muted-foreground">
                     {{ `${baseUrl ?? ''}/chat/completions` }}
                   </div>
                 </div>

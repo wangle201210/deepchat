@@ -7,22 +7,34 @@ import { presenter } from '@/presenter'
 
 // Schema definitions
 const SearchConversationsArgsSchema = z.object({
-  query: z.string().describe('Search keyword to search in conversation titles and message contents'),
+  query: z
+    .string()
+    .describe('Search keyword to search in conversation titles and message contents'),
   limit: z.number().optional().default(10).describe('Result limit (1-50, default 10)'),
   offset: z.number().optional().default(0).describe('Pagination offset (default 0)')
 })
 
 const SearchMessagesArgsSchema = z.object({
   query: z.string().describe('Search keyword to search in message contents'),
-  conversationId: z.string().optional().describe('Optional conversation ID to limit search within specific conversation'),
-  role: z.enum(['user', 'assistant', 'system', 'function']).optional().describe('Optional message role filter'),
+  conversationId: z
+    .string()
+    .optional()
+    .describe('Optional conversation ID to limit search within specific conversation'),
+  role: z
+    .enum(['user', 'assistant', 'system', 'function'])
+    .optional()
+    .describe('Optional message role filter'),
   limit: z.number().optional().default(20).describe('Result limit (1-100, default 20)'),
   offset: z.number().optional().default(0).describe('Pagination offset (default 0)')
 })
 
 const GetConversationHistoryArgsSchema = z.object({
   conversationId: z.string().describe('Conversation ID'),
-  includeSystem: z.boolean().optional().default(false).describe('Whether to include system messages')
+  includeSystem: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe('Whether to include system messages')
 })
 
 const GetConversationStatsArgsSchema = z.object({
@@ -84,10 +96,10 @@ export class ConversationSearchServer {
   ): Promise<SearchResult> {
     try {
       const sqlitePresenter = presenter.sqlitePresenter
-      
+
       // 使用原始SQL进行全文搜索
       const searchQuery = `%${query}%`
-      
+
       // 搜索对话标题
       const conversationSql = `
         SELECT 
@@ -103,7 +115,7 @@ export class ConversationSearchServer {
         ORDER BY c.updated_at DESC
         LIMIT ? OFFSET ?
       `
-      
+
       // 搜索消息内容并关联对话
       const messageSql = `
         SELECT 
@@ -117,19 +129,19 @@ export class ConversationSearchServer {
         ORDER BY c.updated_at DESC
         LIMIT ? OFFSET ?
       `
-      
+
       // 获取数据库实例
       const db = (sqlitePresenter as any).db
-      
+
       // 执行对话标题搜索
       const conversationResults = db.prepare(conversationSql).all(searchQuery, limit, offset)
-      
+
       // 执行消息内容搜索
       const messageResults = db.prepare(messageSql).all(searchQuery, limit, offset)
-      
+
       // 合并结果并去重
       const conversationMap = new Map()
-      
+
       // 添加标题匹配的对话
       conversationResults.forEach((conv: any) => {
         conversationMap.set(conv.id, {
@@ -141,7 +153,7 @@ export class ConversationSearchServer {
           snippet: `Title match: ${conv.title}`
         })
       })
-      
+
       // 添加内容匹配的对话
       messageResults.forEach((msg: any) => {
         if (!conversationMap.has(msg.conversationId)) {
@@ -155,16 +167,18 @@ export class ConversationSearchServer {
           })
         }
       })
-      
+
       const conversations = Array.from(conversationMap.values()).slice(0, limit)
-      
+
       return {
         conversations,
         total: conversations.length
       }
     } catch (error) {
       console.error('Error searching conversations:', error)
-      throw new Error(`Failed to search conversations: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(
+        `Failed to search conversations: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
   }
 
@@ -179,7 +193,7 @@ export class ConversationSearchServer {
     try {
       const sqlitePresenter = presenter.sqlitePresenter
       const searchQuery = `%${query}%`
-      
+
       let sql = `
         SELECT 
           m.msg_id as id,
@@ -192,22 +206,22 @@ export class ConversationSearchServer {
         INNER JOIN conversations c ON m.conversation_id = c.conv_id
         WHERE m.content LIKE ?
       `
-      
+
       const params: any[] = [searchQuery]
-      
+
       if (conversationId) {
         sql += ' AND m.conversation_id = ?'
         params.push(conversationId)
       }
-      
+
       if (role) {
         sql += ' AND m.role = ?'
         params.push(role)
       }
-      
+
       sql += ' ORDER BY m.created_at DESC LIMIT ? OFFSET ?'
       params.push(limit, offset)
-      
+
       // 获取总数
       let countSql = `
         SELECT COUNT(*) as total
@@ -215,59 +229,61 @@ export class ConversationSearchServer {
         WHERE m.content LIKE ?
       `
       const countParams: any[] = [searchQuery]
-      
+
       if (conversationId) {
         countSql += ' AND m.conversation_id = ?'
         countParams.push(conversationId)
       }
-      
+
       if (role) {
         countSql += ' AND m.role = ?'
         countParams.push(role)
       }
-      
+
       const db = (sqlitePresenter as any).db
-      
-      const messages = db.prepare(sql).all(...params).map((msg: any) => ({
-        id: msg.id,
-        conversationId: msg.conversationId,
-        conversationTitle: msg.conversationTitle,
-        role: msg.role,
-        content: msg.content,
-        createdAt: msg.createdAt,
-        snippet: this.createSnippet(msg.content, query)
-      }))
-      
+
+      const messages = db
+        .prepare(sql)
+        .all(...params)
+        .map((msg: any) => ({
+          id: msg.id,
+          conversationId: msg.conversationId,
+          conversationTitle: msg.conversationTitle,
+          role: msg.role,
+          content: msg.content,
+          createdAt: msg.createdAt,
+          snippet: this.createSnippet(msg.content, query)
+        }))
+
       const totalResult = db.prepare(countSql).get(...countParams)
       const total = totalResult?.total || 0
-      
+
       return {
         messages,
         total
       }
     } catch (error) {
       console.error('Error searching messages:', error)
-      throw new Error(`Failed to search messages: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(
+        `Failed to search messages: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
   }
 
   // 获取对话历史
-  private async getConversationHistory(
-    conversationId: string,
-    includeSystem: boolean = false
-  ) {
+  private async getConversationHistory(conversationId: string, includeSystem: boolean = false) {
     try {
       const sqlitePresenter = presenter.sqlitePresenter
       const conversation = await sqlitePresenter.getConversation(conversationId)
       const messages = await sqlitePresenter.queryMessages(conversationId)
-      
-      const filteredMessages = includeSystem 
-        ? messages 
-        : messages.filter(msg => msg.role !== 'system')
-      
+
+      const filteredMessages = includeSystem
+        ? messages
+        : messages.filter((msg) => msg.role !== 'system')
+
       return {
         conversation,
-        messages: filteredMessages.map(msg => ({
+        messages: filteredMessages.map((msg) => ({
           id: msg.id,
           role: msg.role,
           content: msg.content,
@@ -278,7 +294,9 @@ export class ConversationSearchServer {
       }
     } catch (error) {
       console.error('Error getting conversation history:', error)
-      throw new Error(`Failed to get conversation history: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(
+        `Failed to get conversation history: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
   }
 
@@ -287,35 +305,41 @@ export class ConversationSearchServer {
     try {
       const sqlitePresenter = presenter.sqlitePresenter
       const db = (sqlitePresenter as any).db
-      
-      const sinceTimestamp = Date.now() - (days * 24 * 60 * 60 * 1000)
-      
+
+      const sinceTimestamp = Date.now() - days * 24 * 60 * 60 * 1000
+
       // 总对话数
       const totalConversations = db.prepare('SELECT COUNT(*) as count FROM conversations').get()
-      
+
       // 最近N天的对话数
-      const recentConversations = db.prepare(
-        'SELECT COUNT(*) as count FROM conversations WHERE created_at >= ?'
-      ).get(sinceTimestamp)
-      
+      const recentConversations = db
+        .prepare('SELECT COUNT(*) as count FROM conversations WHERE created_at >= ?')
+        .get(sinceTimestamp)
+
       // 总消息数
       const totalMessages = db.prepare('SELECT COUNT(*) as count FROM messages').get()
-      
+
       // 最近N天的消息数
-      const recentMessages = db.prepare(
-        'SELECT COUNT(*) as count FROM messages WHERE created_at >= ?'
-      ).get(sinceTimestamp)
-      
+      const recentMessages = db
+        .prepare('SELECT COUNT(*) as count FROM messages WHERE created_at >= ?')
+        .get(sinceTimestamp)
+
       // 按角色统计消息
-      const messagesByRole = db.prepare(`
+      const messagesByRole = db
+        .prepare(
+          `
         SELECT role, COUNT(*) as count 
         FROM messages 
         WHERE created_at >= ? 
         GROUP BY role
-      `).all(sinceTimestamp)
-      
+      `
+        )
+        .all(sinceTimestamp)
+
       // 最活跃的对话（按消息数量）
-      const activeConversations = db.prepare(`
+      const activeConversations = db
+        .prepare(
+          `
         SELECT 
           c.conv_id as id,
           c.title,
@@ -327,8 +351,10 @@ export class ConversationSearchServer {
         GROUP BY c.conv_id
         ORDER BY messageCount DESC
         LIMIT 10
-      `).all(sinceTimestamp)
-      
+      `
+        )
+        .all(sinceTimestamp)
+
       return {
         period: `${days} days`,
         total: {
@@ -352,7 +378,9 @@ export class ConversationSearchServer {
       }
     } catch (error) {
       console.error('Error getting conversation statistics:', error)
-      throw new Error(`Failed to get conversation statistics: ${error instanceof Error ? error.message : String(error)}`)
+      throw new Error(
+        `Failed to get conversation statistics: ${error instanceof Error ? error.message : String(error)}`
+      )
     }
   }
 
@@ -361,22 +389,22 @@ export class ConversationSearchServer {
     const lowerContent = content.toLowerCase()
     const lowerQuery = query.toLowerCase()
     const index = lowerContent.indexOf(lowerQuery)
-    
+
     if (index === -1) {
       return content.length > maxLength ? content.substring(0, maxLength) + '...' : content
     }
-    
+
     const start = Math.max(0, index - 50)
     const end = Math.min(content.length, index + query.length + 50)
     let snippet = content.substring(start, end)
-    
+
     if (start > 0) snippet = '...' + snippet
     if (end < content.length) snippet = snippet + '...'
-    
+
     // 高亮关键词
     const regex = new RegExp(`(${query})`, 'gi')
     snippet = snippet.replace(regex, '**$1**')
-    
+
     return snippet
   }
 
@@ -388,12 +416,14 @@ export class ConversationSearchServer {
         tools: [
           {
             name: 'search_conversations',
-            description: 'Search historical conversation records, supports title and content search',
+            description:
+              'Search historical conversation records, supports title and content search',
             inputSchema: zodToJsonSchema(SearchConversationsArgsSchema)
           },
           {
             name: 'search_messages',
-            description: 'Search historical message records, supports filtering by conversation ID, role and other conditions',
+            description:
+              'Search historical message records, supports filtering by conversation ID, role and other conditions',
             inputSchema: zodToJsonSchema(SearchMessagesArgsSchema)
           },
           {
@@ -419,7 +449,7 @@ export class ConversationSearchServer {
           case 'search_conversations': {
             const { query, limit, offset } = SearchConversationsArgsSchema.parse(args)
             const result = await this.searchConversations(query, limit, offset)
-            
+
             return {
               content: [
                 {
@@ -431,9 +461,10 @@ export class ConversationSearchServer {
           }
 
           case 'search_messages': {
-            const { query, conversationId, role, limit, offset } = SearchMessagesArgsSchema.parse(args)
+            const { query, conversationId, role, limit, offset } =
+              SearchMessagesArgsSchema.parse(args)
             const result = await this.searchMessages(query, conversationId, role, limit, offset)
-            
+
             return {
               content: [
                 {
@@ -447,7 +478,7 @@ export class ConversationSearchServer {
           case 'get_conversation_history': {
             const { conversationId, includeSystem } = GetConversationHistoryArgsSchema.parse(args)
             const result = await this.getConversationHistory(conversationId, includeSystem)
-            
+
             return {
               content: [
                 {
@@ -461,7 +492,7 @@ export class ConversationSearchServer {
           case 'get_conversation_stats': {
             const { days } = GetConversationStatsArgsSchema.parse(args)
             const result = await this.getConversationStats(days)
-            
+
             return {
               content: [
                 {
@@ -489,4 +520,4 @@ export class ConversationSearchServer {
       }
     })
   }
-} 
+}

@@ -92,8 +92,8 @@
             <Tooltip>
               <TooltipTrigger as-child>
                 <Button
-                  variant="ghost"
                   v-show="isAssistant"
+                  variant="ghost"
                   size="icon"
                   class="w-4 h-4 text-muted-foreground hover:text-primary hover:bg-transparent relative"
                   :disabled="isCapturingImage"

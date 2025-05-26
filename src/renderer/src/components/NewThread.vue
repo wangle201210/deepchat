@@ -183,10 +183,12 @@ watch(
         }
       }
     }
-    
+
     // 如果没有现有线程，尝试使用用户上次选择的模型
     try {
-      const preferredModel = await configPresenter.getSetting('preferredModel') as PreferredModel | undefined
+      const preferredModel = (await configPresenter.getSetting('preferredModel')) as
+        | PreferredModel
+        | undefined
       if (preferredModel && preferredModel.modelId && preferredModel.providerId) {
         // 验证偏好模型是否还在可用模型列表中
         for (const provider of settingsStore.enabledModels) {
@@ -208,7 +210,7 @@ watch(
     } catch (error) {
       console.warn('获取用户偏好模型失败:', error)
     }
-    
+
     // 如果没有偏好模型或偏好模型不可用，使用第一个可用模型
     if (settingsStore.enabledModels.length > 0) {
       const model = settingsStore.enabledModels[0].models[0]
@@ -254,13 +256,13 @@ const handleModelUpdate = (model: MODEL_META, providerId: string) => {
     modelId: model.id,
     providerId: providerId
   })
-  
+
   // 保存用户的模型偏好设置
   configPresenter.setSetting('preferredModel', {
     modelId: model.id,
     providerId: providerId
   })
-  
+
   modelSelectOpen.value = false
 }
 

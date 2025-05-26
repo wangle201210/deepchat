@@ -878,7 +878,7 @@ export class ConfigPresenter implements IConfigPresenter {
     await this.customPromptsStore.set('prompts', prompts)
     // 触发自定义提示词变更事件
     eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED)
-    
+
     // 通知MCP系统检查并启动/停止自定义提示词服务器
     eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED)
   }

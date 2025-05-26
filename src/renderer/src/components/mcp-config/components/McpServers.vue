@@ -309,7 +309,7 @@ const handleViewResources = async (serverName: string) => {
               {{ t('settings.mcp.totalServers') }}: {{ mcpStore.serverList.length }}
             </span>
           </div>
-          <div class="flex items-center space-x-1" v-if="mcpStore.serverList.length > 0">
+          <div v-if="mcpStore.serverList.length > 0" class="flex items-center space-x-1">
             <Icon icon="lucide:play" class="h-3 w-3 text-green-600" />
             <span class="text-xs text-green-600">
               {{ mcpStore.serverList.filter((s) => s.isRunning).length }}

@@ -165,13 +165,13 @@ const handleModelUpdate = (model: MODEL_META) => {
     modelId: model.id,
     providerId: model.providerId
   })
-  
+
   // 保存用户的模型偏好设置
   configPresenter.setSetting('preferredModel', {
     modelId: model.id,
     providerId: model.providerId
   })
-  
+
   modelSelectOpen.value = false
 }
 
