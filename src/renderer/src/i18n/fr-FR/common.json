@@ -67,5 +67,8 @@
   "expand": "Développer",
   "image": "image",
   "add": "Ajouter",
-  "reset": "Réinitialiser"
+  "reset": "Réinitialiser",
+  "format": "Format",
+  "edit": "Modifier",
+  "delete": "Supprimer"
 }

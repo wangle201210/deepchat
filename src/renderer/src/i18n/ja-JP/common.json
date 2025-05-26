@@ -67,5 +67,8 @@
   "expand": "展開",
   "image": "写真",
   "add": "追加",
-  "reset": "リセット"
+  "reset": "リセット",
+  "format": "フォーマット",
+  "edit": "編集",
+  "delete": "削除"
 }

@@ -68,5 +68,7 @@
   "image": "picture",
   "add": "Add",
   "reset": "Reset",
-  "format": "Format"
+  "format": "Format",
+  "edit": "Edit",
+  "delete": "Delete"
 }
