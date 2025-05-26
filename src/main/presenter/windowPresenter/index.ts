@@ -146,7 +146,16 @@ export class WindowPresenter implements IWindowPresenter {
   hide(windowId: number): void {
     const window = this.windows.get(windowId)
     if (window) {
-      window.hide()
+      // 修复全屏隐藏窗口黑屏问题（适用于所有平台）
+      if (window.isFullScreen()) {
+        // 先退出全屏，然后在完成后隐藏窗口
+        window.once('leave-full-screen', () => {
+          window.hide()
+        })
+        window.setFullScreen(false)
+      } else {
+        window.hide()
+      }
     }
   }
 
@@ -335,14 +344,35 @@ export class WindowPresenter implements IWindowPresenter {
       if (!this.isQuitting) {
         if (this.windows.size > 1 || this.configPresenter.getSetting('minimizeToTray')) {
           event.preventDefault()
-          shellWindow.hide()
+          
+          // 修复全屏关闭窗口黑屏问题（适用于所有平台）
+          if (shellWindow.isFullScreen()) {
+            // 先退出全屏，然后在完成后隐藏窗口
+            shellWindow.once('leave-full-screen', () => {
+              shellWindow.hide()
+            })
+            shellWindow.setFullScreen(false)
+          } else {
+            shellWindow.hide()
+          }
+          
           // if (this.trayPresenter) {
           //   this.trayPresenter.show()
           // }
         } else {
           if (!this.configPresenter.getCloseToQuit()) {
             event.preventDefault()
-            shellWindow.hide()
+            
+            // 修复全屏关闭窗口黑屏问题（适用于所有平台）
+            if (shellWindow.isFullScreen()) {
+              // 先退出全屏，然后在完成后隐藏窗口
+              shellWindow.once('leave-full-screen', () => {
+                shellWindow.hide()
+              })
+              shellWindow.setFullScreen(false)
+            } else {
+              shellWindow.hide()
+            }
           }
         }
       }
