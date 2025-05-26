@@ -6,8 +6,6 @@
       <MarkdownRenderer
         v-if="part.type === 'text'"
         :content="part.content"
-        :message-id="messageId"
-        :thread-id="threadId"
         :loading="part.loading"
         @copy="handleCopyClick"
       />

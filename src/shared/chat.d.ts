@@ -2,7 +2,7 @@ import { FileMetaData } from './presenter'
 
 export type Message = {
   id: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   content: UserMessageContent | AssistantMessageBlock[]
   role: MESSAGE_ROLE
   timestamp: number
@@ -66,7 +66,7 @@ export type UserMessageContent = {
   think: boolean
   search: boolean
   text: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   content?: (UserMessageTextBlock | UserMessageMentionBlock | UserMessageCodeBlock)[]
 }
 

@@ -69,7 +69,7 @@
                 :placeholder="t('settings.provider.dialog.addCustomProvider.baseUrlPlaceholder')"
                 required
               />
-              <div class="text-xs text-muted-foreground mt-1" v-if="formData.apiType === 'openai'">
+              <div v-if="formData.apiType === 'openai'" class="text-xs text-muted-foreground mt-1">
                 {{ `${formData.baseUrl ?? ''}/chat/completions` }}
               </div>
             </span>

@@ -5,22 +5,26 @@ function safeSerialize(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
-  
+
   if (obj instanceof Date) {
     return new Date(obj.getTime())
   }
-  
+
   if (Array.isArray(obj)) {
-    return obj.map(item => safeSerialize(item))
+    return obj.map((item) => safeSerialize(item))
   }
-  
+
   // 对于普通对象，只复制可序列化的属性
   const serialized: Record<string, unknown> = {}
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const value = (obj as Record<string, unknown>)[key]
       // 跳过函数、Symbol和其他不可序列化的值
-      if (typeof value !== 'function' && typeof value !== 'symbol' && typeof value !== 'undefined') {
+      if (
+        typeof value !== 'function' &&
+        typeof value !== 'symbol' &&
+        typeof value !== 'undefined'
+      ) {
         serialized[key] = safeSerialize(value)
       }
     }

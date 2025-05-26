@@ -38,7 +38,7 @@ export class CustomPromptsServer {
 
     // 设置请求处理器
     this.setupRequestHandlers()
-    
+
     // 监听自定义提示词变更事件
     this.setupEventListeners()
   }

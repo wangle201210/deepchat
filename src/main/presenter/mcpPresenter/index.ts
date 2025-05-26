@@ -170,7 +170,7 @@ export class McpPresenter implements IMCPPresenter {
       this.isInitialized = true
       console.log('[MCP] Initialization completed')
       eventBus.emit(MCP_EVENTS.INITIALIZED)
-      
+
       // 检查并管理自定义提示词服务器
       await this.checkAndManageCustomPromptsServer()
     } catch (error) {
@@ -189,15 +189,15 @@ export class McpPresenter implements IMCPPresenter {
   // 检查并管理自定义提示词服务器
   private async checkAndManageCustomPromptsServer(): Promise<void> {
     const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server'
-    
+
     try {
       // 获取当前自定义提示词
       const customPrompts = await this.configPresenter.getCustomPrompts()
       const hasCustomPrompts = customPrompts && customPrompts.length > 0
-      
+
       // 检查服务器是否正在运行
       const isServerRunning = this.serverManager.isServerRunning(customPromptsServerName)
-      
+
       if (hasCustomPrompts && !isServerRunning) {
         // 有自定义提示词但服务器未运行，启动服务器
         try {
@@ -224,7 +224,7 @@ export class McpPresenter implements IMCPPresenter {
           // 重启失败
         }
       }
-      
+
       // 通知客户端列表已更新
       eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
     } catch (error) {

@@ -1,63 +1,62 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
-  <NodeRenderer :customComponents="nodeComponents" :content="content" :message-id="messageId" :thread-id="threadId"
-    @copy="$emit('copy', $event)" />
+  <NodeRenderer
+    :custom-components="nodeComponents"
+    :content="content"
+    @copy="$emit('copy', $event)"
+  />
 </template>
 <script setup lang="ts">
-  import NodeRenderer, { CodeBlockNode } from 'vue-renderer-markdown'
-  import ReferenceNode from './ReferenceNode.vue'
-  import { h } from 'vue'
-  import { useArtifactStore } from '@/stores/artifact'
+import NodeRenderer, { CodeBlockNode } from 'vue-renderer-markdown'
+import ReferenceNode from './ReferenceNode.vue'
+import { h } from 'vue'
+import { useArtifactStore } from '@/stores/artifact'
+import { nanoid } from 'nanoid'
 
-  const props = defineProps<{
-    content: string
-    messageId: string
-    threadId?: string
-    debug?: boolean
-  }>()
+defineProps<{
+  content: string
+  debug?: boolean
+}>()
 
-  // 组件映射表
-  const artifactStore = useArtifactStore()
-  const nodeComponents = {
-    reference: ReferenceNode,
-    code_block: (_props) => h(CodeBlockNode, {
+// 组件映射表
+const artifactStore = useArtifactStore()
+// 生成唯一的 message ID 和 thread ID，用于 MarkdownRenderer
+const messageId = `artifact-msg-${nanoid()}`
+const threadId = `artifact-thread-${nanoid()}`
+const nodeComponents = {
+  reference: ReferenceNode,
+  code_block: (_props) =>
+    h(CodeBlockNode, {
       ..._props,
       onPreviewCode(v) {
-        const messageId = props.messageId || props['message-id']
-        const threadId = props.threadId || props['thread-id']
-        if (!messageId || !threadId)
-          return
         artifactStore.showArtifact(
           {
             id: v.id,
             type: v.artifactType,
             title: v.artifactTitle,
             content: v.node.code,
-            status: 'loaded',
+            status: 'loaded'
           },
           messageId,
-          threadId,
+          threadId
         )
       }
     })
-  }
+}
 
-
-
-  defineEmits(['copy'])
-
+defineEmits(['copy'])
 </script>
 <style>
-  .prose {
-    li p {
-      @apply py-0 my-0;
-    }
-
-    hr {
-      margin-block-start: 0.5em;
-      margin-block-end: 0.5em;
-      margin-inline-start: auto;
-      margin-inline-end: auto;
-    }
+.prose {
+  li p {
+    @apply py-0 my-0;
   }
+
+  hr {
+    margin-block-start: 0.5em;
+    margin-block-end: 0.5em;
+    margin-inline-start: auto;
+    margin-inline-end: auto;
+  }
+}
 </style>

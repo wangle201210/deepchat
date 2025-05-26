@@ -55,10 +55,10 @@
           }}
         </Button>
         <Button
+          v-if="!provider.custom && provider.id !== 'doubao'"
           variant="outline"
           size="xs"
           class="text-xs text-normal rounded-lg"
-          v-if="!provider.custom && provider.id !== 'doubao'"
           @click="openProviderWebsite"
         >
           <Icon icon="lucide:hand-helping" class="w-4 h-4 text-muted-foreground" />{{
@@ -66,7 +66,7 @@
           }}
         </Button>
       </div>
-      <div class="text-xs text-muted-foreground" v-if="!provider.custom">
+      <div v-if="!provider.custom" class="text-xs text-muted-foreground">
         {{ t('settings.provider.getKeyTip') }}
         <a :href="providerWebsites?.apiKey" target="_blank" class="text-primary">{{
           provider.name

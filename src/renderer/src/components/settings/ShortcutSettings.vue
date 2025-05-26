@@ -3,7 +3,11 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 快捷键列表 -->
       <div class="flex flex-col gap-2">
-        <div v-for="shortcut in shortcuts" :key="shortcut.id" class="flex flex-row p-2 items-center gap-2 px-2">
+        <div
+          v-for="shortcut in shortcuts"
+          :key="shortcut.id"
+          class="flex flex-row p-2 items-center gap-2 px-2"
+        >
           <span class="flex flex-row items-center gap-2 flex-grow w-full">
             <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>

@@ -90,7 +90,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     open: 'Ouvrir',
     quit: 'Quitter',
     translate: 'Traduire',
-    askAI: 'Demander à l\'AI'
+    askAI: "Demander à l'AI"
   },
   de: {
     copy: 'Kopieren',
