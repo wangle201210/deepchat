@@ -223,6 +223,7 @@
       "resources": "의지"
     },
     "serverList": "서버 목록",
+    "totalServers": "총 서버 수",
     "addServer": "서버 추가",
     "running": "실행 중",
     "stopped": "중지됨",
@@ -302,6 +303,7 @@
     "default": "기본",
     "setAsDefault": "기본 설정",
     "removeServer": "서버 삭제",
+    "autoStart": "자동 시작",
     "confirmRemoveServer": "서버 {name}을(를) 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
     "removeServerDialog": {
       "title": "서버 삭제"
@@ -324,7 +326,14 @@
     "marketplace": "MCP 시장으로 가서 한 번의 클릭으로 설치하십시오.",
     "maxDefaultServersReached": "최대 3 개의 기본 서버 만 설정할 수 있습니다",
     "removeDefaultFirst": "기본 서버를 먼저 제거하십시오",
-    "higressMarket": "Higress MCP 설치로 이동하십시오"
+    "higressMarket": "Higress MCP 설치로 이동하십시오",
+    "technicalDetails": "기술 세부 사항",
+    "httpServer": "HTTP 서버",
+    "localProcess": "로컬 프로세스",
+    "restartServer": "서버 재시작",
+    "viewLogs": "로그 보기",
+    "starting": "시작 중",
+    "error": "오류"
   },
   "about": {
     "title": "우리에 대해",

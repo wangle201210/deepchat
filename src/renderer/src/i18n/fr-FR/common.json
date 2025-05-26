@@ -63,8 +63,9 @@
   "title": "Paramètres généraux",
   "languageSystem": "Suivez le système",
   "watermarkTip": "Généré par AI",
-  "collapse": "Fermer",
+  "collapse": "Réduire",
   "expand": "Développer",
   "image": "image",
-  "add": "Nouveau"
+  "add": "Ajouter",
+  "reset": "Réinitialiser"
 }

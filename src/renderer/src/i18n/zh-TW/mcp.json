@@ -115,7 +115,8 @@
   "tools": {
     "searchPlaceholder": "搜尋工具...",
     "noToolsAvailable": "暫無可用工具",
-    "selectTool": "請從左側選擇要調試的工具",
+    "toolList": "工具列表",
+    "functionDescription": "功能描述",
     "path": "路徑",
     "pathPlaceholder": "輸入文件路徑",
     "searchPattern": "搜尋模式",
