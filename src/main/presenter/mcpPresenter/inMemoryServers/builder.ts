@@ -10,6 +10,7 @@ import { FastGptKnowledgeServer } from './fastGptKnowledgeServer'
 import { CustomPromptsServer } from './customPromptsServer'
 import { DeepResearchServer } from './deepResearchServer'
 import { AutoPromptingServer } from './autoPromptingServer'
+import { ConversationSearchServer } from './conversationSearchServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -73,6 +74,8 @@ export function getInMemoryServer(
       return new DeepResearchServer(env)
     case 'deepchat-inmemory/auto-prompting-server':
       return new AutoPromptingServer()
+    case 'deepchat-inmemory/conversation-search-server':
+      return new ConversationSearchServer()
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

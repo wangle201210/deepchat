@@ -182,6 +182,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "自動テンプレートプロンプト",
       "desc": "ユーザー入力に基づいて最適なカスタムプロンプトを自動的に選択し、プロンプトテンプレートをインテリジェントに埋め込みます。"
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "会話履歴検索",
+      "desc": "DeepChat内蔵の会話履歴検索サービス、過去の会話記録とメッセージ内容を検索できます"
     }
   },
   "prompts": {

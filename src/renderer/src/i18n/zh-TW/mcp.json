@@ -202,6 +202,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "自動模板提示詞",
       "desc": "依據使用者輸入自動選擇最合適的自訂提示詞，並智慧填入提示詞模板"
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "對話歷史搜索",
+      "desc": "DeepChat內建對話歷史搜索服務，可搜索歷史對話記錄和訊息內容"
     }
   },
   "prompts": {

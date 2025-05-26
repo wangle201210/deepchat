@@ -182,6 +182,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "Génération Automatique de Prompt par Modèle",
       "desc": "Sélectionne automatiquement le prompt personnalisé le plus adapté en fonction de l'entrée de l'utilisateur et remplit intelligemment le modèle de prompt."
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "Recherche d'Historique de Conversation",
+      "desc": "Service de recherche d'historique de conversation intégré DeepChat, peut rechercher les enregistrements de conversation historiques et le contenu des messages"
     }
   },
   "prompts": {
