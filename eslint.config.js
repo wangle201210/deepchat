@@ -46,8 +46,7 @@ export default defineConfig([
       'build',
       'resources',
       'runtime',
-      'scripts',
-      'src/renderer/src/components/ui' // shadcn
+      'scripts'
     ]
   },
   prettier
