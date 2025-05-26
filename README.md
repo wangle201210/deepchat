@@ -108,6 +108,8 @@ Compared to other AI tools, DeepChat offers the following unique advantages:
   - Clear code structure, both model providers and MCP services are highly decoupled, can be freely customized with minimal cost
   - Reasonable architecture, data interaction and UI behavior separation, fully utilizing Electron's capabilities, rejecting simple web wrappers, excellent performance
 
+For more details on how to use these features, see the [User Guide](./docs/user-guide.md).
+
 ## 🤖 Supported Model Providers
 
 <table>
@@ -239,6 +241,8 @@ Download the latest version for your system from the [GitHub Releases](https://g
 2. Select the model you want to use
 3. Start communicating with your AI assistant
 
+For a comprehensive guide on getting started and using all features, please refer to the [User Guide](./docs/user-guide.md).
+
 ## 💻 Development Guide
 
 Please read the [Contribution Guidelines](./CONTRIBUTING.md)
@@ -289,6 +293,8 @@ $ npm run build:mac:arm64
 $ npm run build:linux:x64
 $ npm run build:linux:arm64
 ```
+
+For a more detailed guide on development, project structure, and architecture, please see the [Developer Guide](./docs/developer-guide.md).
 
 ## 👥 Community & Contribution
 
