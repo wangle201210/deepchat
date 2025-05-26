@@ -32,11 +32,8 @@
 
       <!-- Prompt卡片网格 -->
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div
-          v-for="(prompt, index) in prompts"
-          :key="prompt.id"
-          class="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors duration-200"
-        >
+        <div v-for="(prompt, index) in prompts" :key="prompt.id"
+          class="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors duration-200">
           <!-- 卡片头部 -->
           <div class="flex items-start justify-between mb-3">
             <div class="flex items-center gap-3 flex-1 min-w-0">
@@ -51,40 +48,29 @@
                   <span class="text-xs px-2 py-0.5 bg-muted rounded-md text-muted-foreground">
                     {{ getSourceLabel(prompt.source) }}
                   </span>
-                  <span 
-                    :class="[
-                      'text-xs px-2 py-0.5 rounded-md cursor-pointer transition-colors',
-                      prompt.enabled 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50' 
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    ]"
-                    @click="togglePromptEnabled(index)"
-                    :title="prompt.enabled ? t('promptSetting.clickToDisable') : t('promptSetting.clickToEnable')"
-                  >
+                  <span :class="[
+                    'text-xs px-2 py-0.5 rounded-md cursor-pointer transition-colors',
+                    prompt.enabled
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ]" @click="togglePromptEnabled(index)"
+                    :title="prompt.enabled ? t('promptSetting.clickToDisable') : t('promptSetting.clickToEnable')">
                     {{ prompt.enabled ? t('promptSetting.active') : t('promptSetting.inactive') }}
                   </span>
                 </div>
               </div>
             </div>
-            
+
             <!-- 操作按钮 -->
             <div class="flex items-center gap-1 flex-shrink-0 ml-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                class="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
-                @click="editPrompt(index)"
-                :title="t('common.edit')"
-              >
+              <Button variant="ghost" size="icon"
+                class="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted" @click="editPrompt(index)"
+                :title="t('common.edit')">
                 <Icon icon="lucide:pencil" class="w-3.5 h-3.5" />
               </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button variant="ghost" size="icon"
                 class="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                @click="deletePrompt(index)"
-                :title="t('common.delete')"
-              >
+                @click="deletePrompt(index)" :title="t('common.delete')">
                 <Icon icon="lucide:trash-2" class="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -97,21 +83,14 @@
 
           <!-- 内容预览 -->
           <div class="relative mb-3">
-            <div
-              :class="[
-                'text-xs bg-muted/50 rounded-md p-2 border text-muted-foreground',
-                !isExpanded(prompt.id) && 'line-clamp-2'
-              ]"
-            >
+            <div :class="[
+              'text-xs bg-muted/50 rounded-md p-2 border text-muted-foreground break-all',
+              !isExpanded(prompt.id) && 'line-clamp-2'
+            ]">
               {{ prompt.content }}
             </div>
-            <Button
-              v-if="prompt.content.length > 100"
-              variant="ghost"
-              size="sm"
-              class="text-xs text-primary h-6 px-2 mt-1"
-              @click="toggleShowMore(prompt.id)"
-            >
+            <Button v-if="prompt.content.length > 100" variant="ghost" size="sm"
+              class="text-xs text-primary h-6 px-2 mt-1" @click="toggleShowMore(prompt.id)">
               {{
                 isExpanded(prompt.id) ? t('promptSetting.showLess') : t('promptSetting.showMore')
               }}
@@ -144,11 +123,11 @@
         <DialogHeader>
           <DialogTitle>{{
             editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle')
-          }}</DialogTitle>
+            }}</DialogTitle>
           <DialogDescription>
             {{
-              editingIdx === null 
-                ? t('promptSetting.addDescription') 
+              editingIdx === null
+                ? t('promptSetting.addDescription')
                 : t('promptSetting.editDescription')
             }}
           </DialogDescription>
@@ -160,26 +139,17 @@
           </div>
           <div>
             <Label>{{ t('promptSetting.description') }}</Label>
-            <Input
-              v-model="form.description"
-              :placeholder="t('promptSetting.descriptionPlaceholder')"
-            />
+            <Input v-model="form.description" :placeholder="t('promptSetting.descriptionPlaceholder')" />
           </div>
           <div class="flex items-center space-x-2">
-            <Checkbox
-              id="prompt-enabled"
-              :checked="form.enabled"
-              @update:checked="(value) => form.enabled = value"
-            />
+            <Checkbox id="prompt-enabled" :checked="form.enabled" @update:checked="(value) => form.enabled = value" />
             <Label for="prompt-enabled">{{ t('promptSetting.enablePrompt') }}</Label>
           </div>
           <div>
             <Label>{{ t('promptSetting.content') }}</Label>
-            <textarea
-              v-model="form.content"
+            <textarea v-model="form.content"
               class="w-full min-h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
-              :placeholder="t('promptSetting.contentPlaceholder')"
-            ></textarea>
+              :placeholder="t('promptSetting.contentPlaceholder')"></textarea>
           </div>
           <div>
             <div class="flex items-center justify-between mb-3">
@@ -190,54 +160,38 @@
               </Button>
             </div>
             <div v-if="form.parameters?.length" class="space-y-3">
-              <div
-                v-for="(param, index) in form.parameters"
-                :key="index"
-                class="relative p-3 border rounded-lg bg-muted/30"
-              >
+              <div v-for="(param, index) in form.parameters" :key="index"
+                class="relative p-3 border rounded-lg bg-muted/30">
                 <!-- 删除按钮 - 放在右上角 -->
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <Button variant="ghost" size="icon"
                   class="absolute top-2 right-2 h-6 w-6 bg-muted/50 border border-border/50 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
-                  @click="removeParameter(index)"
-                  :title="t('common.delete')"
-                >
+                  @click="removeParameter(index)" :title="t('common.delete')">
                   <Icon icon="lucide:trash-2" class="w-3.5 h-3.5" />
                 </Button>
-                
+
                 <!-- 参数内容 -->
                 <div class="space-y-3 pr-8">
                   <!-- 参数名称行 -->
                   <div class="flex items-center gap-3">
                     <div class="flex-1">
                       <Label class="text-sm text-muted-foreground">{{ t('promptSetting.parameterName') }}</Label>
-                      <Input
-                        v-model="param.name"
-                        :placeholder="t('promptSetting.parameterNamePlaceholder')"
-                        class="mt-1"
-                      />
+                      <Input v-model="param.name" :placeholder="t('promptSetting.parameterNamePlaceholder')"
+                        class="mt-1" />
                     </div>
                     <div class="flex items-center gap-2 shrink-0 pt-6">
-                      <Checkbox
-                        :id="'required-' + index"
-                        :checked="param.required"
-                        @update:checked="(value) => param.required = value"
-                      />
+                      <Checkbox :id="'required-' + index" :checked="param.required"
+                        @update:checked="(value) => param.required = value" />
                       <Label :for="'required-' + index" class="text-sm whitespace-nowrap">
                         {{ t('promptSetting.required') }}
                       </Label>
                     </div>
                   </div>
-                  
+
                   <!-- 描述行 -->
                   <div>
                     <Label class="text-sm text-muted-foreground">{{ t('promptSetting.parameterDescription') }}</Label>
-                    <Input
-                      v-model="param.description"
-                      :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
-                      class="mt-1"
-                    />
+                    <Input v-model="param.description" :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
+                      class="mt-1" />
                   </div>
                 </div>
               </div>
@@ -252,7 +206,7 @@
           <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
           <Button :disabled="!form.name || !form.content" @click="savePrompt">{{
             t('common.confirm')
-          }}</Button>
+            }}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -318,15 +272,15 @@ const safeClone = (obj: unknown): unknown => {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
-  
+
   if (obj instanceof Date) {
     return new Date(obj.getTime())
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(item => safeClone(item))
   }
-  
+
   // 对于普通对象，只复制可序列化的属性
   const cloned: Record<string, unknown> = {}
   for (const key in obj) {
@@ -343,7 +297,7 @@ const safeClone = (obj: unknown): unknown => {
 
 const loadPrompts = async () => {
   await promptsStore.loadPrompts()
-  
+
   // 检查是否需要迁移数据（为旧数据添加新字段）
   let needsMigration = false
   const migratedPrompts = promptsStore.prompts.map(prompt => {
@@ -351,7 +305,7 @@ const loadPrompts = async () => {
     if (!hasNewFields) {
       needsMigration = true
     }
-    
+
     return {
       ...prompt,
       enabled: prompt.enabled ?? true, // 默认启用
@@ -360,7 +314,7 @@ const loadPrompts = async () => {
       updatedAt: prompt.updatedAt ?? Date.now()
     }
   }) as PromptItem[]
-  
+
   // 如果需要迁移，保存更新后的数据
   if (needsMigration) {
     try {
@@ -371,7 +325,7 @@ const loadPrompts = async () => {
       console.warn('Failed to migrate prompt data:', error)
     }
   }
-  
+
   prompts.value = migratedPrompts
 }
 
@@ -413,13 +367,13 @@ const resetForm = () => {
 
 const savePrompt = async () => {
   if (!form.name || !form.content) return
-  
+
   const timestamp = Date.now()
-  
+
   if (editingIdx.value === null) {
     // 新增
-    const newPrompt = { 
-      ...toRaw(form), 
+    const newPrompt = {
+      ...toRaw(form),
       id: timestamp.toString(),
       enabled: form.enabled ?? true,
       source: 'local' as const,
@@ -465,13 +419,13 @@ const editPrompt = (idx: number) => {
 
 const deletePrompt = async (idx: number) => {
   const prompt = prompts.value[idx]
-  
+
   // 确认删除
   const confirmed = confirm(t('promptSetting.confirmDelete', { name: prompt.name }))
   if (!confirmed) {
     return
   }
-  
+
   try {
     await promptsStore.deletePrompt(prompt.id)
     await loadPrompts()
@@ -491,7 +445,7 @@ const deletePrompt = async (idx: number) => {
 const togglePromptEnabled = async (idx: number) => {
   const prompt = prompts.value[idx]
   const newEnabled = !(prompt.enabled ?? true) // 处理 undefined 的情况
-  
+
   try {
     // 更新本地状态
     prompts.value[idx] = {
@@ -499,13 +453,13 @@ const togglePromptEnabled = async (idx: number) => {
       enabled: newEnabled,
       updatedAt: Date.now()
     }
-    
+
     // 更新存储
     await promptsStore.updatePrompt(prompt.id, {
       enabled: newEnabled,
       updatedAt: Date.now()
     })
-    
+
     toast({
       title: newEnabled ? t('promptSetting.enableSuccess') : t('promptSetting.disableSuccess'),
       variant: 'default'
@@ -560,26 +514,26 @@ const importPrompts = () => {
         try {
           const content = event.target?.result as string
           const importedPrompts = JSON.parse(content)
-          
+
           if (Array.isArray(importedPrompts)) {
             // 获取当前所有提示词
             const currentPrompts = [...prompts.value]
-            
+
             // 创建一个 Map 来快速查找现有提示词
             const currentPromptsMap = new Map(currentPrompts.map(p => [p.id, p]))
-            
+
             let updatedCount = 0
             let addedCount = 0
-            
+
             // 处理导入的每个提示词
             for (const importedPrompt of importedPrompts) {
               const timestamp = Date.now()
-              
+
               if (!importedPrompt.id) {
                 // 如果导入的提示词没有ID，生成一个新的ID
                 importedPrompt.id = timestamp.toString() + Math.random().toString(36).substr(2, 9)
               }
-              
+
               // 设置导入状态
               if (!importedPrompt.source) {
                 importedPrompt.source = 'imported'
@@ -591,7 +545,7 @@ const importPrompts = () => {
                 importedPrompt.createdAt = timestamp
               }
               importedPrompt.updatedAt = timestamp
-              
+
               if (currentPromptsMap.has(importedPrompt.id)) {
                 // 如果ID已存在，更新现有提示词
                 const index = currentPrompts.findIndex(p => p.id === importedPrompt.id)
@@ -605,13 +559,13 @@ const importPrompts = () => {
                 addedCount++
               }
             }
-            
+
             // 保存合并后的提示词
             // 使用安全的深拷贝函数，避免克隆错误
             const rawPrompts = currentPrompts.map(prompt => safeClone(toRaw(prompt)) as PromptItem)
             await promptsStore.savePrompts(rawPrompts)
             await loadPrompts()
-            
+
             toast({
               title: t('promptSetting.importSuccess'),
               description: `${t('promptSetting.importStats', { added: addedCount, updated: updatedCount })}`,
@@ -629,7 +583,7 @@ const importPrompts = () => {
           })
         }
       }
-      
+
       reader.onerror = () => {
         toast({
           title: t('promptSetting.importFailed'),
@@ -637,7 +591,7 @@ const importPrompts = () => {
           variant: 'destructive'
         })
       }
-      
+
       reader.readAsText(file)
     }
   }
