@@ -4,7 +4,7 @@
       <div class="flex-1">
         <div class="flex items-center">
           <img src="@/assets/images/ragflow.png" class="h-5 mr-2" />
-          <span class="text-base font-medium">RAGFlow知识库</span>
+          <span class="text-base font-medium">RAGFlow</span>
         </div>
         <p class="text-sm text-muted-foreground mt-1">
           {{ t('settings.knowledgeBase.ragflowDescription') }}

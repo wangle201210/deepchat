@@ -33,5 +33,8 @@
   "copySuccess": "Copy Success",
   "copySuccessDesc": "Content copied to clipboard",
   "copyFailed": "Copy Failed",
-  "copyFailedDesc": "Failed to copy content to clipboard"
+  "copyFailedDesc": "Failed to copy content to clipboard",
+  "copyAsImage": "Copy as an image",
+  "copyImageSuccessDesc": "Image copied to clipboard",
+  "copyImageFailedDesc": "Unable to copy pictures to clipboard"
 }

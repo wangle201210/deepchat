@@ -380,7 +380,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     name: chunk.tool_call_name,
                     arguments_chunk: ''
                   }
-                  // Yielding start event might be less useful here if handled during execution
+                  // Immediately send the start event to indicate the tool call has begun
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      tool_call: 'start',
+                      tool_call_id: chunk.tool_call_id,
+                      tool_call_name: chunk.tool_call_name,
+                      tool_call_params: '' // Initial parameters are empty
+                    }
+                  }
                 }
                 break
               case 'tool_call_chunk':
@@ -391,7 +401,18 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                 ) {
                   currentToolChunks[chunk.tool_call_id].arguments_chunk +=
                     chunk.tool_call_arguments_chunk
-                  // Yielding chunks might be too granular for the agent loop consumer
+
+                  // Send update event to update parameter content in real-time
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      tool_call: 'update',
+                      tool_call_id: chunk.tool_call_id,
+                      tool_call_name: currentToolChunks[chunk.tool_call_id].name,
+                      tool_call_params: currentToolChunks[chunk.tool_call_id].arguments_chunk
+                    }
+                  }
                 }
                 break
               case 'tool_call_end':
@@ -404,6 +425,19 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     name: currentToolChunks[chunk.tool_call_id].name,
                     arguments: completeArgs
                   })
+
+                  // Send final update event to ensure parameter completeness
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      tool_call: 'update',
+                      tool_call_id: chunk.tool_call_id,
+                      tool_call_name: currentToolChunks[chunk.tool_call_id].name,
+                      tool_call_params: completeArgs
+                    }
+                  }
+
                   delete currentToolChunks[chunk.tool_call_id]
                 }
                 break
@@ -557,7 +591,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                 type: 'response',
                 data: {
                   eventId,
-                  tool_call: 'start',
+                  tool_call: 'running',
                   tool_call_id: toolCall.id,
                   tool_call_name: toolCall.name,
                   tool_call_params: toolCall.arguments,

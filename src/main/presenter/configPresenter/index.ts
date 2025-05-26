@@ -14,7 +14,7 @@ import path from 'path'
 import { app, nativeTheme, shell } from 'electron'
 import fs from 'fs'
 import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
-import { McpConfHelper } from './mcpConfHelper'
+import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
 import { defaultModelsSettings } from './modelDefaultSettings'
@@ -235,7 +235,6 @@ export class ConfigPresenter implements IConfigPresenter {
 
       // 如果过滤后数量不同，说明有移除操作，需要保存更新后的提供商列表
       if (filteredProviders.length !== providers.length) {
-        console.log('[Config] 迁移: 移除了 qwenlm 提供商')
         this.setProviders(filteredProviders)
       }
     }
@@ -703,8 +702,27 @@ export class ConfigPresenter implements IConfigPresenter {
   // ===================== MCP配置相关方法 =====================
 
   // 获取MCP服务器配置
-  getMcpServers(): Promise<Record<string, MCPServerConfig>> {
-    return this.mcpConfHelper.getMcpServers()
+  async getMcpServers(): Promise<Record<string, MCPServerConfig>> {
+    const servers = await this.mcpConfHelper.getMcpServers()
+
+    // 检查是否有自定义提示词，如果有则添加 custom-prompts-server
+    try {
+      const customPrompts = await this.getCustomPrompts()
+      if (customPrompts && customPrompts.length > 0) {
+        const customPromptsServerName = 'deepchat-inmemory/custom-prompts-server'
+        const systemServers = SYSTEM_INMEM_MCP_SERVERS[customPromptsServerName]
+
+        if (systemServers && !servers[customPromptsServerName]) {
+          servers[customPromptsServerName] = systemServers
+          servers[customPromptsServerName].disable = false
+          servers[customPromptsServerName].autoApprove = ['all']
+        }
+      }
+    } catch (error) {
+      // 检查自定义提示词时出错
+    }
+
+    return servers
   }
 
   // 设置MCP服务器配置
@@ -851,58 +869,45 @@ export class ConfigPresenter implements IConfigPresenter {
     try {
       return this.customPromptsStore.get('prompts') || []
     } catch (error) {
-      console.error('Failed to get custom prompts:', error)
       return []
     }
   }
 
   // 保存自定义 prompts
   async setCustomPrompts(prompts: Prompt[]): Promise<void> {
-    try {
-      await this.customPromptsStore.set('prompts', prompts)
-    } catch (error) {
-      console.error('Failed to set custom prompts:', error)
-      throw error
-    }
+    await this.customPromptsStore.set('prompts', prompts)
+    // 触发自定义提示词变更事件
+    eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED)
+    
+    // 通知MCP系统检查并启动/停止自定义提示词服务器
+    eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED)
   }
 
   // 添加单个 prompt
   async addCustomPrompt(prompt: Prompt): Promise<void> {
-    try {
-      const prompts = await this.getCustomPrompts()
-      prompts.push(prompt)
-      await this.setCustomPrompts(prompts)
-    } catch (error) {
-      console.error('Failed to add custom prompt:', error)
-      throw error
-    }
+    const prompts = await this.getCustomPrompts()
+    prompts.push(prompt)
+    await this.setCustomPrompts(prompts)
+    // 事件会在 setCustomPrompts 中触发
   }
 
   // 更新单个 prompt
   async updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void> {
-    try {
-      const prompts = await this.getCustomPrompts()
-      const index = prompts.findIndex((p) => p.id === promptId)
-      if (index !== -1) {
-        prompts[index] = { ...prompts[index], ...updates }
-        await this.setCustomPrompts(prompts)
-      }
-    } catch (error) {
-      console.error('Failed to update custom prompt:', error)
-      throw error
+    const prompts = await this.getCustomPrompts()
+    const index = prompts.findIndex((p) => p.id === promptId)
+    if (index !== -1) {
+      prompts[index] = { ...prompts[index], ...updates }
+      await this.setCustomPrompts(prompts)
+      // 事件会在 setCustomPrompts 中触发
     }
   }
 
   // 删除单个 prompt
   async deleteCustomPrompt(promptId: string): Promise<void> {
-    try {
-      const prompts = await this.getCustomPrompts()
-      const filteredPrompts = prompts.filter((p) => p.id !== promptId)
-      await this.setCustomPrompts(filteredPrompts)
-    } catch (error) {
-      console.error('Failed to delete custom prompt:', error)
-      throw error
-    }
+    const prompts = await this.getCustomPrompts()
+    const filteredPrompts = prompts.filter((p) => p.id !== promptId)
+    await this.setCustomPrompts(filteredPrompts)
+    // 事件会在 setCustomPrompts 中触发
   }
 }
 

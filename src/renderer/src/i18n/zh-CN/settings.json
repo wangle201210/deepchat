@@ -179,7 +179,11 @@
     "azureApiVersion": "API 版本",
     "safety": {
       "title": "安全设置"
-    }
+    },
+    "serverList": "服务器列表",
+    "totalServers": "服务器总数",
+    "addServer": "添加服务器",
+    "autoStart": "自启动"
   },
   "knowledgeBase": {
     "title": "知识库设置",
@@ -217,6 +221,13 @@
     "enabledDescription": "启用或禁用MCP功能和工具",
     "enableToAccess": "请先启用MCP以访问配置选项",
     "marketplace": "前往MCP市场一键安装",
+    "technicalDetails": "技术详情",
+    "httpServer": "HTTP服务器",
+    "localProcess": "本地进程",
+    "restartServer": "重启服务器",
+    "viewLogs": "查看日志",
+    "starting": "启动中",
+    "error": "错误",
     "tabs": {
       "servers": "服务器",
       "tools": "工具",
@@ -303,6 +314,7 @@
     "default": "默认",
     "setAsDefault": "设为默认服务器",
     "removeServer": "删除服务器",
+    "autoStart": "自启动",
     "confirmRemoveServer": "确定要删除服务器 {name} 吗？此操作无法撤销。",
     "removeServerDialog": {
       "title": "删除服务器"

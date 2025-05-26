@@ -1,8 +1,18 @@
 {
   "tools": {
-    "searchPlaceholder": "Search for tools...",
+    "searchPlaceholder": "Search tools...",
     "noToolsAvailable": "No tools available",
-    "selectTool": "Please select a tool to debug from the left",
+    "selectToolToDebug": "Select a tool to debug",
+    "dialogDescription": "Debug and test tools provided by MCP servers",
+    "toolsCount": "tools",
+    "availableTools": "Available Tools",
+    "toolList": "Tool List",
+    "functionDescription": "Function Description",
+    "invalidJson": "Invalid JSON format",
+    "inputHint": "Please enter parameters in JSON format",
+    "required": "Required",
+    "noDescription": "No description",
+    "input": "Input",
     "path": "Path",
     "pathPlaceholder": "Enter file path",
     "searchPattern": "Search pattern",
@@ -26,9 +36,7 @@
     "enabled": "Enable MCP",
     "enabledDescription": "Enable MCP functionality to use tool calls",
     "empty": "Empty",
-    "invalidJsonFormat": "Invalid JSON format",
     "jsonInputPlaceholder": "Enter the parameters in JSON format",
-    "input": "Input Parameters",
     "type": "Type",
     "annotations": "Annotations"
   },
@@ -161,6 +169,18 @@
     "fastGptKnowledge": {
       "name": "FastGPT Knowledge Base Search",
       "desc": "FastGPT knowledge base search service, can search FastGPT knowledge base content"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "DeepChat built-in custom prompt word service",
+      "name": "Custom prompt words"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "DeepChat built-in in-depth research service based on Bocha Search (note that long context models are required to be used, and models with insufficient context may fail)",
+      "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "Auto Template Prompting",
+      "desc": "Automatically selects the most suitable custom prompt based on user input and intelligently fills the prompt template."
     }
   },
   "prompts": {
@@ -168,19 +188,22 @@
     "noDescription": "No description yet",
     "selectPrompt": "Shown here",
     "parameters": "Prompt parameters",
+    "input": "Input Parameters",
     "runningPrompt": "Prompt is getting",
     "executeButton": "Click to get",
     "resultTitle": "Prompt Details",
     "invalidJson": "Invalid JSON format",
     "parametersHint": "Please enter the parameters in JSON format, support automatic formatting",
-    "resetToDefault": "Reset to default parameters"
+    "resetToDefault": "Reset to default parameters",
+    "dialogDescription": "Debug and test prompts provided by MCP servers"
   },
   "resources": {
     "noResourcesAvailable": "None Resources",
     "selectResource": "Show Resources content here",
     "loading": "loading",
     "loadContent": "Get Resource content",
-    "pleaseSelect": "Click to get display Resources details"
+    "pleaseSelect": "Click to get display Resources details",
+    "dialogDescription": "Browse and view resources provided by MCP servers"
   },
   "errors": {
     "loadConfigFailed": "Failed to load MCP configuration",

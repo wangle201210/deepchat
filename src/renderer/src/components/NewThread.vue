@@ -106,7 +106,15 @@ import { UserMessageContent } from '@shared/chat'
 import ChatConfig from './ChatConfig.vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { useEventListener } from '@vueuse/core'
+
 const configPresenter = usePresenter('configPresenter')
+
+// 定义偏好模型的类型
+interface PreferredModel {
+  modelId: string
+  providerId: string
+}
+
 const { t } = useI18n()
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
@@ -154,7 +162,8 @@ watch(
 )
 watch(
   () => [settingsStore.enabledModels, chatStore.threads],
-  () => {
+  async () => {
+    // 如果有现有线程，使用最近线程的模型
     if (chatStore.threads.length > 0) {
       if (chatStore.threads[0].dtThreads.length > 0) {
         const thread = chatStore.threads[0].dtThreads[0]
@@ -174,7 +183,33 @@ watch(
         }
       }
     }
-    // console.log(settingsStore.enabledModels.length)
+    
+    // 如果没有现有线程，尝试使用用户上次选择的模型
+    try {
+      const preferredModel = await configPresenter.getSetting('preferredModel') as PreferredModel | undefined
+      if (preferredModel && preferredModel.modelId && preferredModel.providerId) {
+        // 验证偏好模型是否还在可用模型列表中
+        for (const provider of settingsStore.enabledModels) {
+          if (provider.providerId === preferredModel.providerId) {
+            for (const model of provider.models) {
+              if (model.id === preferredModel.modelId) {
+                activeModel.value = {
+                  name: model.name,
+                  id: model.id,
+                  providerId: provider.providerId,
+                  tags: []
+                }
+                return
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('获取用户偏好模型失败:', error)
+    }
+    
+    // 如果没有偏好模型或偏好模型不可用，使用第一个可用模型
     if (settingsStore.enabledModels.length > 0) {
       const model = settingsStore.enabledModels[0].models[0]
       if (model) {
@@ -219,6 +254,13 @@ const handleModelUpdate = (model: MODEL_META, providerId: string) => {
     modelId: model.id,
     providerId: providerId
   })
+  
+  // 保存用户的模型偏好设置
+  configPresenter.setSetting('preferredModel', {
+    modelId: model.id,
+    providerId: providerId
+  })
+  
   modelSelectOpen.value = false
 }
 

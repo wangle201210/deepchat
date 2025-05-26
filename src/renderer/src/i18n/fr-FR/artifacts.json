@@ -33,5 +33,8 @@
   "copySuccess": "Copie réussie",
   "copySuccessDesc": "Contenu copié dans le presse-papiers",
   "copyFailed": "Échec de la copie",
-  "copyFailedDesc": "Impossible de copier le contenu dans le presse-papiers"
+  "copyFailedDesc": "Impossible de copier le contenu dans le presse-papiers",
+  "copyAsImage": "Copier en tant qu'image",
+  "copyImageSuccessDesc": "Image copiée dans le presse-papiers",
+  "copyImageFailedDesc": "Impossible de copier des images dans le presse-papiers"
 }

@@ -43,12 +43,7 @@
         <!-- 操作按钮区域 -->
         <div class="flex gap-2 mt-2">
           <!-- 免责声明按钮 -->
-          <Button
-            variant="outline"
-            size="sm"
-            class="mb-2 text-xs text-muted-foreground"
-            @click="openDisclaimerDialog"
-          >
+          <Button variant="outline" size="sm" class="mb-2 text-xs" @click="openDisclaimerDialog">
             <Icon icon="lucide:info" class="mr-1 h-3 w-3" />
             {{ t('about.disclaimerButton') }}
           </Button>
@@ -57,9 +52,9 @@
           <Button
             variant="outline"
             size="sm"
-            class="mb-2 text-xs text-muted-foreground"
-            @click="handleCheckUpdate"
+            class="mb-2 text-xs"
             :disabled="upgrade.isChecking || upgrade.isDownloading || upgrade.isRestarting"
+            @click="handleCheckUpdate"
           >
             <Icon
               icon="lucide:refresh-cw"

@@ -52,6 +52,10 @@ export interface Prompt {
     required: boolean
   }>
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
+  enabled?: boolean // 是否启用
+  source?: 'local' | 'imported' | 'builtin' // 来源类型
+  createdAt?: number // 创建时间
+  updatedAt?: number // 更新时间
 }
 export interface PromptListEntry {
   name: string
@@ -143,6 +147,7 @@ export interface IWindowPresenter {
   isMainWindowFocused(windowId: number): boolean
   sendToAllWindows(channel: string, ...args: unknown[]): void
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
+  sendTodefaultTab(channel: string, switchToTarget?: boolean, ...args: unknown[]): Promise<boolean>
   closeWindow(windowId: number, forceClose?: boolean): Promise<void>
 }
 
@@ -1014,7 +1019,7 @@ export interface LLMAgentEventData {
   tool_call_server_description?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tool_call_response_raw?: any
-  tool_call?: 'start' | 'end' | 'error'
+  tool_call?: 'start' | 'running' | 'end' | 'error' | 'update'
   totalUsage?: {
     prompt_tokens: number
     completion_tokens: number

@@ -1,6 +1,10 @@
 import { clipboard, contextBridge, nativeImage, webUtils, webFrame, ipcRenderer } from 'electron'
 import { exposeElectronAPI } from '@electron-toolkit/preload'
 
+// 缓存变量
+let cachedWindowId: number | undefined = undefined
+let cachedWebContentsId: number | undefined = undefined
+
 // Custom APIs for renderer
 const api = {
   copyText: (text: string) => {
@@ -14,10 +18,18 @@ const api = {
     return webUtils.getPathForFile(file)
   },
   getWindowId: () => {
-    return ipcRenderer.sendSync('get-window-id')
+    if (cachedWindowId !== undefined) {
+      return cachedWindowId
+    }
+    cachedWindowId = ipcRenderer.sendSync('get-window-id')
+    return cachedWindowId
   },
   getWebContentsId: () => {
-    return ipcRenderer.sendSync('get-web-contents-id')
+    if (cachedWebContentsId !== undefined) {
+      return cachedWebContentsId
+    }
+    cachedWebContentsId = ipcRenderer.sendSync('get-web-contents-id')
+    return cachedWebContentsId
   }
 }
 exposeElectronAPI()

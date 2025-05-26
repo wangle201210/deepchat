@@ -2,7 +2,8 @@
   "tools": {
     "searchPlaceholder": "Rechercher des outils...",
     "noToolsAvailable": "Aucun outil disponible",
-    "selectTool": "Veuillez sélectionner un outil à déboguer à gauche",
+    "toolList": "Liste des outils",
+    "functionDescription": "Description de la fonction",
     "path": "Chemin",
     "pathPlaceholder": "Entrez le chemin du fichier",
     "searchPattern": "Modèle de recherche",
@@ -161,6 +162,18 @@
     "fastGptKnowledge": {
       "name": "Recherche dans la base de connaissances FastGPT",
       "desc": "Service de recherche dans la base de connaissances FastGPT, peut rechercher le contenu de la base de connaissances FastGPT"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "Service de mot invite personnalisé intégré Deepchat intégré",
+      "name": "Mots rapides personnalisés"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "Un service de recherche approfondi de Deepchat basé sur la recherche de bocha (notez que des modèles de contexte longs doivent être utilisés, et les modèles avec un contexte insuffisant peuvent échouer)",
+      "name": "Recherche en profondeur"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "Génération Automatique de Prompt par Modèle",
+      "desc": "Sélectionne automatiquement le prompt personnalisé le plus adapté en fonction de l'entrée de l'utilisateur et remplit intelligemment le modèle de prompt."
     }
   },
   "prompts": {
@@ -168,19 +181,22 @@
     "noDescription": "Aucune description encore",
     "selectPrompt": "Montré ici",
     "parameters": "Paramètres rapides",
+    "input": "Paramètres d'entrée",
     "runningPrompt": "Invite obtient",
     "executeButton": "Cliquez pour obtenir",
     "resultTitle": "Des détails proches",
     "invalidJson": "Format JSON non valide",
     "parametersHint": "Veuillez saisir les paramètres au format JSON, prendre en charge la mise en forme automatique",
-    "resetToDefault": "Réinitialiser avec les paramètres par défaut"
+    "resetToDefault": "Réinitialiser avec les paramètres par défaut",
+    "dialogDescription": "Déboguer et tester les prompts fournis par les serveurs MCP"
   },
   "resources": {
     "noResourcesAvailable": "Aucune ressource",
     "selectResource": "Afficher le contenu des ressources ici",
     "loading": "chargement",
     "loadContent": "Obtenez du contenu de ressources",
-    "pleaseSelect": "Cliquez pour obtenir des détails sur les ressources d'affichage"
+    "pleaseSelect": "Cliquez pour obtenir des détails sur les ressources d'affichage",
+    "dialogDescription": "Parcourir et afficher les ressources fournies par les serveurs MCP"
   },
   "errors": {
     "loadConfigFailed": "Échec du chargement de la configuration MCP",

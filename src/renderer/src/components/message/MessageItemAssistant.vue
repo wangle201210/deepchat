@@ -1,35 +1,79 @@
 <template>
-  <div ref="messageNode" :data-message-id="message.id"
-    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item">
-    <ModelIcon :model-id="message.model_id" custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
-      :alt="message.role" />
+  <div
+    :data-message-id="message.id"
+    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
+  >
+    <ModelIcon
+      :model-id="message.model_id"
+      custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
+      :alt="message.role"
+    />
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
-      <div v-if="currentContent.length === 0" class="flex flex-row items-center gap-2 text-xs text-muted-foreground">
+      <div
+        v-if="currentContent.length === 0"
+        class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
+      >
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
-          <MessageBlockContent v-if="block.type === 'content'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" :is-search-result="isSearchResult" />
-          <MessageBlockThink v-else-if="block.type === 'reasoning_content'" :block="block" :usage="message.usage" />
-          <MessageBlockSearch v-else-if="block.type === 'search'" :message-id="message.id" :block="block" />
-          <MessageBlockToolCall v-else-if="block.type === 'tool_call'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" />
-          <MessageBlockAction v-else-if="block.type === 'action'" :message-id="message.id"
-            :conversation-id="currentThreadId" :block="block" />
-          <MessageBlockImage v-else-if="block.type === 'image'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" />
+          <MessageBlockContent
+            v-if="block.type === 'content'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+            :is-search-result="isSearchResult"
+          />
+          <MessageBlockThink
+            v-else-if="block.type === 'reasoning_content'"
+            :block="block"
+            :usage="message.usage"
+          />
+          <MessageBlockSearch
+            v-else-if="block.type === 'search'"
+            :message-id="message.id"
+            :block="block"
+          />
+          <MessageBlockToolCall
+            v-else-if="block.type === 'tool_call'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
+          <MessageBlockAction
+            v-else-if="block.type === 'action'"
+            :message-id="message.id"
+            :conversation-id="currentThreadId"
+            :block="block"
+          />
+          <MessageBlockImage
+            v-else-if="block.type === 'image'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </template>
       </div>
-      <MessageToolbar :loading="message.status === 'pending'" :usage="message.usage" :is-assistant="true"
-        :current-variant-index="currentVariantIndex" :total-variants="totalVariants"
+      <MessageToolbar
+        :loading="message.status === 'pending'"
+        :usage="message.usage"
+        :is-assistant="true"
+        :current-variant-index="currentVariantIndex"
+        :total-variants="totalVariants"
         :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
-        :is-capturing-image="isCapturingImage" @retry="handleAction('retry')" @delete="handleAction('delete')"
-        @copy="handleAction('copy')" @copyImage="handleAction('copyImage')" @prev="handleAction('prev')"
-        @next="handleAction('next')" @fork="handleAction('fork')" />
+        :is-capturing-image="isCapturingImage"
+        @retry="handleAction('retry')"
+        @delete="handleAction('delete')"
+        @copy="handleAction('copy')"
+        @copyImage="handleAction('copyImage')"
+        @copyImageFromTop="handleAction('copyImageFromTop')"
+        @prev="handleAction('prev')"
+        @next="handleAction('next')"
+        @fork="handleAction('fork')"
+      />
     </div>
   </div>
 
@@ -55,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, useTemplateRef } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { AssistantMessage, AssistantMessageBlock } from '@shared/chat'
 import MessageBlockContent from './MessageBlockContent.vue'
 import MessageBlockThink from './MessageBlockThink.vue'
@@ -80,24 +124,25 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { usePresenter } from '@/composables/usePresenter'
-
-const devicePresenter = usePresenter('devicePresenter')
-const tabPresenter = usePresenter('tabPresenter')
-
-const appVersion = ref('')
-const isCapturingImage = ref(false)
 
 const props = defineProps<{
   message: AssistantMessage
-  isDark: boolean
+  isCapturingImage: boolean
 }>()
 
 const chatStore = useChatStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
 
-const messageNode = useTemplateRef('messageNode')
+// 定义事件
+const emit = defineEmits<{
+  copyImage: [
+    messageId: string,
+    parentId: string | undefined,
+    fromTop: boolean,
+    modelInfo: { model_name: string; model_provider: string }
+  ]
+}>()
 
 // 获取当前会话ID
 const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
@@ -154,7 +199,6 @@ const isSearchResult = computed(() => {
 
 onMounted(async () => {
   currentVariantIndex.value = allVariants.value.length
-  appVersion.value = await devicePresenter.getAppVersion()
 })
 
 // 分支会话对话框
@@ -181,65 +225,8 @@ const confirmFork = async () => {
   }
 }
 
-/**
- * 查找用户消息DOM元素
- * 通过parentId查找对应的用户消息
- */
-const findUserMessageElement = (): HTMLElement | null => {
-  if (!props.message.parentId) return null
-
-  // 在DOM中查找包含用户消息ID的元素
-  const userMessageSelector = `[data-message-id="${props.message.parentId}"]`
-  return document.querySelector(userMessageSelector) as HTMLElement
-}
-
-/**
- * 计算包含用户消息和助手消息的整体范围
- */
-const calculateMessageGroupRect = (): {
-  x: number
-  y: number
-  width: number
-  height: number
-} | null => {
-  const userMessageElement = findUserMessageElement()
-  const assistantMessageElement = messageNode.value
-
-  if (!userMessageElement || !assistantMessageElement) {
-    // 如果找不到用户消息，只截取当前助手消息
-    if (assistantMessageElement) {
-      const rect = assistantMessageElement.getBoundingClientRect()
-      const assistantOnlyRect = {
-        x: Math.round(rect.x),
-        y: Math.round(rect.y),
-        width: Math.round(rect.width),
-        height: Math.round(rect.height)
-      }
-      return assistantOnlyRect
-    }
-    return null
-  }
-
-  const userRect = userMessageElement.getBoundingClientRect()
-  const assistantRect = assistantMessageElement.getBoundingClientRect()
-
-
-  const left = Math.min(userRect.left, assistantRect.left)
-  const top = Math.min(userRect.top, assistantRect.top)
-  const right = Math.max(userRect.right, assistantRect.right)
-  const bottom = Math.max(userRect.bottom, assistantRect.bottom)
-
-  const combinedRect = {
-    x: Math.round(left),
-    y: Math.round(top),
-    width: Math.round(right - left),
-    height: Math.round(bottom - top)
-  }
-  return combinedRect
-}
-
 const handleAction = (
-  action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'copyImage' | 'fork'
+  action: 'retry' | 'delete' | 'copy' | 'prev' | 'next' | 'copyImage' | 'copyImageFromTop' | 'fork'
 ) => {
   if (action === 'retry') {
     chatStore.retryMessage(props.message.id)
@@ -265,187 +252,17 @@ const handleAction = (
       currentVariantIndex.value++
     }
   } else if (action === 'copyImage') {
-    handleCopyImage()
+    emit('copyImage', props.message.id, props.message.parentId, false, {
+      model_name: props.message.model_name,
+      model_provider: props.message.model_provider
+    })
+  } else if (action === 'copyImageFromTop') {
+    emit('copyImage', props.message.id, props.message.parentId, true, {
+      model_name: props.message.model_name,
+      model_provider: props.message.model_provider
+    })
   } else if (action === 'fork') {
     showForkDialog()
-  }
-}
-
-/**
- * 处理复制图片操作
- * 使用固定截图窗口，预先规划分段截图策略
- */
-const handleCopyImage = async () => {
-  if (isCapturingImage.value) {
-    return
-  }
-  isCapturingImage.value = true
-  let originalScrollBehavior = ''
-  let scrollContainer: HTMLElement | null = null
-
-  try {
-    const initialRect = calculateMessageGroupRect()
-    if (!initialRect) {
-      console.error('[CAPTURE_DEBUG] Failed to calculate initialRect')
-      isCapturingImage.value = false
-      return
-    }
-
-    const tabId = window.api.getWebContentsId()
-    scrollContainer = document.querySelector('.message-list-container') as HTMLElement
-    if (!scrollContainer) {
-      console.error('[CAPTURE_DEBUG] Scroll container not found')
-      isCapturingImage.value = false
-      return
-    }
-
-    // Attempt to disable smooth scrolling temporarily
-    originalScrollBehavior = scrollContainer.style.scrollBehavior
-    scrollContainer.style.scrollBehavior = 'auto'
-
-    const containerOriginalScrollTop = scrollContainer.scrollTop
-    const containerRect = scrollContainer.getBoundingClientRect()
-
-    const scrollbarOffset = 20; // Offset to avoid scrollbar
-    const captureWindowVisibleHeight = containerRect.height - 44;
-    const fixedCaptureWindow = {
-      x: containerRect.left,
-      y: containerRect.top,
-      width: containerRect.width - scrollbarOffset, // Use defined offset
-      height: captureWindowVisibleHeight
-    };
-
-    const maxScrollTop = scrollContainer.scrollHeight - scrollContainer.clientHeight;
-
-    if (initialRect.height <= 0) {
-      isCapturingImage.value = false
-      return
-    }
-
-    const imageDataList: string[] = []
-    let totalCapturedContentHeight = 0
-    let iteration = 0
-
-
-    while (totalCapturedContentHeight < initialRect.height) {
-      iteration++;
-
-      const currentActualInitialRect = calculateMessageGroupRect();
-      if (!currentActualInitialRect) {
-        console.error(`[CAPTURE_DEBUG] Iteration ${iteration}: Failed to get currentActualInitialRect mid-loop!`);
-        break;
-      }
-
-      const targetContentSegmentTopInCurrentInitialRectY = currentActualInitialRect.y + totalCapturedContentHeight;
-      const scrollTopTarget = scrollContainer.scrollTop + targetContentSegmentTopInCurrentInitialRectY - fixedCaptureWindow.y; // fixedCaptureWindow.y IS containerRect.top
-
-      const currentScroll = Math.max(0, Math.min(scrollTopTarget, maxScrollTop));
-
-      scrollContainer.scrollTop = currentScroll;
-      await new Promise(resolve => setTimeout(resolve, 350));
-
-      // const actualScrolledTo = scrollContainer.scrollTop;
-      // if (Math.abs(actualScrolledTo - currentScroll) > 5 && !(currentScroll === 0 && actualScrolledTo < 5)) { // Allow 0->0.5 without warning
-      //   console.warn(`[CAPTURE_DEBUG] Iteration ${iteration}: Scroll position mismatch. Requested: ${currentScroll}, Actual: ${actualScrolledTo}.`);
-      // }
-
-      const finalInitialRectStateAfterScroll = calculateMessageGroupRect();
-      if (!finalInitialRectStateAfterScroll) {
-        console.error(`[CAPTURE_DEBUG] Iteration ${iteration}: Failed to get finalInitialRectStateAfterScroll!`);
-        break;
-      }
-      const finalScRect = scrollContainer.getBoundingClientRect();
-
-      const topOfUncapturedContentInViewport = finalInitialRectStateAfterScroll.y + totalCapturedContentHeight;
-      const contentOffsetYInCaptureWindow = topOfUncapturedContentInViewport - finalScRect.top;
-
-      let captureStartYInWindow = 0;
-      let heightToCaptureFromSegment = 0;
-
-      if (contentOffsetYInCaptureWindow < 0) {
-        captureStartYInWindow = 0;
-        heightToCaptureFromSegment = Math.min(
-          initialRect.height - totalCapturedContentHeight + contentOffsetYInCaptureWindow,
-          fixedCaptureWindow.height
-        );
-      } else {
-        captureStartYInWindow = contentOffsetYInCaptureWindow;
-        heightToCaptureFromSegment = Math.min(
-          initialRect.height - totalCapturedContentHeight,
-          fixedCaptureWindow.height - contentOffsetYInCaptureWindow
-        );
-      }
-      heightToCaptureFromSegment = Math.max(0, heightToCaptureFromSegment);
-
-      if (heightToCaptureFromSegment < 1 && initialRect.height > totalCapturedContentHeight) {
-        break
-      }
-
-      const captureRect = {
-        x: fixedCaptureWindow.x,
-        y: Math.round(finalScRect.top + captureStartYInWindow),
-        width: fixedCaptureWindow.width, // Ensure using the width from fixedCaptureWindow
-        height: Math.round(heightToCaptureFromSegment)
-      };
-
-      try {
-        const segmentData = await tabPresenter.captureTabArea(tabId, captureRect)
-        if (segmentData) {
-          imageDataList.push(segmentData)
-        } else {
-          console.error(`[CAPTURE_DEBUG] Iteration ${iteration}: Segment capture failed (returned no data).`)
-          break
-        }
-      } catch (captureError) {
-        console.error(`[CAPTURE_DEBUG] Iteration ${iteration}: Error during captureTabArea:`, captureError)
-        break
-      }
-
-      totalCapturedContentHeight += heightToCaptureFromSegment
-      // Add a small safety break for extremely long content or potential infinite loops.
-      if (iteration > 30) {
-        console.warn('[CAPTURE_DEBUG] Exceeded 30 iterations, breaking loop as a failsafe.')
-        break
-      }
-    }
-
-    scrollContainer.scrollTop = containerOriginalScrollTop
-
-    if (imageDataList.length === 0 && initialRect.height > 0) {
-      console.error('[CAPTURE_DEBUG] No images captured despite content having height.')
-      isCapturingImage.value = false
-      return
-    }
-    if (imageDataList.length === 0 && initialRect.height === 0) {
-      isCapturingImage.value = false
-      return
-    }
-
-    if (imageDataList.length > 0) {
-      const finalImage = await tabPresenter.stitchImagesWithWatermark(imageDataList, {
-        isDark: props.isDark,
-        version: appVersion.value,
-        texts: {
-          brand: 'DeepChat',
-          tip: t('common.watermarkTip')
-        }
-      })
-
-      if (finalImage) {
-        window.api.copyImage(finalImage)
-      } else {
-        console.error('[CAPTURE_DEBUG] Stitching failed or produced no image.')
-      }
-    }
-
-  } catch (error) {
-    console.error('[CAPTURE_DEBUG] General error in handleCopyImage:', error)
-  } finally {
-    // Restore original scroll behavior in the finally block
-    if (scrollContainer && originalScrollBehavior !== undefined) {
-      scrollContainer.style.scrollBehavior = originalScrollBehavior
-    }
-    isCapturingImage.value = false
   }
 }
 

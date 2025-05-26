@@ -7,6 +7,9 @@ import { PowerpackServer } from './powerpackServer'
 import { DifyKnowledgeServer } from './difyKnowledgeServer'
 import { RagflowKnowledgeServer } from './ragflowKnowledgeServer'
 import { FastGptKnowledgeServer } from './fastGptKnowledgeServer'
+import { CustomPromptsServer } from './customPromptsServer'
+import { DeepResearchServer } from './deepResearchServer'
+import { AutoPromptingServer } from './autoPromptingServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -22,6 +25,8 @@ export function getInMemoryServer(
       return new BochaSearchServer(env)
     case 'braveSearch':
       return new BraveSearchServer(env)
+    case 'deepResearch':
+      return new DeepResearchServer(env)
     case 'imageServer':
       return new ImageServer(args[0], args[1])
     case 'powerpack':
@@ -62,6 +67,12 @@ export function getInMemoryServer(
           }[]
         }
       )
+    case 'deepchat-inmemory/custom-prompts-server':
+      return new CustomPromptsServer()
+    case 'deepchat-inmemory/deep-research-server':
+      return new DeepResearchServer(env)
+    case 'deepchat-inmemory/auto-prompting-server':
+      return new AutoPromptingServer()
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

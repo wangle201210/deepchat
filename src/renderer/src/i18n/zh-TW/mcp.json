@@ -115,7 +115,8 @@
   "tools": {
     "searchPlaceholder": "搜尋工具...",
     "noToolsAvailable": "暫無可用工具",
-    "selectTool": "請從左側選擇要調試的工具",
+    "toolList": "工具列表",
+    "functionDescription": "功能描述",
     "path": "路徑",
     "pathPlaceholder": "輸入文件路徑",
     "searchPattern": "搜尋模式",
@@ -181,6 +182,18 @@
     "ragflowKnowledge": {
       "desc": "RAGFlow知識庫檢索服務，可以對RAGFlow知識庫內容進行檢索",
       "name": "RAGFlow知識庫檢索"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "DeepChat內置自定義提示詞服務",
+      "name": "自定義提示詞"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "基於博查搜索的DeepChat內置深度研究服務，（注意需要長上下文模型才能使用，上下文不足的模型可能會失敗）",
+      "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "自動模板提示詞",
+      "desc": "依據使用者輸入自動選擇最合適的自訂提示詞，並智慧填入提示詞模板"
     }
   },
   "prompts": {
@@ -188,18 +201,21 @@
     "noDescription": "暫無描述",
     "selectPrompt": "此處展示選中的Prompt",
     "parameters": "Prompt 參數",
+    "input": "輸入參數",
     "runningPrompt": "Prompt 獲取中",
     "executeButton": "點擊獲取",
     "resultTitle": "Prompt 詳情",
     "invalidJson": "無效的 JSON 格式",
     "parametersHint": "請輸入 JSON 格式的參數，支持自動格式化",
-    "resetToDefault": "重置為默認參數"
+    "resetToDefault": "重置為默認參數",
+    "dialogDescription": "調試和測試MCP伺服器提供的提示模板"
   },
   "resources": {
     "noResourcesAvailable": "暫無 Resources",
     "selectResource": "此處展示 Resources 內容",
     "loading": "載入中",
     "loadContent": "獲取 Resource 內容",
-    "pleaseSelect": "點擊獲取展示Resources詳情"
+    "pleaseSelect": "點擊獲取展示Resources詳情",
+    "dialogDescription": "瀏覽和查看MCP伺服器提供的資源"
   }
 }

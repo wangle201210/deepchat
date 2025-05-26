@@ -2,7 +2,8 @@
   "tools": {
     "searchPlaceholder": "ツールを検索...",
     "noToolsAvailable": "利用可能なツールがありません",
-    "selectTool": "左側からデバッグするツールを選択してください",
+    "toolList": "ツールリスト",
+    "functionDescription": "機能説明",
     "path": "パス",
     "pathPlaceholder": "ファイルパスを入力",
     "searchPattern": "検索パターン",
@@ -161,6 +162,18 @@
     "fastGptKnowledge": {
       "name": "FastGPT知識ベース検索",
       "desc": "FastGPT知識ベース検索サービス、FastGPT知識ベースのコンテンツを検索できます"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "desc": "Deepchatビルトインカスタムプロンプトワードサービス",
+      "name": "カスタムプロンプトワード"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "desc": "Bocha検索に基づくDeepchatビルトイン詳細な研究サービス（長いコンテキストモデルを使用する必要があり、コンテキストが不十分なモデルが失敗する可能性があることに注意してください）",
+      "name": "DeepResearch"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "自動テンプレートプロンプト",
+      "desc": "ユーザー入力に基づいて最適なカスタムプロンプトを自動的に選択し、プロンプトテンプレートをインテリジェントに埋め込みます。"
     }
   },
   "prompts": {
@@ -168,19 +181,22 @@
     "noDescription": "まだ説明はありません",
     "selectPrompt": "ここに示されています",
     "parameters": "プロンプトパラメーター",
+    "input": "入力パラメーター",
     "runningPrompt": "プロンプトが取得されています",
     "executeButton": "クリックして取得します",
     "resultTitle": "詳細を迅速にします",
     "invalidJson": "無効なJSON形式",
     "parametersHint": "JSON形式のパラメーターを入力してください。自動フォーマットをサポートしてください",
-    "resetToDefault": "デフォルトのパラメーターにリセットします"
+    "resetToDefault": "デフォルトのパラメーターにリセットします",
+    "dialogDescription": "MCPサーバーが提供するプロンプトをデバッグおよびテストします"
   },
   "resources": {
     "noResourcesAvailable": "なしリソース",
     "selectResource": "ここにリソースのコンテンツを表示します",
     "loading": "読み込み",
     "loadContent": "リソースコンテンツを取得します",
-    "pleaseSelect": "クリックして表示リソースの詳細を取得します"
+    "pleaseSelect": "クリックして表示リソースの詳細を取得します",
+    "dialogDescription": "MCPサーバーが提供するリソースを参照および表示します"
   },
   "errors": {
     "loadConfigFailed": "MCP設定の読み込みに失敗しました",

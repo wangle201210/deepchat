@@ -115,7 +115,17 @@
   "tools": {
     "searchPlaceholder": "搜索工具...",
     "noToolsAvailable": "暂无可用工具",
-    "selectTool": "请从左侧选择要调试的工具",
+    "selectToolToDebug": "选择要调试的工具",
+    "dialogDescription": "调试和测试MCP服务器提供的工具",
+    "toolsCount": "个工具",
+    "availableTools": "可用工具",
+    "toolList": "工具列表",
+    "functionDescription": "功能描述",
+    "invalidJson": "无效的JSON格式",
+    "inputHint": "请输入JSON格式的参数",
+    "required": "必需",
+    "noDescription": "暂无描述",
+    "input": "输入参数",
     "path": "路径",
     "pathPlaceholder": "输入文件路径",
     "searchPattern": "搜索模式",
@@ -139,9 +149,6 @@
     "enabled": "启用MCP",
     "enabledDescription": "启用MCP功能以使用工具调用",
     "jsonInputPlaceholder": "输入JSON格式的参数",
-    "invalidJsonFormat": "无效的JSON格式",
-    "empty": "空",
-    "input": "输入参数",
     "type": "类型",
     "annotations": "注解"
   },
@@ -181,6 +188,18 @@
     "fastGptKnowledge": {
       "name": "FastGPT知识库检索",
       "desc": "FastGPT知识库检索服务，可以对FastGPT知识库内容进行检索"
+    },
+    "deepchat-inmemory/custom-prompts-server": {
+      "name": "自定义提示词",
+      "desc": "DeepChat内置自定义提示词服务"
+    },
+    "deepchat-inmemory/deep-research-server": {
+      "name": "DeepResearch",
+      "desc": "基于博查搜索的DeepChat内置深度研究服务，（注意需要长上下文模型才能使用，上下文不足的模型可能会失败）"
+    },
+    "deepchat-inmemory/auto-prompting-server": {
+      "name": "自动模板提示词",
+      "desc": "根据用户输入自动选择最合适的自定义提示词，并智能填充提示词模板"
     }
   },
   "prompts": {
@@ -188,18 +207,21 @@
     "noDescription": "暂无描述",
     "selectPrompt": "此处展示选中的Prompt",
     "parameters": "Prompt 参数",
+    "input": "输入参数",
     "runningPrompt": "Prompt 获取中",
     "executeButton": "点击获取",
     "resultTitle": "Prompt 详情",
     "resetToDefault": "重置为默认参数",
     "invalidJson": "无效的 JSON 格式",
-    "parametersHint": "请输入 JSON 格式的参数，支持自动格式化"
+    "parametersHint": "请输入 JSON 格式的参数，支持自动格式化",
+    "dialogDescription": "调试和测试MCP服务器提供的提示模板"
   },
   "resources": {
     "noResourcesAvailable": "暂无 Resources",
     "selectResource": "此处展示 Resources 内容",
     "loading": "加载中",
     "loadContent": "获取 Resource 内容",
-    "pleaseSelect": "点击获取展示Resources详情"
+    "pleaseSelect": "点击获取展示Resources详情",
+    "dialogDescription": "浏览和查看MCP服务器提供的资源"
   }
 }
