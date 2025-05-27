@@ -33,7 +33,7 @@ export class ConversationsTable extends BaseTable {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         user_id INTEGER DEFAULT 0,
-        is_pinned INTEGER DEFAULT 0, // This line already exists, ensure it's kept
+        is_pinned INTEGER DEFAULT 0,
         model_id TEXT DEFAULT 'gpt-4',
         provider_id TEXT DEFAULT 'openai',
         context_length INTEGER DEFAULT 10,
@@ -268,7 +268,7 @@ export class ConversationsTable extends BaseTable {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         is_new: row.is_new,
-        is_pinned: (row as any).is_pinned, // Cast to any to access is_pinned
+        is_pinned: row.is_pinned,
         settings: {
           systemPrompt: row.systemPrompt,
           temperature: row.temperature,
