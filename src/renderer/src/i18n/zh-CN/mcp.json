@@ -156,7 +156,8 @@
     "jsonInputPlaceholder": "输入JSON格式的参数",
     "type": "类型",
     "annotations": "注解",
-    "empty": "空"
+    "empty": "空",
+    "invalidJsonFormat": "JSON格式不正确"
   },
   "inmemory": {
     "bochaSearch": {

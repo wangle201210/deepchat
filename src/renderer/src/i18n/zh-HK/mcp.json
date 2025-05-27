@@ -121,7 +121,12 @@
     "typePlaceholder": "選擇服務器類型",
     "typeSse": "服務器發送事件",
     "typeStdio": "標準輸入輸出",
-    "update": "更新"
+    "update": "更新",
+    "addFolder": "添加文件夾",
+    "folders": "文件夾列表",
+    "noFoldersSelected": "未選擇任何文件夾",
+    "selectFolder": "選擇文件夾",
+    "selectFolderError": "選擇文件夾失敗"
   },
   "serverList": "服務器列表",
   "setAsDefault": "設為默認服務器",

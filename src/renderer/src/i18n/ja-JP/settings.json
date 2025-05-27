@@ -182,7 +182,8 @@
     },
     "serverList": "サーバーリスト",
     "totalServers": "サーバー総数",
-    "addServer": "サーバーを追加"
+    "addServer": "サーバーを追加",
+    "autoStart": "セルフスタート"
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",

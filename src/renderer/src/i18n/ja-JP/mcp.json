@@ -121,7 +121,12 @@
     "typePlaceholder": "サーバータイプを選択します",
     "typeSse": "サーバーはイベントを送信します",
     "typeStdio": "標準入力と出力",
-    "update": "更新します"
+    "update": "更新します",
+    "addFolder": "フォルダーを追加します",
+    "folders": "フォルダーリスト",
+    "noFoldersSelected": "フォルダーは選択されていません",
+    "selectFolder": "フォルダーを選択します",
+    "selectFolderError": "フォルダーの選択に失敗しました"
   },
   "serverList": "サーバーリスト",
   "setAsDefault": "デフォルトのサーバーとして設定します",

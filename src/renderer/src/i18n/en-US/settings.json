@@ -182,7 +182,8 @@
     },
     "serverList": "Server List",
     "totalServers": "Total Servers",
-    "addServer": "Add Server"
+    "addServer": "Add Server",
+    "autoStart": "Self-start"
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",

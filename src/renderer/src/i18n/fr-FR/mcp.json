@@ -121,7 +121,12 @@
     "typePlaceholder": "Sélectionnez un type de serveur",
     "typeSse": "Le serveur envoie des événements",
     "typeStdio": "Entrée et sortie standard",
-    "update": "renouveler"
+    "update": "renouveler",
+    "addFolder": "Ajouter un dossier",
+    "folders": "Liste de dossiers",
+    "noFoldersSelected": "Aucun dossier n'a été sélectionné",
+    "selectFolder": "Sélectionnez un dossier",
+    "selectFolderError": "Échec de la sélection d'un dossier"
   },
   "serverList": "Liste des serveurs",
   "setAsDefault": "Définir comme serveur par défaut",

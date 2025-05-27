@@ -38,7 +38,8 @@
     "empty": "Empty",
     "jsonInputPlaceholder": "Enter the parameters in JSON format",
     "type": "Type",
-    "annotations": "Annotations"
+    "annotations": "Annotations",
+    "invalidJsonFormat": "JSON format is incorrect"
   },
   "addServer": "Add a server",
   "addServerDialog": {

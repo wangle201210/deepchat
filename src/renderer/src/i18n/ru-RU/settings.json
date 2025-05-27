@@ -182,7 +182,8 @@
     },
     "serverList": "Список серверов",
     "totalServers": "Всего серверов",
-    "addServer": "Добавить сервер"
+    "addServer": "Добавить сервер",
+    "autoStart": "Самостоятельно"
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",

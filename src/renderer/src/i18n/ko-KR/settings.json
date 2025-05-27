@@ -182,7 +182,8 @@
     },
     "serverList": "서버 목록",
     "totalServers": "총 서버 수",
-    "addServer": "서버 추가"
+    "addServer": "서버 추가",
+    "autoStart": "자기 시작"
   },
   "knowledgeBase": {
     "title": "지식 베이스 설정",

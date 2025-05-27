@@ -182,7 +182,8 @@
     },
     "serverList": "Liste des serveurs",
     "totalServers": "Total des serveurs",
-    "addServer": "Ajouter un serveur"
+    "addServer": "Ajouter un serveur",
+    "autoStart": "S'opiniter"
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",

@@ -68,7 +68,12 @@
     "configImported": "구성을 성공적으로 가져왔습니다",
     "parseError": "파싱 오류",
     "skipToManual": "수동 구성으로 건너뛰기",
-    "parseAndContinue": "파싱 및 계속"
+    "parseAndContinue": "파싱 및 계속",
+    "addFolder": "폴더를 추가하십시오",
+    "folders": "폴더 목록",
+    "noFoldersSelected": "폴더가 선택되지 않았습니다",
+    "selectFolder": "폴더를 선택하십시오",
+    "selectFolderError": "폴더를 선택하지 못했습니다"
   },
   "deleteServer": "서버 삭제",
   "editServer": "서버 편집",

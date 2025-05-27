@@ -182,7 +182,8 @@
     },
     "serverList": "服務器列表",
     "totalServers": "服務器總數",
-    "addServer": "添加服務器"
+    "addServer": "添加服務器",
+    "autoStart": "自啟動"
   },
   "knowledgeBase": {
     "fastgptTitle": "FastGPT知識庫",
