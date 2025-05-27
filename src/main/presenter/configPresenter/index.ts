@@ -37,6 +37,7 @@ interface IAppSettings {
   lastSyncTime?: number // 上次同步时间
   customSearchEngines?: string // 自定义搜索引擎JSON字符串
   loggingEnabled?: boolean // 日志记录是否启用
+  default_system_prompt?: string // 默认系统提示词
   [key: string]: unknown // 允许任意键，使用unknown类型替代any
 }
 
@@ -103,6 +104,7 @@ export class ConfigPresenter implements IConfigPresenter {
         syncFolderPath: path.join(this.userDataPath, 'sync'),
         lastSyncTime: 0,
         loggingEnabled: false,
+        default_system_prompt: '',
         appVersion: this.currentAppVersion
       }
     })
@@ -718,7 +720,7 @@ export class ConfigPresenter implements IConfigPresenter {
           servers[customPromptsServerName].autoApprove = ['all']
         }
       }
-    } catch (error) {
+    } catch {
       // 检查自定义提示词时出错
     }
 
@@ -868,7 +870,7 @@ export class ConfigPresenter implements IConfigPresenter {
   async getCustomPrompts(): Promise<Prompt[]> {
     try {
       return this.customPromptsStore.get('prompts') || []
-    } catch (error) {
+    } catch {
       return []
     }
   }
@@ -908,6 +910,16 @@ export class ConfigPresenter implements IConfigPresenter {
     const filteredPrompts = prompts.filter((p) => p.id !== promptId)
     await this.setCustomPrompts(filteredPrompts)
     // 事件会在 setCustomPrompts 中触发
+  }
+
+  // 获取默认系统提示词
+  async getDefaultSystemPrompt(): Promise<string> {
+    return this.getSetting<string>('default_system_prompt') || ''
+  }
+
+  // 设置默认系统提示词
+  async setDefaultSystemPrompt(prompt: string): Promise<void> {
+    this.setSetting('default_system_prompt', prompt)
   }
 }
 

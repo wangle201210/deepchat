@@ -44,5 +44,12 @@
   "enablePrompt": "Activer ce prompt",
   "sourceLocal": "Local",
   "sourceImported": "Importé",
-  "sourceBuiltin": "Intégré"
-} 
+  "sourceBuiltin": "Intégré",
+  "defaultSystemPrompt": "Prompt système par défaut",
+  "defaultSystemPromptPlaceholder": "Entrez le prompt système par défaut qui sera utilisé pour toutes les nouvelles conversations...",
+  "defaultSystemPromptDescription": "Ce mot rapide sera utilisé comme mot d'invite système par défaut pour toutes les nouvelles conversations. Vous pouvez le modifier lors de la création d'une conversation. Notez que ce paramètre entrera en vigueur la prochaine fois que vous créez une nouvelle conversation.",
+  "typing": "Saisie en cours",
+  "saving": "Sauvegarde en cours",
+  "saved": "Sauvegardé",
+  "saveDefaultPromptFailed": "Échec de la sauvegarde du prompt système par défaut"
+}

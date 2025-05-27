@@ -23,6 +23,42 @@
         </div>
       </div>
 
+      <!-- 默认系统提示词设置区域 -->
+      <div class="bg-card border border-border rounded-lg p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <Icon
+            :icon="getStatusIcon()"
+            :class="[
+              'w-5 h-5 transition-colors duration-200',
+              getStatusColor(),
+              defaultPromptSaveStatus === 'saving' ? 'animate-spin' : ''
+            ]"
+          />
+          <Label class="text-base font-medium">{{ t('promptSetting.defaultSystemPrompt') }}</Label>
+          <div class="flex items-center gap-1 text-xs text-muted-foreground">
+            <span v-if="defaultPromptSaveStatus === 'typing'">{{ t('promptSetting.typing') }}</span>
+            <span v-else-if="defaultPromptSaveStatus === 'saving'">{{
+              t('promptSetting.saving')
+            }}</span>
+            <span v-else-if="defaultPromptSaveStatus === 'saved'">{{
+              t('promptSetting.saved')
+            }}</span>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <textarea
+            ref="defaultPromptTextarea"
+            v-model="defaultSystemPrompt"
+            class="w-full h-24 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none overflow-y-auto"
+            :placeholder="t('promptSetting.defaultSystemPromptPlaceholder')"
+            @blur="handleDefaultPromptBlur"
+          ></textarea>
+          <p class="text-xs text-muted-foreground">
+            {{ t('promptSetting.defaultSystemPromptDescription') }}
+          </p>
+        </div>
+      </div>
+
       <!-- 空状态 -->
       <div v-if="prompts.length === 0" class="text-center text-muted-foreground py-12">
         <Icon icon="lucide:book-open-text" class="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -271,7 +307,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, toRaw } from 'vue'
+import { ref, reactive, onMounted, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -289,10 +325,18 @@ import {
 } from '@/components/ui/dialog'
 import { useToast } from '@/components/ui/toast'
 import { usePromptsStore } from '@/stores/prompts'
+import { useSettingsStore } from '@/stores/settings'
+import { useDebounceFn } from '@vueuse/core'
 
 const { t } = useI18n()
 const { toast } = useToast()
 const promptsStore = usePromptsStore()
+const settingsStore = useSettingsStore()
+
+// 默认系统提示词相关状态
+const defaultSystemPrompt = ref('')
+const defaultPromptSaveStatus = ref<'idle' | 'typing' | 'saving' | 'saved'>('idle')
+const defaultPromptTextarea = ref<HTMLTextAreaElement>()
 
 interface PromptItem {
   id: string
@@ -494,7 +538,7 @@ const deletePrompt = async (idx: number) => {
       title: t('promptSetting.deleteSuccess'),
       variant: 'default'
     })
-  } catch (error) {
+  } catch {
     toast({
       title: t('promptSetting.deleteFailed'),
       variant: 'destructive'
@@ -525,7 +569,7 @@ const togglePromptEnabled = async (idx: number) => {
       title: newEnabled ? t('promptSetting.enableSuccess') : t('promptSetting.disableSuccess'),
       variant: 'default'
     })
-  } catch (error) {
+  } catch {
     // 如果更新失败，恢复状态
     await loadPrompts()
     toast({
@@ -555,7 +599,7 @@ const exportPrompts = () => {
       title: t('promptSetting.exportSuccess'),
       variant: 'default'
     })
-  } catch (error) {
+  } catch {
     toast({
       title: t('promptSetting.exportFailed'),
       variant: 'destructive'
@@ -695,8 +739,77 @@ const closeDialog = () => {
   resetForm()
 }
 
+// 保存默认系统提示词的防抖函数
+const saveDefaultSystemPrompt = useDebounceFn(async (prompt: string) => {
+  if (defaultPromptSaveStatus.value === 'saving') return
+
+  defaultPromptSaveStatus.value = 'saving'
+  try {
+    await settingsStore.setDefaultSystemPrompt(prompt)
+    defaultPromptSaveStatus.value = 'saved'
+
+    // 2秒后重置状态
+    setTimeout(() => {
+      if (defaultPromptSaveStatus.value === 'saved') {
+        defaultPromptSaveStatus.value = 'idle'
+      }
+    }, 2000)
+  } catch {
+    defaultPromptSaveStatus.value = 'idle'
+    toast({
+      title: t('promptSetting.saveDefaultPromptFailed'),
+      variant: 'destructive'
+    })
+  }
+}, 1000)
+
+// 监听默认系统提示词变化
+watch(defaultSystemPrompt, (newValue) => {
+  if (defaultPromptSaveStatus.value !== 'saving') {
+    defaultPromptSaveStatus.value = 'typing'
+  }
+  saveDefaultSystemPrompt(newValue)
+})
+
+// 处理输入框失去焦点
+const handleDefaultPromptBlur = () => {
+  if (defaultPromptSaveStatus.value === 'typing') {
+    saveDefaultSystemPrompt(defaultSystemPrompt.value)
+  }
+}
+
+// 获取状态图标
+const getStatusIcon = () => {
+  switch (defaultPromptSaveStatus.value) {
+    case 'typing':
+      return 'lucide:edit-3'
+    case 'saving':
+      return 'lucide:loader-2'
+    case 'saved':
+      return 'lucide:check'
+    default:
+      return 'lucide:settings'
+  }
+}
+
+// 获取状态颜色
+const getStatusColor = () => {
+  switch (defaultPromptSaveStatus.value) {
+    case 'typing':
+      return 'text-blue-500'
+    case 'saving':
+      return 'text-yellow-500'
+    case 'saved':
+      return 'text-green-500'
+    default:
+      return 'text-primary'
+  }
+}
+
 onMounted(async () => {
   await loadPrompts()
+  // 加载默认系统提示词
+  defaultSystemPrompt.value = await settingsStore.getDefaultSystemPrompt()
 })
 </script>
 

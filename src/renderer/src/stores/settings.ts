@@ -1378,6 +1378,15 @@ export const useSettingsStore = defineStore('settings', () => {
     )
   }
 
+  // 默认系统提示词相关方法
+  const getDefaultSystemPrompt = async (): Promise<string> => {
+    return await configP.getDefaultSystemPrompt()
+  }
+
+  const setDefaultSystemPrompt = async (prompt: string): Promise<void> => {
+    await configP.setDefaultSystemPrompt(prompt)
+  }
+
   return {
     providers,
     theme,
@@ -1454,6 +1463,8 @@ export const useSettingsStore = defineStore('settings', () => {
     getAzureApiVersion,
     setGeminiSafety,
     getGeminiSafety,
+    getDefaultSystemPrompt,
+    setDefaultSystemPrompt,
     setupProviderListener
   }
 })
