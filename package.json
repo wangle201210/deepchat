@@ -69,7 +69,7 @@
     "tokenx": "^0.4.1",
     "turndown": "^7.2.0",
     "undici": "^7.8.0",
-    "vue-renderer-markdown": "^0.0.8",
+    "vue-renderer-markdown": "^0.0.12",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "xml2js": "^0.6.2",
     "zod": "^3.24.3"
@@ -109,7 +109,6 @@
     "@types/node": "^22.14.1",
     "@types/xlsx": "^0.0.35",
     "@uiw/codemirror-extensions-langs": "^4.23.11",
-    "@uiw/codemirror-themes": "^4.23.8",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vscode/markdown-it-katex": "^1.1.1",
     "@vue/eslint-config-prettier": "^10.2.0",

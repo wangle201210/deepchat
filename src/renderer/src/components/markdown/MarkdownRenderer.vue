@@ -1,10 +1,12 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
-  <NodeRenderer
-    :custom-components="nodeComponents"
-    :content="content"
-    @copy="$emit('copy', $event)"
-  />
+  <div class="prose prose-sm dark:prose-invert w-full max-w-none break-all">
+    <NodeRenderer
+      :custom-components="nodeComponents"
+      :content="content"
+      @copy="$emit('copy', $event)"
+    />
+  </div>
 </template>
 <script setup lang="ts">
 import NodeRenderer, { CodeBlockNode } from 'vue-renderer-markdown'
@@ -12,6 +14,7 @@ import ReferenceNode from './ReferenceNode.vue'
 import { h } from 'vue'
 import { useArtifactStore } from '@/stores/artifact'
 import { nanoid } from 'nanoid'
+import { darkStyle, lightStyle } from '@/lib/code.theme'
 
 defineProps<{
   content: string
@@ -28,6 +31,8 @@ const nodeComponents = {
   code_block: (_props) =>
     h(CodeBlockNode, {
       ..._props,
+      darkStyle,
+      lightStyle,
       onPreviewCode(v) {
         artifactStore.showArtifact(
           {
