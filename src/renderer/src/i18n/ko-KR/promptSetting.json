@@ -44,5 +44,12 @@
   "enablePrompt": "이 프롬프트 활성화",
   "sourceLocal": "로컬",
   "sourceImported": "가져옴",
-  "sourceBuiltin": "내장"
-} 
+  "sourceBuiltin": "내장",
+  "defaultSystemPrompt": "기본 시스템 프롬프트",
+  "defaultSystemPromptPlaceholder": "모든 새 대화에 사용될 기본 시스템 프롬프트를 입력하세요...",
+  "defaultSystemPromptDescription": "이 프롬프트 단어는 모든 새로운 대화의 기본 시스템 프롬프트 단어로 사용됩니다. 대화를 만들 때 수정할 수 있습니다. 다음에 새 대화를 만들 때이 설정이 적용됩니다.",
+  "typing": "입력 중",
+  "saving": "저장 중",
+  "saved": "저장됨",
+  "saveDefaultPromptFailed": "기본 시스템 프롬프트 저장 실패"
+}

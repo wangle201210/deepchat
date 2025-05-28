@@ -44,5 +44,12 @@
   "enablePrompt": "启用此提示词",
   "sourceLocal": "本地",
   "sourceImported": "导入",
-  "sourceBuiltin": "内置"
-} 
+  "sourceBuiltin": "内置",
+  "defaultSystemPrompt": "默认系统提示词",
+  "defaultSystemPromptPlaceholder": "请输入默认系统提示词，将作为所有新对话的默认系统提示词...",
+  "defaultSystemPromptDescription": "此提示词将作为所有新对话的默认系统提示词，您可以在创建对话时修改，注意本设置修改后会在下一次创建新会话时生效。",
+  "typing": "输入中",
+  "saving": "保存中",
+  "saved": "已保存",
+  "saveDefaultPromptFailed": "保存默认系统提示词失败"
+}

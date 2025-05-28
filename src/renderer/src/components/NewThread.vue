@@ -300,8 +300,11 @@ watch(
   { immediate: true }
 )
 
-onMounted(() => {
+onMounted(async () => {
   const groupElement = document.querySelector('.new-thread-model-select')
+  configPresenter.getDefaultSystemPrompt().then((prompt) => {
+    systemPrompt.value = prompt
+  })
   if (groupElement) {
     useEventListener(groupElement, 'mouseenter', handleMouseEnter)
     useEventListener(groupElement, 'mouseleave', handleMouseLeave)
