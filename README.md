@@ -88,8 +88,9 @@ Compared to other AI tools, DeepChat offers the following unique advantages:
   - Built-in integration with leading search APIs like BoSearch, Brave Search via MCP mode, allowing the model to intelligently decide when to search
   - Supports mainstream search engines like Google, Bing, Baidu, and Sogou Official Accounts search by simulating user web browsing, enabling the LLM to read search engines like a human
   - Supports reading any search engine; simply configure a search assistant model to connect various search sources, whether internal networks, API-less engines, or vertical domain search engines, as information sources for the model
-- 🔧 **Excellent MCP (Model Controller Platform) Support**
+- 🔧 **Excellent MCP (Model Context Protocol) Support**
   - Complete support for the three core capabilities of Resources/Prompts/Tools in the MCP protocol
+  - Supports semantic workflows, enabling more complex and intelligent automation by understanding the meaning and context of tasks.
   - Extremely user-friendly configuration interface
   - Aesthetically pleasing and clear tool call display
   - Detailed tool call debugging window with automatic formatting of tool parameters and return data
