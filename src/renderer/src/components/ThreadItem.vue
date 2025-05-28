@@ -37,8 +37,13 @@
       </DropdownMenuTrigger>
       <DropdownMenuContent>
         <DropdownMenuItem @select="handleTogglePin(thread)">
-          <Icon :icon="thread.is_pinned === 1 ? 'lucide:pin-off' : 'lucide:pin'" class="mr-2 h-4 w-4" />
-          <span>{{ thread.is_pinned === 1 ? t('thread.actions.unpin') : t('thread.actions.pin') }}</span>
+          <Icon
+            :icon="thread.is_pinned === 1 ? 'lucide:pin-off' : 'lucide:pin'"
+            class="mr-2 h-4 w-4"
+          />
+          <span>{{
+            thread.is_pinned === 1 ? t('thread.actions.unpin') : t('thread.actions.pin')
+          }}</span>
         </DropdownMenuItem>
         <DropdownMenuItem @select="$emit('rename', thread)">
           <Icon icon="lucide:pencil" class="mr-2 h-4 w-4" />
