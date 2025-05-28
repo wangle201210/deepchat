@@ -94,7 +94,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   {
     id: 'minimax',
     name: 'MiniMax',
-    apiType: 'minimax',
+    apiType: 'openai',
     apiKey: '',
     baseUrl: 'https://api.minimax.chat/v1',
     enable: false,

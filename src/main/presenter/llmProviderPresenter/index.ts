@@ -94,6 +94,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       }
 
       switch (provider.apiType) {
+        case 'minimax':
+          return new OpenAIProvider(provider, this.configPresenter)
         case 'deepseek':
           return new DeepseekProvider(provider, this.configPresenter)
         case 'silicon':
