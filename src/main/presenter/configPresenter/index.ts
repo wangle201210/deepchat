@@ -17,6 +17,7 @@ import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
+import { defaultShotcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { defaultModelsSettings } from './modelDefaultSettings'
 import { getProviderSpecificModelConfig } from './providerModelSettings'
 
@@ -29,6 +30,7 @@ interface IAppSettings {
   appVersion?: string // 用于版本检查和数据迁移
   proxyMode?: string // 代理模式：system, none, custom
   customProxyUrl?: string // 自定义代理地址
+  customShortKey?: ShortcutKeySetting // 自定义快捷键
   artifactsEffectEnabled?: boolean // artifacts动画效果是否启用
   searchPreviewEnabled?: boolean // 搜索预览是否启用
   contentProtectionEnabled?: boolean // 投屏保护是否启用
@@ -95,6 +97,7 @@ export class ConfigPresenter implements IConfigPresenter {
         language: 'en-US',
         providers: defaultProviders,
         closeToQuit: false,
+        customShortKey: defaultShotcutKey,
         proxyMode: 'system',
         customProxyUrl: '',
         artifactsEffectEnabled: true,
@@ -926,3 +929,4 @@ export class ConfigPresenter implements IConfigPresenter {
 // 导出配置相关内容，方便其他组件使用
 export { defaultModelsSettings } from './modelDefaultSettings'
 export { providerModelSettings } from './providerModelSettings'
+export { defaultShotcutKey } from './shortcutKeySettings'
