@@ -291,10 +291,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       prompt_tokens: number
       completion_tokens: number
       total_tokens: number
+      context_length: number
     } = {
       prompt_tokens: 0,
       completion_tokens: 0,
-      total_tokens: 0
+      total_tokens: 0,
+      context_length: modelConfig?.contextLength || 0
     }
 
     try {
@@ -449,6 +451,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                   totalUsage.prompt_tokens += chunk.usage.prompt_tokens
                   totalUsage.completion_tokens += chunk.usage.completion_tokens
                   totalUsage.total_tokens += chunk.usage.total_tokens
+                  totalUsage.context_length = modelConfig.contextLength
                   yield {
                     type: 'response',
                     data: {
