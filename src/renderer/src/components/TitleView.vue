@@ -14,7 +14,7 @@
         <PopoverTrigger as-child>
           <Button variant="outline" class="flex items-center gap-1.5 px-2 h-7" size="sm">
             <ModelIcon class="w-5 h-5" :model-id="model.id"></ModelIcon>
-            <h2 class="text-xs font-bold">{{ model.name }}</h2>
+            <h2 class="text-xs font-bold">{{ model.providerId }} {{ model.name }}</h2>
             <Badge
               v-for="tag in model.tags"
               :key="tag"
@@ -143,6 +143,7 @@ watch(
 type Model = {
   name: string
   id: string
+  providerId: string
   tags: string[]
 }
 
@@ -154,6 +155,7 @@ const props = withDefaults(
     model: () => ({
       name: 'DeepSeek R1',
       id: 'deepseek-r1',
+      providerId: '',
       tags: ['reasoning']
     })
   }
