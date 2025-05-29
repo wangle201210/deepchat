@@ -90,6 +90,11 @@ module.exports = {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
+        },
+        usage: {
+          low: 'hsl(var(--usage-low))',
+          mid: 'hsl(var(--usage-mid))',
+          high: 'hsl(var(--usage-high))'
         }
       },
       borderRadius: {
