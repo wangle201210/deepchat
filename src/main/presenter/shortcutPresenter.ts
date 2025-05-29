@@ -4,14 +4,14 @@ import { SHORTCUT_EVENTS } from '../events'
 import { eventBus } from '../eventbus'
 import {
   CommandKey,
-  defaultShotcutKey,
+  defaultShortcutKey,
   ShortcutKeySetting
 } from './configPresenter/shortcutKeySettings'
 
 export class ShortcutPresenter {
   private isActive: boolean = false
   private shortcutKeys: ShortcutKeySetting = {
-    ...defaultShotcutKey
+    ...defaultShortcutKey
   }
 
   /**

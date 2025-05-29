@@ -17,7 +17,7 @@ import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
-import { defaultShotcutKey, ShortcutKeySetting } from './shortcutKeySettings'
+import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { defaultModelsSettings } from './modelDefaultSettings'
 import { getProviderSpecificModelConfig } from './providerModelSettings'
 
@@ -97,7 +97,7 @@ export class ConfigPresenter implements IConfigPresenter {
         language: 'en-US',
         providers: defaultProviders,
         closeToQuit: false,
-        customShortKey: defaultShotcutKey,
+        customShortKey: defaultShortcutKey,
         proxyMode: 'system',
         customProxyUrl: '',
         artifactsEffectEnabled: true,
@@ -924,9 +924,30 @@ export class ConfigPresenter implements IConfigPresenter {
   async setDefaultSystemPrompt(prompt: string): Promise<void> {
     this.setSetting('default_system_prompt', prompt)
   }
+
+  // 获取默认快捷键
+  getDefaultShortcutKey(): ShortcutKeySetting {
+    return {
+      ...defaultShortcutKey
+    }
+  }
+
+  // 获取快捷键
+  getShortcutKey(): ShortcutKeySetting {
+    return (
+      this.getSetting<ShortcutKeySetting>('shortcutKey') || {
+        ...defaultShortcutKey
+      }
+    )
+  }
+
+  // 设置快捷键
+  setShortcutKey(customShortcutKey: ShortcutKeySetting) {
+    this.setSetting('shortcutKey', customShortcutKey)
+  }
 }
 
 // 导出配置相关内容，方便其他组件使用
 export { defaultModelsSettings } from './modelDefaultSettings'
 export { providerModelSettings } from './providerModelSettings'
-export { defaultShotcutKey } from './shortcutKeySettings'
+export { defaultShortcutKey } from './shortcutKeySettings'

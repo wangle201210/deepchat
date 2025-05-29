@@ -5,7 +5,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { useI18n } from 'vue-i18n'
 import { SearchEngineTemplate } from '@shared/chat'
 import { CONFIG_EVENTS, OLLAMA_EVENTS, DEEPLINK_EVENTS } from '@/events'
-import type { OllamaModel } from '@shared/presenter'
+import type { OllamaModel, ShortcutKeySetting } from '@shared/presenter'
 import { useRouter } from 'vue-router'
 import { useMcpStore } from '@/stores/mcp'
 import { useUpgradeStore } from '@/stores/upgrade'
@@ -1226,6 +1226,24 @@ export const useSettingsStore = defineStore('settings', () => {
     return await configP.getSearchPreviewEnabled()
   }
 
+  // 添加设置searchPreviewEnabled的方法
+  const setShortcutKey = async (customShortcutKey: ShortcutKeySetting) => {
+    // 更新本地状态
+    // searchPreviewEnabled.value = Boolean(enabled)
+
+    await configP.setShortcutKey(customShortcutKey)
+  }
+
+  // 获取默认快捷键
+  const getDefaultShortcutKey = () => {
+    return configP.getDefaultShortcutKey()
+  }
+
+  // 搜索预览设置 - 直接从configPresenter获取
+  const getShortcutKey = async (): Promise<boolean> => {
+    return await configP.getShortcutKey()
+  }
+
   // 添加监听搜索引擎更新的事件
   const setupSearchEnginesListener = () => {
     // 使用IPC监听事件
@@ -1444,6 +1462,9 @@ export const useSettingsStore = defineStore('settings', () => {
     // setupArtifactsEffectListener,
     getSearchPreviewEnabled,
     setSearchPreviewEnabled,
+    getDefaultShortcutKey,
+    getShortcutKey,
+    setShortcutKey,
     setNotificationsEnabled, // 暴露设置系统通知的方法
     getNotificationsEnabled, // 暴露获取系统通知状态的方法
     setupSearchEnginesListener,
