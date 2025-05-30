@@ -203,7 +203,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'deepseek-chat',
         name: 'DeepSeek chat',
         temperature: 1,
-        maxTokens: 16000,
+        maxTokens: 8192,
         contextLength: 65536,
         match: ['deepseek-chat'],
         vision: false,
@@ -213,12 +213,12 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
       {
         id: 'deepseek-reasoner',
         name: 'DeepSeek Reasoner',
-        temperature: 0.6,
-        maxTokens: 16000,
+        temperature: 1,
+        maxTokens: 32768,
         contextLength: 65536,
         match: ['deepseek-reasoner'],
         vision: false,
-        functionCall: false,
+        functionCall: true,
         reasoning: true
       }
     ]
@@ -456,10 +456,10 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         name: 'DeepSeek R1 0528',
         temperature: 0.6,
         maxTokens: 16000,
-        contextLength: 60_000,
+        contextLength: 128000,
         match: ['deepseek-r1-0528'],
         vision: false,
-        functionCall: false,
+        functionCall: true,
         reasoning: true
       },
       {
@@ -876,12 +876,24 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   openrouter: {
     models: [
       {
-        id: 'deepseek/deepseek-chat-v3-0324:free',
-        name: 'DeepSeek Chat V3 0324 Free',
+        id: 'deepseek-r1-0528:free',
+        name: 'DeepSeek R1-0528:free',
         temperature: 0.6,
-        maxTokens: 10000,
-        contextLength: 110000,
-        match: ['deepseek/deepseek-chat-v3-0324:free', 'deepseek-chat-v3-0324:free'],
+        maxTokens: 65536,
+        contextLength: 131072,
+        match: ['deepseek/deepseek-r1-0528:free', 'deepseek/deepseek-r1-0528-qwen3-8b:free'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        //对fc支持有问题，避免使用
+        id: 'deepseek-chat-v3-0324:free',
+        name: 'DeepSeek v3-0324:free',
+        temperature: 0.6,
+        maxTokens: 65536,
+        contextLength: 131072,
+        match: ['deepseek/deepseek-chat-v3-0324:free', 'deepseek/deepseek-chat:free'],
         vision: false,
         functionCall: false,
         reasoning: false
@@ -974,6 +986,11 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // Azure OpenAI提供商特定模型配置
   'azure-openai': {
+    models: []
+  },
+
+  // LM Studio提供商特定模型配置
+  lmstudio: {
     models: []
   }
 }
