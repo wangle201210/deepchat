@@ -79,7 +79,7 @@ app.whenReady().then(() => {
   presenter.shortcutPresenter.registerShortcuts()
 
   // 监听显示窗口事件
-  eventBus.on(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, () => {
+  eventBus.on(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, (trayClick: boolean) => {
     if (presenter.windowPresenter.windows.size === 0) {
       presenter.windowPresenter.createShellWindow({
         initialTab: {
@@ -87,7 +87,7 @@ app.whenReady().then(() => {
         }
       })
     } else {
-      presenter.windowPresenter.mainWindow?.isVisible()
+      presenter.windowPresenter.mainWindow?.isVisible() && !trayClick
         ? presenter.windowPresenter.mainWindow?.hide()
         : presenter.windowPresenter.mainWindow?.show()
     }
