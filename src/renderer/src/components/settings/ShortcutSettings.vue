@@ -78,11 +78,43 @@ const shortcutError = ref('')
 // 禁止作为快捷键的修饰键
 const FORBIDDEN_SINGLE_KEYS = ['Control', 'Command', 'Alt', 'Shift', 'Meta', 'Escape', 'Tab']
 
+// 标准化快捷键字符串，处理 CommandOrControl 特殊情况
+const normalizeShortcut = (shortcut: string): string[] => {
+  // 在 macOS 上，CommandOrControl 应该视为 Command，在其他系统上视为 Control
+  const isMac = navigator.platform.toLowerCase().includes('mac')
+  const normalized = shortcut
+    .replace(/CommandOrControl/g, isMac ? 'Command' : 'Control')
+    .replace(/CmdOrCtrl/g, isMac ? 'Command' : 'Control')
+  
+  return normalized.split('+')
+}
+
+// 检查两个快捷键是否等价（考虑 CommandOrControl 的情况）
+const areShortcutsEquivalent = (shortcut1: string, shortcut2: string): boolean => {
+  if (shortcut1 === shortcut2) return true
+  
+  const parts1 = normalizeShortcut(shortcut1)
+  const parts2 = normalizeShortcut(shortcut2)
+  
+  // 如果组成部分数量不同，则不等价
+  if (parts1.length !== parts2.length) return false
+  
+  // 检查每个部分是否匹配（忽略顺序）
+  const sortedParts1 = [...parts1].sort()
+  const sortedParts2 = [...parts2].sort()
+  
+  for (let i = 0; i < sortedParts1.length; i++) {
+    if (sortedParts1[i] !== sortedParts2[i]) return false
+  }
+  
+  return true
+}
+
 // 检查快捷键是否冲突
 const isShortcutConflict = (key: string, currentId: string): boolean => {
   // 检查快捷键是否已经被其他功能使用
   for (const [id, shortcut] of Object.entries(shortcutKeys.value)) {
-    if (id !== currentId && shortcut === key) {
+    if (id !== currentId && areShortcutsEquivalent(shortcut, key)) {
       return true
     }
   }
@@ -181,8 +213,26 @@ const formatShortcut = (_shortcut: string) => {
 
 const resetShortcutKeys = async () => {
   resetLoading.value = true
-  await shortcutKeyStore.resetShortcutKeys()
-  resetLoading.value = false
+  
+  // 取消当前的录制状态并清除错误信息
+  if (recordingShortcutId.value) {
+    cancelRecording()
+  }
+  
+  // 确保所有状态都被重置
+  shortcutError.value = ''
+  tempShortcut.value = ''
+  recordingShortcutId.value = null
+  
+  try {
+    await shortcutKeyStore.resetShortcutKeys()
+    // 确保快捷键功能重新启用
+    shortcutKeyStore.enableShortcutKey()
+  } catch (error) {
+    console.error('重置快捷键失败:', error)
+  } finally {
+    resetLoading.value = false
+  }
 }
 
 // 开始录制快捷键
@@ -195,9 +245,8 @@ const startRecording = (shortcutId: string) => {
   recordingShortcutId.value = shortcutId
   tempShortcut.value = ''
   shortcutError.value = ''
-  
-  // 向主进程发送消息，禁用全局快捷键
-  window.electron.ipcRenderer.send('shortcuts:disable')
+
+  shortcutKeyStore.disableShortcutKey()
   
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown, { capture: true })
@@ -223,6 +272,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     // 验证快捷键是否合法
     if (validateShortcut(tempShortcut.value)) {
       saveAndStopRecording()
+      shortcutKeyStore.enableShortcutKey()
     }
     // 注意：错误信息会在 validateShortcut 中设置，不需要在这里清除
     return
@@ -256,13 +306,13 @@ const handleKeyDown = (event: KeyboardEvent) => {
 const validateShortcut = (shortcut: string): boolean => {
   // 检查是否只有一个修饰键
   if (FORBIDDEN_SINGLE_KEYS.includes(shortcut)) {
-    shortcutError.value = t('settings.shortcuts.noModifierOnly') || '不能仅使用修饰键作为快捷键'
+    shortcutError.value = t('settings.shortcuts.noModifierOnly')
     return false
   }
   
   // 检查是否有快捷键冲突
   if (recordingShortcutId.value && isShortcutConflict(shortcut, recordingShortcutId.value)) {
-    shortcutError.value = t('settings.shortcuts.keyConflict') || '快捷键冲突，请选择其他组合'
+    shortcutError.value = t('settings.shortcuts.keyConflict')
     return false
   }
   
@@ -302,6 +352,10 @@ const stopRecording = () => {
 const saveChanges = async () => {
   try {
     await shortcutKeyStore.saveShortcutKeys()
+
+    // 重新注册快捷键
+    shortcutKeyStore.disableShortcutKey()
+    shortcutKeyStore.enableShortcutKey()
   } catch (error) {
     console.error('Save shortcut keys error:', error)
   }

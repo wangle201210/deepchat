@@ -5,6 +5,7 @@ import { usePresenter } from '@/composables/usePresenter'
 
 export const useShortcutKeyStore = defineStore('shortcutKey', () => {
   const configP = usePresenter('configPresenter')
+  const shortcutKeyP = usePresenter('shortcutPresenter')
   const shortcutKeys = ref<ShortcutKeySetting>({})
 
   const loadShortcutKeys = async () => {
@@ -21,6 +22,14 @@ export const useShortcutKeyStore = defineStore('shortcutKey', () => {
     await loadShortcutKeys()
   }
 
+  const enableShortcutKey = async () => {
+    shortcutKeyP.registerShortcuts()
+  }
+
+  const disableShortcutKey = async () => {
+    shortcutKeyP.destroy()
+  }
+
   onMounted(async () => {
     await loadShortcutKeys()
   })
@@ -30,5 +39,7 @@ export const useShortcutKeyStore = defineStore('shortcutKey', () => {
     loadShortcutKeys,
     saveShortcutKeys,
     resetShortcutKeys,
+    enableShortcutKey,
+    disableShortcutKey,
   }
 })

@@ -192,6 +192,11 @@ export interface ILlamaCppPresenter {
   destroy(): Promise<void>
 }
 
+export interface IShortcutPresenter {
+  registerShortcuts(): void
+  destroy(): void
+}
+
 export interface ISQLitePresenter {
   close(): void
   createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>

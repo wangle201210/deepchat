@@ -1,4 +1,5 @@
 import { app, globalShortcut } from 'electron'
+
 import { presenter } from '.'
 import { SHORTCUT_EVENTS } from '../events'
 import { eventBus } from '../eventbus'
@@ -7,9 +8,11 @@ import {
   defaultShortcutKey,
   ShortcutKeySetting
 } from './configPresenter/shortcutKeySettings'
+import { ConfigPresenter } from './configPresenter'
 
 export class ShortcutPresenter {
   private isActive: boolean = false
+  private configPresenter: ConfigPresenter
   private shortcutKeys: ShortcutKeySetting = {
     ...defaultShortcutKey
   }
@@ -18,15 +21,18 @@ export class ShortcutPresenter {
    * 创建一个新的 ShortcutPresenter 实例
    * @param shortKey 可选的自定义快捷键设置
    */
-  constructor(shortKey?: ShortcutKeySetting) {
-    if (shortKey) {
-      this.shortcutKeys = { ...this.shortcutKeys, ...shortKey }
-    }
+  constructor(configPresenter: ConfigPresenter) {
+    this.configPresenter = configPresenter
   }
 
   registerShortcuts(): void {
     if (this.isActive) return
     console.log('reg shortcuts')
+
+    this.shortcutKeys = {
+      ...defaultShortcutKey,
+      ...this.configPresenter.getShortcutKey()
+    }
 
     // Command+N 或 Ctrl+N 创建新会话
     globalShortcut.register(this.shortcutKeys.NewConversation, async () => {
