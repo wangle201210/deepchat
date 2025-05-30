@@ -359,6 +359,10 @@
     "text-xl": "特大"
   },
   "shortcuts": {
+    "title": "快捷鍵設置",
+    "pressKeys": "輸入快捷鍵",
+    "pressEnterToSave": "按Enter保存，Esc取消",
+
     "cleanHistory": "清除聊天歷史",
     "goSettings": "打開設置",
     "hideWindow": "隱藏窗口",

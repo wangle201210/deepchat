@@ -359,6 +359,10 @@
     "text-xl": "Extrêmement grand"
   },
   "shortcuts": {
+    "title": "Paramètres des raccourcis clavier",
+    "pressKeys": "Appuyez sur les touches",
+    "pressEnterToSave": "Appuyez sur Entrée pour enregistrer, Échap pour annuler",
+
     "cleanHistory": "Historique de chat clair",
     "goSettings": "Paramètres ouvrir",
     "hideWindow": "Cache-fenêtre",

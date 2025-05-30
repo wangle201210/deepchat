@@ -359,6 +359,10 @@
     "text-xl": "非常に大きい"
   },
   "shortcuts": {
+    "title": "ショートカットキー設定",
+    "pressKeys": "キーを押してください",
+    "pressEnterToSave": "Enterキーで保存、Escでキャンセル",
+
     "cleanHistory": "明確なチャット履歴",
     "goSettings": "設定を開く",
     "hideWindow": "ウィンドウを非表示にします",

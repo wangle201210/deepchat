@@ -358,6 +358,7 @@ export interface IConfigPresenter {
   getDefaultShortcutKey(): ShortcutKeySetting
   getShortcutKey(): ShortcutKeySetting
   setShortcutKey(customShortcutKey: ShortcutKeySetting): void
+  resetShortcutKeys(): void
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -1044,4 +1045,4 @@ export type LLMAgentEvent =
   | { type: 'error'; data: { eventId: string; error: string } }
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
 
-export { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
+export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'

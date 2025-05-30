@@ -359,6 +359,10 @@
     "text-2xl": "超大"
   },
   "shortcuts": {
+    "title": "快捷键设置",
+    "pressKeys": "输入快捷键",
+    "pressEnterToSave": "按Enter保存，Esc取消",
+    
     "zoomIn": "放大字体",
     "zoomOut": "缩小字体",
     "zoomReset": "重置字体",

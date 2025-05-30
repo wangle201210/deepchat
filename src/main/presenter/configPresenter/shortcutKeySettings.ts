@@ -1,4 +1,4 @@
-export const CommandKey = process.platform === 'darwin' ? 'Command' : 'Control'
+export const CommandKey = 'CommandOrControl'
 
 const ShiftKey = 'Shift'
 
@@ -21,7 +21,7 @@ export const rendererShortcutKey = {
 
 // 系统层面 快捷键
 export const systemShortcutKey = {
-  ShowWindow: `${CommandKey}+O`,
+  ShowHideWindow: `${CommandKey}+O`,
   Quit: `${CommandKey}+Q`,
 }
 

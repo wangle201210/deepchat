@@ -359,6 +359,10 @@
     "text-xl": "Large"
   },
   "shortcuts": {
+    "title": "Shortcut Key Settings",
+    "pressKeys": "Press keys",
+    "pressEnterToSave": "Press Enter to save, Esc to cancel",
+
     "cleanHistory": "Clear chat history",
     "goSettings": "Open Settings",
     "hideWindow": "Hide window",

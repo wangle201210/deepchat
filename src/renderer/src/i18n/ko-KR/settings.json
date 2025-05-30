@@ -359,6 +359,10 @@
     "text-xl": "매우 큽니다"
   },
   "shortcuts": {
+    "title": "키보드 단축키 설정",
+    "pressKeys": "키를 누르세요",
+    "pressEnterToSave": "Enter키로 저장, Esc로 취소",
+
     "cleanHistory": "명확한 채팅 기록",
     "goSettings": "열기 설정",
     "hideWindow": "창을 숨기십시오",

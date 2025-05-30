@@ -359,6 +359,10 @@
     "text-xl": "большой"
   },
   "shortcuts": {
+    "title": "Ключевые",
+    "pressKeys": "Нажмите клавиши",
+    "pressEnterToSave": "Нажмите Enter для сохранения, Esc для отмены",
+
     "cleanHistory": "Четкая история чата",
     "goSettings": "Откройте настройки",
     "hideWindow": "Скрыть окно",
