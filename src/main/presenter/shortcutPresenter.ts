@@ -1,7 +1,7 @@
 import { app, globalShortcut } from 'electron'
 
 import { presenter } from '.'
-import { SHORTCUT_EVENTS } from '../events'
+import { SHORTCUT_EVENTS, TRAY_EVENTS } from '../events'
 import { eventBus } from '../eventbus'
 import {
   CommandKey,
@@ -135,6 +135,8 @@ export class ShortcutPresenter {
       }
     })
 
+    this.showHideWindow()
+
     this.isActive = true
   }
 
@@ -204,9 +206,20 @@ export class ShortcutPresenter {
     }
   }
 
+  // Command+O 或 Ctrl+O 显示/隐藏窗口
+  private async showHideWindow() {
+    // Command+O 或 Ctrl+O 显示/隐藏窗口
+    globalShortcut.register(this.shortcutKeys.ShowHideWindow, () => {
+      eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
+    })
+  }
+
   unregisterShortcuts(): void {
     console.log('unreg shortcuts')
     globalShortcut.unregisterAll()
+
+    // 取消注册显示/隐藏窗口快捷键
+    this.showHideWindow()
     this.isActive = false
   }
 

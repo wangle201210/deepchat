@@ -16,3 +16,5 @@ build/winarm.json
 build/winx64.json
 runtime/**/*
 .eslintcache
+.env
+.npmrc

@@ -17,33 +17,49 @@
       <div class="w-full h-full flex flex-col gap-1.5">
         <!-- 快捷键列表 -->
         <div class="flex flex-col gap-2">
-          <div v-for="shortcut in shortcuts" :key="shortcut.id" class="flex flex-row p-2 items-center gap-2 px-2">
+          <div
+            v-for="shortcut in shortcuts"
+            :key="shortcut.id"
+            class="flex flex-row p-2 items-center gap-2 px-2"
+          >
             <span class="flex flex-row items-center gap-2 flex-grow w-full">
               <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
               <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
             </span>
             <div class="flex-shrink-0 min-w-32">
               <div class="relative w-full">
-                <Button 
-                  variant="outline" 
-                  class="w-full justify-between relative ring-offset-background" 
-                  @click="startRecording(shortcut.id)" 
+                <Button
+                  variant="outline"
+                  class="min-w-[150px] justify-between relative ring-offset-background"
                   :class="{
                     'ring-2 ring-primary': recordingShortcutId === shortcut.id && !shortcutError,
                     'ring-2 ring-destructive': recordingShortcutId === shortcut.id && shortcutError
                   }"
+                  :disabled="shortcut.disabled"
+                  @click="startRecording(shortcut.id)"
                 >
-                  <span v-if="recordingShortcutId === shortcut.id" class="text-sm" :class="{'text-primary': !shortcutError, 'text-destructive': shortcutError}">
+                  <span
+                    v-if="recordingShortcutId === shortcut.id"
+                    class="text-sm"
+                    :class="{ 'text-primary': !shortcutError, 'text-destructive': shortcutError }"
+                  >
                     <span v-if="shortcutError">
                       {{ shortcutError }}
                     </span>
                     <span v-else-if="tempShortcut">
-                      {{ tempShortcut }} <span class="text-xs text-muted-foreground">{{ t('settings.shortcuts.pressEnterToSave') }}</span>
+                      {{ tempShortcut }}
+                      <span class="text-xs text-muted-foreground">{{
+                        t('settings.shortcuts.pressEnterToSave')
+                      }}</span>
                     </span>
                     <span v-else>{{ t('settings.shortcuts.pressKeys') }}</span>
                   </span>
                   <span v-else class="text-sm">{{ shortcut.key }}</span>
-                  <Icon v-if="recordingShortcutId !== shortcut.id" icon="lucide:pencil" class="w-3.5 h-3.5 text-muted-foreground" />
+                  <Icon
+                    v-if="recordingShortcutId !== shortcut.id"
+                    icon="lucide:pencil"
+                    class="w-3.5 h-3.5 text-muted-foreground"
+                  />
                 </Button>
               </div>
             </div>
@@ -85,35 +101,35 @@ const normalizeShortcut = (shortcut: string): string[] => {
   const normalized = shortcut
     .replace(/CommandOrControl/g, isMac ? 'Command' : 'Control')
     .replace(/CmdOrCtrl/g, isMac ? 'Command' : 'Control')
-  
+
   return normalized.split('+')
 }
 
 // 检查两个快捷键是否等价（考虑 CommandOrControl 的情况）
 const areShortcutsEquivalent = (shortcut1: string, shortcut2: string): boolean => {
   if (shortcut1 === shortcut2) return true
-  
+
   const parts1 = normalizeShortcut(shortcut1)
   const parts2 = normalizeShortcut(shortcut2)
-  
+
   // 如果组成部分数量不同，则不等价
   if (parts1.length !== parts2.length) return false
-  
+
   // 检查每个部分是否匹配（忽略顺序）
   const sortedParts1 = [...parts1].sort()
   const sortedParts2 = [...parts2].sort()
-  
+
   for (let i = 0; i < sortedParts1.length; i++) {
     if (sortedParts1[i] !== sortedParts2[i]) return false
   }
-  
+
   return true
 }
 
 // 检查快捷键是否冲突
 const isShortcutConflict = (key: string, currentId: string): boolean => {
   // 检查快捷键是否已经被其他功能使用
-  for (const [id, shortcut] of Object.entries(shortcutKeys.value)) {
+  for (const [id, shortcut] of Object.entries<string>(shortcutKeys.value || {})) {
     if (id !== currentId && areShortcutsEquivalent(shortcut, key)) {
       return true
     }
@@ -121,62 +137,67 @@ const isShortcutConflict = (key: string, currentId: string): boolean => {
   return false
 }
 
-const shortcutMapping: Record<ShortcutKey, { icon: string; label: string }> = {
+const shortcutMapping: Record<
+  ShortcutKey,
+  { icon: string; label: string; key?: string; disabled?: boolean }
+> = {
   NewConversation: {
     icon: 'lucide:plus-square',
-    label: 'settings.shortcuts.newConversation',
+    label: 'settings.shortcuts.newConversation'
   },
   NewWindow: {
     icon: 'lucide:app-window',
-    label: 'settings.shortcuts.newWindow',
+    label: 'settings.shortcuts.newWindow'
   },
   NewTab: {
     icon: 'lucide:plus',
-    label: 'settings.shortcuts.newTab',
+    label: 'settings.shortcuts.newTab'
   },
   CloseTab: {
     icon: 'lucide:x',
-    label: 'settings.shortcuts.closeTab',
+    label: 'settings.shortcuts.closeTab'
   },
   SwitchNextTab: {
     icon: 'lucide:arrow-right',
-    label: 'settings.shortcuts.nextTab',
+    label: 'settings.shortcuts.nextTab'
   },
   SwitchPrevTab: {
     icon: 'lucide:arrow-left',
-    label: 'settings.shortcuts.previousTab',
+    label: 'settings.shortcuts.previousTab'
   },
-  // NumberTabs: {
-  //   icon: 'lucide:list-ordered',
-  //   label: 'settings.shortcuts.specificTab',
-  // },
+  NumberTabs: {
+    icon: 'lucide:list-ordered',
+    label: 'settings.shortcuts.specificTab',
+    key: 'CommandOrControl+1...8',
+    disabled: true
+  },
   SwtichToLastTab: {
     icon: 'lucide:move-horizontal',
-    label: 'settings.shortcuts.lastTab',
+    label: 'settings.shortcuts.lastTab'
   },
   ZoomIn: {
     icon: 'lucide:zoom-in',
-    label: 'settings.shortcuts.zoomIn',
+    label: 'settings.shortcuts.zoomIn'
   },
   ZoomOut: {
     icon: 'lucide:zoom-out',
-    label: 'settings.shortcuts.zoomOut',
+    label: 'settings.shortcuts.zoomOut'
   },
   ZoomResume: {
     icon: 'lucide:rotate-ccw',
-    label: 'settings.shortcuts.zoomReset',
+    label: 'settings.shortcuts.zoomReset'
   },
   GoSettings: {
     icon: 'lucide:settings',
-    label: 'settings.shortcuts.goSettings',
+    label: 'settings.shortcuts.goSettings'
   },
   CleanChatHistory: {
     icon: 'lucide:trash-2',
-    label: 'settings.shortcuts.cleanHistory',
+    label: 'settings.shortcuts.cleanHistory'
   },
   Quit: {
     icon: 'lucide:log-out',
-    label: 'settings.shortcuts.quitApp',
+    label: 'settings.shortcuts.quitApp'
   }
 }
 
@@ -190,7 +211,8 @@ const shortcuts = computed(() => {
       id: key,
       icon: value.icon,
       label: value.label,
-      key: formatShortcut(shortcutKeys.value[key])
+      key: formatShortcut(shortcutKeys.value[key] || value.key),
+      disabled: value.disabled
     }))
   } catch (error) {
     console.error('Parse shortcut key error', error)
@@ -213,17 +235,17 @@ const formatShortcut = (_shortcut: string) => {
 
 const resetShortcutKeys = async () => {
   resetLoading.value = true
-  
+
   // 取消当前的录制状态并清除错误信息
   if (recordingShortcutId.value) {
     cancelRecording()
   }
-  
+
   // 确保所有状态都被重置
   shortcutError.value = ''
   tempShortcut.value = ''
   recordingShortcutId.value = null
-  
+
   try {
     await shortcutKeyStore.resetShortcutKeys()
     // 确保快捷键功能重新启用
@@ -241,16 +263,16 @@ const startRecording = (shortcutId: string) => {
   if (recordingShortcutId.value && recordingShortcutId.value !== shortcutId) {
     stopRecording()
   }
-  
+
   recordingShortcutId.value = shortcutId
   tempShortcut.value = ''
   shortcutError.value = ''
 
   shortcutKeyStore.disableShortcutKey()
-  
+
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown, { capture: true })
-  
+
   // 阻止页面滑动和其他默认行为
   document.body.style.overflow = 'hidden'
 }
@@ -258,15 +280,15 @@ const startRecording = (shortcutId: string) => {
 // 处理键盘按下事件
 const handleKeyDown = (event: KeyboardEvent) => {
   if (!recordingShortcutId.value) return
-  
+
   event.preventDefault()
-  
+
   // 如果按下 Esc 键，取消录制
   if (event.key === 'Escape') {
     cancelRecording()
     return
   }
-  
+
   // 如果按下 Enter 键并且已经有临时快捷键，验证并保存
   if (event.key === 'Enter' && tempShortcut.value) {
     // 验证快捷键是否合法
@@ -277,24 +299,24 @@ const handleKeyDown = (event: KeyboardEvent) => {
     // 注意：错误信息会在 validateShortcut 中设置，不需要在这里清除
     return
   }
-  
+
   // 清除之前的错误信息（只在输入新按键时清除，而不是在按 Enter 时）
   shortcutError.value = ''
-  
+
   const keys: string[] = []
-  
+
   // 添加修饰键
   if (event.ctrlKey) keys.push('Control')
   if (event.metaKey) keys.push('Command')
   if (event.altKey) keys.push('Alt')
   if (event.shiftKey) keys.push('Shift')
-  
+
   // 添加主键
   const key = event.key
   if (!['Control', 'Alt', 'Shift', 'Meta', 'Enter', 'Escape'].includes(key)) {
     keys.push(key.length === 1 ? key.toUpperCase() : key)
   }
-  
+
   if (keys.length > 0) {
     // 更新临时快捷键
     tempShortcut.value = keys.join('+')
@@ -309,13 +331,13 @@ const validateShortcut = (shortcut: string): boolean => {
     shortcutError.value = t('settings.shortcuts.noModifierOnly')
     return false
   }
-  
+
   // 检查是否有快捷键冲突
   if (recordingShortcutId.value && isShortcutConflict(shortcut, recordingShortcutId.value)) {
     shortcutError.value = t('settings.shortcuts.keyConflict')
     return false
   }
-  
+
   return true
 }
 
@@ -342,7 +364,7 @@ const stopRecording = () => {
   if (recordingShortcutId.value) {
     recordingShortcutId.value = null
     window.removeEventListener('keydown', handleKeyDown, { capture: true })
-    
+
     // 恢复默认行为
     document.body.style.overflow = ''
   }

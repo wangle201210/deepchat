@@ -141,5 +141,5 @@ export const TAB_EVENTS = {
 
 // 托盘相关事件
 export const TRAY_EVENTS = {
-  SHOW_WINDOW: 'tray:show-window' // 从托盘显示窗口
+  SHOW_HIDDEN_WINDOW: 'tray:show-hidden-window' // 从托盘显示/隐藏窗口
 }
