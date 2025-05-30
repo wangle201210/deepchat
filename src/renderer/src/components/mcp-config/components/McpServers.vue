@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -42,7 +42,25 @@ const selectedServer = ref<string>('')
 const selectedServerForTools = ref<string>('')
 const selectedServerForPrompts = ref<string>('')
 const selectedServerForResources = ref<string>('')
+// 监听 MCP 安装缓存
+watch(
+  () => settingsStore.mcpInstallCache,
+  (newCache) => {
+    if (newCache) {
+      // 打开添加服务器对话框
+      isAddServerDialogOpen.value = true
+    }
+  },
+  { immediate: true }
+)
 
+watch(isAddServerDialogOpen, (newIsAddServerDialogOpen) => {
+  // 当添加服务器对话框关闭时，清理缓存
+  if (!newIsAddServerDialogOpen) {
+    // 清理缓存
+    settingsStore.clearMcpInstallCache()
+  }
+})
 // 计算属性：区分内置服务和普通服务
 const inMemoryServers = computed(() => {
   return mcpStore.serverList.filter((server) => {
