@@ -190,8 +190,15 @@
             <span class="text-xs flex flex-row items-center">
               <Icon icon="lucide:arrow-down" class="w-3 h-3" />{{ usage.output_tokens }}
             </span>
+            <span
+              class="text-xs flex flex-row items-center"
+              :class="getUsageColorClass(usage.context_usage)"
+            >
+              <Icon icon="lucide:gauge" class="w-3 h-3 mr-1" />
+              {{ usage.context_usage?.toFixed(2) }}%
+            </span>
           </template>
-          <template v-if="hasTokensPerSecond">{{ usage.tokens_per_second?.toFixed(2) }}/s</template>
+          <template v-if="hasTokensPerSecond">{{ usage.tokens_per_second?.toFixed(2) }}/S</template>
         </span>
       </div>
     </TooltipProvider>
@@ -213,6 +220,13 @@ const showCopyFromTopTip = ref(false)
 
 let copyImagePressTimer: number | null = null
 const LONG_PRESS_DURATION = 800 // 长按时间阈值（毫秒）
+
+function getUsageColorClass(value) {
+  if (value == null) return ''
+  if (value > 70) return 'text-usage-high'
+  if (value > 45) return 'text-usage-mid'
+  return 'text-usage-low'
+}
 
 const handleCopy = () => {
   emit('copy')
@@ -256,6 +270,7 @@ const handleCopyImageCancel = () => {
 
 const props = defineProps<{
   usage: {
+    context_usage: number
     tokens_per_second: number
     total_tokens: number
     reasoning_start_time: number

@@ -233,7 +233,7 @@ const isFirstStep = computed(() => currentStep.value === 0)
 </script>
 
 <template>
-  <div class="h-full flex items-center justify-center bg-background p-4">
+  <div class="h-full flex items-center justify-center bg-background p-4 w-full">
     <Card class="w-full max-w-2xl">
       <CardHeader>
         <div class="flex items-center space-x-4">

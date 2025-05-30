@@ -452,6 +452,17 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   ppio: {
     models: [
       {
+        id: 'deepseek/deepseek-r1-0528',
+        name: 'DeepSeek R1 0528',
+        temperature: 0.6,
+        maxTokens: 8192,
+        contextLength: 40960,
+        match: ['deepseek-r1-0528'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
         id: 'qwen/qwen3-235b-a22b-fp8',
         name: 'Qwen/Qwen3-235B-A22B',
         temperature: 0.6,

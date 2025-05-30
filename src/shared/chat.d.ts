@@ -15,6 +15,7 @@ export type Message = {
   error: string
   // user只有prompt_tokens，其他数值可以留为0
   usage: {
+    context_usage: number
     tokens_per_second: number
     total_tokens: number
     generation_time: number

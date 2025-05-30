@@ -565,6 +565,7 @@ export type MESSAGE_METADATA = {
   generationTime: number
   firstTokenTime: number
   tokensPerSecond: number
+  contextUsage: number
   model?: string
   provider?: string
   reasoningStartTime?: number
@@ -1032,6 +1033,7 @@ export interface LLMAgentEventData {
     prompt_tokens: number
     completion_tokens: number
     total_tokens: number
+    context_length: number
   }
   image_data?: { data: string; mimeType: string }
   error?: string // For error event

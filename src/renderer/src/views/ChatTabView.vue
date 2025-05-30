@@ -128,6 +128,7 @@ const activeModel = computed(() => {
   return {
     name: model.name,
     id: model.id,
+    providerId: model.providerId,
     tags: []
   }
 })

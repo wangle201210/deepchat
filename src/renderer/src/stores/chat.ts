@@ -101,18 +101,18 @@ export const useChatStore = defineStore('chat', () => {
       // Sort conversations: Pinned first, then by date
       result.list.sort((a, b) => {
         // Treat is_pinned undefined as 0 (not pinned)
-        const aIsPinned = a.is_pinned === 1;
-        const bIsPinned = b.is_pinned === 1;
+        const aIsPinned = a.is_pinned === 1
+        const bIsPinned = b.is_pinned === 1
 
         if (aIsPinned && !bIsPinned) {
-          return -1; // a comes first
+          return -1 // a comes first
         }
         if (!aIsPinned && bIsPinned) {
-          return 1; // b comes first
+          return 1 // b comes first
         }
         // If both have the same pinned status, sort by updatedAt
-        return b.updatedAt - a.updatedAt;
-      });
+        return b.updatedAt - a.updatedAt
+      })
 
       // 按日期分组处理会话列表
       const groupedThreads: Map<string, CONVERSATION[]> = new Map()

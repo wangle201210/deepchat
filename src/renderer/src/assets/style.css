@@ -76,6 +76,10 @@
 
     --display-weight: 700;
     --text-weight: 400;
+
+    --usage-low: 142 71% 45%;   /* 亮绿 */
+    --usage-mid: 48 96% 53%;    /* 亮黄 */
+    --usage-high: 0 72% 51%;    /* 亮红 */
   }
 
   .dark {
@@ -112,6 +116,10 @@
     --sidebar-accent-foreground: var(--base-200);
     --sidebar-border: var(--base-800);
     --sidebar-ring: var(--primary-600);
+
+    --usage-low: 142 40% 60%;   /* 暗绿 */
+    --usage-mid: 48 80% 60%;    /* 暗黄 */
+    --usage-high: 0 70% 65%;    /* 暗红 */
   }
 }
 @layer base {

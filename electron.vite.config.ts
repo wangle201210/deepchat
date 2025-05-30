@@ -54,7 +54,8 @@ export default defineConfig({
       vue(),
       svgLoader(),
       vueDevTools({
-        launchEditor: 'windsurf'
+        // use export LAUNCH_EDITOR=cursor instead
+        // launchEditor: 'cursor'
       })
     ],
     build: {

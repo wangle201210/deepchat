@@ -52,6 +52,7 @@ interface GeneratingMessageState {
     prompt_tokens: number
     completion_tokens: number
     total_tokens: number
+    context_length: number
   }
 }
 
@@ -135,6 +136,9 @@ export class ThreadPresenter implements IThreadPresenter {
       const totalTokens = state.promptTokens + completionTokens
       const generationTime = Date.now() - (state.firstTokenTime ?? state.startTime)
       const tokensPerSecond = completionTokens / (generationTime / 1000)
+      const contextUsage = state?.totalUsage?.context_length
+        ? (totalTokens / state.totalUsage.context_length) * 100
+        : 0
 
       // 如果有reasoning_content，记录结束时间
       const metadata: Partial<MESSAGE_METADATA> = {
@@ -143,7 +147,8 @@ export class ThreadPresenter implements IThreadPresenter {
         outputTokens: completionTokens,
         generationTime,
         firstTokenTime: state.firstTokenTime ? state.firstTokenTime - state.startTime : 0,
-        tokensPerSecond
+        tokensPerSecond,
+        contextUsage
       }
 
       if (state.reasoningStartTime !== null && state.lastReasoningTime !== null) {
@@ -766,6 +771,7 @@ export class ThreadPresenter implements IThreadPresenter {
       '',
       false,
       {
+        contextUsage: 0,
         totalTokens: 0,
         generationTime: 0,
         firstTokenTime: 0,
@@ -827,6 +833,7 @@ export class ThreadPresenter implements IThreadPresenter {
         userMessageId,
         false,
         {
+          contextUsage: 0,
           totalTokens: 0,
           generationTime: 0,
           firstTokenTime: 0,
@@ -2011,6 +2018,7 @@ export class ThreadPresenter implements IThreadPresenter {
       generationTime: 0,
       firstTokenTime: 0,
       tokensPerSecond: 0,
+      contextUsage: 0,
       inputTokens: 0,
       outputTokens: 0,
       model: modelId,
@@ -2266,6 +2274,7 @@ export class ThreadPresenter implements IThreadPresenter {
           generationTime: 0,
           firstTokenTime: 0,
           tokensPerSecond: 0,
+          contextUsage: 0,
           inputTokens: msg.usage?.input_tokens || 0,
           outputTokens: msg.usage?.output_tokens || 0,
           ...(msg.model_id ? { model: msg.model_id } : {}),
