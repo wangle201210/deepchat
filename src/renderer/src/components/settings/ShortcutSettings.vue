@@ -28,10 +28,16 @@
                   variant="outline" 
                   class="w-full justify-between relative ring-offset-background" 
                   @click="startRecording(shortcut.id)" 
-                  :class="{'ring-2 ring-primary': recordingShortcutId === shortcut.id}"
+                  :class="{
+                    'ring-2 ring-primary': recordingShortcutId === shortcut.id && !shortcutError,
+                    'ring-2 ring-destructive': recordingShortcutId === shortcut.id && shortcutError
+                  }"
                 >
-                  <span v-if="recordingShortcutId === shortcut.id" class="text-sm text-primary">
-                    <span v-if="tempShortcut">
+                  <span v-if="recordingShortcutId === shortcut.id" class="text-sm" :class="{'text-primary': !shortcutError, 'text-destructive': shortcutError}">
+                    <span v-if="shortcutError">
+                      {{ shortcutError }}
+                    </span>
+                    <span v-else-if="tempShortcut">
                       {{ tempShortcut }} <span class="text-xs text-muted-foreground">{{ t('settings.shortcuts.pressEnterToSave') }}</span>
                     </span>
                     <span v-else>{{ t('settings.shortcuts.pressKeys') }}</span>
@@ -67,6 +73,21 @@ const { shortcutKeys } = storeToRefs(shortcutKeyStore)
 const resetLoading = ref(false)
 const recordingShortcutId = ref<string | null>(null)
 const tempShortcut = ref('')
+const shortcutError = ref('')
+
+// 禁止作为快捷键的修饰键
+const FORBIDDEN_SINGLE_KEYS = ['Control', 'Command', 'Alt', 'Shift', 'Meta', 'Escape', 'Tab']
+
+// 检查快捷键是否冲突
+const isShortcutConflict = (key: string, currentId: string): boolean => {
+  // 检查快捷键是否已经被其他功能使用
+  for (const [id, shortcut] of Object.entries(shortcutKeys.value)) {
+    if (id !== currentId && shortcut === key) {
+      return true
+    }
+  }
+  return false
+}
 
 const shortcutMapping: Record<ShortcutKey, { icon: string; label: string }> = {
   NewConversation: {
@@ -173,6 +194,10 @@ const startRecording = (shortcutId: string) => {
   
   recordingShortcutId.value = shortcutId
   tempShortcut.value = ''
+  shortcutError.value = ''
+  
+  // 向主进程发送消息，禁用全局快捷键
+  window.electron.ipcRenderer.send('shortcuts:disable')
   
   // 添加键盘事件监听
   window.addEventListener('keydown', handleKeyDown, { capture: true })
@@ -193,11 +218,18 @@ const handleKeyDown = (event: KeyboardEvent) => {
     return
   }
   
-  // 如果按下 Enter 键并且已经有临时快捷键，保存并停止录制
+  // 如果按下 Enter 键并且已经有临时快捷键，验证并保存
   if (event.key === 'Enter' && tempShortcut.value) {
-    saveAndStopRecording()
+    // 验证快捷键是否合法
+    if (validateShortcut(tempShortcut.value)) {
+      saveAndStopRecording()
+    }
+    // 注意：错误信息会在 validateShortcut 中设置，不需要在这里清除
     return
   }
+  
+  // 清除之前的错误信息（只在输入新按键时清除，而不是在按 Enter 时）
+  shortcutError.value = ''
   
   const keys: string[] = []
   
@@ -214,13 +246,33 @@ const handleKeyDown = (event: KeyboardEvent) => {
   }
   
   if (keys.length > 0) {
+    // 更新临时快捷键
     tempShortcut.value = keys.join('+')
+    // 不再每次按键都验证，只在按 Enter 时验证
   }
+}
+
+// 验证快捷键
+const validateShortcut = (shortcut: string): boolean => {
+  // 检查是否只有一个修饰键
+  if (FORBIDDEN_SINGLE_KEYS.includes(shortcut)) {
+    shortcutError.value = t('settings.shortcuts.noModifierOnly') || '不能仅使用修饰键作为快捷键'
+    return false
+  }
+  
+  // 检查是否有快捷键冲突
+  if (recordingShortcutId.value && isShortcutConflict(shortcut, recordingShortcutId.value)) {
+    shortcutError.value = t('settings.shortcuts.keyConflict') || '快捷键冲突，请选择其他组合'
+    return false
+  }
+  
+  return true
 }
 
 // 取消录制
 const cancelRecording = () => {
   tempShortcut.value = ''
+  shortcutError.value = ''
   stopRecording()
 }
 
@@ -231,6 +283,7 @@ const saveAndStopRecording = () => {
     shortcutKeys.value[shortcutKey] = tempShortcut.value
     saveChanges()
   }
+  shortcutError.value = ''
   stopRecording()
 }
 

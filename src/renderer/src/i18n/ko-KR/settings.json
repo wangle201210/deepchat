@@ -359,9 +359,11 @@
     "text-xl": "매우 큽니다"
   },
   "shortcuts": {
-    "title": "키보드 단축키 설정",
+    "title": "단축키 설정",
     "pressKeys": "키를 누르세요",
-    "pressEnterToSave": "Enter키로 저장, Esc로 취소",
+    "pressEnterToSave": "Enter 키를 누르면 저장되고 Esc 키를 누르면 취소됩니다",
+    "noModifierOnly": "수정 키만 단축키로 사용할 수 없습니다",
+    "keyConflict": "단축키 충돌이 발생했습니다. 다른 조합을 선택해주세요",
 
     "cleanHistory": "명확한 채팅 기록",
     "goSettings": "열기 설정",

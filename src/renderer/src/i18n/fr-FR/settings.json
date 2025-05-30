@@ -362,6 +362,8 @@
     "title": "Paramètres des raccourcis clavier",
     "pressKeys": "Appuyez sur les touches",
     "pressEnterToSave": "Appuyez sur Entrée pour enregistrer, Échap pour annuler",
+    "noModifierOnly": "Impossible d'utiliser uniquement une touche de modification comme raccourci",
+    "keyConflict": "Conflit de raccourci clavier, veuillez choisir une autre combinaison",
 
     "cleanHistory": "Historique de chat clair",
     "goSettings": "Paramètres ouvrir",
