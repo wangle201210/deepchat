@@ -200,16 +200,14 @@ export const useSettingsStore = defineStore('settings', () => {
         name: 'settings'
       })
       await router.push({
-        name: 'settings-mcp',
-        query: { subtab: 'servers' } // 确保激活服务器子标签
+        name: 'settings-mcp'
       })
     } else {
       await router.replace({
         name: 'settings-mcp',
         query: {
-          ...currentRoute.query,
-          subtab: 'servers'
-        } // 确保激活服务器子标签
+          ...currentRoute.query
+        }
       })
       // 如果已经在MCP设置页面，只更新子标签页
     }

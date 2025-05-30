@@ -203,7 +203,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'deepseek-chat',
         name: 'DeepSeek chat',
         temperature: 1,
-        maxTokens: 8192,
+        maxTokens: 16000,
         contextLength: 65536,
         match: ['deepseek-chat'],
         vision: false,
@@ -214,7 +214,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'deepseek-reasoner',
         name: 'DeepSeek Reasoner',
         temperature: 0.6,
-        maxTokens: 8192,
+        maxTokens: 16000,
         contextLength: 65536,
         match: ['deepseek-reasoner'],
         vision: false,
@@ -455,8 +455,8 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'deepseek/deepseek-r1-0528',
         name: 'DeepSeek R1 0528',
         temperature: 0.6,
-        maxTokens: 8192,
-        contextLength: 40960,
+        maxTokens: 16000,
+        contextLength: 60_000,
         match: ['deepseek-r1-0528'],
         vision: false,
         functionCall: false,
@@ -874,7 +874,19 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // OpenRouter提供商特定模型配置
   openrouter: {
-    models: []
+    models: [
+      {
+        id: 'deepseek/deepseek-chat-v3-0324:free',
+        name: 'DeepSeek Chat V3 0324 Free',
+        temperature: 0.6,
+        maxTokens: 10000,
+        contextLength: 110000,
+        match: ['deepseek/deepseek-chat-v3-0324:free', 'deepseek-chat-v3-0324:free'],
+        vision: false,
+        functionCall: false,
+        reasoning: false
+      }
+    ]
   },
 
   // Grok提供商特定模型配置
