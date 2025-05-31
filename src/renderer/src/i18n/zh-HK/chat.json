@@ -4,7 +4,9 @@
     "fileArea": "文件區域",
     "inputArea": "輸入區域",
     "functionSwitch": "功能開關",
-    "fileSelect": "選擇文件"
+    "fileSelect": "選擇文件",
+    "pasteFiles": "支持複製粘貼文件",
+    "dropFiles": "拖拽文件到此處"
   },
   "features": {
     "deepThinking": "深度思考",

@@ -4,7 +4,9 @@
     "fileArea": "File Area",
     "inputArea": "Input Area",
     "functionSwitch": "Function Switch",
-    "fileSelect": "File Select"
+    "fileSelect": "File Select",
+    "pasteFiles": "Support copy and paste files",
+    "dropFiles": "Drop files here"
   },
   "features": {
     "deepThinking": "Deep Thinking",

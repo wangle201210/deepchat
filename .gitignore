@@ -17,4 +17,5 @@ build/winx64.json
 runtime/**/*
 .eslintcache
 .env
+.env.local
 .npmrc

@@ -4,7 +4,9 @@
     "fileArea": "파일 영역",
     "inputArea": "입력 영역",
     "functionSwitch": "기능 전환",
-    "fileSelect": "파일 선택 버튼"
+    "fileSelect": "파일 선택 버튼",
+    "pasteFiles": "파일 복사 붙여넣기 지원",
+    "dropFiles": "파일을 여기로 드래그하세요"
   },
   "features": {
     "deepThinking": "심층 사고",
