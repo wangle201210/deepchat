@@ -2,6 +2,7 @@
 import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
+import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -191,6 +192,11 @@ export interface ILlamaCppPresenter {
   destroy(): Promise<void>
 }
 
+export interface IShortcutPresenter {
+  registerShortcuts(): void
+  destroy(): void
+}
+
 export interface ISQLitePresenter {
   close(): void
   createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
@@ -353,6 +359,11 @@ export interface IConfigPresenter {
   // 默认系统提示词设置
   getDefaultSystemPrompt(): Promise<string>
   setDefaultSystemPrompt(prompt: string): Promise<void>
+  // 快捷键设置
+  getDefaultShortcutKey(): ShortcutKeySetting
+  getShortcutKey(): ShortcutKeySetting
+  setShortcutKey(customShortcutKey: ShortcutKeySetting): void
+  resetShortcutKeys(): void
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -1038,3 +1049,5 @@ export type LLMAgentEvent =
   | { type: 'response'; data: LLMAgentEventData }
   | { type: 'error'; data: { eventId: string; error: string } }
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
+
+export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'

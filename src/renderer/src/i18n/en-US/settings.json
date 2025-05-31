@@ -359,6 +359,12 @@
     "text-xl": "Large"
   },
   "shortcuts": {
+    "title": "Shortcut Key Settings",
+    "pressKeys": "Press keys",
+    "pressEnterToSave": "Press Enter to save, Esc to cancel",
+    "noModifierOnly": "Cannot use modifier key alone as shortcut",
+    "keyConflict": "Shortcut key conflict, please choose another combination",
+
     "cleanHistory": "Clear chat history",
     "goSettings": "Open Settings",
     "hideWindow": "Hide window",
