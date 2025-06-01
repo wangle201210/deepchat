@@ -463,6 +463,72 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         reasoning: true
       },
       {
+        id: 'deepseek/deepseek-r1-distill-qwen-32b',
+        name: 'DeepSeek R1 Distill Qwen 32B',
+        temperature: 0.7,
+        maxTokens: 4000,
+        contextLength: 32768,
+        match: ['deepseek-r1-distill-qwen-32b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-14b',
+        name: 'DeepSeek R1 Distill Qwen 14B',
+        temperature: 0.7,
+        maxTokens: 4000,
+        contextLength: 32768,
+        match: ['deepseek-r1-distill-qwen-14b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-7b',
+        name: 'DeepSeek R1 Distill Qwen 7B',
+        temperature: 0.7,
+        maxTokens: 4000,
+        contextLength: 32768,
+        match: ['deepseek-r1-distill-qwen-7b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-1.5b',
+        name: 'DeepSeek R1 Distill Qwen 1.5B',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 65536,
+        match: ['deepseek-r1-distill-qwen-1.5b', 'deepseek-r1-distill-qwen-1-5b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-llama-8b',
+        name: 'DeepSeek R1 Distill Llama 8B',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 65536,
+        match: ['deepseek-r1-distill-llama-8b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-llama-70b',
+        name: 'DeepSeek R1 Distill Llama 70B',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 65536,
+        match: ['deepseek-r1-distill-llama-70b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
         id: 'qwen/qwen3-235b-a22b-fp8',
         name: 'Qwen/Qwen3-235B-A22B',
         temperature: 0.6,
