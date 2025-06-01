@@ -183,7 +183,20 @@
     "serverList": "Liste des serveurs",
     "totalServers": "Total des serveurs",
     "addServer": "Ajouter un serveur",
-    "autoStart": "S'opiniter"
+    "autoStart": "S'opiniter",
+    "githubCopilotAuth": "Authentification GitHub Copilot",
+    "githubCopilotConnected": "GitHub Copilot connecté",
+    "githubCopilotNotConnected": "GitHub Copilot non connecté",
+    "loginWithGitHub": "Se connecter avec GitHub",
+    "loggingIn": "Connexion en cours...",
+    "githubCopilotLoginTip": "Autorisez DeepChat à accéder à votre abonnement GitHub Copilot. Les autorisations 'read:user' et 'read:org' sont requises pour accéder à l'API Copilot.",
+    "loginSuccess": "Connexion réussie",
+    "loginFailed": "Échec de la connexion",
+    "tokenValid": "Le jeton est valide",
+    "tokenInvalid": "Le jeton n'est pas valide",
+    "disconnect": "Déconnecter",
+    "disconnected": "Déconnecté avec succès",
+    "disconnectFailed": "Échec de la déconnexion"
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",

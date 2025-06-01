@@ -183,7 +183,20 @@
     "serverList": "伺服器列表",
     "totalServers": "伺服器總數",
     "addServer": "添加伺服器",
-    "autoStart": "自啟動"
+    "autoStart": "自啟動",
+    "githubCopilotAuth": "GitHub Copilot 認證",
+    "githubCopilotConnected": "GitHub Copilot 已連接",
+    "githubCopilotNotConnected": "GitHub Copilot 未連接",
+    "loginWithGitHub": "使用 GitHub 登入",
+    "loggingIn": "登入中...",
+    "githubCopilotLoginTip": "請授權 DeepChat 訪問您的 GitHub Copilot 訂閱。需要 'read:user' 和 'read:org' 權限才能正常使用 Copilot API。",
+    "loginSuccess": "登入成功",
+    "loginFailed": "登入失敗",
+    "tokenValid": "令牌有效",
+    "tokenInvalid": "令牌無效",
+    "disconnect": "斷開連接",
+    "disconnected": "已成功斷開連接",
+    "disconnectFailed": "斷開連接失敗"
   },
   "knowledgeBase": {
     "title": "知識庫設置",

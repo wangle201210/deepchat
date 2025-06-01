@@ -183,7 +183,20 @@
     "serverList": "服務器列表",
     "totalServers": "服務器總數",
     "addServer": "添加服務器",
-    "autoStart": "自啟動"
+    "autoStart": "自啟動",
+    "githubCopilotAuth": "GitHub Copilot 認證",
+    "githubCopilotConnected": "GitHub Copilot 已連接",
+    "githubCopilotNotConnected": "GitHub Copilot 未連接",
+    "loginWithGitHub": "用 GitHub 登入",
+    "loggingIn": "登入中...",
+    "githubCopilotLoginTip": "請授權 DeepChat 存取你的 GitHub Copilot 訂閱。需要 'read:user' 及 'read:org' 權限才能正常使用 Copilot API。",
+    "loginSuccess": "登入成功",
+    "loginFailed": "登入失敗",
+    "tokenValid": "Token 有效",
+    "tokenInvalid": "Token 無效",
+    "disconnect": "斷開連接",
+    "disconnected": "已成功斷開連接",
+    "disconnectFailed": "斷開連接失敗"
   },
   "knowledgeBase": {
     "fastgptTitle": "FastGPT知識庫",

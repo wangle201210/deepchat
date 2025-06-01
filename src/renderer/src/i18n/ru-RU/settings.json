@@ -183,7 +183,20 @@
     "serverList": "Список серверов",
     "totalServers": "Всего серверов",
     "addServer": "Добавить сервер",
-    "autoStart": "Самостоятельно"
+    "autoStart": "Самостоятельно",
+    "githubCopilotAuth": "Аутентификация GitHub Copilot",
+    "githubCopilotConnected": "GitHub Copilot подключен",
+    "githubCopilotNotConnected": "GitHub Copilot не подключен",
+    "loginWithGitHub": "Войти через GitHub",
+    "loggingIn": "Вход...",
+    "githubCopilotLoginTip": "Разрешите DeepChat доступ к вашей подписке GitHub Copilot. Для доступа к API Copilot требуются разрешения 'read:user' и 'read:org'.",
+    "loginSuccess": "Вход выполнен успешно",
+    "loginFailed": "Ошибка входа",
+    "tokenValid": "Токен действителен",
+    "tokenInvalid": "Токен недействителен",
+    "disconnect": "Отключить",
+    "disconnected": "Отключено успешно",
+    "disconnectFailed": "Не удалось отключить"
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",
