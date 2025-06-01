@@ -72,7 +72,6 @@ export class GitHubCopilotDeviceFlow {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
       throw new Error(`Failed to request device code: ${response.status} ${response.statusText}`)
     }
 
