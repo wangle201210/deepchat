@@ -192,9 +192,10 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   presenter.destroy()
   trayPresenter.destroy()
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  // 现在所有平台都不在 window-all-closed 时退出应用
+  // Windows 平台：应用继续在托盘中运行
+  // macOS 平台：应用继续在 dock 中运行（原有行为）
+  // 用户需要通过托盘菜单或 Cmd+Q 来真正退出应用
 })
 
 app.on('before-quit', () => {

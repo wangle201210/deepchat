@@ -342,7 +342,10 @@ export class WindowPresenter implements IWindowPresenter {
 
     shellWindow.on('close', (event) => {
       if (!this.isQuitting) {
-        if (this.windows.size > 1 || this.configPresenter.getSetting('minimizeToTray')) {
+        // Windows 平台：总是隐藏到托盘，不退出
+        // macOS 平台：保持原有逻辑，根据配置决定
+        if (process.platform !== 'darwin') {
+          // Windows 和其他平台：总是隐藏到托盘，不退出
           event.preventDefault()
 
           // 修复全屏关闭窗口黑屏问题（适用于所有平台）
@@ -355,12 +358,9 @@ export class WindowPresenter implements IWindowPresenter {
           } else {
             shellWindow.hide()
           }
-
-          // if (this.trayPresenter) {
-          //   this.trayPresenter.show()
-          // }
         } else {
-          if (!this.configPresenter.getCloseToQuit()) {
+          // macOS：保持原有逻辑
+          if (this.windows.size > 1) {
             event.preventDefault()
 
             // 修复全屏关闭窗口黑屏问题（适用于所有平台）
@@ -372,6 +372,21 @@ export class WindowPresenter implements IWindowPresenter {
               shellWindow.setFullScreen(false)
             } else {
               shellWindow.hide()
+            }
+          } else {
+            if (!this.configPresenter.getCloseToQuit()) {
+              event.preventDefault()
+
+              // 修复全屏关闭窗口黑屏问题（适用于所有平台）
+              if (shellWindow.isFullScreen()) {
+                // 先退出全屏，然后在完成后隐藏窗口
+                shellWindow.once('leave-full-screen', () => {
+                  shellWindow.hide()
+                })
+                shellWindow.setFullScreen(false)
+              } else {
+                shellWindow.hide()
+              }
             }
           }
         }
