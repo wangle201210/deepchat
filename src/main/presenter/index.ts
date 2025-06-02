@@ -90,7 +90,7 @@ export class Presenter implements IPresenter {
   deeplinkPresenter: DeeplinkPresenter
   notificationPresenter: NotificationPresenter
   tabPresenter: TabPresenter
-  trayPresenter: TrayPresenter | null = null // 托盘 Presenter，可能为 null
+  trayPresenter: TrayPresenter
   oauthPresenter: OAuthPresenter
   // llamaCppPresenter: LlamaCppPresenter // 保留原始注释
 
@@ -118,6 +118,7 @@ export class Presenter implements IPresenter {
     this.deeplinkPresenter = new DeeplinkPresenter()
     this.notificationPresenter = new NotificationPresenter()
     this.oauthPresenter = new OAuthPresenter()
+    this.trayPresenter = new TrayPresenter()
 
     // this.llamaCppPresenter = new LlamaCppPresenter() // 保留原始注释
     this.setupEventBus() // 设置事件总线监听
@@ -174,6 +175,13 @@ export class Presenter implements IPresenter {
 
     // 统一注册需要转发的事件
     eventsToForward.forEach(forward)
+  }
+  setupTray() {
+    console.info('setupTray', !!this.trayPresenter)
+    if (!this.trayPresenter) {
+      this.trayPresenter = new TrayPresenter()
+    }
+    this.trayPresenter.init()
   }
 
   // 应用初始化逻辑 (主窗口准备就绪后调用)
@@ -248,8 +256,8 @@ ipcMain.handle(
         return { error: `Method "${method}" not found or not a function on "${name}"` }
       }
     } catch (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      e: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    e: any
     ) {
       console.error('error on presenter handle', e) // 保留错误日志
       return { error: e.message || String(e) }

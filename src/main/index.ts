@@ -7,7 +7,6 @@ import fs from 'fs'
 import { eventBus } from './eventbus'
 import { WINDOW_EVENTS, TRAY_EVENTS } from './events'
 import { setLoggingEnabled } from '@shared/logger'
-import { TrayPresenter } from './presenter/trayPresenter'
 import { is } from '@electron-toolkit/utils' // 确保导入 is
 
 // 设置应用命令行参数
@@ -40,9 +39,7 @@ app.whenReady().then(() => {
   setLoggingEnabled(loggingEnabled)
 
   // 初始化托盘图标和菜单，并存储 presenter 实例
-  const trayPresenter = new TrayPresenter()
-  trayPresenter.init()
-  presenter.trayPresenter = trayPresenter
+  presenter.setupTray()
 
   // 从配置中读取代理设置并初始化
   const proxyMode = presenter.configPresenter.getProxyMode() as ProxyMode
