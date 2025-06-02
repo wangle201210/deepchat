@@ -269,7 +269,7 @@ app.on('window-all-closed', () => {
 
 // 在应用即将退出时触发，适合进行最终的资源清理 (如销毁托盘)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.on('will-quit', (event) => {
+app.on('will-quit', (_event) => {
   console.log('main: app will-quit event triggered.') // 保留关键日志
 
   // 销毁托盘图标
