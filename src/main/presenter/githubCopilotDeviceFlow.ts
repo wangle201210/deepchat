@@ -37,15 +37,15 @@ export class GitHubCopilotDeviceFlow {
     try {
       // Step 1: 获取设备验证码
       const deviceCodeResponse = await this.requestDeviceCode()
-      
+
       // Step 2: 显示用户验证码并打开浏览器
       await this.showUserCodeAndOpenBrowser(deviceCodeResponse)
-      
+
       // Step 3: 轮询获取访问令牌
       const accessToken = await this.pollForAccessToken(deviceCodeResponse)
-      
+
       return accessToken
-      
+
     } catch (error) {
       throw error
     }
@@ -207,12 +207,12 @@ export class GitHubCopilotDeviceFlow {
               验证码将在 ${Math.floor(deviceCodeResponse.expires_in / 60)} 分钟后过期
             </p>
           </div>
-          
+
           <script>
             function openBrowser() {
               window.electronAPI.openExternal('${deviceCodeResponse.verification_uri}');
             }
-            
+
             function copyCode() {
               window.electronAPI.copyToClipboard('${deviceCodeResponse.user_code}');
               const button = event.target;
@@ -231,7 +231,7 @@ export class GitHubCopilotDeviceFlow {
 
       // 加载HTML内容
       instructionWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`)
-      
+
       // 注入API
       instructionWindow.webContents.on('dom-ready', () => {
         instructionWindow.webContents.executeJavaScript(`
@@ -335,11 +335,11 @@ export class GitHubCopilotDeviceFlow {
           const data = await response.json() as AccessTokenResponse
 
           if (data.error) {
-            
+
             switch (data.error) {
               case 'authorization_pending':
                 return // 继续轮询
-              
+
               case 'slow_down':
                 // 增加轮询间隔
                 if (this.pollingInterval) {
@@ -347,7 +347,7 @@ export class GitHubCopilotDeviceFlow {
                   this.pollingInterval = setInterval(poll, (deviceCodeResponse.interval + 5) * 1000)
                 }
                 return
-              
+
               case 'expired_token':
                 if (this.pollingInterval) {
                   clearInterval(this.pollingInterval)
@@ -355,7 +355,7 @@ export class GitHubCopilotDeviceFlow {
                 }
                 reject(new Error('Device code expired'))
                 return
-              
+
               case 'access_denied':
                 if (this.pollingInterval) {
                   clearInterval(this.pollingInterval)
@@ -363,7 +363,7 @@ export class GitHubCopilotDeviceFlow {
                 }
                 reject(new Error('User denied access'))
                 return
-              
+
               default:
                 reject(new Error(`OAuth error: ${data.error_description || data.error}`))
                 return
@@ -385,7 +385,7 @@ export class GitHubCopilotDeviceFlow {
 
       // 开始轮询
       this.pollingInterval = setInterval(poll, deviceCodeResponse.interval * 1000)
-      
+
       // 立即执行第一次轮询
       poll()
     })
@@ -405,11 +405,11 @@ export class GitHubCopilotDeviceFlow {
 // GitHub Copilot Device Flow 配置
 export function createGitHubCopilotDeviceFlow(): GitHubCopilotDeviceFlow {
   // 从环境变量读取 GitHub OAuth 配置
-  const clientId = process.env.GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID
+  const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
 
   if (!clientId) {
     throw new Error(
-      'GITHUB_CLIENT_ID environment variable is required. Please create a .env file with your GitHub OAuth Client ID. You can use either GITHUB_CLIENT_ID or VITE_GITHUB_CLIENT_ID.'
+      'VITE_GITHUB_CLIENT_ID environment variable is required. Please create a .env file with your GitHub OAuth Client ID.'
     )
   }
 
@@ -419,4 +419,4 @@ export function createGitHubCopilotDeviceFlow(): GitHubCopilotDeviceFlow {
   }
 
   return new GitHubCopilotDeviceFlow(config)
-} 
+}

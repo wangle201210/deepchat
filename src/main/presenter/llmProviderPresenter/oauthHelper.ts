@@ -38,7 +38,7 @@ export class OAuthHelper {
 
       // 构建授权URL
       const authUrl = this.buildAuthUrl()
-      
+
       // 加载授权页面
       this.authWindow.loadURL(authUrl)
       this.authWindow.show()
@@ -87,8 +87,8 @@ export class OAuthHelper {
    * 处理回调
    */
   private handleCallback(
-    url: string, 
-    resolve: (value: string) => void, 
+    url: string,
+    resolve: (value: string) => void,
     reject: (reason?: Error) => void
   ): void {
     if (url.startsWith(this.config.redirectUri)) {
@@ -112,7 +112,7 @@ export class OAuthHelper {
         console.error('Error parsing callback URL:', error)
         reject(new Error('解析回调URL失败'))
       }
-      
+
       this.closeAuthWindow()
     }
   }
@@ -131,8 +131,8 @@ export class OAuthHelper {
 // GitHub Copilot的OAuth配置
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
-  redirectUri: process.env.GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
-  clientId: process.env.GITHUB_CLIENT_ID || '',
+  redirectUri: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+  clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
   scope: 'read:user read:org',
   responseType: 'code'
-} 
+}

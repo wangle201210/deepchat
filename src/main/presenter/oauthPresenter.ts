@@ -47,25 +47,25 @@ export class OAuthPresenter {
     try {
       console.log('Starting GitHub Copilot Device Flow login for provider:', providerId)
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
-      
+
       // 使用专门的GitHub Copilot Device Flow实现
       console.log('Creating GitHub Device Flow instance...')
       const githubDeviceFlow = createGitHubCopilotDeviceFlow()
-      
+
       // 开始Device Flow登录
       console.log('Starting Device Flow login...')
       const accessToken = await githubDeviceFlow.startDeviceFlow()
       console.log('Received access token:', accessToken ? 'SUCCESS' : 'FAILED')
-      
+
       // 验证令牌
       console.log('Validating access token...')
       const isValid = await this.validateGitHubAccessToken(accessToken)
       console.log('Token validation result:', isValid)
-      
+
       if (!isValid) {
         throw new Error('获取的访问令牌无效')
       }
-      
+
       // 保存访问令牌到provider配置
       console.log('Saving access token to provider configuration...')
       const provider = presenter.configPresenter.getProviderById(providerId)
@@ -76,15 +76,15 @@ export class OAuthPresenter {
       } else {
         console.warn('Provider not found:', providerId)
       }
-      
+
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
-      
+
     } catch (error) {
       console.error('GitHub Copilot Device Flow login failed:', error)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, { 
-        providerId, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
+        providerId,
+        error: error instanceof Error ? error.message : 'Unknown error'
       })
       return false
     }
@@ -97,30 +97,30 @@ export class OAuthPresenter {
     try {
       console.log('Starting GitHub Copilot OAuth login for provider:', providerId)
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
-      
+
       // 使用专门的GitHub Copilot OAuth实现
       console.log('Creating GitHub OAuth instance...')
       const githubOAuth = createGitHubCopilotOAuth()
-      
+
       // 开始OAuth登录
       console.log('Starting OAuth login flow...')
       const authCode = await githubOAuth.startLogin()
       console.log('Received auth code:', authCode ? 'SUCCESS' : 'FAILED')
-      
+
       // 用授权码交换访问令牌
       console.log('Exchanging auth code for access token...')
       const accessToken = await githubOAuth.exchangeCodeForToken(authCode)
       console.log('Received access token:', accessToken ? 'SUCCESS' : 'FAILED')
-      
+
       // 验证令牌
       console.log('Validating access token...')
       const isValid = await githubOAuth.validateToken(accessToken)
       console.log('Token validation result:', isValid)
-      
+
       if (!isValid) {
         throw new Error('获取的访问令牌无效')
       }
-      
+
       // 保存访问令牌到provider配置
       console.log('Saving access token to provider configuration...')
       const provider = presenter.configPresenter.getProviderById(providerId)
@@ -131,7 +131,7 @@ export class OAuthPresenter {
       } else {
         console.warn('Provider not found:', providerId)
       }
-      
+
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       console.log('GitHub Copilot OAuth login completed successfully')
       return true
@@ -140,10 +140,10 @@ export class OAuthPresenter {
       console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
       console.error('Error message:', error instanceof Error ? error.message : error)
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-      
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, { 
-        providerId, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+
+      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
+        providerId,
+        error: error instanceof Error ? error.message : 'Unknown error'
       })
       return false
     }
@@ -155,34 +155,34 @@ export class OAuthPresenter {
   async startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean> {
     try {
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
-      
+
       // 启动回调服务器
       await this.startCallbackServer()
-      
+
       // 开始OAuth登录
       const authCode = await this.startOAuthFlow(config)
-      
+
       // 停止回调服务器
       this.stopCallbackServer()
-      
+
       // 用授权码交换访问令牌
       const accessToken = await this.exchangeCodeForToken(authCode, config)
-      
+
       // 保存访问令牌到provider配置
       const provider = presenter.configPresenter.getProviderById(providerId)
       if (provider) {
         provider.apiKey = accessToken
         presenter.configPresenter.setProviderById(providerId, provider)
       }
-      
+
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
     } catch (error) {
       console.error('OAuth login failed:', error)
       this.stopCallbackServer()
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, { 
-        providerId, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
+        providerId,
+        error: error instanceof Error ? error.message : 'Unknown error'
       })
       return false
     }
@@ -195,18 +195,18 @@ export class OAuthPresenter {
     return new Promise((resolve, reject) => {
       this.callbackServer = http.createServer((req, res) => {
         const url = new URL(req.url!, `http://localhost:${this.callbackPort}`)
-        
+
         console.log('Callback server received request:', url.href)
-        
+
         // 设置CORS头
         res.setHeader('Access-Control-Allow-Origin', '*')
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-        
+
         if (url.pathname === '/auth/callback') {
           const code = url.searchParams.get('code')
           const error = url.searchParams.get('error')
-          
+
           if (code) {
             // 成功页面
             res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -234,7 +234,7 @@ export class OAuthPresenter {
               </body>
               </html>
             `)
-            
+
             // 触发回调处理
             this.handleServerCallback(code, null)
           } else if (error) {
@@ -258,7 +258,7 @@ export class OAuthPresenter {
               </body>
               </html>
             `)
-            
+
             this.handleServerCallback(null, error)
           } else {
             res.writeHead(400, { 'Content-Type': 'text/plain' })
@@ -269,12 +269,12 @@ export class OAuthPresenter {
           res.end('Not found')
         }
       })
-      
+
       this.callbackServer.listen(this.callbackPort, 'localhost', () => {
         console.log(`OAuth callback server started on http://localhost:${this.callbackPort}`)
         resolve()
       })
-      
+
       this.callbackServer.on('error', (error) => {
         console.error('Callback server error:', error)
         reject(error)
@@ -308,7 +308,7 @@ export class OAuthPresenter {
       console.log('OAuth server callback success, received code:', code)
       this.callbackResolve?.(code)
     }
-    
+
     // 清理回调函数
     this.callbackResolve = null
     this.callbackReject = null
@@ -339,7 +339,7 @@ export class OAuthPresenter {
       // 构建授权URL
       const authUrl = this.buildAuthUrl(config)
       console.log('Opening OAuth URL:', authUrl)
-      
+
       // 加载授权页面
       this.authWindow.loadURL(authUrl)
       this.authWindow.show()
@@ -418,12 +418,12 @@ export class OAuthPresenter {
       throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json() as { 
+    const data = await response.json() as {
       access_token: string
       error?: string
-      error_description?: string 
+      error_description?: string
     }
-    
+
     if (data.error) {
       throw new Error(`Token exchange error: ${data.error_description || data.error}`)
     }
@@ -445,9 +445,9 @@ export class OAuthPresenter {
 // GitHub Copilot的OAuth配置
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
-  redirectUri: process.env.GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
-  clientId: process.env.GITHUB_CLIENT_ID || '',
-  clientSecret: process.env.GITHUB_CLIENT_SECRET,
+  redirectUri: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+  clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
+  clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET,
   scope: 'read:user read:org',
   responseType: 'code'
-} 
+}

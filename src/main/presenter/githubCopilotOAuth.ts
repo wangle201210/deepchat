@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron'
 import { randomBytes } from 'crypto'
+import { is } from '@electron-toolkit/utils'
 
 export interface GitHubOAuthConfig {
   clientId: string
@@ -12,7 +13,7 @@ export class GitHubCopilotOAuth {
   private authWindow: BrowserWindow | null = null
   private state: string = ''
 
-  constructor(private config: GitHubOAuthConfig) {}
+  constructor(private config: GitHubOAuthConfig) { }
 
   /**
    * 启动GitHub OAuth登录流程
@@ -222,20 +223,18 @@ export class GitHubCopilotOAuth {
 // GitHub Copilot OAuth配置
 export function createGitHubCopilotOAuth(): GitHubCopilotOAuth {
   // 从环境变量读取 GitHub OAuth 配置
-  const clientId = process.env.GITHUB_CLIENT_ID || process.env.VITE_GITHUB_CLIENT_ID
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET || process.env.VITE_GITHUB_CLIENT_SECRET
-  const redirectUri =
-    process.env.GITHUB_REDIRECT_URI || process.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback'
+  const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID
+  const clientSecret = import.meta.env.VITE_GITHUB_CLIENT_SECRET
+  const redirectUri = import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback'
 
   console.log('GitHub OAuth Configuration:')
   console.log('- Client ID configured:', clientId ? '✅' : '❌')
   console.log('- Client Secret configured:', clientSecret ? '✅' : '❌')
   console.log('- Redirect URI:', redirectUri)
   console.log('- Environment variables check:')
-  console.log('  - process.env.GITHUB_CLIENT_ID:', process.env.GITHUB_CLIENT_ID ? 'EXISTS' : 'NOT SET')
-  console.log('  - process.env.VITE_GITHUB_CLIENT_ID:', process.env.VITE_GITHUB_CLIENT_ID ? 'EXISTS' : 'NOT SET')
-  console.log('  - process.env.GITHUB_CLIENT_SECRET:', process.env.GITHUB_CLIENT_SECRET ? 'EXISTS' : 'NOT SET')
-  console.log('  - process.env.VITE_GITHUB_CLIENT_SECRET:', process.env.VITE_GITHUB_CLIENT_SECRET ? 'EXISTS' : 'NOT SET')
+  console.log('  - import.meta.env.VITE_GITHUB_CLIENT_ID:', import.meta.env.VITE_GITHUB_CLIENT_ID ? 'EXISTS' : 'NOT SET')
+  console.log('  - import.meta.env.VITE_GITHUB_CLIENT_SECRET:', import.meta.env.VITE_GITHUB_CLIENT_SECRET ? 'EXISTS' : 'NOT SET')
+  console.log('  - import.meta.env.VITE_GITHUB_REDIRECT_URI:', import.meta.env.VITE_GITHUB_REDIRECT_URI ? 'EXISTS' : 'NOT SET')
 
   if (!clientId) {
     throw new Error(
@@ -255,13 +254,14 @@ export function createGitHubCopilotOAuth(): GitHubCopilotOAuth {
     redirectUri,
     scope: 'read:user read:org'
   }
-
-  console.log('Final OAuth config:', {
-    clientId: config.clientId,
-    redirectUri: config.redirectUri,
-    scope: config.scope,
-    clientSecretLength: config.clientSecret.length
-  })
+  if (is.dev) {
+    console.log('Final OAuth config:', {
+      clientId: config.clientId.substring(0, 4) + '****' + config.clientId.substring(config.clientId.length - 4),
+      redirectUri: config.redirectUri,
+      scope: config.scope,
+      clientSecretLength: config.clientSecret.length
+    })
+  }
 
   return new GitHubCopilotOAuth(config)
 }
