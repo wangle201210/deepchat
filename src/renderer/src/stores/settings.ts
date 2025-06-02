@@ -335,7 +335,7 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       // 获取自定义模型列表
       const customModelsList = await llmP.getCustomModels(providerId)
-      
+
       // 如果customModelsList为null或undefined，使用空数组
       const safeCustomModelsList = customModelsList || []
 
@@ -1388,6 +1388,24 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setDefaultSystemPrompt(prompt)
   }
 
+  // 根据 providerId 获取 provider 名称
+  const getProviderNameById = (providerId: string): string => {
+    // 先从当前 providers 中查找（包括启用和未启用的）
+    const provider = providers.value.find(p => p.id === providerId)
+    if (provider) {
+      return provider.name
+    }
+
+    // 如果在当前 providers 中找不到，再从 defaultProviders 中查找
+    const defaultProvider = defaultProviders.value.find(p => p.id === providerId)
+    if (defaultProvider) {
+      return defaultProvider.name
+    }
+
+    // 如果都找不到，返回原始 providerId
+    return providerId
+  }
+
   return {
     providers,
     theme,
@@ -1466,6 +1484,7 @@ export const useSettingsStore = defineStore('settings', () => {
     getGeminiSafety,
     getDefaultSystemPrompt,
     setDefaultSystemPrompt,
-    setupProviderListener
+    setupProviderListener,
+    getProviderNameById
   }
 })
