@@ -384,6 +384,36 @@ export class TabPresenter implements ITabPresenter {
   }
 
   /**
+   * 获取指定窗口中当前活动标签页的 ID。
+   * 此方法位于 TabPresenter 中，因为它维护着 isActive 状态。
+   * @param windowId 窗口 ID。
+   * @returns 当前活动标签页的 ID；如果未找到活动标签页或窗口无效，则返回 undefined。
+   */
+  async getActiveTabId(windowId: number): Promise<number | undefined> {
+    // 获取窗口对应的标签页 ID 列表
+    const tabsInWindow = this.windowTabs.get(windowId)
+    if (!tabsInWindow) {
+      console.warn(
+        `TabPresenter: No tab list found for window ${windowId} when getting active tab ID.`
+      )
+      return undefined
+    }
+
+    // 遍历标签页列表，查找第一个标记为活动的标签页
+    for (const tabId of tabsInWindow) {
+      const state = this.tabState.get(tabId)
+      // 检查状态是否存在且 isActive 为 true
+      if (state?.isActive) {
+        return tabId // 返回活动标签页 ID
+      }
+    }
+
+    // 未找到活动标签页
+    console.log(`TabPresenter: No active tab found for window ${windowId}.`)
+    return undefined
+  }
+
+  /**
    * 获取窗口的所有标签数据
    */
   async getWindowTabsData(windowId: number): Promise<TabData[]> {
