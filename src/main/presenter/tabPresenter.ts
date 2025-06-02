@@ -27,24 +27,30 @@ export class TabPresenter implements ITabPresenter {
   // 存储每个标签页的右键菜单处理器
   private tabContextMenuDisposers: Map<number, () => void> = new Map()
 
-  private windowPresenter: IWindowPresenter // Store windowPresenter instance
+  private windowPresenter: IWindowPresenter // 窗口管理器实例
 
   constructor(windowPresenter: IWindowPresenter) {
-    this.windowPresenter = windowPresenter // Assign injected windowPresenter
+    this.windowPresenter = windowPresenter // 注入窗口管理器
     this.initBusHandlers()
   }
 
-  private initBusHandlers() {
+  // 初始化事件总线处理器
+  private initBusHandlers(): void {
+    // 窗口尺寸变化，更新视图 bounds
     eventBus.on(WINDOW_EVENTS.WINDOW_RESIZE, (windowId: number) => {
       const views = this.windowTabs.get(windowId)
       const window = BrowserWindow.fromId(windowId)
       if (window) {
         views?.forEach((view) => {
-          this.updateViewBounds(window, this.tabs.get(view)!)
+          const tabView = this.tabs.get(view)
+          if (tabView) {
+            this.updateViewBounds(window, tabView)
+          }
         })
       }
     })
 
+    // 窗口关闭，分离包含的视图
     eventBus.on(WINDOW_EVENTS.WINDOW_CLOSED, (windowId: number) => {
       const views = this.windowTabs.get(windowId)
       const window = BrowserWindow.fromId(windowId)
@@ -58,7 +64,7 @@ export class TabPresenter implements ITabPresenter {
       }
     })
 
-    // 添加语言设置改变的事件处理
+    // 语言设置改变，更新所有标签页右键菜单
     eventBus.on(CONFIG_EVENTS.SETTING_CHANGED, async (key) => {
       if (key === 'language') {
         // 为所有活动的标签页更新右键菜单
@@ -68,7 +74,7 @@ export class TabPresenter implements ITabPresenter {
       }
     })
 
-    // 添加系统主题更新的事件处理
+    // 系统主题更新，通知所有标签页
     eventBus.on(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, (isDark: boolean) => {
       // 向所有标签页广播主题更新
       for (const [, view] of this.tabs.entries()) {
@@ -91,7 +97,7 @@ export class TabPresenter implements ITabPresenter {
     const window = BrowserWindow.fromId(windowId)
     if (!window) return null
 
-    // 创建新的BrowserView
+    // 创建新的WebContentsView
     const view = new WebContentsView({
       webPreferences: {
         preload: join(__dirname, '../preload/index.mjs'),
@@ -116,6 +122,7 @@ export class TabPresenter implements ITabPresenter {
     } else {
       view.webContents.loadURL(url)
     }
+
     if (is.dev) {
       view.webContents.openDevTools({ mode: 'detach' })
     }
@@ -148,17 +155,17 @@ export class TabPresenter implements ITabPresenter {
 
     // 如果需要激活，设置为活动标签
     if (options.active ?? true) {
-      this.activateTab(tabId)
+      await this.activateTab(tabId)
     }
 
     // 在创建标签页后设置右键菜单
     await this.setupTabContextMenu(tabId)
 
-    // // 监听标签页相关事件
+    // 监听标签页相关事件
     this.setupWebContentsListeners(view.webContents, tabId, windowId)
 
-    // // 通知渲染进程更新标签列表
-    this.notifyWindowTabsUpdate(windowId)
+    // 通知渲染进程更新标签列表
+    await this.notifyWindowTabsUpdate(windowId)
 
     return tabId
   }
@@ -167,14 +174,14 @@ export class TabPresenter implements ITabPresenter {
    * 销毁标签页
    */
   async closeTab(tabId: number): Promise<boolean> {
-    return this.destroyTab(tabId)
+    return await this.destroyTab(tabId)
   }
 
   /**
    * 激活标签页
    */
   async switchTab(tabId: number): Promise<boolean> {
-    return this.activateTab(tabId)
+    return await this.activateTab(tabId)
   }
 
   /**
@@ -187,7 +194,7 @@ export class TabPresenter implements ITabPresenter {
   /**
    * 销毁标签页
    */
-  destroyTab(tabId: number): boolean {
+  private async destroyTab(tabId: number): Promise<boolean> {
     // 清理右键菜单
     this.cleanupTabContextMenu(tabId)
 
@@ -220,23 +227,24 @@ export class TabPresenter implements ITabPresenter {
         // 如果还有其他标签并且关闭的是活动标签，激活相邻标签
         if (tabs.length > 0) {
           const newActiveIndex = Math.min(index, tabs.length - 1)
-          this.activateTab(tabs[newActiveIndex])
+          await this.activateTab(tabs[newActiveIndex])
         }
       }
 
       // 通知渲染进程更新标签列表
-      this.notifyWindowTabsUpdate(windowId)
+      await this.notifyWindowTabsUpdate(windowId)
     }
 
     // 销毁视图
     view.webContents.closeDevTools()
+    // Note: view.destroy() is also an option depending on Electron version/behavior
     return true
   }
 
   /**
    * 激活标签页
    */
-  private activateTab(tabId: number): boolean {
+  private async activateTab(tabId: number): Promise<boolean> {
     const view = this.tabs.get(tabId)
     if (!view) return false
 
@@ -255,8 +263,7 @@ export class TabPresenter implements ITabPresenter {
       const tabView = this.tabs.get(id)
       if (state && tabView) {
         state.isActive = id === tabId
-        // 根据活动状态设置视图的可见性
-        tabView.setVisible(id === tabId)
+        tabView.setVisible(id === tabId) // 根据活动状态设置视图可见性
       }
     }
 
@@ -264,7 +271,7 @@ export class TabPresenter implements ITabPresenter {
     this.bringViewToFront(window, view)
 
     // 通知渲染进程更新标签列表
-    this.notifyWindowTabsUpdate(windowId)
+    await this.notifyWindowTabsUpdate(windowId)
 
     // 通知渲染进程切换活动标签
     window.webContents.send('setActiveTab', windowId, tabId)
@@ -297,11 +304,11 @@ export class TabPresenter implements ITabPresenter {
       }
 
       // 通知渲染进程更新标签列表
-      this.notifyWindowTabsUpdate(windowId)
+      await this.notifyWindowTabsUpdate(windowId)
 
       // 如果窗口还有其他标签，激活一个
       if (tabs.length > 0) {
-        this.activateTab(tabs[Math.min(index, tabs.length - 1)])
+        await this.activateTab(tabs[Math.min(index, tabs.length - 1)])
       }
     }
 
@@ -338,10 +345,10 @@ export class TabPresenter implements ITabPresenter {
     this.attachViewToWindow(window, view)
 
     // 激活标签
-    this.activateTab(tabId)
+    await this.activateTab(tabId)
 
     // 通知渲染进程更新标签列表
-    this.notifyWindowTabsUpdate(targetWindowId)
+    await this.notifyWindowTabsUpdate(targetWindowId)
 
     return true
   }
@@ -366,9 +373,8 @@ export class TabPresenter implements ITabPresenter {
 
           // 插入到新位置
           tabs.splice(newIndex, 0, tabId)
-
           // 通知渲染进程更新标签列表
-          this.notifyWindowTabsUpdate(windowId)
+          await this.notifyWindowTabsUpdate(windowId)
           return true
         }
       }
@@ -376,11 +382,11 @@ export class TabPresenter implements ITabPresenter {
     }
 
     // 从源窗口分离
-    const detached = this.detachTab(tabId)
+    const detached = await this.detachTab(tabId)
     if (!detached) return false
 
     // 附加到目标窗口
-    return this.attachTab(tabId, targetWindowId, index)
+    return await this.attachTab(tabId, targetWindowId, index)
   }
 
   /**
@@ -427,15 +433,17 @@ export class TabPresenter implements ITabPresenter {
   /**
    * 通知渲染进程更新标签列表
    */
-  notifyWindowTabsUpdate(windowId: number): void {
+  async notifyWindowTabsUpdate(windowId: number): Promise<void> {
     const window = BrowserWindow.fromId(windowId)
     if (!window || window.isDestroyed()) return
 
-    this.getWindowTabsData(windowId).then((tabListData) => {
-      if (!window.isDestroyed() && window.webContents && !window.webContents.isDestroyed()) {
-        window.webContents.send('update-window-tabs', windowId, tabListData)
-      }
-    })
+    // Await the internal async call
+    const tabListData = await this.getWindowTabsData(windowId)
+
+    if (!window.isDestroyed() && window.webContents && !window.webContents.isDestroyed()) {
+      // Sending IPC is typically synchronous
+      window.webContents.send('update-window-tabs', windowId, tabListData)
+    }
   }
 
   /**
@@ -467,7 +475,7 @@ export class TabPresenter implements ITabPresenter {
             windowId
           })
         }
-        this.notifyWindowTabsUpdate(windowId)
+        this.notifyWindowTabsUpdate(windowId).catch(console.error) // Call async function, handle potential rejection
       }
     })
 
@@ -477,6 +485,7 @@ export class TabPresenter implements ITabPresenter {
     // 页面加载完成
     if (isFirstTab) {
       eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW)
+      // Once did-finish-load happens, emit first content loaded
       webContents.once('did-finish-load', () => {
         eventBus.emit(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
       })
@@ -490,7 +499,7 @@ export class TabPresenter implements ITabPresenter {
           if (state.icon !== favicons[0]) {
             console.log('page-favicon-updated', state.icon, favicons[0])
             state.icon = favicons[0]
-            this.notifyWindowTabsUpdate(windowId)
+            this.notifyWindowTabsUpdate(windowId).catch(console.error) // Call async function, handle potential rejection
           }
         }
       }
@@ -512,7 +521,7 @@ export class TabPresenter implements ITabPresenter {
               windowId
             })
           }
-          this.notifyWindowTabsUpdate(windowId)
+          this.notifyWindowTabsUpdate(windowId).catch(console.error) // Call async function, handle potential rejection
         }
       }
     })
@@ -552,9 +561,8 @@ export class TabPresenter implements ITabPresenter {
    * 将视图带到前面（激活）
    */
   private bringViewToFront(window: BrowserWindow, view: WebContentsView): void {
-    // 这里需要根据实际窗口结构实现
+    // Re-adding ensures it's on top in most view hierarchies
     window.contentView.addChildView(view)
-
     this.updateViewBounds(window, view)
   }
 
@@ -612,28 +620,29 @@ export class TabPresenter implements ITabPresenter {
     }
   }
 
-  public destroy() {
+  // 清理Presenter资源
+  public async destroy(): Promise<void> {
     // 清理所有标签页的右键菜单
     for (const [tabId] of this.tabContextMenuDisposers) {
       this.cleanupTabContextMenu(tabId)
     }
     this.tabContextMenuDisposers.clear()
 
-    // Iterate over the map containing tab views or windows
+    // 销毁所有标签页
+    // 使用 `for...of` 循环确保每个 closeTab 调用都被 await
     for (const [tabId] of this.tabWindowMap.entries()) {
-      // TODO: Implement cleanup logic for each entry
-      // This might involve destroying WebContentsView, removing listeners, etc.
       console.log(`Destroying resources for tab: ${tabId}`)
-      this.closeTab(tabId)
+      await this.closeTab(tabId)
     }
-    // Clear the map after processing all entries
 
+    // 清理所有映射
     this.tabWindowMap.clear()
     this.tabs.clear()
     this.tabState.clear()
     this.windowTabs.clear()
   }
 
+  // 将标签页移动到新窗口
   async moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean> {
     const tabInfo = this.tabState.get(tabId)
     const originalWindowId = this.tabWindowMap.get(tabId)
@@ -643,22 +652,21 @@ export class TabPresenter implements ITabPresenter {
       return false
     }
 
-    // 1. Detach the tab from its current window
+    // 1. 从当前窗口分离标签页
     const detached = await this.detachTab(tabId)
     if (!detached) {
       console.error(
         `moveTabToNewWindow: Failed to detach tab ${tabId} from window ${originalWindowId}.`
       )
-      // Attempt to reattach to original window if detachment fails
-      // await this.attachTab(tabId, originalWindowId) // Consider if this is the desired fallback
+      // Consider reattaching here on failure if that's the desired fallback
+      // await this.attachTab(tabId, originalWindowId);
       return false
     }
 
-    // 2. Create a new window with position and options.
+    // 2. 创建新窗口
     const newWindowOptions: Record<string, any> = {
-      // Consider defining a proper type for these options
       forMovedTab: true,
-      activateTabId: tabId
+      activateTabId: tabId // Pass the tabId to the new window presenter to activate it
     }
     if (screenX !== undefined && screenY !== undefined) {
       newWindowOptions.x = screenX
@@ -669,29 +677,31 @@ export class TabPresenter implements ITabPresenter {
 
     if (newWindowId === null) {
       console.error('moveTabToNewWindow: Failed to create a new window.')
-      // Attempt to reattach to original window if new window creation fails
+      // Reattach to original window if new window creation fails
       await this.attachTab(tabId, originalWindowId)
       return false
     }
 
-    // 3. Attach the tab (WebContentsView) to the new window
+    // 3. 将标签页附加到新窗口
     const attached = await this.attachTab(tabId, newWindowId)
     if (!attached) {
       console.error(
         `moveTabToNewWindow: Failed to attach tab ${tabId} to new window ${newWindowId}.`
       )
-      // If attaching fails, we might need to destroy the newly created window or reattach to original.
-      // Consider closing the new empty window:
-      // if (newBrowserWindow) newBrowserWindow.close();
-      // else this.windowPresenter.close(newWindowId); // Fallback if newBrowserWindow is null
-      // And then reattach to original
-      // await this.attachTab(tabId, originalWindowId);
+      // Reattach to original window if attaching fails
+      await this.attachTab(tabId, originalWindowId)
+      // Optionally close the empty new window here:
+      // const newBrowserWindow = BrowserWindow.fromId(newWindowId);
+      // if (newBrowserWindow && !newBrowserWindow.isDestroyed()) newBrowserWindow.close();
       return false
     }
 
-    console.log(`Tab ${tabId} moved from window ${originalWindowId} to new window ${newWindowId}`)
-    this.notifyWindowTabsUpdate(originalWindowId) // Notify original window
-    this.notifyWindowTabsUpdate(newWindowId) // Notify new window
+    // console.log(`Tab ${tabId} moved from window ${originalWindowId} to new window ${newWindowId}`); // Kept concise log
+    // 通知原窗口更新标签列表
+    await this.notifyWindowTabsUpdate(originalWindowId)
+    // 通知新窗口更新标签列表
+    await this.notifyWindowTabsUpdate(newWindowId)
+
     return true
   }
 
@@ -716,7 +726,7 @@ export class TabPresenter implements ITabPresenter {
       const image = await view.webContents.capturePage(rect)
 
       if (image.isEmpty()) {
-        console.error('captureTabArea: Captured image is empty')
+        console.error('Capture tab area: Captured image is empty')
         return null
       }
 
@@ -724,7 +734,7 @@ export class TabPresenter implements ITabPresenter {
       const base64Data = image.toDataURL()
       return base64Data
     } catch (error) {
-      console.error('captureTabArea error:', error)
+      console.error('Capture tab area error:', error)
       return null
     }
   }
@@ -780,7 +790,7 @@ export class TabPresenter implements ITabPresenter {
       console.log(`Successfully stitched ${imageDataList.length} images with watermark`)
       return base64Data
     } catch (error) {
-      console.error('stitchImagesWithWatermark error:', error)
+      console.error('Stitch images with watermark error:', error)
       return null
     }
   }
