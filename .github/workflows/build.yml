@@ -31,18 +31,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20.12.2'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.11.0
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
         env:
           npm_config_platform: win32
           npm_config_arch: ${{ matrix.arch }}
       - name: Install Node Runtime
-        run: npm run installRuntime:win:${{ matrix.arch }}
+        run: pnpm run installRuntime:win:${{ matrix.arch }}
       - name: Install Sharp
-        run: npm install sharp  --build-from-source
+        run: pnpm install sharp --build-from-source
       - name: Build Windows
-        run: npm run build:win:${{ matrix.arch }}
+        run: pnpm run build:win:${{ matrix.arch }}
         env:
           VITE_GITHUB_CLIENT_ID: ${{ secrets.DC_GITHUB_CLIENT_ID }}
           VITE_GITHUB_CLIENT_SECRET: ${{ secrets.DC_GITHUB_CLIENT_SECRET }}
@@ -70,18 +74,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20.12.2'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.11.0
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
         env:
           npm_config_platform: linux
           npm_config_arch: ${{ matrix.arch }}
       - name: Install Node Runtime
-        run: npm run installRuntime:linux:${{ matrix.arch }}
+        run: pnpm run installRuntime:linux:${{ matrix.arch }}
       - name: Install Sharp
-        run: npm install --cpu=wasm32 sharp
+        run: pnpm install --cpu=wasm32 sharp
       - name: Build Linux
-        run: npm run build:linux:${{ matrix.arch }}
+        run: pnpm run build:linux:${{ matrix.arch }}
         env:
           VITE_GITHUB_CLIENT_ID: ${{ secrets.DC_GITHUB_CLIENT_ID }}
           VITE_GITHUB_CLIENT_SECRET: ${{ secrets.DC_GITHUB_CLIENT_SECRET }}
@@ -110,18 +118,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20.12.2'
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.11.0
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
         env:
           npm_config_platform: darwin
           npm_config_arch: ${{ matrix.arch }}
       - name: Install Node Runtime
-        run: npm run installRuntime:mac:${{ matrix.arch }}
+        run: pnpm run installRuntime:mac:${{ matrix.arch }}
       - name: Install Sharp
-        run: npm i --cpu=${{ matrix.arch }} --os=darwin sharp
+        run: pnpm install --cpu=${{ matrix.arch }} --os=darwin sharp
       - name: Build Mac
-        run: npm run build:mac:${{ matrix.arch }}
+        run: pnpm run build:mac:${{ matrix.arch }}
         env:
           CSC_LINK: ${{ secrets.DEEPCHAT_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.DEEPCHAT_CSC_KEY_PASS }}
