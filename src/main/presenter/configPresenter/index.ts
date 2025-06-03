@@ -38,6 +38,7 @@ interface IAppSettings {
   syncFolderPath?: string // 同步文件夹路径
   lastSyncTime?: number // 上次同步时间
   customSearchEngines?: string // 自定义搜索引擎JSON字符串
+  soundEnabled?: boolean // 音效是否启用
   loggingEnabled?: boolean // 日志记录是否启用
   default_system_prompt?: string // 默认系统提示词
   [key: string]: unknown // 允许任意键，使用unknown类型替代any
@@ -106,6 +107,7 @@ export class ConfigPresenter implements IConfigPresenter {
         syncEnabled: false,
         syncFolderPath: path.join(this.userDataPath, 'sync'),
         lastSyncTime: 0,
+        soundEnabled: false,
         loggingEnabled: false,
         default_system_prompt: '',
         appVersion: this.currentAppVersion
@@ -702,6 +704,18 @@ export class ConfigPresenter implements IConfigPresenter {
     setTimeout(() => {
       presenter.devicePresenter.restartApp()
     }, 1000)
+  }
+
+  // 获取音效开关状态
+  getSoundEnabled(): boolean {
+    const value = this.getSetting<boolean>('soundEnabled') ?? false
+    return value === undefined || value === null ? false : value
+  }
+
+  // 设置音效开关状态
+  setSoundEnabled(enabled: boolean): void {
+    this.setSetting('soundEnabled', enabled)
+    eventBus.emit(CONFIG_EVENTS.SOUND_ENABLED_CHANGED, enabled)
   }
 
   // ===================== MCP配置相关方法 =====================

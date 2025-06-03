@@ -147,6 +147,17 @@
         </div>
       </div>
 
+      <!-- 音效开关 -->
+      <div class="flex flex-row p-2 items-center gap-2 px-2">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <Icon icon="lucide:volume-2" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.common.soundEnabled') }}</span>
+        </span>
+        <div class="flex-shrink-0">
+          <Switch id="sound-switch" :checked="soundEnabled" @update:checked="handleSoundChange" />
+        </div>
+      </div>
+
       <!-- 日志开关确认对话框 -->
       <Dialog :open="isLoggingDialogOpen" @update:open="cancelLoggingChange">
         <DialogContent>
@@ -620,6 +631,21 @@ const confirmLoggingChange = () => {
 
 const openLogFolder = () => {
   configPresenter.openLoggingFolder()
+}
+
+// 音效开关相关
+const soundEnabled = computed({
+  get: () => {
+    return settingsStore.soundEnabled
+  },
+  set: (value) => {
+    settingsStore.setSoundEnabled(value)
+  }
+})
+
+// 处理音效开关状态变更
+const handleSoundChange = (value: boolean) => {
+  settingsStore.setSoundEnabled(value)
 }
 
 // 测试搜索引擎相关
