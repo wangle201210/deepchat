@@ -44,7 +44,9 @@ jobs:
       - name: Install Node Runtime
         run: pnpm run installRuntime:win:${{ matrix.arch }}
       - name: Install Sharp
-        run: pnpm install sharp --build-from-source
+        run: pnpm install sharp
+        env:
+          npm_config_build_from_source: true
       - name: Build Windows
         run: pnpm run build:win:${{ matrix.arch }}
         env:
@@ -87,7 +89,9 @@ jobs:
       - name: Install Node Runtime
         run: pnpm run installRuntime:linux:${{ matrix.arch }}
       - name: Install Sharp
-        run: pnpm install --cpu=wasm32 sharp
+        run: pnpm install sharp
+        env:
+          npm_config_cpu: wasm32
       - name: Build Linux
         run: pnpm run build:linux:${{ matrix.arch }}
         env:
@@ -131,7 +135,10 @@ jobs:
       - name: Install Node Runtime
         run: pnpm run installRuntime:mac:${{ matrix.arch }}
       - name: Install Sharp
-        run: pnpm install --cpu=${{ matrix.arch }} --os=darwin sharp
+        run: pnpm install sharp
+        env:
+          npm_config_cpu: ${{ matrix.arch }}
+          npm_config_os: darwin
       - name: Build Mac
         run: pnpm run build:mac:${{ matrix.arch }}
         env:
