@@ -415,7 +415,36 @@ export class OllamaProvider extends BaseLLMProvider {
     mcpTools: MCPToolDefinition[]
   ): AsyncGenerator<LLMCoreStreamEvent> {
     if (!modelId) throw new Error('Model ID is required')
+    // Ollama 不需要图片生成分支，直接处理聊天完成
+    yield* this.handleChatCompletion(
+      messages,
+      modelId,
+      modelConfig,
+      temperature,
+      maxTokens,
+      mcpTools
+    )
+  }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////
+  /**
+   * 处理 Ollama 聊天补全模型请求的内部方法。
+   * @param messages 聊天消息数组。
+   * @param modelId 模型ID。
+   * @param modelConfig 模型配置。
+   * @param temperature 温度参数。
+   * @param maxTokens 最大 token 数。
+   * @param mcpTools MCP 工具定义数组。
+   * @returns AsyncGenerator<LLMCoreStreamEvent> 流式事件。
+   */
+  private async *handleChatCompletion(
+    messages: ChatMessage[],
+    modelId: string,
+    modelConfig: ModelConfig,
+    temperature: number,
+    maxTokens: number,
+    mcpTools: MCPToolDefinition[]
+  ): AsyncGenerator<LLMCoreStreamEvent> {
     try {
       const tools = mcpTools || []
       const supportsFunctionCall = modelConfig?.functionCall || false
@@ -575,7 +604,7 @@ export class OllamaProvider extends BaseLLMProvider {
                   // 移除可能的语言标识和开头的空白
                   const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
                   parsedCall = JSON.parse(cleanContent)
-                } catch (parseError) {
+                } catch {
                   // 尝试修复通用JSON格式问题
                   const cleanContent = codeContent.replace(/^tool_code\s*/i, '').trim()
                   const repaired = cleanContent
@@ -635,7 +664,7 @@ export class OllamaProvider extends BaseLLMProvider {
                 }
 
                 stopReason = 'tool_use'
-              } catch (error) {
+              } catch {
                 // 解析失败，将内容作为普通文本输出
                 yield {
                   type: 'text',
@@ -958,7 +987,10 @@ export class OllamaProvider extends BaseLLMProvider {
                 tool_call_arguments_complete: tool.arguments
               }
             } catch (e) {
-              console.error(`[coreStream] 工具 ${toolId} 参数解析错误: ${tool.arguments}`, e)
+              console.error(
+                `[handleChatCompletion] 工具 ${toolId} 参数解析错误: ${tool.arguments}`,
+                e
+              )
               yield {
                 type: 'tool_call_end',
                 tool_call_id: toolId,
@@ -1030,7 +1062,7 @@ export class OllamaProvider extends BaseLLMProvider {
             let parsedCall
             try {
               parsedCall = JSON.parse(content)
-            } catch (parseError: unknown) {
+            } catch {
               // 尝试修复格式问题
               const repaired = content
                 .replace(/,\s*}/g, '}') // 移除对象末尾的逗号
@@ -1076,7 +1108,7 @@ export class OllamaProvider extends BaseLLMProvider {
                 arguments: functionArgs
               }
             }
-          } catch (error: unknown) {
+          } catch {
             return null
           }
         })
@@ -1087,7 +1119,7 @@ export class OllamaProvider extends BaseLLMProvider {
       }>
 
       return toolCalls
-    } catch (error: unknown) {
+    } catch {
       return []
     }
   }
