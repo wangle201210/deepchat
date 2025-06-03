@@ -18,8 +18,8 @@
         variant="outline"
         size="xs"
         class="text-xs text-normal rounded-lg"
-        @click="$emit('disable-all-models')"
         :disabled="enabledModels.length === 0"
+        @click="$emit('disable-all-models')"
       >
         <Icon icon="lucide:x-circle" class="w-4 h-4 text-muted-foreground" />{{
           t('settings.provider.disableAllModels')

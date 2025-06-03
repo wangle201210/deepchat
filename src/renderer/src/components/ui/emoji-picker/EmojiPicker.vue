@@ -32,7 +32,6 @@ const categories = [
   { id: 'activities', name: t('components.emojiPicker.activities', 'Activities'), icon: '⚽' },
   { id: 'objects', name: t('components.emojiPicker.objects', 'Objects'), icon: '💡' },
   { id: 'symbols', name: t('components.emojiPicker.symbols', 'Symbols'), icon: '❤️' },
-  { id: 'flags', name: t('components.emojiPicker.flags', 'Flags'), icon: '🏁' }
 ]
 
 // Emoji data by category
@@ -423,44 +422,6 @@ const emojiData = {
     '♓',
     '🆔',
     '⚛️'
-  ],
-  flags: [
-    '🏁',
-    '🚩',
-    '🎌',
-    '🏴',
-    '🏳️',
-    '🏳️‍🌈',
-    '🏳️‍⚧️',
-    '🏴‍☠️',
-    '🇦🇫',
-    '🇦🇽',
-    '🇦🇱',
-    '🇩🇿',
-    '🇦🇸',
-    '🇦🇩',
-    '🇦🇴',
-    '🇦🇮',
-    '🇦🇶',
-    '🇦🇬',
-    '🇦🇷',
-    '🇦🇲',
-    '🇦🇼',
-    '🇦🇺',
-    '🇦🇹',
-    '🇦🇿',
-    '🇧🇸',
-    '🇧🇭',
-    '🇧🇩',
-    '🇧🇧',
-    '🇧🇾',
-    '🇧🇪',
-    '🇧🇿',
-    '🇧🇯',
-    '🇧🇲',
-    '🇧🇹',
-    '🇧🇴',
-    '🇧🇦'
   ]
 }
 

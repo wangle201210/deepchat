@@ -88,8 +88,9 @@ Compared to other AI tools, DeepChat offers the following unique advantages:
   - Built-in integration with leading search APIs like BoSearch, Brave Search via MCP mode, allowing the model to intelligently decide when to search
   - Supports mainstream search engines like Google, Bing, Baidu, and Sogou Official Accounts search by simulating user web browsing, enabling the LLM to read search engines like a human
   - Supports reading any search engine; simply configure a search assistant model to connect various search sources, whether internal networks, API-less engines, or vertical domain search engines, as information sources for the model
-- 🔧 **Excellent MCP (Model Controller Platform) Support**
+- 🔧 **Excellent MCP (Model Context Protocol) Support**
   - Complete support for the three core capabilities of Resources/Prompts/Tools in the MCP protocol
+  - Supports semantic workflows, enabling more complex and intelligent automation by understanding the meaning and context of tasks.
   - Extremely user-friendly configuration interface
   - Aesthetically pleasing and clear tool call display
   - Detailed tool call debugging window with automatic formatting of tool parameters and return data
@@ -107,6 +108,8 @@ Compared to other AI tools, DeepChat offers the following unique advantages:
   - Enterprise integration requires only minimal configuration code changes to use reserved encrypted obfuscation security capabilities
   - Clear code structure, both model providers and MCP services are highly decoupled, can be freely customized with minimal cost
   - Reasonable architecture, data interaction and UI behavior separation, fully utilizing Electron's capabilities, rejecting simple web wrappers, excellent performance
+
+For more details on how to use these features, see the [User Guide](./docs/user-guide.md).
 
 ## 🤖 Supported Model Providers
 
@@ -239,6 +242,8 @@ Download the latest version for your system from the [GitHub Releases](https://g
 2. Select the model you want to use
 3. Start communicating with your AI assistant
 
+For a comprehensive guide on getting started and using all features, please refer to the [User Guide](./docs/user-guide.md).
+
 ## 💻 Development Guide
 
 Please read the [Contribution Guidelines](./CONTRIBUTING.md)
@@ -289,6 +294,8 @@ $ npm run build:mac:arm64
 $ npm run build:linux:x64
 $ npm run build:linux:arm64
 ```
+
+For a more detailed guide on development, project structure, and architecture, please see the [Developer Guide](./docs/developer-guide.md).
 
 ## 👥 Community & Contribution
 

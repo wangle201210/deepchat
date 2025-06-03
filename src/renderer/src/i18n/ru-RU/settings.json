@@ -179,7 +179,24 @@
     "azureApiVersion": "Версия API",
     "safety": {
       "title": "Настройки безопасности"
-    }
+    },
+    "serverList": "Список серверов",
+    "totalServers": "Всего серверов",
+    "addServer": "Добавить сервер",
+    "autoStart": "Самостоятельно",
+    "githubCopilotAuth": "Аутентификация GitHub Copilot",
+    "githubCopilotConnected": "GitHub Copilot подключен",
+    "githubCopilotNotConnected": "GitHub Copilot не подключен",
+    "loginWithGitHub": "Войти через GitHub",
+    "loggingIn": "Вход...",
+    "githubCopilotLoginTip": "Разрешите DeepChat доступ к вашей подписке GitHub Copilot. Для доступа к API Copilot требуются разрешения 'read:user' и 'read:org'.",
+    "loginSuccess": "Вход выполнен успешно",
+    "loginFailed": "Ошибка входа",
+    "tokenValid": "Токен действителен",
+    "tokenInvalid": "Токен недействителен",
+    "disconnect": "Отключить",
+    "disconnected": "Отключено успешно",
+    "disconnectFailed": "Не удалось отключить"
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",
@@ -293,7 +310,11 @@
       "invalidKeyValueFormat": "Неправильный формат заголовка запроса, пожалуйста, проверьте, является ли вход правильным.",
       "npmRegistry": "Пользовательский реестр NPM",
       "npmRegistryPlaceholder": "Установите пользовательский реестр NPM, оставьте систему, чтобы автоматически выбрать самый быстрый",
-      "browseHigress": "Посмотреть Higress MCP Marketplace"
+      "browseHigress": "Посмотреть Higress MCP Marketplace",
+      "selectFolderError": "Ошибка выбора папки",
+      "folders": "Папки разрешены доступа",
+      "addFolder": "Добавить папку",
+      "noFoldersSelected": "Не было выбрано папки"
     },
     "deleteServer": "Удалить сервер",
     "editServer": "Редактировать сервер",
@@ -351,6 +372,12 @@
     "text-xl": "большой"
   },
   "shortcuts": {
+    "title": "Настройки сочетаний клавиш",
+    "pressKeys": "Нажмите клавиши",
+    "pressEnterToSave": "Нажмите Enter для сохранения, Esc для отмены",
+    "noModifierOnly": "Нельзя использовать только модификатор в качестве сочетания",
+    "keyConflict": "Конфликт сочетаний клавиш, выберите другую комбинацию",
+
     "cleanHistory": "Четкая история чата",
     "goSettings": "Откройте настройки",
     "hideWindow": "Скрыть окно",

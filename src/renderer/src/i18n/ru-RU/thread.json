@@ -2,7 +2,9 @@
   "actions": {
     "rename": "Переименовать",
     "delete": "Удалить",
-    "cleanMessages": "Очистить сообщение"
+    "cleanMessages": "Очистить сообщение",
+    "pin": "Закрепить",
+    "unpin": "Открепить"
   },
   "toolbar": {
     "save": "сохранять",

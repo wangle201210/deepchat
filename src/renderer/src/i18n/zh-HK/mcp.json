@@ -31,7 +31,15 @@
     "jsonInputPlaceholder": "輸入JSON格式的參數",
     "input": "輸入參數",
     "type": "類型",
-    "annotations": "註解"
+    "annotations": "註解",
+    "selectToolToDebug": "選擇要調試的工具",
+    "dialogDescription": "調試和測試 MCP 服務器提供的工具",
+    "toolsCount": "工具",
+    "availableTools": "可用工具",
+    "invalidJson": "無效的 JSON 格式",
+    "inputHint": "請以 JSON 格式輸入參數",
+    "required": "必填",
+    "noDescription": "無描述"
   },
   "addServer": "添加服務器",
   "addServerDialog": {
@@ -113,7 +121,12 @@
     "typePlaceholder": "選擇服務器類型",
     "typeSse": "服務器發送事件",
     "typeStdio": "標準輸入輸出",
-    "update": "更新"
+    "update": "更新",
+    "addFolder": "添加文件夾",
+    "folders": "文件夾列表",
+    "noFoldersSelected": "未選擇任何文件夾",
+    "selectFolder": "選擇文件夾",
+    "selectFolderError": "選擇文件夾失敗"
   },
   "serverList": "服務器列表",
   "setAsDefault": "設為默認服務器",
@@ -174,6 +187,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "自動模板提示詞",
       "desc": "根據用戶輸入自動揀選最合適的自訂提示詞，並智能填寫提示詞模板"
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "對話歷史搜尋",
+      "desc": "DeepChat內建對話歷史搜尋服務，可搜尋歷史對話記錄和訊息內容"
     }
   },
   "prompts": {

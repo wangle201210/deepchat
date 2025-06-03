@@ -88,7 +88,12 @@
     "configImported": "配置導入成功",
     "parseError": "解析錯誤",
     "skipToManual": "跳過至手動配置",
-    "parseAndContinue": "解析並繼續"
+    "parseAndContinue": "解析並繼續",
+    "addFolder": "添加文件夾",
+    "folders": "文件夾列表",
+    "noFoldersSelected": "未選擇任何文件夾",
+    "selectFolder": "選擇文件夾",
+    "selectFolderError": "選擇文件夾失敗"
   },
   "deleteServer": "刪除伺服器",
   "editServer": "編輯伺服器",
@@ -144,7 +149,15 @@
     "empty": "空",
     "input": "輸入參數",
     "type": "類型",
-    "annotations": "註解"
+    "annotations": "註解",
+    "selectToolToDebug": "選擇要調試的工具",
+    "dialogDescription": "調試和測試 MCP 伺服器提供的工具",
+    "toolsCount": "工具",
+    "availableTools": "可用工具",
+    "invalidJson": "無效的 JSON 格式",
+    "inputHint": "請以 JSON 格式輸入參數",
+    "required": "必填",
+    "noDescription": "無描述"
   },
   "inmemory": {
     "Artifacts": {
@@ -194,6 +207,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "自動模板提示詞",
       "desc": "依據使用者輸入自動選擇最合適的自訂提示詞，並智慧填入提示詞模板"
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "對話歷史搜索",
+      "desc": "DeepChat內建對話歷史搜索服務，可搜索歷史對話記錄和訊息內容"
     }
   },
   "prompts": {

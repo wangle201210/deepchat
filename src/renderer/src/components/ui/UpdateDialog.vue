@@ -72,7 +72,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { useUpgradeStore } from '@/stores/upgrade'
-import { renderMarkdown, getCommonMarkdown } from '@/lib/markdown.helper'
+import { renderMarkdown, getCommonMarkdown } from 'vue-renderer-markdown'
 
 const { t } = useI18n()
 const upgrade = useUpgradeStore()

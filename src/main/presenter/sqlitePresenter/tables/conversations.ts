@@ -16,6 +16,7 @@ type ConversationRow = {
   modelId: string
   artifacts: number
   is_new: number
+  is_pinned: number
 }
 
 export class ConversationsTable extends BaseTable {
@@ -87,9 +88,10 @@ export class ConversationsTable extends BaseTable {
         provider_id,
         model_id,
         is_new,
-        artifacts
+        artifacts,
+        is_pinned
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     const conv_id = nanoid()
     const now = Date.now()
@@ -105,7 +107,8 @@ export class ConversationsTable extends BaseTable {
       settings.providerId || 'openai',
       settings.modelId || 'gpt-4',
       1,
-      settings.artifacts || 0
+      settings.artifacts || 0,
+      0 // Default is_pinned to 0
     )
     return conv_id
   }
@@ -126,12 +129,13 @@ export class ConversationsTable extends BaseTable {
         provider_id as providerId,
         model_id as modelId,
         is_new,
-        artifacts
+        artifacts,
+        is_pinned
       FROM conversations
       WHERE conv_id = ?
     `
       )
-      .get(conversationId) as ConversationRow
+      .get(conversationId) as ConversationRow & { is_pinned: number }
 
     if (!result) {
       throw new Error(`Conversation ${conversationId} not found`)
@@ -143,6 +147,7 @@ export class ConversationsTable extends BaseTable {
       createdAt: result.createdAt,
       updatedAt: result.updatedAt,
       is_new: result.is_new,
+      is_pinned: result.is_pinned,
       settings: {
         systemPrompt: result.systemPrompt,
         temperature: result.temperature,
@@ -167,6 +172,11 @@ export class ConversationsTable extends BaseTable {
     if (data.is_new !== undefined) {
       updates.push('is_new = ?')
       params.push(data.is_new)
+    }
+
+    if (data.is_pinned !== undefined) {
+      updates.push('is_pinned = ?')
+      params.push(data.is_pinned)
     }
 
     if (data.settings) {
@@ -241,7 +251,8 @@ export class ConversationsTable extends BaseTable {
         provider_id as providerId,
         model_id as modelId,
         is_new,
-        artifacts
+        artifacts,
+        is_pinned
       FROM conversations
       ORDER BY updated_at DESC
       LIMIT ? OFFSET ?
@@ -257,6 +268,7 @@ export class ConversationsTable extends BaseTable {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         is_new: row.is_new,
+        is_pinned: row.is_pinned,
         settings: {
           systemPrompt: row.systemPrompt,
           temperature: row.temperature,

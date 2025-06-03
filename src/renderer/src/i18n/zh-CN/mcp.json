@@ -88,7 +88,12 @@
     "configImported": "配置导入成功",
     "parseError": "解析错误",
     "skipToManual": "跳过至手动配置",
-    "parseAndContinue": "解析并继续"
+    "parseAndContinue": "解析并继续",
+    "folders": "文件夹列表",
+    "addFolder": "添加文件夹",
+    "selectFolder": "选择文件夹",
+    "selectFolderError": "选择文件夹失败",
+    "noFoldersSelected": "未选择任何文件夹"
   },
   "deleteServer": "删除服务器",
   "editServer": "编辑服务器",
@@ -150,7 +155,9 @@
     "enabledDescription": "启用MCP功能以使用工具调用",
     "jsonInputPlaceholder": "输入JSON格式的参数",
     "type": "类型",
-    "annotations": "注解"
+    "annotations": "注解",
+    "empty": "空",
+    "invalidJsonFormat": "JSON格式不正确"
   },
   "inmemory": {
     "bochaSearch": {
@@ -200,6 +207,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "自动模板提示词",
       "desc": "根据用户输入自动选择最合适的自定义提示词，并智能填充提示词模板"
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "对话历史搜索",
+      "desc": "DeepChat内置对话历史搜索服务，可搜索历史对话记录和消息内容"
     }
   },
   "prompts": {

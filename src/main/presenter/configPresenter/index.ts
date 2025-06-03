@@ -17,6 +17,7 @@ import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
+import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { defaultModelsSettings } from './modelDefaultSettings'
 import { getProviderSpecificModelConfig } from './providerModelSettings'
 
@@ -29,6 +30,7 @@ interface IAppSettings {
   appVersion?: string // 用于版本检查和数据迁移
   proxyMode?: string // 代理模式：system, none, custom
   customProxyUrl?: string // 自定义代理地址
+  customShortKey?: ShortcutKeySetting // 自定义快捷键
   artifactsEffectEnabled?: boolean // artifacts动画效果是否启用
   searchPreviewEnabled?: boolean // 搜索预览是否启用
   contentProtectionEnabled?: boolean // 投屏保护是否启用
@@ -37,6 +39,7 @@ interface IAppSettings {
   lastSyncTime?: number // 上次同步时间
   customSearchEngines?: string // 自定义搜索引擎JSON字符串
   loggingEnabled?: boolean // 日志记录是否启用
+  default_system_prompt?: string // 默认系统提示词
   [key: string]: unknown // 允许任意键，使用unknown类型替代any
 }
 
@@ -94,6 +97,7 @@ export class ConfigPresenter implements IConfigPresenter {
         language: 'en-US',
         providers: defaultProviders,
         closeToQuit: false,
+        customShortKey: defaultShortcutKey,
         proxyMode: 'system',
         customProxyUrl: '',
         artifactsEffectEnabled: true,
@@ -103,6 +107,7 @@ export class ConfigPresenter implements IConfigPresenter {
         syncFolderPath: path.join(this.userDataPath, 'sync'),
         lastSyncTime: 0,
         loggingEnabled: false,
+        default_system_prompt: '',
         appVersion: this.currentAppVersion
       }
     })
@@ -718,7 +723,7 @@ export class ConfigPresenter implements IConfigPresenter {
           servers[customPromptsServerName].autoApprove = ['all']
         }
       }
-    } catch (error) {
+    } catch {
       // 检查自定义提示词时出错
     }
 
@@ -868,7 +873,7 @@ export class ConfigPresenter implements IConfigPresenter {
   async getCustomPrompts(): Promise<Prompt[]> {
     try {
       return this.customPromptsStore.get('prompts') || []
-    } catch (error) {
+    } catch {
       return []
     }
   }
@@ -878,7 +883,7 @@ export class ConfigPresenter implements IConfigPresenter {
     await this.customPromptsStore.set('prompts', prompts)
     // 触发自定义提示词变更事件
     eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED)
-    
+
     // 通知MCP系统检查并启动/停止自定义提示词服务器
     eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED)
   }
@@ -909,8 +914,45 @@ export class ConfigPresenter implements IConfigPresenter {
     await this.setCustomPrompts(filteredPrompts)
     // 事件会在 setCustomPrompts 中触发
   }
+
+  // 获取默认系统提示词
+  async getDefaultSystemPrompt(): Promise<string> {
+    return this.getSetting<string>('default_system_prompt') || ''
+  }
+
+  // 设置默认系统提示词
+  async setDefaultSystemPrompt(prompt: string): Promise<void> {
+    this.setSetting('default_system_prompt', prompt)
+  }
+
+  // 获取默认快捷键
+  getDefaultShortcutKey(): ShortcutKeySetting {
+    return {
+      ...defaultShortcutKey
+    }
+  }
+
+  // 获取快捷键
+  getShortcutKey(): ShortcutKeySetting {
+    return (
+      this.getSetting<ShortcutKeySetting>('shortcutKey') || {
+        ...defaultShortcutKey
+      }
+    )
+  }
+
+  // 设置快捷键
+  setShortcutKey(customShortcutKey: ShortcutKeySetting) {
+    this.setSetting('shortcutKey', customShortcutKey)
+  }
+
+  // 重置快捷键
+  resetShortcutKeys() {
+    this.setSetting('shortcutKey', {...defaultShortcutKey})
+  }
 }
 
 // 导出配置相关内容，方便其他组件使用
 export { defaultModelsSettings } from './modelDefaultSettings'
 export { providerModelSettings } from './providerModelSettings'
+export { defaultShortcutKey } from './shortcutKeySettings'

@@ -1,79 +1,36 @@
 <template>
-  <div
-    :data-message-id="message.id"
-    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
-  >
-    <ModelIcon
-      :model-id="message.model_id"
-      custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
-      :alt="message.role"
-    />
+  <div :data-message-id="message.id"
+    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item">
+    <ModelIcon :model-id="currentMessage.model_id" custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
+      :alt="currentMessage.role" />
     <div class="flex flex-col w-full space-y-1.5">
-      <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
-      <div
-        v-if="currentContent.length === 0"
-        class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
-      >
+      <MessageInfo :name="currentMessage.model_name" :timestamp="currentMessage.timestamp" />
+      <div v-if="currentContent.length === 0" class="flex flex-row items-center gap-2 text-xs text-muted-foreground">
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
-          <MessageBlockContent
-            v-if="block.type === 'content'"
-            :block="block"
-            :message-id="message.id"
-            :thread-id="currentThreadId"
-            :is-search-result="isSearchResult"
-          />
-          <MessageBlockThink
-            v-else-if="block.type === 'reasoning_content'"
-            :block="block"
-            :usage="message.usage"
-          />
-          <MessageBlockSearch
-            v-else-if="block.type === 'search'"
-            :message-id="message.id"
-            :block="block"
-          />
-          <MessageBlockToolCall
-            v-else-if="block.type === 'tool_call'"
-            :block="block"
-            :message-id="message.id"
-            :thread-id="currentThreadId"
-          />
-          <MessageBlockAction
-            v-else-if="block.type === 'action'"
-            :message-id="message.id"
-            :conversation-id="currentThreadId"
-            :block="block"
-          />
-          <MessageBlockImage
-            v-else-if="block.type === 'image'"
-            :block="block"
-            :message-id="message.id"
-            :thread-id="currentThreadId"
-          />
+          <MessageBlockContent v-if="block.type === 'content'" :block="block" :message-id="message.id"
+            :thread-id="currentThreadId" :is-search-result="isSearchResult" />
+          <MessageBlockThink v-else-if="block.type === 'reasoning_content'" :block="block" :usage="message.usage" />
+          <MessageBlockSearch v-else-if="block.type === 'search'" :message-id="message.id" :block="block" />
+          <MessageBlockToolCall v-else-if="block.type === 'tool_call'" :block="block" :message-id="message.id"
+            :thread-id="currentThreadId" />
+          <MessageBlockAction v-else-if="block.type === 'action'" :message-id="message.id"
+            :conversation-id="currentThreadId" :block="block" />
+          <MessageBlockImage v-else-if="block.type === 'image'" :block="block" :message-id="message.id"
+            :thread-id="currentThreadId" />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </template>
       </div>
-      <MessageToolbar
-        :loading="message.status === 'pending'"
-        :usage="message.usage"
-        :is-assistant="true"
-        :current-variant-index="currentVariantIndex"
-        :total-variants="totalVariants"
+      <MessageToolbar :loading="message.status === 'pending'" :usage="message.usage" :is-assistant="true"
+        :current-variant-index="currentVariantIndex" :total-variants="totalVariants"
         :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
-        :is-capturing-image="isCapturingImage"
-        @retry="handleAction('retry')"
-        @delete="handleAction('delete')"
-        @copy="handleAction('copy')"
-        @copyImage="handleAction('copyImage')"
-        @copyImageFromTop="handleAction('copyImageFromTop')"
-        @prev="handleAction('prev')"
-        @next="handleAction('next')"
-        @fork="handleAction('fork')"
-      />
+        :is-capturing-image="isCapturingImage" @retry="handleAction('retry')" @delete="handleAction('delete')"
+        @copy="handleAction('copy')" @copy-image="handleAction('copyImage')"
+        @copy-image-from-top="handleAction('copyImageFromTop')" @prev="handleAction('prev')"
+        @next="handleAction('next')" @fork="handleAction('fork')" />
     </div>
   </div>
 
@@ -146,6 +103,16 @@ const emit = defineEmits<{
 
 // 获取当前会话ID
 const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
+
+// 获取当前显示的消息（根据变体索引）
+const currentMessage = computed(() => {
+  if (currentVariantIndex.value === 0) {
+    return props.message
+  }
+
+  const variant = allVariants.value[currentVariantIndex.value - 1]
+  return variant || props.message
+})
 
 // 计算当前消息的所有变体（包括缓存中的）
 const allVariants = computed(() => {
@@ -253,13 +220,13 @@ const handleAction = (
     }
   } else if (action === 'copyImage') {
     emit('copyImage', props.message.id, props.message.parentId, false, {
-      model_name: props.message.model_name,
-      model_provider: props.message.model_provider
+      model_name: currentMessage.value.model_name,
+      model_provider: currentMessage.value.model_provider
     })
   } else if (action === 'copyImageFromTop') {
     emit('copyImage', props.message.id, props.message.parentId, true, {
-      model_name: props.message.model_name,
-      model_provider: props.message.model_provider
+      model_name: currentMessage.value.model_name,
+      model_provider: currentMessage.value.model_provider
     })
   } else if (action === 'fork') {
     showForkDialog()

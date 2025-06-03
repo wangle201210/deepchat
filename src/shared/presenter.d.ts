@@ -2,6 +2,7 @@
 import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
+import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -191,6 +192,11 @@ export interface ILlamaCppPresenter {
   destroy(): Promise<void>
 }
 
+export interface IShortcutPresenter {
+  registerShortcuts(): void
+  destroy(): void
+}
+
 export interface ISQLitePresenter {
   close(): void
   createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
@@ -244,6 +250,21 @@ export interface ISQLitePresenter {
   deleteAllMessagesInConversation(conversationId: string): Promise<void>
 }
 
+export interface IOAuthPresenter {
+  startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean>
+  startGitHubCopilotLogin(providerId: string): Promise<boolean>
+  startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean>
+}
+
+export interface OAuthConfig {
+  authUrl: string
+  redirectUri: string
+  clientId: string
+  clientSecret?: string
+  scope: string
+  responseType: string
+}
+
 export interface IPresenter {
   windowPresenter: IWindowPresenter
   sqlitePresenter: ISQLitePresenter
@@ -259,6 +280,7 @@ export interface IPresenter {
   deeplinkPresenter: IDeeplinkPresenter
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
+  oauthPresenter: IOAuthPresenter
   init(): void
   destroy(): void
 }
@@ -350,6 +372,14 @@ export interface IConfigPresenter {
   addCustomPrompt(prompt: Prompt): Promise<void>
   updateCustomPrompt(promptId: string, updates: Partial<Prompt>): Promise<void>
   deleteCustomPrompt(promptId: string): Promise<void>
+  // 默认系统提示词设置
+  getDefaultSystemPrompt(): Promise<string>
+  setDefaultSystemPrompt(prompt: string): Promise<void>
+  // 快捷键设置
+  getDefaultShortcutKey(): ShortcutKeySetting
+  getShortcutKey(): ShortcutKeySetting
+  setShortcutKey(customShortcutKey: ShortcutKeySetting): void
+  resetShortcutKeys(): void
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -557,6 +587,7 @@ export type MESSAGE_METADATA = {
   generationTime: number
   firstTokenTime: number
   tokensPerSecond: number
+  contextUsage: number
   model?: string
   provider?: string
   reasoningStartTime?: number
@@ -1017,13 +1048,14 @@ export interface LLMAgentEventData {
   tool_call_server_name?: string
   tool_call_server_icons?: string
   tool_call_server_description?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   tool_call_response_raw?: any
   tool_call?: 'start' | 'running' | 'end' | 'error' | 'update'
   totalUsage?: {
     prompt_tokens: number
     completion_tokens: number
     total_tokens: number
+    context_length: number
   }
   image_data?: { data: string; mimeType: string }
   error?: string // For error event
@@ -1033,3 +1065,5 @@ export type LLMAgentEvent =
   | { type: 'response'; data: LLMAgentEventData }
   | { type: 'error'; data: { eventId: string; error: string } }
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
+
+export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'

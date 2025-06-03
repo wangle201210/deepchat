@@ -161,6 +161,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     command: 'deepchat-inmemory/auto-prompting-server',
     env: {},
     disable: false
+  },
+  'deepchat-inmemory/conversation-search-server': {
+    args: [],
+    descriptions: 'DeepChat built-in conversation history search service',
+    icons: '🔍',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'deepchat-inmemory/conversation-search-server',
+    env: {},
+    disable: false
   }
 }
 

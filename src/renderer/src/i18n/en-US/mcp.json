@@ -38,7 +38,8 @@
     "empty": "Empty",
     "jsonInputPlaceholder": "Enter the parameters in JSON format",
     "type": "Type",
-    "annotations": "Annotations"
+    "annotations": "Annotations",
+    "invalidJsonFormat": "JSON format is incorrect"
   },
   "addServer": "Add a server",
   "addServerDialog": {
@@ -115,6 +116,11 @@
     "parseSuccess": "Configuration parsing successfully",
     "skipToManual": "Skip to manual configuration",
     "submit": "submit",
+    "folders": "Folder List",
+    "addFolder": "Add Folder",
+    "selectFolder": "Select Folder",
+    "selectFolderError": "Failed to select folder",
+    "noFoldersSelected": "No folders selected",
     "type": "Server Type",
     "typeInMemory": "Memory",
     "typePlaceholder": "Select a server type",
@@ -181,6 +187,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "Auto Template Prompting",
       "desc": "Automatically selects the most suitable custom prompt based on user input and intelligently fills the prompt template."
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "Conversation History Search",
+      "desc": "DeepChat built-in conversation history search service, can search historical conversation records and message contents"
     }
   },
   "prompts": {

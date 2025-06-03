@@ -121,8 +121,8 @@
                   >
                     {{ t('settings.provider.pulling') }}
                   </span>
-                  <span class="w-[50px]" v-if="model.pulling">
-                    <Progress :modelValue="pullingModels.get(model.name)" class="h-1.5" />
+                  <span v-if="model.pulling" class="w-[50px]">
+                    <Progress :model-value="pullingModels.get(model.name)" class="h-1.5" />
                   </span>
                 </div>
                 <span class="text-xs text-muted-foreground">{{ formatModelSize(model.size) }}</span>

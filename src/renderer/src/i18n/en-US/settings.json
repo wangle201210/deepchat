@@ -182,7 +182,21 @@
     },
     "serverList": "Server List",
     "totalServers": "Total Servers",
-    "addServer": "Add Server"
+    "addServer": "Add Server",
+    "autoStart": "Self-start",
+    "githubCopilotAuth": "GitHub Copilot Auth",
+    "githubCopilotConnected": "GitHub Copilot Connected",
+    "githubCopilotNotConnected": "GitHub Copilot Not Connected",
+    "loginWithGitHub": "Login with GitHub",
+    "loggingIn": "Logging in...",
+    "githubCopilotLoginTip": "Authorize DeepChat to access your GitHub Copilot subscription. 'read:user' and 'read:org' permissions are required to access the Copilot API.",
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed",
+    "tokenValid": "Token is valid",
+    "tokenInvalid": "Token is invalid",
+    "disconnect": "Disconnect",
+    "disconnected": "Disconnected successfully",
+    "disconnectFailed": "Disconnect failed"
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",
@@ -304,7 +318,11 @@
       "invalidKeyValueFormat": "Incorrect request header format, please check whether the input is correct.",
       "npmRegistry": "Custom NPM Registry",
       "npmRegistryPlaceholder": "Set up a custom NPM Registry, leave the system to automatically select the fastest one",
-      "browseHigress": "View Higress MCP Marketplace"
+      "browseHigress": "View Higress MCP Marketplace",
+      "selectFolderError": "Folder selection error",
+      "folders": "Folders allowed to access",
+      "addFolder": "Add folder",
+      "noFoldersSelected": "No folders were selected"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
@@ -354,6 +372,12 @@
     "text-xl": "Large"
   },
   "shortcuts": {
+    "title": "Shortcut Key Settings",
+    "pressKeys": "Press keys",
+    "pressEnterToSave": "Press Enter to save, Esc to cancel",
+    "noModifierOnly": "Cannot use modifier key alone as shortcut",
+    "keyConflict": "Shortcut key conflict, please choose another combination",
+
     "cleanHistory": "Clear chat history",
     "goSettings": "Open Settings",
     "hideWindow": "Hide window",

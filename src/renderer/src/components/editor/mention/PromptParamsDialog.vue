@@ -30,7 +30,7 @@
 
       <DialogFooter>
         <Button variant="outline" @click="$emit('close')"> 取消 </Button>
-        <Button @click="handleSubmit" :disabled="hasErrors"> 确认 </Button>
+        <Button :disabled="hasErrors" @click="handleSubmit"> 确认 </Button>
       </DialogFooter>
     </DialogContent>
   </Dialog>

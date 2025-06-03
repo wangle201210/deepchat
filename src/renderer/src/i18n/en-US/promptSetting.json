@@ -44,5 +44,12 @@
   "enablePrompt": "Enable this prompt",
   "sourceLocal": "Local",
   "sourceImported": "Imported",
-  "sourceBuiltin": "Built-in"
-} 
+  "sourceBuiltin": "Built-in",
+  "defaultSystemPrompt": "Default System Prompt",
+  "defaultSystemPromptPlaceholder": "Enter the default system prompt that will be used for all new conversations...",
+  "defaultSystemPromptDescription": "This prompt word will be used as the default system prompt word for all new conversations. You can modify it when creating a conversation. Note that this setting will take effect the next time you create a new conversation.",
+  "typing": "Typing",
+  "saving": "Saving",
+  "saved": "Saved",
+  "saveDefaultPromptFailed": "Failed to save default system prompt"
+}

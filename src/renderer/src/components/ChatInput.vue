@@ -154,9 +154,15 @@
           </div>
         </div>
         <div v-if="isDragging" class="absolute inset-0 bg-black/40 rounded-lg">
-          <div class="flex items-center justify-center h-full gap-1">
-            <Icon icon="lucide:file-up" class="w-4 h-4 text-white" />
-            <span class="text-sm text-white">Drop files here</span>
+          <div class="flex flex-col items-center justify-center h-full gap-2">
+            <div class="flex items-center gap-1">
+              <Icon icon="lucide:file-up" class="w-4 h-4 text-white" />
+              <span class="text-sm text-white">{{ t('chat.input.dropFiles') }}</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <Icon icon="lucide:clipboard" class="w-3 h-3 text-white/80" />
+              <span class="text-xs text-white/80">{{ t('chat.input.pasteFiles') }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -181,6 +187,7 @@ import FileItem from './FileItem.vue'
 import { useChatStore } from '@/stores/chat'
 import {
   MessageFile,
+  UserMessageCodeBlock,
   UserMessageContent,
   UserMessageMentionBlock,
   UserMessageTextBlock
@@ -343,33 +350,49 @@ const handlePaste = async (e: ClipboardEvent) => {
   const files = e.clipboardData?.files
   if (files && files.length > 0) {
     for (const file of files) {
-      if (file.type.startsWith('image/')) {
-        const base64 = (await imageFileToBase64(file)) as string
-        const imageInfo = await getClipboardImageInfo(file)
+      try {
+        if (file.type.startsWith('image/')) {
+          // 处理图片文件
+          const base64 = (await imageFileToBase64(file)) as string
+          const imageInfo = await getClipboardImageInfo(file)
 
-        const tempFilePath = await filePresenter.writeImageBase64({
-          name: file.name ?? 'image',
-          content: base64
-        })
+          const tempFilePath = await filePresenter.writeImageBase64({
+            name: file.name ?? 'image',
+            content: base64
+          })
 
-        const fileInfo: MessageFile = {
-          name: file.name ?? 'image',
-          content: base64,
-          mimeType: file.type,
-          metadata: {
-            fileName: file.name ?? 'image',
-            fileSize: file.size,
-            // fileHash: string
-            fileDescription: file.type,
-            fileCreated: new Date(),
-            fileModified: new Date()
-          },
-          token: calculateImageTokens(imageInfo.width, imageInfo.height),
-          path: tempFilePath
+          const fileInfo: MessageFile = {
+            name: file.name ?? 'image',
+            content: base64,
+            mimeType: file.type,
+            metadata: {
+              fileName: file.name ?? 'image',
+              fileSize: file.size,
+              // fileHash: string
+              fileDescription: file.type,
+              fileCreated: new Date(),
+              fileModified: new Date()
+            },
+            token: calculateImageTokens(imageInfo.width, imageInfo.height),
+            path: tempFilePath
+          }
+          if (fileInfo) {
+            selectedFiles.value.push(fileInfo)
+          }
+        } else {
+          // 处理其他类型的文件
+          const path = window.api.getPathForFile(file)
+          const mimeType = await filePresenter.getMimeType(path)
+          const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
+          if (fileInfo) {
+            selectedFiles.value.push(fileInfo)
+          } else {
+            console.error('File info is null:', file.name)
+          }
         }
-        if (fileInfo) {
-          selectedFiles.value.push(fileInfo)
-        }
+      } catch (error) {
+        console.error('文件处理失败:', error)
+        // 继续处理其他文件，不要中断整个流程
       }
     }
     if (selectedFiles.value.length > 0) {
@@ -408,7 +431,7 @@ const handleFileSelect = async (e: Event) => {
 }
 
 const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
-  const blocks: (UserMessageMentionBlock | UserMessageTextBlock)[] = []
+  const blocks: (UserMessageMentionBlock | UserMessageTextBlock | UserMessageCodeBlock)[] = []
   if (docJSON.type === 'doc') {
     for (const [idx, block] of (docJSON.content ?? []).entries()) {
       if (block.type === 'paragraph') {
@@ -435,7 +458,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
                 fetchingMcpEntry.value = true
                 // console.log(subBlock.attrs?.content)
                 const mcpEntry = JSON.parse(subBlock.attrs?.content) as ResourceListEntry
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
                 const mcpEntryResult = await mcpStore.readResource(mcpEntry)
 
                 if (mcpEntryResult.blob) {
@@ -507,6 +530,13 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
         if (idx < (docJSON.content?.length ?? 0) - 1 && idx > 0) {
           blocks.push({ type: 'text', content: '\n' })
         }
+      } else if (block.type === 'codeBlock') {
+        console.log('push code block', block)
+        blocks.push({
+          type: 'code',
+          content: block.content?.[0]?.text ?? '',
+          language: block.content?.[0]?.attrs?.language ?? 'text'
+        })
       }
     }
   }
@@ -516,6 +546,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
 const emitSend = async () => {
   if (inputText.value.trim()) {
     const blocks = await tiptapJSONtoMessageBlock(editor.getJSON())
+
     const messageContent: UserMessageContent = {
       text: inputText.value.trim(),
       files: selectedFiles.value,
@@ -524,7 +555,7 @@ const emitSend = async () => {
       think: settings.value.deepThinking,
       content: blocks
     }
-    // console.log(messageContent)
+    console.log(JSON.stringify(blocks), JSON.stringify(messageContent.content))
 
     emit('send', messageContent)
     inputText.value = ''

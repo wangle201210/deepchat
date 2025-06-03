@@ -200,16 +200,14 @@ export const useSettingsStore = defineStore('settings', () => {
         name: 'settings'
       })
       await router.push({
-        name: 'settings-mcp',
-        query: { subtab: 'servers' } // 确保激活服务器子标签
+        name: 'settings-mcp'
       })
     } else {
       await router.replace({
         name: 'settings-mcp',
         query: {
-          ...currentRoute.query,
-          subtab: 'servers'
-        } // 确保激活服务器子标签
+          ...currentRoute.query
+        }
       })
       // 如果已经在MCP设置页面，只更新子标签页
     }
@@ -338,9 +336,12 @@ export const useSettingsStore = defineStore('settings', () => {
       // 获取自定义模型列表
       const customModelsList = await llmP.getCustomModels(providerId)
 
+      // 如果customModelsList为null或undefined，使用空数组
+      const safeCustomModelsList = customModelsList || []
+
       // 获取自定义模型状态并合并
       const customModelsWithStatus = await Promise.all(
-        customModelsList.map(async (model) => {
+        safeCustomModelsList.map(async (model) => {
           // 获取模型状态
           const enabled = await configP.getModelStatus(providerId, model.id)
           return {
@@ -1378,6 +1379,33 @@ export const useSettingsStore = defineStore('settings', () => {
     )
   }
 
+  // 默认系统提示词相关方法
+  const getDefaultSystemPrompt = async (): Promise<string> => {
+    return await configP.getDefaultSystemPrompt()
+  }
+
+  const setDefaultSystemPrompt = async (prompt: string): Promise<void> => {
+    await configP.setDefaultSystemPrompt(prompt)
+  }
+
+  // 根据 providerId 获取 provider 名称
+  const getProviderNameById = (providerId: string): string => {
+    // 先从当前 providers 中查找（包括启用和未启用的）
+    const provider = providers.value.find(p => p.id === providerId)
+    if (provider) {
+      return provider.name
+    }
+
+    // 如果在当前 providers 中找不到，再从 defaultProviders 中查找
+    const defaultProvider = defaultProviders.value.find(p => p.id === providerId)
+    if (defaultProvider) {
+      return defaultProvider.name
+    }
+
+    // 如果都找不到，返回原始 providerId
+    return providerId
+  }
+
   return {
     providers,
     theme,
@@ -1454,6 +1482,9 @@ export const useSettingsStore = defineStore('settings', () => {
     getAzureApiVersion,
     setGeminiSafety,
     getGeminiSafety,
-    setupProviderListener
+    getDefaultSystemPrompt,
+    setDefaultSystemPrompt,
+    setupProviderListener,
+    getProviderNameById
   }
 })

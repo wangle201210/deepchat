@@ -10,7 +10,9 @@ module.exports = {
     './pages/**/*.{ts,tsx,vue}',
     './components/**/*.{ts,tsx,vue}',
     './app/**/*.{ts,tsx,vue}',
-    './src/**/*.{ts,tsx,vue}'
+    './src/**/*.{ts,tsx,vue}',
+    './node_modules/vue-renderer-markdown/dist/*.js',
+    './node_modules/vue-renderer-markdown/dist/index.css'
   ],
 
   fontFamily: {
@@ -88,6 +90,11 @@ module.exports = {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
+        },
+        usage: {
+          low: 'hsl(var(--usage-low))',
+          mid: 'hsl(var(--usage-mid))',
+          high: 'hsl(var(--usage-high))'
         }
       },
       borderRadius: {

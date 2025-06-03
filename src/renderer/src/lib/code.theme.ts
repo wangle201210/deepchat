@@ -1,7 +1,7 @@
-import { createTheme } from '@uiw/codemirror-themes'
+import { createTheme } from 'vue-renderer-markdown'
 import { tags as t } from '@lezer/highlight'
 
-export const anysphereThemeDark = createTheme({
+export const darkStyle = {
   theme: 'dark',
   settings: {
     background: 'rgba(0, 0, 0, 0)',
@@ -54,9 +54,8 @@ export const anysphereThemeDark = createTheme({
     { tag: t.url, color: '#83D6C5', textDecoration: 'underline' },
     { tag: t.color, color: '#EBC88D' }
   ]
-})
-
-export const anysphereThemeLight = createTheme({
+}
+export const lightStyle = {
   theme: 'light',
   settings: {
     background: 'rgba(255,255,255,0)',
@@ -110,7 +109,9 @@ export const anysphereThemeLight = createTheme({
     { tag: t.url, color: '#0e7490', textDecoration: 'underline' },
     { tag: t.color, color: '#d97706' }
   ]
-})
+}
 
+export const anysphereThemeDark = createTheme(darkStyle as typeof createTheme.arguments)
+export const anysphereThemeLight = createTheme(lightStyle as typeof createTheme.arguments)
 // For backward compatibility
 export const anysphereTheme = anysphereThemeDark

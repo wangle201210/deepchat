@@ -2,7 +2,9 @@
   "actions": {
     "rename": "Renommer",
     "delete": "Supprimer",
-    "cleanMessages": "Nettoyer les messages"
+    "cleanMessages": "Nettoyer les messages",
+    "pin": "Épingler",
+    "unpin": "Détacher"
   },
   "toolbar": {
     "save": "sauvegarder",

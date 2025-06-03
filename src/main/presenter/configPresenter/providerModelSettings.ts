@@ -100,6 +100,17 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   // Gemini提供商特定模型配置
   gemini: {
     models: [
+    {
+        id: 'models/gemini-2.5-flash-preview-05-20',
+        name: 'Gemini 2.5 Flash Preview 05-20',
+        temperature: 0.7,
+        maxTokens: 65536,
+        contextLength: 1048576,
+        match: ['models/gemini-2.5-flash-preview-05-20', 'gemini-2.5-flash-preview-05-20', 'gemini-2.5-flash-preview'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
       {
         id: 'models/gemini-2.5-flash-preview-04-17',
         name: 'Gemini 2.5 Flash Preview',
@@ -213,12 +224,12 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
       {
         id: 'deepseek-reasoner',
         name: 'DeepSeek Reasoner',
-        temperature: 0.6,
-        maxTokens: 8192,
+        temperature: 1,
+        maxTokens: 32768,
         contextLength: 65536,
         match: ['deepseek-reasoner'],
         vision: false,
-        functionCall: false,
+        functionCall: true,
         reasoning: true
       }
     ]
@@ -452,6 +463,83 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   ppio: {
     models: [
       {
+        id: 'deepseek/deepseek-r1-0528',
+        name: 'DeepSeek R1 0528',
+        temperature: 0.6,
+        maxTokens: 16000,
+        contextLength: 128000,
+        match: ['deepseek-r1-0528'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-32b',
+        name: 'DeepSeek R1 Distill Qwen 32B',
+        temperature: 0.7,
+        maxTokens: 4000,
+        contextLength: 32768,
+        match: ['deepseek-r1-distill-qwen-32b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-14b',
+        name: 'DeepSeek R1 Distill Qwen 14B',
+        temperature: 0.7,
+        maxTokens: 4000,
+        contextLength: 32768,
+        match: ['deepseek-r1-distill-qwen-14b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-7b',
+        name: 'DeepSeek R1 Distill Qwen 7B',
+        temperature: 0.7,
+        maxTokens: 4000,
+        contextLength: 32768,
+        match: ['deepseek-r1-distill-qwen-7b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-qwen-1.5b',
+        name: 'DeepSeek R1 Distill Qwen 1.5B',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 65536,
+        match: ['deepseek-r1-distill-qwen-1.5b', 'deepseek-r1-distill-qwen-1-5b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-llama-8b',
+        name: 'DeepSeek R1 Distill Llama 8B',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 65536,
+        match: ['deepseek-r1-distill-llama-8b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-llama-70b',
+        name: 'DeepSeek R1 Distill Llama 70B',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 65536,
+        match: ['deepseek-r1-distill-llama-70b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
         id: 'qwen/qwen3-235b-a22b-fp8',
         name: 'Qwen/Qwen3-235B-A22B',
         temperature: 0.6,
@@ -589,6 +677,67 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   // GitHub提供商特定模型配置
   github: {
     models: []
+  },
+
+  // GitHub Copilot提供商特定模型配置
+  'github-copilot': {
+    models: [
+      {
+        id: 'gpt-4o',
+        name: 'GPT-4o',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 128000,
+        match: ['gpt-4o'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gpt-4o-mini',
+        name: 'GPT-4o Mini',
+        temperature: 0.7,
+        maxTokens: 16384,
+        contextLength: 128000,
+        match: ['gpt-4o-mini'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'o1-preview',
+        name: 'o1 Preview',
+        temperature: 1.0,
+        maxTokens: 32768,
+        contextLength: 128000,
+        match: ['o1-preview'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'o1-mini',
+        name: 'o1 Mini',
+        temperature: 1.0,
+        maxTokens: 65536,
+        contextLength: 128000,
+        match: ['o1-mini'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'claude-3-5-sonnet',
+        name: 'Claude 3.5 Sonnet',
+        temperature: 0.7,
+        maxTokens: 8192,
+        contextLength: 200000,
+        match: ['claude-3-5-sonnet'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      }
+    ]
   },
 
   // 阿里云提供商特定模型配置, 注意匹配排序，only max/plus/turbo
@@ -863,7 +1012,31 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // OpenRouter提供商特定模型配置
   openrouter: {
-    models: []
+    models: [
+      {
+        id: 'deepseek-r1-0528:free',
+        name: 'DeepSeek R1-0528:free',
+        temperature: 0.6,
+        maxTokens: 65536,
+        contextLength: 131072,
+        match: ['deepseek/deepseek-r1-0528:free', 'deepseek/deepseek-r1-0528-qwen3-8b:free'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        //对fc支持有问题，避免使用
+        id: 'deepseek-chat-v3-0324:free',
+        name: 'DeepSeek v3-0324:free',
+        temperature: 0.6,
+        maxTokens: 65536,
+        contextLength: 131072,
+        match: ['deepseek/deepseek-chat-v3-0324:free', 'deepseek/deepseek-chat:free'],
+        vision: false,
+        functionCall: false,
+        reasoning: false
+      }
+    ]
   },
 
   // Grok提供商特定模型配置
@@ -951,6 +1124,11 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // Azure OpenAI提供商特定模型配置
   'azure-openai': {
+    models: []
+  },
+
+  // LM Studio提供商特定模型配置
+  lmstudio: {
     models: []
   }
 }

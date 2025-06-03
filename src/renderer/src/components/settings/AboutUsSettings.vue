@@ -147,7 +147,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { renderMarkdown, getCommonMarkdown } from '@/lib/markdown.helper'
+import { renderMarkdown, getCommonMarkdown } from 'vue-renderer-markdown'
 import { useUpgradeStore } from '@/stores/upgrade'
 
 const { t } = useI18n()

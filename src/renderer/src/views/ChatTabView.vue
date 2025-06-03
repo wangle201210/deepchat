@@ -1,23 +1,15 @@
 <template>
   <div class="w-full h-full flex-row flex">
-    <div
-      :class="[
-        'flex-1 w-0 h-full transition-all duration-200 max-lg:!mr-0',
-        artifactStore.isOpen && route.name === 'chat' ? 'mr-[calc(60%_-_104px)]' : ''
-      ]"
-    >
+    <div :class="[
+      'flex-1 w-0 h-full transition-all duration-200 max-lg:!mr-0',
+      artifactStore.isOpen && route.name === 'chat' ? 'mr-[calc(60%_-_104px)]' : ''
+    ]">
       <div class="flex h-full">
         <!-- 左侧会话列表 -->
-        <Transition
-          enter-active-class="transition-all duration-300 ease-out"
-          leave-active-class="transition-all duration-300 ease-in"
-          enter-from-class="-translate-x-full opacity-0"
-          leave-to-class="-translate-x-full opacity-0"
-        >
-          <div
-            v-if="chatStore.isSidebarOpen"
-            class="w-60 max-w-60 h-full fixed left-0 z-20 lg:relative"
-          >
+        <Transition enter-active-class="transition-all duration-300 ease-out"
+          leave-active-class="transition-all duration-300 ease-in" enter-from-class="-translate-x-full opacity-0"
+          leave-to-class="-translate-x-full opacity-0">
+          <div v-if="chatStore.isSidebarOpen" class="w-60 max-w-60 h-full fixed left-0 z-20 lg:relative">
             <ThreadsView class="transform" />
           </div>
         </Transition>
@@ -94,17 +86,12 @@ watch(
 const activeModel = computed(() => {
   let model: RENDERER_MODEL_META | undefined
   const modelId = chatStore.activeThread?.settings.modelId
-  if (modelId) {
-    for (const group of settingsStore.enabledModels) {
-      const foundModel = group.models.find((m) => m.id === modelId)
-      if (foundModel) {
-        model = foundModel
-        break
-      }
-    }
+  const providerId = chatStore.activeThread?.settings.providerId
 
-    if (!model) {
-      for (const group of settingsStore.customModels) {
+  if (modelId && providerId) {
+    // 首先在启用的模型中查找，同时匹配 modelId 和 providerId
+    for (const group of settingsStore.enabledModels) {
+      if (group.providerId === providerId) {
         const foundModel = group.models.find((m) => m.id === modelId)
         if (foundModel) {
           model = foundModel
@@ -112,13 +99,27 @@ const activeModel = computed(() => {
         }
       }
     }
+
+    // 如果在启用的模型中没找到，再在自定义模型中查找
+    if (!model) {
+      for (const group of settingsStore.customModels) {
+        if (group.providerId === providerId) {
+          const foundModel = group.models.find((m) => m.id === modelId)
+          if (foundModel) {
+            model = foundModel
+            break
+          }
+        }
+      }
+    }
   }
+
   if (!model) {
     model = {
       name: chatStore.activeThread?.settings.modelId || '',
       id: chatStore.activeThread?.settings.modelId || '',
       group: '',
-      providerId: '',
+      providerId: chatStore.activeThread?.settings.providerId || '',
       enabled: false,
       isCustom: false,
       contextLength: 0,
@@ -128,6 +129,7 @@ const activeModel = computed(() => {
   return {
     name: model.name,
     id: model.id,
+    providerId: model.providerId,
     tags: []
   }
 })

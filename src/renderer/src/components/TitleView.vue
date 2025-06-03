@@ -1,12 +1,7 @@
 <template>
   <div class="flex items-center justify-between w-full p-2">
     <div class="flex flex-row gap-2 items-center">
-      <Button
-        class="w-7 h-7 rounded-md"
-        size="icon"
-        variant="outline"
-        @click="onSidebarButtonClick"
-      >
+      <Button class="w-7 h-7 rounded-md" size="icon" variant="outline" @click="onSidebarButtonClick">
         <Icon v-if="chatStore.isSidebarOpen" icon="lucide:panel-left-close" class="w-4 h-4" />
         <Icon v-else icon="lucide:panel-left-open" class="w-4 h-4" />
       </Button>
@@ -14,15 +9,9 @@
         <PopoverTrigger as-child>
           <Button variant="outline" class="flex items-center gap-1.5 px-2 h-7" size="sm">
             <ModelIcon class="w-5 h-5" :model-id="model.id"></ModelIcon>
-            <h2 class="text-xs font-bold">{{ model.name }}</h2>
-            <Badge
-              v-for="tag in model.tags"
-              :key="tag"
-              variant="outline"
-              class="py-0 rounded-lg"
-              size="xs"
-              >{{ t(`model.tags.${tag}`) }}</Badge
-            >
+            <h2 class="text-xs font-bold">{{ providerName }} {{ model.name }}</h2>
+            <Badge v-for="tag in model.tags" :key="tag" variant="outline" class="py-0 rounded-lg" size="xs">{{
+              t(`model.tags.${tag}`) }}</Badge>
             <Icon icon="lucide:chevron-right" class="w-4 h-4" />
           </Button>
         </PopoverTrigger>
@@ -40,17 +29,10 @@
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" class="p-0 w-80">
-          <ChatConfig
-            v-model:system-prompt="systemPrompt"
-            :temperature="temperature"
-            :context-length="contextLength"
-            :max-tokens="maxTokens"
-            :artifacts="artifacts"
-            @update:temperature="updateTemperature"
-            @update:context-length="updateContextLength"
-            @update:max-tokens="updateMaxTokens"
-            @update:artifacts="updateArtifacts"
-          />
+          <ChatConfig v-model:system-prompt="systemPrompt" :temperature="temperature" :context-length="contextLength"
+            :max-tokens="maxTokens" :artifacts="artifacts" @update:temperature="updateTemperature"
+            @update:context-length="updateContextLength" @update:max-tokens="updateMaxTokens"
+            @update:artifacts="updateArtifacts" />
         </PopoverContent>
       </Popover>
     </div>
@@ -67,13 +49,15 @@ import ChatConfig from './ChatConfig.vue'
 import ModelSelect from './ModelSelect.vue'
 import ModelIcon from './icons/ModelIcon.vue'
 import { MODEL_META } from '@shared/presenter'
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
+import { useSettingsStore } from '@/stores/settings'
 const configPresenter = usePresenter('configPresenter')
 
 const { t } = useI18n()
 const chatStore = useChatStore()
+const settingsStore = useSettingsStore()
 
 // Chat configuration state
 const temperature = ref(chatStore.chatConfig.temperature)
@@ -143,6 +127,7 @@ watch(
 type Model = {
   name: string
   id: string
+  providerId: string
   tags: string[]
 }
 
@@ -154,6 +139,7 @@ const props = withDefaults(
     model: () => ({
       name: 'DeepSeek R1',
       id: 'deepseek-r1',
+      providerId: '',
       tags: ['reasoning']
     })
   }
@@ -165,13 +151,13 @@ const handleModelUpdate = (model: MODEL_META) => {
     modelId: model.id,
     providerId: model.providerId
   })
-  
+
   // 保存用户的模型偏好设置
   configPresenter.setSetting('preferredModel', {
     modelId: model.id,
     providerId: model.providerId
   })
-  
+
   modelSelectOpen.value = false
 }
 
@@ -181,6 +167,11 @@ onMounted(async () => {
     contextLengthLimit.value = config.contextLength
     maxTokensLimit.value = config.maxTokens
   }
+})
+
+// 根据 providerId 获取 provider 名称
+const providerName = computed(() => {
+  return settingsStore.getProviderNameById(props.model.providerId)
 })
 </script>
 

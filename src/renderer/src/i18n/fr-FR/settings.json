@@ -179,7 +179,24 @@
     "azureApiVersion": "Version API",
     "safety": {
       "title": "Paramètres de sécurité"
-    }
+    },
+    "serverList": "Liste des serveurs",
+    "totalServers": "Total des serveurs",
+    "addServer": "Ajouter un serveur",
+    "autoStart": "S'opiniter",
+    "githubCopilotAuth": "Authentification GitHub Copilot",
+    "githubCopilotConnected": "GitHub Copilot connecté",
+    "githubCopilotNotConnected": "GitHub Copilot non connecté",
+    "loginWithGitHub": "Se connecter avec GitHub",
+    "loggingIn": "Connexion en cours...",
+    "githubCopilotLoginTip": "Autorisez DeepChat à accéder à votre abonnement GitHub Copilot. Les autorisations 'read:user' et 'read:org' sont requises pour accéder à l'API Copilot.",
+    "loginSuccess": "Connexion réussie",
+    "loginFailed": "Échec de la connexion",
+    "tokenValid": "Le jeton est valide",
+    "tokenInvalid": "Le jeton n'est pas valide",
+    "disconnect": "Déconnecter",
+    "disconnected": "Déconnecté avec succès",
+    "disconnectFailed": "Échec de la déconnexion"
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
@@ -293,7 +310,11 @@
       "invalidKeyValueFormat": "Format d'en-tête de demande incorrect, veuillez vérifier si l'entrée est correcte.",
       "npmRegistry": "Registre NPM personnalisé",
       "npmRegistryPlaceholder": "Configurez un registre NPM personnalisé, laissez le système pour sélectionner automatiquement le plus rapide",
-      "browseHigress": "Voir Higress MCP Marketplace"
+      "browseHigress": "Voir Higress MCP Marketplace",
+      "selectFolderError": "Erreur de sélection du dossier",
+      "folders": "Dossiers autorisés à accéder",
+      "addFolder": "Ajouter un dossier",
+      "noFoldersSelected": "Aucun dossier n'a été sélectionné"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -305,7 +326,7 @@
       "description": "Êtes-vous sûr de vouloir supprimer le serveur {nom}? Cette opération ne peut pas être annulée.",
       "title": "Confirmer la suppression"
     },
-    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {nom}? Cette opération ne peut pas être annulée.",
+    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {name} ? Cette action ne peut pas être annulée.",
     "customServers": "Services personnalisés",
     "default": "défaut",
     "deleteServer": "Supprimer le serveur",
@@ -314,7 +335,6 @@
     "removeDefault": "Supprimer par défaut",
     "removeServer": "Supprimer le serveur",
     "autoStart": "Démarrage automatique",
-    "confirmRemoveServer": "Êtes-vous sûr de vouloir supprimer le serveur {name} ? Cette action ne peut pas être annulée.",
     "removeServerDialog": {
       "title": "Supprimer le serveur"
     },
@@ -352,6 +372,12 @@
     "text-xl": "Extrêmement grand"
   },
   "shortcuts": {
+    "title": "Paramètres des raccourcis clavier",
+    "pressKeys": "Appuyez sur les touches",
+    "pressEnterToSave": "Appuyez sur Entrée pour enregistrer, Échap pour annuler",
+    "noModifierOnly": "Impossible d'utiliser uniquement une touche de modification comme raccourci",
+    "keyConflict": "Conflit de raccourci clavier, veuillez choisir une autre combinaison",
+
     "cleanHistory": "Historique de chat clair",
     "goSettings": "Paramètres ouvrir",
     "hideWindow": "Cache-fenêtre",

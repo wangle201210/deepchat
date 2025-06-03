@@ -31,7 +31,15 @@
     "jsonInputPlaceholder": "Entrez les paramètres au format JSON",
     "input": "Paramètres d'entrée",
     "type": "Type",
-    "annotations": "Annotations"
+    "annotations": "Annotations",
+    "selectToolToDebug": "Sélectionnez un outil à déboguer",
+    "dialogDescription": "Déboguer et tester les outils fournis par les serveurs MCP",
+    "toolsCount": "outils",
+    "availableTools": "Outils disponibles",
+    "invalidJson": "Format JSON invalide",
+    "inputHint": "Veuillez entrer les paramètres au format JSON",
+    "required": "Requis",
+    "noDescription": "Pas de description"
   },
   "addServer": "Ajouter un serveur",
   "addServerDialog": {
@@ -113,7 +121,12 @@
     "typePlaceholder": "Sélectionnez un type de serveur",
     "typeSse": "Le serveur envoie des événements",
     "typeStdio": "Entrée et sortie standard",
-    "update": "renouveler"
+    "update": "renouveler",
+    "addFolder": "Ajouter un dossier",
+    "folders": "Liste de dossiers",
+    "noFoldersSelected": "Aucun dossier n'a été sélectionné",
+    "selectFolder": "Sélectionnez un dossier",
+    "selectFolderError": "Échec de la sélection d'un dossier"
   },
   "serverList": "Liste des serveurs",
   "setAsDefault": "Définir comme serveur par défaut",
@@ -174,6 +187,10 @@
     "deepchat-inmemory/auto-prompting-server": {
       "name": "Génération Automatique de Prompt par Modèle",
       "desc": "Sélectionne automatiquement le prompt personnalisé le plus adapté en fonction de l'entrée de l'utilisateur et remplit intelligemment le modèle de prompt."
+    },
+    "deepchat-inmemory/conversation-search-server": {
+      "name": "Recherche d'Historique de Conversation",
+      "desc": "Service de recherche d'historique de conversation intégré DeepChat, peut rechercher les enregistrements de conversation historiques et le contenu des messages"
     }
   },
   "prompts": {

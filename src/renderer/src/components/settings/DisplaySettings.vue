@@ -53,11 +53,11 @@
           <Slider
             :default-value="[fontSizeLevel]"
             :model-value="[fontSizeLevel]"
-            @update:model-value="(val) => (fontSizeLevel = val?.[0] ?? 1)"
             :min="0"
             :max="4"
             :step="1"
             class="w-full max-w-sm"
+            @update:model-value="(val) => (fontSizeLevel = val?.[0] ?? 1)"
           />
           <span class="text-xs w-16 text-center">{{
             t('settings.display.' + fontSizeClass.toLowerCase())

@@ -2,7 +2,9 @@
   "actions": {
     "rename": "이름 변경",
     "delete": "삭제",
-    "cleanMessages": "메시지 정리"
+    "cleanMessages": "메시지 정리",
+    "pin": "고정하기",
+    "unpin": "고정 해제"
   },
   "toolbar": {
     "save": "구하다",

@@ -179,7 +179,24 @@
     "azureApiVersion": "APIバージョン",
     "safety": {
       "title": "セキュリティ設定"
-    }
+    },
+    "serverList": "サーバーリスト",
+    "totalServers": "サーバー総数",
+    "addServer": "サーバーを追加",
+    "autoStart": "セルフスタート",
+    "githubCopilotAuth": "GitHub Copilot認証",
+    "githubCopilotConnected": "GitHub Copilot接続済み",
+    "githubCopilotNotConnected": "GitHub Copilot未接続",
+    "loginWithGitHub": "GitHubでログイン",
+    "loggingIn": "ログイン中...",
+    "githubCopilotLoginTip": "DeepChatがGitHub Copilotサブスクリプションにアクセスすることを許可します。Copilot APIにアクセスするには'read:user'と'read:org'の権限が必要です。",
+    "loginSuccess": "ログイン成功",
+    "loginFailed": "ログイン失敗",
+    "tokenValid": "トークンは有効です",
+    "tokenInvalid": "トークンは無効です",
+    "disconnect": "切断",
+    "disconnected": "切断成功",
+    "disconnectFailed": "切断失敗"
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
@@ -293,7 +310,11 @@
       "invalidKeyValueFormat": "誤ったリクエストヘッダー形式、入力が正しいかどうかを確認してください。",
       "npmRegistry": "カスタムNPMレジストリ",
       "npmRegistryPlaceholder": "カスタムNPMレジストリをセットアップし、システムを残して最速のレジストリを自動的に選択する",
-      "browseHigress": "Higress MCP Marketplaceを表示します"
+      "browseHigress": "Higress MCP Marketplaceを表示します",
+      "selectFolderError": "フォルダーの選択エラー",
+      "folders": "アクセスが許可されています",
+      "addFolder": "フォルダーを追加します",
+      "noFoldersSelected": "フォルダーは選択されていません"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",
@@ -351,6 +372,12 @@
     "text-xl": "非常に大きい"
   },
   "shortcuts": {
+    "title": "ショートカットキー設定",
+    "pressKeys": "キーを押してください",
+    "pressEnterToSave": "Enterキーで保存、Escでキャンセル",
+    "noModifierOnly": "修飾キーのみをショートカットキーとして使用することはできません",
+    "keyConflict": "ショートカットキーが競合しています。別の組み合わせを選択してください",
+
     "cleanHistory": "明確なチャット履歴",
     "goSettings": "設定を開く",
     "hideWindow": "ウィンドウを非表示にします",

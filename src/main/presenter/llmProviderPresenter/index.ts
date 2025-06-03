@@ -19,6 +19,7 @@ import { OLLAMA_EVENTS } from '@/events'
 import { ConfigPresenter } from '../configPresenter'
 import { GeminiProvider } from './providers/geminiProvider'
 import { GithubProvider } from './providers/githubProvider'
+import { GithubCopilotProvider } from './providers/githubCopilotProvider'
 import { OllamaProvider } from './providers/ollamaProvider'
 import { AnthropicProvider } from './providers/anthropicProvider'
 import { DoubaoProvider } from './providers/doubaoProvider'
@@ -94,6 +95,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       }
 
       switch (provider.apiType) {
+        case 'minimax':
+          return new OpenAIProvider(provider, this.configPresenter)
         case 'deepseek':
           return new DeepseekProvider(provider, this.configPresenter)
         case 'silicon':
@@ -107,6 +110,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new ZhipuProvider(provider, this.configPresenter)
         case 'github':
           return new GithubProvider(provider, this.configPresenter)
+        case 'github-copilot':
+          return new GithubCopilotProvider(provider, this.configPresenter)
         case 'ollama':
           return new OllamaProvider(provider, this.configPresenter)
         case 'anthropic':
@@ -284,15 +289,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const conversationMessages: ChatMessage[] = [...initialMessages]
     let needContinueConversation = true
     let toolCallCount = 0
-    const MAX_TOOL_CALLS = 20
+    const MAX_TOOL_CALLS = BaseLLMProvider.getMaxToolCalls()
     const totalUsage: {
       prompt_tokens: number
       completion_tokens: number
       total_tokens: number
+      context_length: number
     } = {
       prompt_tokens: 0,
       completion_tokens: 0,
-      total_tokens: 0
+      total_tokens: 0,
+      context_length: modelConfig?.contextLength || 0
     }
 
     try {
@@ -447,6 +454,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                   totalUsage.prompt_tokens += chunk.usage.prompt_tokens
                   totalUsage.completion_tokens += chunk.usage.completion_tokens
                   totalUsage.total_tokens += chunk.usage.total_tokens
+                  totalUsage.context_length = modelConfig.contextLength
                   yield {
                     type: 'response',
                     data: {

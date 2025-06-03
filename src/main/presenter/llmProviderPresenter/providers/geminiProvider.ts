@@ -18,7 +18,8 @@ import {
   HarmCategory,
   HarmBlockThreshold,
   SafetySetting,
-  FunctionCallingConfigMode
+  FunctionCallingConfigMode,
+  Modality
 } from '@google/genai'
 import { ConfigPresenter } from '../../configPresenter'
 import { presenter } from '@/presenter'
@@ -113,45 +114,6 @@ export class GeminiProvider extends BaseLLMProvider {
       description: 'Gemini 2.0 Flash-Lite 模型（更轻量级）'
     },
     {
-      id: 'models/gemini-1.5-flash',
-      name: 'Gemini 1.5 Flash',
-      group: 'default',
-      providerId: 'gemini',
-      isCustom: false,
-      contextLength: 1048576,
-      maxTokens: 8192,
-      vision: true,
-      functionCall: true,
-      reasoning: false,
-      description: 'Gemini 1.5 Flash 模型（更快速、性价比更高）'
-    },
-    {
-      id: 'models/gemini-1.5-flash-8b',
-      name: 'Gemini 1.5 Flash-8B',
-      group: 'default',
-      providerId: 'gemini',
-      isCustom: false,
-      contextLength: 1048576,
-      maxTokens: 8192,
-      vision: true,
-      functionCall: true,
-      reasoning: false,
-      description: 'Gemini 1.5 Flash-8B 模型（8B 参数版本）'
-    },
-    {
-      id: 'models/gemini-1.5-pro',
-      name: 'Gemini 1.5 Pro',
-      group: 'default',
-      providerId: 'gemini',
-      isCustom: false,
-      contextLength: 2097152,
-      maxTokens: 8192,
-      vision: true,
-      functionCall: true,
-      reasoning: false,
-      description: 'Gemini 1.5 Pro 模型（更强大、支持多模态）'
-    },
-    {
       id: 'gemini-2.0-flash-exp-image-generation',
       name: 'Gemini 2.0 Flash Exp Image Generation',
       group: 'default',
@@ -196,9 +158,9 @@ export class GeminiProvider extends BaseLLMProvider {
       const prompt = `请为以下对话生成一个简洁的标题，不超过10个字，不使用标点符号或其他特殊符号，标题语言应该匹配对话的语言：\n\n${conversationText}`
 
       const result = await this.genAI.models.generateContent({
-        model: 'models/gemini-1.5-flash-8b',
+        model: modelId,
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: this.getGenerationConfig(0.4, undefined, 'models/gemini-1.5-flash-8b')
+        config: this.getGenerationConfig(0.4, undefined, modelId)
       })
 
       return result.text?.trim() || '新对话'
@@ -294,7 +256,7 @@ export class GeminiProvider extends BaseLLMProvider {
       maxOutputTokens: maxTokens
     } as GenerationConfig & { responseModalities?: string[] }
     if (modelId === 'gemini-2.0-flash-exp-image-generation') {
-      generationConfig.responseModalities = ['Text', 'Image']
+      generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
     }
     return generationConfig
   }
@@ -681,6 +643,7 @@ export class GeminiProvider extends BaseLLMProvider {
           return suggestions.map((item) => item.toString())
         }
       } catch (parseError) {
+        console.error('Gemini suggestions parseError:', parseError)
         // 如果解析失败，尝试分行处理
         const lines = responseText
           .split('\n')

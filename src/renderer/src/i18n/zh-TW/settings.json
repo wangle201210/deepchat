@@ -179,7 +179,24 @@
     "azureApiVersion": "API 版本",
     "safety": {
       "title": "安全設置"
-    }
+    },
+    "serverList": "伺服器列表",
+    "totalServers": "伺服器總數",
+    "addServer": "添加伺服器",
+    "autoStart": "自啟動",
+    "githubCopilotAuth": "GitHub Copilot 認證",
+    "githubCopilotConnected": "GitHub Copilot 已連接",
+    "githubCopilotNotConnected": "GitHub Copilot 未連接",
+    "loginWithGitHub": "使用 GitHub 登入",
+    "loggingIn": "登入中...",
+    "githubCopilotLoginTip": "請授權 DeepChat 訪問您的 GitHub Copilot 訂閱。需要 'read:user' 和 'read:org' 權限才能正常使用 Copilot API。",
+    "loginSuccess": "登入成功",
+    "loginFailed": "登入失敗",
+    "tokenValid": "令牌有效",
+    "tokenInvalid": "令牌無效",
+    "disconnect": "斷開連接",
+    "disconnected": "已成功斷開連接",
+    "disconnectFailed": "斷開連接失敗"
   },
   "knowledgeBase": {
     "title": "知識庫設置",
@@ -293,7 +310,11 @@
       "invalidKeyValueFormat": "錯誤的請求頭格式，請檢查輸入是否正確",
       "npmRegistry": "自定義NPM Registry",
       "npmRegistryPlaceholder": "設置自定義NPM Registry,留空系統會自動選擇最快的一個",
-      "browseHigress": "瀏覽 Higress MCP 市場"
+      "browseHigress": "瀏覽 Higress MCP 市場",
+      "selectFolderError": "文件夾選擇錯誤",
+      "folders": "允許訪問的文件夾",
+      "addFolder": "添加文件夾",
+      "noFoldersSelected": "未選擇任何文件夾"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -351,6 +372,12 @@
     "text-xl": "特大"
   },
   "shortcuts": {
+    "title": "快捷鍵設置",
+    "pressKeys": "輸入快捷鍵",
+    "pressEnterToSave": "按Enter保存，Esc取消",
+    "noModifierOnly": "不能僅使用修飾鍵作為快捷鍵",
+    "keyConflict": "快捷鍵衝突，請選擇其他組合",
+    
     "cleanHistory": "清除聊天歷史",
     "goSettings": "打開設置",
     "hideWindow": "隱藏窗口",

@@ -33,6 +33,7 @@ export class MessageManager implements IMessageManager {
       timestamp: sqliteMessage.created_at,
       status: sqliteMessage.status as MESSAGE_STATUS,
       usage: {
+        context_usage: metadata?.contextUsage ?? 0,
         tokens_per_second: metadata?.tokensPerSecond ?? 0,
         total_tokens: metadata?.totalTokens ?? 0,
         generation_time: metadata?.generationTime ?? 0,

@@ -179,7 +179,24 @@
     "azureApiVersion": "API 버전",
     "safety": {
       "title": "보안 설정"
-    }
+    },
+    "serverList": "서버 목록",
+    "totalServers": "총 서버 수",
+    "addServer": "서버 추가",
+    "autoStart": "자기 시작",
+    "githubCopilotAuth": "GitHub Copilot 인증",
+    "githubCopilotConnected": "GitHub Copilot 연결됨",
+    "githubCopilotNotConnected": "GitHub Copilot 연결되지 않음",
+    "loginWithGitHub": "GitHub로 로그인",
+    "loggingIn": "로그인 중...",
+    "githubCopilotLoginTip": "DeepChat이 GitHub Copilot 구독에 액세스하도록 허용하세요. Copilot API에 액세스하려면 'read:user' 및 'read:org' 권한이 필요합니다.",
+    "loginSuccess": "로그인 성공",
+    "loginFailed": "로그인 실패",
+    "tokenValid": "토큰이 유효합니다",
+    "tokenInvalid": "토큰이 유효하지 않습니다",
+    "disconnect": "연결 해제",
+    "disconnected": "성공적으로 연결 해제됨",
+    "disconnectFailed": "연결 해제 실패"
   },
   "knowledgeBase": {
     "title": "지식 베이스 설정",
@@ -293,7 +310,11 @@
       "invalidKeyValueFormat": "잘못된 요청 헤더 형식, 입력이 올바른지 확인하십시오.",
       "npmRegistry": "사용자 정의 NPM 레지스트리",
       "npmRegistryPlaceholder": "사용자 정의 NPM 레지스트리를 설정하고 시스템을 남겨두고 가장 빠른 것을 자동으로 선택하십시오.",
-      "browseHigress": "Higress MCP Marketplace를보십시오"
+      "browseHigress": "Higress MCP Marketplace를보십시오",
+      "selectFolderError": "폴더 선택 오류",
+      "folders": "폴더에 액세스 할 수 있습니다",
+      "addFolder": "폴더를 추가하십시오",
+      "noFoldersSelected": "폴더가 선택되지 않았습니다"
     },
     "deleteServer": "서버 삭제",
     "editServer": "서버 편집",
@@ -351,6 +372,12 @@
     "text-xl": "매우 큽니다"
   },
   "shortcuts": {
+    "title": "단축키 설정",
+    "pressKeys": "키를 누르세요",
+    "pressEnterToSave": "Enter 키를 누르면 저장되고 Esc 키를 누르면 취소됩니다",
+    "noModifierOnly": "수정 키만 단축키로 사용할 수 없습니다",
+    "keyConflict": "단축키 충돌이 발생했습니다. 다른 조합을 선택해주세요",
+
     "cleanHistory": "명확한 채팅 기록",
     "goSettings": "열기 설정",
     "hideWindow": "창을 숨기십시오",

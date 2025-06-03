@@ -29,9 +29,9 @@
             <Button
               size="icon"
               variant="outline"
-              @click="syncStore.openSyncFolder"
               :disabled="!syncStore.syncEnabled"
               title="打开同步文件夹"
+              @click="syncStore.openSyncFolder"
             >
               <Icon icon="lucide:external-link" class="w-4 h-4" />
             </Button>
@@ -55,10 +55,10 @@
       <!-- 手动备份 -->
       <div
         class="p-2 flex flex-row items-center gap-2 hover:bg-accent rounded-lg cursor-pointer"
-        @click="syncStore.startBackup"
         :class="{
           'opacity-50 cursor-not-allowed': !syncStore.syncEnabled || syncStore.isBackingUp
         }"
+        @click="syncStore.startBackup"
       >
         <Icon icon="lucide:save" class="w-4 h-4 text-muted-foreground" />
         <span class="text-sm font-medium">{{ t('settings.data.startBackup') }}</span>
@@ -101,7 +101,7 @@
             <Button variant="outline" @click="closeImportDialog">
               {{ t('dialog.cancel') }}
             </Button>
-            <Button variant="default" @click="handleImport" :disabled="syncStore.isImporting">
+            <Button variant="default" :disabled="syncStore.isImporting" @click="handleImport">
               {{
                 syncStore.isImporting
                   ? t('settings.data.importing')
