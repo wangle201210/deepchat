@@ -67,16 +67,14 @@ import ChatConfig from './ChatConfig.vue'
 import ModelSelect from './ModelSelect.vue'
 import ModelIcon from './icons/ModelIcon.vue'
 import { MODEL_META } from '@shared/presenter'
-import { onMounted, ref, watch, computed } from 'vue'
+import { onMounted, ref, watch} from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
-import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
 const configPresenter = usePresenter('configPresenter')
 
 const { t } = useI18n()
 const chatStore = useChatStore()
-const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
 // Chat configuration state
 const temperature = ref(chatStore.chatConfig.temperature)
@@ -188,10 +186,6 @@ onMounted(async () => {
   }
 })
 
-// 根据 providerId 获取 provider 名称
-const providerName = computed(() => {
-  return settingsStore.getProviderNameById(props.model.providerId)
-})
 </script>
 
 <style scoped></style>
