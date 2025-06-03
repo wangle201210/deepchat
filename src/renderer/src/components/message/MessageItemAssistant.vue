@@ -270,11 +270,12 @@ const handleAction = (
             (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
             settingsStore.copyWithCotEnabled
           ) {
-            return `<think>${trimmedContent}</think>`
+            return `<think>\n${trimmedContent}\n</think>`
           }
           return trimmedContent
         })
         .join('\n')
+        .trim()
     )
   } else if (action === 'prev') {
     if (currentVariantIndex.value > 0) {
