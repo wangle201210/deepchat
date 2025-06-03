@@ -64,7 +64,11 @@
             <PopoverTrigger as-child>
               <Button variant="outline" class="w-full justify-between">
                 <div class="flex items-center gap-2">
-                  <ModelIcon :model-id="selectedSearchModel?.id || ''" class="h-4 w-4" />
+                  <ModelIcon
+                    :model-id="selectedSearchModel?.id || ''"
+                    class="h-4 w-4"
+                    :is-dark="themeStore.isDark"
+                  />
                   <span class="truncate">{{
                     selectedSearchModel?.name || t('settings.common.selectModel')
                   }}</span>
@@ -336,12 +340,13 @@ import type { RENDERER_MODEL_META } from '@shared/presenter'
 import type { SearchEngineTemplate } from '@shared/chat'
 import { Switch } from '@/components/ui/switch'
 import { nanoid } from 'nanoid'
+import { useThemeStore } from '@/stores/theme'
 
 const devicePresenter = usePresenter('devicePresenter')
 const configPresenter = usePresenter('configPresenter')
 const settingsStore = useSettingsStore()
 const { t } = useI18n()
-
+const themeStore = useThemeStore()
 const selectedSearchEngine = ref(settingsStore.activeSearchEngine?.id ?? 'google')
 const selectedSearchModel = computed(() => settingsStore.searchAssistantModel)
 

@@ -1,36 +1,86 @@
 <template>
-  <div :data-message-id="message.id"
-    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item">
-    <ModelIcon :model-id="currentMessage.model_id" custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
-      :alt="currentMessage.role" />
+  <div
+    :data-message-id="message.id"
+    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
+  >
+    <div
+      class="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-base-900/5 dark:bg-base-100/10 border border-input rounded-md"
+    >
+      <ModelIcon
+        :model-id="currentMessage.model_provider"
+        custom-class=" block"
+        class="w-3 h-3"
+        :is-dark="themeStore.isDark"
+        :alt="currentMessage.role"
+      />
+    </div>
+
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="currentMessage.model_name" :timestamp="currentMessage.timestamp" />
-      <div v-if="currentContent.length === 0" class="flex flex-row items-center gap-2 text-xs text-muted-foreground">
+      <div
+        v-if="currentContent.length === 0"
+        class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
+      >
         <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
         {{ t('chat.messages.thinking') }}
       </div>
       <div v-else class="flex flex-col w-full space-y-2">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
-          <MessageBlockContent v-if="block.type === 'content'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" :is-search-result="isSearchResult" />
-          <MessageBlockThink v-else-if="block.type === 'reasoning_content'" :block="block" :usage="message.usage" />
-          <MessageBlockSearch v-else-if="block.type === 'search'" :message-id="message.id" :block="block" />
-          <MessageBlockToolCall v-else-if="block.type === 'tool_call'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" />
-          <MessageBlockAction v-else-if="block.type === 'action'" :message-id="message.id"
-            :conversation-id="currentThreadId" :block="block" />
-          <MessageBlockImage v-else-if="block.type === 'image'" :block="block" :message-id="message.id"
-            :thread-id="currentThreadId" />
+          <MessageBlockContent
+            v-if="block.type === 'content'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+            :is-search-result="isSearchResult"
+          />
+          <MessageBlockThink
+            v-else-if="block.type === 'reasoning_content'"
+            :block="block"
+            :usage="message.usage"
+          />
+          <MessageBlockSearch
+            v-else-if="block.type === 'search'"
+            :message-id="message.id"
+            :block="block"
+          />
+          <MessageBlockToolCall
+            v-else-if="block.type === 'tool_call'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
+          <MessageBlockAction
+            v-else-if="block.type === 'action'"
+            :message-id="message.id"
+            :conversation-id="currentThreadId"
+            :block="block"
+          />
+          <MessageBlockImage
+            v-else-if="block.type === 'image'"
+            :block="block"
+            :message-id="message.id"
+            :thread-id="currentThreadId"
+          />
           <MessageBlockError v-else-if="block.type === 'error'" :block="block" />
         </template>
       </div>
-      <MessageToolbar :loading="message.status === 'pending'" :usage="message.usage" :is-assistant="true"
-        :current-variant-index="currentVariantIndex" :total-variants="totalVariants"
+      <MessageToolbar
+        :loading="message.status === 'pending'"
+        :usage="message.usage"
+        :is-assistant="true"
+        :current-variant-index="currentVariantIndex"
+        :total-variants="totalVariants"
         :is-in-generating-thread="chatStore.generatingThreadIds.has(currentThreadId)"
-        :is-capturing-image="isCapturingImage" @retry="handleAction('retry')" @delete="handleAction('delete')"
-        @copy="handleAction('copy')" @copy-image="handleAction('copyImage')"
-        @copy-image-from-top="handleAction('copyImageFromTop')" @prev="handleAction('prev')"
-        @next="handleAction('next')" @fork="handleAction('fork')" />
+        :is-capturing-image="isCapturingImage"
+        @retry="handleAction('retry')"
+        @delete="handleAction('delete')"
+        @copy="handleAction('copy')"
+        @copy-image="handleAction('copyImage')"
+        @copy-image-from-top="handleAction('copyImageFromTop')"
+        @prev="handleAction('prev')"
+        @next="handleAction('next')"
+        @fork="handleAction('fork')"
+      />
     </div>
   </div>
 
@@ -81,12 +131,13 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-
+import { useThemeStore } from '@/stores/theme'
 const props = defineProps<{
   message: AssistantMessage
   isCapturingImage: boolean
 }>()
 
+const themeStore = useThemeStore()
 const chatStore = useChatStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
