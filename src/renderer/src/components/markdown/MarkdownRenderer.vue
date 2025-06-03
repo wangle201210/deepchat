@@ -14,7 +14,6 @@ import ReferenceNode from './ReferenceNode.vue'
 import { h } from 'vue'
 import { useArtifactStore } from '@/stores/artifact'
 import { nanoid } from 'nanoid'
-import { darkStyle, lightStyle } from '@/lib/code.theme'
 
 defineProps<{
   content: string
@@ -31,8 +30,9 @@ const nodeComponents = {
   code_block: (_props) =>
     h(CodeBlockNode, {
       ..._props,
-      darkStyle,
-      lightStyle,
+      // todo: 配置 custom themes
+      // darkTheme
+      // lightTheme
       onPreviewCode(v) {
         artifactStore.showArtifact(
           {

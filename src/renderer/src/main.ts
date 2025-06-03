@@ -8,7 +8,6 @@ import App from './App.vue'
 import router from './router'
 import { createI18n } from 'vue-i18n'
 import locales from './i18n'
-import 'katex/dist/katex.min.css'
 import 'vue-renderer-markdown/index.css'
 
 const i18n = createI18n({

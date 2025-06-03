@@ -21,7 +21,7 @@
     <div v-show="!collapse" ref="messageBlock" class="w-full relative">
       <div
         class="prose prose-sm dark:prose-invert w-full max-w-full leading-7 break-all"
-        v-html="renderedContent"
+        v-html="disclaimerContent"
       ></div>
     </div>
 
@@ -39,7 +39,7 @@ import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { computed, onMounted, ref, watch } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
-import MarkdownIt from 'markdown-it'
+import { renderMarkdown, getCommonMarkdown } from 'vue-renderer-markdown'
 import { AssistantMessageBlock } from '@shared/chat'
 const props = defineProps<{
   block: AssistantMessageBlock
@@ -66,18 +66,8 @@ const reasoningDuration = computed(() => {
   return parseFloat(duration.toFixed(2))
 })
 
-const md = new MarkdownIt({
-  html: true,
-  linkify: true,
-  typographer: true,
-  breaks: true
-})
-
-const renderedContent = computed(() => {
-  const content = props.block.content || ''
-
-  return md.render(content)
-})
+const md = getCommonMarkdown()
+const disclaimerContent = computed(() => renderMarkdown(md, t('searchDisclaimer')))
 
 watch(
   () => collapse.value,
