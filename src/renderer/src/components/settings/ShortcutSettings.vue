@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full h-full p-4 flex flex-col">
-    <div class="pb-4 flex flex-row items-center justify-between">
+  <div class="w-full h-full py-4 flex flex-col">
+    <div class="pb-4 px-4 flex flex-row items-center justify-between">
       <div class="flex items-center gap-2">
         <Icon icon="lucide:keyboard" class="w-5 h-5 text-primary" />
         <span class="text-lg font-semibold">{{ t('settings.shortcuts.title') }}</span>
@@ -13,7 +13,7 @@
         </Button>
       </div>
     </div>
-    <ScrollArea class="flex-1 w-full h-full">
+    <ScrollArea class="px-4 flex-1 w-full h-full">
       <div class="w-full h-full flex flex-col gap-1.5">
         <!-- 快捷键列表 -->
         <div class="flex flex-col gap-2">
