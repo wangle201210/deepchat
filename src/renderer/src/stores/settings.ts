@@ -1322,10 +1322,7 @@ export const useSettingsStore = defineStore('settings', () => {
 
   ///////////////////////////////////////////////////////////////////////////////////////
   const setCopyWithCotEnabled = async (enabled: boolean) => {
-    // 更新本地状态
     copyWithCotEnabled.value = Boolean(enabled)
-
-    // 调用ConfigPresenter设置值
     await configP.setCopyWithCotEnabled(enabled)
   }
 
@@ -1333,9 +1330,7 @@ export const useSettingsStore = defineStore('settings', () => {
     return await configP.getCopyWithCotEnabled()
   }
 
-  // 设置音效开关监听器
   const setupCopyWithCotEnabledListener = () => {
-    // 监听音效开关变更事件
     window.electron.ipcRenderer.on(
       CONFIG_EVENTS.COPY_WITH_COT_CHANGED,
       (_event, enabled: boolean) => {
