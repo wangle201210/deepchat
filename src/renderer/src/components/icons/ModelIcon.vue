@@ -45,7 +45,7 @@ import openrouterColorIcon from '@/assets/llm-icons/openrouter.svg?url'
 import geminiColorIcon from '@/assets/llm-icons/gemini-color.svg?url'
 import githubColorIcon from '@/assets/llm-icons/github.svg?url'
 import azureOpenaiColorIcon from '@/assets/llm-icons/azure-color.svg?url'
-import anthropicColorIcon from '@/assets/llm-icons/anthropic.svg?url'
+import claudeColorIcon from '@/assets/llm-icons/claude-color.svg?url'
 import googleColorIcon from '@/assets/llm-icons/google-color.svg?url'
 import qiniuIcon from '@/assets/llm-icons/qiniu.svg?url'
 import grokColorIcon from '@/assets/llm-icons/grok.svg?url'
@@ -63,7 +63,7 @@ const icons = {
   grok: grokColorIcon,
   qiniu: qiniuIcon,
   gemma: googleColorIcon,
-  claude: anthropicColorIcon,
+  claude: claudeColorIcon,
   azure: azureOpenaiColorIcon,
   deepseek: deepseekColorIcon,
   lmstudio: lmstudioColorIcon,
@@ -110,7 +110,7 @@ const icons = {
   openrouter: openrouterColorIcon,
   gemini: geminiColorIcon,
   github: githubColorIcon,
-  anthropic: anthropicColorIcon,
+  anthropic: claudeColorIcon,
   gpt: openaiColorIcon,
   o1: openaiColorIcon,
   o3: openaiColorIcon,
@@ -124,10 +124,12 @@ const icons = {
 interface Props {
   modelId: string
   customClass?: string
+  isDark?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  customClass: 'w-4 h-4'
+  customClass: 'w-4 h-4',
+  isDark: false
 })
 
 const iconKey = computed(() => {
@@ -140,8 +142,39 @@ const iconKey = computed(() => {
   })
   return matchedIcon ? matchedIcon : 'default'
 })
+
+const invert = computed(() => {
+  if (!props.isDark) {
+    return false
+  }
+  if (
+    props.modelId.toLowerCase() === 'openai' ||
+    props.modelId.toLowerCase().includes('openai-responses') ||
+    props.modelId.toLowerCase().includes('openrouter') ||
+    props.modelId.toLowerCase().includes('ollama') ||
+    props.modelId.toLowerCase().includes('grok') ||
+    props.modelId.toLowerCase().includes('github') ||
+    props.modelId.toLowerCase().includes('moonshot') ||
+    props.modelId.toLowerCase().includes('lmstudio')
+  ) {
+    return true
+  }
+  return false
+})
 </script>
 
 <template>
-  <img :src="icons[iconKey]" :alt="iconKey" :class="customClass" class="rounded-md dark:bg-white" />
+  <div>
+    <img
+      :src="icons[iconKey]"
+      :alt="iconKey"
+      :class="[customClass, { invert }, invert ? 'opacity-50' : '']"
+    />
+  </div>
 </template>
+
+<style scoped>
+.invert {
+  filter: invert(1);
+}
+</style>
