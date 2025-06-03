@@ -137,8 +137,14 @@ jobs:
       - name: Install Sharp
         run: pnpm install sharp
         env:
+          npm_config_build_from_source: true
           npm_config_cpu: ${{ matrix.arch }}
           npm_config_os: darwin
+      - name: Copy Sharp binaries
+        run: |
+          mkdir -p dist/sharp-binaries
+          cp -R node_modules/sharp/vendor/lib dist/sharp-binaries/
+          cp -R node_modules/sharp/build/Release dist/sharp-binaries/
       - name: Build Mac
         run: pnpm run build:mac:${{ matrix.arch }}
         env:
