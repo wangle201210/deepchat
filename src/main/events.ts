@@ -21,6 +21,7 @@ export const CONFIG_EVENTS = {
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
+  SOUND_ENABLED_CHANGED: 'config:sound-enabled-changed', // 新增：声音开关变更事件
   PROXY_RESOLVED: 'config:proxy-resolved',
   LANGUAGE_CHANGED: 'config:language-changed', // 新增：语言变更事件
   CUSTOM_PROMPTS_CHANGED: 'config:custom-prompts-changed', // 新增：自定义提示词变更事件

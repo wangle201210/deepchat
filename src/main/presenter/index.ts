@@ -69,6 +69,7 @@ const eventsToForward: string[] = [
   SHORTCUT_EVENTS.ZOOM_OUT,
   SHORTCUT_EVENTS.ZOOM_RESUME,
   CONFIG_EVENTS.LANGUAGE_CHANGED,
+  CONFIG_EVENTS.SOUND_ENABLED_CHANGED,
   CONFIG_EVENTS.OAUTH_LOGIN_START,
   CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS,
   CONFIG_EVENTS.OAUTH_LOGIN_ERROR
@@ -256,8 +257,8 @@ ipcMain.handle(
         return { error: `Method "${method}" not found or not a function on "${name}"` }
       }
     } catch (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    e: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      e: any
     ) {
       console.error('error on presenter handle', e) // 保留错误日志
       return { error: e.message || String(e) }

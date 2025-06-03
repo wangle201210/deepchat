@@ -38,6 +38,7 @@
     "contentProtectionEnableDesc": "Enabling screen protection prevents screen sharing software from capturing the DeepChat window, protecting your content privacy. Note that this feature will not completely hide all interfaces. Please use this feature responsibly and in compliance with regulations. Additionally, not all screen sharing software supports this feature. Additionally, some environments may leave a black window.",
     "contentProtectionDisableDesc": "Disabling screen protection will allow screen sharing software to capture the DeepChat window.",
     "contentProtectionRestartNotice": "Changing this setting will restart the application. Do you want to continue?",
+    "soundEnabled": "Enable Sound effects",
     "loggingEnabled": "Enable Logging",
     "loggingDialogTitle": "Confirm Logging Setting Change",
     "loggingEnableDesc": "Enabling logging will help us diagnose issues and improve the application. Log files may contain sensitive information.",

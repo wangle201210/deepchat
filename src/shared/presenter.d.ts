@@ -303,6 +303,9 @@ export interface IConfigPresenter {
   getEnabledProviders(): LLM_PROVIDER[]
   getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
   getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
+  // 音效设置
+  getSoundEnabled(): boolean
+  setSoundEnabled(enabled: boolean): void
   // 日志设置
   getLoggingEnabled(): boolean
   setLoggingEnabled(enabled: boolean): void
