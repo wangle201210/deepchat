@@ -162,6 +162,21 @@
         </div>
       </div>
 
+      <!-- 复制全部（含COT）开关 -->
+      <div class="flex flex-row p-2 items-center gap-2 px-2">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <Icon icon="lucide:file-text" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.common.copyWithCotEnabled') }}</span>
+        </span>
+        <div class="flex-shrink-0">
+          <Switch
+            id="copy-with-cot-switch"
+            :checked="copyWithCotEnabled"
+            @update:checked="handleCopyWithCotChange"
+          />
+        </div>
+      </div>
+
       <!-- 日志开关确认对话框 -->
       <Dialog :open="isLoggingDialogOpen" @update:open="cancelLoggingChange">
         <DialogContent>
@@ -651,6 +666,19 @@ const soundEnabled = computed({
 // 处理音效开关状态变更
 const handleSoundChange = (value: boolean) => {
   settingsStore.setSoundEnabled(value)
+}
+
+const copyWithCotEnabled = computed({
+  get: () => {
+    return settingsStore.copyWithCotEnabled
+  },
+  set: (value) => {
+    settingsStore.setCopyWithCotEnabled(value)
+  }
+})
+
+const handleCopyWithCotChange = (value: boolean) => {
+  settingsStore.setCopyWithCotEnabled(value)
 }
 
 // 测试搜索引擎相关

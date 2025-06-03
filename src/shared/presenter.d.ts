@@ -306,6 +306,9 @@ export interface IConfigPresenter {
   // 音效设置
   getSoundEnabled(): boolean
   setSoundEnabled(enabled: boolean): void
+  // COT拷贝设置
+  getCopyWithCotEnabled(): boolean
+  setCopyWithCotEnabled(enabled: boolean): void
   // 日志设置
   getLoggingEnabled(): boolean
   setLoggingEnabled(enabled: boolean): void
