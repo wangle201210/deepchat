@@ -9,7 +9,7 @@
         <Transition enter-active-class="transition-all duration-300 ease-out"
           leave-active-class="transition-all duration-300 ease-in" enter-from-class="-translate-x-full opacity-0"
           leave-to-class="-translate-x-full opacity-0">
-          <div v-if="chatStore.isSidebarOpen" class="w-60 max-w-60 h-full fixed left-0 z-20 lg:relative">
+          <div v-show="chatStore.isSidebarOpen" class="w-60 max-w-60 h-full fixed left-0 z-20 lg:relative">
             <ThreadsView class="transform" />
           </div>
         </Transition>
