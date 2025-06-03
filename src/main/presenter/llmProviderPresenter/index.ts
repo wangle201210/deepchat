@@ -289,7 +289,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const conversationMessages: ChatMessage[] = [...initialMessages]
     let needContinueConversation = true
     let toolCallCount = 0
-    const MAX_TOOL_CALLS = 20
+    const MAX_TOOL_CALLS = BaseLLMProvider.getMaxToolCalls()
     const totalUsage: {
       prompt_tokens: number
       completion_tokens: number

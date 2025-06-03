@@ -273,7 +273,6 @@ app.on('will-quit', (_event) => {
   if (presenter.trayPresenter) {
     console.log('main: Destroying tray during will-quit.') // 保留关键日志
     presenter.trayPresenter.destroy()
-    presenter.trayPresenter = null // 清理引用
   } else {
     console.warn('main: TrayPresenter not found in presenter during will-quit.') // 保持 warn
   }

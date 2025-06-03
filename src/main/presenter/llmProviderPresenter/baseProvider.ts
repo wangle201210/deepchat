@@ -24,7 +24,7 @@ import { jsonrepair } from 'jsonrepair'
  * 并实现其抽象方法。
  */
 export abstract class BaseLLMProvider {
-  // 最大工具调用次数限制
+  // 单轮会话中最大工具调用次数限制
   protected static readonly MAX_TOOL_CALLS = 50
 
   protected provider: LLM_PROVIDER
@@ -45,8 +45,8 @@ export abstract class BaseLLMProvider {
   }
 
   /**
-   * 获取最大工具调用次数
-   * @returns 配置的最大工具调用次数
+   * 获取单轮会话中最大工具调用次数
+   * @returns 配置的单轮会话中最大工具调用次数
    */
   public static getMaxToolCalls(): number {
     return BaseLLMProvider.MAX_TOOL_CALLS
