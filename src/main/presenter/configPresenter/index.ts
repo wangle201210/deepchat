@@ -39,6 +39,7 @@ interface IAppSettings {
   lastSyncTime?: number // 上次同步时间
   customSearchEngines?: string // 自定义搜索引擎JSON字符串
   soundEnabled?: boolean // 音效是否启用
+  copyWithCotEnabled?: boolean
   loggingEnabled?: boolean // 日志记录是否启用
   default_system_prompt?: string // 默认系统提示词
   [key: string]: unknown // 允许任意键，使用unknown类型替代any
@@ -108,6 +109,7 @@ export class ConfigPresenter implements IConfigPresenter {
         syncFolderPath: path.join(this.userDataPath, 'sync'),
         lastSyncTime: 0,
         soundEnabled: false,
+        copyWithCotEnabled: true,
         loggingEnabled: false,
         default_system_prompt: '',
         appVersion: this.currentAppVersion
@@ -716,6 +718,16 @@ export class ConfigPresenter implements IConfigPresenter {
   setSoundEnabled(enabled: boolean): void {
     this.setSetting('soundEnabled', enabled)
     eventBus.emit(CONFIG_EVENTS.SOUND_ENABLED_CHANGED, enabled)
+  }
+
+  getCopyWithCotEnabled(): boolean {
+    const value = this.getSetting<boolean>('copyWithCotEnabled') ?? true
+    return value === undefined || value === null ? false : value
+  }
+
+  setCopyWithCotEnabled(enabled: boolean): void {
+    this.setSetting('copyWithCotEnabled', enabled)
+    eventBus.emit(CONFIG_EVENTS.COPY_WITH_COT_CHANGED, enabled)
   }
 
   // ===================== MCP配置相关方法 =====================

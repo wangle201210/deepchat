@@ -39,6 +39,7 @@
     "contentProtectionDisableDesc": "關閉投屏保護將允許投屏軟件捕獲DeepChat窗口。",
     "contentProtectionRestartNotice": "切換此設置將導致程序重啟，請確認是否繼續？",
     "soundEnabled": "啟用音效",
+    "copyWithCotEnabled": "複製COT資訊",
     "loggingEnabled": "啟用日誌",
     "loggingDialogTitle": "確認日誌設定變更",
     "loggingEnableDesc": "啟用日誌將幫助我們診斷問題並改進應用程式。日誌檔案可能包含敏感資訊。",

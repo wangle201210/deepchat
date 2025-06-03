@@ -39,6 +39,7 @@
     "contentProtectionDisableDesc": "La désactivation de la protection de l'écran permettra aux logiciels de partage d'écran de capturer la fenêtre DeepChat.",
     "contentProtectionRestartNotice": "La modification de ce paramètre redémarrera l'application. Voulez-vous continuer ?",
     "soundEnabled": "Activer le son",
+    "copyWithCotEnabled": "Copier les infos COT",
     "loggingEnabled": "Activer la journalisation",
     "loggingDialogTitle": "Confirmer le changement de paramètre de journalisation",
     "loggingEnableDesc": "L'activation de la journalisation nous aidera à diagnostiquer les problèmes et à améliorer l'application. Les fichiers journaux peuvent contenir des informations sensibles.",

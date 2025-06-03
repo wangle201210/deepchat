@@ -34,6 +34,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const searchPreviewEnabled = ref<boolean>(true) // 搜索预览是否启用，默认启用
   const contentProtectionEnabled = ref<boolean>(true) // 投屏保护是否启用，默认启用
   const soundEnabled = ref<boolean>(false) // 声音是否启用，默认禁用
+  const copyWithCotEnabled = ref<boolean>(true)
   const notificationsEnabled = ref<boolean>(true) // 系统通知是否启用，默认启用
   const isRefreshingModels = ref<boolean>(false) // 是否正在刷新模型列表
   const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
@@ -246,6 +247,7 @@ export const useSettingsStore = defineStore('settings', () => {
     try {
       loggingEnabled.value = await configP.getLoggingEnabled()
       soundEnabled.value = await configP.getSoundEnabled()
+      copyWithCotEnabled.value = await configP.getCopyWithCotEnabled()
 
       // 获取全部 provider
       providers.value = await configP.getProviders()
@@ -322,6 +324,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
       // 设置声音事件监听器
       setupSoundEnabledListener()
+
+      // 设置拷贝事件监听器
+      setupCopyWithCotEnabledListener()
 
       // 单独刷新一次 Ollama 模型，确保即使没有启用 Ollama provider 也能获取模型列表
       if (providers.value.some((p) => p.id === 'ollama')) {
@@ -676,6 +681,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // 监听音效配置变更事件
     setupSoundEnabledListener()
+
+    // 设置拷贝事件监听器
+    setupCopyWithCotEnabledListener()
   }
 
   // 更新本地模型状态，不触发后端请求
@@ -1286,6 +1294,7 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setLoggingEnabled(enabled)
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////
   // 设置音效开关状态
   const setSoundEnabled = async (enabled: boolean) => {
     // 更新本地状态
@@ -1311,6 +1320,31 @@ export const useSettingsStore = defineStore('settings', () => {
     )
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////
+  const setCopyWithCotEnabled = async (enabled: boolean) => {
+    // 更新本地状态
+    copyWithCotEnabled.value = Boolean(enabled)
+
+    // 调用ConfigPresenter设置值
+    await configP.setCopyWithCotEnabled(enabled)
+  }
+
+  const getCopyWithCotEnabled = async (): Promise<boolean> => {
+    return await configP.getCopyWithCotEnabled()
+  }
+
+  // 设置音效开关监听器
+  const setupCopyWithCotEnabledListener = () => {
+    // 监听音效开关变更事件
+    window.electron.ipcRenderer.on(
+      CONFIG_EVENTS.COPY_WITH_COT_CHANGED,
+      (_event, enabled: boolean) => {
+        copyWithCotEnabled.value = enabled
+      }
+    )
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
   const findModelByIdOrName = (
     modelId: string
   ): { model: RENDERER_MODEL_META; providerId: string } | null => {
@@ -1437,6 +1471,7 @@ export const useSettingsStore = defineStore('settings', () => {
     searchPreviewEnabled,
     contentProtectionEnabled,
     soundEnabled,
+    copyWithCotEnabled,
     notificationsEnabled, // 暴露系统通知状态
     loggingEnabled,
     updateProvider,
@@ -1489,6 +1524,9 @@ export const useSettingsStore = defineStore('settings', () => {
     getSoundEnabled,
     setSoundEnabled,
     setupSoundEnabledListener,
+    getCopyWithCotEnabled,
+    setCopyWithCotEnabled,
+    setupCopyWithCotEnabledListener,
     testSearchEngine,
     refreshSearchEngines,
     findModelByIdOrName,
