@@ -22,7 +22,6 @@ export const useSettingsStore = defineStore('settings', () => {
   const { locale } = useI18n({ useScope: 'global' })
   const upgradeStore = useUpgradeStore()
   const providers = ref<LLM_PROVIDER[]>([])
-  const theme = ref<string>('system')
   const language = ref<string>('system')
   const providerOrder = ref<string[]>([])
   const enabledModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
@@ -254,9 +253,6 @@ export const useSettingsStore = defineStore('settings', () => {
       defaultProviders.value = await configP.getDefaultProviders()
       // 加载保存的 provider 顺序
       await loadSavedOrder()
-
-      // 获取主题
-      theme.value = (await configP.getSetting('theme')) || 'system'
 
       // 获取语言
       language.value = (await configP.getSetting('language')) || 'system'
@@ -597,12 +593,6 @@ export const useSettingsStore = defineStore('settings', () => {
     if (provider.enable !== providers.value.find((p) => p.id === id)?.enable) {
       await refreshAllModels()
     }
-  }
-
-  // 更新主题
-  const updateTheme = async (newTheme: string) => {
-    await configP.setSetting('theme', newTheme)
-    theme.value = newTheme
   }
 
   // 更新语言
@@ -1453,7 +1443,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     providers,
-    theme,
     language,
     fontSizeLevel, // Expose font size level
     fontSizeClass, // Expose font size class
@@ -1470,7 +1459,6 @@ export const useSettingsStore = defineStore('settings', () => {
     notificationsEnabled, // 暴露系统通知状态
     loggingEnabled,
     updateProvider,
-    updateTheme,
     updateLanguage,
     updateFontSizeLevel, // Expose update function
     initSettings,
