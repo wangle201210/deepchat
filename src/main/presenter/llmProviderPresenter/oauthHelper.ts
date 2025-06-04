@@ -131,7 +131,8 @@ export class OAuthHelper {
 // GitHub Copilot的OAuth配置
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
-  redirectUri: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+  redirectUri:
+    import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
   scope: 'read:user read:org',
   responseType: 'code'

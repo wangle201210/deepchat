@@ -238,7 +238,8 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       official: 'https://github.com/features/copilot',
       apiKey: 'https://github.com/settings/tokens',
       docs: 'https://docs.github.com/en/copilot',
-      models: 'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
+      models:
+        'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
       defaultBaseUrl: 'https://api.githubcopilot.com'
     }
   },
