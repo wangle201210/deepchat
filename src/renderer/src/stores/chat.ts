@@ -1007,27 +1007,45 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+  let typewriterAudio: HTMLAudioElement | null = null
+  let toolcallAudio: HTMLAudioElement | null = null
+
   let lastSoundTime = 0
   const soundInterval = 120
 
+  const initAudio = () => {
+    if (!typewriterAudio) {
+      typewriterAudio = new Audio('/sounds/sfx-typing.mp3')
+      typewriterAudio.volume = 0.6
+      typewriterAudio.load()
+    }
+    if (!toolcallAudio) {
+      toolcallAudio = new Audio('/sounds/sfx-fc.mp3')
+      toolcallAudio.volume = 1
+      toolcallAudio.load()
+    }
+  }
+
+  initAudio()
+
   const playTypewriterSound = () => {
     const now = Date.now()
-    if (!settingsStore.soundEnabled) return
+    if (!settingsStore.soundEnabled || !typewriterAudio) return
     if (now - lastSoundTime > soundInterval) {
-      const audio = new Audio('/sounds/sfx-typing.mp3')
-      audio.volume = 0.6
-      audio.play().catch(console.error)
+      typewriterAudio.currentTime = 0
+      typewriterAudio.play().catch(console.error)
       lastSoundTime = now
     }
   }
 
   const playToolcallSound = () => {
-    if (!settingsStore.soundEnabled) return
-    const audio = new Audio('/sounds/sfx-fc.mp3')
-    audio.volume = 1
-    audio.play().catch(console.error)
+    if (!settingsStore.soundEnabled || !toolcallAudio) return
+    toolcallAudio.currentTime = 0
+    toolcallAudio.play().catch(console.error)
   }
 
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
   // 注册消息编辑事件处理
   window.electron.ipcRenderer.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (_, msgId: string) => {
     handleMessageEdited(msgId)
