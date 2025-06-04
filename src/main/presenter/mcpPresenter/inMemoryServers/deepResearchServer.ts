@@ -1,152 +1,39 @@
 // Most of the code is referenced from https://github.com/pinkpixel-dev/deep-research-mcp
 // replacing the search engine with Bocha and re-implementing the page content extraction logic
+// Redesigned with reflection-based iterative research pattern inspired by LangGraph Reflexion
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import axios from 'axios'
-import * as cheerio from 'cheerio'
-import { HttpsProxyAgent } from 'https-proxy-agent'
-import { proxyConfig } from '@/presenter/proxyConfig'
 import { presenter } from '@/presenter'
+import { nanoid } from 'nanoid'
 
-// Schema definitions for deep research tool
-const DeepResearchArgsSchema = z.object({
-  query: z.string().describe('The main research topic or question.'),
-  search_depth: z
-    .string()
-    .optional()
-    .default('advanced')
-    .describe('Depth of the search ("basic" or "advanced").'),
-  topic: z
-    .string()
-    .optional()
-    .default('general')
-    .describe('Category for the search ("general" or "news").'),
-  days: z.number().optional().describe('For "news" topic: number of days back from current date.'),
-  time_range: z
-    .string()
-    .optional()
-    .describe('Time range for search results (e.g., "d" for day, "w" for week).'),
-  max_search_results: z
+// Schema definitions for iterative deep research tools
+const StartDeepResearchArgsSchema = z.object({
+  question: z.string().describe('The research question or topic to start deep research for.')
+})
+
+const SingleWebSearchArgsSchema = z.object({
+  session_id: z.string().describe('Research session ID from start_deep_research.'),
+  query: z.string().describe('Single search query to execute.'),
+  max_results: z
     .number()
-    .optional()
-    .default(7)
-    .describe('Max search results to retrieve (1-20).'),
-  chunks_per_source: z
-    .number()
-    .optional()
-    .default(3)
-    .describe('For "advanced" search: number of content chunks from each source (1-3).'),
-  include_search_images: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Include image URLs from search results.'),
-  include_search_image_descriptions: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Include image descriptions from search results.'),
-  include_answer: z
-    .union([z.boolean(), z.enum(['basic', 'advanced'])])
-    .optional()
-    .default(false)
-    .describe('Include an LLM-generated answer from search.'),
-  include_raw_content_search: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Include cleaned HTML from search results.'),
-  include_domains_search: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('List of domains to specifically include in search.'),
-  exclude_domains_search: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('List of domains to specifically exclude from search.'),
-  search_timeout: z
-    .number()
-    .optional()
-    .default(60)
-    .describe('Timeout in seconds for search requests.'),
-  crawl_max_depth: z
-    .number()
-    .optional()
-    .default(1)
-    .describe('Max crawl depth from base URL (1-2).'),
-  crawl_max_breadth: z
-    .number()
-    .optional()
+    .min(5)
+    .max(15)
     .default(10)
-    .describe('Max links to follow per page level during crawl (1-10).'),
-  crawl_limit: z
-    .number()
-    .optional()
-    .default(10)
-    .describe('Total links crawler will process per root URL (1-20).'),
-  crawl_instructions: z
-    .string()
-    .optional()
-    .describe('Natural language instructions for the crawler.'),
-  crawl_select_paths: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('Regex for URLs paths to crawl.'),
-  crawl_select_domains: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('Regex for domains/subdomains to crawl.'),
-  crawl_exclude_paths: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('Regex for URL paths to exclude.'),
-  crawl_exclude_domains: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('Regex for domains/subdomains to exclude.'),
-  crawl_allow_external: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Allow crawler to follow links to external domains.'),
-  crawl_include_images: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Extract image URLs from crawled pages.'),
-  crawl_categories: z
-    .array(z.string())
-    .optional()
-    .default([])
-    .describe('Filter crawl URLs by categories.'),
-  crawl_extract_depth: z
-    .string()
-    .optional()
-    .default('basic')
-    .describe('Extraction depth for crawl ("basic" or "advanced").'),
-  crawl_timeout: z
-    .number()
-    .optional()
-    .default(180)
-    .describe('Timeout in seconds for crawl requests.'),
-  documentation_prompt: z
-    .string()
-    .optional()
-    .describe('Custom prompt for LLM documentation generation.'),
-  hardware_acceleration: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe('Try to use hardware acceleration if available.')
+    .describe('Maximum results for this search query (5-15).')
+})
+
+const ReflectResultsArgsSchema = z.object({
+  session_id: z.string().describe('Research session ID from start_deep_research.'),
+  iteration: z.number().describe('Current iteration number for this reflection.')
+})
+
+const GenerateFinalAnswerArgsSchema = z.object({
+  session_id: z.string().describe('Research session ID from start_deep_research.'),
+  documentation_prompt: z.string().optional().describe('Custom documentation prompt.')
 })
 
 // 默认文档生成提示
@@ -183,39 +70,40 @@ Include screenshots when appropriate
     Create an extremely detailed, comprehensive markdown document about a given topic when asked.
 `
 
-// 接口定义
-interface CombinedResult {
-  search_rank: number
-  original_url: string
+// Reflection result schema
+interface ReflectionResult {
+  needs_more_research: boolean
+  missing_information: string[]
+  quality_assessment: string
+  suggested_queries: string[]
+  confidence_score: number // 0-1 scale
+}
+
+// Search result interface
+interface SearchResult {
   title: string
-  initial_content_snippet: string
-  search_score?: number
-  published_date?: string
-  crawled_data: CrawledPageData[]
-  crawl_errors: string[]
-}
-
-interface CrawledPageData {
   url: string
-  raw_content: string | null
-  images?: string[]
-  links?: string[]
-  depth: number
+  snippet: string
+  published_date?: string
 }
 
-interface CrawlParams {
-  maxDepth: number
-  maxBreadth: number
-  limit: number
-  instructions?: string
-  selectPaths: string[]
-  selectDomains: string[]
-  excludePaths: string[]
-  excludeDomains: string[]
-  allowExternal: boolean
-  includeImages: boolean
-  extractDepth: 'basic' | 'advanced'
-  timeout: number
+// Query search result interface
+interface QuerySearchResult {
+  query: string
+  results: SearchResult[]
+}
+
+// Research session data interface
+interface ResearchSession {
+  session_id: string
+  question: string
+  iteration: number
+  search_results: QuerySearchResult[]
+  reflections: ReflectionResult[]
+  suggested_queries: string[]
+  created_at: Date
+  last_accessed_at: Date
+  is_completed: boolean
 }
 
 // 博查API返回的数据结构
@@ -251,278 +139,13 @@ interface BochaWebSearchResponse {
   }
 }
 
-// 自定义网页爬虫类
-class WebCrawler {
-  private visitedUrls = new Set<string>()
-  private crawledCount = 0
-  private readonly userAgent =
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-
-  constructor(private params: CrawlParams) {}
-
-  async crawl(startUrl: string): Promise<CrawledPageData[]> {
-    this.visitedUrls.clear()
-    this.crawledCount = 0
-
-    const results: CrawledPageData[] = []
-    const urlQueue: Array<{ url: string; depth: number }> = [{ url: startUrl, depth: 0 }]
-
-    while (urlQueue.length > 0 && this.crawledCount < this.params.limit) {
-      const batch = urlQueue.splice(0, Math.min(this.params.maxBreadth, urlQueue.length))
-
-      // 并发处理当前批次的URL
-      const batchPromises = batch.map(({ url, depth }) =>
-        this.crawlSinglePage(url, depth).catch((error) => {
-          console.error(`Failed to crawl ${url}:`, error.message)
-          return null
-        })
-      )
-
-      const batchResults = await Promise.all(batchPromises)
-
-      for (const result of batchResults) {
-        if (result) {
-          results.push(result)
-          this.crawledCount++
-
-          // 如果还没达到最大深度，提取新的链接加入队列
-          if (result.depth < this.params.maxDepth && this.crawledCount < this.params.limit) {
-            const newUrls = this.extractValidLinks(result.links || [], result.depth + 1)
-            urlQueue.push(...newUrls.slice(0, this.params.maxBreadth))
-          }
-        }
-      }
-    }
-
-    return results
-  }
-
-  private async crawlSinglePage(url: string, depth: number): Promise<CrawledPageData | null> {
-    if (this.visitedUrls.has(url) || this.crawledCount >= this.params.limit) {
-      return null
-    }
-
-    this.visitedUrls.add(url)
-
-    try {
-      const proxyUrl = proxyConfig.getProxyUrl()
-      const response = await axios.get(url, {
-        timeout: 10000, // 10秒超时
-        headers: {
-          'User-Agent': this.userAgent
-        },
-        httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
-        httpsAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
-        maxRedirects: 5
-      })
-
-      const $ = cheerio.load(response.data)
-
-      // 移除不需要的元素
-      $('script, style, nav, header, footer, iframe, .ad, #ad, .advertisement').remove()
-
-      // 提取主要内容
-      const rawContent = this.extractMainContent($)
-
-      // 提取图片（如果需要）
-      const images: string[] = []
-      if (this.params.includeImages) {
-        $('img').each((_, element) => {
-          const src = $(element).attr('src')
-          if (src) {
-            const absoluteUrl = this.resolveUrl(src, url)
-            if (absoluteUrl) images.push(absoluteUrl)
-          }
-        })
-      }
-
-      // 提取链接
-      const links: string[] = []
-      $('a[href]').each((_, element) => {
-        const href = $(element).attr('href')
-        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
-          const absoluteUrl = this.resolveUrl(href, url)
-          if (absoluteUrl && this.isValidUrl(absoluteUrl)) {
-            links.push(absoluteUrl)
-          }
-        }
-      })
-
-      return {
-        url,
-        raw_content: rawContent,
-        images: images.slice(0, 20), // 限制图片数量
-        links: [...new Set(links)].slice(0, 50), // 去重并限制链接数量
-        depth
-      }
-    } catch (error: unknown) {
-      const err = error as Error
-      console.error(`Failed to crawl page ${url}:`, err.message)
-      return null
-    }
-  }
-
-  private extractMainContent($: cheerio.CheerioAPI): string {
-    // 尝试多种策略提取主要内容
-    const strategies = [
-      // 1. 尝试语义化标签
-      () => {
-        const article = $('article').first()
-        if (article.length) return article.text()
-        return null
-      },
-      // 2. 尝试main标签
-      () => {
-        const main = $('main').first()
-        if (main.length) return main.text()
-        return null
-      },
-      // 3. 尝试常见的内容类名
-      () => {
-        const selectors = [
-          '.content',
-          '#content',
-          '.post-content',
-          '.article-content',
-          '.entry-content',
-          '.container'
-        ]
-        for (const selector of selectors) {
-          const element = $(selector).first()
-          if (element.length && element.text().trim().length > 200) {
-            return element.text()
-          }
-        }
-        return null
-      },
-      // 4. 使用body作为最后手段
-      () => {
-        return $('body').text()
-      }
-    ]
-
-    for (const strategy of strategies) {
-      const content = strategy()
-      if (content && content.trim().length > 50) {
-        return this.cleanText(content)
-      }
-    }
-
-    return ''
-  }
-
-  private cleanText(text: string): string {
-    return text
-      .replace(/[\r\n]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 5000) // 限制内容长度
-  }
-
-  private resolveUrl(href: string, baseUrl: string): string | null {
-    try {
-      if (href.startsWith('http')) {
-        return href
-      }
-      return new URL(href, baseUrl).toString()
-    } catch {
-      return null
-    }
-  }
-
-  private isValidUrl(url: string): boolean {
-    try {
-      const urlObj = new URL(url)
-
-      // 基本URL格式检查
-      if (!['http:', 'https:'].includes(urlObj.protocol)) {
-        return false
-      }
-
-      // 检查域名过滤
-      if (!this.params.allowExternal) {
-        // 如果不允许外部链接，需要检查域名限制
-        if (this.params.selectDomains.length > 0) {
-          const matchesDomain = this.params.selectDomains.some((pattern) => {
-            try {
-              return new RegExp(pattern).test(urlObj.hostname)
-            } catch {
-              return urlObj.hostname.includes(pattern)
-            }
-          })
-          if (!matchesDomain) return false
-        }
-      }
-
-      // 检查排除域名
-      if (this.params.excludeDomains.length > 0) {
-        const isExcluded = this.params.excludeDomains.some((pattern) => {
-          try {
-            return new RegExp(pattern).test(urlObj.hostname)
-          } catch {
-            return urlObj.hostname.includes(pattern)
-          }
-        })
-        if (isExcluded) return false
-      }
-
-      // 检查路径过滤
-      if (this.params.selectPaths.length > 0) {
-        const matchesPath = this.params.selectPaths.some((pattern) => {
-          try {
-            return new RegExp(pattern).test(urlObj.pathname)
-          } catch {
-            return urlObj.pathname.includes(pattern)
-          }
-        })
-        if (!matchesPath) return false
-      }
-
-      // 检查排除路径
-      if (this.params.excludePaths.length > 0) {
-        const isExcluded = this.params.excludePaths.some((pattern) => {
-          try {
-            return new RegExp(pattern).test(urlObj.pathname)
-          } catch {
-            return urlObj.pathname.includes(pattern)
-          }
-        })
-        if (isExcluded) return false
-      }
-
-      // 排除常见的非内容文件
-      const excludeExtensions = [
-        '.pdf',
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.gif',
-        '.zip',
-        '.rar',
-        '.exe',
-        '.dmg'
-      ]
-      if (excludeExtensions.some((ext) => urlObj.pathname.toLowerCase().endsWith(ext))) {
-        return false
-      }
-
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  private extractValidLinks(links: string[], depth: number): Array<{ url: string; depth: number }> {
-    return links
-      .filter((link) => !this.visitedUrls.has(link) && this.isValidUrl(link))
-      .slice(0, this.params.maxBreadth)
-      .map((url) => ({ url, depth }))
-  }
-}
-
 export class DeepResearchServer {
   private server: Server
   private bochaApiKey: string
+  private researchSessions: Map<string, ResearchSession> = new Map()
+  private readonly SESSION_TIMEOUT = 60 * 60 * 1000 // 1小时超时
+  private readonly MAX_SESSIONS = 50 // 最大会话数
+  private cleanupTimer: NodeJS.Timeout | null = null
 
   constructor(env?: Record<string, unknown>) {
     // 只检查博查API密钥
@@ -535,7 +158,7 @@ export class DeepResearchServer {
     this.server = new Server(
       {
         name: 'deepchat-inmemory/deep-research-server',
-        version: '1.0.0'
+        version: '2.0.0'
       },
       {
         capabilities: {
@@ -546,11 +169,88 @@ export class DeepResearchServer {
 
     // 设置请求处理器
     this.setupRequestHandlers()
+
+    // 启动清理定时器
+    this.startCleanupTimer()
   }
 
   // 启动服务器
   public startServer(transport: Transport): void {
     this.server.connect(transport)
+  }
+
+  // 启动清理定时器
+  private startCleanupTimer(): void {
+    this.cleanupTimer = setInterval(() => {
+      this.cleanupExpiredSessions()
+    }, 5 * 60 * 1000) // 每5分钟检查一次
+  }
+
+  // 清理过期会话
+  private cleanupExpiredSessions(): void {
+    const now = new Date()
+    const expiredSessions: string[] = []
+
+    for (const [sessionId, session] of this.researchSessions.entries()) {
+      if (now.getTime() - session.last_accessed_at.getTime() > this.SESSION_TIMEOUT) {
+        expiredSessions.push(sessionId)
+      }
+    }
+
+    expiredSessions.forEach(sessionId => {
+      this.researchSessions.delete(sessionId)
+      console.log(`Cleaned up expired research session: ${sessionId}`)
+    })
+
+    // 如果会话数量过多，清理最旧的会话
+    if (this.researchSessions.size > this.MAX_SESSIONS) {
+      const sortedSessions = Array.from(this.researchSessions.entries())
+        .sort(([, a], [, b]) => a.last_accessed_at.getTime() - b.last_accessed_at.getTime())
+
+      const toRemove = sortedSessions.slice(0, this.researchSessions.size - this.MAX_SESSIONS)
+      toRemove.forEach(([sessionId]) => {
+        this.researchSessions.delete(sessionId)
+        console.log(`Cleaned up old research session: ${sessionId}`)
+      })
+    }
+  }
+
+  // 获取研究会话
+  private getSession(sessionId: string): ResearchSession {
+    const session = this.researchSessions.get(sessionId)
+    if (!session) {
+      throw new Error(`Research session not found: ${sessionId}`)
+    }
+    // 更新最后访问时间
+    session.last_accessed_at = new Date()
+    return session
+  }
+
+  // 创建新的研究会话
+  private createSession(question: string): ResearchSession {
+    const sessionId = nanoid()
+    const session: ResearchSession = {
+      session_id: sessionId,
+      question,
+      iteration: 0,
+      search_results: [],
+      reflections: [],
+      suggested_queries: [],
+      created_at: new Date(),
+      last_accessed_at: new Date(),
+      is_completed: false
+    }
+
+    this.researchSessions.set(sessionId, session)
+    return session
+  }
+
+  // 清理会话数据
+  private cleanupSession(sessionId: string): void {
+    const removed = this.researchSessions.delete(sessionId)
+    if (removed) {
+      console.log(`Research session cleaned up: ${sessionId}`)
+    }
   }
 
   // 设置请求处理器
@@ -560,10 +260,28 @@ export class DeepResearchServer {
       return {
         tools: [
           {
-            name: 'deep_research_tool',
+            name: 'start_deep_research',
             description:
-              'Performs extensive web research using Bocha Search and advanced web crawling. Returns aggregated JSON data including the query, search summary, detailed research findings, and documentation instructions.',
-            inputSchema: zodToJsonSchema(DeepResearchArgsSchema)
+              'Start a new deep research session. This creates a session and returns a session_id for subsequent operations.',
+            inputSchema: zodToJsonSchema(StartDeepResearchArgsSchema)
+          },
+          {
+            name: 'execute_single_web_search',
+            description:
+              'Execute a single web search with one query within a research session.',
+            inputSchema: zodToJsonSchema(SingleWebSearchArgsSchema)
+          },
+          {
+            name: 'reflect_on_results',
+            description:
+              'Analyze accumulated research results within a session and determine if more research is needed.',
+            inputSchema: zodToJsonSchema(ReflectResultsArgsSchema)
+          },
+          {
+            name: 'generate_final_answer',
+            description:
+              'Generate the final comprehensive answer based on all accumulated research in the session. This will also cleanup the session data.',
+            inputSchema: zodToJsonSchema(GenerateFinalAnswerArgsSchema)
           }
         ]
       }
@@ -574,64 +292,17 @@ export class DeepResearchServer {
       try {
         const { name, arguments: args } = request.params
 
-        if (name !== 'deep_research_tool') {
-          throw new Error(`Unknown tool: ${name}`)
-        }
-
-        const parsed = DeepResearchArgsSchema.safeParse(args)
-        if (!parsed.success) {
-          throw new Error(`Invalid research parameters: ${parsed.error}`)
-        }
-
-        const researchArgs = parsed.data
-
-        // 确定文档生成提示
-        const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN'
-        const finalDocumentationPrompt = `${DEFAULT_DOCUMENTATION_PROMPT}\nUser's current system language is ${locale}, please respond in the system language unless specified otherwise.`
-
-        try {
-          console.log('Starting deep research using Bocha Search')
-          const results = await this.performDeepResearch(researchArgs)
-
-          const outputText = JSON.stringify(
-            {
-              documentation_instructions: finalDocumentationPrompt,
-              original_query: researchArgs.query,
-              search_summary: results.summary,
-              research_data: results.results
-            },
-            null,
-            2
-          )
-
-          return {
-            content: [{ type: 'text', text: outputText }]
-          }
-        } catch (error: unknown) {
-          const researchError = error as {
-            response?: { data?: { error?: string } }
-            message?: string
-          }
-          const errorMessage =
-            researchError.response?.data?.error ||
-            researchError.message ||
-            'An unexpected error occurred'
-          console.error('[DeepResearchTool Error]', errorMessage)
-
-          const errorOutput = JSON.stringify(
-            {
-              documentation_instructions: finalDocumentationPrompt,
-              error: errorMessage,
-              original_query: researchArgs.query
-            },
-            null,
-            2
-          )
-
-          return {
-            content: [{ type: 'text', text: errorOutput }],
-            isError: true
-          }
+        switch (name) {
+          case 'start_deep_research':
+            return await this.handleStartDeepResearch(args)
+          case 'execute_single_web_search':
+            return await this.handleSingleWebSearch(args)
+          case 'reflect_on_results':
+            return await this.handleReflectResults(args)
+          case 'generate_final_answer':
+            return await this.handleGenerateFinalAnswer(args)
+          default:
+            throw new Error(`Unknown tool: ${name}`)
         }
       } catch (error) {
         console.error('Error calling tool:', error)
@@ -650,153 +321,361 @@ export class DeepResearchServer {
     })
   }
 
-  // 执行深度研究
-  private async performDeepResearch(args: z.infer<typeof DeepResearchArgsSchema>): Promise<{
-    results: CombinedResult[]
-    summary: string | null
-  }> {
-    try {
-      // 第一步：使用博查搜索获取初始结果
-      const searchResults = await this.performBochaSearch(args)
+  // 处理开始深度研究请求
+  private async handleStartDeepResearch(args: unknown) {
+    const parsed = StartDeepResearchArgsSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new Error(`Invalid arguments for start_deep_research: ${parsed.error}`)
+    }
 
-      if (searchResults.results.length === 0) {
-        return searchResults
+    const { question } = parsed.data
+
+    // 创建新的研究会话
+    const session = this.createSession(question)
+
+    // 生成初始搜索查询
+    const initialQueries = this.generateSearchQueries(question, 1)
+    session.suggested_queries = initialQueries
+    session.iteration = 1
+
+    const response = {
+      session_id: session.session_id,
+      question: session.question,
+      research_iteration: session.iteration,
+      suggested_queries: initialQueries,
+      next_steps: `Research session created with ID: ${session.session_id}. Generated ${initialQueries.length} initial search queries. Execute each query separately using execute_single_web_search tool.`,
+      session_info: {
+        created_at: session.created_at.toISOString(),
+        memory_usage: `Storing session data in memory for efficient access`
       }
+    }
 
-      // 第二步：对搜索结果进行深度爬取
-      const crawlParams: CrawlParams = {
-        maxDepth: Math.min(3, args.crawl_max_depth || 1), // 最多3层深度
-        maxBreadth: Math.min(15, args.crawl_max_breadth || 10),
-        limit: Math.min(50, args.crawl_limit || 20), // 增加爬取限制
-        instructions: args.crawl_instructions,
-        selectPaths: args.crawl_select_paths || [],
-        selectDomains: args.crawl_select_domains || [],
-        excludePaths: args.crawl_exclude_paths || [],
-        excludeDomains: args.crawl_exclude_domains || [],
-        allowExternal: args.crawl_allow_external || false,
-        includeImages: args.crawl_include_images || false,
-        extractDepth: (args.crawl_extract_depth as 'basic' | 'advanced') || 'basic',
-        timeout: args.crawl_timeout || 180
-      }
-
-      console.log(`Starting deep crawl for ${searchResults.results.length} search results...`)
-
-      const enhancedResults: CombinedResult[] = []
-
-      // 并发爬取搜索结果
-      const crawlPromises = searchResults.results.map(async (result) => {
-        try {
-          const crawler = new WebCrawler(crawlParams)
-          const crawledData = await crawler.crawl(result.original_url)
-
-          return {
-            ...result,
-            crawled_data: crawledData.length > 0 ? crawledData : result.crawled_data,
-            crawl_errors:
-              crawledData.length === 0
-                ? [`Failed to crawl ${result.original_url}: No content extracted`]
-                : []
-          }
-        } catch (error: unknown) {
-          const err = error as Error
-          console.error(`Crawl error for ${result.original_url}:`, err.message)
-          return {
-            ...result,
-            crawl_errors: [`Failed to crawl ${result.original_url}: ${err.message}`]
-          }
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(response, null, 2)
         }
-      })
-
-      const crawlResults = await Promise.all(crawlPromises)
-      enhancedResults.push(...crawlResults)
-
-      const totalCrawledPages = enhancedResults.reduce(
-        (sum, result) => sum + result.crawled_data.length,
-        0
-      )
-      const enhancedSummary = `${searchResults.summary} Deep crawling obtained ${totalCrawledPages} page contents.`
-
-      console.log(
-        `Deep research completed: ${enhancedResults.length} search results, ${totalCrawledPages} crawled pages`
-      )
-
-      return {
-        results: enhancedResults,
-        summary: enhancedSummary
-      }
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: string } }; message?: string }
-      console.error('Deep research error:', axiosError.message)
-      throw new Error(`Deep research failed: ${axiosError.message}`)
+      ]
     }
   }
 
-  // 使用博查API进行搜索
-  private async performBochaSearch(args: z.infer<typeof DeepResearchArgsSchema>): Promise<{
-    results: CombinedResult[]
-    summary: string | null
-  }> {
+  // 处理单个网络搜索请求
+  private async handleSingleWebSearch(args: unknown) {
+    const parsed = SingleWebSearchArgsSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new Error(`Invalid arguments for execute_single_web_search: ${parsed.error}`)
+    }
+
+    const { session_id, query, max_results } = parsed.data
+
+    // 获取会话
+    const session = this.getSession(session_id)
+
     try {
-      // 调用博查Web搜索API
+      const searchResult = await this.performSingleBochaSearch(query, max_results)
+
+      // 将搜索结果存储到会话中
+      session.search_results.push(searchResult)
+
+      const response = {
+        session_id: session.session_id,
+        query: query,
+        results_count: searchResult.results.length,
+        total_searches_in_session: session.search_results.length,
+        next_steps: `Search results stored in memory for session ${session.session_id}. You can execute more searches or proceed to reflect_on_results to analyze the accumulated data.`,
+        memory_info: {
+          total_results_accumulated: session.search_results.reduce((sum, sr) => sum + sr.results.length, 0)
+        }
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(response, null, 2)
+          }
+        ]
+      }
+    } catch (error) {
+      const axiosError = error as { message?: string }
+      console.error('Single web search error:', axiosError.message)
+      throw new Error(`Single web search failed: ${axiosError.message}`)
+    }
+  }
+
+  // 处理结果反思请求
+  private async handleReflectResults(args: unknown) {
+    const parsed = ReflectResultsArgsSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new Error(`Invalid arguments for reflect_on_results: ${parsed.error}`)
+    }
+
+    const { session_id, iteration } = parsed.data
+
+    // 获取会话
+    const session = this.getSession(session_id)
+
+    // 从内存中获取搜索结果进行分析
+    const allSearchResults = session.search_results
+    const searchResultsText = allSearchResults
+      .map(sr => `Query: ${sr.query}\nResults: ${sr.results.map(r => `${r.title}: ${r.snippet}`).join('\n')}`)
+      .join('\n\n')
+
+    // 分析搜索结果质量和完整性
+    const reflection = this.analyzeSearchResults(session.question, searchResultsText, iteration)
+
+    // 存储反思结果
+    session.reflections.push(reflection)
+    session.iteration = iteration
+
+    // 如果需要更多研究，生成新的查询建议
+    if (reflection.needs_more_research) {
+      const newQueries = this.generateSearchQueries(session.question, iteration + 1)
+      session.suggested_queries = newQueries
+    }
+
+    const statusMessage = reflection.needs_more_research
+      ? `Research iteration ${iteration} reflection complete for session ${session.session_id}. Analysis indicates more research needed.\n\nMissing information:\n${reflection.missing_information.map((info, i) => `${i + 1}. ${info}`).join('\n')}\n\nConfidence: ${(reflection.confidence_score * 100).toFixed(1)}%\n\nSuggested next queries: ${session.suggested_queries.join(', ')}\n\nNext: Execute additional searches with suggested queries.`
+      : `Research iteration ${iteration} reflection complete for session ${session.session_id}. Analysis indicates sufficient information gathered.\n\nQuality assessment: ${reflection.quality_assessment}\n\nConfidence: ${(reflection.confidence_score * 100).toFixed(1)}%\n\nNext: Generate final comprehensive answer using generate_final_answer.`
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: statusMessage
+        }
+      ]
+    }
+  }
+
+  // 处理最终答案生成请求
+  private async handleGenerateFinalAnswer(args: unknown) {
+    const parsed = GenerateFinalAnswerArgsSchema.safeParse(args)
+    if (!parsed.success) {
+      throw new Error(`Invalid arguments for generate_final_answer: ${parsed.error}`)
+    }
+
+    const { session_id, documentation_prompt } = parsed.data
+
+    // 获取会话
+    const session = this.getSession(session_id)
+
+    // 从内存中构建完整的研究数据
+    const researchData = {
+      original_question: session.question,
+      total_iterations: session.iteration,
+      total_searches: session.search_results.length,
+      total_results: session.search_results.reduce((sum, sr) => sum + sr.results.length, 0),
+      search_results: session.search_results,
+      reflections: session.reflections,
+      final_confidence: session.reflections.length > 0
+        ? session.reflections[session.reflections.length - 1].confidence_score
+        : 0.5
+    }
+
+    // 确定文档生成提示
+    const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN'
+    const finalDocumentationPrompt =
+      documentation_prompt ||
+      `${DEFAULT_DOCUMENTATION_PROMPT}
+User's current system language is ${locale}, please respond in the system language unless specified otherwise.`
+
+    const finalResult = {
+      session_id: session.session_id,
+      original_question: session.question,
+      research_summary: `Comprehensive research completed across ${session.iteration} iterations with ${researchData.total_searches} searches yielding ${researchData.total_results} total results.`,
+      final_confidence_score: `${(researchData.final_confidence * 100).toFixed(1)}%`,
+      documentation_instructions: finalDocumentationPrompt,
+      research_metadata: {
+        session_created: session.created_at.toISOString(),
+        session_duration: `${Math.round((new Date().getTime() - session.created_at.getTime()) / 1000 / 60)} minutes`,
+        total_sources: researchData.total_results,
+        iterations_completed: session.iteration,
+        research_completed: true
+      },
+      cleanup_status: 'Session data will be cleaned up after this response'
+    }
+
+    // 标记会话为已完成，准备清理
+    session.is_completed = true
+
+    // 延迟清理，给响应时间返回
+    setTimeout(() => {
+      this.cleanupSession(session_id)
+    }, 1000)
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(finalResult, null, 2)
+        }
+      ]
+    }
+  }
+
+  // 生成搜索查询
+  private generateSearchQueries(
+    question: string,
+    iteration: number = 1
+  ): string[] {
+    const baseQueries = [
+      question,
+      `${question} latest research`,
+      `${question} expert analysis`,
+      `${question} best practices`
+    ]
+
+    if (iteration === 1) {
+      return baseQueries.slice(0, 3)
+    }
+
+    // 基于之前的结果生成更具体的查询
+    const refinedQueries = [
+      `${question} detailed explanation`,
+      `${question} case studies examples`,
+      `${question} implementation guide`,
+      `${question} challenges solutions`,
+      `${question} advanced techniques`,
+      `${question} expert opinions`
+    ]
+
+    // 基于迭代次数返回不同数量的查询
+    const queryCount = Math.min(3, Math.max(1, 5 - iteration))
+    return refinedQueries.slice(0, queryCount)
+  }
+
+  // 执行单个博查搜索
+  private async performSingleBochaSearch(
+    query: string,
+    maxResults: number
+  ): Promise<QuerySearchResult> {
+    try {
       const response = await axios.post(
         'https://api.bochaai.com/v1/web-search',
         {
-          query: args.query,
+          query,
           summary: true,
           freshness: 'noLimit',
-          count: args.max_search_results || 7
+          count: maxResults
         },
         {
           headers: {
             Authorization: `Bearer ${this.bochaApiKey}`,
             'Content-Type': 'application/json'
           },
-          timeout: (args.search_timeout || 60) * 1000
+          timeout: 30000
         }
       )
 
       const searchResponse = response.data as BochaWebSearchResponse
-
-      if (
-        !searchResponse.data?.webPages?.value ||
-        searchResponse.data.webPages.value.length === 0
-      ) {
-        return {
-          results: [],
-          summary: `No results found for query: "${args.query}".`
-        }
-      }
-
-      // 将博查搜索结果转换为统一格式
-      const combinedResults: CombinedResult[] = searchResponse.data.webPages.value.map(
-        (item, index) => ({
-          search_rank: index + 1,
-          original_url: item.url,
-          title: item.name,
-          initial_content_snippet: item.summary,
-          search_score: undefined, // 博查API不提供分数
-          published_date: item.datePublished,
-          crawled_data: [
-            {
-              url: item.url,
-              raw_content: item.summary,
-              images: [],
-              links: [],
-              depth: 0
-            }
-          ],
-          crawl_errors: []
-        })
-      )
+      const results = searchResponse.data?.webPages?.value || []
 
       return {
-        results: combinedResults,
-        summary: `Found ${combinedResults.length} results using Bocha Search for "${args.query}"`
+        query,
+        results: results.map(
+          (item): SearchResult => ({
+            title: item.name,
+            url: item.url,
+            snippet: item.summary,
+            published_date: item.datePublished
+          })
+        )
       }
-    } catch (error: unknown) {
-      const axiosError = error as { response?: { data?: { error?: string } }; message?: string }
-      console.error('Bocha search error:', axiosError.message)
-      throw new Error(`Bocha API request failed: ${axiosError.message}`)
+    } catch (error) {
+      console.error(`Search failed for query "${query}":`, error)
+      return { query, results: [] }
+    }
+  }
+
+  // 分析搜索结果
+  private analyzeSearchResults(
+    question: string,
+    searchResults: string,
+    iteration: number
+  ): ReflectionResult {
+    // 简化的分析逻辑 - 在实际应用中可以使用LLM进行更sophisticated的分析
+    const resultsLength = searchResults.length
+    const hasKeywords = searchResults.toLowerCase().includes(question.toLowerCase())
+
+    // 基于迭代次数和结果质量评估
+    let confidenceScore = 0.5 // 基础分数
+    let needsMoreResearch = true
+    let missingInfo: string[] = []
+
+    if (resultsLength > 1000 && hasKeywords) {
+      confidenceScore += 0.3
+    }
+
+    if (iteration >= 3) {
+      confidenceScore += 0.2
+      needsMoreResearch = false // 最多3次迭代
+    }
+
+    if (confidenceScore >= 0.8) {
+      needsMoreResearch = false
+    } else {
+      missingInfo = [
+        'More detailed technical information needed',
+        'Additional expert perspectives required',
+        'Recent developments and updates needed'
+      ]
+    }
+
+    return {
+      needs_more_research: needsMoreResearch,
+      missing_information: missingInfo,
+      quality_assessment: `Research quality assessment for iteration ${iteration}. Confidence level: ${(confidenceScore * 100).toFixed(1)}%`,
+      suggested_queries: needsMoreResearch
+        ? [`${question} advanced techniques`, `${question} expert opinions`]
+        : [],
+      confidence_score: Math.min(confidenceScore, 1.0)
+    }
+  }
+
+  // 销毁时清理资源
+  public destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+      this.cleanupTimer = null
+    }
+
+    // 清理所有会话
+    this.researchSessions.clear()
+    console.log('DeepResearchServer destroyed and all sessions cleaned up')
+  }
+
+  // 获取会话统计信息（用于调试和监控）
+  public getSessionStats(): {
+    total_sessions: number
+    active_sessions: number
+    completed_sessions: number
+    oldest_session_age_minutes: number
+  } {
+    const now = new Date()
+    let activeCount = 0
+    let completedCount = 0
+    let oldestAge = 0
+
+    for (const session of this.researchSessions.values()) {
+      if (session.is_completed) {
+        completedCount++
+      } else {
+        activeCount++
+      }
+
+      const ageMinutes = Math.round((now.getTime() - session.created_at.getTime()) / 1000 / 60)
+      if (ageMinutes > oldestAge) {
+        oldestAge = ageMinutes
+      }
+    }
+
+    return {
+      total_sessions: this.researchSessions.size,
+      active_sessions: activeCount,
+      completed_sessions: completedCount,
+      oldest_session_age_minutes: oldestAge
     }
   }
 }

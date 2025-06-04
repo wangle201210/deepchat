@@ -79,7 +79,6 @@ export class OAuthPresenter {
 
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
-
     } catch (error) {
       console.error('GitHub Copilot Device Flow login failed:', error)
       eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
@@ -393,8 +392,6 @@ export class OAuthPresenter {
     return `${config.authUrl}?${params.toString()}`
   }
 
-
-
   /**
    * 用授权码交换访问令牌
    */
@@ -402,7 +399,7 @@ export class OAuthPresenter {
     const response = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         'User-Agent': 'DeepChat/1.0.0'
       },
@@ -418,7 +415,7 @@ export class OAuthPresenter {
       throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       access_token: string
       error?: string
       error_description?: string
@@ -445,7 +442,8 @@ export class OAuthPresenter {
 // GitHub Copilot的OAuth配置
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
-  redirectUri: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+  redirectUri:
+    import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
   clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET,
   scope: 'read:user read:org',

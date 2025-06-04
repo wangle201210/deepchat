@@ -100,13 +100,17 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   // Gemini提供商特定模型配置
   gemini: {
     models: [
-    {
+      {
         id: 'models/gemini-2.5-flash-preview-05-20',
         name: 'Gemini 2.5 Flash Preview 05-20',
         temperature: 0.7,
         maxTokens: 65536,
         contextLength: 1048576,
-        match: ['models/gemini-2.5-flash-preview-05-20', 'gemini-2.5-flash-preview-05-20', 'gemini-2.5-flash-preview'],
+        match: [
+          'models/gemini-2.5-flash-preview-05-20',
+          'gemini-2.5-flash-preview-05-20',
+          'gemini-2.5-flash-preview'
+        ],
         vision: true,
         functionCall: true,
         reasoning: true

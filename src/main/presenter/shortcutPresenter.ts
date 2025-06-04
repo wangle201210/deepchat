@@ -93,10 +93,7 @@ export class ShortcutPresenter {
     globalShortcut.register(this.shortcutKeys.GoSettings, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        presenter.windowPresenter.sendToActiveTab(
-          focusedWindow.id,
-          SHORTCUT_EVENTS.GO_SETTINGS
-        )
+        presenter.windowPresenter.sendToActiveTab(focusedWindow.id, SHORTCUT_EVENTS.GO_SETTINGS)
       }
     })
 
