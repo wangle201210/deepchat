@@ -180,8 +180,8 @@
 
     <!-- 新增/编辑弹窗 -->
     <Dialog v-model:open="openAddDialog">
-      <DialogContent class="max-w-2xl">
-        <DialogHeader>
+      <DialogContent class="px-0 flex flex-col max-w-2xl h-[80vh]">
+        <DialogHeader class="px-6">
           <DialogTitle>{{
             editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle')
           }}</DialogTitle>
@@ -193,108 +193,110 @@
             }}
           </DialogDescription>
         </DialogHeader>
-        <div class="space-y-4 py-4">
-          <div>
-            <Label>{{ t('promptSetting.name') }}</Label>
-            <Input v-model="form.name" :placeholder="t('promptSetting.namePlaceholder')" />
-          </div>
-          <div>
-            <Label>{{ t('promptSetting.description') }}</Label>
-            <Input
-              v-model="form.description"
-              :placeholder="t('promptSetting.descriptionPlaceholder')"
-            />
-          </div>
-          <div class="flex items-center space-x-2">
-            <Checkbox
-              id="prompt-enabled"
-              :checked="form.enabled"
-              @update:checked="(value) => (form.enabled = value)"
-            />
-            <Label for="prompt-enabled">{{ t('promptSetting.enablePrompt') }}</Label>
-          </div>
-          <div>
-            <Label>{{ t('promptSetting.content') }}</Label>
-            <textarea
-              v-model="form.content"
-              class="w-full min-h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
-              :placeholder="t('promptSetting.contentPlaceholder')"
-            ></textarea>
-          </div>
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <Label>{{ t('promptSetting.parameters') }}</Label>
-              <Button variant="outline" size="sm" @click="addParameter">
-                <Icon icon="lucide:plus" class="w-4 h-4 mr-1" />
-                {{ t('promptSetting.addParameter') }}
-              </Button>
+        <ScrollArea class="px-6 h-0 flex-grow">
+          <div class="space-y-4">
+            <div>
+              <Label>{{ t('promptSetting.name') }}</Label>
+              <Input v-model="form.name" :placeholder="t('promptSetting.namePlaceholder')" />
             </div>
-            <div v-if="form.parameters?.length" class="space-y-3">
-              <div
-                v-for="(param, index) in form.parameters"
-                :key="index"
-                class="relative p-3 border rounded-lg bg-muted/30"
-              >
-                <!-- 删除按钮 - 放在右上角 -->
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="absolute top-2 right-2 h-6 w-6 bg-muted/50 border border-border/50 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
-                  :title="t('common.delete')"
-                  @click="removeParameter(index)"
-                >
-                  <Icon icon="lucide:trash-2" class="w-3.5 h-3.5" />
+            <div>
+              <Label>{{ t('promptSetting.description') }}</Label>
+              <Input
+                v-model="form.description"
+                :placeholder="t('promptSetting.descriptionPlaceholder')"
+              />
+            </div>
+            <div class="flex items-center space-x-2">
+              <Checkbox
+                id="prompt-enabled"
+                :checked="form.enabled"
+                @update:checked="(value) => (form.enabled = value)"
+              />
+              <Label for="prompt-enabled">{{ t('promptSetting.enablePrompt') }}</Label>
+            </div>
+            <div>
+              <Label>{{ t('promptSetting.content') }}</Label>
+              <textarea
+                v-model="form.content"
+                class="w-full min-h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
+                :placeholder="t('promptSetting.contentPlaceholder')"
+              ></textarea>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <Label>{{ t('promptSetting.parameters') }}</Label>
+                <Button variant="outline" size="sm" @click="addParameter">
+                  <Icon icon="lucide:plus" class="w-4 h-4 mr-1" />
+                  {{ t('promptSetting.addParameter') }}
                 </Button>
+              </div>
+              <div v-if="form.parameters?.length" class="space-y-3">
+                <div
+                  v-for="(param, index) in form.parameters"
+                  :key="index"
+                  class="relative p-3 border rounded-lg bg-muted/30"
+                >
+                  <!-- 删除按钮 - 放在右上角 -->
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="absolute top-2 right-2 h-6 w-6 bg-muted/50 border border-border/50 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
+                    :title="t('common.delete')"
+                    @click="removeParameter(index)"
+                  >
+                    <Icon icon="lucide:trash-2" class="w-3.5 h-3.5" />
+                  </Button>
 
-                <!-- 参数内容 -->
-                <div class="space-y-3 pr-8">
-                  <!-- 参数名称行 -->
-                  <div class="flex items-center gap-3">
-                    <div class="flex-1">
+                  <!-- 参数内容 -->
+                  <div class="space-y-3 pr-8">
+                    <!-- 参数名称行 -->
+                    <div class="flex items-center gap-3">
+                      <div class="flex-1">
+                        <Label class="text-sm text-muted-foreground">{{
+                          t('promptSetting.parameterName')
+                        }}</Label>
+                        <Input
+                          v-model="param.name"
+                          :placeholder="t('promptSetting.parameterNamePlaceholder')"
+                          class="mt-1"
+                        />
+                      </div>
+                      <div class="flex items-center gap-2 shrink-0 pt-6">
+                        <Checkbox
+                          :id="'required-' + index"
+                          :checked="param.required"
+                          @update:checked="(value) => (param.required = value)"
+                        />
+                        <Label :for="'required-' + index" class="text-sm whitespace-nowrap">
+                          {{ t('promptSetting.required') }}
+                        </Label>
+                      </div>
+                    </div>
+
+                    <!-- 描述行 -->
+                    <div>
                       <Label class="text-sm text-muted-foreground">{{
-                        t('promptSetting.parameterName')
+                        t('promptSetting.parameterDescription')
                       }}</Label>
                       <Input
-                        v-model="param.name"
-                        :placeholder="t('promptSetting.parameterNamePlaceholder')"
+                        v-model="param.description"
+                        :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
                         class="mt-1"
                       />
                     </div>
-                    <div class="flex items-center gap-2 shrink-0 pt-6">
-                      <Checkbox
-                        :id="'required-' + index"
-                        :checked="param.required"
-                        @update:checked="(value) => (param.required = value)"
-                      />
-                      <Label :for="'required-' + index" class="text-sm whitespace-nowrap">
-                        {{ t('promptSetting.required') }}
-                      </Label>
-                    </div>
-                  </div>
-
-                  <!-- 描述行 -->
-                  <div>
-                    <Label class="text-sm text-muted-foreground">{{
-                      t('promptSetting.parameterDescription')
-                    }}</Label>
-                    <Input
-                      v-model="param.description"
-                      :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
-                      class="mt-1"
-                    />
                   </div>
                 </div>
               </div>
-            </div>
-            <div
-              v-else
-              class="text-center text-muted-foreground py-8 border-2 border-dashed border-muted rounded-lg"
-            >
-              <Icon icon="lucide:settings" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>{{ t('promptSetting.noParameters') }}</p>
+              <div
+                v-else
+                class="text-center text-muted-foreground py-8 border-2 border-dashed border-muted rounded-lg"
+              >
+                <Icon icon="lucide:settings" class="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>{{ t('promptSetting.noParameters') }}</p>
+              </div>
             </div>
           </div>
-        </div>
+        </ScrollArea>
         <DialogFooter>
           <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
           <Button :disabled="!form.name || !form.content" @click="savePrompt">{{
