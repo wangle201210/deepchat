@@ -36,7 +36,7 @@ const GenerateFinalAnswerArgsSchema = z.object({
   documentation_prompt: z.string().optional().describe('Custom documentation prompt.')
 })
 
-// 默认文档生成提示
+// Default documentation generation prompt
 const DEFAULT_DOCUMENTATION_PROMPT = `
 For all queries, search the web extensively to acquire up to date information. Research several sources. Use all the tools provided to you to gather as much context as possible.
 Adhere to these guidelines when creating documentation:
@@ -106,7 +106,7 @@ interface ResearchSession {
   is_completed: boolean
 }
 
-// 博查API返回的数据结构
+// Bocha API response data structure
 interface BochaWebSearchResponse {
   msg: string | null
   data: {
@@ -143,18 +143,18 @@ export class DeepResearchServer {
   private server: Server
   private bochaApiKey: string
   private researchSessions: Map<string, ResearchSession> = new Map()
-  private readonly SESSION_TIMEOUT = 60 * 60 * 1000 // 1小时超时
-  private readonly MAX_SESSIONS = 50 // 最大会话数
+  private readonly SESSION_TIMEOUT = 60 * 60 * 1000 // 1 hour timeout
+  private readonly MAX_SESSIONS = 50 // Maximum number of sessions
   private cleanupTimer: NodeJS.Timeout | null = null
 
   constructor(env?: Record<string, unknown>) {
-    // 只检查博查API密钥
+    // Only check Bocha API key
     if (!env?.BOCHA_API_KEY) {
       throw new Error('BOCHA_API_KEY is required')
     }
     this.bochaApiKey = env.BOCHA_API_KEY as string
 
-    // 创建服务器实例
+    // Create server instance
     this.server = new Server(
       {
         name: 'deepchat-inmemory/deep-research-server',
@@ -167,26 +167,26 @@ export class DeepResearchServer {
       }
     )
 
-    // 设置请求处理器
+    // Set request handlers
     this.setupRequestHandlers()
 
-    // 启动清理定时器
+    // Start cleanup timer
     this.startCleanupTimer()
   }
 
-  // 启动服务器
+  // Start server
   public startServer(transport: Transport): void {
     this.server.connect(transport)
   }
 
-  // 启动清理定时器
+  // Start cleanup timer
   private startCleanupTimer(): void {
     this.cleanupTimer = setInterval(() => {
       this.cleanupExpiredSessions()
-    }, 5 * 60 * 1000) // 每5分钟检查一次
+    }, 5 * 60 * 1000) // Check every 5 minutes
   }
 
-  // 清理过期会话
+  // Clean up expired sessions
   private cleanupExpiredSessions(): void {
     const now = new Date()
     const expiredSessions: string[] = []
@@ -202,7 +202,7 @@ export class DeepResearchServer {
       console.log(`Cleaned up expired research session: ${sessionId}`)
     })
 
-    // 如果会话数量过多，清理最旧的会话
+    // If session count is too high, clean up the oldest session
     if (this.researchSessions.size > this.MAX_SESSIONS) {
       const sortedSessions = Array.from(this.researchSessions.entries())
         .sort(([, a], [, b]) => a.last_accessed_at.getTime() - b.last_accessed_at.getTime())
@@ -215,18 +215,18 @@ export class DeepResearchServer {
     }
   }
 
-  // 获取研究会话
+  // Get research session
   private getSession(sessionId: string): ResearchSession {
     const session = this.researchSessions.get(sessionId)
     if (!session) {
       throw new Error(`Research session not found: ${sessionId}`)
     }
-    // 更新最后访问时间
+    // Update last accessed time
     session.last_accessed_at = new Date()
     return session
   }
 
-  // 创建新的研究会话
+  // Create new research session
   private createSession(question: string): ResearchSession {
     const sessionId = nanoid()
     const session: ResearchSession = {
@@ -245,7 +245,7 @@ export class DeepResearchServer {
     return session
   }
 
-  // 清理会话数据
+  // Clean up session data
   private cleanupSession(sessionId: string): void {
     const removed = this.researchSessions.delete(sessionId)
     if (removed) {
@@ -253,9 +253,9 @@ export class DeepResearchServer {
     }
   }
 
-  // 设置请求处理器
+  // Set request handlers
   private setupRequestHandlers(): void {
-    // 设置工具列表处理器
+    // Set tools list handler
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: [
@@ -287,7 +287,7 @@ export class DeepResearchServer {
       }
     })
 
-    // 设置工具调用处理器
+    // Set tool call handler
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       try {
         const { name, arguments: args } = request.params
@@ -321,7 +321,7 @@ export class DeepResearchServer {
     })
   }
 
-  // 处理开始深度研究请求
+  // Handle start deep research request
   private async handleStartDeepResearch(args: unknown) {
     const parsed = StartDeepResearchArgsSchema.safeParse(args)
     if (!parsed.success) {
@@ -330,10 +330,10 @@ export class DeepResearchServer {
 
     const { question } = parsed.data
 
-    // 创建新的研究会话
+    // Create new research session
     const session = this.createSession(question)
 
-    // 生成初始搜索查询
+    // Generate initial search queries
     const initialQueries = this.generateSearchQueries(question, 1)
     session.suggested_queries = initialQueries
     session.iteration = 1
@@ -360,7 +360,7 @@ export class DeepResearchServer {
     }
   }
 
-  // 处理单个网络搜索请求
+  // Handle single web search request
   private async handleSingleWebSearch(args: unknown) {
     const parsed = SingleWebSearchArgsSchema.safeParse(args)
     if (!parsed.success) {
@@ -369,13 +369,13 @@ export class DeepResearchServer {
 
     const { session_id, query, max_results } = parsed.data
 
-    // 获取会话
+    // Get session
     const session = this.getSession(session_id)
 
     try {
       const searchResult = await this.performSingleBochaSearch(query, max_results)
 
-      // 将搜索结果存储到会话中
+      // Store search results in session
       session.search_results.push(searchResult)
 
       const response = {
@@ -404,7 +404,7 @@ export class DeepResearchServer {
     }
   }
 
-  // 处理结果反思请求
+  // Handle result reflection request
   private async handleReflectResults(args: unknown) {
     const parsed = ReflectResultsArgsSchema.safeParse(args)
     if (!parsed.success) {
@@ -413,23 +413,23 @@ export class DeepResearchServer {
 
     const { session_id, iteration } = parsed.data
 
-    // 获取会话
+    // Get session
     const session = this.getSession(session_id)
 
-    // 从内存中获取搜索结果进行分析
+    // Analyze search results from memory
     const allSearchResults = session.search_results
     const searchResultsText = allSearchResults
       .map(sr => `Query: ${sr.query}\nResults: ${sr.results.map(r => `${r.title}: ${r.snippet}`).join('\n')}`)
       .join('\n\n')
 
-    // 分析搜索结果质量和完整性
+    // Analyze search results quality and completeness
     const reflection = this.analyzeSearchResults(session.question, searchResultsText, iteration)
 
-    // 存储反思结果
+    // Store reflection results
     session.reflections.push(reflection)
     session.iteration = iteration
 
-    // 如果需要更多研究，生成新的查询建议
+    // If more research is needed, generate new query suggestions
     if (reflection.needs_more_research) {
       const newQueries = this.generateSearchQueries(session.question, iteration + 1)
       session.suggested_queries = newQueries
@@ -449,7 +449,7 @@ export class DeepResearchServer {
     }
   }
 
-  // 处理最终答案生成请求
+  // Handle final answer generation request
   private async handleGenerateFinalAnswer(args: unknown) {
     const parsed = GenerateFinalAnswerArgsSchema.safeParse(args)
     if (!parsed.success) {
@@ -458,10 +458,10 @@ export class DeepResearchServer {
 
     const { session_id, documentation_prompt } = parsed.data
 
-    // 获取会话
+    // Get session
     const session = this.getSession(session_id)
 
-    // 从内存中构建完整的研究数据
+    // Build complete research data from memory
     const researchData = {
       original_question: session.question,
       total_iterations: session.iteration,
@@ -474,33 +474,93 @@ export class DeepResearchServer {
         : 0.5
     }
 
-    // 确定文档生成提示
+    // Determine document generation prompt
     const locale = presenter.configPresenter.getLanguage?.() || 'zh-CN'
     const finalDocumentationPrompt =
       documentation_prompt ||
       `${DEFAULT_DOCUMENTATION_PROMPT}
 User's current system language is ${locale}, please respond in the system language unless specified otherwise.`
 
-    const finalResult = {
-      session_id: session.session_id,
-      original_question: session.question,
-      research_summary: `Comprehensive research completed across ${session.iteration} iterations with ${researchData.total_searches} searches yielding ${researchData.total_results} total results.`,
-      final_confidence_score: `${(researchData.final_confidence * 100).toFixed(1)}%`,
-      documentation_instructions: finalDocumentationPrompt,
+    // Build complete research content for model summary
+    const completeResearchContent = {
+      research_question: session.question,
       research_metadata: {
+        session_id: session.session_id,
         session_created: session.created_at.toISOString(),
         session_duration: `${Math.round((new Date().getTime() - session.created_at.getTime()) / 1000 / 60)} minutes`,
+        total_iterations: session.iteration,
+        total_searches: researchData.total_searches,
         total_sources: researchData.total_results,
-        iterations_completed: session.iteration,
-        research_completed: true
+        final_confidence_score: `${(researchData.final_confidence * 100).toFixed(1)}%`
       },
+
+      // Complete search results data
+      detailed_search_results: session.search_results.map((searchResult, index) => ({
+        search_number: index + 1,
+        query: searchResult.query,
+        results_count: searchResult.results.length,
+        results: searchResult.results.map((result, resultIndex) => ({
+          result_number: resultIndex + 1,
+          title: result.title,
+          url: result.url,
+          content_snippet: result.snippet,
+          published_date: result.published_date || 'Unknown',
+          source_domain: new URL(result.url).hostname
+        }))
+      })),
+
+      // Reflection analysis history
+      research_reflections: session.reflections.map((reflection, index) => ({
+        iteration: index + 1,
+        needs_more_research: reflection.needs_more_research,
+        confidence_score: `${(reflection.confidence_score * 100).toFixed(1)}%`,
+        quality_assessment: reflection.quality_assessment,
+        missing_information: reflection.missing_information,
+        suggested_queries: reflection.suggested_queries
+      })),
+
+      // Complete text content of all search results (for model analysis)
+      consolidated_research_content: session.search_results.map(sr =>
+        `=== Search Query: ${sr.query} ===\n` +
+        sr.results.map((result, idx) =>
+          `[Source ${idx + 1}] ${result.title}\n` +
+          `URL: ${result.url}\n` +
+          `Published: ${result.published_date || 'Unknown'}\n` +
+          `Content Summary: ${result.snippet}\n` +
+          `---`
+        ).join('\n')
+      ).join('\n\n'),
+
+      // Document generation instructions
+      documentation_instructions: finalDocumentationPrompt,
+
+      // Summary instructions
+      summary_instructions: `
+Please generate a comprehensive and detailed research report based on the complete research data above for the user's question: "${session.question}"
+
+The report should include:
+1. Problem overview and research background
+2. Key findings and main information points
+3. Comparative analysis of different source perspectives
+4. Specific implementation recommendations or solutions
+5. Related latest developments and trends
+6. References and information sources
+
+Please ensure:
+- Make full use of information from all search results
+- Maintain objectivity and accuracy
+- Provide specific details and examples
+- Respond in the user's system language (${locale}) unless specified otherwise
+- Appropriately cite specific sources and links
+      `,
+
       cleanup_status: 'Session data will be cleaned up after this response'
     }
 
-    // 标记会话为已完成，准备清理
+    // Mark session as completed, prepare for cleanup
     session.is_completed = true
 
-    // 延迟清理，给响应时间返回
+    // Delay cleanup, give response time to return
     setTimeout(() => {
       this.cleanupSession(session_id)
     }, 1000)
@@ -509,13 +569,13 @@ User's current system language is ${locale}, please respond in the system langua
       content: [
         {
           type: 'text',
-          text: JSON.stringify(finalResult, null, 2)
+          text: JSON.stringify(completeResearchContent, null, 2)
         }
       ]
     }
   }
 
-  // 生成搜索查询
+  // Generate search queries
   private generateSearchQueries(
     question: string,
     iteration: number = 1
@@ -531,7 +591,7 @@ User's current system language is ${locale}, please respond in the system langua
       return baseQueries.slice(0, 3)
     }
 
-    // 基于之前的结果生成更具体的查询
+    // Generate more specific queries based on previous results
     const refinedQueries = [
       `${question} detailed explanation`,
       `${question} case studies examples`,
@@ -541,12 +601,12 @@ User's current system language is ${locale}, please respond in the system langua
       `${question} expert opinions`
     ]
 
-    // 基于迭代次数返回不同数量的查询
+    // Return different numbers of queries based on iteration
     const queryCount = Math.min(3, Math.max(1, 5 - iteration))
     return refinedQueries.slice(0, queryCount)
   }
 
-  // 执行单个博查搜索
+  // Execute single Bocha search
   private async performSingleBochaSearch(
     query: string,
     maxResults: number
@@ -589,18 +649,18 @@ User's current system language is ${locale}, please respond in the system langua
     }
   }
 
-  // 分析搜索结果
+  // Analyze search results
   private analyzeSearchResults(
     question: string,
     searchResults: string,
     iteration: number
   ): ReflectionResult {
-    // 简化的分析逻辑 - 在实际应用中可以使用LLM进行更sophisticated的分析
+    // Simplified analysis logic - In a real application, an LLM could be used for more sophisticated analysis
     const resultsLength = searchResults.length
     const hasKeywords = searchResults.toLowerCase().includes(question.toLowerCase())
 
-    // 基于迭代次数和结果质量评估
-    let confidenceScore = 0.5 // 基础分数
+    // Based on iteration and result quality assessment
+    let confidenceScore = 0.5 // Base score
     let needsMoreResearch = true
     let missingInfo: string[] = []
 
@@ -610,7 +670,7 @@ User's current system language is ${locale}, please respond in the system langua
 
     if (iteration >= 3) {
       confidenceScore += 0.2
-      needsMoreResearch = false // 最多3次迭代
+      needsMoreResearch = false // Max 3 iterations
     }
 
     if (confidenceScore >= 0.8) {
@@ -634,19 +694,19 @@ User's current system language is ${locale}, please respond in the system langua
     }
   }
 
-  // 销毁时清理资源
+  // Clean up resources on destroy
   public destroy(): void {
     if (this.cleanupTimer) {
       clearInterval(this.cleanupTimer)
       this.cleanupTimer = null
     }
 
-    // 清理所有会话
+    // Clean up all sessions
     this.researchSessions.clear()
     console.log('DeepResearchServer destroyed and all sessions cleaned up')
   }
 
-  // 获取会话统计信息（用于调试和监控）
+  // Get session stats (for debugging and monitoring)
   public getSessionStats(): {
     total_sessions: number
     active_sessions: number
