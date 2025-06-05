@@ -52,6 +52,17 @@ interface IModelStore {
 }
 
 // 添加 prompts 相关的类型定义
+interface FileItem {
+  id: string
+  name: string
+  type: string
+  size: number
+  path: string
+  description?: string
+  content?: string
+  createdAt: number
+}
+
 interface Prompt {
   id: string
   name: string
@@ -62,6 +73,11 @@ interface Prompt {
     description: string
     required: boolean
   }>
+  files?: FileItem[] // 关联的文件
+  enabled?: boolean // 是否启用
+  source?: 'local' | 'imported' | 'builtin' // 来源类型
+  createdAt?: number // 创建时间
+  updatedAt?: number // 更新时间
 }
 
 const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({
