@@ -6,7 +6,11 @@
     "functionSwitch": "Function Switch",
     "fileSelect": "File Select",
     "pasteFiles": "Support copy and paste files",
-    "dropFiles": "Drop files here"
+    "dropFiles": "Drop files here",
+    "promptFilesAdded": "Prompt Files Added",
+    "promptFilesAddedDesc": "Successfully added {count} files",
+    "promptFilesError": "File Processing Error",
+    "promptFilesErrorDesc": "{count} files failed to process"
   },
   "features": {
     "deepThinking": "Deep Thinking",

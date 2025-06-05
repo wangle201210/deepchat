@@ -538,7 +538,9 @@ export class McpClient {
                 ? String(p.description)
                 : undefined,
             arguments:
-              typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined
+              typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined,
+            files:
+              typeof p === 'object' && p !== null && 'files' in p ? p.files : undefined
           })) as PromptListEntry[]
           // 缓存结果
           this.cachedPrompts = validPrompts

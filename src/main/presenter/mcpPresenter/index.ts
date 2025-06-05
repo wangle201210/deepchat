@@ -440,6 +440,7 @@ export class McpPresenter implements IMCPPresenter {
               name: prompt.name,
               description: prompt.description || '',
               arguments: prompt.arguments || [],
+              files: prompt.files || [], // 添加 files 字段
               client: {
                 name: client.serverName,
                 icon: client.serverConfig['icons'] as string

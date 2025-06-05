@@ -78,6 +78,7 @@ export interface PromptListEntry {
     description?: string
     required: boolean
   }[]
+  files?: FileItem[] // 关联的文件
   client: {
     name: string
     icon: string

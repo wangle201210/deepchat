@@ -212,33 +212,33 @@
                 <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.basicInfo') }}</Label>
               </div>
               
-              <div class="space-y-4">
-                <div>
+          <div class="space-y-4">
+            <div>
                   <Label class="text-sm font-medium">{{ t('promptSetting.name') }}</Label>
                   <Input 
                     v-model="form.name" 
                     :placeholder="t('promptSetting.namePlaceholder')" 
                     class="mt-2"
                   />
-                </div>
-                <div>
+            </div>
+            <div>
                   <Label class="text-sm font-medium">{{ t('promptSetting.description') }}</Label>
-                  <Input
-                    v-model="form.description"
-                    :placeholder="t('promptSetting.descriptionPlaceholder')"
+              <Input
+                v-model="form.description"
+                :placeholder="t('promptSetting.descriptionPlaceholder')"
                     class="mt-2"
-                  />
-                </div>
+              />
+            </div>
               </div>
               
               <div class="flex items-center space-x-2 pt-2">
-                <Checkbox
-                  id="prompt-enabled"
-                  :checked="form.enabled"
-                  @update:checked="(value) => (form.enabled = value)"
-                />
+              <Checkbox
+                id="prompt-enabled"
+                :checked="form.enabled"
+                @update:checked="(value) => (form.enabled = value)"
+              />
                 <Label for="prompt-enabled" class="text-sm">{{ t('promptSetting.enablePrompt') }}</Label>
-              </div>
+            </div>
             </div>
 
             <!-- 内容区域 -->
@@ -248,16 +248,16 @@
                 <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.content') }}</Label>
               </div>
               
-              <div>
-                <textarea
-                  v-model="form.content"
+            <div>
+              <textarea
+                v-model="form.content"
                   class="w-full min-h-48 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
-                  :placeholder="t('promptSetting.contentPlaceholder')"
-                ></textarea>
+                :placeholder="t('promptSetting.contentPlaceholder')"
+              ></textarea>
                 <p class="text-xs text-muted-foreground mt-2">
                   {{ t('promptSetting.contentTip') }}
                 </p>
-              </div>
+            </div>
             </div>
 
             <!-- 参数区域 -->
@@ -430,7 +430,7 @@
               {{ form.content.length }} {{ t('promptSetting.characters') }}
             </div>
             <div class="flex items-center gap-3">
-              <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
+          <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
               <Button :disabled="!form.name || !form.content" @click="savePrompt">
                 <Icon 
                   :icon="editingIdx === null ? 'lucide:plus' : 'lucide:save'" 

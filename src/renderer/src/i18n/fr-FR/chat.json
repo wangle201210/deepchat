@@ -6,7 +6,11 @@
     "functionSwitch": "Commutateur de fonction",
     "fileSelect": "Sélection de fichier",
     "pasteFiles": "Support du copier-coller de fichiers",
-    "dropFiles": "Déposez les fichiers ici"
+    "dropFiles": "Déposez les fichiers ici",
+    "promptFilesAdded": "Fichiers de prompt ajoutés",
+    "promptFilesAddedDesc": "{count} fichiers ajoutés avec succès",
+    "promptFilesError": "Erreur de traitement des fichiers",
+    "promptFilesErrorDesc": "Échec du traitement de {count} fichiers"
   },
   "features": {
     "deepThinking": "Réflexion approfondie",

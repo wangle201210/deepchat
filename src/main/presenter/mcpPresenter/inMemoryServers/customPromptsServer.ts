@@ -16,6 +16,16 @@ interface PromptDefinition {
     description: string
     required: boolean
   }>
+  files?: Array<{
+    id: string
+    name: string
+    type: string
+    size: number
+    path: string
+    description?: string
+    content?: string
+    createdAt: number
+  }>
 }
 
 export class CustomPromptsServer {
@@ -79,11 +89,12 @@ export class CustomPromptsServer {
               description: param.description,
               required: !!param.required
             }))
-          : []
+          : [],
+        files: prompt.files || []
       }))
 
       return this.promptsCache
-    } catch (error) {
+    } catch {
       this.promptsCache = []
       return []
     }
