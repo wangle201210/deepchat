@@ -393,8 +393,7 @@ export class DeepResearchServer {
     if (!parsed.success) {
       throw new Error(`request_research_data 参数无效: ${parsed.error}`)
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { session_id, iteration } = parsed.data // iteration 由 LLM 维护
+    const { session_id } = parsed.data // iteration 由 LLM 维护
     const session = this.getSession(session_id)
 
     // 计算并发送自上次反思以来的新增搜索结果
