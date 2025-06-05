@@ -367,10 +367,12 @@ import type { SearchEngineTemplate } from '@shared/chat'
 import { Switch } from '@/components/ui/switch'
 import { nanoid } from 'nanoid'
 import { useThemeStore } from '@/stores/theme'
+import { useSoundStore } from '@/stores/sound'
 
 const devicePresenter = usePresenter('devicePresenter')
 const configPresenter = usePresenter('configPresenter')
 const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
 const { t } = useI18n()
 const themeStore = useThemeStore()
 const selectedSearchEngine = ref(settingsStore.activeSearchEngine?.id ?? 'google')
@@ -656,16 +658,16 @@ const openLogFolder = () => {
 // 音效开关相关
 const soundEnabled = computed({
   get: () => {
-    return settingsStore.soundEnabled
+    return soundStore.soundEnabled
   },
   set: (value) => {
-    settingsStore.setSoundEnabled(value)
+    soundStore.setSoundEnabled(value)
   }
 })
 
 // 处理音效开关状态变更
 const handleSoundChange = (value: boolean) => {
-  settingsStore.setSoundEnabled(value)
+  soundStore.setSoundEnabled(value)
 }
 
 const copyWithCotEnabled = computed({

@@ -12,7 +12,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
-import { useSettingsStore } from './settings'
+import { useSoundStore } from './sound'
 
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
@@ -23,8 +23,7 @@ export const useChatStore = defineStore('chat', () => {
   const notificationP = usePresenter('notificationPresenter')
   const { t } = useI18n()
 
-  // 引入 settingsStore 实例，响应式上下文
-  const settingsStore = useSettingsStore()
+  const soundStore = useSoundStore()
 
   // 状态
   const activeThreadIdMap = ref<Map<number, string | null>>(new Map())
@@ -1031,7 +1030,7 @@ export const useChatStore = defineStore('chat', () => {
 
   const playTypewriterSound = () => {
     const now = Date.now()
-    if (!settingsStore.soundEnabled || !typewriterAudio) return
+    if (!soundStore.soundEnabled || !typewriterAudio) return
     if (now - lastSoundTime > soundInterval) {
       typewriterAudio.currentTime = 0
       typewriterAudio.play().catch(console.error)
@@ -1040,7 +1039,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const playToolcallSound = () => {
-    if (!settingsStore.soundEnabled || !toolcallAudio) return
+    if (!soundStore.soundEnabled || !toolcallAudio) return
     toolcallAudio.currentTime = 0
     toolcallAudio.play().catch(console.error)
   }
