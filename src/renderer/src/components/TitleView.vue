@@ -67,7 +67,7 @@ import ChatConfig from './ChatConfig.vue'
 import ModelSelect from './ModelSelect.vue'
 import ModelIcon from './icons/ModelIcon.vue'
 import { MODEL_META } from '@shared/presenter'
-import { onMounted, ref, watch} from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
 import { useThemeStore } from '@/stores/theme'
@@ -185,7 +185,6 @@ onMounted(async () => {
     maxTokensLimit.value = config.maxTokens
   }
 })
-
 </script>
 
 <style scoped></style>

@@ -974,7 +974,7 @@ export class ConfigPresenter implements IConfigPresenter {
 
   // 重置快捷键
   resetShortcutKeys() {
-    this.setSetting('shortcutKey', {...defaultShortcutKey})
+    this.setSetting('shortcutKey', { ...defaultShortcutKey })
   }
 }
 
