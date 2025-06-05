@@ -6,6 +6,7 @@ import tailwind from 'tailwindcss'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import svgLoader from 'vite-svg-loader'
 import monacoEditorPlugin from 'vite-plugin-monaco-editor-esm'
+import path from 'node:path'
 
 export default defineConfig({
   main: {
@@ -35,8 +36,8 @@ export default defineConfig({
     }
   },
   renderer: {
-    optimizeDeps:{
-      include:[
+    optimizeDeps: {
+      include: [
         'monaco-editor',
         'axios'
       ]
@@ -60,6 +61,9 @@ export default defineConfig({
     plugins: [
       monacoEditorPlugin({
         languageWorkers: ['editorWorkerService', 'typescript', 'css', 'html', 'json'],
+        customDistPath(_root, buildOutDir, _base) {
+          return path.resolve(buildOutDir, 'monacoeditorwork')
+        },
       }),
       vue(),
       svgLoader(),
