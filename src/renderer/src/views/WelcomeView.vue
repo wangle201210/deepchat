@@ -9,7 +9,6 @@ import { MODEL_META } from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
 import { useThemeStore } from '@/stores/theme'
 import { useLanguageStore } from '@/stores/language'
-import { useSoundStore } from '@/stores/sound'
 
 const themeStore = useThemeStore()
 
@@ -68,7 +67,6 @@ const DialogFooter = defineAsyncComponent(() =>
 
 const settingsStore = useSettingsStore()
 const languageStore = useLanguageStore()
-const soundStore = useSoundStore()
 const configPresenter = usePresenter('configPresenter')
 const router = useRouter()
 
@@ -202,7 +200,6 @@ const cancelWatch = watch(
 onMounted(() => {
   settingsStore.initSettings()
   languageStore.initLanguage()
-  soundStore.initSound()
 })
 
 const handleModelEnabledChange = async (model: MODEL_META, enabled: boolean) => {
