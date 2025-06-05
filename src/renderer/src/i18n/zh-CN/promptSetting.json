@@ -11,7 +11,7 @@
   "content": "内容",
   "contentPlaceholder": "请输入提示词内容",
   "basicInfo": "基本信息",
-  "contentTip": "支持使用变量占位符，如 {{variable}}，可在参数部分定义相应的参数",
+  "contentTip": "支持使用变量占位符，如 {openBrace}{openBrace}variable{closeBrace}{closeBrace}，可在参数部分定义相应的参数",
   "noPrompt": "暂无提示词，请点击右上角新增",
   "noPromptDesc": "点击右上角的新增按钮创建您的第一个提示词",
   "active": "启用",

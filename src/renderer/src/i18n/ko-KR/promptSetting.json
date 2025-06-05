@@ -11,7 +11,7 @@
   "content": "내용",
   "contentPlaceholder": "프롬프트 내용을 입력하세요",
   "basicInfo": "기본 정보",
-  "contentTip": "{{variable}}과 같은 변수 자리 표시자를 지원하며, 매개변수 섹션에서 해당 매개변수를 정의할 수 있습니다",
+  "contentTip": "{openBrace}{openBrace}variable{closeBrace}{closeBrace}과 같은 변수 자리 표시자를 지원하며, 매개변수 섹션에서 해당 매개변수를 정의할 수 있습니다",
   "noPrompt": "프롬프트가 없습니다. 오른쪽 상단의 + 버튼을 클릭하여 추가하세요",
   "noPromptDesc": "오른쪽 상단의 추가 버튼을 클릭하여 첫 번째 프롬프트를 만드세요",
   "active": "활성",

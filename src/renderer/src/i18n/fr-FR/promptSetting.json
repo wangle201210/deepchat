@@ -11,7 +11,7 @@
   "content": "Contenu",
   "contentPlaceholder": "Veuillez entrer le contenu du prompt",
   "basicInfo": "Informations de base",
-  "contentTip": "Prend en charge les espaces réservés aux variables comme {{variable}}, vous pouvez définir les paramètres correspondants dans la section des paramètres",
+  "contentTip": "Prend en charge les espaces réservés aux variables comme {openBrace}{openBrace}variable{closeBrace}{closeBrace}, vous pouvez définir les paramètres correspondants dans la section des paramètres",
   "noPrompt": "Aucun prompt, cliquez sur le bouton + en haut à droite pour en ajouter",
   "noPromptDesc": "Cliquez sur le bouton ajouter en haut à droite pour créer votre premier prompt",
   "active": "Actif",

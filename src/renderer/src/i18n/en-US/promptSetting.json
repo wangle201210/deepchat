@@ -11,7 +11,7 @@
   "content": "Content",
   "contentPlaceholder": "Please enter prompt content",
   "basicInfo": "Basic Information",
-  "contentTip": "Supports variable placeholders like {{variable}}, you can define corresponding parameters in the parameters section",
+  "contentTip": "Supports variable placeholders like {openBrace}{openBrace}variable{closeBrace}{closeBrace}, you can define corresponding parameters in the parameters section",
   "noPrompt": "No prompts yet, click the + button to add",
   "noPromptDesc": "Click the add button in the top right corner to create your first prompt",
   "active": "Active",

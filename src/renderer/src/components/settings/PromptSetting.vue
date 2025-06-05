@@ -255,7 +255,7 @@
                 :placeholder="t('promptSetting.contentPlaceholder')"
               ></textarea>
                 <p class="text-xs text-muted-foreground mt-2">
-                  {{ t('promptSetting.contentTip') }}
+                  {{ t('promptSetting.contentTip', { openBrace: '{', closeBrace: '}' }) }}
                 </p>
             </div>
             </div>
