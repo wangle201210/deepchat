@@ -5,7 +5,8 @@ import {
   MODEL_META,
   ModelConfig,
   RENDERER_MODEL_META,
-  MCPServerConfig
+  MCPServerConfig,
+  Prompt
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import ElectronStore from 'electron-store'
@@ -49,35 +50,6 @@ interface IAppSettings {
 interface IModelStore {
   models: MODEL_META[]
   custom_models: MODEL_META[]
-}
-
-// 添加 prompts 相关的类型定义
-interface FileItem {
-  id: string
-  name: string
-  type: string
-  size: number
-  path: string
-  description?: string
-  content?: string
-  createdAt: number
-}
-
-interface Prompt {
-  id: string
-  name: string
-  description: string
-  content: string
-  parameters?: Array<{
-    name: string
-    description: string
-    required: boolean
-  }>
-  files?: FileItem[] // 关联的文件
-  enabled?: boolean // 是否启用
-  source?: 'local' | 'imported' | 'builtin' // 来源类型
-  createdAt?: number // 创建时间
-  updatedAt?: number // 更新时间
 }
 
 const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({

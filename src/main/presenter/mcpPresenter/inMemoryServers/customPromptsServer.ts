@@ -85,10 +85,10 @@ export class CustomPromptsServer {
         description: prompt.description,
         arguments: prompt.parameters
           ? prompt.parameters.map((param) => ({
-              name: param.name,
-              description: param.description,
-              required: !!param.required
-            }))
+            name: param.name,
+            description: param.description,
+            required: !!param.required
+          }))
           : [],
         files: prompt.files || []
       }))
@@ -115,7 +115,7 @@ export class CustomPromptsServer {
       // 遍历所有参数，并替换内容中的{{参数名}}
       for (const param of prompt.parameters) {
         const value = args[param.name] || ''
-        promptContent = promptContent.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
+        promptContent = promptContent?.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
       }
     }
 
