@@ -1,7 +1,7 @@
 import { usePresenter } from '@/composables/usePresenter'
 import { CONFIG_EVENTS } from '@/events'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
 export const useSoundStore = defineStore('sound', () => {
   const soundEnabled = ref<boolean>(false) // 声音是否启用，默认禁用
@@ -10,12 +10,10 @@ export const useSoundStore = defineStore('sound', () => {
   // 初始化设置
   const initSound = async () => {
     try {
-      // 获取语言
       soundEnabled.value = await configPresenter.getSoundEnabled()
-
       setupSoundEnabledListener()
     } catch (error) {
-      console.error('初始化语言失败:', error)
+      console.error('初始化音效失败:', error)
     }
   }
 
@@ -43,6 +41,11 @@ export const useSoundStore = defineStore('sound', () => {
       }
     )
   }
+
+  // 在 store 创建时初始化
+  onMounted(async () => {
+    await initSound()
+  })
 
   return {
     soundEnabled,
