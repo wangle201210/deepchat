@@ -13,8 +13,8 @@
       <Popover v-model:open="modelSelectOpen">
         <PopoverTrigger as-child>
           <Button variant="outline" class="flex items-center gap-1.5 px-2 h-7" size="sm">
-            <ModelIcon class="w-5 h-5" :model-id="model.id"></ModelIcon>
-            <h2 class="text-xs font-bold">{{ model.providerId }} {{ model.name }}</h2>
+            <ModelIcon :model-id="model.providerId" :is-dark="themeStore.isDark"></ModelIcon>
+            <h2 class="text-xs font-bold">{{ model.name }}</h2>
             <Badge
               v-for="tag in model.tags"
               :key="tag"
@@ -70,11 +70,12 @@ import { MODEL_META } from '@shared/presenter'
 import { onMounted, ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
+import { useThemeStore } from '@/stores/theme'
 const configPresenter = usePresenter('configPresenter')
 
 const { t } = useI18n()
 const chatStore = useChatStore()
-
+const themeStore = useThemeStore()
 // Chat configuration state
 const temperature = ref(chatStore.chatConfig.temperature)
 const contextLength = ref(chatStore.chatConfig.contextLength)

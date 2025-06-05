@@ -130,7 +130,9 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { ref, onMounted, watch, computed } from 'vue'
+
 import { useSettingsStore } from '@/stores/settings'
+import { useLanguageStore } from '@/stores/language'
 import {
   Dialog,
   DialogContent,
@@ -143,6 +145,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 
+const languageStore = useLanguageStore()
 const settingsStore = useSettingsStore()
 const { t } = useI18n()
 
@@ -162,7 +165,7 @@ const languageOptions = [
 
 watch(selectedLanguage, async (newValue) => {
   console.log('selectedLanguage', newValue)
-  await settingsStore.updateLanguage(newValue)
+  await languageStore.updateLanguage(newValue)
 })
 
 // --- Font Size Settings ---
@@ -211,6 +214,6 @@ const handleNotificationsChange = (value: boolean) => {
 
 // --- Lifecycle ---
 onMounted(async () => {
-  selectedLanguage.value = settingsStore.language
+  selectedLanguage.value = languageStore.language
 })
 </script>

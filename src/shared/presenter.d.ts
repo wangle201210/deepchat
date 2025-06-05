@@ -2,6 +2,7 @@
 import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
+import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -191,6 +192,11 @@ export interface ILlamaCppPresenter {
   destroy(): Promise<void>
 }
 
+export interface IShortcutPresenter {
+  registerShortcuts(): void
+  destroy(): void
+}
+
 export interface ISQLitePresenter {
   close(): void
   createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
@@ -244,6 +250,21 @@ export interface ISQLitePresenter {
   deleteAllMessagesInConversation(conversationId: string): Promise<void>
 }
 
+export interface IOAuthPresenter {
+  startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean>
+  startGitHubCopilotLogin(providerId: string): Promise<boolean>
+  startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean>
+}
+
+export interface OAuthConfig {
+  authUrl: string
+  redirectUri: string
+  clientId: string
+  clientSecret?: string
+  scope: string
+  responseType: string
+}
+
 export interface IPresenter {
   windowPresenter: IWindowPresenter
   sqlitePresenter: ISQLitePresenter
@@ -259,6 +280,7 @@ export interface IPresenter {
   deeplinkPresenter: IDeeplinkPresenter
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
+  oauthPresenter: IOAuthPresenter
   init(): void
   destroy(): void
 }
@@ -281,6 +303,12 @@ export interface IConfigPresenter {
   getEnabledProviders(): LLM_PROVIDER[]
   getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
   getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
+  // 音效设置
+  getSoundEnabled(): boolean
+  setSoundEnabled(enabled: boolean): void
+  // COT拷贝设置
+  getCopyWithCotEnabled(): boolean
+  setCopyWithCotEnabled(enabled: boolean): void
   // 日志设置
   getLoggingEnabled(): boolean
   setLoggingEnabled(enabled: boolean): void
@@ -353,6 +381,11 @@ export interface IConfigPresenter {
   // 默认系统提示词设置
   getDefaultSystemPrompt(): Promise<string>
   setDefaultSystemPrompt(prompt: string): Promise<void>
+  // 快捷键设置
+  getDefaultShortcutKey(): ShortcutKeySetting
+  getShortcutKey(): ShortcutKeySetting
+  setShortcutKey(customShortcutKey: ShortcutKeySetting): void
+  resetShortcutKeys(): void
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -1038,3 +1071,5 @@ export type LLMAgentEvent =
   | { type: 'response'; data: LLMAgentEventData }
   | { type: 'error'; data: { eventId: string; error: string } }
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
+
+export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'

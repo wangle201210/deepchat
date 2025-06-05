@@ -38,6 +38,8 @@
     "contentProtectionEnableDesc": "開啟畫面保護可以防止錄影軟體擷取 DeepChat 主視窗，用來保護您的內容隱私。請注意，此功能不會徹底隱藏所有介面，請合理合規使用。並且，並不是所有錄影軟體都遵守使用者隱私設定，該功能可能會在一些不遵守隱私設定的錄影軟體上失效，某些環境中可能會殘留一個黑色視窗。",
     "contentProtectionDisableDesc": "關閉畫面保護將允許錄影軟體擷取 DeepChat 視窗。",
     "contentProtectionRestartNotice": "切換此設定將會重新啟動應用程式，請問您是否要繼續？",
+    "soundEnabled": "啟用音效",
+    "copyWithCotEnabled": "複製COT資訊",
     "loggingEnabled": "啟用日誌",
     "loggingDialogTitle": "確認日誌設定變更",
     "loggingEnableDesc": "啟用日誌將幫助我們診斷問題並改進應用程式。日誌檔案可能包含敏感資訊。",
@@ -183,7 +185,20 @@
     "serverList": "伺服器列表",
     "totalServers": "伺服器總數",
     "addServer": "添加伺服器",
-    "autoStart": "自啟動"
+    "autoStart": "自啟動",
+    "githubCopilotAuth": "GitHub Copilot 認證",
+    "githubCopilotConnected": "GitHub Copilot 已連接",
+    "githubCopilotNotConnected": "GitHub Copilot 未連接",
+    "loginWithGitHub": "使用 GitHub 登入",
+    "loggingIn": "登入中...",
+    "githubCopilotLoginTip": "請授權 DeepChat 訪問您的 GitHub Copilot 訂閱。需要 'read:user' 和 'read:org' 權限才能正常使用 Copilot API。",
+    "loginSuccess": "登入成功",
+    "loginFailed": "登入失敗",
+    "tokenValid": "令牌有效",
+    "tokenInvalid": "令牌無效",
+    "disconnect": "斷開連接",
+    "disconnected": "已成功斷開連接",
+    "disconnectFailed": "斷開連接失敗"
   },
   "knowledgeBase": {
     "title": "知識庫設置",
@@ -359,6 +374,12 @@
     "text-xl": "特大"
   },
   "shortcuts": {
+    "title": "快捷鍵設置",
+    "pressKeys": "輸入快捷鍵",
+    "pressEnterToSave": "按Enter保存，Esc取消",
+    "noModifierOnly": "不能僅使用修飾鍵作為快捷鍵",
+    "keyConflict": "快捷鍵衝突，請選擇其他組合",
+    
     "cleanHistory": "清除聊天歷史",
     "goSettings": "打開設置",
     "hideWindow": "隱藏窗口",

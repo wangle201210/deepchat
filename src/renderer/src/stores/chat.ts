@@ -12,6 +12,8 @@ import { usePresenter } from '@/composables/usePresenter'
 import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
+import { useSoundStore } from './sound'
+
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
 
@@ -20,6 +22,9 @@ export const useChatStore = defineStore('chat', () => {
   const windowP = usePresenter('windowPresenter')
   const notificationP = usePresenter('notificationPresenter')
   const { t } = useI18n()
+
+  const soundStore = useSoundStore()
+
   // 状态
   const activeThreadIdMap = ref<Map<number, string | null>>(new Map())
   const threads = ref<
@@ -434,6 +439,9 @@ export const useChatStore = defineStore('chat', () => {
               lastBlock.status = 'success'
             }
 
+            // 工具调用音效，与实际数据流同步
+            playToolcallSound()
+
             curMsg.content.push({
               type: 'tool_call',
               content: '',
@@ -552,6 +560,8 @@ export const useChatStore = defineStore('chat', () => {
           const lastContentBlock = curMsg.content[curMsg.content.length - 1]
           if (lastContentBlock && lastContentBlock.type === 'content') {
             lastContentBlock.content += msg.content
+            // 打字机音效，与实际数据流同步
+            playTypewriterSound()
           } else {
             if (lastContentBlock) {
               lastContentBlock.status = 'success'
@@ -562,6 +572,8 @@ export const useChatStore = defineStore('chat', () => {
               status: 'loading',
               timestamp: Date.now()
             })
+            // 如果是新块的第一个字符，也播放声音
+            playTypewriterSound()
           }
         }
 
@@ -994,6 +1006,45 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+  let typewriterAudio: HTMLAudioElement | null = null
+  let toolcallAudio: HTMLAudioElement | null = null
+
+  let lastSoundTime = 0
+  const soundInterval = 120
+
+  const initAudio = () => {
+    if (!typewriterAudio) {
+      typewriterAudio = new Audio('/sounds/sfx-typing.mp3')
+      typewriterAudio.volume = 0.6
+      typewriterAudio.load()
+    }
+    if (!toolcallAudio) {
+      toolcallAudio = new Audio('/sounds/sfx-fc.mp3')
+      toolcallAudio.volume = 1
+      toolcallAudio.load()
+    }
+  }
+
+  initAudio()
+
+  const playTypewriterSound = () => {
+    const now = Date.now()
+    if (!soundStore.soundEnabled || !typewriterAudio) return
+    if (now - lastSoundTime > soundInterval) {
+      typewriterAudio.currentTime = 0
+      typewriterAudio.play().catch(console.error)
+      lastSoundTime = now
+    }
+  }
+
+  const playToolcallSound = () => {
+    if (!soundStore.soundEnabled || !toolcallAudio) return
+    toolcallAudio.currentTime = 0
+    toolcallAudio.play().catch(console.error)
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
   // 注册消息编辑事件处理
   window.electron.ipcRenderer.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (_, msgId: string) => {
     handleMessageEdited(msgId)

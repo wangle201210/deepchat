@@ -19,6 +19,7 @@ import { OLLAMA_EVENTS } from '@/events'
 import { ConfigPresenter } from '../configPresenter'
 import { GeminiProvider } from './providers/geminiProvider'
 import { GithubProvider } from './providers/githubProvider'
+import { GithubCopilotProvider } from './providers/githubCopilotProvider'
 import { OllamaProvider } from './providers/ollamaProvider'
 import { AnthropicProvider } from './providers/anthropicProvider'
 import { DoubaoProvider } from './providers/doubaoProvider'
@@ -109,6 +110,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new ZhipuProvider(provider, this.configPresenter)
         case 'github':
           return new GithubProvider(provider, this.configPresenter)
+        case 'github-copilot':
+          return new GithubCopilotProvider(provider, this.configPresenter)
         case 'ollama':
           return new OllamaProvider(provider, this.configPresenter)
         case 'anthropic':
@@ -286,7 +289,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const conversationMessages: ChatMessage[] = [...initialMessages]
     let needContinueConversation = true
     let toolCallCount = 0
-    const MAX_TOOL_CALLS = 20
+    const MAX_TOOL_CALLS = BaseLLMProvider.getMaxToolCalls()
     const totalUsage: {
       prompt_tokens: number
       completion_tokens: number

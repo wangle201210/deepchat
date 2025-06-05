@@ -274,9 +274,11 @@ const scrollToBottom = () => {
   })
 }
 
-onMounted(async () => {
+onMounted(() => {
   // 获取应用版本
-  appVersion.value = await devicePresenter.getAppVersion()
+  devicePresenter.getAppVersion().then((version) => {
+    appVersion.value = version
+  })
 
   setTimeout(() => {
     scrollToBottom()

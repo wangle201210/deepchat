@@ -64,7 +64,11 @@
             <PopoverTrigger as-child>
               <Button variant="outline" class="w-full justify-between">
                 <div class="flex items-center gap-2">
-                  <ModelIcon :model-id="selectedSearchModel?.id || ''" class="h-4 w-4" />
+                  <ModelIcon
+                    :model-id="selectedSearchModel?.id || ''"
+                    class="h-4 w-4"
+                    :is-dark="themeStore.isDark"
+                  />
                   <span class="truncate">{{
                     selectedSearchModel?.name || t('settings.common.selectModel')
                   }}</span>
@@ -143,6 +147,32 @@
             id="logging-switch"
             :checked="loggingEnabled"
             @update:checked="handleLoggingChange"
+          />
+        </div>
+      </div>
+
+      <!-- 音效开关 -->
+      <div class="flex flex-row p-2 items-center gap-2 px-2">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <Icon icon="lucide:volume-2" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.common.soundEnabled') }}</span>
+        </span>
+        <div class="flex-shrink-0">
+          <Switch id="sound-switch" :checked="soundEnabled" @update:checked="handleSoundChange" />
+        </div>
+      </div>
+
+      <!-- 复制全部（含COT）开关 -->
+      <div class="flex flex-row p-2 items-center gap-2 px-2">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <Icon icon="lucide:file-text" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.common.copyWithCotEnabled') }}</span>
+        </span>
+        <div class="flex-shrink-0">
+          <Switch
+            id="copy-with-cot-switch"
+            :checked="copyWithCotEnabled"
+            @update:checked="handleCopyWithCotChange"
           />
         </div>
       </div>
@@ -336,12 +366,15 @@ import type { RENDERER_MODEL_META } from '@shared/presenter'
 import type { SearchEngineTemplate } from '@shared/chat'
 import { Switch } from '@/components/ui/switch'
 import { nanoid } from 'nanoid'
+import { useThemeStore } from '@/stores/theme'
+import { useSoundStore } from '@/stores/sound'
 
 const devicePresenter = usePresenter('devicePresenter')
 const configPresenter = usePresenter('configPresenter')
 const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
 const { t } = useI18n()
-
+const themeStore = useThemeStore()
 const selectedSearchEngine = ref(settingsStore.activeSearchEngine?.id ?? 'google')
 const selectedSearchModel = computed(() => settingsStore.searchAssistantModel)
 
@@ -620,6 +653,34 @@ const confirmLoggingChange = () => {
 
 const openLogFolder = () => {
   configPresenter.openLoggingFolder()
+}
+
+// 音效开关相关
+const soundEnabled = computed({
+  get: () => {
+    return soundStore.soundEnabled
+  },
+  set: (value) => {
+    soundStore.setSoundEnabled(value)
+  }
+})
+
+// 处理音效开关状态变更
+const handleSoundChange = (value: boolean) => {
+  soundStore.setSoundEnabled(value)
+}
+
+const copyWithCotEnabled = computed({
+  get: () => {
+    return settingsStore.copyWithCotEnabled
+  },
+  set: (value) => {
+    settingsStore.setCopyWithCotEnabled(value)
+  }
+})
+
+const handleCopyWithCotChange = (value: boolean) => {
+  settingsStore.setCopyWithCotEnabled(value)
 }
 
 // 测试搜索引擎相关

@@ -17,6 +17,7 @@ import { CONFIG_EVENTS, SYSTEM_EVENTS } from '@/events'
 import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
+import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { defaultModelsSettings } from './modelDefaultSettings'
 import { getProviderSpecificModelConfig } from './providerModelSettings'
 
@@ -29,6 +30,7 @@ interface IAppSettings {
   appVersion?: string // 用于版本检查和数据迁移
   proxyMode?: string // 代理模式：system, none, custom
   customProxyUrl?: string // 自定义代理地址
+  customShortKey?: ShortcutKeySetting // 自定义快捷键
   artifactsEffectEnabled?: boolean // artifacts动画效果是否启用
   searchPreviewEnabled?: boolean // 搜索预览是否启用
   contentProtectionEnabled?: boolean // 投屏保护是否启用
@@ -36,6 +38,8 @@ interface IAppSettings {
   syncFolderPath?: string // 同步文件夹路径
   lastSyncTime?: number // 上次同步时间
   customSearchEngines?: string // 自定义搜索引擎JSON字符串
+  soundEnabled?: boolean // 音效是否启用
+  copyWithCotEnabled?: boolean
   loggingEnabled?: boolean // 日志记录是否启用
   default_system_prompt?: string // 默认系统提示词
   [key: string]: unknown // 允许任意键，使用unknown类型替代any
@@ -95,6 +99,7 @@ export class ConfigPresenter implements IConfigPresenter {
         language: 'en-US',
         providers: defaultProviders,
         closeToQuit: false,
+        customShortKey: defaultShortcutKey,
         proxyMode: 'system',
         customProxyUrl: '',
         artifactsEffectEnabled: true,
@@ -103,6 +108,8 @@ export class ConfigPresenter implements IConfigPresenter {
         syncEnabled: false,
         syncFolderPath: path.join(this.userDataPath, 'sync'),
         lastSyncTime: 0,
+        soundEnabled: false,
+        copyWithCotEnabled: true,
         loggingEnabled: false,
         default_system_prompt: '',
         appVersion: this.currentAppVersion
@@ -701,6 +708,28 @@ export class ConfigPresenter implements IConfigPresenter {
     }, 1000)
   }
 
+  // 获取音效开关状态
+  getSoundEnabled(): boolean {
+    const value = this.getSetting<boolean>('soundEnabled') ?? false
+    return value === undefined || value === null ? false : value
+  }
+
+  // 设置音效开关状态
+  setSoundEnabled(enabled: boolean): void {
+    this.setSetting('soundEnabled', enabled)
+    eventBus.emit(CONFIG_EVENTS.SOUND_ENABLED_CHANGED, enabled)
+  }
+
+  getCopyWithCotEnabled(): boolean {
+    const value = this.getSetting<boolean>('copyWithCotEnabled') ?? true
+    return value === undefined || value === null ? false : value
+  }
+
+  setCopyWithCotEnabled(enabled: boolean): void {
+    this.setSetting('copyWithCotEnabled', enabled)
+    eventBus.emit(CONFIG_EVENTS.COPY_WITH_COT_CHANGED, enabled)
+  }
+
   // ===================== MCP配置相关方法 =====================
 
   // 获取MCP服务器配置
@@ -921,8 +950,35 @@ export class ConfigPresenter implements IConfigPresenter {
   async setDefaultSystemPrompt(prompt: string): Promise<void> {
     this.setSetting('default_system_prompt', prompt)
   }
+
+  // 获取默认快捷键
+  getDefaultShortcutKey(): ShortcutKeySetting {
+    return {
+      ...defaultShortcutKey
+    }
+  }
+
+  // 获取快捷键
+  getShortcutKey(): ShortcutKeySetting {
+    return (
+      this.getSetting<ShortcutKeySetting>('shortcutKey') || {
+        ...defaultShortcutKey
+      }
+    )
+  }
+
+  // 设置快捷键
+  setShortcutKey(customShortcutKey: ShortcutKeySetting) {
+    this.setSetting('shortcutKey', customShortcutKey)
+  }
+
+  // 重置快捷键
+  resetShortcutKeys() {
+    this.setSetting('shortcutKey', { ...defaultShortcutKey })
+  }
 }
 
 // 导出配置相关内容，方便其他组件使用
 export { defaultModelsSettings } from './modelDefaultSettings'
 export { providerModelSettings } from './providerModelSettings'
+export { defaultShortcutKey } from './shortcutKeySettings'

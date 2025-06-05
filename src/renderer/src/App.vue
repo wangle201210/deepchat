@@ -30,7 +30,7 @@ const isMacOS = ref(false)
 const devicePresenter = usePresenter('devicePresenter')
 // 监听主题和字体大小变化，直接更新 body class
 watch(
-  [() => settingsStore.theme, () => settingsStore.fontSizeClass],
+  [() => themeStore.themeMode, () => settingsStore.fontSizeClass],
   ([newTheme, newFontSizeClass], [oldTheme, oldFontSizeClass]) => {
     if (oldTheme) {
       document.documentElement.classList.remove(oldTheme)
@@ -169,7 +169,7 @@ onMounted(() => {
     isMacOS.value = deviceInfo.platform === 'darwin'
   })
   // 设置初始 body class
-  document.body.classList.add(settingsStore.theme)
+  document.body.classList.add(themeStore.themeMode)
   document.body.classList.add(settingsStore.fontSizeClass)
 
   // 监听全局错误通知事件

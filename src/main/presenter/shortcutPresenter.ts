@@ -1,21 +1,41 @@
 import { app, globalShortcut } from 'electron'
+
 import { presenter } from '.'
-import { SHORTCUT_EVENTS } from '../events'
+import { SHORTCUT_EVENTS, TRAY_EVENTS } from '../events'
 import { eventBus } from '../eventbus'
+import {
+  CommandKey,
+  defaultShortcutKey,
+  ShortcutKeySetting
+} from './configPresenter/shortcutKeySettings'
+import { ConfigPresenter } from './configPresenter'
 
 export class ShortcutPresenter {
   private isActive: boolean = false
+  private configPresenter: ConfigPresenter
+  private shortcutKeys: ShortcutKeySetting = {
+    ...defaultShortcutKey
+  }
 
-  constructor() {
-    console.log('ShortcutPresenter constructor')
+  /**
+   * 创建一个新的 ShortcutPresenter 实例
+   * @param shortKey 可选的自定义快捷键设置
+   */
+  constructor(configPresenter: ConfigPresenter) {
+    this.configPresenter = configPresenter
   }
 
   registerShortcuts(): void {
     if (this.isActive) return
     console.log('reg shortcuts')
 
+    this.shortcutKeys = {
+      ...defaultShortcutKey,
+      ...this.configPresenter.getShortcutKey()
+    }
+
     // Command+N 或 Ctrl+N 创建新会话
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+N' : 'Control+N', async () => {
+    globalShortcut.register(this.shortcutKeys.NewConversation, async () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
         presenter.windowPresenter.sendToActiveTab(
@@ -26,18 +46,15 @@ export class ShortcutPresenter {
     })
 
     // Command+Shift+N 或 Ctrl+Shift+N 创建新窗口
-    globalShortcut.register(
-      process.platform === 'darwin' ? 'Command+Shift+N' : 'Control+Shift+N',
-      () => {
-        const focusedWindow = presenter.windowPresenter.getFocusedWindow()
-        if (focusedWindow?.isFocused()) {
-          eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
-        }
+    globalShortcut.register(this.shortcutKeys.NewWindow, () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
       }
-    )
+    })
 
     // Command+T 或 Ctrl+T 在当前窗口创建新标签页
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+T' : 'Control+T', () => {
+    globalShortcut.register(this.shortcutKeys.NewTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
         eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_TAB, focusedWindow.id)
@@ -45,7 +62,7 @@ export class ShortcutPresenter {
     })
 
     // Command+W 或 Ctrl+W 关闭当前标签页
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+W' : 'Control+W', () => {
+    globalShortcut.register(this.shortcutKeys.CloseTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
         eventBus.emit(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, focusedWindow.id)
@@ -53,39 +70,48 @@ export class ShortcutPresenter {
     })
 
     // Command+Q 或 Ctrl+Q 退出程序
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+Q' : 'Control+Q', () => {
+    globalShortcut.register(this.shortcutKeys.Quit, () => {
       app.quit()
     })
 
     // Command+= 或 Ctrl+= 放大字体
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+=' : 'Control+=', () => {
+    globalShortcut.register(this.shortcutKeys.ZoomIn, () => {
       eventBus.emit(SHORTCUT_EVENTS.ZOOM_IN)
     })
 
     // Command+- 或 Ctrl+- 缩小字体
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+-' : 'Control+-', () => {
+    globalShortcut.register(this.shortcutKeys.ZoomOut, () => {
       eventBus.emit(SHORTCUT_EVENTS.ZOOM_OUT)
     })
 
     // Command+0 或 Ctrl+0 重置字体大小
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+0' : 'Control+0', () => {
+    globalShortcut.register(this.shortcutKeys.ZoomResume, () => {
       eventBus.emit(SHORTCUT_EVENTS.ZOOM_RESUME)
     })
 
     // Command+, 或 Ctrl+, 打开设置
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+,' : 'Control+,', () => {
-      eventBus.emit(SHORTCUT_EVENTS.GO_SETTINGS)
+    globalShortcut.register(this.shortcutKeys.GoSettings, () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        presenter.windowPresenter.sendToActiveTab(focusedWindow.id, SHORTCUT_EVENTS.GO_SETTINGS)
+      }
     })
 
     // Command+L 或 Ctrl+L 清除聊天历史
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+L' : 'Control+L', () => {
-      eventBus.emit(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY)
+    globalShortcut.register(this.shortcutKeys.CleanChatHistory, () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        presenter.windowPresenter.sendToActiveTab(
+          focusedWindow.id,
+          SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY
+        )
+      }
     })
 
     // 添加标签页切换相关快捷键
 
     // Command+Tab 或 Ctrl+Tab 切换到下一个标签页
-    globalShortcut.register('Control+Tab', () => {
+    globalShortcut.register(this.shortcutKeys.SwitchNextTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
         this.switchToNextTab(focusedWindow.id)
@@ -93,7 +119,7 @@ export class ShortcutPresenter {
     })
 
     // Ctrl+Shift+Tab 切换到上一个标签页
-    globalShortcut.register('Control+Shift+Tab', () => {
+    globalShortcut.register(this.shortcutKeys.SwitchPrevTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
         this.switchToPreviousTab(focusedWindow.id)
@@ -102,24 +128,23 @@ export class ShortcutPresenter {
 
     // 注册标签页数字快捷键 (1-8)
     for (let i = 1; i <= 8; i++) {
-      globalShortcut.register(
-        process.platform === 'darwin' ? `Command+${i}` : `Control+${i}`,
-        () => {
-          const focusedWindow = presenter.windowPresenter.getFocusedWindow()
-          if (focusedWindow?.isFocused()) {
-            this.switchToTabByIndex(focusedWindow.id, i - 1) // 索引从0开始
-          }
+      globalShortcut.register(`${CommandKey}+${i}`, () => {
+        const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+        if (focusedWindow?.isFocused()) {
+          this.switchToTabByIndex(focusedWindow.id, i - 1) // 索引从0开始
         }
-      )
+      })
     }
 
     // Command+9 或 Ctrl+9 切换到最后一个标签页
-    globalShortcut.register(process.platform === 'darwin' ? 'Command+9' : 'Control+9', () => {
+    globalShortcut.register(this.shortcutKeys.SwtichToLastTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
         this.switchToLastTab(focusedWindow.id)
       }
     })
+
+    this.showHideWindow()
 
     this.isActive = true
   }
@@ -190,9 +215,20 @@ export class ShortcutPresenter {
     }
   }
 
+  // Command+O 或 Ctrl+O 显示/隐藏窗口
+  private async showHideWindow() {
+    // Command+O 或 Ctrl+O 显示/隐藏窗口
+    globalShortcut.register(this.shortcutKeys.ShowHideWindow, () => {
+      eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
+    })
+  }
+
   unregisterShortcuts(): void {
     console.log('unreg shortcuts')
     globalShortcut.unregisterAll()
+
+    // 取消注册显示/隐藏窗口快捷键
+    this.showHideWindow()
     this.isActive = false
   }
 

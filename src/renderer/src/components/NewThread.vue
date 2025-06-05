@@ -37,7 +37,11 @@
                   class="flex border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full"
                   size="sm"
                 >
-                  <ModelIcon class="w-4 h-4" :model-id="activeModel.id"></ModelIcon>
+                  <ModelIcon
+                    class="w-4 h-4"
+                    :model-id="activeModel.providerId"
+                    :is-dark="themeStore.isDark"
+                  ></ModelIcon>
                   <!-- <Icon icon="lucide:message-circle" class="w-5 h-5 text-muted-foreground" /> -->
                   <h2 class="text-xs font-bold max-w-[150px] truncate">{{ name }}</h2>
                   <Badge
@@ -46,7 +50,8 @@
                     variant="outline"
                     class="py-0 rounded-lg"
                     size="xs"
-                    >{{ t(`model.tags.${tag}`) }}</Badge
+                  >
+                    {{ t(`model.tags.${tag}`) }}</Badge
                   >
                   <Icon icon="lucide:chevron-right" class="w-4 h-4" />
                 </Button>
@@ -106,8 +111,10 @@ import { UserMessageContent } from '@shared/chat'
 import ChatConfig from './ChatConfig.vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { useEventListener } from '@vueuse/core'
+import { useThemeStore } from '@/stores/theme'
 
 const configPresenter = usePresenter('configPresenter')
+const themeStore = useThemeStore()
 
 // 定义偏好模型的类型
 interface PreferredModel {
@@ -168,16 +175,23 @@ watch(
       if (chatStore.threads[0].dtThreads.length > 0) {
         const thread = chatStore.threads[0].dtThreads[0]
         const modelId = thread.settings.modelId
-        for (const provider of settingsStore.enabledModels) {
-          for (const model of provider.models) {
-            if (model.id === modelId) {
-              activeModel.value = {
-                name: model.name,
-                id: model.id,
-                providerId: provider.providerId,
-                tags: []
+        const providerId = thread.settings.providerId
+
+        // 同时匹配 modelId 和 providerId
+        if (modelId && providerId) {
+          for (const provider of settingsStore.enabledModels) {
+            if (provider.providerId === providerId) {
+              for (const model of provider.models) {
+                if (model.id === modelId) {
+                  activeModel.value = {
+                    name: model.name,
+                    id: model.id,
+                    providerId: provider.providerId,
+                    tags: []
+                  }
+                  return
+                }
               }
-              return
             }
           }
         }

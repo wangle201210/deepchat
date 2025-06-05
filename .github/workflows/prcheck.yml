@@ -32,4 +32,4 @@ jobs:
         run: npm run build
 
       - name: Check translations
-        run: npm run i18n
+        run: npm run i18n && npm run i18n:en

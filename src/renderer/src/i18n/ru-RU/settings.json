@@ -36,6 +36,8 @@
     "testSearchEngineDesc": "Будет выполнен тестовый поиск по запросу \"погода\" с использованием поисковой системы {engine}.",
     "testSearchEngineNote": "Если поисковая страница требует входа или других действий, вы можете выполнить их в тестовом окне. Пожалуйста, закройте тестовое окно, когда закончите.",
     "theme": "Тема",
+    "soundEnabled": "Звуковые уведомления",
+    "copyWithCotEnabled": "Скопировать информацию COT",
     "loggingEnabled": "Включить логирование",
     "loggingDialogTitle": "Подтверждение изменения настроек логирования",
     "loggingEnableDesc": "Включение логирования поможет нам диагностировать проблемы и улучшить приложение. Файлы логов могут содержать конфиденциальную информацию.",
@@ -183,7 +185,20 @@
     "serverList": "Список серверов",
     "totalServers": "Всего серверов",
     "addServer": "Добавить сервер",
-    "autoStart": "Самостоятельно"
+    "autoStart": "Самостоятельно",
+    "githubCopilotAuth": "Аутентификация GitHub Copilot",
+    "githubCopilotConnected": "GitHub Copilot подключен",
+    "githubCopilotNotConnected": "GitHub Copilot не подключен",
+    "loginWithGitHub": "Войти через GitHub",
+    "loggingIn": "Вход...",
+    "githubCopilotLoginTip": "Разрешите DeepChat доступ к вашей подписке GitHub Copilot. Для доступа к API Copilot требуются разрешения 'read:user' и 'read:org'.",
+    "loginSuccess": "Вход выполнен успешно",
+    "loginFailed": "Ошибка входа",
+    "tokenValid": "Токен действителен",
+    "tokenInvalid": "Токен недействителен",
+    "disconnect": "Отключить",
+    "disconnected": "Отключено успешно",
+    "disconnectFailed": "Не удалось отключить"
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",
@@ -359,6 +374,12 @@
     "text-xl": "большой"
   },
   "shortcuts": {
+    "title": "Настройки сочетаний клавиш",
+    "pressKeys": "Нажмите клавиши",
+    "pressEnterToSave": "Нажмите Enter для сохранения, Esc для отмены",
+    "noModifierOnly": "Нельзя использовать только модификатор в качестве сочетания",
+    "keyConflict": "Конфликт сочетаний клавиш, выберите другую комбинацию",
+
     "cleanHistory": "Четкая история чата",
     "goSettings": "Откройте настройки",
     "hideWindow": "Скрыть окно",

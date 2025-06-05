@@ -4,7 +4,9 @@
     "fileArea": "ファイルエリア",
     "inputArea": "入力エリア",
     "functionSwitch": "機能スイッチ",
-    "fileSelect": "ファイル選択"
+    "fileSelect": "ファイル選択",
+    "pasteFiles": "ファイルのコピー＆ペーストをサポート",
+    "dropFiles": "ファイルをここにドラッグ"
   },
   "features": {
     "deepThinking": "深い思考",

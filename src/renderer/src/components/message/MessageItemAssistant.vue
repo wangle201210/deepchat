@@ -3,13 +3,20 @@
     :data-message-id="message.id"
     class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
   >
-    <ModelIcon
-      :model-id="message.model_id"
-      custom-class="flex-shrink-0 w-5 h-5 block rounded-md bg-background"
-      :alt="message.role"
-    />
+    <div
+      class="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-base-900/5 dark:bg-base-100/10 border border-input rounded-md"
+    >
+      <ModelIcon
+        :model-id="currentMessage.model_provider"
+        custom-class=" block"
+        class="w-3 h-3"
+        :is-dark="themeStore.isDark"
+        :alt="currentMessage.role"
+      />
+    </div>
+
     <div class="flex flex-col w-full space-y-1.5">
-      <MessageInfo :name="message.model_name" :timestamp="message.timestamp" />
+      <MessageInfo :name="currentMessage.model_name" :timestamp="currentMessage.timestamp" />
       <div
         v-if="currentContent.length === 0"
         class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
@@ -109,6 +116,7 @@ import MessageBlockError from './MessageBlockError.vue'
 import MessageToolbar from './MessageToolbar.vue'
 import MessageInfo from './MessageInfo.vue'
 import { useChatStore } from '@/stores/chat'
+import { useSettingsStore } from '@/stores/settings'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
 import MessageBlockAction from './MessageBlockAction.vue'
@@ -124,13 +132,15 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-
+import { useThemeStore } from '@/stores/theme'
 const props = defineProps<{
   message: AssistantMessage
   isCapturingImage: boolean
 }>()
 
+const themeStore = useThemeStore()
 const chatStore = useChatStore()
+const settingsStore = useSettingsStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
 
@@ -146,6 +156,16 @@ const emit = defineEmits<{
 
 // 获取当前会话ID
 const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
+
+// 获取当前显示的消息（根据变体索引）
+const currentMessage = computed(() => {
+  if (currentVariantIndex.value === 0) {
+    return props.message
+  }
+
+  const variant = allVariants.value[currentVariantIndex.value - 1]
+  return variant || props.message
+})
 
 // 计算当前消息的所有变体（包括缓存中的）
 const allVariants = computed(() => {
@@ -235,13 +255,27 @@ const handleAction = (
   } else if (action === 'copy') {
     window.api.copyText(
       currentContent.value
-        .map((block) => {
-          if (block.type === 'reasoning_content' || block.type === 'artifact-thinking') {
-            return `<think>${block.content}</think>`
+        .filter((block) => {
+          if (
+            (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
+            !settingsStore.copyWithCotEnabled
+          ) {
+            return false
           }
-          return block.content
+          return true
+        })
+        .map((block) => {
+          const trimmedContent = (block.content ?? '').trim()
+          if (
+            (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
+            settingsStore.copyWithCotEnabled
+          ) {
+            return `<think>\n${trimmedContent}\n</think>`
+          }
+          return trimmedContent
         })
         .join('\n')
+        .trim()
     )
   } else if (action === 'prev') {
     if (currentVariantIndex.value > 0) {
@@ -253,13 +287,13 @@ const handleAction = (
     }
   } else if (action === 'copyImage') {
     emit('copyImage', props.message.id, props.message.parentId, false, {
-      model_name: props.message.model_name,
-      model_provider: props.message.model_provider
+      model_name: currentMessage.value.model_name,
+      model_provider: currentMessage.value.model_provider
     })
   } else if (action === 'copyImageFromTop') {
     emit('copyImage', props.message.id, props.message.parentId, true, {
-      model_name: props.message.model_name,
-      model_provider: props.message.model_provider
+      model_name: currentMessage.value.model_name,
+      model_provider: currentMessage.value.model_provider
     })
   } else if (action === 'fork') {
     showForkDialog()

@@ -7,6 +7,10 @@ import { usePresenter } from '@/composables/usePresenter'
 import { useRouter } from 'vue-router'
 import { MODEL_META } from '@shared/presenter'
 import { useI18n } from 'vue-i18n'
+import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
+
+const themeStore = useThemeStore()
 
 const Button = defineAsyncComponent(() =>
   import('@/components/ui/button').then((mod) => mod.Button)
@@ -62,6 +66,7 @@ const DialogFooter = defineAsyncComponent(() =>
 )
 
 const settingsStore = useSettingsStore()
+const languageStore = useLanguageStore()
 const configPresenter = usePresenter('configPresenter')
 const router = useRouter()
 
@@ -194,6 +199,7 @@ const cancelWatch = watch(
 
 onMounted(() => {
   settingsStore.initSettings()
+  languageStore.initLanguage()
 })
 
 const handleModelEnabledChange = async (model: MODEL_META, enabled: boolean) => {
@@ -278,6 +284,7 @@ const isFirstStep = computed(() => currentStep.value === 0)
                         <ModelIcon
                           :model-id="provider.id"
                           :custom-class="'w-4 h-4 text-muted-foreground'"
+                          :is-dark="themeStore.isDark"
                         />
                         <span>{{ provider.name }}</span>
                       </div>

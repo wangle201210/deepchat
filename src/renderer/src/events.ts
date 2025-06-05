@@ -20,7 +20,9 @@ export const CONFIG_EVENTS = {
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
-  LANGUAGE_CHANGED: 'config:language-changed' // 新增：语言变更事件
+  LANGUAGE_CHANGED: 'config:language-changed', // 新增：语言变更事件
+  SOUND_ENABLED_CHANGED: 'config:sound-enabled-changed', // 新增：声音启用状态变更事件
+  COPY_WITH_COT_CHANGED: 'config:copy-with-cot-enabled-changed'
 }
 
 // 会话相关事件
