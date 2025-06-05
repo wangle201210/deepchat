@@ -42,6 +42,17 @@ export interface Resource {
   text?: string
   blob?: string
 }
+export interface FileItem {
+  id: string
+  name: string
+  type: string
+  size: number
+  path: string
+  description?: string
+  content?: string
+  createdAt: number
+}
+
 export interface Prompt {
   id: string
   name: string
@@ -52,6 +63,7 @@ export interface Prompt {
     description: string
     required: boolean
   }>
+  files?: FileItem[] // 关联的文件
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
   enabled?: boolean // 是否启用
   source?: 'local' | 'imported' | 'builtin' // 来源类型
@@ -66,6 +78,7 @@ export interface PromptListEntry {
     description?: string
     required: boolean
   }[]
+  files?: FileItem[] // 关联的文件
   client: {
     name: string
     icon: string

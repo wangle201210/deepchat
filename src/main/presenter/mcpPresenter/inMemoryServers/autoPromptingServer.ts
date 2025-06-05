@@ -4,6 +4,7 @@ import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { presenter } from '@/presenter'
+import { Prompt } from '@shared/presenter'
 
 // --- 类型定义和 Schema (合并后) ---
 
@@ -16,6 +17,7 @@ const TemplateParameterSchema = z.object({
 })
 
 // 模板定义的 Schema
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TemplateDefinitionSchema = z.object({
   name: z.string().describe('模板名称'),
   description: z.string().describe('模板描述'),
@@ -69,16 +71,28 @@ export class AutoPromptingServer {
 
   /**
    * 辅助函数：根据模板名称从 presenter 获取模板定义。
-   * 现在直接返回 TemplateDefinition 类型，因为 Schema 已适配。
+   * 将 Prompt 类型转换为 TemplateDefinition 类型。
    * @param name 模板名称
    * @returns 模板定义或 undefined
    */
   private async getTemplateDefinition(name: string): Promise<TemplateDefinition | undefined> {
     try {
-      // 直接将 presenter 返回的类型断言为 TemplateDefinition[]，
-      // 因为现在 TemplateDefinitionSchema 已经与 presenter 的实际返回结构匹配。
-      const templates: TemplateDefinition[] = await presenter.configPresenter.getCustomPrompts()
-      return templates.find((t) => t.name === name)
+      const prompts: Prompt[] = await presenter.configPresenter.getCustomPrompts()
+      const prompt = prompts.find((p) => p.name === name)
+
+      if (!prompt) {
+        return undefined
+      }
+
+      // 将 Prompt 转换为 TemplateDefinition，处理 content 可能为 undefined 的情况
+      const templateDefinition: TemplateDefinition = {
+        name: prompt.name,
+        description: prompt.description,
+        content: prompt.content || '', // 如果 content 为 undefined，使用空字符串
+        parameters: prompt.parameters
+      }
+
+      return templateDefinition
     } catch (error) {
       console.error('Failed to retrieve custom templates:', error)
       return undefined
@@ -115,8 +129,8 @@ export class AutoPromptingServer {
     if (name === 'list_all_prompt_template_names') {
       // 1. 得到所有模板名
       try {
-        const templates: TemplateDefinition[] = await presenter.configPresenter.getCustomPrompts()
-        const templateNames = templates.map((t) => t.name)
+        const prompts: Prompt[] = await presenter.configPresenter.getCustomPrompts()
+        const templateNames = prompts.map((p) => p.name)
         return {
           content: [{ type: 'text', text: JSON.stringify(templateNames) }]
         }

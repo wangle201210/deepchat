@@ -5,7 +5,8 @@ import {
   MODEL_META,
   ModelConfig,
   RENDERER_MODEL_META,
-  MCPServerConfig
+  MCPServerConfig,
+  Prompt
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import ElectronStore from 'electron-store'
@@ -49,19 +50,6 @@ interface IAppSettings {
 interface IModelStore {
   models: MODEL_META[]
   custom_models: MODEL_META[]
-}
-
-// 添加 prompts 相关的类型定义
-interface Prompt {
-  id: string
-  name: string
-  description: string
-  content: string
-  parameters?: Array<{
-    name: string
-    description: string
-    required: boolean
-  }>
 }
 
 const defaultProviders = DEFAULT_PROVIDERS.map((provider) => ({

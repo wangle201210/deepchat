@@ -6,7 +6,11 @@
     "functionSwitch": "機能スイッチ",
     "fileSelect": "ファイル選択",
     "pasteFiles": "ファイルのコピー＆ペーストをサポート",
-    "dropFiles": "ファイルをここにドラッグ"
+    "dropFiles": "ファイルをここにドラッグ",
+    "promptFilesAdded": "プロンプトファイルが追加されました",
+    "promptFilesAddedDesc": "{count}個のファイルが正常に追加されました",
+    "promptFilesError": "ファイル処理エラー",
+    "promptFilesErrorDesc": "{count}個のファイルの処理に失敗しました"
   },
   "features": {
     "deepThinking": "深い思考",

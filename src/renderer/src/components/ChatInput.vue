@@ -203,7 +203,7 @@ import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import { Mention } from './editor/mention/mention'
-import suggestion, { mentionData } from './editor/mention/suggestion'
+import suggestion, { mentionData, setPromptFilesHandler } from './editor/mention/suggestion'
 import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
@@ -580,6 +580,86 @@ const deleteFile = (idx: number) => {
   }
 }
 
+// 处理来自 Prompt 的文件
+const handlePromptFiles = async (files: Array<{
+  id: string
+  name: string
+  type: string
+  size: number
+  path: string
+  description?: string
+  content?: string
+  createdAt: number
+}>) => {
+  if (!files || files.length === 0) return
+
+  const { toast } = await import('@/components/ui/toast')
+  let addedCount = 0
+  let errorCount = 0
+
+  for (const fileItem of files) {
+    try {
+      // 检查文件是否已存在（基于文件名去重）
+      const exists = selectedFiles.value.some(f => f.name === fileItem.name)
+      if (exists) {
+        continue
+      }
+
+      // 转换 FileItem -> MessageFile
+      const messageFile: MessageFile = {
+        name: fileItem.name,
+        content: fileItem.content || '', // 如果没有内容，尝试从路径读取
+        mimeType: fileItem.type || 'application/octet-stream',
+        metadata: {
+          fileName: fileItem.name,
+          fileSize: fileItem.size || 0,
+          fileDescription: fileItem.description || '',
+          fileCreated: new Date(fileItem.createdAt || Date.now()),
+          fileModified: new Date(fileItem.createdAt || Date.now())
+        },
+        token: approximateTokenSize(fileItem.content || ''),
+        path: fileItem.path || fileItem.name
+      }
+
+      // 如果没有内容但有路径，尝试读取文件
+      if (!messageFile.content && fileItem.path) {
+        try {
+          const fileContent = await filePresenter.readFile(fileItem.path)
+          messageFile.content = fileContent
+          messageFile.token = approximateTokenSize(fileContent)
+        } catch (error) {
+          console.warn(`Failed to read file content: ${fileItem.path}`, error)
+          // 如果读取失败，仍然添加文件但内容为空
+        }
+      }
+
+      selectedFiles.value.push(messageFile)
+      addedCount++
+    } catch (error) {
+      console.error('Failed to process prompt file:', fileItem, error)
+      errorCount++
+    }
+  }
+
+  // 显示结果反馈
+  if (addedCount > 0) {
+    toast({
+      title: t('chat.input.promptFilesAdded'),
+      description: t('chat.input.promptFilesAddedDesc', { count: addedCount }),
+      variant: 'default'
+    })
+    emit('file-upload', selectedFiles.value)
+  }
+
+  if (errorCount > 0) {
+    toast({
+      title: t('chat.input.promptFilesError'),
+      description: t('chat.input.promptFilesErrorDesc', { count: errorCount }),
+      variant: 'destructive'
+    })
+  }
+}
+
 const disabledSend = computed(() => {
   const activeThreadId = chatStore.getActiveThreadId()
   if (activeThreadId) {
@@ -732,6 +812,9 @@ const handleSearchMouseLeave = () => {
 
 onMounted(() => {
   initSettings()
+
+  // 设置 prompt 文件处理回调
+  setPromptFilesHandler(handlePromptFiles)
 
   // Add event listeners for search engine selector hover with auto remove
   const searchElement = document.querySelector('.search-engine-select')
