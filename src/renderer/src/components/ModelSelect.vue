@@ -97,7 +97,7 @@ onMounted(async () => {
       return {
         id: providerId,
         name: provider?.name || providerId,
-        models
+        models: models.filter((model) => model.type === 'chat')
       }
     })
   } catch (error) {
