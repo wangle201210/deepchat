@@ -846,7 +846,7 @@ export class ConfigPresenter implements IConfigPresenter {
     nativeTheme.on('updated', () => {
       // 只有当主题设置为 system 时，才需要通知渲染进程
       if (nativeTheme.themeSource === 'system') {
-        eventBus.send(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, SendTarget.ALL_WINDOWS, nativeTheme.shouldUseDarkColors)
+        eventBus.sendToMain(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, nativeTheme.shouldUseDarkColors)
       }
     })
   }

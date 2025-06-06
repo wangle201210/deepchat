@@ -21,7 +21,6 @@ import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
 import {
   CONFIG_EVENTS,
-  STREAM_EVENTS,
   WINDOW_EVENTS,
   UPDATE_EVENTS,
   DEEPLINK_EVENTS
