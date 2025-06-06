@@ -381,6 +381,7 @@
     "keyConflict": "Shortcut key conflict, please choose another combination",
 
     "cleanHistory": "Clear chat history",
+    "deleteConversation": "Delete Conversation",
     "goSettings": "Open Settings",
     "hideWindow": "Hide window",
     "quitApp": "Quit app",

@@ -108,6 +108,17 @@ export class ShortcutPresenter {
       }
     })
 
+    // Command+D 或 Ctrl+D 清除聊天历史
+    globalShortcut.register(this.shortcutKeys.DeleteConversation, () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        presenter.windowPresenter.sendToActiveTab(
+          focusedWindow.id,
+          SHORTCUT_EVENTS.DELETE_CONVERSATION
+        )
+      }
+    })
+
     // 添加标签页切换相关快捷键
 
     // Command+Tab 或 Ctrl+Tab 切换到下一个标签页

@@ -21,7 +21,7 @@
     <div v-show="!collapse" ref="messageBlock" class="w-full relative">
       <div
         class="prose prose-sm dark:prose-invert w-full max-w-full leading-7 break-all"
-        v-html="disclaimerContent"
+        v-html="renderedContent"
       ></div>
     </div>
 
@@ -67,7 +67,9 @@ const reasoningDuration = computed(() => {
 })
 
 const md = getCommonMarkdown()
-const disclaimerContent = computed(() => renderMarkdown(md, t('searchDisclaimer')))
+const renderedContent = computed(() => {
+  return renderMarkdown(md, props.block.content || '')
+})
 
 watch(
   () => collapse.value,
