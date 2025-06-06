@@ -108,7 +108,7 @@ export class ToolManager {
             ?.replace('{serverName}', serverName)
             .replace('{errorMessage}', errorMessage) ||
           `无法从服务器 '${serverName}' 获取工具列表: ${errorMessage}`
-        eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+        eventBus.sendToRenderer(NOTIFICATION_EVENTS.SHOW_ERROR, SendTarget.ALL_WINDOWS, {
           title: errorMessages.getMcpToolListErrorTitle || '获取工具定义失败',
           message: formattedMessage,
           id: `mcp-error-pass1-${serverName}-${Date.now()}`,

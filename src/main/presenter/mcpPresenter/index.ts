@@ -349,7 +349,7 @@ export class McpPresenter implements IMCPPresenter {
       // 获取当前语言并发送通知
       const locale = this.configPresenter.getLanguage?.() || 'zh-CN'
       const errorMessages = getErrorMessageLabels(locale)
-      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SHOW_ERROR, SendTarget.ALL_WINDOWS, {
         title: errorMessages.addMcpServerErrorTitle || '添加服务器失败',
         message:
           errorMessages.addMcpServerDuplicateMessage?.replace('{serverName}', serverName) ||

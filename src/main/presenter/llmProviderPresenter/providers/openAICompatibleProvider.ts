@@ -21,7 +21,7 @@ import { ConfigPresenter } from '../../configPresenter'
 import { proxyConfig } from '../../proxyConfig'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { presenter } from '@/presenter'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
 import { app } from 'electron'
@@ -160,10 +160,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
 
       if (msg.role === 'assistant' && msg.tool_calls) {
-        ;(baseMessage as ChatCompletionAssistantMessageParam).tool_calls = msg.tool_calls
+        ; (baseMessage as ChatCompletionAssistantMessageParam).tool_calls = msg.tool_calls
       }
       if (msg.role === 'tool') {
-        ;(baseMessage as ChatCompletionToolMessageParam).tool_call_id = msg.tool_call_id || ''
+        ; (baseMessage as ChatCompletionToolMessageParam).tool_call_id = msg.tool_call_id || ''
       }
 
       return baseMessage as ChatCompletionMessageParam
@@ -524,7 +524,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     ) {
       // 限定服务供应商为chutes，sorry for hack...
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      ;(requestParams as any).provider = {
+      ; (requestParams as any).provider = {
         only: ['chutes']
       }
     }
@@ -573,10 +573,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     let toolUseDetected = false // 标记是否检测到工具使用（原生或非原生）
     let usage:
       | {
-          prompt_tokens: number
-          completion_tokens: number
-          total_tokens: number
-        }
+        prompt_tokens: number
+        completion_tokens: number
+        total_tokens: number
+      }
       | undefined = undefined
 
     //-----------------------------------------------------------------------------------------------------
@@ -1176,7 +1176,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // Optionally log the full error object for debugging
       console.error('OpenAICompatibleProvider check failed:', error)
 
-      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SHOW_ERROR, SendTarget.ALL_WINDOWS, {
         title: 'API Check Failed', // More specific title
         message: errorMessage,
         id: `openai-check-error-${Date.now()}`,

@@ -36,7 +36,7 @@ export class NotificationPresenter {
     const notification = new Notification(notificationOptions)
 
     notification.on('click', () => {
-      eventBus.send(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED, SendTarget.ALL_WINDOWS, options.id)
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED, SendTarget.ALL_WINDOWS, options.id)
       this.clearNotification(options.id)
     })
 

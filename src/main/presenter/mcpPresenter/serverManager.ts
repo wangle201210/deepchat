@@ -204,7 +204,7 @@ export class ServerManager {
       const formattedMessage = `${serverName}: ${errorMsg}`
 
       // 发送全局错误通知
-      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SHOW_ERROR, SendTarget.ALL_WINDOWS, {
         title: errorMessages.mcpConnectionErrorTitle,
         message: formattedMessage,
         id: `mcp-error-${serverName}-${Date.now()}`, // 添加时间戳和服务器名称确保每个错误有唯一ID
