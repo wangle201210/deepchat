@@ -192,8 +192,12 @@ const shortcutMapping: Record<
     label: 'settings.shortcuts.goSettings'
   },
   CleanChatHistory: {
-    icon: 'lucide:trash-2',
+    icon: 'lucide:eraser',
     label: 'settings.shortcuts.cleanHistory'
+  },
+  DeleteConversation: {
+    icon: 'lucide:trash-2',
+    label: 'settings.shortcuts.deleteConversation'
   },
   Quit: {
     icon: 'lucide:log-out',

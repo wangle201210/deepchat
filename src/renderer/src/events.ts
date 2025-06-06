@@ -96,7 +96,8 @@ export const SHORTCUT_EVENTS = {
   ZOOM_RESUME: 'shortcut:zoom-resume',
   CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
   GO_SETTINGS: 'shortcut:go-settings',
-  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  DELETE_CONVERSATION: 'shortcut:delete-conversation'
 }
 
 // 标签页相关事件
