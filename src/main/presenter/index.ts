@@ -4,7 +4,7 @@ import { WindowPresenter } from './windowPresenter'
 import { SQLitePresenter } from './sqlitePresenter'
 import { ShortcutPresenter } from './shortcutPresenter'
 import { IPresenter } from '@shared/presenter'
-import { eventBus, SendTarget } from '@/eventbus'
+import { eventBus } from '@/eventbus'
 import path from 'path'
 import { LLMProviderPresenter } from './llmProviderPresenter'
 import { ConfigPresenter } from './configPresenter'
@@ -21,9 +21,7 @@ import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
 import {
   CONFIG_EVENTS,
-  WINDOW_EVENTS,
-  UPDATE_EVENTS,
-  DEEPLINK_EVENTS
+  WINDOW_EVENTS
 } from '@/events'
 
 // 注意: 现在大部分事件已在各自的 presenter 中直接发送到渲染进程
