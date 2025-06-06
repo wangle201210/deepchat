@@ -2,155 +2,249 @@
 
 ## 🎯 重构目标
 
-将原本复杂的事件转发逻辑重构为更优雅、更清晰的事件通信机制，明确区分主进程内部通信和主进程到渲染进程的通信，推进使用精确的发送方法替代模糊的 `emit()`。
+构建一个清晰、高效的事件通信机制，支持主进程和渲染进程之间的精确事件传递。通过继承 EventEmitter 保持向后兼容，同时提供现代化的事件发送方法和自动转发机制。
 
-## 🚀 主要改进
+## 🚀 主要功能特性
 
-### 1. EventBus 类优化
+### 1. EventBus 核心架构
 
-- **继承 EventEmitter**：保持向后兼容性
+- **继承 EventEmitter**：完全兼容原生事件系统
 - **精确的发送方法**：
-  - `sendToMain()`：仅发送到主进程
-  - `sendToRenderer()`：发送到渲染进程（支持指定目标）
-  - `send()`：同时发送到主进程和渲染进程（推荐）
-- **简化的 emit()**：默认发送到两端，但推荐废弃使用
-- **预定义事件常量**：无需手动注册，常见事件已内置
+  - `sendToMain(eventName, ...args)`：仅发送到主进程
+  - `sendToWindow(eventName, windowId, ...args)`：发送到特定窗口
+  - `sendToRenderer(eventName, target, ...args)`：发送到渲染进程
+  - `send(eventName, target, ...args)`：同时发送到主进程和渲染进程
+- **智能的 emit() 重写**：自动转发预定义事件到渲染进程
+- **WindowPresenter 集成**：通过标准接口管理渲染进程通信
 
-### 2. SendTarget 枚举
+### 2. SendTarget 枚举定义
 
 ```typescript
 enum SendTarget {
-  ALL_WINDOWS = 'all_windows',    // 广播到所有窗口（默认）
-  DEFAULT_TAB = 'default_tab'     // 发送到默认标签页
+  MAIN = 'main',                  // 主进程（内部标识）
+  RENDERER = 'renderer',          // 渲染进程（内部标识）
+  ALL_WINDOWS = 'all_windows',    // 广播到所有窗口（默认推荐）
+  DEFAULT_TAB = 'default_tab'     // 发送到默认标签页（特殊场景）
 }
 ```
 
-### 3. 设计理念转变
+### 3. 自动转发事件系统
 
-- **从动态配置到静态定义**：移除复杂的事件注册逻辑
-- **从模糊到精确**：推荐使用具体的 `send` 方法
-- **从复杂到简单**：WindowPresenter 通过标准方式设置
+通过 `DEFAULT_RENDERER_EVENTS` 常量集合定义需要自动转发的事件：
 
-## 📊 事件分类处理
-
-### 配置相关事件（需要通知所有标签页）
-✅ **已优化为直接发送**：
-- `CONFIG_EVENTS.LANGUAGE_CHANGED` - 语言变更
-- `CONFIG_EVENTS.SOUND_ENABLED_CHANGED` - 音效开关
-- `CONFIG_EVENTS.COPY_WITH_COT_CHANGED` - 拷贝设置
-- `CONFIG_EVENTS.MODEL_LIST_CHANGED` - 模型列表变更
-- `CONFIG_EVENTS.MODEL_STATUS_CHANGED` - 模型状态变更
-- `CONFIG_EVENTS.PROVIDER_CHANGED` - 提供商变更
-- `CONFIG_EVENTS.PROXY_MODE_CHANGED` - 代理模式变更
-- `CONFIG_EVENTS.CUSTOM_PROXY_URL_CHANGED` - 自定义代理地址
-- `CONFIG_EVENTS.ARTIFACTS_EFFECT_CHANGED` - 动画效果设置
-- `CONFIG_EVENTS.SYNC_SETTINGS_CHANGED` - 同步设置变更
-- `CONFIG_EVENTS.SEARCH_ENGINES_UPDATED` - 搜索引擎更新
-- `CONFIG_EVENTS.CONTENT_PROTECTION_CHANGED` - 投屏保护设置
-- `CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED` - 自定义提示词变更
-- `SYSTEM_EVENTS.SYSTEM_THEME_UPDATED` - 系统主题更新
-
-### OAuth 相关事件（需要通知所有标签页）
-✅ **已优化为直接发送**：
-- `CONFIG_EVENTS.OAUTH_LOGIN_START` - OAuth 登录开始
-- `CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS` - OAuth 登录成功
-- `CONFIG_EVENTS.OAUTH_LOGIN_ERROR` - OAuth 登录失败
-
-### 同步相关事件（需要通知所有标签页）
-✅ **已优化为直接发送**：
-- `SYNC_EVENTS.BACKUP_STARTED` - 备份开始
-- `SYNC_EVENTS.BACKUP_COMPLETED` - 备份完成
-- `SYNC_EVENTS.BACKUP_ERROR` - 备份错误
-- `SYNC_EVENTS.IMPORT_STARTED` - 导入开始
-- `SYNC_EVENTS.IMPORT_COMPLETED` - 导入完成
-- `SYNC_EVENTS.IMPORT_ERROR` - 导入错误
-
-### 快捷键相关事件
-✅ **已优化分类处理**：
-- `SHORTCUT_EVENTS.ZOOM_IN` - 放大字体（所有窗口）
-- `SHORTCUT_EVENTS.ZOOM_OUT` - 缩小字体（所有窗口）
-- `SHORTCUT_EVENTS.ZOOM_RESUME` - 重置字体（所有窗口）
-- `SHORTCUT_EVENTS.CREATE_NEW_WINDOW` - 创建新窗口（主进程）
-- `SHORTCUT_EVENTS.CREATE_NEW_TAB` - 创建新标签页（主进程）
-- `SHORTCUT_EVENTS.CLOSE_CURRENT_TAB` - 关闭当前标签页（主进程）
-
-### 通知相关事件
-✅ **已优化为直接发送**：
-- `NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED` - 系统通知点击（所有窗口）
-
-### 窗口相关事件（主进程内部）
-✅ **已优化为主进程内部**：
-- `WINDOW_EVENTS.WINDOW_CREATED` - 窗口创建
-- `WINDOW_EVENTS.WINDOW_FOCUSED` - 窗口获得焦点
-- `WINDOW_EVENTS.WINDOW_BLURRED` - 窗口失去焦点
-
-### 预定义自动转发事件
-✅ **内置常量定义**：
-- `stream:error`
-- `conversation:activated`
-- `conversation:deactivated`
-- `conversation:message-edited`
-- `mcp:server-started`
-- `mcp:server-stopped`
-- `mcp:config-changed`
-- `mcp:tool-call-result`
-- `ollama:pull-model-progress`
-- `notification:show-error`
-- `shortcut:go-settings`
-- `shortcut:clean-chat-history`
-
-## 🔧 重构成果
-
-### 架构简化
-- **移除动态配置**：事件类型预定义，无需手动注册
-- **简化初始化**：构造函数无需参数
-- **标准化设置**：WindowPresenter 通过标准方法设置
-
-### 代码质量提升
-- **精确控制**：推荐使用具体的 `send` 方法
-- **类型安全**：完全移除 `any` 类型使用
-- **废弃警告**：为过时方法添加 `@deprecated` 标记
-
-### 可维护性提升
-- **清晰的分类**：主进程 vs 渲染进程事件
-- **预定义常量**：减少配置复杂性
-- **渐进式迁移**：保持向后兼容，逐步推进使用新方法
-
-## 🎨 推荐用法
-
-### 现代化写法（推荐）
 ```typescript
-// 配置变更：通知所有标签页
-eventBus.send('config:language-changed', SendTarget.ALL_WINDOWS, language)
+const DEFAULT_RENDERER_EVENTS = new Set([
+  // 流事件
+  'stream:error',
+  // 会话事件
+  'conversation:activated',
+  'conversation:deactivated',
+  'conversation:message-edited',
+  // MCP 事件
+  'mcp:server-started',
+  'mcp:server-stopped',
+  'mcp:config-changed',
+  'mcp:tool-call-result',
+  // Ollama 事件
+  'ollama:pull-model-progress',
+  // 通知事件
+  'notification:show-error',
+  // 快捷键事件
+  'shortcut:go-settings',
+  'shortcut:clean-chat-history'
+])
+```
 
-// 窗口管理：仅主进程内部
+## 📊 事件通信模式
+
+### 主进程内部通信
+适用于窗口管理、系统级操作等场景：
+```typescript
+// 窗口生命周期管理
 eventBus.sendToMain('window:created', windowId)
+eventBus.sendToMain('window:focused', windowId)
+eventBus.sendToMain('window:blurred', windowId)
 
-// UI 更新：仅渲染进程
-eventBus.sendToRenderer('notification:show-error', SendTarget.ALL_WINDOWS, error)
-
-// 特殊操作：发送到默认标签页
-eventBus.sendToRenderer('deeplink:mcp-install', SendTarget.DEFAULT_TAB, data)
+// 快捷键触发的主进程操作
+eventBus.sendToMain('shortcut:create-new-window')
+eventBus.sendToMain('shortcut:create-new-tab', windowId)
+eventBus.sendToMain('shortcut:close-current-tab', windowId)
 ```
 
-### 传统写法（逐步废弃）
+### 渲染进程通信
+适用于 UI 更新、用户界面响应等场景：
 ```typescript
-// 仍可使用，但缺乏明确性
-eventBus.emit('some-event', data)
+// 配置变更通知
+eventBus.sendToRenderer('config:language-changed', SendTarget.ALL_WINDOWS, language)
+eventBus.sendToRenderer('config:theme-changed', SendTarget.ALL_WINDOWS, theme)
+
+// 特定窗口操作
+eventBus.sendToWindow('window:specific-update', targetWindowId, data)
+
+// 默认标签页操作
+eventBus.sendToRenderer('deeplink:mcp-install', SendTarget.DEFAULT_TAB, installData)
 ```
 
-## 🎉 总结
+### 双向通信（推荐）
+适用于需要主进程和渲染进程同时响应的场景：
+```typescript
+// 配置系统事件
+eventBus.send('config:provider-changed', SendTarget.ALL_WINDOWS, providerConfig)
+eventBus.send('config:model-list-updated', SendTarget.ALL_WINDOWS, modelList)
 
-这次优化成功地：
+// 同步系统事件
+eventBus.send('sync:backup-started', SendTarget.ALL_WINDOWS, backupInfo)
+eventBus.send('sync:backup-completed', SendTarget.ALL_WINDOWS, result)
 
-1. **简化了架构**：从复杂的动态配置转为简单的静态定义
-2. **提高了精确性**：推荐使用明确的发送方法
-3. **改善了开发体验**：减少配置，专注业务逻辑
-4. **保持了兼容性**：渐进式迁移，不破坏现有代码
-5. **解决了核心问题**：**语言变更等设置项现在能够正确广播到所有标签页**
+// 用户界面缩放
+eventBus.send('shortcut:zoom-in', SendTarget.ALL_WINDOWS)
+eventBus.send('shortcut:zoom-out', SendTarget.ALL_WINDOWS)
+```
 
-特别重要的是，现在的设计更加清晰和可预测：
-- 配置变更事件自动通知所有界面
-- 窗口管理事件仅在主进程内部流转
-- 开发者可以精确控制事件的发送目标
-- 无需复杂的事件注册和配置
+### 自动转发事件
+利用 emit() 的智能转发机制：
+```typescript
+// 这些事件会自动转发到渲染进程
+eventBus.emit('stream:error', errorData)           // 自动转发
+eventBus.emit('mcp:server-started', serverInfo)    // 自动转发
+eventBus.emit('notification:show-error', error)    // 自动转发
+
+// 其他事件仅在主进程内部
+eventBus.emit('internal:custom-event', data)       // 仅主进程
+```
+
+## 🔧 架构优势
+
+### 简化的初始化
+```typescript
+// 构造函数无需复杂参数
+export const eventBus = new EventBus()
+
+// 运行时设置 WindowPresenter
+eventBus.setWindowPresenter(windowPresenter)
+```
+
+### 类型安全保障
+- 完全移除 `any` 类型使用
+- 参数类型明确定义：`...args: unknown[]`
+- 枚举类型提供编译时检查
+- TypeScript 智能提示支持
+
+### 错误处理机制
+```typescript
+// 内置的错误检查和警告
+sendToRenderer(eventName: string, target: SendTarget = SendTarget.ALL_WINDOWS, ...args: unknown[]) {
+  if (!this.windowPresenter) {
+    console.warn('WindowPresenter not available, cannot send to renderer')
+    return
+  }
+  // ... 发送逻辑
+}
+```
+
+## 🎨 实际应用场景
+
+### 配置管理系统
+```typescript
+class ConfigManager {
+  updateLanguage(language: string) {
+    this.saveConfig('language', language)
+    // 通知所有界面更新语言
+    eventBus.send('config:language-changed', SendTarget.ALL_WINDOWS, language)
+  }
+
+  updateProvider(provider: ProviderConfig) {
+    this.saveConfig('provider', provider)
+    // 通知主进程和所有界面
+    eventBus.send('config:provider-changed', SendTarget.ALL_WINDOWS, provider)
+  }
+}
+```
+
+### 窗口管理系统
+```typescript
+class WindowManager {
+  createWindow() {
+    const windowId = this.doCreateWindow()
+    // 仅通知主进程
+    eventBus.sendToMain('window:created', windowId)
+  }
+
+  focusWindow(windowId: number) {
+    this.doFocusWindow(windowId)
+    // 仅通知主进程
+    eventBus.sendToMain('window:focused', windowId)
+  }
+
+  notifySpecificWindow(windowId: number, data: any) {
+    // 向特定窗口发送消息
+    eventBus.sendToWindow('window:notification', windowId, data)
+  }
+}
+```
+
+### 错误处理系统
+```typescript
+class ErrorHandler {
+  handleStreamError(error: Error) {
+    // 利用自动转发显示错误
+    eventBus.emit('stream:error', {
+      message: error.message,
+      timestamp: Date.now()
+    })
+  }
+
+  showUserNotification(message: string) {
+    // 仅发送到渲染进程显示通知
+    eventBus.sendToRenderer('notification:show-error', SendTarget.ALL_WINDOWS, message)
+  }
+}
+```
+
+## 🎯 性能优化
+
+### 智能事件过滤
+- 只有预定义事件才会自动转发
+- 避免不必要的进程间通信开销
+- 减少渲染进程的事件处理负担
+
+### 目标精确控制
+- 支持发送到特定窗口而非广播
+- 可选择发送到默认标签页
+- 避免无效的事件传播
+
+### 错误预防机制
+- WindowPresenter 状态检查
+- 控制台警告提示
+- 优雅的错误降级处理
+
+## 🔄 兼容性保障
+
+### 向后兼容
+- 完全保持 EventEmitter 的所有原生功能
+- emit() 方法仍然可用，只是增加了自动转发逻辑
+- 现有的事件监听器无需修改
+
+### 渐进式升级
+- 可以逐步从 emit() 迁移到具体的 send 方法
+- 新功能不影响现有代码运行
+- 清晰的迁移路径和最佳实践指导
+
+## 🎉 重构成果总结
+
+这次 EventBus 重构成功实现了：
+
+1. **架构清晰化**：明确区分主进程、渲染进程和双向通信
+2. **功能完善化**：支持特定窗口通信和灵活的目标选择
+3. **开发体验优化**：完整的 TypeScript 支持和错误处理
+4. **性能提升**：智能的事件过滤和精确的目标控制
+5. **兼容性保障**：平滑的升级路径和向后兼容
+
+特别重要的改进：
+- **自动转发机制**：预定义事件自动同步到渲染进程
+- **精确目标控制**：可以选择发送到所有窗口或特定窗口
+- **类型安全**：完整的 TypeScript 类型定义
+- **错误处理**：内置的状态检查和友好的错误提示
+- **简化配置**：无需复杂的初始化，运行时动态设置
+
+现在的 EventBus 不仅功能更强大，而且更加易用和可维护，为应用的事件通信提供了坚实的基础。
