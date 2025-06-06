@@ -112,22 +112,6 @@ export class EventBus extends EventEmitter {
   setWindowPresenter(windowPresenter: IWindowPresenter) {
     this.windowPresenter = windowPresenter
   }
-
-  /**
-   * @deprecated 使用 send() 方法替代
-   * 批量注册可转发到渲染进程的事件（已废弃）
-   */
-  registerRendererEvents(): void {
-    console.warn('registerRendererEvents is deprecated, renderer events are now predefined')
-  }
-
-  /**
-   * @deprecated 使用 send() 方法替代
-   * 添加可转发到渲染进程的事件类型（已废弃）
-   */
-  addRendererEvent(): void {
-    console.warn('addRendererEvent is deprecated, renderer events are now predefined')
-  }
 }
 
 // 创建全局事件总线实例
