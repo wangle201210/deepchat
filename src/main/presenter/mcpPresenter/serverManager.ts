@@ -2,7 +2,7 @@ import { IConfigPresenter } from '@shared/presenter'
 import { McpClient } from './mcpClient'
 import axios from 'axios'
 import { proxyConfig } from '@/presenter/proxyConfig'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { MCP_EVENTS } from '@/events'
 import { getErrorMessageLabels } from '@shared/i18n'
@@ -186,7 +186,7 @@ export class ServerManager {
 
       throw error
     } finally {
-      eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
+      eventBus.send(MCP_EVENTS.CLIENT_LIST_UPDATED, SendTarget.ALL_WINDOWS)
     }
   }
 
@@ -230,7 +230,7 @@ export class ServerManager {
       this.clients.delete(name)
 
       console.info(`MCP server ${name} has been stopped`)
-      eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
+      eventBus.send(MCP_EVENTS.CLIENT_LIST_UPDATED, SendTarget.ALL_WINDOWS)
     } catch (error) {
       console.error(`Failed to stop MCP server ${name}:`, error)
       throw error

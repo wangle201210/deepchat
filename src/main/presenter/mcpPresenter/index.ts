@@ -12,7 +12,7 @@ import {
 } from '@shared/presenter'
 import { ServerManager } from './serverManager'
 import { ToolManager } from './toolManager'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events'
 import { IConfigPresenter } from '@shared/presenter'
 import { getErrorMessageLabels } from '@shared/i18n'
@@ -138,7 +138,7 @@ export class McpPresenter implements IMCPPresenter {
           console.log(`[MCP] Custom prompts server ${customPromptsServerName} started successfully`)
 
           // 通知渲染进程服务器已启动
-          eventBus.emit(MCP_EVENTS.SERVER_STARTED, customPromptsServerName)
+          eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, customPromptsServerName)
         } catch (error) {
           console.error(
             `[MCP] Failed to start custom prompts server ${customPromptsServerName}:`,
@@ -158,7 +158,7 @@ export class McpPresenter implements IMCPPresenter {
               console.log(`[MCP] Default server ${serverName} started successfully`)
 
               // 通知渲染进程服务器已启动
-              eventBus.emit(MCP_EVENTS.SERVER_STARTED, serverName)
+              eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, serverName)
             } catch (error) {
               console.error(`[MCP] Failed to start default server ${serverName}:`, error)
             }
@@ -169,7 +169,7 @@ export class McpPresenter implements IMCPPresenter {
       // 标记初始化完成并发出事件
       this.isInitialized = true
       console.log('[MCP] Initialization completed')
-      eventBus.emit(MCP_EVENTS.INITIALIZED)
+      eventBus.send(MCP_EVENTS.INITIALIZED, SendTarget.ALL_WINDOWS)
 
       // 检查并管理自定义提示词服务器
       await this.checkAndManageCustomPromptsServer()
@@ -177,7 +177,7 @@ export class McpPresenter implements IMCPPresenter {
       console.error('[MCP] Initialization failed:', error)
       // 即使初始化失败也标记为已完成，避免系统卡在未初始化状态
       this.isInitialized = true
-      eventBus.emit(MCP_EVENTS.INITIALIZED)
+      eventBus.send(MCP_EVENTS.INITIALIZED, SendTarget.ALL_WINDOWS)
     }
   }
 
@@ -202,33 +202,33 @@ export class McpPresenter implements IMCPPresenter {
         // 有自定义提示词但服务器未运行，启动服务器
         try {
           await this.serverManager.startServer(customPromptsServerName)
-          eventBus.emit(MCP_EVENTS.SERVER_STARTED, customPromptsServerName)
+          eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, customPromptsServerName)
         } catch (error) {
-          // 启动失败
+          console.error(`Failed to start custom prompts server ${customPromptsServerName}:`, error)
         }
       } else if (!hasCustomPrompts && isServerRunning) {
         // 没有自定义提示词但服务器正在运行，停止服务器
         try {
           await this.serverManager.stopServer(customPromptsServerName)
-          eventBus.emit(MCP_EVENTS.SERVER_STOPPED, customPromptsServerName)
+          eventBus.send(MCP_EVENTS.SERVER_STOPPED, SendTarget.ALL_WINDOWS, customPromptsServerName)
         } catch (error) {
-          // 停止失败
+          console.error(`Failed to stop custom prompts server ${customPromptsServerName}:`, error)
         }
       } else if (hasCustomPrompts && isServerRunning) {
         // 有自定义提示词且服务器正在运行，重启服务器以刷新缓存
         try {
           await this.serverManager.stopServer(customPromptsServerName)
           await this.serverManager.startServer(customPromptsServerName)
-          eventBus.emit(MCP_EVENTS.SERVER_STARTED, customPromptsServerName)
+          eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, customPromptsServerName)
         } catch (error) {
-          // 重启失败
+          console.error(`Failed to restart custom prompts server ${customPromptsServerName}:`, error)
         }
       }
 
       // 通知客户端列表已更新
-      eventBus.emit(MCP_EVENTS.CLIENT_LIST_UPDATED)
+      eventBus.send(MCP_EVENTS.CLIENT_LIST_UPDATED, SendTarget.ALL_WINDOWS)
     } catch (error) {
-      // 处理错误
+      console.error('Failed to manage custom prompts server:', error)
     }
   }
 
@@ -399,13 +399,13 @@ export class McpPresenter implements IMCPPresenter {
   async startServer(serverName: string): Promise<void> {
     await this.serverManager.startServer(serverName)
     // 通知渲染进程服务器已启动
-    eventBus.emit(MCP_EVENTS.SERVER_STARTED, serverName)
+    eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, serverName)
   }
 
   async stopServer(serverName: string): Promise<void> {
     await this.serverManager.stopServer(serverName)
     // 通知渲染进程服务器已停止
-    eventBus.emit(MCP_EVENTS.SERVER_STOPPED, serverName)
+    eventBus.send(MCP_EVENTS.SERVER_STOPPED, SendTarget.ALL_WINDOWS, serverName)
   }
 
   async getAllToolDefinitions(): Promise<MCPToolDefinition[]> {

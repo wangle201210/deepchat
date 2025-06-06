@@ -1,4 +1,4 @@
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS, NOTIFICATION_EVENTS } from '@/events'
 import {
   MCPToolCall,
@@ -342,7 +342,7 @@ export class ToolManager {
       }
 
       // Trigger event
-      eventBus.emit(MCP_EVENTS.TOOL_CALL_RESULT, response)
+      eventBus.send(MCP_EVENTS.TOOL_CALL_RESULT, SendTarget.ALL_WINDOWS, response)
 
       return response
     } catch (error: unknown) {
