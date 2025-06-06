@@ -2,7 +2,7 @@ import { app, shell } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import { ISyncPresenter, IConfigPresenter, ISQLitePresenter } from '@shared/presenter'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { SYNC_EVENTS } from '@/events'
 import { DataImporter } from '../sqlitePresenter/importData'
 import { ImportMode } from '../sqlitePresenter/index'
@@ -95,7 +95,7 @@ export class SyncPresenter implements ISyncPresenter {
       await this.performBackup()
     } catch (error: unknown) {
       console.error('备份失败:', error)
-      eventBus.emit(SYNC_EVENTS.BACKUP_ERROR, (error as Error).message || 'sync.error.unknown')
+      eventBus.send(SYNC_EVENTS.BACKUP_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
       throw error
     }
   }
@@ -133,7 +133,7 @@ export class SyncPresenter implements ISyncPresenter {
     }
 
     // 发出导入开始事件
-    eventBus.emit(SYNC_EVENTS.IMPORT_STARTED)
+    eventBus.send(SYNC_EVENTS.IMPORT_STARTED, SendTarget.ALL_WINDOWS)
 
     try {
       // 关闭数据库连接
@@ -211,7 +211,7 @@ export class SyncPresenter implements ISyncPresenter {
           this.copyDirectory(providerModelsBackupPath, this.PROVIDER_MODELS_DIR_PATH)
         }
 
-        eventBus.emit(SYNC_EVENTS.IMPORT_COMPLETED)
+        eventBus.send(SYNC_EVENTS.IMPORT_COMPLETED, SendTarget.ALL_WINDOWS)
         return { success: true, message: 'sync.success.importComplete' }
       } catch (error: unknown) {
         console.error('导入文件失败，恢复备份:', error)
@@ -236,7 +236,7 @@ export class SyncPresenter implements ISyncPresenter {
           this.copyDirectory(tempProviderModelsPath, this.PROVIDER_MODELS_DIR_PATH)
         }
 
-        eventBus.emit(SYNC_EVENTS.IMPORT_ERROR, (error as Error).message || 'sync.error.unknown')
+        eventBus.send(SYNC_EVENTS.IMPORT_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
         return { success: false, message: 'sync.error.importFailed' }
       } finally {
         // 清理临时文件
@@ -258,7 +258,7 @@ export class SyncPresenter implements ISyncPresenter {
       }
     } catch (error: unknown) {
       console.error('导入过程出错:', error)
-      eventBus.emit(SYNC_EVENTS.IMPORT_ERROR, (error as Error).message || 'sync.error.unknown')
+      eventBus.send(SYNC_EVENTS.IMPORT_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
       return { success: false, message: 'sync.error.importProcess' }
     }
   }
@@ -269,7 +269,7 @@ export class SyncPresenter implements ISyncPresenter {
   private async performBackup(): Promise<void> {
     // 标记备份开始
     this.isBackingUp = true
-    eventBus.emit(SYNC_EVENTS.BACKUP_STARTED)
+    eventBus.send(SYNC_EVENTS.BACKUP_STARTED, SendTarget.ALL_WINDOWS)
 
     try {
       const syncFolderPath = this.configPresenter.getSyncFolderPath()
@@ -386,10 +386,10 @@ export class SyncPresenter implements ISyncPresenter {
       this.configPresenter.setLastSyncTime(now)
 
       // 发送备份完成事件
-      eventBus.emit(SYNC_EVENTS.BACKUP_COMPLETED, now)
+      eventBus.send(SYNC_EVENTS.BACKUP_COMPLETED, SendTarget.ALL_WINDOWS, now)
     } catch (error: unknown) {
       console.error('备份过程出错:', error)
-      eventBus.emit(SYNC_EVENTS.BACKUP_ERROR, (error as Error).message || 'sync.error.unknown')
+      eventBus.send(SYNC_EVENTS.BACKUP_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
       throw error
     } finally {
       // 标记备份结束

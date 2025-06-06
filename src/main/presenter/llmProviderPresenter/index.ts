@@ -12,7 +12,7 @@ import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
 import { DeepseekProvider } from './providers/deepseekProvider'
 import { SiliconcloudProvider } from './providers/siliconcloudProvider'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { OpenAICompatibleProvider } from './providers/openAICompatibleProvider'
 import { PPIOProvider } from './providers/ppioProvider'
 import { OLLAMA_EVENTS } from '@/events'
@@ -670,14 +670,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     const toolCallInfo = `\n<function_call>
                     {
                       "function_call": ${JSON.stringify(
-                        {
-                          id: toolCall.id,
-                          name: toolCall.name,
-                          arguments: toolCall.arguments // Keep original args here
-                        },
-                        null,
-                        2
-                      )}
+                      {
+                        id: toolCall.id,
+                        name: toolCall.name,
+                        arguments: toolCall.arguments // Keep original args here
+                      },
+                      null,
+                      2
+                    )}
                     }
                     </function_call>\n`
 
@@ -999,7 +999,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         modelName: modelName,
         ...progress
       })
-      eventBus.emit(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, {
+      eventBus.sendToRenderer(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, SendTarget.ALL_WINDOWS, {
         eventId: 'pullOllamaModels',
         modelName: modelName,
         ...progress

@@ -523,7 +523,7 @@ export class WindowPresenter implements IWindowPresenter {
       console.log(`Window ${windowId} is ready to show.`)
       if (!shellWindow.isDestroyed()) {
         shellWindow.show() // 显示窗口避免白屏
-        eventBus.emit(WINDOW_EVENTS.WINDOW_CREATED, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CREATED, windowId)
       } else {
         console.warn(`Window ${windowId} was destroyed before ready-to-show.`)
       }
@@ -533,7 +533,7 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('focus', () => {
       console.log(`Window ${windowId} gained focus.`)
       this.focusedWindowId = windowId
-      eventBus.emit(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
       if (!shellWindow.isDestroyed()) {
         shellWindow.webContents.send('window-focused', windowId)
       }
@@ -545,7 +545,7 @@ export class WindowPresenter implements IWindowPresenter {
       if (this.focusedWindowId === windowId) {
         this.focusedWindowId = null // 仅当失去焦点的窗口是当前记录的焦点窗口时才清空
       }
-      eventBus.emit(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
       if (!shellWindow.isDestroyed()) {
         shellWindow.webContents.send('window-blurred', windowId)
       }
@@ -555,8 +555,7 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('maximize', () => {
       console.log(`Window ${windowId} maximized.`)
       if (!shellWindow.isDestroyed()) {
-        shellWindow.webContents.send('window:maximized')
-        eventBus.emit(WINDOW_EVENTS.WINDOW_MAXIMIZED, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_MAXIMIZED, windowId)
         // 触发恢复逻辑更新标签页 bounds
         this.handleWindowRestore(windowId).catch((error) => {
           console.error(`Error handling restore logic after maximizing window ${windowId}:`, error)
@@ -568,8 +567,7 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('unmaximize', () => {
       console.log(`Window ${windowId} unmaximized.`)
       if (!shellWindow.isDestroyed()) {
-        shellWindow.webContents.send('window:unmaximized')
-        eventBus.emit(WINDOW_EVENTS.WINDOW_UNMAXIMIZED, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_UNMAXIMIZED, windowId)
         // 触发恢复逻辑更新标签页 bounds
         this.handleWindowRestore(windowId).catch((error) => {
           console.error(
@@ -586,7 +584,7 @@ export class WindowPresenter implements IWindowPresenter {
       this.handleWindowRestore(windowId).catch((error) => {
         console.error(`Error handling restore logic for window ${windowId}:`, error)
       })
-      eventBus.emit(WINDOW_EVENTS.WINDOW_RESTORED, windowId)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESTORED, windowId)
     }
     shellWindow.on('restore', handleRestore)
 
@@ -594,8 +592,7 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('enter-full-screen', () => {
       console.log(`Window ${windowId} entered fullscreen.`)
       if (!shellWindow.isDestroyed()) {
-        shellWindow.webContents.send('window-fullscreened')
-        eventBus.emit(WINDOW_EVENTS.WINDOW_ENTER_FULL_SCREEN, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_ENTER_FULL_SCREEN, windowId)
         // 触发恢复逻辑更新标签页 bounds
         this.handleWindowRestore(windowId).catch((error) => {
           console.error(
@@ -610,8 +607,7 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('leave-full-screen', () => {
       console.log(`Window ${windowId} left fullscreen.`)
       if (!shellWindow.isDestroyed()) {
-        shellWindow.webContents.send('window-unfullscreened')
-        eventBus.emit(WINDOW_EVENTS.WINDOW_LEAVE_FULL_SCREEN, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_LEAVE_FULL_SCREEN, windowId)
         // 触发恢复逻辑更新标签页 bounds
         this.handleWindowRestore(windowId).catch((error) => {
           console.error(
@@ -624,7 +620,7 @@ export class WindowPresenter implements IWindowPresenter {
 
     // 窗口尺寸改变，通知 TabPresenter 更新所有视图 bounds
     shellWindow.on('resize', () => {
-      eventBus.emit(WINDOW_EVENTS.WINDOW_RESIZE, windowId)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESIZE, windowId)
     })
 
     // 'close' 事件：用户尝试关闭窗口 (点击关闭按钮等)。
@@ -699,7 +695,7 @@ export class WindowPresenter implements IWindowPresenter {
 
       this.windows.delete(windowIdBeingClosed) // 从 Map 中移除
       shellWindowState.unmanage() // 停止管理窗口状态
-      eventBus.emit(WINDOW_EVENTS.WINDOW_CLOSED, windowIdBeingClosed)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CLOSED, windowIdBeingClosed)
       console.log(
         `Window ${windowIdBeingClosed} closed event handled. Map size AFTER delete: ${this.windows.size}`
       )

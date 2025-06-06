@@ -3,7 +3,7 @@ import { presenter } from '@/presenter'
 import { IDeeplinkPresenter, MCPServerConfig } from '@shared/presenter'
 import path from 'path'
 import { DEEPLINK_EVENTS, MCP_EVENTS, WINDOW_EVENTS } from '@/events'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 
 interface MCPInstallConfig {
   mcpServers: Record<
@@ -191,7 +191,12 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     console.log('modelId:', modelId)
     console.log('systemPrompt:', systemPrompt)
     console.log('autoSend:', autoSend)
-    eventBus.emit(DEEPLINK_EVENTS.START, { msg, modelId, systemPrompt, autoSend })
+    eventBus.sendToRenderer(DEEPLINK_EVENTS.START, SendTarget.DEFAULT_TAB, {
+      msg,
+      modelId,
+      systemPrompt,
+      autoSend
+    })
   }
 
   async handleMcpInstall(params: URLSearchParams): Promise<void> {
@@ -317,7 +322,7 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
           }
         }
         // 如果配置中指定了该服务器为默认服务器，则添加到默认服务器列表
-        eventBus.emit(DEEPLINK_EVENTS.MCP_INSTALL, {
+        eventBus.sendToRenderer(DEEPLINK_EVENTS.MCP_INSTALL, SendTarget.DEFAULT_TAB, {
           mcpConfig: JSON.stringify(resultServerConfig)
         })
       }

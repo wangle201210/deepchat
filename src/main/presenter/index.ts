@@ -21,60 +21,11 @@ import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
 import {
   CONFIG_EVENTS,
-  CONVERSATION_EVENTS,
-  STREAM_EVENTS,
-  WINDOW_EVENTS,
-  UPDATE_EVENTS,
-  OLLAMA_EVENTS,
-  MCP_EVENTS,
-  SYNC_EVENTS,
-  DEEPLINK_EVENTS,
-  NOTIFICATION_EVENTS,
-  SHORTCUT_EVENTS
+  WINDOW_EVENTS
 } from '@/events'
 
-// 需要通过 forward 函数转发到渲染进程的事件列表
-const eventsToForward: string[] = [
-  CONFIG_EVENTS.PROVIDER_CHANGED,
-  STREAM_EVENTS.RESPONSE,
-  STREAM_EVENTS.END,
-  STREAM_EVENTS.ERROR,
-  CONVERSATION_EVENTS.ACTIVATED,
-  CONVERSATION_EVENTS.DEACTIVATED,
-  CONFIG_EVENTS.MODEL_LIST_CHANGED,
-  CONFIG_EVENTS.MODEL_STATUS_CHANGED,
-  UPDATE_EVENTS.STATUS_CHANGED,
-  UPDATE_EVENTS.PROGRESS,
-  UPDATE_EVENTS.WILL_RESTART,
-  UPDATE_EVENTS.ERROR,
-  CONVERSATION_EVENTS.MESSAGE_EDITED,
-  MCP_EVENTS.SERVER_STARTED,
-  MCP_EVENTS.SERVER_STOPPED,
-  MCP_EVENTS.CONFIG_CHANGED,
-  MCP_EVENTS.TOOL_CALL_RESULT,
-  OLLAMA_EVENTS.PULL_MODEL_PROGRESS,
-  SYNC_EVENTS.BACKUP_STARTED,
-  SYNC_EVENTS.BACKUP_COMPLETED,
-  SYNC_EVENTS.BACKUP_ERROR,
-  SYNC_EVENTS.IMPORT_STARTED,
-  SYNC_EVENTS.IMPORT_COMPLETED,
-  SYNC_EVENTS.IMPORT_ERROR,
-  DEEPLINK_EVENTS.START,
-  DEEPLINK_EVENTS.MCP_INSTALL,
-  NOTIFICATION_EVENTS.SHOW_ERROR,
-  NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED,
-  SHORTCUT_EVENTS.GO_SETTINGS,
-  SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
-  SHORTCUT_EVENTS.ZOOM_IN,
-  SHORTCUT_EVENTS.ZOOM_OUT,
-  SHORTCUT_EVENTS.ZOOM_RESUME,
-  CONFIG_EVENTS.LANGUAGE_CHANGED,
-  CONFIG_EVENTS.SOUND_ENABLED_CHANGED,
-  CONFIG_EVENTS.COPY_WITH_COT_CHANGED,
-  CONFIG_EVENTS.OAUTH_LOGIN_START,
-  CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS,
-  CONFIG_EVENTS.OAUTH_LOGIN_ERROR
-]
+// 注意: 现在大部分事件已在各自的 presenter 中直接发送到渲染进程
+// 剩余的自动转发事件已在 EventBus 的 DEFAULT_RENDERER_EVENTS 中定义
 
 // 主 Presenter 类，负责协调其他 Presenter 并处理 IPC 通信
 export class Presenter implements IPresenter {
@@ -128,55 +79,26 @@ export class Presenter implements IPresenter {
 
   // 设置事件总线监听和转发
   setupEventBus() {
-    // 事件转发辅助函数（包含特定逻辑处理）
-    const forward = (eventName: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      eventBus.on(eventName, (...payload: any[]) => {
-        // 特定事件的处理逻辑
-        if (eventName === STREAM_EVENTS.RESPONSE) {
-          const [msg] = payload
-          const dataToRender = { ...msg }
-          delete dataToRender.tool_call_response_raw // 删除原始数据
-          this.windowPresenter.sendToAllWindows(eventName, dataToRender)
-        } else if (eventName === STREAM_EVENTS.END) {
-          const [msg] = payload
-          console.log('stream-end', msg.eventId) // 保留日志
-          this.windowPresenter.sendToAllWindows(eventName, msg)
-        } else if (eventName === CONFIG_EVENTS.PROVIDER_CHANGED) {
-          const providers = this.configPresenter.getProviders()
-          this.llmproviderPresenter.setProviders(providers)
-          this.windowPresenter.sendToAllWindows(eventName) // 此事件转发无需 payload
-        } else if (
-          eventName === UPDATE_EVENTS.STATUS_CHANGED ||
-          eventName === UPDATE_EVENTS.PROGRESS ||
-          eventName === UPDATE_EVENTS.WILL_RESTART ||
-          eventName === UPDATE_EVENTS.ERROR ||
-          eventName === DEEPLINK_EVENTS.START
-        ) {
-          const [msg] = payload
-          console.log(eventName, msg) // 保留日志
-          this.windowPresenter.sendToAllWindows(eventName, msg)
-        } else if (eventName === DEEPLINK_EVENTS.MCP_INSTALL) {
-          // Note: DEEPLINK_EVENTS.START is handled above
-          // 特殊处理：向默认标签页发送消息，并切换到目标标签页
-          const [msg] = payload
-          console.log(eventName, msg) // 保留日志
-          // Pass true as the second argument to indicate it's an internal event causing tab switch
-          this.windowPresenter.sendTodefaultTab(eventName, true, msg)
-        } else {
-          // 默认处理：直接转发所有 payload 到所有窗口
-          this.windowPresenter.sendToAllWindows(eventName, ...payload)
-        }
-      })
-    }
+    // 设置 WindowPresenter 到 EventBus
+    eventBus.setWindowPresenter(this.windowPresenter)
+
+    // 设置特殊事件的处理逻辑
+    this.setupSpecialEventHandlers()
 
     // 应用主窗口准备就绪时触发初始化
     eventBus.on(WINDOW_EVENTS.READY_TO_SHOW, () => {
       this.init()
     })
+  }
 
-    // 统一注册需要转发的事件
-    eventsToForward.forEach(forward)
+  // 设置需要特殊处理的事件
+  private setupSpecialEventHandlers() {
+    // CONFIG_EVENTS.PROVIDER_CHANGED 需要更新 providers（已在 configPresenter 中处理发送到渲染进程）
+    eventBus.on(CONFIG_EVENTS.PROVIDER_CHANGED, () => {
+      const providers = this.configPresenter.getProviders()
+      this.llmproviderPresenter.setProviders(providers)
+    })
+
   }
   setupTray() {
     console.info('setupTray', !!this.trayPresenter)
@@ -258,8 +180,8 @@ ipcMain.handle(
         return { error: `Method "${method}" not found or not a function on "${name}"` }
       }
     } catch (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      e: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    e: any
     ) {
       console.error('error on presenter handle', e) // 保留错误日志
       return { error: e.message || String(e) }

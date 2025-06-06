@@ -92,7 +92,7 @@ export class ProxyConfig {
           })
         )
       }
-      eventBus.emit(CONFIG_EVENTS.PROXY_RESOLVED)
+      eventBus.sendToMain(CONFIG_EVENTS.PROXY_RESOLVED)
     } catch (error) {
       console.error('Failed to resolve proxy:', error)
       return

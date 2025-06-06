@@ -1,6 +1,6 @@
 import { nativeImage, Notification, NotificationConstructorOptions } from 'electron'
 import icon from '../../../resources/icon.png?asset'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { presenter } from '.'
 
@@ -36,7 +36,7 @@ export class NotificationPresenter {
     const notification = new Notification(notificationOptions)
 
     notification.on('click', () => {
-      eventBus.emit(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED, options.id)
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED, SendTarget.ALL_WINDOWS, options.id)
       this.clearNotification(options.id)
     })
 

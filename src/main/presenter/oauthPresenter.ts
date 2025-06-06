@@ -1,6 +1,4 @@
 import { BrowserWindow } from 'electron'
-import { eventBus } from '@/eventbus'
-import { CONFIG_EVENTS } from '@/events'
 import { presenter } from '.'
 import * as http from 'http'
 import { URL } from 'url'
@@ -46,7 +44,6 @@ export class OAuthPresenter {
   async startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean> {
     try {
       console.log('Starting GitHub Copilot Device Flow login for provider:', providerId)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
 
       // 使用专门的GitHub Copilot Device Flow实现
       console.log('Creating GitHub Device Flow instance...')
@@ -77,14 +74,9 @@ export class OAuthPresenter {
         console.warn('Provider not found:', providerId)
       }
 
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
     } catch (error) {
       console.error('GitHub Copilot Device Flow login failed:', error)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
       return false
     }
   }
@@ -95,7 +87,6 @@ export class OAuthPresenter {
   async startGitHubCopilotLogin(providerId: string): Promise<boolean> {
     try {
       console.log('Starting GitHub Copilot OAuth login for provider:', providerId)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
 
       // 使用专门的GitHub Copilot OAuth实现
       console.log('Creating GitHub OAuth instance...')
@@ -131,7 +122,6 @@ export class OAuthPresenter {
         console.warn('Provider not found:', providerId)
       }
 
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       console.log('GitHub Copilot OAuth login completed successfully')
       return true
     } catch (error) {
@@ -139,11 +129,6 @@ export class OAuthPresenter {
       console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
       console.error('Error message:', error instanceof Error ? error.message : error)
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
       return false
     }
   }
@@ -153,8 +138,6 @@ export class OAuthPresenter {
    */
   async startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean> {
     try {
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
-
       // 启动回调服务器
       await this.startCallbackServer()
 
@@ -174,15 +157,11 @@ export class OAuthPresenter {
         presenter.configPresenter.setProviderById(providerId, provider)
       }
 
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
     } catch (error) {
       console.error('OAuth login failed:', error)
       this.stopCallbackServer()
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
+
       return false
     }
   }

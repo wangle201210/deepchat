@@ -11,13 +11,11 @@
 // 配置相关事件
 export const CONFIG_EVENTS = {
   PROVIDER_CHANGED: 'config:provider-changed', // 替代 provider-setting-changed
-  SYSTEM_CHANGED: 'config:system-changed',
   MODEL_LIST_CHANGED: 'config:model-list-changed', // 替代 provider-models-updated（ConfigPresenter）
   MODEL_STATUS_CHANGED: 'config:model-status-changed', // 替代 model-status-changed（ConfigPresenter）
   SETTING_CHANGED: 'config:setting-changed', // 替代 setting-changed（ConfigPresenter）
   PROXY_MODE_CHANGED: 'config:proxy-mode-changed',
   CUSTOM_PROXY_URL_CHANGED: 'config:custom-proxy-url-changed',
-  ARTIFACTS_EFFECT_CHANGED: 'config:artifacts-effect-changed',
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
@@ -25,7 +23,6 @@ export const CONFIG_EVENTS = {
   COPY_WITH_COT_CHANGED: 'config:copy-with-cot-enabled-changed',
   PROXY_RESOLVED: 'config:proxy-resolved',
   LANGUAGE_CHANGED: 'config:language-changed', // 新增：语言变更事件
-  CUSTOM_PROMPTS_CHANGED: 'config:custom-prompts-changed', // 新增：自定义提示词变更事件
   CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED: 'config:custom-prompts-server-check-required', // 新增：需要检查自定义提示词服务器事件
   // OAuth相关事件
   OAUTH_LOGIN_START: 'config:oauth-login-start', // OAuth登录开始

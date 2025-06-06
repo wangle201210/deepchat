@@ -1,4 +1,4 @@
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { MCPServerConfig } from '@shared/presenter'
 import { MCP_EVENTS } from '@/events'
 import ElectronStore from 'electron-store'
@@ -285,7 +285,7 @@ export class McpConfHelper {
       !defaultServers.includes(serverName)
     ) {
       this.mcpStore.set('defaultServers', validDefaultServers)
-      eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
+      eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
         mcpServers: mcpServers,
         defaultServers: validDefaultServers,
         mcpEnabled: this.mcpStore.get('mcpEnabled')
@@ -298,7 +298,7 @@ export class McpConfHelper {
     const defaultServers = this.mcpStore.get('defaultServers') || []
     const updatedServers = defaultServers.filter((name) => name !== serverName)
     this.mcpStore.set('defaultServers', updatedServers)
-    eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
+    eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: this.mcpStore.get('mcpServers'),
       defaultServers: updatedServers,
       mcpEnabled: this.mcpStore.get('mcpEnabled')
@@ -318,7 +318,7 @@ export class McpConfHelper {
   // 设置MCP启用状态
   async setMcpEnabled(enabled: boolean): Promise<void> {
     this.mcpStore.set('mcpEnabled', enabled)
-    eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
+    eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: this.mcpStore.get('mcpServers'),
       defaultServers: this.mcpStore.get('defaultServers'),
       mcpEnabled: enabled
@@ -386,7 +386,7 @@ export class McpConfHelper {
 
     // 恢复默认服务器设置
     this.mcpStore.set('defaultServers', DEFAULT_MCP_SERVERS.defaultServers)
-    eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
+    eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: updatedServers,
       defaultServers: DEFAULT_MCP_SERVERS.defaultServers,
       mcpEnabled: this.mcpStore.get('mcpEnabled')

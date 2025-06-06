@@ -260,9 +260,6 @@ export const useSettingsStore = defineStore('settings', () => {
       // 获取搜索预览设置
       searchPreviewEnabled.value = await configP.getSearchPreviewEnabled()
 
-      // 获取artifacts效果开关状态
-      // artifactsEffectEnabled.value = await configP.getArtifactsEffectEnabled()
-
       // 获取投屏保护设置
       contentProtectionEnabled.value = await configP.getContentProtectionEnabled()
 
@@ -1435,8 +1432,6 @@ export const useSettingsStore = defineStore('settings', () => {
     getOllamaPullingModels,
     removeOllamaEventListeners,
     cleanup,
-    // setArtifactsEffectEnabled,
-    // setupArtifactsEffectListener,
     getSearchPreviewEnabled,
     setSearchPreviewEnabled,
     setNotificationsEnabled, // 暴露设置系统通知的方法

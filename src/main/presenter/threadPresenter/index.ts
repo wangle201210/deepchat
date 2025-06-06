@@ -17,7 +17,7 @@ import {
 } from '../../../shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './messageManager'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import {
   AssistantMessage,
   Message,
@@ -89,7 +89,7 @@ export class ThreadPresenter implements IThreadPresenter {
       await this.messageManager.handleMessageError(eventId, String(error))
       this.generatingMessages.delete(eventId)
     }
-    eventBus.emit(STREAM_EVENTS.ERROR, msg)
+    eventBus.sendToRenderer(STREAM_EVENTS.ERROR, SendTarget.ALL_WINDOWS, msg)
   }
   async handleLLMAgentEnd(msg: LLMAgentEventData) {
     const { eventId, userStop } = msg
@@ -169,7 +169,7 @@ export class ThreadPresenter implements IThreadPresenter {
           console.log('updated conv time', state.conversationId)
         })
     }
-    eventBus.emit(STREAM_EVENTS.END, msg)
+    eventBus.sendToRenderer(STREAM_EVENTS.END, SendTarget.ALL_WINDOWS, msg)
   }
   async handleLLMAgentResponse(msg: LLMAgentEventData) {
     const currentTime = Date.now()
@@ -479,7 +479,7 @@ export class ThreadPresenter implements IThreadPresenter {
       // 更新消息内容
       await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
     }
-    eventBus.emit(STREAM_EVENTS.RESPONSE, msg)
+    eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, msg)
   }
 
   setSearchAssistantModel(model: MODEL_META, providerId: string) {
@@ -638,7 +638,7 @@ export class ThreadPresenter implements IThreadPresenter {
     const conversation = await this.getConversation(conversationId)
     if (conversation) {
       this.activeConversationIds.set(tabId, conversationId)
-      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId, tabId })
+      eventBus.sendToRenderer(CONVERSATION_EVENTS.ACTIVATED, SendTarget.ALL_WINDOWS, { conversationId, tabId })
     } else {
       throw new Error(`Conversation ${conversationId} not found`)
     }
@@ -679,7 +679,7 @@ export class ThreadPresenter implements IThreadPresenter {
         const newMsg = { ...msg }
         const msgContent = newMsg.content as UserMessageContent
         if (msgContent.content) {
-          ;(newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
+          ; (newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
             msgContent.content
           )
         }
@@ -1329,7 +1329,7 @@ export class ThreadPresenter implements IThreadPresenter {
       // 9. 如果有工具调用结果，发送工具调用结果事件
       if (toolCallResponse && toolCall) {
         // console.log('toolCallResponse', toolCallResponse)
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+        eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, {
           eventId: state.message.id,
           content: '',
           tool_call: 'start',
@@ -1341,7 +1341,7 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_server_icons: toolCall.server_icons,
           tool_call_server_description: toolCall.server_description
         })
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+        eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, {
           eventId: state.message.id,
           content: '',
           tool_call: 'running',
@@ -1353,7 +1353,7 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_server_icons: toolCall.server_icons,
           tool_call_server_description: toolCall.server_description
         })
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+        eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, {
           eventId: state.message.id,
           content: '',
           tool_call: 'end',
@@ -1455,8 +1455,8 @@ export class ThreadPresenter implements IThreadPresenter {
     // 任何情况都使用最新配置
     const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
     const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
-    ;(userMessage.content as UserMessageContent).search = webSearchEnabled
-    ;(userMessage.content as UserMessageContent).think = thinkEnabled
+      ; (userMessage.content as UserMessageContent).search = webSearchEnabled
+      ; (userMessage.content as UserMessageContent).think = thinkEnabled
     return { conversation, userMessage, contextMessages }
   }
 
@@ -1468,10 +1468,9 @@ export class ThreadPresenter implements IThreadPresenter {
   }> {
     // 处理文本内容
     const userContent = `
-      ${
-        userMessage.content.content
-          ? this.formatUserMessageContent(userMessage.content.content)
-          : userMessage.content.text
+      ${userMessage.content.content
+        ? this.formatUserMessageContent(userMessage.content.content)
+        : userMessage.content.text
       }
       ${getFileContext(userMessage.content.files)}
     `
@@ -1591,7 +1590,7 @@ export class ThreadPresenter implements IThreadPresenter {
       const msgContent = msg.role === 'user' ? (msg.content as UserMessageContent) : null
       const msgText = msgContent
         ? msgContent.text ||
-          (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
+        (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
         : ''
 
       const msgTokens = approximateTokenSize(
@@ -2180,7 +2179,7 @@ export class ThreadPresenter implements IThreadPresenter {
   }
   async clearActiveThread(tabId: number): Promise<void> {
     this.activeConversationIds.delete(tabId)
-    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED, { tabId })
+    eventBus.sendToRenderer(CONVERSATION_EVENTS.DEACTIVATED, SendTarget.ALL_WINDOWS, { tabId })
   }
 
   async clearAllMessages(conversationId: string): Promise<void> {

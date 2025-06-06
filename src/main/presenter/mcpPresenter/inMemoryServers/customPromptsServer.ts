@@ -60,7 +60,7 @@ export class CustomPromptsServer {
 
   // 设置事件监听器
   private setupEventListeners(): void {
-    eventBus.on(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED, () => {
+    eventBus.on(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED, () => {
       this.promptsCache = null
     })
   }

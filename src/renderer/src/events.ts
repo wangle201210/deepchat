@@ -10,10 +10,8 @@
 // 配置相关事件
 export const CONFIG_EVENTS = {
   PROVIDER_CHANGED: 'config:provider-changed', // 替代 provider-setting-changed
-  SYSTEM_CHANGED: 'config:system-changed',
   MODEL_LIST_CHANGED: 'config:model-list-changed', // 替代 provider-models-updated（ConfigPresenter）
   MODEL_STATUS_CHANGED: 'config:model-status-changed', // 替代 model-status-changed（ConfigPresenter）
-  ARTIFACTS_EFFECT_CHANGED: 'config:artifacts-effect-changed', // artifacts效果设置变更
   SETTING_CHANGED: 'config:setting-changed', // 替代 setting-changed（ConfigPresenter）
   PROXY_MODE_CHANGED: 'config:proxy-mode-changed',
   CUSTOM_PROXY_URL_CHANGED: 'config:custom-proxy-url-changed',
