@@ -523,7 +523,7 @@ export class WindowPresenter implements IWindowPresenter {
       console.log(`Window ${windowId} is ready to show.`)
       if (!shellWindow.isDestroyed()) {
         shellWindow.show() // 显示窗口避免白屏
-        eventBus.emit(WINDOW_EVENTS.WINDOW_CREATED, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CREATED, windowId)
       } else {
         console.warn(`Window ${windowId} was destroyed before ready-to-show.`)
       }
@@ -533,7 +533,7 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('focus', () => {
       console.log(`Window ${windowId} gained focus.`)
       this.focusedWindowId = windowId
-      eventBus.emit(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_FOCUSED, windowId)
       if (!shellWindow.isDestroyed()) {
         shellWindow.webContents.send('window-focused', windowId)
       }
@@ -545,7 +545,7 @@ export class WindowPresenter implements IWindowPresenter {
       if (this.focusedWindowId === windowId) {
         this.focusedWindowId = null // 仅当失去焦点的窗口是当前记录的焦点窗口时才清空
       }
-      eventBus.emit(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
+      eventBus.sendToMain(WINDOW_EVENTS.WINDOW_BLURRED, windowId)
       if (!shellWindow.isDestroyed()) {
         shellWindow.webContents.send('window-blurred', windowId)
       }
