@@ -102,22 +102,6 @@ export class Presenter implements IPresenter {
       const providers = this.configPresenter.getProviders()
       this.llmproviderPresenter.setProviders(providers)
     })
-
-    // UPDATE 和 DEEPLINK_EVENTS.START 事件需要日志记录
-    const logEvents = [
-      UPDATE_EVENTS.STATUS_CHANGED,
-      UPDATE_EVENTS.PROGRESS,
-      UPDATE_EVENTS.WILL_RESTART,
-      UPDATE_EVENTS.ERROR,
-      DEEPLINK_EVENTS.START
-    ]
-    logEvents.forEach(eventName => {
-      eventBus.on(eventName, (msg: unknown) => {
-        console.log(eventName, msg) // 保留日志
-        eventBus.sendToRenderer(eventName, SendTarget.ALL_WINDOWS, msg)
-      })
-    })
-
     // DEEPLINK_EVENTS.MCP_INSTALL 需要发送到默认标签页
     eventBus.on(DEEPLINK_EVENTS.MCP_INSTALL, (msg: unknown) => {
       console.log(DEEPLINK_EVENTS.MCP_INSTALL, msg) // 保留日志

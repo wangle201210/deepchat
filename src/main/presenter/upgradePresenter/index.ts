@@ -74,7 +74,7 @@ export class UpgradePresenter implements IUpgradePresenter {
       this._lock = false
       this._status = 'error'
       this._error = e.message
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         status: this._status,
         error: this._error,
         info: this._versionInfo
@@ -84,8 +84,6 @@ export class UpgradePresenter implements IUpgradePresenter {
     // 检查更新状态
     autoUpdater.on('checking-for-update', () => {
       console.log('正在检查更新')
-      // this._status = 'checking'
-      // eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, { status: this._status })
     })
 
     // 无可用更新
@@ -93,7 +91,7 @@ export class UpgradePresenter implements IUpgradePresenter {
       console.log('无可用更新')
       this._lock = false
       this._status = 'not-available'
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, { status: this._status })
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, { status: this._status })
     })
 
     // 有可用更新
@@ -104,12 +102,6 @@ export class UpgradePresenter implements IUpgradePresenter {
       // 重要：这里不再使用info中的信息更新this._versionInfo
       // 而是确保使用之前从versionUrl获取的原始信息
       console.log('使用已保存的版本信息:', this._versionInfo)
-
-      // eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
-      //   status: this._status,
-      //   info: this._versionInfo // 使用已保存的版本信息
-      // })
-
       // 检测到更新后自动开始下载
       this.startDownloadUpdate()
     })
@@ -124,11 +116,11 @@ export class UpgradePresenter implements IUpgradePresenter {
         transferred: progressObj.transferred,
         total: progressObj.total
       }
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         status: this._status,
         info: this._versionInfo // 使用已保存的版本信息
       })
-      eventBus.emit(UPDATE_EVENTS.PROGRESS, this._progress)
+      eventBus.sendToRenderer(UPDATE_EVENTS.PROGRESS, SendTarget.ALL_WINDOWS, this._progress)
     })
 
     // 下载完成
@@ -143,7 +135,7 @@ export class UpgradePresenter implements IUpgradePresenter {
       // 确保保存完整的更新信息
       console.log('使用已保存的版本信息:', this._versionInfo)
 
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         status: this._status,
         info: this._versionInfo // 使用已保存的版本信息
       })
@@ -183,7 +175,7 @@ export class UpgradePresenter implements IUpgradePresenter {
         fs.unlinkSync(this._updateMarkerPath)
 
         // 通知渲染进程
-        eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+        eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
           status: this._status,
           error: this._error,
           info: {
@@ -244,7 +236,7 @@ export class UpgradePresenter implements IUpgradePresenter {
 
     try {
       this._status = 'checking'
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, { status: this._status })
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, { status: this._status })
 
       // 首先获取版本信息文件
       const platformString = getPlatformInfo()
@@ -278,7 +270,7 @@ export class UpgradePresenter implements IUpgradePresenter {
           this._status = 'error'
           this._error = '自动更新可能不稳定，请手动下载更新'
 
-          eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+          eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
             status: this._status,
             error: this._error,
             info: this._versionInfo
@@ -299,7 +291,7 @@ export class UpgradePresenter implements IUpgradePresenter {
           // 如果自动更新失败，回退到手动更新
           this._status = 'available'
 
-          eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+          eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
             status: this._status,
             info: this._versionInfo // 使用已保存的版本信息
           })
@@ -307,12 +299,12 @@ export class UpgradePresenter implements IUpgradePresenter {
       } else {
         // 没有新版本
         this._status = 'not-available'
-        eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, { status: this._status })
+        eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, { status: this._status })
       }
     } catch (error: Error | unknown) {
       this._status = 'error'
       this._error = error instanceof Error ? error.message : String(error)
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         status: this._status,
         error: this._error
       })
@@ -357,7 +349,7 @@ export class UpgradePresenter implements IUpgradePresenter {
     }
     try {
       this._status = 'downloading'
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         status: this._status,
         info: this._versionInfo // 使用已保存的版本信息
       })
@@ -366,7 +358,7 @@ export class UpgradePresenter implements IUpgradePresenter {
     } catch (error: Error | unknown) {
       this._status = 'error'
       this._error = error instanceof Error ? error.message : String(error)
-      eventBus.emit(UPDATE_EVENTS.STATUS_CHANGED, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         status: this._status,
         error: this._error
       })
@@ -389,7 +381,7 @@ export class UpgradePresenter implements IUpgradePresenter {
       }, 30000)
     } catch (e) {
       console.error('退出并安装失败', e)
-      eventBus.emit(UPDATE_EVENTS.ERROR, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: e instanceof Error ? e.message : String(e)
       })
     }
@@ -399,7 +391,7 @@ export class UpgradePresenter implements IUpgradePresenter {
   restartToUpdate(): boolean {
     console.log('重启并更新')
     if (this._status !== 'downloaded') {
-      eventBus.emit(UPDATE_EVENTS.ERROR, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: '更新尚未下载完成'
       })
       return false
@@ -409,7 +401,7 @@ export class UpgradePresenter implements IUpgradePresenter {
       return true
     } catch (e) {
       console.error('重启更新失败', e)
-      eventBus.emit(UPDATE_EVENTS.ERROR, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: e instanceof Error ? e.message : String(e)
       })
       return false
@@ -428,7 +420,7 @@ export class UpgradePresenter implements IUpgradePresenter {
       }, 1000)
     } catch (e) {
       console.error('重启失败', e)
-      eventBus.emit(UPDATE_EVENTS.ERROR, {
+      eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: e instanceof Error ? e.message : String(e)
       })
     }
