@@ -25,7 +25,7 @@
     </div>
 
     <!-- 可滚动的会话列表 -->
-    <ScrollArea ref="scrollAreaRef" class="flex-1" @scroll="handleScroll">
+    <ScrollArea ref="scrollAreaRef" class="flex-1">
       <!-- 最近 -->
       <div v-for="thread in chatStore.threads" :key="thread.dt" class="space-y-1.5 mb-3">
         <div class="text-xs font-bold text-muted-foreground px-2">{{ thread.dt }}</div>
@@ -44,8 +44,11 @@
         </ul>
       </div>
 
-      <!-- 加载状态提示 -->
-      <div v-if="chatStore.isLoading" class="text-xs text-center text-muted-foreground py-2">
+      <!-- 加载状态提示 (可以保留，以防将来网络慢时有初始加载感) -->
+      <div
+        v-if="chatStore.threads.length === 0"
+        class="text-xs text-center text-muted-foreground py-2"
+      >
         {{ t('common.loading') }}
       </div>
     </ScrollArea>
@@ -108,7 +111,7 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import ThreadItem from './ThreadItem.vue'
-import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
@@ -122,7 +125,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { useEventListener, useWindowSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import { SHORTCUT_EVENTS } from '@/events'
 
 const { t } = useI18n()
@@ -135,7 +138,6 @@ const renameDialog = ref(false)
 const renameThread = ref<CONVERSATION | null>(null)
 const cleanMessagesDialog = ref(false)
 const cleanMessagesThread = ref<CONVERSATION | null>(null)
-const currentPage = ref(1) // 当前页码
 
 const windowSize = useWindowSize()
 
@@ -145,36 +147,6 @@ const createNewThread = async () => {
     await chatStore.createNewEmptyThread()
   } catch (error) {
     console.error(t('common.error.createChatFailed'), error)
-  }
-}
-
-// 处理滚动事件
-const handleScroll = async () => {
-  // 通过event.target获取滚动元素
-  // const target = event.target as HTMLElement
-  // const { scrollTop, scrollHeight, clientHeight } = target
-  // 使用viewportRef直接获取
-  const viewportElement = scrollAreaRef.value?.$el?.querySelector('.h-full.w-full') as HTMLElement
-  const viewportScrollTop = viewportElement?.scrollTop || 0
-  const viewportScrollHeight = viewportElement?.scrollHeight || 0
-  const viewportClientHeight = viewportElement?.clientHeight || 0
-  // console.log('滚动检测数据:', {
-  //   scrollTop, scrollHeight, clientHeight,
-  //   viewportScrollTop, viewportScrollHeight, viewportClientHeight,
-  //   diff: viewportScrollHeight - viewportScrollTop - viewportClientHeight,
-  //   isLoading: chatStore.isLoading,
-  //   hasMore: chatStore.hasMore
-  // })
-
-  // 使用viewport的滚动位置判断
-  if (
-    viewportScrollHeight - viewportScrollTop - viewportClientHeight < 30 &&
-    !chatStore.isLoading &&
-    chatStore.hasMore
-  ) {
-    currentPage.value++
-    console.log('触发加载更多, 下一页:', currentPage.value)
-    await chatStore.loadThreads(currentPage.value)
   }
 }
 
@@ -215,30 +187,15 @@ const handleDeleteDialogCancel = () => {
   deleteThread.value = null
 }
 
-// 删除会话
+// 删除会话 - 逻辑简化
 const handleThreadDelete = async () => {
   try {
     if (!deleteThread.value) {
       return
     }
     await threadP.deleteConversation(deleteThread.value.id)
-
-    // 删除后重新加载第一页
-    currentPage.value = 1
-    await chatStore.loadThreads(1)
-
-    if (chatStore.threads.length > 0 && chatStore.threads[0].dtThreads.length > 0) {
-      chatStore.setActiveThread(chatStore.threads[0].dtThreads[0].id)
-    } else {
-      chatStore.createThread(t('common.newChat'), {
-        systemPrompt: '',
-        temperature: 0.7,
-        contextLength: 1000,
-        maxTokens: 2000,
-        providerId: '',
-        modelId: ''
-      })
-    }
+    // 删除后，store会自动接收更新并处理活动会话切换，组件无需再做任何事。
+    // 目前的删除处理不够完善，遗留问题
   } catch (error) {
     console.error(t('common.error.deleteChatFailed'), error)
   }
@@ -293,24 +250,13 @@ const handleCleanChatHistory = () => {
 
 // 在组件挂载时加载会话列表
 onMounted(async () => {
-  currentPage.value = 1 // 重置页码
-  await chatStore.loadThreads(1)
+  // 不再需要加载和滚动监听
 
-  // 使用nextTick确保DOM已更新
-  nextTick(() => {
-    const viewportElement = scrollAreaRef.value?.$el?.querySelector('.h-full.w-full') as HTMLElement
-    if (viewportElement) {
-      console.log('设置直接DOM滚动监听')
-      useEventListener(viewportElement, 'scroll', handleScroll)
-    }
-  })
-
-  // 监听清除聊天历史的快捷键事件
+  // 监听快捷键事件
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY, () => {
     handleCleanChatHistory()
   })
 
-  // 监听删除会话的快捷键事件
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.DELETE_CONVERSATION, () => {
     if (chatStore.activeThread) {
       showDeleteDialog(chatStore.activeThread)
