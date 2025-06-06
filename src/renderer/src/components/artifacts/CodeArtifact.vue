@@ -45,7 +45,8 @@ import { Icon } from '@iconify/vue'
 import { MermaidBlockNode } from 'vue-renderer-markdown'
 import { useThemeStore } from '@/stores/theme'
 import { useArtifactStore } from '@/stores/artifact'
-import { detectLanguage, useMonaco, getLanguageIcon } from 'vue-renderer-markdown'
+import { getLanguageIcon } from 'vue-renderer-markdown'
+import { detectLanguage, useMonaco } from 'vue-use-monaco'
 import { nanoid } from 'nanoid'
 
 const props = defineProps<{
