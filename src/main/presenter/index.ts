@@ -96,20 +96,7 @@ export class Presenter implements IPresenter {
 
   // 设置需要特殊处理的事件
   private setupSpecialEventHandlers() {
-    // STREAM_EVENTS.RESPONSE 需要特殊处理：删除 tool_call_response_raw
-    eventBus.on(STREAM_EVENTS.RESPONSE, (msg: unknown) => {
-      const dataToRender = { ...(msg as object) }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (dataToRender as any).tool_call_response_raw // 删除原始数据
-      eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, dataToRender)
-    })
 
-    // STREAM_EVENTS.END 需要日志记录
-    eventBus.on(STREAM_EVENTS.END, (msg: unknown) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      console.log('stream-end', (msg as any).eventId) // 保留日志
-      eventBus.sendToRenderer(STREAM_EVENTS.END, SendTarget.ALL_WINDOWS, msg)
-    })
 
     // CONFIG_EVENTS.PROVIDER_CHANGED 需要更新 providers（已在 configPresenter 中处理发送到渲染进程）
     eventBus.on(CONFIG_EVENTS.PROVIDER_CHANGED, () => {
