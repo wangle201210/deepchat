@@ -2,57 +2,28 @@
 
 ## 🎯 重构目标
 
-构建一个清晰、高效的事件通信机制，支持主进程和渲染进程之间的精确事件传递。通过继承 EventEmitter 保持向后兼容，同时提供现代化的事件发送方法和自动转发机制。
+构建一个简洁、明确的事件通信机制，支持主进程和渲染进程之间的精确事件传递。通过继承 EventEmitter 保持基础功能，专注于提供显式的事件发送方法，避免复杂的自动转发机制。
 
 ## 🚀 主要功能特性
 
 ### 1. EventBus 核心架构
 
-- **继承 EventEmitter**：完全兼容原生事件系统
+- **继承 EventEmitter**：保持原生事件系统的基础功能
 - **精确的发送方法**：
   - `sendToMain(eventName, ...args)`：仅发送到主进程
   - `sendToWindow(eventName, windowId, ...args)`：发送到特定窗口
   - `sendToRenderer(eventName, target, ...args)`：发送到渲染进程
   - `send(eventName, target, ...args)`：同时发送到主进程和渲染进程
-- **智能的 emit() 重写**：自动转发预定义事件到渲染进程
+- **显式通信**：所有跨进程通信都需要明确指定
 - **WindowPresenter 集成**：通过标准接口管理渲染进程通信
 
 ### 2. SendTarget 枚举定义
 
 ```typescript
 enum SendTarget {
-  MAIN = 'main',                  // 主进程（内部标识）
-  RENDERER = 'renderer',          // 渲染进程（内部标识）
   ALL_WINDOWS = 'all_windows',    // 广播到所有窗口（默认推荐）
   DEFAULT_TAB = 'default_tab'     // 发送到默认标签页（特殊场景）
 }
-```
-
-### 3. 自动转发事件系统
-
-通过 `DEFAULT_RENDERER_EVENTS` 常量集合定义需要自动转发的事件：
-
-```typescript
-const DEFAULT_RENDERER_EVENTS = new Set([
-  // 流事件
-  'stream:error',
-  // 会话事件
-  'conversation:activated',
-  'conversation:deactivated',
-  'conversation:message-edited',
-  // MCP 事件
-  'mcp:server-started',
-  'mcp:server-stopped',
-  'mcp:config-changed',
-  'mcp:tool-call-result',
-  // Ollama 事件
-  'ollama:pull-model-progress',
-  // 通知事件
-  'notification:show-error',
-  // 快捷键事件
-  'shortcut:go-settings',
-  'shortcut:clean-chat-history'
-])
 ```
 
 ## 📊 事件通信模式
@@ -101,16 +72,44 @@ eventBus.send('shortcut:zoom-in', SendTarget.ALL_WINDOWS)
 eventBus.send('shortcut:zoom-out', SendTarget.ALL_WINDOWS)
 ```
 
-### 自动转发事件
-利用 emit() 的智能转发机制：
+### 流事件和业务事件处理
+需要明确指定每个事件的发送目标：
 ```typescript
-// 这些事件会自动转发到渲染进程
-eventBus.emit('stream:error', errorData)           // 自动转发
-eventBus.emit('mcp:server-started', serverInfo)    // 自动转发
-eventBus.emit('notification:show-error', error)    // 自动转发
+// 流事件处理
+class StreamEventHandler {
+  handleError(error: Error) {
+    // 主进程记录错误
+    eventBus.sendToMain('stream:error-logged', error)
+    // 渲染进程显示错误
+    eventBus.sendToRenderer('stream:error-display', SendTarget.ALL_WINDOWS, error)
+  }
+}
 
-// 其他事件仅在主进程内部
-eventBus.emit('internal:custom-event', data)       // 仅主进程
+// 会话事件处理
+class ConversationHandler {
+  activateConversation(conversationId: string) {
+    // 通知所有窗口更新UI
+    eventBus.send('conversation:activated', SendTarget.ALL_WINDOWS, conversationId)
+  }
+
+  editMessage(messageData: any) {
+    // 通知所有窗口消息已编辑
+    eventBus.send('conversation:message-edited', SendTarget.ALL_WINDOWS, messageData)
+  }
+}
+
+// MCP 服务器事件
+class MCPHandler {
+  startServer(serverInfo: any) {
+    // 主进程和渲染进程都需要知道服务器启动
+    eventBus.send('mcp:server-started', SendTarget.ALL_WINDOWS, serverInfo)
+  }
+
+  updateConfig(newConfig: any) {
+    // 配置变更通知所有窗口
+    eventBus.send('mcp:config-changed', SendTarget.ALL_WINDOWS, newConfig)
+  }
+}
 ```
 
 ## 🔧 架构优势
@@ -123,6 +122,12 @@ export const eventBus = new EventBus()
 // 运行时设置 WindowPresenter
 eventBus.setWindowPresenter(windowPresenter)
 ```
+
+### 显式通信保障
+- 所有跨进程通信都需要明确调用相应方法
+- 避免意外的事件泄漏或遗漏
+- 代码逻辑更加清晰和可预测
+- 便于调试和维护
 
 ### 类型安全保障
 - 完全移除 `any` 类型使用
@@ -149,7 +154,7 @@ sendToRenderer(eventName: string, target: SendTarget = SendTarget.ALL_WINDOWS, .
 class ConfigManager {
   updateLanguage(language: string) {
     this.saveConfig('language', language)
-    // 通知所有界面更新语言
+    // 明确通知所有界面更新语言
     eventBus.send('config:language-changed', SendTarget.ALL_WINDOWS, language)
   }
 
@@ -183,68 +188,99 @@ class WindowManager {
 }
 ```
 
-### 错误处理系统
+### 通知系统
 ```typescript
-class ErrorHandler {
-  handleStreamError(error: Error) {
-    // 利用自动转发显示错误
-    eventBus.emit('stream:error', {
-      message: error.message,
-      timestamp: Date.now()
-    })
+class NotificationManager {
+  showError(message: string) {
+    // 明确指定仅向渲染进程发送通知
+    eventBus.sendToRenderer('notification:show-error', SendTarget.ALL_WINDOWS, message)
   }
 
-  showUserNotification(message: string) {
-    // 仅发送到渲染进程显示通知
-    eventBus.sendToRenderer('notification:show-error', SendTarget.ALL_WINDOWS, message)
+  handleSystemNotificationClick() {
+    // 系统通知点击需要通知所有窗口
+    eventBus.send('notification:sys-notify-clicked', SendTarget.ALL_WINDOWS)
+  }
+}
+```
+
+### 快捷键处理系统
+```typescript
+class ShortcutManager {
+  handleGoSettings() {
+    // 明确通知渲染进程跳转设置
+    eventBus.sendToRenderer('shortcut:go-settings', SendTarget.ALL_WINDOWS)
+  }
+
+  handleCleanHistory() {
+    // 主进程清理历史
+    this.cleanHistoryInMain()
+    // 明确通知渲染进程更新UI
+    eventBus.sendToRenderer('shortcut:clean-chat-history', SendTarget.ALL_WINDOWS)
+  }
+
+  handleZoom(direction: 'in' | 'out' | 'reset') {
+    // 缩放操作需要主进程和渲染进程同时响应
+    eventBus.send(`shortcut:zoom-${direction}`, SendTarget.ALL_WINDOWS)
   }
 }
 ```
 
 ## 🎯 性能优化
 
-### 智能事件过滤
-- 只有预定义事件才会自动转发
-- 避免不必要的进程间通信开销
-- 减少渲染进程的事件处理负担
-
-### 目标精确控制
+### 精确的目标控制
 - 支持发送到特定窗口而非广播
 - 可选择发送到默认标签页
 - 避免无效的事件传播
+- 减少不必要的进程间通信
+
+### 显式控制的优势
+- 开发者必须明确指定事件的发送目标
+- 避免意外的性能开销
+- 更好的代码可读性和维护性
+- 便于性能分析和优化
 
 ### 错误预防机制
 - WindowPresenter 状态检查
 - 控制台警告提示
 - 优雅的错误降级处理
 
-## 🔄 兼容性保障
+## 🔄 兼容性和迁移
 
 ### 向后兼容
 - 完全保持 EventEmitter 的所有原生功能
-- emit() 方法仍然可用，只是增加了自动转发逻辑
+- 主进程内部的事件监听不受影响
 - 现有的事件监听器无需修改
 
-### 渐进式升级
-- 可以逐步从 emit() 迁移到具体的 send 方法
-- 新功能不影响现有代码运行
-- 清晰的迁移路径和最佳实践指导
+### 迁移指导
+原有依赖自动转发的代码需要调整：
+
+```typescript
+// ❌ 之前的自动转发方式
+eventBus.emit('stream:error', error)  // 自动转发到渲染进程
+
+// ✅ 现在需要明确指定
+eventBus.sendToMain('stream:error-logged', error)  // 主进程记录
+eventBus.sendToRenderer('stream:error-display', SendTarget.ALL_WINDOWS, error)  // 渲染进程显示
+
+// 或者使用双向发送
+eventBus.send('stream:error', SendTarget.ALL_WINDOWS, error)
+```
 
 ## 🎉 重构成果总结
 
-这次 EventBus 重构成功实现了：
+这次 EventBus 简化重构成功实现了：
 
-1. **架构清晰化**：明确区分主进程、渲染进程和双向通信
-2. **功能完善化**：支持特定窗口通信和灵活的目标选择
-3. **开发体验优化**：完整的 TypeScript 支持和错误处理
-4. **性能提升**：智能的事件过滤和精确的目标控制
-5. **兼容性保障**：平滑的升级路径和向后兼容
+1. **架构简化**：移除复杂的自动转发机制，专注于显式通信
+2. **逻辑清晰**：每个事件的发送目标都需要明确指定
+3. **性能优化**：避免不必要的事件转发和处理
+4. **维护性提升**：代码逻辑更加直观和可预测
+5. **兼容性保障**：保持 EventEmitter 基础功能不变
 
 特别重要的改进：
-- **自动转发机制**：预定义事件自动同步到渲染进程
-- **精确目标控制**：可以选择发送到所有窗口或特定窗口
-- **类型安全**：完整的 TypeScript 类型定义
-- **错误处理**：内置的状态检查和友好的错误提示
-- **简化配置**：无需复杂的初始化，运行时动态设置
+- **显式通信**：所有跨进程通信都需要明确指定，避免隐藏的依赖
+- **精确控制**：可以选择发送到所有窗口、特定窗口或默认标签页
+- **简洁架构**：移除了复杂的事件定义和自动转发逻辑
+- **更好的可维护性**：事件流向清晰，便于调试和维护
+- **性能提升**：避免了不必要的事件处理开销
 
-现在的 EventBus 不仅功能更强大，而且更加易用和可维护，为应用的事件通信提供了坚实的基础。
+现在的 EventBus 更加简洁明了，虽然需要开发者显式指定事件目标，但这带来了更好的代码可读性、可维护性和性能表现。每个事件的处理逻辑都是明确和可预测的，为应用的稳定运行提供了更好的基础。

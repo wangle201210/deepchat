@@ -2,14 +2,14 @@
 
 ## 概述
 
-EventBus 类提供了主进程和渲染进程之间优雅的事件通信机制。它继承自 EventEmitter，提供精确的事件发送控制，支持向主进程、渲染进程或特定窗口发送事件。
+EventBus 类提供了主进程和渲染进程之间精确的事件通信机制。它继承自 EventEmitter，专注于提供明确的事件发送控制，支持向主进程、渲染进程或特定窗口发送事件。
 
 ## 核心理念
 
 - **精确控制**：使用具体的发送方法，明确事件的目标
-- **自动转发**：预定义的事件会自动转发到渲染进程
+- **显式发送**：所有跨进程通信都需要明确指定
 - **类型安全**：完整的 TypeScript 支持
-- **简化配置**：无需手动注册事件，常见事件已预定义
+- **简洁架构**：无复杂的自动转发机制
 
 ## 主要方法
 
@@ -48,13 +48,6 @@ eventBus.send('config:provider-changed', SendTarget.ALL_WINDOWS, providers)
 eventBus.send('sync:backup-completed', SendTarget.ALL_WINDOWS, timestamp)
 ```
 
-### 5. 使用 emit（自动转发机制）
-```typescript
-// emit 会发送到主进程，并自动转发预定义的事件到渲染进程
-eventBus.emit('stream:error', errorData)  // 自动转发到渲染进程
-eventBus.emit('custom:event', data)       // 仅发送到主进程
-```
-
 ## 事件分类指南
 
 ### 仅主进程内部
@@ -89,40 +82,10 @@ eventBus.sendToWindow('window:specific-action', targetWindowId, actionData)
 
 ```typescript
 enum SendTarget {
-  MAIN = 'main',                  // 主进程（内部使用）
-  RENDERER = 'renderer',          // 渲染进程（内部使用）
   ALL_WINDOWS = 'all_windows',    // 广播到所有窗口（默认，推荐）
   DEFAULT_TAB = 'default_tab'     // 发送到默认标签页（特殊场景）
 }
 ```
-
-## 预定义的自动转发事件
-
-以下事件在使用 `emit()` 时会自动转发到渲染进程：
-
-### 流事件
-- `stream:error` - 流错误事件
-
-### 会话事件
-- `conversation:activated` - 会话激活
-- `conversation:deactivated` - 会话停用
-- `conversation:message-edited` - 消息编辑
-
-### MCP 事件
-- `mcp:server-started` - MCP 服务器启动
-- `mcp:server-stopped` - MCP 服务器停止
-- `mcp:config-changed` - MCP 配置变更
-- `mcp:tool-call-result` - MCP 工具调用结果
-
-### Ollama 事件
-- `ollama:pull-model-progress` - 模型下载进度
-
-### 通知事件
-- `notification:show-error` - 显示错误通知
-
-### 快捷键事件
-- `shortcut:go-settings` - 跳转设置页面
-- `shortcut:clean-chat-history` - 清理聊天历史
 
 ## 初始化和配置
 
@@ -166,10 +129,33 @@ onZoomIn() {
 
 ### 4. 错误处理事件
 ```typescript
-// 利用自动转发机制处理错误
+// 明确指定错误事件的发送目标
 onStreamError(error: Error) {
-  // 自动转发到渲染进程显示错误
-  eventBus.emit('stream:error', error)
+  // 主进程记录错误
+  eventBus.sendToMain('stream:error-logged', error)
+  // 渲染进程显示错误
+  eventBus.sendToRenderer('stream:error-display', SendTarget.ALL_WINDOWS, error)
+}
+```
+
+### 5. 流事件处理
+```typescript
+// 处理各种流事件，明确指定发送目标
+handleConversationEvents() {
+  // 会话激活 - 通知所有窗口更新UI
+  eventBus.send('conversation:activated', SendTarget.ALL_WINDOWS, conversationId)
+
+  // 消息编辑 - 通知所有窗口
+  eventBus.send('conversation:message-edited', SendTarget.ALL_WINDOWS, messageData)
+}
+
+// MCP 服务器事件
+handleMCPEvents() {
+  // MCP 服务器启动 - 通知主进程和所有窗口
+  eventBus.send('mcp:server-started', SendTarget.ALL_WINDOWS, serverInfo)
+
+  // 配置变更 - 通知所有窗口
+  eventBus.send('mcp:config-changed', SendTarget.ALL_WINDOWS, newConfig)
 }
 ```
 
@@ -191,17 +177,57 @@ eventBus.sendToRenderer('ui:update', SendTarget.DEFAULT_TAB, data)
 ## 注意事项
 
 1. **WindowPresenter 依赖**：发送到渲染进程需要先设置 WindowPresenter
-2. **事件命名规范**：建议使用 `模块:动作` 的命名格式
-3. **参数类型**：确保传递的参数可以被序列化
-4. **错误处理**：监听控制台警告，确保 WindowPresenter 正确设置
-5. **性能考虑**：避免频繁发送大型对象到渲染进程
+2. **显式发送**：所有跨进程通信都需要明确调用相应的方法
+3. **事件命名规范**：建议使用 `模块:动作` 的命名格式
+4. **参数类型**：确保传递的参数可以被序列化
+5. **错误处理**：监听控制台警告，确保 WindowPresenter 正确设置
+6. **性能考虑**：避免频繁发送大型对象到渲染进程
+
+## 常见场景示例
+
+### 配置系统
+```typescript
+class ConfigManager {
+  updateLanguage(language: string) {
+    this.saveConfig('language', language)
+    // 明确通知所有窗口更新语言
+    eventBus.send('config:language-changed', SendTarget.ALL_WINDOWS, language)
+  }
+}
+```
+
+### 通知系统
+```typescript
+class NotificationManager {
+  showError(message: string) {
+    // 仅向渲染进程发送通知显示事件
+    eventBus.sendToRenderer('notification:show-error', SendTarget.ALL_WINDOWS, message)
+  }
+}
+```
+
+### 快捷键处理
+```typescript
+class ShortcutManager {
+  handleGoSettings() {
+    // 通知渲染进程跳转到设置页面
+    eventBus.sendToRenderer('shortcut:go-settings', SendTarget.ALL_WINDOWS)
+  }
+
+  handleCleanHistory() {
+    // 主进程清理历史，然后通知渲染进程更新UI
+    this.cleanHistoryInMain()
+    eventBus.sendToRenderer('shortcut:clean-chat-history', SendTarget.ALL_WINDOWS)
+  }
+}
+```
 
 ## 调试技巧
 
 ```typescript
-// 监听所有事件进行调试
+// 监听主进程事件进行调试
 eventBus.on('*', (eventName, ...args) => {
-  console.log(`Event: ${eventName}`, args)
+  console.log(`Main process event: ${eventName}`, args)
 })
 
 // 检查 WindowPresenter 状态
