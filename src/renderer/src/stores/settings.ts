@@ -145,7 +145,8 @@ export const useSettingsStore = defineStore('settings', () => {
           isCustom: priorityModel.model.isCustom,
           vision: priorityModel.model.vision || false,
           functionCall: priorityModel.model.functionCall || false,
-          reasoning: priorityModel.model.reasoning || false
+          reasoning: priorityModel.model.reasoning || false,
+          type: priorityModel.model.type || 'chat'
         },
         providerId: priorityModel.providerId
       })
@@ -162,7 +163,8 @@ export const useSettingsStore = defineStore('settings', () => {
           isCustom: priorityModel.model.isCustom,
           vision: priorityModel.model.vision || false,
           functionCall: priorityModel.model.functionCall || false,
-          reasoning: priorityModel.model.reasoning || false
+          reasoning: priorityModel.model.reasoning || false,
+          type: priorityModel.model.type || 'chat'
         },
         toRaw(priorityModel.providerId)
       )
@@ -417,7 +419,8 @@ export const useSettingsStore = defineStore('settings', () => {
               providerId,
               vision: meta.vision || false,
               functionCall: meta.functionCall || false,
-              reasoning: meta.reasoning || false
+              reasoning: meta.reasoning || false,
+              type: meta.type || 'chat'
             }))
           }
         } catch (error) {
@@ -674,7 +677,8 @@ export const useSettingsStore = defineStore('settings', () => {
               enabled: true,
               vision: model.vision || false,
               functionCall: model.functionCall || false,
-              reasoning: model.reasoning || false
+              reasoning: model.reasoning || false,
+              type: model.type || 'chat'
             })
           }
         }
@@ -1018,6 +1022,7 @@ export const useSettingsStore = defineStore('settings', () => {
         vision: existingModel?.vision || false,
         functionCall: existingModel?.functionCall || false,
         reasoning: existingModel?.reasoning || false,
+        type: existingModel?.type || 'chat',
         // 保留现有的其他配置，但确保更新 Ollama 特有数据
         ...(existingModel ? { ...existingModel } : {}),
         ollamaModel: model

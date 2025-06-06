@@ -123,6 +123,7 @@ export interface ModelConfig {
   vision: boolean
   functionCall: boolean
   reasoning: boolean
+  type: ModelType
 }
 export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
@@ -412,6 +413,7 @@ export type RENDERER_MODEL_META = {
   vision?: boolean
   functionCall?: boolean
   reasoning?: boolean
+  type: ModelType
 }
 export type MODEL_META = {
   id: string
@@ -425,6 +427,7 @@ export type MODEL_META = {
   vision?: boolean
   functionCall?: boolean
   reasoning?: boolean
+  type: ModelType
 }
 export type LLM_PROVIDER = {
   id: string
@@ -1086,3 +1089,18 @@ export type LLMAgentEvent =
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
 
 export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
+
+export type ModelType = 'embedding' | 'chat' | 'rerank'
+
+export interface DefaultModelSetting {
+  id: string
+  name: string
+  temperature: number
+  contextLength: number
+  maxTokens: number
+  match: string[]
+  vision: boolean
+  functionCall: boolean
+  reasoning?: boolean
+  type?: ModelType
+}

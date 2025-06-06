@@ -364,6 +364,7 @@ const isFirstStep = computed(() => currentStep.value === 0)
                   :model-id="model.id"
                   :group="model.group"
                   :enabled="model.enabled ?? false"
+                  :type="model.type ?? 'chat'"
                   @enabled-change="handleModelEnabledChange(model, $event)"
                 />
               </div>

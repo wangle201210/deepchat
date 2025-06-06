@@ -16,6 +16,7 @@
     <div class="flex-grow"></div>
     <div class="flex flex-row items-center gap-2">
       <span v-if="group" class="text-xs text-muted-foreground">{{ group }}</span>
+      <Label class="text-xs text-muted-foreground" for="json-config">{{ type }}</Label>
       <Button
         v-if="!enabled"
         variant="link"
@@ -51,16 +52,22 @@
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 
-defineProps<{
-  modelName: string
-  modelId: string
-  group?: string
-  enabled: boolean
-  isCustomModel?: boolean
-  vision?: boolean
-  functionCall?: boolean
-  reasoning?: boolean
-}>()
+withDefaults(
+  defineProps<{
+    modelName: string
+    modelId: string
+    group?: string
+    enabled: boolean
+    isCustomModel?: boolean
+    vision?: boolean
+    functionCall?: boolean
+    reasoning?: boolean
+    type?: 'chat' | 'embedding' | 'rerank'
+  }>(),
+  {
+    type: 'chat'
+  }
+)
 
 const emit = defineEmits<{
   enabledChange: [boolean]

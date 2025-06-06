@@ -343,11 +343,13 @@ export class ConfigPresenter implements IConfigPresenter {
           model.functionCall !== undefined ? model.functionCall : config.functionCall || false
         model.reasoning =
           model.reasoning !== undefined ? model.reasoning : config.reasoning || false
+        model.type = model.type !== undefined ? model.type : config.type || 'chat'
       } else {
         // 确保模型具有这些属性，如果没有配置，默认为false
         model.vision = model.vision || false
         model.functionCall = model.functionCall || false
         model.reasoning = model.reasoning || false
+        model.type = model.type || 'chat'
       }
       return model
     })
@@ -365,7 +367,8 @@ export class ConfigPresenter implements IConfigPresenter {
       temperature: 0.7,
       vision: false,
       functionCall: false,
-      reasoning: false
+      reasoning: false,
+      type: 'chat'
     }
   }
 
@@ -826,7 +829,8 @@ export class ConfigPresenter implements IConfigPresenter {
           temperature: config.temperature,
           vision: config.vision,
           functionCall: config.functionCall || false,
-          reasoning: config.reasoning || false
+          reasoning: config.reasoning || false,
+          type: config.type || 'chat'
         }
       }
     }
@@ -838,7 +842,8 @@ export class ConfigPresenter implements IConfigPresenter {
       temperature: 0.6,
       vision: false,
       functionCall: false,
-      reasoning: false
+      reasoning: false,
+      type: 'chat'
     }
   }
 

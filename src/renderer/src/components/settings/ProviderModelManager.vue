@@ -41,6 +41,7 @@
         :vision="model.vision ?? false"
         :function-call="model.functionCall ?? false"
         :reasoning="model.reasoning ?? false"
+        :type="model.type ?? 'chat'"
         @enabled-change="$emit('model-enabled-change', model, $event)"
       />
     </div>

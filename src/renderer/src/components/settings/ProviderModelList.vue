@@ -16,6 +16,7 @@
         :vision="model.vision"
         :function-call="model.functionCall"
         :reasoning="model.reasoning"
+        :type="model.type ?? 'chat'"
         @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         @delete-model="() => handleDeleteCustomModel(model)"
       />
@@ -97,6 +98,7 @@
           :vision="model.vision"
           :function-call="model.functionCall"
           :reasoning="model.reasoning"
+          :type="model.type ?? 'chat'"
           @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         />
       </div>
@@ -208,7 +210,8 @@ const confirmAdd = async (idx: number) => {
       maxTokens: model.maxTokens || 2048,
       vision: false,
       functionCall: false,
-      reasoning: false
+      reasoning: false,
+      type: 'chat'
     })
     removeEdit(idx)
   } catch (error) {
