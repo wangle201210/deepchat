@@ -16,13 +16,6 @@ interface RequestInitWithAgent extends RequestInit {
   agent?: HttpsProxyAgent<string>
 }
 import { proxyConfig } from '../../proxyConfig'
-import { OAuthHelper, GITHUB_COPILOT_OAUTH_CONFIG } from '../oauthHelper'
-import {
-  GitHubCopilotDeviceFlow,
-  createGitHubCopilotDeviceFlow
-} from '../../githubCopilotDeviceFlow'
-import { eventBus } from '@/eventbus'
-import { CONFIG_EVENTS } from '@/events'
 
 interface CopilotTokenResponse {
   token: string
@@ -35,13 +28,9 @@ export class GithubCopilotProvider extends BaseLLMProvider {
   private tokenExpiresAt: number = 0
   private baseApiUrl = 'https://copilot-proxy.githubusercontent.com'
   private tokenUrl = 'https://api.github.com/copilot_internal/v2/token'
-  private oauthHelper: OAuthHelper
-  private deviceFlow: GitHubCopilotDeviceFlow
 
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
-    this.oauthHelper = new OAuthHelper(GITHUB_COPILOT_OAUTH_CONFIG)
-    this.deviceFlow = createGitHubCopilotDeviceFlow()
 
     console.log('🎯 [GitHub Copilot] Constructor called')
     console.log(`   Base API URL: ${this.baseApiUrl}`)
@@ -102,191 +91,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     this.init()
   }
 
-  /**
-   * 启动Device Flow登录流程（推荐）
-   */
-  public async startDeviceFlowLogin(): Promise<boolean> {
-    console.log('🔐 [GitHub Copilot] Starting Device Flow login...')
 
-    try {
-      console.log('📢 [GitHub Copilot] Emitting OAuth login start event')
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START)
-
-      console.log('🌐 [GitHub Copilot] Starting Device Flow authentication...')
-      // 使用Device Flow进行认证
-      const accessToken = await this.deviceFlow.startDeviceFlow()
-      console.log(
-        `✅ [GitHub Copilot] Received access token via Device Flow: ${accessToken ? accessToken.substring(0, 20) + '...' : 'NONE'}`
-      )
-
-      console.log('💾 [GitHub Copilot] Saving access token to provider config...')
-      // 保存访问令牌
-      this.provider.apiKey = accessToken
-      this.configPresenter.setProviderById(this.provider.id, this.provider)
-
-      console.log('🔄 [GitHub Copilot] Re-initializing provider with new token...')
-      // 验证令牌并初始化
-      await this.init()
-
-      console.log('📢 [GitHub Copilot] Emitting OAuth login success event')
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS)
-
-      console.log('✅ [GitHub Copilot] Device Flow login completed successfully!')
-      return true
-    } catch (error) {
-      console.error('❌ [GitHub Copilot] Device Flow login failed:', error)
-      console.error(
-        '   Error type:',
-        error instanceof Error ? error.constructor.name : typeof error
-      )
-      console.error('   Error message:', error instanceof Error ? error.message : error)
-
-      eventBus.emit(
-        CONFIG_EVENTS.OAUTH_LOGIN_ERROR,
-        error instanceof Error ? error.message : 'Unknown error'
-      )
-      return false
-    }
-  }
-
-  /**
-   * 启动OAuth登录流程（传统方式）
-   */
-  public async startOAuthLogin(): Promise<boolean> {
-    console.log('🔐 [GitHub Copilot] Starting OAuth login flow...')
-
-    try {
-      console.log('📢 [GitHub Copilot] Emitting OAuth login start event')
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START)
-
-      console.log('🌐 [GitHub Copilot] Starting OAuth helper login process...')
-      // 开始OAuth登录
-      const authCode = await this.oauthHelper.startLogin()
-      console.log(
-        `✅ [GitHub Copilot] Received auth code: ${authCode ? authCode.substring(0, 10) + '...' : 'NONE'}`
-      )
-
-      console.log('🔄 [GitHub Copilot] Exchanging auth code for access token...')
-      // 用授权码交换访问令牌
-      const accessToken = await this.exchangeCodeForToken(authCode)
-      console.log(
-        `✅ [GitHub Copilot] Received access token: ${accessToken ? accessToken.substring(0, 20) + '...' : 'NONE'}`
-      )
-
-      console.log('💾 [GitHub Copilot] Saving access token to provider config...')
-      // 保存访问令牌
-      this.provider.apiKey = accessToken
-      this.configPresenter.setProviderById(this.provider.id, this.provider)
-
-      console.log('🔄 [GitHub Copilot] Re-initializing provider with new token...')
-      // 验证令牌并初始化
-      await this.init()
-
-      console.log('📢 [GitHub Copilot] Emitting OAuth login success event')
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS)
-
-      console.log('✅ [GitHub Copilot] OAuth login completed successfully!')
-      return true
-    } catch (error) {
-      console.error('❌ [GitHub Copilot] OAuth login failed:', error)
-      console.error(
-        '   Error type:',
-        error instanceof Error ? error.constructor.name : typeof error
-      )
-      console.error('   Error message:', error instanceof Error ? error.message : error)
-
-      eventBus.emit(
-        CONFIG_EVENTS.OAUTH_LOGIN_ERROR,
-        error instanceof Error ? error.message : 'Unknown error'
-      )
-      return false
-    }
-  }
-
-  /**
-   * 用授权码交换访问令牌
-   */
-  private async exchangeCodeForToken(code: string): Promise<string> {
-    console.log('🔄 [GitHub Copilot] Starting token exchange...')
-    console.log(`   Auth code: ${code ? code.substring(0, 10) + '...' : 'NONE'}`)
-
-    const exchangeUrl = 'https://github.com/login/oauth/access_token'
-    console.log(`   Exchange URL: ${exchangeUrl}`)
-
-    const requestBody = {
-      client_id: GITHUB_COPILOT_OAUTH_CONFIG.clientId,
-      client_secret: process.env.GITHUB_CLIENT_SECRET,
-      code: code,
-      redirect_uri: GITHUB_COPILOT_OAUTH_CONFIG.redirectUri
-    }
-
-    console.log('📋 [GitHub Copilot] Token exchange request:')
-    console.log(`   Client ID: ${requestBody.client_id}`)
-    console.log(
-      `   Client Secret: ${requestBody.client_secret ? 'EXISTS (length: ' + requestBody.client_secret.length + ')' : 'NOT SET'}`
-    )
-    console.log(`   Code: ${requestBody.code ? requestBody.code.substring(0, 10) + '...' : 'NONE'}`)
-    console.log(`   Redirect URI: ${requestBody.redirect_uri}`)
-
-    const headers = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'User-Agent': 'DeepChat/1.0.0'
-    }
-
-    console.log('📋 [GitHub Copilot] Request headers:')
-    console.log(`   Accept: ${headers.Accept}`)
-    console.log(`   Content-Type: ${headers['Content-Type']}`)
-    console.log(`   User-Agent: ${headers['User-Agent']}`)
-
-    console.log('📤 [GitHub Copilot] Making token exchange request...')
-
-    const response = await fetch(exchangeUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody)
-    })
-
-    console.log('📥 [GitHub Copilot] Token exchange response:')
-    console.log(`   Status: ${response.status} ${response.statusText}`)
-    console.log(`   OK: ${response.ok}`)
-
-    if (!response.ok) {
-      console.log('❌ [GitHub Copilot] Token exchange failed!')
-
-      // 尝试读取错误响应体
-      try {
-        const errorBody = await response.text()
-        console.log(`   Error body: ${errorBody}`)
-      } catch (bodyError) {
-        console.log(`   Could not read error body: ${bodyError}`)
-      }
-
-      throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
-    }
-
-    console.log('✅ [GitHub Copilot] Token exchange successful, parsing response...')
-    const data = (await response.json()) as {
-      access_token: string
-      error?: string
-      error_description?: string
-    }
-
-    console.log('📊 [GitHub Copilot] Token exchange response data:')
-    console.log(
-      `   Access token: ${data.access_token ? data.access_token.substring(0, 20) + '...' : 'NOT PRESENT'}`
-    )
-    console.log(`   Error: ${data.error || 'NONE'}`)
-    console.log(`   Error description: ${data.error_description || 'NONE'}`)
-
-    if (data.error) {
-      console.log('❌ [GitHub Copilot] Token exchange returned error!')
-      throw new Error(`Token exchange error: ${data.error_description || data.error}`)
-    }
-
-    console.log('✅ [GitHub Copilot] Token exchange completed successfully!')
-    return data.access_token
-  }
 
   private async getCopilotToken(): Promise<string> {
     console.log('🔍 [GitHub Copilot] Starting getCopilotToken process...')

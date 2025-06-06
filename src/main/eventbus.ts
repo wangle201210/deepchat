@@ -43,6 +43,13 @@ export class EventBus extends EventEmitter {
     super.emit(eventName, ...args)
   }
 
+  sendToWindow(eventName: string, windowId: number, ...args: unknown[]) {
+    if (!this.windowPresenter) {
+      console.warn('WindowPresenter not available, cannot send to window')
+      return
+    }
+    this.windowPresenter.sendToWindow(windowId, eventName, ...args)
+  }
   /**
    * 向渲染进程发送事件
    * @param eventName 事件名称

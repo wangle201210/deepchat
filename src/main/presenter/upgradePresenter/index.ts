@@ -1,6 +1,6 @@
 import { app, shell } from 'electron'
 import { IUpgradePresenter, UpdateStatus, UpdateProgress } from '@shared/presenter'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { UPDATE_EVENTS, WINDOW_EVENTS } from '@/events'
 import electronUpdater from 'electron-updater'
 import axios from 'axios'
@@ -326,12 +326,12 @@ export class UpgradePresenter implements IUpgradePresenter {
       error: this._error,
       updateInfo: this._versionInfo
         ? {
-            version: this._versionInfo.version,
-            releaseDate: this._versionInfo.releaseDate,
-            releaseNotes: this._versionInfo.releaseNotes,
-            githubUrl: this._versionInfo.githubUrl,
-            downloadUrl: this._versionInfo.downloadUrl
-          }
+          version: this._versionInfo.version,
+          releaseDate: this._versionInfo.releaseDate,
+          releaseNotes: this._versionInfo.releaseNotes,
+          githubUrl: this._versionInfo.githubUrl,
+          downloadUrl: this._versionInfo.downloadUrl
+        }
         : null
     }
   }
@@ -379,9 +379,9 @@ export class UpgradePresenter implements IUpgradePresenter {
     console.log('准备退出并安装更新')
     try {
       // 发送即将重启的消息
-      eventBus.emit(UPDATE_EVENTS.WILL_RESTART)
+      eventBus.sendToRenderer(UPDATE_EVENTS.WILL_RESTART, SendTarget.ALL_WINDOWS)
       // 通知需要完全退出应用
-      eventBus.emit(WINDOW_EVENTS.FORCE_QUIT_APP)
+      eventBus.sendToMain(WINDOW_EVENTS.FORCE_QUIT_APP)
       autoUpdater.quitAndInstall()
       // 如果30秒还没完成，就强制退出重启
       setTimeout(() => {
@@ -420,7 +420,7 @@ export class UpgradePresenter implements IUpgradePresenter {
   restartApp(): void {
     try {
       // 发送即将重启的消息
-      eventBus.emit(UPDATE_EVENTS.WILL_RESTART)
+      eventBus.sendToRenderer(UPDATE_EVENTS.WILL_RESTART, SendTarget.ALL_WINDOWS)
       // 给UI层一点时间保存状态
       setTimeout(() => {
         app.relaunch()

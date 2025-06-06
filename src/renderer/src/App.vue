@@ -11,6 +11,7 @@ import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
 import TranslatePopup from '@/components/popup/TranslatePopup.vue'
 
 const route = useRoute()
@@ -20,7 +21,7 @@ const chatStore = useChatStore()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
-
+useLanguageStore()
 // 错误通知队列及当前正在显示的错误
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
 const currentErrorId = ref<string | null>(null)
