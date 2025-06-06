@@ -381,6 +381,7 @@
     "keyConflict": "단축키 충돌이 발생했습니다. 다른 조합을 선택해주세요",
 
     "cleanHistory": "명확한 채팅 기록",
+    "deleteConversation": "대화 삭제",
     "goSettings": "열기 설정",
     "hideWindow": "창을 숨기십시오",
     "quitApp": "프로그램을 종료하십시오",

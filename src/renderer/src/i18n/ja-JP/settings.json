@@ -381,6 +381,7 @@
     "keyConflict": "ショートカットキーが競合しています。別の組み合わせを選択してください",
 
     "cleanHistory": "明確なチャット履歴",
+    "deleteConversation": "会話を削除",
     "goSettings": "設定を開く",
     "hideWindow": "ウィンドウを非表示にします",
     "quitApp": "プログラムを終了します",

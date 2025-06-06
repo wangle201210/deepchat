@@ -132,6 +132,7 @@ export const SHORTCUT_EVENTS = {
   CLOSE_CURRENT_TAB: 'shortcut:close-current-tab',
   GO_SETTINGS: 'shortcut:go-settings',
   CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  DELETE_CONVERSATION: 'shortcut:delete-conversation',
   SWITCH_TO_NEXT_TAB: 'shortcut:switch-to-next-tab',
   SWITCH_TO_PREVIOUS_TAB: 'shortcut:switch-to-previous-tab',
   SWITCH_TO_SPECIFIC_TAB: 'shortcut:switch-to-specific-tab',

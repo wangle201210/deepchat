@@ -14,6 +14,7 @@ export const rendererShortcutKey = {
   ZoomResume: `${CommandKey}+0`,
   GoSettings: `${CommandKey}+,`,
   CleanChatHistory: `${CommandKey}+L`,
+  DeleteConversation: `${CommandKey}+D`,
   SwitchNextTab: `${CommandKey}+Tab`,
   SwitchPrevTab: `${CommandKey}+${ShiftKey}+Tab`,
   SwtichToLastTab: `${CommandKey}+9`

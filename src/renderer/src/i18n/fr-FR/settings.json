@@ -381,6 +381,7 @@
     "keyConflict": "Conflit de raccourci clavier, veuillez choisir une autre combinaison",
 
     "cleanHistory": "Historique de chat clair",
+    "deleteConversation": "Supprimer la conversation",
     "goSettings": "Paramètres ouvrir",
     "hideWindow": "Cache-fenêtre",
     "quitApp": "Quitter l'application",
