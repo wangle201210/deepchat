@@ -95,20 +95,12 @@ export class Presenter implements IPresenter {
 
   // 设置需要特殊处理的事件
   private setupSpecialEventHandlers() {
-
-
     // CONFIG_EVENTS.PROVIDER_CHANGED 需要更新 providers（已在 configPresenter 中处理发送到渲染进程）
     eventBus.on(CONFIG_EVENTS.PROVIDER_CHANGED, () => {
       const providers = this.configPresenter.getProviders()
       this.llmproviderPresenter.setProviders(providers)
     })
-    // DEEPLINK_EVENTS.MCP_INSTALL 需要发送到默认标签页
-    eventBus.on(DEEPLINK_EVENTS.MCP_INSTALL, (msg: unknown) => {
-      console.log(DEEPLINK_EVENTS.MCP_INSTALL, msg) // 保留日志
-      eventBus.sendToRenderer(DEEPLINK_EVENTS.MCP_INSTALL, SendTarget.DEFAULT_TAB, msg)
-    })
 
-    // 其他事件使用默认的转发机制（通过 emit 自动转发）
   }
   setupTray() {
     console.info('setupTray', !!this.trayPresenter)
