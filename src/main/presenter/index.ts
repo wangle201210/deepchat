@@ -21,35 +21,14 @@ import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
 import {
   CONFIG_EVENTS,
-  CONVERSATION_EVENTS,
   STREAM_EVENTS,
   WINDOW_EVENTS,
   UPDATE_EVENTS,
-  OLLAMA_EVENTS,
-  MCP_EVENTS,
-  DEEPLINK_EVENTS,
-  NOTIFICATION_EVENTS,
-  SHORTCUT_EVENTS
+  DEEPLINK_EVENTS
 } from '@/events'
 
-// 需要自动转发到渲染进程的事件列表（大部分配置和同步事件已在各自的 presenter 中直接处理）
-const eventsToForward: string[] = [
-  // 注意: 大部分配置相关事件（CONFIG_EVENTS.*）、同步事件（SYNC_EVENTS.*）、
-  // OAuth 事件（CONFIG_EVENTS.OAUTH_*）、缩放事件（SHORTCUT_EVENTS.ZOOM_*）
-  // 已在各自的 presenter 中直接发送到渲染进程，不需要在这里列出
-  STREAM_EVENTS.ERROR,
-  CONVERSATION_EVENTS.ACTIVATED,
-  CONVERSATION_EVENTS.DEACTIVATED,
-  CONVERSATION_EVENTS.MESSAGE_EDITED,
-  MCP_EVENTS.SERVER_STARTED,
-  MCP_EVENTS.SERVER_STOPPED,
-  MCP_EVENTS.CONFIG_CHANGED,
-  MCP_EVENTS.TOOL_CALL_RESULT,
-  OLLAMA_EVENTS.PULL_MODEL_PROGRESS,
-  NOTIFICATION_EVENTS.SHOW_ERROR,
-  SHORTCUT_EVENTS.GO_SETTINGS,
-  SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY
-]
+// 注意: 现在大部分事件已在各自的 presenter 中直接发送到渲染进程
+// 剩余的自动转发事件已在 EventBus 的 DEFAULT_RENDERER_EVENTS 中定义
 
 // 主 Presenter 类，负责协调其他 Presenter 并处理 IPC 通信
 export class Presenter implements IPresenter {
@@ -105,9 +84,6 @@ export class Presenter implements IPresenter {
   setupEventBus() {
     // 设置 WindowPresenter 到 EventBus
     eventBus.setWindowPresenter(this.windowPresenter)
-
-    // 注册需要转发到渲染进程的事件
-    eventBus.registerRendererEvents(eventsToForward)
 
     // 设置特殊事件的处理逻辑
     this.setupSpecialEventHandlers()

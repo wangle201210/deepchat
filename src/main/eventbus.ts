@@ -1,9 +1,5 @@
+import { IWindowPresenter } from '@shared/presenter'
 import EventEmitter from 'events'
-
-export interface EventBusOptions {
-  // 可以在渲染进程中接收的事件类型列表
-  rendererEvents?: string[]
-}
 
 export enum SendTarget {
   MAIN = 'main',
@@ -12,44 +8,34 @@ export enum SendTarget {
   DEFAULT_TAB = 'default_tab'
 }
 
-// 定义窗口展示器接口
-interface IWindowPresenter {
-  sendToAllWindows(eventName: string, ...args: unknown[]): void
-  sendTodefaultTab(eventName: string, isInternal: boolean, ...args: unknown[]): void
-}
+// 定义需要自动转发到渲染进程的事件常量
+const DEFAULT_RENDERER_EVENTS = new Set([
+  // 流事件
+  'stream:error',
+  // 会话事件
+  'conversation:activated',
+  'conversation:deactivated',
+  'conversation:message-edited',
+  // MCP 事件
+  'mcp:server-started',
+  'mcp:server-stopped',
+  'mcp:config-changed',
+  'mcp:tool-call-result',
+  // Ollama 事件
+  'ollama:pull-model-progress',
+  // 通知事件
+  'notification:show-error',
+  // 快捷键事件
+  'shortcut:go-settings',
+  'shortcut:clean-chat-history'
+])
 
 export class EventBus extends EventEmitter {
   private windowPresenter: IWindowPresenter | null = null
-  private rendererEvents: Set<string> = new Set()
 
-  constructor(options: EventBusOptions = {}) {
+  constructor() {
     super()
-    if (options.rendererEvents) {
-      this.rendererEvents = new Set(options.rendererEvents)
-    }
   }
-
-  /**
-   * 设置窗口展示器（用于向渲染进程发送消息）
-   */
-  setWindowPresenter(windowPresenter: IWindowPresenter) {
-    this.windowPresenter = windowPresenter
-  }
-
-  /**
-   * 添加可转发到渲染进程的事件类型
-   */
-  addRendererEvent(eventName: string) {
-    this.rendererEvents.add(eventName)
-  }
-
-  /**
-   * 移除可转发到渲染进程的事件类型
-   */
-  removeRendererEvent(eventName: string) {
-    this.rendererEvents.delete(eventName)
-  }
-
   /**
    * 仅向主进程发送事件
    */
@@ -65,7 +51,7 @@ export class EventBus extends EventEmitter {
    */
   sendToRenderer(eventName: string, target: SendTarget = SendTarget.ALL_WINDOWS, ...args: unknown[]) {
     if (!this.windowPresenter) {
-      console.warn('WindowPresenter not set, cannot send to renderer')
+      console.warn('WindowPresenter not available, cannot send to renderer')
       return
     }
 
@@ -82,24 +68,10 @@ export class EventBus extends EventEmitter {
   }
 
   /**
-   * 重写 emit 方法，同时广播给主进程和渲染进程
+   * 同时发送到主进程和渲染进程
    * @param eventName 事件名称
+   * @param target 发送目标
    * @param args 事件参数
-   */
-  emit(eventName: string, ...args: unknown[]): boolean {
-    // 首先发送到主进程
-    const mainResult = super.emit(eventName, ...args)
-
-    // 如果是可转发到渲染进程的事件，也发送到渲染进程
-    if (this.rendererEvents.has(eventName)) {
-      this.sendToRenderer(eventName, SendTarget.ALL_WINDOWS, ...args)
-    }
-
-    return mainResult
-  }
-
-  /**
-   * 重写默认的 send 方法，同时广播给主进程和渲染进程
    */
   send(eventName: string, target: SendTarget = SendTarget.ALL_WINDOWS, ...args: unknown[]) {
     // 发送到主进程
@@ -110,12 +82,47 @@ export class EventBus extends EventEmitter {
   }
 
   /**
-   * 批量注册可转发到渲染进程的事件
+   * 重写 emit 方法，默认同时广播给主进程和渲染进程
+   * 注意：这个方法将被逐步废弃，推荐使用具体的 send 方法
+   * @param eventName 事件名称
+   * @param args 事件参数
    */
-  registerRendererEvents(events: string[]) {
-    events.forEach(event => this.addRendererEvent(event))
+  emit(eventName: string, ...args: unknown[]): boolean {
+    // 发送到主进程
+    const mainResult = super.emit(eventName, ...args)
+
+    // 如果是默认需要转发的事件，也发送到渲染进程
+    if (DEFAULT_RENDERER_EVENTS.has(eventName)) {
+      this.sendToRenderer(eventName, SendTarget.ALL_WINDOWS, ...args)
+    }
+
+    return mainResult
+  }
+
+  /**
+   * 设置窗口展示器（用于向渲染进程发送消息）
+   */
+  setWindowPresenter(windowPresenter: IWindowPresenter) {
+    this.windowPresenter = windowPresenter
+  }
+
+  /**
+   * @deprecated 使用 send() 方法替代
+   * 批量注册可转发到渲染进程的事件（已废弃）
+   */
+  registerRendererEvents(): void {
+    console.warn('registerRendererEvents is deprecated, renderer events are now predefined')
+  }
+
+  /**
+   * @deprecated 使用 send() 方法替代
+   * 添加可转发到渲染进程的事件类型（已废弃）
+   */
+  addRendererEvent(): void {
+    console.warn('addRendererEvent is deprecated, renderer events are now predefined')
   }
 }
 
 // 创建全局事件总线实例
 export const eventBus = new EventBus()
+

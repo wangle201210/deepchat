@@ -497,6 +497,7 @@ export class ConfigPresenter implements IConfigPresenter {
 
   // 设置应用语言
   setLanguage(language: string): void {
+    console.log('setLanguage', language)
     this.setSetting('language', language)
     // 触发语言变更事件（需要通知所有标签页）
     eventBus.send(CONFIG_EVENTS.LANGUAGE_CHANGED, SendTarget.ALL_WINDOWS, language)
