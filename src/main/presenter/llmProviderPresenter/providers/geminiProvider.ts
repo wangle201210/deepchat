@@ -972,4 +972,25 @@ export class GeminiProvider extends BaseLLMProvider {
       yield { type: 'stop', stop_reason: 'error' }
     }
   }
+
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    // Google Gemini embedding API
+    if (!this.genAI) throw new Error('Google Generative AI client is not initialized')
+    // Gemini embedding API 仅支持单条文本
+    const results: number[][] = []
+    for (const text of texts) {
+      const resp = await this.genAI.models.embedContent({
+        model: modelId,
+        content: { parts: [{ text }] }
+      })
+      if (resp && resp.embedding && Array.isArray(resp.embedding.values)) {
+        results.push(resp.embedding.values)
+      } else if (resp && Array.isArray(resp.embedding)) {
+        results.push(resp.embedding)
+      } else {
+        results.push([])
+      }
+    }
+    return results
+  }
 }

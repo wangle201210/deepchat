@@ -247,7 +247,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
    * 处理图片生成模型请求的内部方法。
    * @param messages 聊天消息数组。
    * @param modelId 模型ID。
-   * @param modelConfig 模型配置。
    * @returns AsyncGenerator<LLMCoreStreamEvent> 流式事件。
    */
   private async *handleImgGeneration(
@@ -1268,5 +1267,23 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       console.error('Failed to get suggestions:', error)
       return [] // Return empty on error
     }
+  }
+
+  /**
+   * 获取文本的 embedding 表示
+   * @param texts 待编码的文本数组
+   * @param modelId 使用的模型ID
+   * @returns embedding 数组
+   */
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
+    // OpenAI embeddings API
+    const response = await this.openai.embeddings.create({
+      model: modelId,
+      input: texts
+    })
+    // 兼容 OpenAI 返回格式
+    return response.data.map((item: any) => item.embedding)
   }
 }

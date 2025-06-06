@@ -1013,4 +1013,19 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     }
     return provider.deleteModel(modelName)
   }
+
+  /**
+   * 获取文本的 embedding 表示
+   * @param providerId 提供商ID
+   * @param texts 文本数组
+   * @param modelId 模型ID
+   * @returns embedding 数组
+   */
+  async getEmbeddings(providerId: string, texts: string[], modelId: string): Promise<number[][]> {
+    const provider = this.getProviderInstance(providerId)
+    if (!provider.getEmbeddings) {
+      throw new Error('当前 LLM 提供商未实现 embedding 能力')
+    }
+    return provider.getEmbeddings(texts, modelId)
+  }
 }

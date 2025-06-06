@@ -1127,4 +1127,21 @@ export class OllamaProvider extends BaseLLMProvider {
   public onProxyResolved(): void {
     console.log('ollama onProxyResolved')
   }
+
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    // Ollama embedding API: 只支持单条文本
+    const results: number[][] = []
+    for (const text of texts) {
+      const resp = await this.ollama.embeddings({
+        model: modelId,
+        prompt: text
+      })
+      if (resp && Array.isArray(resp.embedding)) {
+        results.push(resp.embedding)
+      } else {
+        results.push([])
+      }
+    }
+    return results
+  }
 }
