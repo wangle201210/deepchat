@@ -27,6 +27,9 @@ export class TabPresenter implements ITabPresenter {
   // 存储每个标签页的右键菜单处理器
   private tabContextMenuDisposers: Map<number, () => void> = new Map()
 
+  // WebContents ID 到 Tab ID 的映射 (用于IPC调用来源识别)
+  private webContentsToTabId: Map<number, number> = new Map()
+
   private windowPresenter: IWindowPresenter // 窗口管理器实例
 
   constructor(windowPresenter: IWindowPresenter) {
@@ -139,6 +142,9 @@ export class TabPresenter implements ITabPresenter {
       position: options?.position ?? 0
     })
 
+    // 建立 WebContents ID 到 Tab ID 的映射
+    this.webContentsToTabId.set(view.webContents.id, tabId)
+
     // 更新窗口-标签映射
     if (!this.windowTabs.has(windowId)) {
       this.windowTabs.set(windowId, [])
@@ -217,6 +223,11 @@ export class TabPresenter implements ITabPresenter {
     this.tabs.delete(tabId)
     this.tabState.delete(tabId)
     this.tabWindowMap.delete(tabId)
+
+    // 清除 WebContents 映射
+    if (view) {
+      this.webContentsToTabId.delete(view.webContents.id)
+    }
 
     if (this.windowTabs.has(windowId)) {
       const tabs = this.windowTabs.get(windowId)!
@@ -431,6 +442,25 @@ export class TabPresenter implements ITabPresenter {
   }
 
   /**
+   * 根据 WebContents ID 获取对应的 Tab ID
+   * @param webContentsId WebContents ID
+   * @returns Tab ID，如果未找到则返回 undefined
+   */
+  getTabIdByWebContentsId(webContentsId: number): number | undefined {
+    return this.webContentsToTabId.get(webContentsId)
+  }
+
+  /**
+   * 根据 WebContents ID 获取对应的窗口ID
+   * @param webContentsId WebContents ID
+   * @returns 窗口ID，如果未找到则返回 undefined
+   */
+  getWindowIdByWebContentsId(webContentsId: number): number | undefined {
+    const tabId = this.getTabIdByWebContentsId(webContentsId)
+    return tabId ? this.tabWindowMap.get(tabId) : undefined
+  }
+
+  /**
    * 通知渲染进程更新标签列表
    */
   async notifyWindowTabsUpdate(windowId: number): Promise<void> {
@@ -640,6 +670,7 @@ export class TabPresenter implements ITabPresenter {
     this.tabs.clear()
     this.tabState.clear()
     this.windowTabs.clear()
+    this.webContentsToTabId.clear()
   }
 
   // 将标签页移动到新窗口

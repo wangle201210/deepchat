@@ -19,10 +19,17 @@ import { NotificationPresenter } from './notifactionPresenter'
 import { TabPresenter } from './tabPresenter'
 import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
-import {
-  CONFIG_EVENTS,
-  WINDOW_EVENTS
-} from '@/events'
+import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
+
+// IPC调用上下文接口
+interface IPCCallContext {
+  tabId?: number
+  windowId?: number
+  webContentsId: number
+  presenterName: string
+  methodName: string
+  timestamp: number
+}
 
 // 注意: 现在大部分事件已在各自的 presenter 中直接发送到渲染进程
 // 剩余的自动转发事件已在 EventBus 的 DEFAULT_RENDERER_EVENTS 中定义
@@ -79,8 +86,9 @@ export class Presenter implements IPresenter {
 
   // 设置事件总线监听和转发
   setupEventBus() {
-    // 设置 WindowPresenter 到 EventBus
+    // 设置 WindowPresenter 和 TabPresenter 到 EventBus
     eventBus.setWindowPresenter(this.windowPresenter)
+    eventBus.setTabPresenter(this.tabPresenter)
 
     // 设置特殊事件的处理逻辑
     this.setupSpecialEventHandlers()
@@ -98,7 +106,6 @@ export class Presenter implements IPresenter {
       const providers = this.configPresenter.getProviders()
       this.llmproviderPresenter.setProviders(providers)
     })
-
   }
   setupTray() {
     console.info('setupTray', !!this.trayPresenter)
@@ -157,17 +164,38 @@ function isFunction(obj: any, prop: string): obj is { [key: string]: (...args: a
   return typeof obj[prop] === 'function'
 }
 
-// IPC 主进程处理程序：动态调用 Presenter 的方法
+// IPC 主进程处理程序：动态调用 Presenter 的方法 (支持Tab上下文)
 ipcMain.handle(
   'presenter:call',
-  (_event: IpcMainInvokeEvent, name: string, method: string, ...payloads: unknown[]) => {
+  (event: IpcMainInvokeEvent, name: string, method: string, ...payloads: unknown[]) => {
     try {
+      // 构建调用上下文
+      const webContentsId = event.sender.id
+      const tabId = presenter.tabPresenter.getTabIdByWebContentsId(webContentsId)
+      const windowId = presenter.tabPresenter.getWindowIdByWebContentsId(webContentsId)
+
+      const context: IPCCallContext = {
+        tabId,
+        windowId,
+        webContentsId,
+        presenterName: name,
+        methodName: method,
+        timestamp: Date.now()
+      }
+
+      // 记录调用日志 (包含tab上下文)
+      if (import.meta.env.VITE_LOG_IPC_CALL === '1') {
+        console.log(
+          `[IPC Call] Tab:${context.tabId || 'unknown'} Window:${context.windowId || 'unknown'} -> ${context.presenterName}.${context.methodName}`
+        )
+      }
+
       // 通过名称获取对应的 Presenter 实例
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calledPresenter: any = presenter[name as keyof Presenter]
 
       if (!calledPresenter) {
-        console.warn('calling wrong presenter', name) // 保留警告
+        console.warn(`[IPC Warning] Tab:${context.tabId} calling wrong presenter: ${name}`)
         return { error: `Presenter "${name}" not found` }
       }
 
@@ -176,14 +204,20 @@ ipcMain.handle(
         // 调用方法并返回结果
         return calledPresenter[method](...payloads)
       } else {
-        console.warn('called method is not a function or does not exist', name, method) // 保留警告
+        console.warn(
+          `[IPC Warning] Tab:${context.tabId} called method is not a function or does not exist: ${name}.${method}`
+        )
         return { error: `Method "${method}" not found or not a function on "${name}"` }
       }
     } catch (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    e: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      e: any
     ) {
-      console.error('error on presenter handle', e) // 保留错误日志
+      // 尝试获取调用上下文以改进错误日志
+      const webContentsId = event.sender.id
+      const tabId = presenter.tabPresenter.getTabIdByWebContentsId(webContentsId)
+
+      console.error(`[IPC Error] Tab:${tabId || 'unknown'} ${name}.${method}:`, e)
       return { error: e.message || String(e) }
     }
   }
