@@ -174,6 +174,9 @@ export interface ITabPresenter {
   attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   getWindowTabsData(windowId: number): Promise<Array<TabData>>
+  getActiveTabId(windowId: number): Promise<number | undefined>
+  getTabIdByWebContentsId(webContentsId: number): number | undefined
+  getWindowIdByWebContentsId(webContentsId: number): number | undefined
   moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
   captureTabArea(
     tabId: number,
@@ -998,15 +1001,15 @@ export interface ISyncPresenter {
 // 从 LLM Provider 的 coreStream 返回的标准化事件
 export interface LLMCoreStreamEvent {
   type:
-  | 'text'
-  | 'reasoning'
-  | 'tool_call_start'
-  | 'tool_call_chunk'
-  | 'tool_call_end'
-  | 'error'
-  | 'usage'
-  | 'stop'
-  | 'image_data'
+    | 'text'
+    | 'reasoning'
+    | 'tool_call_start'
+    | 'tool_call_chunk'
+    | 'tool_call_end'
+    | 'error'
+    | 'usage'
+    | 'stop'
+    | 'image_data'
   content?: string // 用于 type 'text'
   reasoning_content?: string // 用于 type 'reasoning'
   tool_call_id?: string // 用于 tool_call_* 类型
