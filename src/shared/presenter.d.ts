@@ -194,6 +194,9 @@ export interface ITabPresenter {
       }
     }
   ): Promise<string | null>
+  // 新增渲染进程Tab事件处理方法
+  onRendererTabReady(tabId: number): Promise<void>
+  onRendererTabActivated(threadId: string): Promise<void>
 }
 
 export interface TabCreateOptions {

@@ -5,7 +5,8 @@ import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { presenter } from '@/presenter' // 导入全局的 presenter 对象
-import { ipcMain } from 'electron' // 引入 ipcMain
+import { eventBus } from '@/eventbus' // 引入 eventBus
+import { TAB_EVENTS } from '@/events' // 引入 TAB_EVENTS
 
 // Schema definitions
 const SearchConversationsArgsSchema = z.object({
@@ -83,19 +84,19 @@ interface SearchResult {
 function awaitTabReady(webContentsId: number, timeout = 10000): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      ipcMain.removeListener('tab:ready', listener)
+      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener)
       reject(new Error(`Timed out waiting for tab ${webContentsId} to be ready.`))
     }, timeout)
 
-    const listener = (_event: Electron.IpcMainEvent, readyWebContentsId: number) => {
-      if (readyWebContentsId === webContentsId) {
+    const listener = (readyTabId: number) => {
+      if (readyTabId === webContentsId) {
         clearTimeout(timer)
-        ipcMain.removeListener('tab:ready', listener)
+        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener)
         resolve()
       }
     }
 
-    ipcMain.on('tab:ready', listener)
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_READY, listener)
   })
 }
 
@@ -103,19 +104,19 @@ function awaitTabReady(webContentsId: number, timeout = 10000): Promise<void> {
 function awaitTabActivated(threadId: string, timeout = 5000): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      ipcMain.removeListener('tab:activated', listener)
+      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
       reject(new Error(`Timed out waiting for thread ${threadId} to be activated.`))
     }, timeout)
 
-    const listener = (_event: Electron.IpcMainEvent, activatedThreadId: string) => {
+    const listener = (activatedThreadId: string) => {
       if (activatedThreadId === threadId) {
         clearTimeout(timer)
-        ipcMain.removeListener('tab:activated', listener)
+        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
         resolve()
       }
     }
 
-    ipcMain.on('tab:activated', listener)
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
   })
 }
 
@@ -159,7 +160,7 @@ export class ConversationSearchServer {
 
       // 搜索对话标题
       const conversationSql = `
-        SELECT 
+        SELECT
           c.conv_id as id,
           c.title,
           c.created_at as createdAt,
@@ -175,7 +176,7 @@ export class ConversationSearchServer {
 
       // 搜索消息内容并关联对话
       const messageSql = `
-        SELECT 
+        SELECT
           c.conv_id as conversationId,
           c.title as conversationTitle,
           m.content
@@ -252,7 +253,7 @@ export class ConversationSearchServer {
       const searchQuery = `%${query}%`
 
       let sql = `
-        SELECT 
+        SELECT
           m.msg_id as id,
           m.conversation_id as conversationId,
           c.title as conversationTitle,
@@ -385,9 +386,9 @@ export class ConversationSearchServer {
       const messagesByRole = db
         .prepare(
           `
-        SELECT role, COUNT(*) as count 
-        FROM messages 
-        WHERE created_at >= ? 
+        SELECT role, COUNT(*) as count
+        FROM messages
+        WHERE created_at >= ?
         GROUP BY role
       `
         )
@@ -397,7 +398,7 @@ export class ConversationSearchServer {
       const activeConversations = db
         .prepare(
           `
-        SELECT 
+        SELECT
           c.conv_id as id,
           c.title,
           COUNT(m.msg_id) as messageCount,

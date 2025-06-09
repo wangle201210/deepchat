@@ -21,6 +21,7 @@ export const useChatStore = defineStore('chat', () => {
   const threadP = usePresenter('threadPresenter')
   const windowP = usePresenter('windowPresenter')
   const notificationP = usePresenter('notificationPresenter')
+  const tabP = usePresenter('tabPresenter')
   const { t } = useI18n()
 
   const soundStore = useSoundStore()
@@ -1064,8 +1065,8 @@ export const useChatStore = defineStore('chat', () => {
       loadMessages()
       loadChatConfig() // 加载对话配置
 
-      // 新增：在会话激活处理完成后，向主进程发送确认信号
-      window.electron.ipcRenderer.send('tab:activated', msg.conversationId)
+      // 新增：在会话激活处理完成后，通过usePresenter发送确认信号
+      tabP.onRendererTabActivated(msg.conversationId)
     })
 
     window.electron.ipcRenderer.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (_, msgId: string) => {
@@ -1079,8 +1080,8 @@ export const useChatStore = defineStore('chat', () => {
     // store现在是被动的，等待主进程推送数据
     setupEventListeners()
 
-    // 在 store 初始化完成后，向主进程发送就绪信号
-    window.electron.ipcRenderer.send('tab:ready', getTabId())
+    // 在 store 初始化完成后，通过usePresenter发送就绪信号
+    tabP.onRendererTabReady(getTabId())
   })
 
   return {
