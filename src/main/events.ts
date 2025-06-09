@@ -32,7 +32,8 @@ export const CONFIG_EVENTS = {
 
 // 会话相关事件
 export const CONVERSATION_EVENTS = {
-  CREATED: 'conversation:created',
+  LIST_UPDATED: 'conversation:list-updated', // 用于推送完整的会话列表
+
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
   MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited

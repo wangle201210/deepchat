@@ -283,11 +283,13 @@ export class ConversationsTable extends BaseTable {
   }
 
   async rename(conversationId: string, title: string): Promise<void> {
+    // 新增 updatedAt 更新
     const updateStmt = this.db.prepare(`
       UPDATE conversations
-      SET title = ?, is_new = 0
+      SET title = ?, is_new = 0, updated_at = ?
       WHERE conv_id = ?
     `)
-    updateStmt.run(title, conversationId)
+    // 传入当前时间
+    updateStmt.run(title, Date.now(), conversationId)
   }
 }
