@@ -16,7 +16,11 @@
     <div class="flex-grow"></div>
     <div class="flex flex-row items-center gap-2">
       <span v-if="group" class="text-xs text-muted-foreground">{{ group }}</span>
-      <Label class="text-xs text-muted-foreground" for="json-config">{{ type }}</Label>
+      <span
+        class="px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground border border-muted-foreground/20 select-none"
+      >
+        {{ type }}
+      </span>
       <Button
         v-if="!enabled"
         variant="link"
@@ -51,6 +55,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
+import { ModelType } from '@shared/model'
 
 withDefaults(
   defineProps<{
@@ -62,10 +67,10 @@ withDefaults(
     vision?: boolean
     functionCall?: boolean
     reasoning?: boolean
-    type?: 'chat' | 'embedding' | 'rerank'
+    type?: ModelType
   }>(),
   {
-    type: 'chat'
+    type: ModelType.Chat
   }
 )
 

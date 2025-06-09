@@ -9,6 +9,7 @@ import {
   Prompt
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
+import { ModelType } from '@shared/model'
 import ElectronStore from 'electron-store'
 import { DEFAULT_PROVIDERS } from './providers'
 import path from 'path'
@@ -343,13 +344,13 @@ export class ConfigPresenter implements IConfigPresenter {
           model.functionCall !== undefined ? model.functionCall : config.functionCall || false
         model.reasoning =
           model.reasoning !== undefined ? model.reasoning : config.reasoning || false
-        model.type = model.type !== undefined ? model.type : config.type || 'chat'
+        model.type = model.type !== undefined ? model.type : config.type || ModelType.Chat
       } else {
         // 确保模型具有这些属性，如果没有配置，默认为false
         model.vision = model.vision || false
         model.functionCall = model.functionCall || false
         model.reasoning = model.reasoning || false
-        model.type = model.type || 'chat'
+        model.type = model.type || ModelType.Chat
       }
       return model
     })
@@ -368,7 +369,7 @@ export class ConfigPresenter implements IConfigPresenter {
       vision: false,
       functionCall: false,
       reasoning: false,
-      type: 'chat'
+      type: ModelType.Chat
     }
   }
 
@@ -830,7 +831,7 @@ export class ConfigPresenter implements IConfigPresenter {
           vision: config.vision,
           functionCall: config.functionCall || false,
           reasoning: config.reasoning || false,
-          type: config.type || 'chat'
+          type: config.type || ModelType.Chat
         }
       }
     }
@@ -843,7 +844,7 @@ export class ConfigPresenter implements IConfigPresenter {
       vision: false,
       functionCall: false,
       reasoning: false,
-      type: 'chat'
+      type: ModelType.Chat
     }
   }
 

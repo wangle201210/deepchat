@@ -16,7 +16,7 @@
         :vision="model.vision"
         :function-call="model.functionCall"
         :reasoning="model.reasoning"
-        :type="model.type ?? 'chat'"
+        :type="model.type ?? ModelType.Chat"
         @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         @delete-model="() => handleDeleteCustomModel(model)"
       />
@@ -98,7 +98,7 @@
           :vision="model.vision"
           :function-call="model.functionCall"
           :reasoning="model.reasoning"
-          :type="model.type ?? 'chat'"
+          :type="model.type ?? ModelType.Chat"
           @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         />
       </div>
@@ -112,7 +112,8 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import ModelConfigItem from './ModelConfigItem.vue'
-import type { RENDERER_MODEL_META } from '@shared/presenter'
+import { type RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 import { useSettingsStore } from '@/stores/settings'
 
 const { t } = useI18n()
@@ -121,6 +122,7 @@ interface ModelEdit {
   modelId: string
   contextLength: number
   maxTokens: number
+  type: ModelType
 }
 
 const addModelList = ref<ModelEdit[]>([])
@@ -186,7 +188,8 @@ const addEdit = () => {
     modelName: '',
     modelId: '',
     contextLength: 4096,
-    maxTokens: 2048
+    maxTokens: 2048,
+    type: ModelType.Chat
   })
 }
 
@@ -211,7 +214,7 @@ const confirmAdd = async (idx: number) => {
       vision: false,
       functionCall: false,
       reasoning: false,
-      type: 'chat'
+      type: ModelType.Chat
     })
     removeEdit(idx)
   } catch (error) {
