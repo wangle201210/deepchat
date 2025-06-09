@@ -1206,8 +1206,7 @@ export class ThreadPresenter implements IThreadPresenter {
         queryMsgId
       )
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+      const { providerId, modelId } = conversation.settings
       const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
       const { vision } = modelConfig || {}
       // 检查是否已被取消
