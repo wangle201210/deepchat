@@ -36,6 +36,18 @@
         :placeholder="t('model.add.maxTokensPlaceholder')"
         class="w-32"
       />
+      <Select v-model="model.type" class="w-16">
+        <SelectTrigger class="w-full">
+          <div class="flex items-center gap-1">
+            <SelectValue class="text-xs font-bold truncate" />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="type in Object.values(ModelType)" :key="type" :value="type">
+            {{ type }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <Button
         variant="outline"
         size="sm"
@@ -110,6 +122,13 @@ import { useI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { Icon } from '@iconify/vue'
 import ModelConfigItem from './ModelConfigItem.vue'
 import { type RENDERER_MODEL_META } from '@shared/presenter'
@@ -214,7 +233,7 @@ const confirmAdd = async (idx: number) => {
       vision: false,
       functionCall: false,
       reasoning: false,
-      type: ModelType.Chat
+      type: model.type
     })
     removeEdit(idx)
   } catch (error) {
