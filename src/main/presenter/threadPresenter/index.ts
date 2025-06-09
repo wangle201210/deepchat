@@ -741,9 +741,32 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   async setActiveConversation(conversationId: string, tabId: number): Promise<void> {
+    // 【核心修正】由主进程负责全部决策（防重和自动切换逻辑）
+    const existingTabId = await this.findTabForConversation(conversationId)
+
+    // 如果会话已在其他Tab打开，并且不是当前Tab，则切换到那个Tab
+    if (existingTabId !== null && existingTabId !== tabId) {
+      console.log(
+        `Conversation ${conversationId} is already open in tab ${existingTabId}. Switching to it.`
+      )
+      // 命令TabPresenter切换到已存在的Tab
+      await presenter.tabPresenter.switchTab(existingTabId)
+      // 注意：这里不应该再为 requesting tab (即 tabId) 设置 activeConversationId
+      // 也不需要发送ACTIVATED事件，因为tab-session的绑定关系没有改变。
+      // switchTab 自身会处理UI的激活。
+      return
+    }
+
+    // 如果会话未在其他Tab打开，或者是请求激活当前Tab已绑定的会话，则正常执行绑定
     const conversation = await this.getConversation(conversationId)
     if (conversation) {
+      // 检查当前Tab是否已经绑定了这个会话，避免不必要的事件广播
+      if (this.activeConversationIds.get(tabId) === conversationId) {
+        return // 状态未改变，无需操作
+      }
+
       this.activeConversationIds.set(tabId, conversationId)
+      // 广播事件，通知所有渲染进程UI更新
       eventBus.sendToRenderer(CONVERSATION_EVENTS.ACTIVATED, SendTarget.ALL_WINDOWS, {
         conversationId,
         tabId

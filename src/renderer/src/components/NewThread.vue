@@ -359,7 +359,6 @@ const handleSend = async (content: UserMessageContent) => {
     artifacts: artifacts.value as 0 | 1
   })
   console.log('threadId', threadId, activeModel.value)
-  await chatStore.setActiveThread(threadId)
   chatStore.sendMessage(content)
 }
 </script>

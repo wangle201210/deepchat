@@ -105,6 +105,10 @@ export const useChatStore = defineStore('chat', () => {
   const createThread = async (title: string, settings: Partial<CONVERSATION_SETTINGS>) => {
     try {
       const threadId = await threadP.createConversation(title, settings, getTabId())
+      // 因为 createConversation 内部已经调用了 setActiveConversation
+      // 并且可以确定是为当前tab激活，所以在这里可以直接、安全地更新本地状态
+      // 以确保后续的 sendMessage 能正确获取 activeThreadId。
+      setActiveThreadId(threadId)
       return threadId
     } catch (error) {
       console.error('创建会话失败:', error)
@@ -113,28 +117,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const setActiveThread = async (threadId: string) => {
-    // 修改：增加切换或激活逻辑
-    // 1. 检查会话是否已在其他Tab打开
-    const existingTabId = await threadP.findTabForConversation(threadId)
-    // 检查 existingTabId 是否存在，并且不等于当前 tab 的 ID
-    if (existingTabId !== null && existingTabId !== getTabId()) {
-      // 2. 如果是，则激活那个Tab，而不是在当前Tab打开
-      await tabP.switchTab(existingTabId)
-      // UI切换由主进程的setActiveTab事件和shell层负责，此处流程结束
-      return
-    }
-
-    // 如果未在其他Tab打开，或就是当前Tab，则执行原有逻辑
+    // 不在渲染进程进行逻辑判定（查重）和决策，只向主进程发送意图。
+    // 主进程会处理“防重”逻辑，并通过 'ACTIVATED' 事件来通知UI更新。
+    // 如果主进程决定切换到其他tab，当前tab不会收到此事件，状态也就不会被错误地更新。
     const tabId = getTabId()
-    const threadsWorkingStatus = getThreadsWorkingStatus()
-    if (
-      threadsWorkingStatus.get(threadId) === 'completed' ||
-      threadsWorkingStatus.get(threadId) === 'error'
-    ) {
-      threadsWorkingStatus.delete(threadId)
-    }
-    setActiveThreadId(threadId)
-    setMessages([])
     await threadP.setActiveConversation(threadId, tabId)
   }
 
