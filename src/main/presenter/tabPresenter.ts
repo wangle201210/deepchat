@@ -172,9 +172,10 @@ export class TabPresenter implements ITabPresenter {
     this.setupWebContentsListeners(view.webContents, tabId, windowId)
 
     // 在新Tab加载完成后，触发一次全局列表更新广播
+    // 不用 once的原因是考虑tab 强刷的情况，也需要能正常获取，目前看log其它时候很少会触发 did finish load,应该是合理的
     // 确保新Tab以及所有其他Tab都收到最新的列表
-    // 这个可能有问题，时机是否合适？
-    view.webContents.once('did-finish-load', () => {
+    view.webContents.on('did-finish-load', () => {
+      console.log('did-finish-load', tabId)
       // 直接调用 threadPresenter 的内部广播方法
       ;(presenter.threadPresenter as any).broadcastThreadListUpdate()
     })
@@ -777,6 +778,26 @@ export class TabPresenter implements ITabPresenter {
       console.error('Capture tab area error:', error)
       return null
     }
+  }
+
+  /**
+   * 处理渲染进程标签页就绪事件
+   * @param tabId 标签页ID
+   */
+  async onRendererTabReady(tabId: number): Promise<void> {
+    console.log(`Tab ${tabId} renderer ready`)
+    // 通过事件总线通知其他模块
+    eventBus.sendToMain(TAB_EVENTS.RENDERER_TAB_READY, tabId)
+  }
+
+  /**
+   * 处理渲染进程标签页激活事件
+   * @param threadId 会话ID
+   */
+  async onRendererTabActivated(threadId: string): Promise<void> {
+    console.log(`Thread ${threadId} activated in renderer`)
+    // 通过事件总线通知其他模块
+    eventBus.sendToMain(TAB_EVENTS.RENDERER_TAB_ACTIVATED, threadId)
   }
 
   /**
