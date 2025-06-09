@@ -113,6 +113,18 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const setActiveThread = async (threadId: string) => {
+    // 修改：增加切换或激活逻辑
+    // 1. 检查会话是否已在其他Tab打开
+    const existingTabId = await threadP.findTabForConversation(threadId)
+    // 检查 existingTabId 是否存在，并且不等于当前 tab 的 ID
+    if (existingTabId !== null && existingTabId !== getTabId()) {
+      // 2. 如果是，则激活那个Tab，而不是在当前Tab打开
+      await tabP.switchTab(existingTabId)
+      // UI切换由主进程的setActiveTab事件和shell层负责，此处流程结束
+      return
+    }
+
+    // 如果未在其他Tab打开，或就是当前Tab，则执行原有逻辑
     const tabId = getTabId()
     const threadsWorkingStatus = getThreadsWorkingStatus()
     if (
@@ -1021,23 +1033,14 @@ export const useChatStore = defineStore('chat', () => {
         // 2. 用主进程推送的最新、完整的、已格式化好的列表直接替换本地状态
         threads.value = updatedGroupedList
 
-        // 3. 检查之前的活动会话是否还存在于新列表中
-        // 此处对多tab同时显示同一会话处理得不彻底，遗留：后继需要支持自动关闭tab功能
+        // 3. 检查列表更新之前的活动会话是否还存在于新列表中
         if (currentActiveId) {
           const flatList = updatedGroupedList.flatMap((g) => g.dtThreads)
           const activeThreadExists = flatList.some((thread) => thread.id === currentActiveId)
 
-          // 4. 如果活动会话不存在了（比如被删除了），则自动选择一个新的活动会话
+          // 如果活动会话不存在了（如在其他窗口被删除），只清空当前tab的活动状态，待其他流程处理
           if (!activeThreadExists) {
-            console.log(`Active thread ${currentActiveId} no longer exists. Selecting a new one.`)
-            const nextActiveThread = flatList.length > 0 ? flatList[0] : null
-            if (nextActiveThread) {
-              // 调用 setActiveThread 来处理切换逻辑
-              setActiveThread(nextActiveThread.id)
-            } else {
-              // 如果列表变为空，则清空活动会话
-              clearActiveThread()
-            }
+            clearActiveThread()
           }
         }
       }

@@ -79,9 +79,36 @@ export class ThreadPresenter implements IThreadPresenter {
     this.searchManager = new SearchManager()
     this.configPresenter = configPresenter
 
+    // 监听Tab关闭事件，清理绑定关系
+    eventBus.on(TAB_EVENTS.CLOSED, (tabId: number) => {
+      if (this.activeConversationIds.has(tabId)) {
+        this.activeConversationIds.delete(tabId)
+        console.log(`ThreadPresenter: Cleaned up conversation binding for closed tab ${tabId}.`)
+      }
+    })
+
     // 初始化时处理所有未完成的消息
     this.messageManager.initializeUnfinishedMessages()
   }
+
+  /**
+   * 新增：查找指定会话ID所在的Tab ID
+   * @param conversationId 会话ID
+   * @returns 如果找到，返回tabId，否则返回null
+   */
+  async findTabForConversation(conversationId: string): Promise<number | null> {
+    for (const [tabId, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        // 验证该tab是否还真实存在
+        const tabView = await presenter.tabPresenter.getTab(tabId)
+        if (tabView && !tabView.webContents.isDestroyed()) {
+          return tabId
+        }
+      }
+    }
+    return null
+  }
+
   async handleLLMAgentError(msg: LLMAgentEventData) {
     const { eventId, error } = msg
     const state = this.generatingMessages.get(eventId)
@@ -631,13 +658,33 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
+    // 核心修改：编排UI操作和数据删除
+    const tabIdToDelete = await this.findTabForConversation(conversationId)
+
+    if (tabIdToDelete !== null) {
+      const isLastTab = await presenter.tabPresenter.isLastTabInWindow(tabIdToDelete)
+      if (isLastTab) {
+        // 是窗口中最后一个tab，重置到空白页
+        await presenter.tabPresenter.resetTabToBlank(tabIdToDelete)
+        // 主动清除此tab的激活状态，并通知UI层
+        this.clearActiveThread(tabIdToDelete)
+      } else {
+        // 不是最后一个tab，直接关闭
+        await presenter.tabPresenter.closeTab(tabIdToDelete)
+        // closeTab会触发destroyTab, 进而触发TAB_EVENTS.CLOSED事件,
+        // ThreadPresenter会监听到并清理activeConversationIds，所以这里无需手动清理
+      }
+    }
+
     await this.sqlitePresenter.deleteConversation(conversationId)
-    // 检查所有 tab 中的活跃会话
+
+    // 作为兜底，确保所有与此会话相关的绑定都被移除
     for (const [tabId, activeId] of this.activeConversationIds.entries()) {
       if (activeId === conversationId) {
         this.activeConversationIds.delete(tabId)
       }
     }
+
     await this.broadcastThreadListUpdate() // 必须广播
   }
 
@@ -2382,7 +2429,7 @@ export class ThreadPresenter implements IThreadPresenter {
       }
 
       // 在所有数据库操作完成后，调用广播方法
-      await this.broadcastThreadListUpdate();
+      await this.broadcastThreadListUpdate()
 
       // 5. 触发会话创建事件
       return newConversationId

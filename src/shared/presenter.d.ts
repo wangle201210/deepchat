@@ -197,6 +197,8 @@ export interface ITabPresenter {
   // 新增渲染进程Tab事件处理方法
   onRendererTabReady(tabId: number): Promise<void>
   onRendererTabActivated(threadId: string): Promise<void>
+  isLastTabInWindow(tabId: number): Promise<boolean>
+  resetTabToBlank(tabId: number): Promise<void>
 }
 
 export interface TabCreateOptions {
@@ -597,6 +599,7 @@ export interface IThreadPresenter {
   destroy(): void
   continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
   toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
+  findTabForConversation(conversationId: string): Promise<number | null>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'

@@ -253,15 +253,15 @@ const handleDeleteDialogCancel = () => {
   deleteThread.value = null
 }
 
-// 删除会话 - 逻辑简化
+// 删除会话 - 逻辑已移至主进程，此处仅触发
 const handleThreadDelete = async () => {
   try {
     if (!deleteThread.value) {
       return
     }
+    // 只需调用presenter方法，后续的UI更新（tab关闭/重置、列表刷新）
+    // 将由主进程编排并通过事件广播回来。
     await threadP.deleteConversation(deleteThread.value.id)
-    // 删除后，store会自动接收更新并处理活动会话切换，组件无需再做任何事。
-    // 目前的删除处理不够完善，遗留问题
   } catch (error) {
     console.error(t('common.error.deleteChatFailed'), error)
   }
@@ -323,6 +323,7 @@ onMounted(async () => {
     handleCleanChatHistory()
   })
 
+  // 快捷键删除时弹出确认框
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.DELETE_CONVERSATION, () => {
     if (chatStore.activeThread) {
       showDeleteDialog(chatStore.activeThread)
@@ -334,6 +335,8 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   // 移除清除聊天历史的事件监听
   window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY)
+  // 确保快捷键监听被移除
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.DELETE_CONVERSATION)
 })
 </script>
 
