@@ -1,4 +1,4 @@
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import {
   IConfigPresenter,
   LLM_PROVIDER,
@@ -250,8 +250,8 @@ export class ConfigPresenter implements IConfigPresenter {
   setSetting<T>(key: string, value: T): void {
     try {
       this.store.set(key, value)
-      // 触发设置变更事件
-      eventBus.emit(CONFIG_EVENTS.SETTING_CHANGED, key, value)
+      // 触发设置变更事件（仅主进程内部使用）
+      eventBus.sendToMain(CONFIG_EVENTS.SETTING_CHANGED, key, value)
     } catch (error) {
       console.error(`[Config] Failed to set setting ${key}:`, error)
     }
@@ -269,8 +269,8 @@ export class ConfigPresenter implements IConfigPresenter {
 
   setProviders(providers: LLM_PROVIDER[]): void {
     this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, providers)
-    // 触发新事件
-    eventBus.emit(CONFIG_EVENTS.PROVIDER_CHANGED)
+    // 触发新事件（需要通知所有标签页）
+    eventBus.send(CONFIG_EVENTS.PROVIDER_CHANGED, SendTarget.ALL_WINDOWS)
   }
 
   getProviderById(id: string): LLM_PROVIDER | undefined {
@@ -308,8 +308,8 @@ export class ConfigPresenter implements IConfigPresenter {
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void {
     const statusKey = this.getModelStatusKey(providerId, modelId)
     this.setSetting(statusKey, enabled)
-    // 触发模型状态变更事件
-    eventBus.emit(CONFIG_EVENTS.MODEL_STATUS_CHANGED, providerId, modelId, enabled)
+    // 触发模型状态变更事件（需要通知所有标签页）
+    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_STATUS_CHANGED, SendTarget.ALL_WINDOWS, providerId, modelId, enabled)
   }
 
   // 启用模型
@@ -452,8 +452,8 @@ export class ConfigPresenter implements IConfigPresenter {
     this.setCustomModels(providerId, models)
     // 单独设置模型状态
     this.setModelStatus(providerId, model.id, true)
-    // 触发模型列表变更事件
-    eventBus.emit(CONFIG_EVENTS.MODEL_LIST_CHANGED, providerId)
+    // 触发模型列表变更事件（需要通知所有标签页）
+    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_LIST_CHANGED, SendTarget.ALL_WINDOWS, providerId)
   }
 
   removeCustomModel(providerId: string, modelId: string): void {
@@ -465,8 +465,8 @@ export class ConfigPresenter implements IConfigPresenter {
     const statusKey = this.getModelStatusKey(providerId, modelId)
     this.store.delete(statusKey)
 
-    // 触发模型列表变更事件
-    eventBus.emit(CONFIG_EVENTS.MODEL_LIST_CHANGED, providerId)
+    // 触发模型列表变更事件（需要通知所有标签页）
+    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_LIST_CHANGED, SendTarget.ALL_WINDOWS, providerId)
   }
 
   updateCustomModel(providerId: string, modelId: string, updates: Partial<MODEL_META>): void {
@@ -476,7 +476,7 @@ export class ConfigPresenter implements IConfigPresenter {
     if (index !== -1) {
       Object.assign(models[index], updates)
       this.setCustomModels(providerId, models)
-      eventBus.emit(CONFIG_EVENTS.MODEL_LIST_CHANGED, providerId)
+      eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_LIST_CHANGED, SendTarget.ALL_WINDOWS, providerId)
     }
   }
 
@@ -502,8 +502,8 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置应用语言
   setLanguage(language: string): void {
     this.setSetting('language', language)
-    // 触发语言变更事件
-    eventBus.emit(CONFIG_EVENTS.LANGUAGE_CHANGED, language)
+    // 触发语言变更事件（需要通知所有标签页）
+    eventBus.sendToRenderer(CONFIG_EVENTS.LANGUAGE_CHANGED, SendTarget.ALL_WINDOWS, language)
   }
 
   // 获取系统语言并匹配支持的语言列表
@@ -548,7 +548,7 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置代理模式
   setProxyMode(mode: string): void {
     this.setSetting('proxyMode', mode)
-    eventBus.emit(CONFIG_EVENTS.PROXY_MODE_CHANGED, mode)
+    eventBus.sendToMain(CONFIG_EVENTS.PROXY_MODE_CHANGED, mode)
   }
 
   // 获取自定义代理地址
@@ -559,25 +559,7 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置自定义代理地址
   setCustomProxyUrl(url: string): void {
     this.setSetting('customProxyUrl', url)
-    eventBus.emit(CONFIG_EVENTS.CUSTOM_PROXY_URL_CHANGED, url)
-  }
-
-  getArtifactsEffectEnabled(): boolean {
-    const value = this.getSetting<boolean>('artifactsEffectEnabled')
-    console.log('getArtifactsEffectEnabled 原始值:', value, '类型:', typeof value)
-    // 只有当值是undefined或null时才使用默认值true
-    // 注意：false是一个有效的boolean值，应该被保留而不是替换为默认值
-    return value === undefined || value === null ? true : value
-  }
-
-  setArtifactsEffectEnabled(enabled: boolean): void {
-    console.log('ConfigPresenter.setArtifactsEffectEnabled:', enabled, typeof enabled)
-
-    // 确保传入的是布尔值
-    const boolValue = Boolean(enabled)
-
-    this.setSetting('artifactsEffectEnabled', boolValue)
-    eventBus.emit(CONFIG_EVENTS.ARTIFACTS_EFFECT_CHANGED, boolValue)
+    eventBus.sendToMain(CONFIG_EVENTS.CUSTOM_PROXY_URL_CHANGED, url)
   }
 
   // 获取同步功能状态
@@ -607,7 +589,7 @@ export class ConfigPresenter implements IConfigPresenter {
   setSyncEnabled(enabled: boolean): void {
     console.log('setSyncEnabled', enabled)
     this.setSetting('syncEnabled', enabled)
-    eventBus.emit(CONFIG_EVENTS.SYNC_SETTINGS_CHANGED, { enabled })
+    eventBus.send(CONFIG_EVENTS.SYNC_SETTINGS_CHANGED, SendTarget.ALL_WINDOWS, { enabled })
   }
 
   // 获取同步文件夹路径
@@ -620,7 +602,7 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置同步文件夹路径
   setSyncFolderPath(folderPath: string): void {
     this.setSetting('syncFolderPath', folderPath)
-    eventBus.emit(CONFIG_EVENTS.SYNC_SETTINGS_CHANGED, { folderPath })
+    eventBus.send(CONFIG_EVENTS.SYNC_SETTINGS_CHANGED, SendTarget.ALL_WINDOWS, { folderPath })
   }
 
   // 获取上次同步时间
@@ -651,8 +633,8 @@ export class ConfigPresenter implements IConfigPresenter {
   async setCustomSearchEngines(engines: SearchEngineTemplate[]): Promise<void> {
     try {
       this.store.set('customSearchEngines', JSON.stringify(engines))
-      // 发送事件通知搜索引擎更新
-      eventBus.emit(CONFIG_EVENTS.SEARCH_ENGINES_UPDATED, engines)
+      // 发送事件通知搜索引擎更新（需要通知所有标签页）
+      eventBus.send(CONFIG_EVENTS.SEARCH_ENGINES_UPDATED, SendTarget.ALL_WINDOWS, engines)
     } catch (error) {
       console.error('设置自定义搜索引擎失败:', error)
       throw error
@@ -686,7 +668,7 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置投屏保护状态
   setContentProtectionEnabled(enabled: boolean): void {
     this.setSetting('contentProtectionEnabled', enabled)
-    eventBus.emit(CONFIG_EVENTS.CONTENT_PROTECTION_CHANGED, enabled)
+    eventBus.send(CONFIG_EVENTS.CONTENT_PROTECTION_CHANGED, SendTarget.ALL_WINDOWS, enabled)
   }
 
   getLoggingEnabled(): boolean {
@@ -709,7 +691,7 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置音效开关状态
   setSoundEnabled(enabled: boolean): void {
     this.setSetting('soundEnabled', enabled)
-    eventBus.emit(CONFIG_EVENTS.SOUND_ENABLED_CHANGED, enabled)
+    eventBus.sendToRenderer(CONFIG_EVENTS.SOUND_ENABLED_CHANGED, SendTarget.ALL_WINDOWS, enabled)
   }
 
   getCopyWithCotEnabled(): boolean {
@@ -719,7 +701,7 @@ export class ConfigPresenter implements IConfigPresenter {
 
   setCopyWithCotEnabled(enabled: boolean): void {
     this.setSetting('copyWithCotEnabled', enabled)
-    eventBus.emit(CONFIG_EVENTS.COPY_WITH_COT_CHANGED, enabled)
+    eventBus.sendToRenderer(CONFIG_EVENTS.COPY_WITH_COT_CHANGED, SendTarget.ALL_WINDOWS, enabled)
   }
 
   // ===================== MCP配置相关方法 =====================
@@ -870,7 +852,7 @@ export class ConfigPresenter implements IConfigPresenter {
     nativeTheme.on('updated', () => {
       // 只有当主题设置为 system 时，才需要通知渲染进程
       if (nativeTheme.themeSource === 'system') {
-        eventBus.emit(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, nativeTheme.shouldUseDarkColors)
+        eventBus.sendToMain(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, nativeTheme.shouldUseDarkColors)
       }
     })
   }
@@ -901,11 +883,9 @@ export class ConfigPresenter implements IConfigPresenter {
   // 保存自定义 prompts
   async setCustomPrompts(prompts: Prompt[]): Promise<void> {
     await this.customPromptsStore.set('prompts', prompts)
-    // 触发自定义提示词变更事件
-    eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED)
 
-    // 通知MCP系统检查并启动/停止自定义提示词服务器
-    eventBus.emit(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED)
+    // 通知MCP系统检查并启动/停止自定义提示词服务器（仅主进程内部）
+    eventBus.sendToMain(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED)
   }
 
   // 添加单个 prompt

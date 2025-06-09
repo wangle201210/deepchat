@@ -69,6 +69,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
 
   // 监听更新状态
   const setupUpdateListener = () => {
+    console.log('setupUpdateListener')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     window.electron.ipcRenderer.on(UPDATE_EVENTS.STATUS_CHANGED, (_, event: any) => {
       const { status, info, error } = event
@@ -79,12 +80,12 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           hasUpdate.value = true
           updateInfo.value = info
             ? {
-                version: info.version,
-                releaseDate: info.releaseDate,
-                releaseNotes: info.releaseNotes,
-                githubUrl: info.githubUrl,
-                downloadUrl: info.downloadUrl
-              }
+              version: info.version,
+              releaseDate: info.releaseDate,
+              releaseNotes: info.releaseNotes,
+              githubUrl: info.githubUrl,
+              downloadUrl: info.downloadUrl
+            }
             : null
           // 不自动弹出对话框，由主进程自动开始下载
           break

@@ -381,6 +381,7 @@
     "keyConflict": "快捷鍵衝突，請選擇其他組合",
 
     "cleanHistory": "清除聊天歷史",
+    "deleteConversation": "刪除對話",
     "goSettings": "打開設置",
     "hideWindow": "隱藏窗口",
     "quitApp": "退出程序",

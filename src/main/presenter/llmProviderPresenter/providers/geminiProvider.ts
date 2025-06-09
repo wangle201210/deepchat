@@ -62,8 +62,8 @@ export class GeminiProvider extends BaseLLMProvider {
       description: 'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 05-20）'
     },
     {
-      id: 'gemini-2.5-pro-preview-05-06',
-      name: 'Gemini 2.5 Pro Preview 05-06',
+      id: 'gemini-2.5-pro-preview-06-05',
+      name: 'Gemini 2.5 Pro Preview 06-05',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
@@ -925,9 +925,9 @@ export class GeminiProvider extends BaseLLMProvider {
           ? userMessage.content
           : userMessage.content && Array.isArray(userMessage.content)
             ? userMessage.content
-                .filter((c) => c.type === 'text')
-                .map((c) => c.text)
-                .join('\n')
+              .filter((c) => c.type === 'text')
+              .map((c) => c.text)
+              .join('\n')
             : ''
 
       // 发送生成请求

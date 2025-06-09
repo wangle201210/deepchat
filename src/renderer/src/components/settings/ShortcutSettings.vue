@@ -192,8 +192,12 @@ const shortcutMapping: Record<
     label: 'settings.shortcuts.goSettings'
   },
   CleanChatHistory: {
-    icon: 'lucide:trash-2',
+    icon: 'lucide:eraser',
     label: 'settings.shortcuts.cleanHistory'
+  },
+  DeleteConversation: {
+    icon: 'lucide:trash-2',
+    label: 'settings.shortcuts.deleteConversation'
   },
   Quit: {
     icon: 'lucide:log-out',
@@ -220,7 +224,10 @@ const shortcuts = computed(() => {
   }
 })
 
-const formatShortcut = (_shortcut: string) => {
+const formatShortcut = (_shortcut: string | undefined | null) => {
+  // 如果 _shortcut 为空，返回空字符串或一个默认值
+  if (!_shortcut) return ''
+
   return _shortcut
     .replace(
       'CommandOrControl',

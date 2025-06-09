@@ -7,7 +7,7 @@ import {
   SQLITE_MESSAGE
 } from '@shared/presenter'
 import { Message, AssistantMessageBlock } from '@shared/chat'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { CONVERSATION_EVENTS } from '@/events'
 
 export class MessageManager implements IMessageManager {
@@ -94,9 +94,9 @@ export class MessageManager implements IMessageManager {
       throw new Error(`Message ${messageId} not found`)
     }
     const msg = this.convertToMessage(message)
-    eventBus.emit(CONVERSATION_EVENTS.MESSAGE_EDITED, messageId)
+    eventBus.sendToRenderer(CONVERSATION_EVENTS.MESSAGE_EDITED, SendTarget.ALL_WINDOWS, messageId)
     if (msg.parentId) {
-      eventBus.emit(CONVERSATION_EVENTS.MESSAGE_EDITED, msg.parentId)
+      eventBus.sendToRenderer(CONVERSATION_EVENTS.MESSAGE_EDITED, SendTarget.ALL_WINDOWS, msg.parentId)
     }
     return msg
   }

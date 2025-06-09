@@ -10,6 +10,7 @@ import { getContextMenuLabels } from '@shared/i18n'
 import { app } from 'electron'
 import { addWatermarkToNativeImage } from '@/lib/watermark'
 import { stitchImagesVertically } from '@/lib/scrollCapture'
+import { presenter } from '.'
 
 export class TabPresenter implements ITabPresenter {
   // 全局标签页实例存储
@@ -163,6 +164,14 @@ export class TabPresenter implements ITabPresenter {
 
     // 监听标签页相关事件
     this.setupWebContentsListeners(view.webContents, tabId, windowId)
+
+    // 在新Tab加载完成后，触发一次全局列表更新广播
+    // 确保新Tab以及所有其他Tab都收到最新的列表
+    // 这个可能有问题，时机是否合适？
+    view.webContents.once('did-finish-load', () => {
+      // 直接调用 threadPresenter 的内部广播方法
+      ;(presenter.threadPresenter as any).broadcastThreadListUpdate()
+    })
 
     // 通知渲染进程更新标签列表
     await this.notifyWindowTabsUpdate(windowId)
@@ -484,10 +493,10 @@ export class TabPresenter implements ITabPresenter {
 
     // 页面加载完成
     if (isFirstTab) {
-      eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW)
+      eventBus.sendToMain(WINDOW_EVENTS.READY_TO_SHOW)
       // Once did-finish-load happens, emit first content loaded
       webContents.once('did-finish-load', () => {
-        eventBus.emit(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
       })
     }
 

@@ -33,7 +33,7 @@ export class TrayPresenter {
       {
         label: labels.open || '打开/隐藏(Command/Ctrl+O)',
         click: () => {
-          eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
+          eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
         }
       },
       {
@@ -48,7 +48,7 @@ export class TrayPresenter {
 
     // 点击托盘图标时显示窗口
     this.tray.on('click', () => {
-      eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, true)
+      eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, true)
     })
   }
 

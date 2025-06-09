@@ -10,10 +10,8 @@
 // 配置相关事件
 export const CONFIG_EVENTS = {
   PROVIDER_CHANGED: 'config:provider-changed', // 替代 provider-setting-changed
-  SYSTEM_CHANGED: 'config:system-changed',
   MODEL_LIST_CHANGED: 'config:model-list-changed', // 替代 provider-models-updated（ConfigPresenter）
   MODEL_STATUS_CHANGED: 'config:model-status-changed', // 替代 model-status-changed（ConfigPresenter）
-  ARTIFACTS_EFFECT_CHANGED: 'config:artifacts-effect-changed', // artifacts效果设置变更
   SETTING_CHANGED: 'config:setting-changed', // 替代 setting-changed（ConfigPresenter）
   PROXY_MODE_CHANGED: 'config:proxy-mode-changed',
   CUSTOM_PROXY_URL_CHANGED: 'config:custom-proxy-url-changed',
@@ -27,6 +25,8 @@ export const CONFIG_EVENTS = {
 
 // 会话相关事件
 export const CONVERSATION_EVENTS = {
+  LIST_UPDATED: 'conversation:list-updated', // 新增：用于推送完整的会话列表
+
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
   MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited
@@ -96,7 +96,8 @@ export const SHORTCUT_EVENTS = {
   ZOOM_RESUME: 'shortcut:zoom-resume',
   CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
   GO_SETTINGS: 'shortcut:go-settings',
-  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  DELETE_CONVERSATION: 'shortcut:delete-conversation'
 }
 
 // 标签页相关事件

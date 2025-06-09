@@ -13,7 +13,7 @@ import { ConfigPresenter } from '../../configPresenter'
 import { proxyConfig } from '../../proxyConfig'
 import { HttpsProxyAgent } from 'https-proxy-agent'
 import { presenter } from '@/presenter'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
 import { app } from 'electron'
@@ -559,10 +559,10 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     let toolUseDetected = false
     let usage:
       | {
-          prompt_tokens: number
-          completion_tokens: number
-          total_tokens: number
-        }
+        prompt_tokens: number
+        completion_tokens: number
+        total_tokens: number
+      }
       | undefined = undefined
 
     // --- Stream Processing Loop ---
@@ -1033,7 +1033,7 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
       // Optionally log the full error object for debugging
       console.error('OpenAIResponsesProvider check failed:', error)
 
-      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SHOW_ERROR, SendTarget.ALL_WINDOWS, {
         title: 'API Check Failed', // More specific title
         message: errorMessage,
         id: `openai-check-error-${Date.now()}`,

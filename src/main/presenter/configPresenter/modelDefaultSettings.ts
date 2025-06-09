@@ -347,8 +347,8 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
     reasoning: true
   },
   {
-    id: 'gemini-2.5-pro-preview-05-06',
-    name: 'Gemini 2.5 Pro Preview 05-06',
+    id: 'gemini-2.5-pro-preview-06-05',
+    name: 'Gemini 2.5 Pro Preview 06-05',
     temperature: 0.7,
     maxTokens: 8192,
     contextLength: 2048576,

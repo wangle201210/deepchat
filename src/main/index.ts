@@ -127,7 +127,7 @@ app.whenReady().then(() => {
   app.on('browser-window-focus', () => {
     // 当任何窗口获得焦点时，注册快捷键
     presenter.shortcutPresenter.registerShortcuts()
-    eventBus.emit(WINDOW_EVENTS.APP_FOCUS)
+    eventBus.sendToMain(WINDOW_EVENTS.APP_FOCUS)
   })
 
   // 监听浏览器窗口失去焦点事件
@@ -140,7 +140,7 @@ app.whenReady().then(() => {
 
       if (!isAnyWindowFocused) {
         presenter.shortcutPresenter.unregisterShortcuts()
-        eventBus.emit(WINDOW_EVENTS.APP_BLUR)
+        eventBus.sendToMain(WINDOW_EVENTS.APP_BLUR)
       }
     }, 50) // 50毫秒延迟
   })
