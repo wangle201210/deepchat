@@ -328,12 +328,21 @@ export const useChatStore = defineStore('chat', () => {
     if (cached) {
       const curMsg = cached.message as AssistantMessage
       if (curMsg.content) {
+        // 提取一个可复用的保护逻辑
+        const finalizeLastBlock = () => {
+          const lastBlock =
+            curMsg.content.length > 0 ? curMsg.content[curMsg.content.length - 1] : undefined
+          if (lastBlock) {
+            // 只有当上一个块不是一个正在等待结果的工具调用时，才将其标记为成功
+            if (!(lastBlock.type === 'tool_call' && lastBlock.status === 'loading')) {
+              lastBlock.status = 'success'
+            }
+          }
+        }
+
         // 处理工具调用达到最大次数的情况
         if (msg.maximum_tool_calls_reached) {
-          const lastBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
+          finalizeLastBlock() // 使用保护逻辑
           curMsg.content.push({
             type: 'action',
             content: 'common.error.maximumToolCallsReached',
@@ -355,10 +364,7 @@ export const useChatStore = defineStore('chat', () => {
         } else if (msg.tool_call) {
           if (msg.tool_call === 'start') {
             // 工具调用开始解析参数 - 创建新的工具调用块
-            const lastBlock = curMsg.content[curMsg.content.length - 1]
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
+            finalizeLastBlock() // 使用保护逻辑
 
             // 工具调用音效，与实际数据流同步
             playToolcallSound()
@@ -413,10 +419,7 @@ export const useChatStore = defineStore('chat', () => {
               }
             } else {
               // 如果没有找到现有的工具调用块，创建一个新的（兼容旧逻辑）
-              const lastBlock = curMsg.content[curMsg.content.length - 1]
-              if (lastBlock) {
-                lastBlock.status = 'success'
-              }
+              finalizeLastBlock() // 使用保护逻辑
 
               curMsg.content.push({
                 type: 'tool_call',
@@ -460,11 +463,7 @@ export const useChatStore = defineStore('chat', () => {
         }
         // 处理图像数据
         else if (msg.image_data) {
-          const lastBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
-
+          finalizeLastBlock() // 使用保护逻辑
           curMsg.content.push({
             type: 'image',
             content: 'image',
