@@ -236,11 +236,13 @@ export class GitHubCopilotDeviceFlow {
         instructionWindow.webContents.executeJavaScript(`
           window.electronAPI = {
             openExternal: (url) => {
-              window.postMessage({ type: 'open-external', url }, '*');
+              // 通过 console.log 发送消息，主进程通过 console-message 事件接收
+              console.log(JSON.stringify({ type: 'open-external', url }));
             },
             copyToClipboard: (text) => {
-              window.postMessage({ type: 'copy-to-clipboard', text }, '*');
-            }
+              // 通过 console.log 发送消息，主进程通过 console-message 事件接收
+              console.log(JSON.stringify({ type: 'copy-to-clipboard', text }));
+            },
           };
         `)
       })
@@ -263,6 +265,7 @@ export class GitHubCopilotDeviceFlow {
             if (mainWindow) {
               mainWindow.webContents.executeJavaScript(`window.api.copyText('${msg.text}')`)
             }
+
           }
         } catch (e) {}
       })
@@ -415,3 +418,4 @@ export function createGitHubCopilotDeviceFlow(): GitHubCopilotDeviceFlow {
 
   return new GitHubCopilotDeviceFlow(config)
 }
+
