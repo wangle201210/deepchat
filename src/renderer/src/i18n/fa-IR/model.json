@@ -1,0 +1,30 @@
+{
+  "search": {
+    "placeholder": "جستجو مدل‌ها ..."
+  },
+  "error": {
+    "loadFailed": "بارگذاری مدل ناموفق بود"
+  },
+  "type": {
+    "custom": "مدل سفارشی",
+    "official": "مدل رسمی"
+  },
+  "add": {
+    "namePlaceholder": "نام مدل",
+    "idPlaceholder": "شناسه مدل",
+    "contextLengthPlaceholder": "طول زمینه",
+    "maxTokensPlaceholder": "بیشینه توکن‌ها"
+  },
+  "actions": {
+    "add": "افزودن مدل",
+    "enableAll": "روش ‌کردن همه",
+    "disableAll": "خاموش کردن همه"
+  },
+  "tags": {
+    "reasoning": "استدلال",
+    "chat": "گفتگو",
+    "code": "کد",
+    "writing": "نوشتار",
+    "analysis": "تحلیل"
+  }
+}
