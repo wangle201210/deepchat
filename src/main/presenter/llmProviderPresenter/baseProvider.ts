@@ -548,7 +548,9 @@ ${this.convertToolsToXml(tools)}
    * @param modelId 使用的模型ID
    * @returns embedding 数组，每个元素为 number[]
    */
-  abstract getEmbeddings(texts: string[], modelId: string): Promise<number[][]>
+  public async getEmbeddings(_texts: string[], _modelId: string): Promise<number[][]> {
+    throw new Error('getEmbeddings is not supported by this provider')
+  }
 
   /**
    * 将 MCPToolDefinition 转换为 XML 格式

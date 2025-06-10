@@ -925,9 +925,9 @@ export class GeminiProvider extends BaseLLMProvider {
           ? userMessage.content
           : userMessage.content && Array.isArray(userMessage.content)
             ? userMessage.content
-              .filter((c) => c.type === 'text')
-              .map((c) => c.text)
-              .join('\n')
+                .filter((c) => c.type === 'text')
+                .map((c) => c.text)
+                .join('\n')
             : ''
 
       // 发送生成请求
@@ -974,23 +974,19 @@ export class GeminiProvider extends BaseLLMProvider {
   }
 
   async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
-    // Google Gemini embedding API
     if (!this.genAI) throw new Error('Google Generative AI client is not initialized')
-    // Gemini embedding API 仅支持单条文本
-    const results: number[][] = []
-    for (const text of texts) {
-      const resp = await this.genAI.models.embedContent({
-        model: modelId,
-        content: { parts: [{ text }] }
-      })
-      if (resp && resp.embedding && Array.isArray(resp.embedding.values)) {
-        results.push(resp.embedding.values)
-      } else if (resp && Array.isArray(resp.embedding)) {
-        results.push(resp.embedding)
-      } else {
-        results.push([])
-      }
+    // Gemini embedContent 支持批量输入
+    const resp = await this.genAI.models.embedContent({
+      model: modelId,
+      contents: texts.map((text) => ({
+        parts: [{ text }]
+      }))
+    })
+    // resp.embeddings?: ContentEmbedding[]
+    if (resp && Array.isArray(resp.embeddings)) {
+      return resp.embeddings.map((e) => (Array.isArray(e.values) ? e.values : []))
     }
-    return results
+    // 若无返回，抛出异常
+    throw new Error('Gemini embedding API did not return embeddings')
   }
 }

@@ -572,10 +572,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     let toolUseDetected = false // 标记是否检测到工具使用（原生或非原生）
     let usage:
       | {
-        prompt_tokens: number
-        completion_tokens: number
-        total_tokens: number
-      }
+          prompt_tokens: number
+          completion_tokens: number
+          total_tokens: number
+        }
       | undefined = undefined
 
     //-----------------------------------------------------------------------------------------------------
@@ -1284,6 +1284,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       input: texts
     })
     // 兼容 OpenAI 返回格式
-    return response.data.map((item: any) => item.embedding)
+    return response.data.map((item) => item.embedding)
   }
 }

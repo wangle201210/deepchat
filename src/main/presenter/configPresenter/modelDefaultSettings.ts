@@ -1,4 +1,5 @@
-import { DefaultModelSetting } from '@shared/presenter';
+import { DefaultModelSetting } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 export const defaultModelsSettings: DefaultModelSetting[] = [
   // Tencent Hunyuan
   {
@@ -1663,6 +1664,6 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
     vision: false,
     functionCall: false,
     reasoning: false,
-    type: 'embedding'
+    type: ModelType.Embedding
   }
 ]
