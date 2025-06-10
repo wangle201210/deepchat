@@ -9,6 +9,7 @@
   >
     <TooltipProvider>
       <div
+        dir="auto"
         class="bg-card border border-border rounded-lg focus-within:border-primary p-2 flex flex-col gap-2 shadow-sm relative"
       >
         <!-- {{  t('chat.input.fileArea') }} -->

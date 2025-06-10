@@ -811,7 +811,7 @@ export class ThreadPresenter implements IThreadPresenter {
         const newMsg = { ...msg }
         const msgContent = newMsg.content as UserMessageContent
         if (msgContent.content) {
-          ;(newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
+          ; (newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
             msgContent.content
           )
         }
@@ -1419,23 +1419,24 @@ export class ThreadPresenter implements IThreadPresenter {
 
         // 4. 检查工具调用参数
         if (!toolCall.id || !toolCall.name || !toolCall.params) {
-          throw new Error('工具调用参数不完整')
+          // 参数不完整就跳过，然后继续执行即可
+          console.warn('工具调用参数不完整')
+        } else {
+          // 5. 调用工具获取结果
+          toolCallResponse = await presenter.mcpPresenter.callTool({
+            id: toolCall.id,
+            type: 'function',
+            function: {
+              name: toolCall.name,
+              arguments: toolCall.params
+            },
+            server: {
+              name: toolCall.server_name || '',
+              icons: toolCall.server_icons || '',
+              description: toolCall.server_description || ''
+            }
+          })
         }
-
-        // 5. 调用工具获取结果
-        toolCallResponse = await presenter.mcpPresenter.callTool({
-          id: toolCall.id,
-          type: 'function',
-          function: {
-            name: toolCall.name,
-            arguments: toolCall.params
-          },
-          server: {
-            name: toolCall.server_name || '',
-            icons: toolCall.server_icons || '',
-            description: toolCall.server_description || ''
-          }
-        })
       }
 
       // 检查是否已被取消
@@ -1598,8 +1599,8 @@ export class ThreadPresenter implements IThreadPresenter {
     // 任何情况都使用最新配置
     const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
     const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
-    ;(userMessage.content as UserMessageContent).search = webSearchEnabled
-    ;(userMessage.content as UserMessageContent).think = thinkEnabled
+      ; (userMessage.content as UserMessageContent).search = webSearchEnabled
+      ; (userMessage.content as UserMessageContent).think = thinkEnabled
     return { conversation, userMessage, contextMessages }
   }
 
@@ -1611,10 +1612,9 @@ export class ThreadPresenter implements IThreadPresenter {
   }> {
     // 处理文本内容
     const userContent = `
-      ${
-        userMessage.content.content
-          ? this.formatUserMessageContent(userMessage.content.content)
-          : userMessage.content.text
+      ${userMessage.content.content
+        ? this.formatUserMessageContent(userMessage.content.content)
+        : userMessage.content.text
       }
       ${getFileContext(userMessage.content.files)}
     `
@@ -1734,7 +1734,7 @@ export class ThreadPresenter implements IThreadPresenter {
       const msgContent = msg.role === 'user' ? (msg.content as UserMessageContent) : null
       const msgText = msgContent
         ? msgContent.text ||
-          (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
+        (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
         : ''
 
       const msgTokens = approximateTokenSize(

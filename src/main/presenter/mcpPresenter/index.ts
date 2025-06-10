@@ -581,13 +581,47 @@ export class McpPresenter implements IMCPPresenter {
     ]
 
     const properties = tool.inputSchema.properties
+
+    // 递归清理函数，确保所有值都是可序列化的
+    const cleanValue = (value: unknown): unknown => {
+      if (value === null || value === undefined) {
+        return value
+      }
+
+      if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+        return value
+      }
+
+      if (Array.isArray(value)) {
+        return value.map(cleanValue)
+      }
+
+      if (typeof value === 'object') {
+        const cleaned: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+          cleaned[k] = cleanValue(v)
+        }
+        return cleaned
+      }
+
+      // 对于函数、Symbol等不可序列化的值，返回字符串表示
+      return String(value)
+    }
+
     const getSubMap = (obj: Record<string, unknown>, keys: string[]): Record<string, unknown> => {
-      return Object.fromEntries(Object.entries(obj).filter(([key]) => keys.includes(key)))
+      const filtered = Object.fromEntries(Object.entries(obj).filter(([key]) => keys.includes(key)))
+      const cleaned: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(filtered)) {
+        cleaned[key] = cleanValue(value)
+      }
+      return cleaned
     }
 
     const result: Record<string, Record<string, unknown>> = {}
     for (const [key, val] of Object.entries(properties)) {
-      result[key] = getSubMap(val, supportedAttributes)
+      if (typeof val === 'object' && val !== null) {
+        result[key] = getSubMap(val as Record<string, unknown>, supportedAttributes)
+      }
     }
 
     return result
@@ -676,7 +710,7 @@ export class McpPresenter implements IMCPPresenter {
         description: tool.description,
         input_schema: {
           type: 'object',
-          properties: tool.inputSchema.properties,
+          properties: this.filterPropertieAttributes(tool),
           required: tool.inputSchema.required as string[]
         }
       }
