@@ -1,5 +1,5 @@
 <template>
-  <div class="text-sm whitespace-pre-wrap break-all">
+  <div class="text-sm whitespace-pre-wrap break-all" dir="auto">
     <template v-for="(block, index) in contentBlocks" :key="index">
       <!-- 文本块 -->
       <span v-if="block.type === 'text'">{{ block.content }}</span>
