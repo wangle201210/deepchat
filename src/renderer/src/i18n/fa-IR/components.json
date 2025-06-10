@@ -1,0 +1,18 @@
+{
+  "emojiPicker": {
+    "search": "جستجوی شکلک",
+    "smileys": "لبخندها و احساسات",
+    "people": "مردم و بدن",
+    "animals": "حیوانات و طبیعت",
+    "food": "غذا و نوشیدنی",
+    "travel": "سفر و مکان‌ها",
+    "activities": "کنش‌ها",
+    "objects": "اشیاء",
+    "symbols": "نمادها",
+    "flags": "پرچم‌ها"
+  },
+  "messageBlockAction": {
+    "continue": "ادامه",
+    "continued": "ادامه یافت"
+  }
+}
