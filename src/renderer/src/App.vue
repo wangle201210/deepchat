@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
+import { onMounted, ref, watch, onBeforeUnmount, computed } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
@@ -13,7 +13,9 @@ import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
 import { useLanguageStore } from '@/stores/language'
 import TranslatePopup from '@/components/popup/TranslatePopup.vue'
+import { useTextDirection } from '@vueuse/core'
 
+const textDirection = useTextDirection()
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
 const artifactStore = useArtifactStore()
@@ -283,7 +285,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen bg-container">
+  <div class="flex flex-col h-screen bg-container" :dir="textDirection">
     <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]">
       <!-- 主内容区域 -->
 
