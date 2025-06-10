@@ -13,7 +13,7 @@
               <SelectValue :placeholder="t('settings.common.languageSelect')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
+              <SelectItem v-for="lang in languageOptions" :key="lang.value" :value="lang.value" dir="auto">
                 {{ lang.label }}
               </SelectItem>
             </SelectContent>
@@ -160,7 +160,8 @@ const languageOptions = [
   { value: 'ko-KR', label: '한국어' },
   { value: 'ru-RU', label: 'Русский' },
   { value: 'ja-JP', label: '日本語' },
-  { value: 'fr-FR', label: 'Français' }
+  { value: 'fr-FR', label: 'Français' },
+  { value: 'fa-IR', label: 'فارسی (ایران)' }
 ]
 
 watch(selectedLanguage, async (newValue) => {

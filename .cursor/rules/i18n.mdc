@@ -8,7 +8,7 @@ i18n:
   framework: 'vue-i18n'
   location: 'src/renderer/src/i18n'
   requirement: 'all user-facing strings must use i18n keys'
-  locales: ['zh-CN','en-US','ko-KR','ru-RU','zh-HK','fr-FR']
+  locales: ['zh-CN','en-US','ko-KR','ru-RU','zh-HK','fr-FR','fa-IR']
 
 # 国际化开发指南
 R
@@ -22,6 +22,7 @@ R
 - 俄文
 - 繁体中文
 - 法文
+- 波斯文（伊朗）
 
 ## 技术实现
 
