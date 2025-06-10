@@ -11,7 +11,7 @@
     @dragstart="onDragStart"
     @click="onClick"
   >
-    <div class="flex items-center truncate max-w-36">
+    <div class="flex items-center truncate max-w-36" dir="auto">
       <slot></slot>
     </div>
     <button
