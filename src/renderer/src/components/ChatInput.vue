@@ -40,7 +40,7 @@
         <editor-content
           :editor="editor"
           class="p-2 text-sm"
-          @keydown.enter.exact="handleEditorEnter"
+          @keydown="onKeydown"
         />
 
         <div class="flex items-center justify-between">
@@ -211,8 +211,10 @@ import CodeBlock from '@tiptap/extension-code-block'
 import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntry } from '@shared/presenter'
+import { searchHistory } from '@/lib/searchHistory'
 const mcpStore = useMcpStore()
 const { t } = useI18n()
+searchHistory.resetIndex()
 const editor = new Editor({
   editorProps: {
     attributes: {
@@ -545,6 +547,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
 
 const emitSend = async () => {
   if (inputText.value.trim()) {
+    searchHistory.addSearch(inputText.value.trim())
     const blocks = await tiptapJSONtoMessageBlock(editor.getJSON())
 
     const messageContent: UserMessageContent = {
@@ -910,6 +913,65 @@ watch(
       )
   }
 )
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.code === 'Enter' && !e.shiftKey) {
+    // 阻止默认行为，避免换行
+    handleEditorEnter(e)
+    e.preventDefault()
+  }
+  if (e.code === 'ArrowUp') {
+    const contentEditableDiv = e.target as HTMLDivElement
+    if (isCursorInFirstLine(contentEditableDiv)) {
+      const previousSearch = searchHistory.getPrevious()
+      if (previousSearch !== null) {
+                editor.commands.setContent(previousSearch)
+      }
+      e.preventDefault()
+    }
+  } else if (e.code === 'ArrowDown') {
+    const contentEditableDiv = e.target as HTMLDivElement
+    if (isCursorInLastLine(contentEditableDiv)) {
+      const nextSearch = searchHistory.getNext()
+      if (nextSearch !== null) {
+        editor.commands.setContent(nextSearch)
+      }
+      e.preventDefault()
+    }
+  }
+}
+
+function isCursorInFirstLine(contentEditableDiv: HTMLDivElement): boolean {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount) return false
+
+  const range = selection.getRangeAt(0)
+  const startContainer = range.startContainer
+  const parentElement = startContainer.nodeType === Node.TEXT_NODE
+    ? startContainer.parentElement
+    : startContainer as HTMLElement
+
+  if (!parentElement) return false
+
+  const firstLineElement = contentEditableDiv.firstChild
+  return parentElement === firstLineElement || contentEditableDiv.contains(firstLineElement)
+}
+
+function isCursorInLastLine(contentEditableDiv: HTMLDivElement): boolean {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount) return false
+
+  const range = selection.getRangeAt(0)
+  const endContainer = range.endContainer
+  const parentElement = endContainer.nodeType === Node.TEXT_NODE
+    ? endContainer.parentElement
+    : endContainer as HTMLElement
+
+  if (!parentElement) return false
+
+  const lastLineElement = contentEditableDiv.lastChild
+  return parentElement === lastLineElement || contentEditableDiv.contains(lastLineElement)
+}
 
 defineExpose({
   setText: (text: string) => {
