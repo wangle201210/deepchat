@@ -1,4 +1,6 @@
-export const defaultModelsSettings = [
+import { DefaultModelSetting } from '@shared/presenter'
+import { ModelType } from '@shared/model'
+export const defaultModelsSettings: DefaultModelSetting[] = [
   // Tencent Hunyuan
   {
     id: 'hunyuan-t1-latest',
@@ -1651,5 +1653,17 @@ export const defaultModelsSettings = [
     vision: false,
     functionCall: true,
     reasoning: false
+  },
+  {
+    id: 'text-embedding-nomic-embed-text',
+    name: 'Nomic Embed Text',
+    temperature: 0.0,
+    maxTokens: 8192,
+    contextLength: 8192,
+    match: ['text-embedding-nomic-embed-text', 'nomic/embed-text', 'nomic-embed-text'],
+    vision: false,
+    functionCall: false,
+    reasoning: false,
+    type: ModelType.Embedding
   }
 ]

@@ -543,6 +543,16 @@ ${this.convertToolsToXml(tools)}
   ): AsyncGenerator<LLMCoreStreamEvent>
 
   /**
+   * 获取文本的 embedding 表示
+   * @param texts 待编码的文本数组
+   * @param modelId 使用的模型ID
+   * @returns embedding 数组，每个元素为 number[]
+   */
+  public async getEmbeddings(_texts: string[], _modelId: string): Promise<number[][]> {
+    throw new Error('getEmbeddings is not supported by this provider')
+  }
+
+  /**
    * 将 MCPToolDefinition 转换为 XML 格式
    * @param tools MCPToolDefinition 数组
    * @returns XML 格式的工具定义字符串

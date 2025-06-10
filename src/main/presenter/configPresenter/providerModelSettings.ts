@@ -1,3 +1,4 @@
+import { ModelType } from '@shared/model'
 import { ModelConfig } from '@shared/presenter'
 
 // 定义每个provider的模型匹配规则和配置的接口，与modelDefaultSettings保持一致的风格
@@ -11,6 +12,7 @@ export interface ProviderModelSetting {
   vision?: boolean // 是否支持视觉
   functionCall?: boolean // 是否支持函数调用
   reasoning?: boolean // 是否支持推理能力
+  type?: ModelType // 模型类型，默认为Chat
 }
 
 // 为每个提供商创建映射对象，使用models数组包装模型配置
@@ -1133,7 +1135,8 @@ export function getProviderSpecificModelConfig(
         temperature: config.temperature || 0.7,
         vision: config.vision || false,
         functionCall: config.functionCall || false,
-        reasoning: config.reasoning || false
+        reasoning: config.reasoning || false,
+        type: config.type || ModelType.Chat
       }
     }
   }

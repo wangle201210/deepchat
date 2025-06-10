@@ -925,9 +925,9 @@ export class GeminiProvider extends BaseLLMProvider {
           ? userMessage.content
           : userMessage.content && Array.isArray(userMessage.content)
             ? userMessage.content
-              .filter((c) => c.type === 'text')
-              .map((c) => c.text)
-              .join('\n')
+                .filter((c) => c.type === 'text')
+                .map((c) => c.text)
+                .join('\n')
             : ''
 
       // 发送生成请求
@@ -971,5 +971,22 @@ export class GeminiProvider extends BaseLLMProvider {
       }
       yield { type: 'stop', stop_reason: 'error' }
     }
+  }
+
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    if (!this.genAI) throw new Error('Google Generative AI client is not initialized')
+    // Gemini embedContent 支持批量输入
+    const resp = await this.genAI.models.embedContent({
+      model: modelId,
+      contents: texts.map((text) => ({
+        parts: [{ text }]
+      }))
+    })
+    // resp.embeddings?: ContentEmbedding[]
+    if (resp && Array.isArray(resp.embeddings)) {
+      return resp.embeddings.map((e) => (Array.isArray(e.values) ? e.values : []))
+    }
+    // 若无返回，抛出异常
+    throw new Error('Gemini embedding API did not return embeddings')
   }
 }

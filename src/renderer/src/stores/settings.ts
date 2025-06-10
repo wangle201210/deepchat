@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, onMounted, toRaw, computed } from 'vue'
-import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
+import { type LLM_PROVIDER, type RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 import { usePresenter } from '@/composables/usePresenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { CONFIG_EVENTS, OLLAMA_EVENTS, DEEPLINK_EVENTS } from '@/events'
@@ -145,7 +146,8 @@ export const useSettingsStore = defineStore('settings', () => {
           isCustom: priorityModel.model.isCustom,
           vision: priorityModel.model.vision || false,
           functionCall: priorityModel.model.functionCall || false,
-          reasoning: priorityModel.model.reasoning || false
+          reasoning: priorityModel.model.reasoning || false,
+          type: priorityModel.model.type || ModelType.Chat
         },
         providerId: priorityModel.providerId
       })
@@ -162,7 +164,8 @@ export const useSettingsStore = defineStore('settings', () => {
           isCustom: priorityModel.model.isCustom,
           vision: priorityModel.model.vision || false,
           functionCall: priorityModel.model.functionCall || false,
-          reasoning: priorityModel.model.reasoning || false
+          reasoning: priorityModel.model.reasoning || false,
+          type: priorityModel.model.type || ModelType.Chat
         },
         toRaw(priorityModel.providerId)
       )
@@ -414,7 +417,8 @@ export const useSettingsStore = defineStore('settings', () => {
               providerId,
               vision: meta.vision || false,
               functionCall: meta.functionCall || false,
-              reasoning: meta.reasoning || false
+              reasoning: meta.reasoning || false,
+              type: meta.type || ModelType.Chat
             }))
           }
         } catch (error) {
@@ -671,7 +675,8 @@ export const useSettingsStore = defineStore('settings', () => {
               enabled: true,
               vision: model.vision || false,
               functionCall: model.functionCall || false,
-              reasoning: model.reasoning || false
+              reasoning: model.reasoning || false,
+              type: model.type || ModelType.Chat
             })
           }
         }
@@ -1015,6 +1020,7 @@ export const useSettingsStore = defineStore('settings', () => {
         vision: existingModel?.vision || false,
         functionCall: existingModel?.functionCall || false,
         reasoning: existingModel?.reasoning || false,
+        type: existingModel?.type || ModelType.Chat,
         // 保留现有的其他配置，但确保更新 Ollama 特有数据
         ...(existingModel ? { ...existingModel } : {}),
         ollamaModel: model

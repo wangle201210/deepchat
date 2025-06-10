@@ -42,7 +42,8 @@ import { ref, computed, onMounted } from 'vue'
 import Input from './ui/input/Input.vue'
 // import Badge from './ui/badge/Badge.vue'
 import { useChatStore } from '@/stores/chat'
-import type { RENDERER_MODEL_META } from '@shared/presenter'
+import { type RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 import ModelIcon from './icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
@@ -97,7 +98,7 @@ onMounted(async () => {
       return {
         id: providerId,
         name: provider?.name || providerId,
-        models
+        models: models.filter((model) => model.type === ModelType.Chat)
       }
     })
   } catch (error) {

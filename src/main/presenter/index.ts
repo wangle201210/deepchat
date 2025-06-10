@@ -137,7 +137,8 @@ export class Presenter implements IPresenter {
             id: model.id,
             name: model.name,
             contextLength: model.contextLength,
-            maxTokens: model.maxTokens
+            maxTokens: model.maxTokens,
+            type: model.type
           })
         }
       }
