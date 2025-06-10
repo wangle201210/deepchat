@@ -132,8 +132,8 @@
   "setAsDefault": "تنظیم به‌عنوان کارساز پیش‌فرض",
   "setDefault": "تنظیم به‌عنوان پیش‌فرض",
   "startServer": "راه‌اندازی کارساز",
-  "stopServer": "ایست کارساز",
-  "stopped": "ایستاده",
+  "stopServer": "توقف کارساز",
+  "stopped": "متوقف",
   "tabs": {
     "servers": "کارساز",
     "tools": "ابزار"
