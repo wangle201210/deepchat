@@ -234,6 +234,9 @@ export class TabPresenter implements ITabPresenter {
     this.tabState.delete(tabId)
     this.tabWindowMap.delete(tabId)
 
+    // 广播Tab关闭事件
+    eventBus.sendToMain(TAB_EVENTS.CLOSED, tabId)
+
     // 清除 WebContents 映射
     if (view) {
       this.webContentsToTabId.delete(view.webContents.id)
@@ -853,6 +856,43 @@ export class TabPresenter implements ITabPresenter {
     } catch (error) {
       console.error('Stitch images with watermark error:', error)
       return null
+    }
+  }
+
+  /**
+   * 新增：检查一个Tab是否是其所在窗口的最后一个Tab
+   */
+  async isLastTabInWindow(tabId: number): Promise<boolean> {
+    const windowId = this.tabWindowMap.get(tabId)
+    if (windowId === undefined) return false
+    const tabsInWindow = this.windowTabs.get(windowId) || []
+    return tabsInWindow.length === 1
+  }
+
+  /**
+   * 新增：将指定Tab重置到空白页（新建会话页）
+   */
+  async resetTabToBlank(tabId: number): Promise<void> {
+    const view = this.tabs.get(tabId)
+    if (view && !view.webContents.isDestroyed()) {
+      const url = 'local://chat'
+      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        view.webContents.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/chat`)
+      } else {
+        view.webContents.loadFile(join(__dirname, '../renderer/index.html'), {
+          hash: `/chat`
+        })
+      }
+      // 更新 Tab 状态
+      const state = this.tabState.get(tabId)
+      if (state) {
+        state.title = 'New Chat'
+        state.url = url
+        const windowId = this.tabWindowMap.get(tabId)
+        if (windowId) {
+          await this.notifyWindowTabsUpdate(windowId)
+        }
+      }
     }
   }
 }

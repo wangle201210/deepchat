@@ -105,6 +105,10 @@ export const useChatStore = defineStore('chat', () => {
   const createThread = async (title: string, settings: Partial<CONVERSATION_SETTINGS>) => {
     try {
       const threadId = await threadP.createConversation(title, settings, getTabId())
+      // 因为 createConversation 内部已经调用了 setActiveConversation
+      // 并且可以确定是为当前tab激活，所以在这里可以直接、安全地更新本地状态
+      // 以确保后续的 sendMessage 能正确获取 activeThreadId。
+      setActiveThreadId(threadId)
       return threadId
     } catch (error) {
       console.error('创建会话失败:', error)
@@ -113,16 +117,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const setActiveThread = async (threadId: string) => {
+    // 不在渲染进程进行逻辑判定（查重）和决策，只向主进程发送意图。
+    // 主进程会处理“防重”逻辑，并通过 'ACTIVATED' 事件来通知UI更新。
+    // 如果主进程决定切换到其他tab，当前tab不会收到此事件，状态也就不会被错误地更新。
     const tabId = getTabId()
-    const threadsWorkingStatus = getThreadsWorkingStatus()
-    if (
-      threadsWorkingStatus.get(threadId) === 'completed' ||
-      threadsWorkingStatus.get(threadId) === 'error'
-    ) {
-      threadsWorkingStatus.delete(threadId)
-    }
-    setActiveThreadId(threadId)
-    setMessages([])
     await threadP.setActiveConversation(threadId, tabId)
   }
 
@@ -1021,23 +1019,14 @@ export const useChatStore = defineStore('chat', () => {
         // 2. 用主进程推送的最新、完整的、已格式化好的列表直接替换本地状态
         threads.value = updatedGroupedList
 
-        // 3. 检查之前的活动会话是否还存在于新列表中
-        // 此处对多tab同时显示同一会话处理得不彻底，遗留：后继需要支持自动关闭tab功能
+        // 3. 检查列表更新之前的活动会话是否还存在于新列表中
         if (currentActiveId) {
           const flatList = updatedGroupedList.flatMap((g) => g.dtThreads)
           const activeThreadExists = flatList.some((thread) => thread.id === currentActiveId)
 
-          // 4. 如果活动会话不存在了（比如被删除了），则自动选择一个新的活动会话
+          // 如果活动会话不存在了（如在其他窗口被删除），只清空当前tab的活动状态，待其他流程处理
           if (!activeThreadExists) {
-            console.log(`Active thread ${currentActiveId} no longer exists. Selecting a new one.`)
-            const nextActiveThread = flatList.length > 0 ? flatList[0] : null
-            if (nextActiveThread) {
-              // 调用 setActiveThread 来处理切换逻辑
-              setActiveThread(nextActiveThread.id)
-            } else {
-              // 如果列表变为空，则清空活动会话
-              clearActiveThread()
-            }
+            clearActiveThread()
           }
         }
       }
