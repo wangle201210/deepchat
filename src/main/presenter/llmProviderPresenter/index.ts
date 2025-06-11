@@ -30,6 +30,7 @@ import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
 import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
+import { OpenRouterProvider } from './providers/openRouterProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -92,6 +93,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       if (provider.apiType === 'grok' || provider.id === 'grok') {
         console.log('match grok')
         return new GrokProvider(provider, this.configPresenter)
+      }
+      // 特殊处理 openrouter
+      if (provider.id === 'openrouter') {
+        return new OpenRouterProvider(provider, this.configPresenter)
+      }
+
+      if (provider.id === 'ppio') {
+        return new PPIOProvider(provider, this.configPresenter)
       }
 
       switch (provider.apiType) {

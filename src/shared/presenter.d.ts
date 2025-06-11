@@ -1111,3 +1111,10 @@ export interface DefaultModelSetting {
   reasoning?: boolean
   type?: ModelType
 }
+
+export interface KeyStatus {
+  /** 剩余额度 */
+  limit_remaining?: number
+  /** 已使用额度 */
+  usage?: number
+}
