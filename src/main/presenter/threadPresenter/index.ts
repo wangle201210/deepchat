@@ -67,6 +67,7 @@ export class ThreadPresenter implements IThreadPresenter {
   public searchAssistantProviderId: string | null = null
   private searchingMessages: Set<string> = new Set()
   private activeConversationIds: Map<number, string> = new Map()
+  private fetchThreadLength: number = 300
 
   constructor(
     sqlitePresenter: ISQLitePresenter,
@@ -85,6 +86,9 @@ export class ThreadPresenter implements IThreadPresenter {
         this.activeConversationIds.delete(tabId)
         console.log(`ThreadPresenter: Cleaned up conversation binding for closed tab ${tabId}.`)
       }
+    })
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_READY, () => {
+      this.broadcastThreadListUpdate()
     })
 
     // 初始化时处理所有未完成的消息
@@ -740,6 +744,24 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversationList(page, pageSize)
   }
 
+  async loadMoreThreads(): Promise<{ hasMore: boolean; total: number }> {
+    // 获取会话总数
+    const total = await this.sqlitePresenter.getConversationCount()
+
+    // 检查是否还有更多会话可以加载
+    const hasMore = this.fetchThreadLength < total
+
+    if (hasMore) {
+      // 增加 fetchThreadLength，每次增加 500
+      this.fetchThreadLength = Math.min(this.fetchThreadLength + 300, total)
+
+      // 广播更新的会话列表
+      await this.broadcastThreadListUpdate()
+    }
+
+    return { hasMore: this.fetchThreadLength < total, total }
+  }
+
   async setActiveConversation(conversationId: string, tabId: number): Promise<void> {
     // 【核心修正】由主进程负责全部决策（防重和自动切换逻辑）
     const existingTabId = await this.findTabForConversation(conversationId)
@@ -811,7 +833,7 @@ export class ThreadPresenter implements IThreadPresenter {
         const newMsg = { ...msg }
         const msgContent = newMsg.content as UserMessageContent
         if (msgContent.content) {
-          ; (newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
+          ;(newMsg.content as UserMessageContent).text = this.formatUserMessageContent(
             msgContent.content
           )
         }
@@ -1038,7 +1060,7 @@ export class ThreadPresenter implements IThreadPresenter {
     4. 保持查询简洁，通常不超过3个关键词, 最多不要超过5个关键词，参考当前搜索引擎的查询习惯重写关键字
 
     直接返回优化后的搜索词，不要有任何额外说明。
-    如果你觉得用户的问题不需要进行搜索，请直接返回“无须搜索”。
+    如果你觉得用户的问题不需要进行搜索，请直接返回"无须搜索"。
 
     如下是之前对话的上下文：
     <context_messages>
@@ -1599,8 +1621,8 @@ export class ThreadPresenter implements IThreadPresenter {
     // 任何情况都使用最新配置
     const webSearchEnabled = this.configPresenter.getSetting('input_webSearch') as boolean
     const thinkEnabled = this.configPresenter.getSetting('input_deepThinking') as boolean
-      ; (userMessage.content as UserMessageContent).search = webSearchEnabled
-      ; (userMessage.content as UserMessageContent).think = thinkEnabled
+    ;(userMessage.content as UserMessageContent).search = webSearchEnabled
+    ;(userMessage.content as UserMessageContent).think = thinkEnabled
     return { conversation, userMessage, contextMessages }
   }
 
@@ -1612,9 +1634,10 @@ export class ThreadPresenter implements IThreadPresenter {
   }> {
     // 处理文本内容
     const userContent = `
-      ${userMessage.content.content
-        ? this.formatUserMessageContent(userMessage.content.content)
-        : userMessage.content.text
+      ${
+        userMessage.content.content
+          ? this.formatUserMessageContent(userMessage.content.content)
+          : userMessage.content.text
       }
       ${getFileContext(userMessage.content.files)}
     `
@@ -1734,7 +1757,7 @@ export class ThreadPresenter implements IThreadPresenter {
       const msgContent = msg.role === 'user' ? (msg.content as UserMessageContent) : null
       const msgText = msgContent
         ? msgContent.text ||
-        (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
+          (msgContent.content ? this.formatUserMessageContent(msgContent.content) : '')
         : ''
 
       const msgTokens = approximateTokenSize(
@@ -1948,13 +1971,13 @@ export class ThreadPresenter implements IThreadPresenter {
 
                 try {
                   parsedParams = JSON.parse(block.tool_call.params)
-                } catch (e) {
+                } catch {
                   parsedParams = block.tool_call.params // 保留原字符串
                 }
 
                 try {
                   parsedResponse = JSON.parse(block.tool_call.response)
-                } catch (e) {
+                } catch {
                   parsedResponse = block.tool_call.response // 保留原字符串
                 }
 
@@ -2091,7 +2114,7 @@ export class ThreadPresenter implements IThreadPresenter {
         } else if (LMC !== undefined && CMC === undefined) {
           // LMC有值, CMC是undefined -> content保持LMC的值，无需改变
           newCombinedContent = LMC
-          contentTypesCompatibleForMerging = true // 视为成功合并（当前消息内容被“吸收”）
+          contentTypesCompatibleForMerging = true // 视为成功合并（当前消息内容被"吸收"）
         }
         // 如果LMC和CMC的类型不兼容 (例如一个是string, 另一个是array)，
         // contentTypesCompatibleForMerging 将保持 false
@@ -2587,7 +2610,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
   private async broadcastThreadListUpdate(): Promise<void> {
     // 1. 获取所有会话 (假设9999足够大)
-    const result = await this.sqlitePresenter.getConversationList(1, 9999)
+    const result = await this.sqlitePresenter.getConversationList(1, this.fetchThreadLength)
 
     // 2. 对列表进行排序 (置顶优先, 然后按更新时间)
     result.list.sort((a, b) => {

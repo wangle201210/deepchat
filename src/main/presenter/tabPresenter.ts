@@ -10,7 +10,6 @@ import { getContextMenuLabels } from '@shared/i18n'
 import { app } from 'electron'
 import { addWatermarkToNativeImage } from '@/lib/watermark'
 import { stitchImagesVertically } from '@/lib/scrollCapture'
-import { presenter } from '.'
 
 export class TabPresenter implements ITabPresenter {
   // 全局标签页实例存储
@@ -170,15 +169,6 @@ export class TabPresenter implements ITabPresenter {
 
     // 监听标签页相关事件
     this.setupWebContentsListeners(view.webContents, tabId, windowId)
-
-    // 在新Tab加载完成后，触发一次全局列表更新广播
-    // 不用 once的原因是考虑tab 强刷的情况，也需要能正常获取，目前看log其它时候很少会触发 did finish load,应该是合理的
-    // 确保新Tab以及所有其他Tab都收到最新的列表
-    view.webContents.on('did-finish-load', () => {
-      console.log('did-finish-load', tabId)
-      // 直接调用 threadPresenter 的内部广播方法
-      ;(presenter.threadPresenter as any).broadcastThreadListUpdate()
-    })
 
     // 通知渲染进程更新标签列表
     await this.notifyWindowTabsUpdate(windowId)

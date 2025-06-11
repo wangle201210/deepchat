@@ -32,6 +32,7 @@
         :items="flattenedThreads"
         :min-item-size="30"
         key-field="id"
+        @scroll-end="handleScrollEnd"
       >
         <template v-slot="{ item, index, active }">
           <DynamicScrollerItem
@@ -162,9 +163,11 @@ const renameThread = ref<CONVERSATION | null>(null)
 const cleanMessagesDialog = ref(false)
 const cleanMessagesThread = ref<CONVERSATION | null>(null)
 
-const windowSize = useWindowSize()
+// 加载更多状态 - 只用于防重复触发
+let isLoadingMore = false
+const hasMoreThreads = ref(true)
 
-// 动态虚拟滚动配置 - DynamicScroller 会自动计算项目高度
+const windowSize = useWindowSize()
 
 // 虚拟滚动项目类型定义
 type VirtualScrollItem = {
@@ -316,7 +319,8 @@ const handleCleanChatHistory = () => {
 
 // 在组件挂载时加载会话列表
 onMounted(async () => {
-  // 不再需要加载和滚动监听
+  // 初始化hasMoreThreads状态，默认为true，让用户可以尝试加载更多
+  hasMoreThreads.value = true
 
   // 监听快捷键事件
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY, () => {
@@ -338,6 +342,32 @@ onBeforeUnmount(() => {
   // 确保快捷键监听被移除
   window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.DELETE_CONVERSATION)
 })
+
+const handleScrollEnd = async () => {
+  // 如果正在加载或者没有更多会话，则不执行
+  if (isLoadingMore || !hasMoreThreads.value) {
+    return
+  }
+
+  try {
+    isLoadingMore = true
+
+    // 调用loadMoreThreads方法
+    const result = await threadP.loadMoreThreads()
+
+    // 更新是否还有更多会话的状态
+    hasMoreThreads.value = result.hasMore
+
+    // 如果没有更多会话了，可以在这里添加一些提示逻辑
+    if (!result.hasMore) {
+      console.log('所有会话已加载完成')
+    }
+  } catch (error) {
+    console.error('加载更多会话失败:', error)
+  } finally {
+    isLoadingMore = false
+  }
+}
 </script>
 
 <style scoped>

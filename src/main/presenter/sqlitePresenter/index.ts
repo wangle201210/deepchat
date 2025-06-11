@@ -240,6 +240,11 @@ export class SQLitePresenter implements ISQLitePresenter {
     return this.conversationsTable.list(page, pageSize)
   }
 
+  // 获取对话总数
+  public async getConversationCount(): Promise<number> {
+    return this.conversationsTable.count()
+  }
+
   // 删除对话
   public async deleteConversation(conversationId: string): Promise<void> {
     return this.conversationsTable.delete(conversationId)

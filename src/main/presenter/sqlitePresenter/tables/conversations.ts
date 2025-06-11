@@ -292,4 +292,11 @@ export class ConversationsTable extends BaseTable {
     // 传入当前时间
     updateStmt.run(title, Date.now(), conversationId)
   }
+
+  async count(): Promise<number> {
+    const result = this.db.prepare('SELECT COUNT(*) as count FROM conversations').get() as {
+      count: number
+    }
+    return result.count
+  }
 }

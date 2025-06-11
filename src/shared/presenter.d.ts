@@ -231,6 +231,7 @@ export interface ISQLitePresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
+  getConversationCount(): Promise<number>
   insertMessage(
     conversationId: string,
     content: string,
@@ -556,6 +557,7 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
+  loadMoreThreads(): Promise<{ hasMore: boolean; total: number }>
   setActiveConversation(conversationId: string, tabId: number): Promise<void>
   getActiveConversation(tabId: number): Promise<CONVERSATION | null>
   getActiveConversationId(tabId: number): Promise<string | null>
