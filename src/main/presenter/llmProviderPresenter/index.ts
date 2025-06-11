@@ -103,7 +103,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       if (provider.id === 'ppio') {
         return new PPIOProvider(provider, this.configPresenter)
       }
-
+      if(provider.id === 'deepseek') {
+        return new DeepseekProvider(provider, this.configPresenter)
+      }
       switch (provider.apiType) {
         case 'minimax':
           return new OpenAIProvider(provider, this.configPresenter)

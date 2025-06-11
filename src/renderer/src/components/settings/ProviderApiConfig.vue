@@ -61,7 +61,7 @@
         {{ t('settings.provider.getKeyTip') }}
         <a :href="providerWebsites?.apiKey" target="_blank" class="text-primary">{{
           provider.name
-          }}</a>
+        }}</a>
         {{ t('settings.provider.getKeyTipEnd') }}
       </div>
     </div>
@@ -141,7 +141,7 @@ const handleOAuthError = (error: string) => {
 }
 
 const getKeyStatus = async () => {
-  if (['ppio', 'openrouter', 'siliconcloud', 'silicon'].includes(props.provider.id) && props.provider.apiKey) {
+  if (['ppio', 'openrouter', 'siliconcloud', 'silicon', 'deepseek'].includes(props.provider.id) && props.provider.apiKey) {
     try {
       keyStatus.value = await llmProviderPresenter.getKeyStatus(props.provider.id)
     } catch (error) {
