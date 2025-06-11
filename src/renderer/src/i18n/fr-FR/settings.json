@@ -198,7 +198,11 @@
     "tokenInvalid": "Le jeton n'est pas valide",
     "disconnect": "Déconnecter",
     "disconnected": "Déconnecté avec succès",
-    "disconnectFailed": "Échec de la déconnexion"
+    "disconnectFailed": "Échec de la déconnexion",
+    "keyStatus": {
+      "remaining": "Montant restant",
+      "usage": "Utilisé"
+    }
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
@@ -379,7 +383,6 @@
     "pressEnterToSave": "Appuyez sur Entrée pour enregistrer, Échap pour annuler",
     "noModifierOnly": "Impossible d'utiliser uniquement une touche de modification comme raccourci",
     "keyConflict": "Conflit de raccourci clavier, veuillez choisir une autre combinaison",
-
     "cleanHistory": "Historique de chat clair",
     "deleteConversation": "Supprimer la conversation",
     "goSettings": "Paramètres ouvrir",

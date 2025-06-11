@@ -198,7 +198,11 @@
     "tokenInvalid": "توکن نامعتبر است",
     "disconnect": "جدا کردن",
     "disconnected": "جدا شدن موفق",
-    "disconnectFailed": "جدا شدن ناموفق"
+    "disconnectFailed": "جدا شدن ناموفق",
+    "keyStatus": {
+      "remaining": "مقدار باقی مانده",
+      "usage": "مورد استفاده"
+    }
   },
   "knowledgeBase": {
     "title": "تنظیمات پایگاه دانش",
