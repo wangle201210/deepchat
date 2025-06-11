@@ -2,12 +2,23 @@ import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus } from '@shared/prese
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
-// Define interface for PPIO API key response
-interface PPIOKeyResponse {
-  credit_balance: number
+// Define interface for OpenRouter API key response
+interface OpenRouterKeyResponse {
+  data: {
+    label: string
+    usage: number
+    is_free_tier: boolean
+    is_provisioning_key: boolean
+    limit: number | null
+    limit_remaining: number | null
+    rate_limit: {
+      requests: number
+      interval: string
+    }
+  }
 }
 
-export class PPIOProvider extends OpenAICompatibleProvider {
+export class OpenRouterProvider extends OpenAICompatibleProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
   }
@@ -59,8 +70,8 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     )
   }
 
-  /**
-   * Get current API key status from PPIO
+    /**
+   * Get current API key status from OpenRouter
    * @returns Promise<KeyStatus> API key status information
    */
   public async getKeyStatus(): Promise<KeyStatus> {
@@ -68,36 +79,52 @@ export class PPIOProvider extends OpenAICompatibleProvider {
       throw new Error('API key is required')
     }
 
-    const response = await fetch('https://api.ppinfra.com/v3/user', {
+    const response = await fetch('https://openrouter.ai/api/v1/key', {
       method: 'GET',
       headers: {
-        'Authorization': this.provider.apiKey,
+        'Authorization': `Bearer ${this.provider.apiKey}`,
         'Content-Type': 'application/json'
-      }
+      },
     })
 
-    if (!response.ok) {
+    if (response.status !== 200) {
       const errorText = await response.text()
-      throw new Error(`PPIO API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
+      throw new Error(`OpenRouter API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
     }
 
-    const keyResponse: PPIOKeyResponse = await response.json()
-    const remaining = '¥'+keyResponse.credit_balance/10000
-    return {
-      limit_remaining: remaining,
-      remainNum: keyResponse.credit_balance
+    const responseText = await response.text()
+    if (!responseText || responseText.trim().length === 0) {
+      throw new Error('OpenRouter API returned empty response')
     }
+
+    const keyResponse: OpenRouterKeyResponse = JSON.parse(responseText)
+    if (!keyResponse.data) {
+      throw new Error(`OpenRouter API response missing 'data' field`)
+    }
+
+    // Build KeyStatus based on available data
+    const keyStatus: KeyStatus = {
+      usage: '$'+keyResponse.data.usage,
+    }
+
+    // Only include limit_remaining if it's not null (has actual limit)
+    if (keyResponse.data.limit_remaining !== null) {
+      keyStatus.limit_remaining = '$'+keyResponse.data.limit_remaining
+      keyStatus.remainNum = keyResponse.data.limit_remaining
+    }
+
+    return keyStatus
   }
 
   /**
-   * Override check method to use PPIO's API key status endpoint
+   * Override check method to use OpenRouter's API key status endpoint
    * @returns Promise<{ isOk: boolean; errorMsg: string | null }>
    */
-  public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
+    public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
     try {
       const keyStatus = await this.getKeyStatus()
 
-      // Check if there's remaining quota
+      // Check if there's remaining quota (only if limit_remaining exists)
       if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
@@ -107,14 +134,14 @@ export class PPIOProvider extends OpenAICompatibleProvider {
 
       return { isOk: true, errorMsg: null }
     } catch (error: unknown) {
-      let errorMessage = 'An unknown error occurred during PPIO API key check.'
+      let errorMessage = 'An unknown error occurred during OpenRouter API key check.'
       if (error instanceof Error) {
         errorMessage = error.message
       } else if (typeof error === 'string') {
         errorMessage = error
       }
 
-      console.error('PPIO API key check failed:', error)
+      console.error('OpenRouter API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
     }
   }

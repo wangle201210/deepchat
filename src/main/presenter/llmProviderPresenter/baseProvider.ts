@@ -5,7 +5,8 @@ import {
   MCPToolDefinition,
   LLMCoreStreamEvent,
   ModelConfig,
-  ChatMessage
+  ChatMessage,
+  KeyStatus
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
@@ -324,7 +325,7 @@ ${this.convertToolsToXml(tools)}
 
 * 根据搜索工具返回的结果…
 * 网页爬取显示…
-* （避免使用“我猜测”之类表述）
+* （避免使用"我猜测"之类表述）
 
 #### 8. 语言
 
@@ -366,7 +367,7 @@ ${this.convertToolsToXml(tools)}
             try {
               // 首先尝试直接解析JSON
               parsedCall = JSON.parse(content)
-            } catch (initialParseError) {
+            } catch {
               try {
                 // 如果直接解析失败，尝试使用jsonrepair修复
                 parsedCall = JSON.parse(jsonrepair(content))
@@ -548,8 +549,18 @@ ${this.convertToolsToXml(tools)}
    * @param modelId 使用的模型ID
    * @returns embedding 数组，每个元素为 number[]
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async getEmbeddings(_texts: string[], _modelId: string): Promise<number[][]> {
     throw new Error('getEmbeddings is not supported by this provider')
+  }
+
+  /**
+   * 获取 API key 状态信息
+   * @returns API key 状态信息，如果不支持则返回 null
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async getKeyStatus(): Promise<KeyStatus | null> {
+    return null // 默认实现返回 null，表示不支持此功能
   }
 
   /**

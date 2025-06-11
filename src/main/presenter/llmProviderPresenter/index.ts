@@ -6,7 +6,8 @@ import {
   MODEL_META,
   OllamaModel,
   ChatMessage,
-  LLMAgentEvent
+  LLMAgentEvent,
+  KeyStatus
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -30,6 +31,7 @@ import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
 import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
+import { OpenRouterProvider } from './providers/openRouterProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -93,7 +95,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         console.log('match grok')
         return new GrokProvider(provider, this.configPresenter)
       }
+      // 特殊处理 openrouter
+      if (provider.id === 'openrouter') {
+        return new OpenRouterProvider(provider, this.configPresenter)
+      }
 
+      if (provider.id === 'ppio') {
+        return new PPIOProvider(provider, this.configPresenter)
+      }
+      if(provider.id === 'deepseek') {
+        return new DeepseekProvider(provider, this.configPresenter)
+      }
       switch (provider.apiType) {
         case 'minimax':
           return new OpenAIProvider(provider, this.configPresenter)
@@ -911,6 +923,11 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   async check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }> {
     const provider = this.getProviderInstance(providerId)
     return provider.check()
+  }
+
+  async getKeyStatus(providerId: string): Promise<KeyStatus | null> {
+    const provider = this.getProviderInstance(providerId)
+    return provider.getKeyStatus()
   }
 
   async addCustomModel(

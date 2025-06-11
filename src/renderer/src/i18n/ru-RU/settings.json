@@ -198,7 +198,11 @@
     "tokenInvalid": "Токен недействителен",
     "disconnect": "Отключить",
     "disconnected": "Отключено успешно",
-    "disconnectFailed": "Не удалось отключить"
+    "disconnectFailed": "Не удалось отключить",
+    "keyStatus": {
+      "remaining": "Оставшаяся сумма",
+      "usage": "Использовал"
+    }
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",
@@ -379,7 +383,6 @@
     "pressEnterToSave": "Нажмите Enter для сохранения, Esc для отмены",
     "noModifierOnly": "Нельзя использовать только модификатор в качестве сочетания",
     "keyConflict": "Конфликт сочетаний клавиш, выберите другую комбинацию",
-
     "cleanHistory": "Четкая история чата",
     "deleteConversation": "Удалить разговор",
     "goSettings": "Откройте настройки",
