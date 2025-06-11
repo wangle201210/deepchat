@@ -1,0 +1,38 @@
+{
+  "input": {
+    "placeholder": "چیزی بپرسید؟ می‌توانید با {'@'} به ابزارها، پرونده‌ها، منابع ارجاع دهید...",
+    "fileArea": "ناحیه پرونده",
+    "inputArea": "ناحیه ورودی",
+    "functionSwitch": "کلید کارکرد",
+    "fileSelect": "انتخاب پرونده",
+    "pasteFiles": "پشتیبانی از رونوشت و چسباندن پرونده‌ها",
+    "dropFiles": "پرونده‌ها را اینجا رها کنید",
+    "promptFilesAdded": "پرونده‌ها افزوده شد",
+    "promptFilesAddedDesc": "{count} پرونده با موفقیت افزوده شد",
+    "promptFilesError": "خطا در پردازش پرونده",
+    "promptFilesErrorDesc": "پردازش {count} پرونده ناموفق بود"
+  },
+  "features": {
+    "deepThinking": "تفکر عمیق",
+    "webSearch": "جستجوی وب",
+    "deepThinkingProgress": "در حال تفکر عمیق...",
+    "thinkingDuration": "({0} ثانیه طول کشید)",
+    "artifactThinking": "تفکر مصنوعی"
+  },
+  "search": {
+    "results": "{0} صفحه وب یافت شد",
+    "searching": "در حال جستجو...",
+    "title": "یافته‌های جستجو",
+    "description": "{0} نتیجه مرتبط یافت شد",
+    "optimizing": "در حال بهینه‌سازی عبارت جستجو...",
+    "reading": "در حال جستجو و خواندن صفحات وب...",
+    "error": "جستجو ناموفق بود"
+  },
+  "messages": {
+    "thinking": "در حال تفکر..."
+  },
+  "notify": {
+    "generationComplete": "ساخت تکمیل شد",
+    "generationError": "ساخت ناموفق بود"
+  }
+}

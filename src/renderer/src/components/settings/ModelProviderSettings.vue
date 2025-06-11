@@ -28,7 +28,9 @@
                 :custom-class="'w-4 h-4 text-muted-foreground'"
                 :is-dark="themeStore.isDark"
               />
-              <span class="text-sm font-medium flex-1">{{ t(provider.name) }}</span>
+              <span class="text-sm font-medium flex-1" :dir="languageStore.dir">{{
+                t(provider.name)
+              }}</span>
               <Switch :checked="provider.enable" @click.stop="toggleProviderStatus(provider)" />
             </div>
           </template>
@@ -36,6 +38,7 @@
 
         <div
           class="flex flex-row items-center gap-2 rounded-lg p-2 cursor-pointer hover:bg-accent mt-2"
+          :dir="languageStore.dir"
           @click="openAddProviderDialog"
         >
           <Icon icon="lucide:plus" class="w-4 h-4 text-muted-foreground" />
@@ -79,10 +82,12 @@ import { Switch } from '@/components/ui/switch'
 import draggable from 'vuedraggable'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const languageStore = useLanguageStore()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
 const isAddProviderDialogOpen = ref(false)

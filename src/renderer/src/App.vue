@@ -21,7 +21,7 @@ const chatStore = useChatStore()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
-useLanguageStore()
+const langStore = useLanguageStore()
 // 错误通知队列及当前正在显示的错误
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
 const currentErrorId = ref<string | null>(null)
@@ -284,7 +284,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col h-screen bg-container">
-    <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]">
+    <div
+      class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]"
+      :dir="langStore.dir"
+    >
       <!-- 主内容区域 -->
 
       <RouterView />

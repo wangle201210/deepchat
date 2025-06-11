@@ -29,6 +29,7 @@
           <div
             key="newThread-model-select"
             class="new-thread-model-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-input transition-all duration-300"
+            :dir="langStore.dir"
           >
             <Popover v-model:open="modelSelectOpen">
               <PopoverTrigger as-child>
@@ -112,10 +113,11 @@ import ChatConfig from './ChatConfig.vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { useEventListener } from '@vueuse/core'
 import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
 
 const configPresenter = usePresenter('configPresenter')
 const themeStore = useThemeStore()
-
+const langStore = useLanguageStore()
 // 定义偏好模型的类型
 interface PreferredModel {
   modelId: string

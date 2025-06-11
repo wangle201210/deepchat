@@ -1,0 +1,14 @@
+{
+  "newVersion": "نگارش جدید یافت شد",
+  "version": "نگارش",
+  "releaseDate": "تاریخ انتشار",
+  "releaseNotes": "یادداشت‌های انتشار",
+  "later": "زمانی دیگر",
+  "githubDownload": "بارگیری از گیت‌هاب",
+  "netdiskDownload": "بارگیری از فضای ابری",
+  "checkUpdate": "بررسی به‌روزرسانی‌ها",
+  "downloading": "در حال بارگیری",
+  "installNow": "اکنون نصب کن",
+  "autoUpdate": "به‌روزرسانی خودکار",
+  "restarting": "در حال راه‌اندازی دوباره"
+}

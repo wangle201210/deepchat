@@ -5,13 +5,13 @@
       <!-- MCP全局开关 -->
       <div class="p-4 flex-shrink-0">
         <div class="flex items-center justify-between">
-          <div>
+          <div :dir="languageStore.dir">
             <h3 class="text-sm font-medium">{{ t('settings.mcp.enabledTitle') }}</h3>
             <p class="text-xs text-muted-foreground mt-1">
               {{ t('settings.mcp.enabledDescription') }}
             </p>
           </div>
-          <Switch :checked="mcpEnabled" @update:checked="handleMcpEnabledChange" />
+          <Switch dir="ltr" :checked="mcpEnabled" @update:checked="handleMcpEnabledChange" />
         </div>
       </div>
 
@@ -64,9 +64,11 @@ import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import { useMcpStore } from '@/stores/mcp'
+import { useLanguageStore } from '@/stores/language'
 import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from '../mcp-config/const'
 
 const { t } = useI18n()
+const languageStore = useLanguageStore()
 const mcpStore = useMcpStore()
 
 // 计算属性

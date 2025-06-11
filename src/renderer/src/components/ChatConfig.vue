@@ -6,6 +6,7 @@ import { Slider } from '@/components/ui/slider'
 import { Icon } from '@iconify/vue'
 import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useLanguageStore } from '@/stores/language'
 
 // Define props to receive config from parent
 const props = defineProps<{
@@ -18,7 +19,6 @@ const props = defineProps<{
 }>()
 
 const systemPrompt = defineModel<string>('systemPrompt')
-
 // Define emits to send updates to parent
 const emit = defineEmits<{
   'update:temperature': [value: number]
@@ -28,7 +28,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
+const langStore = useLanguageStore()
 // Create computed properties for slider values (which expect arrays)
 const temperatureValue = computed({
   get: () => [props.temperature],
@@ -62,7 +62,7 @@ const formatSize = (size: number): string => {
 </script>
 
 <template>
-  <div class="pt-2 pb-6 px-2">
+  <div class="pt-2 pb-6 px-2" :dir="langStore.dir">
     <h2 class="text-xs text-muted-foreground px-2">{{ t('settings.model.title') }}</h2>
 
     <div class="space-y-6">

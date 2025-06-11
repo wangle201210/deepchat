@@ -8,9 +8,11 @@ import { useMcpStore } from '@/stores/mcp'
 import { Button } from './ui/button'
 import { Switch } from './ui/switch'
 import { Badge } from './ui/badge'
+import { useLanguageStore } from '@/stores/language'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
+const langStore = useLanguageStore()
 
 // 计算属性
 const isLoading = computed(() => mcpStore.toolsLoading)
@@ -92,8 +94,10 @@ onMounted(async () => {
         <!-- MCP启用开关 -->
         <div class="p-2 border-b flex items-center justify-between">
           <div>
-            <div class="text-sm font-medium">{{ t('mcp.tools.enabled') }}</div>
-            <div class="text-xs text-muted-foreground">{{ t('mcp.tools.enabledDescription') }}</div>
+            <div class="text-sm font-medium" :dir="langStore.dir">{{ t('mcp.tools.enabled') }}</div>
+            <div class="text-xs text-muted-foreground" :dir="langStore.dir">
+              {{ t('mcp.tools.enabledDescription') }}
+            </div>
           </div>
           <Switch
             aria-label="启用MCP"
@@ -124,13 +128,15 @@ onMounted(async () => {
           <div v-else-if="mcpEnabled" class="divide-y">
             <div v-for="server in mcpStore.serverList" :key="server.name" class="w-full">
               <div class="p-2 hover:bg-accent flex items-center w-full">
-                <span class="mr-2">{{ server.icons }}</span>
-                <span
-                  v-if="server.type === 'inmemory'"
-                  class="flex-grow truncate text-left text-sm"
-                  >{{ getLocalizedServerName(server.name) }}</span
-                >
-                <span v-else class="flex-grow truncate text-left text-sm">{{ server.name }}</span>
+                <div :dir="langStore.dir" class="w-full">
+                  <span class="mr-2">{{ server.icons }}</span>
+                  <span
+                    v-if="server.type === 'inmemory'"
+                    class="flex-grow truncate text-left text-sm"
+                    >{{ getLocalizedServerName(server.name) }}</span
+                  >
+                  <span v-else class="flex-grow truncate text-left text-sm">{{ server.name }}</span>
+                </div>
                 <Popover>
                   <PopoverTrigger>
                     <Badge

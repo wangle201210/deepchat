@@ -517,7 +517,8 @@ export class ConfigPresenter implements IConfigPresenter {
       'ko-KR',
       'ru-RU',
       'ja-JP',
-      'fr-FR'
+      'fr-FR',
+      'fa-IR'
     ]
 
     // 完全匹配

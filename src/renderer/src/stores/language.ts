@@ -5,11 +5,12 @@ import { useI18n } from 'vue-i18n'
 import { usePresenter } from '@/composables/usePresenter'
 import { CONFIG_EVENTS } from '@/events'
 
+const RTL_LIST = ['fa-IR']
 export const useLanguageStore = defineStore('language', () => {
   const { locale } = useI18n({ useScope: 'global' })
   const language = ref<string>('system')
   const configPresenter = usePresenter('configPresenter')
-
+  const dir = ref('auto' as 'auto' | 'rtl' | 'ltr')
   // 初始化设置
   const initLanguage = async () => {
     try {
@@ -17,12 +18,22 @@ export const useLanguageStore = defineStore('language', () => {
       language.value = (await configPresenter.getSetting('language')) || 'system'
       // 设置语言
       locale.value = await configPresenter.getLanguage()
+      if (RTL_LIST.indexOf(locale.value) >= 0) {
+        dir.value = 'rtl'
+      } else {
+        dir.value = 'auto'
+      }
       // 监听语言变更事件
       window.electron.ipcRenderer.on(
         CONFIG_EVENTS.LANGUAGE_CHANGED,
         async (_event, newLanguage: string) => {
           language.value = newLanguage
           locale.value = await configPresenter.getLanguage()
+          if (RTL_LIST.indexOf(locale.value) >= 0) {
+            dir.value = 'rtl'
+          } else {
+            dir.value = 'auto'
+          }
         }
       )
     } catch (error) {
@@ -44,6 +55,7 @@ export const useLanguageStore = defineStore('language', () => {
   return {
     language,
     updateLanguage,
-    initLanguage
+    initLanguage,
+    dir
   }
 })
