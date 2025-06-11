@@ -662,24 +662,6 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
-    // 核心修改：编排UI操作和数据删除
-    const tabIdToDelete = await this.findTabForConversation(conversationId)
-
-    if (tabIdToDelete !== null) {
-      const isLastTab = await presenter.tabPresenter.isLastTabInWindow(tabIdToDelete)
-      if (isLastTab) {
-        // 是窗口中最后一个tab，重置到空白页
-        await presenter.tabPresenter.resetTabToBlank(tabIdToDelete)
-        // 主动清除此tab的激活状态，并通知UI层
-        this.clearActiveThread(tabIdToDelete)
-      } else {
-        // 不是最后一个tab，直接关闭
-        await presenter.tabPresenter.closeTab(tabIdToDelete)
-        // closeTab会触发destroyTab, 进而触发TAB_EVENTS.CLOSED事件,
-        // ThreadPresenter会监听到并清理activeConversationIds，所以这里无需手动清理
-      }
-    }
-
     await this.sqlitePresenter.deleteConversation(conversationId)
 
     // 作为兜底，确保所有与此会话相关的绑定都被移除

@@ -137,6 +137,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     }
   },
   {
+    id: '302ai',
+    name: '302.AI',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.302.ai/v1',
+    enable: false,
+    websites: {
+      official: 'https://302.ai',
+      apiKey: 'https://dash.302.ai/apis/list',
+      docs: 'https://302ai.apifox.cn/doc-3704971',
+      models: 'https://302.ai/pricing/',
+      defaultBaseUrl: 'https://api.302.ai/v1'
+    }
+  },
+  {
     id: 'openai-responses',
     name: 'OpenAI Responses',
     apiType: 'openai-responses',
@@ -545,21 +560,6 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       models: 'https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models',
       defaultBaseUrl:
         'https://your-resource-name.openai.azure.com/openai/deployments/your-deployment-name'
-    }
-  },
-  {
-    id: '302ai',
-    name: '302.AI',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://api.302.ai/v1',
-    enable: false,
-    websites: {
-      official: 'https://302.ai',
-      apiKey: 'https://dash.302.ai/apis/list',
-      docs: 'https://302ai.apifox.cn/doc-3704971',
-      models: 'https://302.ai/pricing/',
-      defaultBaseUrl: 'https://api.302.ai/v1'
     }
   }
 ]
