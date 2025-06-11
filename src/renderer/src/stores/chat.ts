@@ -13,6 +13,8 @@ import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
 import { useSoundStore } from './sound'
+import sfxfcMp3 from '../../public/sounds/sfx-fc.mp3?url'
+import sfxtyMp3 from '../../public/sounds/sfx-typing.mp3?url'
 
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
@@ -926,12 +928,12 @@ export const useChatStore = defineStore('chat', () => {
 
   const initAudio = () => {
     if (!typewriterAudio) {
-      typewriterAudio = new Audio('/sounds/sfx-typing.mp3')
+      typewriterAudio = new Audio(sfxtyMp3)
       typewriterAudio.volume = 0.6
       typewriterAudio.load()
     }
     if (!toolcallAudio) {
-      toolcallAudio = new Audio('/sounds/sfx-fc.mp3')
+      toolcallAudio = new Audio(sfxfcMp3)
       toolcallAudio.volume = 1
       toolcallAudio.load()
     }

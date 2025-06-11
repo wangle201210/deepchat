@@ -212,9 +212,11 @@ import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntry } from '@shared/presenter'
 import { searchHistory } from '@/lib/searchHistory'
 import { useLanguageStore } from '@/stores/language'
+import { useToast } from '@/components/ui/toast/use-toast'
 
 const langStore = useLanguageStore()
 const mcpStore = useMcpStore()
+const { toast } = useToast()
 const { t } = useI18n()
 searchHistory.resetIndex()
 const editor = new Editor({
@@ -600,7 +602,6 @@ const handlePromptFiles = async (
 ) => {
   if (!files || files.length === 0) return
 
-  const { toast } = await import('@/components/ui/toast')
   let addedCount = 0
   let errorCount = 0
 
