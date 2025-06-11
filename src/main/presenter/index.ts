@@ -256,8 +256,8 @@ ipcMain.handle(
         return { error: `Method "${method}" not found or not a function on "${name}"` }
       }
     } catch (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    e: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      e: any
     ) {
       console.error('error on presenter handle', e) // 保留错误日志
       return { error: e.message || String(e) }

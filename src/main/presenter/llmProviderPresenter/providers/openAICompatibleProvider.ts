@@ -50,7 +50,7 @@ const SIZE_CONFIGURABLE_MODELS = ['gpt-image-1', 'gpt-4o-image', 'gpt-4o-all']
 
 export class OpenAICompatibleProvider extends BaseLLMProvider {
   protected openai!: OpenAI
-  private isNoModelsApi: boolean = false
+  protected isNoModelsApi: boolean = false
   // 添加不支持 OpenAI 标准接口的供应商黑名单
   private static readonly NO_MODELS_API_LIST: string[] = []
 

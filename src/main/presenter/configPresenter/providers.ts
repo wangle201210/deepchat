@@ -197,21 +197,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.ocoolai.com'
   //   }
   // },
-  // {
-  //   id: 'together',
-  //   name: 'Together',
-  //   apiType: 'together',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.tohgether.xyz',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://www.together.ai/',
-  //     apiKey: 'https://api.together.ai/settings/api-keys',
-  //     docs: 'https://docs.together.ai/docs/introduction',
-  //     models: 'https://docs.together.ai/docs/chat-models',
-  //     defaultBaseUrl: 'https://api.tohgether.xyz'
-  //   }
-  // },
+  {
+    id: 'together',
+    name: 'Together',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.together.xyz/v1',
+    enable: false,
+    websites: {
+      official: 'https://www.together.ai/',
+      apiKey: 'https://api.together.ai/settings/api-keys',
+      docs: 'https://docs.together.ai/docs/introduction',
+      models: 'https://docs.together.ai/docs/chat-models',
+      defaultBaseUrl: 'https://api.tohgether.xyz/v1'
+    }
+  },
   {
     id: 'github',
     name: 'GitHub Models',
@@ -238,7 +238,8 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       official: 'https://github.com/features/copilot',
       apiKey: 'https://github.com/settings/tokens',
       docs: 'https://docs.github.com/en/copilot',
-      models: 'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
+      models:
+        'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
       defaultBaseUrl: 'https://api.githubcopilot.com'
     }
   },
