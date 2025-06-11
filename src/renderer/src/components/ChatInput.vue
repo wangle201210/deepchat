@@ -9,7 +9,7 @@
   >
     <TooltipProvider>
       <div
-        dir="auto"
+        :dir="langStore.dir"
         class="bg-card border border-border rounded-lg focus-within:border-primary p-2 flex flex-col gap-2 shadow-sm relative"
       >
         <!-- {{  t('chat.input.fileArea') }} -->
@@ -38,11 +38,7 @@
           </TransitionGroup>
         </div>
         <!-- {{ t('chat.input.inputArea') }} -->
-        <editor-content
-          :editor="editor"
-          class="p-2 text-sm"
-          @keydown="onKeydown"
-        />
+        <editor-content :editor="editor" class="p-2 text-sm" @keydown="onKeydown" />
 
         <div class="flex items-center justify-between">
           <!-- {{ t('chat.input.functionSwitch') }} -->
@@ -75,6 +71,7 @@
                   :class="{
                     'border-primary': settings.webSearch
                   }"
+                  :dir="langStore.dir"
                 >
                   <Button
                     variant="outline"
@@ -84,6 +81,7 @@
                         ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
                         : ''
                     ]"
+                    :dir="langStore.dir"
                     size="icon"
                     @click="onWebSearchClick"
                   >
@@ -213,6 +211,9 @@ import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntry } from '@shared/presenter'
 import { searchHistory } from '@/lib/searchHistory'
+import { useLanguageStore } from '@/stores/language'
+
+const langStore = useLanguageStore()
 const mcpStore = useMcpStore()
 const { t } = useI18n()
 searchHistory.resetIndex()
@@ -585,16 +586,18 @@ const deleteFile = (idx: number) => {
 }
 
 // 处理来自 Prompt 的文件
-const handlePromptFiles = async (files: Array<{
-  id: string
-  name: string
-  type: string
-  size: number
-  path: string
-  description?: string
-  content?: string
-  createdAt: number
-}>) => {
+const handlePromptFiles = async (
+  files: Array<{
+    id: string
+    name: string
+    type: string
+    size: number
+    path: string
+    description?: string
+    content?: string
+    createdAt: number
+  }>
+) => {
   if (!files || files.length === 0) return
 
   const { toast } = await import('@/components/ui/toast')
@@ -604,7 +607,7 @@ const handlePromptFiles = async (files: Array<{
   for (const fileItem of files) {
     try {
       // 检查文件是否已存在（基于文件名去重）
-      const exists = selectedFiles.value.some(f => f.name === fileItem.name)
+      const exists = selectedFiles.value.some((f) => f.name === fileItem.name)
       if (exists) {
         continue
       }
@@ -926,7 +929,7 @@ function onKeydown(e: KeyboardEvent) {
     if (isCursorInFirstLine(contentEditableDiv)) {
       const previousSearch = searchHistory.getPrevious()
       if (previousSearch !== null) {
-                editor.commands.setContent(previousSearch)
+        editor.commands.setContent(previousSearch)
       }
       e.preventDefault()
     }
@@ -948,9 +951,10 @@ function isCursorInFirstLine(contentEditableDiv: HTMLDivElement): boolean {
 
   const range = selection.getRangeAt(0)
   const startContainer = range.startContainer
-  const parentElement = startContainer.nodeType === Node.TEXT_NODE
-    ? startContainer.parentElement
-    : startContainer as HTMLElement
+  const parentElement =
+    startContainer.nodeType === Node.TEXT_NODE
+      ? startContainer.parentElement
+      : (startContainer as HTMLElement)
 
   if (!parentElement) return false
 
@@ -964,9 +968,10 @@ function isCursorInLastLine(contentEditableDiv: HTMLDivElement): boolean {
 
   const range = selection.getRangeAt(0)
   const endContainer = range.endContainer
-  const parentElement = endContainer.nodeType === Node.TEXT_NODE
-    ? endContainer.parentElement
-    : endContainer as HTMLElement
+  const parentElement =
+    endContainer.nodeType === Node.TEXT_NODE
+      ? endContainer.parentElement
+      : (endContainer as HTMLElement)
 
   if (!parentElement) return false
 

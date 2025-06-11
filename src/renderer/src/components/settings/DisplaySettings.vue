@@ -13,7 +13,12 @@
               <SelectValue :placeholder="t('settings.common.languageSelect')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="lang in languageOptions" :key="lang.value" :value="lang.value" dir="auto">
+              <SelectItem
+                v-for="lang in languageOptions"
+                :key="lang.value"
+                :value="lang.value"
+                :dir="languageStore.dir"
+              >
                 {{ lang.label }}
               </SelectItem>
             </SelectContent>
