@@ -104,12 +104,13 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
 
     // Build KeyStatus based on available data
     const keyStatus: KeyStatus = {
-      usage: keyResponse.data.usage
+      usage: '$'+keyResponse.data.usage,
     }
 
     // Only include limit_remaining if it's not null (has actual limit)
     if (keyResponse.data.limit_remaining !== null) {
-      keyStatus.limit_remaining = keyResponse.data.limit_remaining
+      keyStatus.limit_remaining = '$'+keyResponse.data.limit_remaining
+      keyStatus.remainNum = keyResponse.data.limit_remaining
     }
 
     return keyStatus
@@ -124,7 +125,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
       const keyStatus = await this.getKeyStatus()
 
       // Check if there's remaining quota (only if limit_remaining exists)
-      if (keyStatus.limit_remaining !== undefined && keyStatus.limit_remaining <= 0) {
+      if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
           errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`

@@ -6,7 +6,8 @@ import {
   MODEL_META,
   OllamaModel,
   ChatMessage,
-  LLMAgentEvent
+  LLMAgentEvent,
+  KeyStatus
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -920,6 +921,11 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   async check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }> {
     const provider = this.getProviderInstance(providerId)
     return provider.check()
+  }
+
+  async getKeyStatus(providerId: string): Promise<KeyStatus | null> {
+    const provider = this.getProviderInstance(providerId)
+    return provider.getKeyStatus()
   }
 
   async addCustomModel(

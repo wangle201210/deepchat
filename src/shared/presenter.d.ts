@@ -496,6 +496,7 @@ export interface ILlmProviderPresenter {
   ): Promise<string>
   stopStream(eventId: string): Promise<void>
   check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }>
+  getKeyStatus(providerId: string): Promise<KeyStatus | null>
   summaryTitles(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
     providerId: string,
@@ -1113,8 +1114,9 @@ export interface DefaultModelSetting {
 }
 
 export interface KeyStatus {
+  remainNum?: number
   /** 剩余额度 */
-  limit_remaining?: number
+  limit_remaining?: string
   /** 已使用额度 */
-  usage?: number
+  usage?: string
 }

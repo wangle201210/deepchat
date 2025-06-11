@@ -82,10 +82,10 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     }
 
     const keyResponse: PPIOKeyResponse = await response.json()
-
-    // Map to unified KeyStatus format
+    const remaining = '¥'+keyResponse.credit_balance/10000
     return {
-      limit_remaining: keyResponse.credit_balance
+      limit_remaining: remaining,
+      remainNum: keyResponse.credit_balance
     }
   }
 
@@ -98,7 +98,7 @@ export class PPIOProvider extends OpenAICompatibleProvider {
       const keyStatus = await this.getKeyStatus()
 
       // Check if there's remaining quota
-      if (keyStatus.limit_remaining !== undefined && keyStatus.limit_remaining <= 0) {
+      if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
         return {
           isOk: false,
           errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`

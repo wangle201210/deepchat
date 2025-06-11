@@ -73,6 +73,17 @@
             t('settings.provider.howToGet')
           }}
         </Button>
+        <!-- Key Status Display -->
+        <div v-if="keyStatus && (keyStatus.usage !== undefined || keyStatus.limit_remaining !== undefined)" class="flex items-center gap-2 text-xs text-muted-foreground">
+          <div v-if="keyStatus.usage !== undefined" class="flex items-center gap-1">
+            <Icon icon="lucide:activity" class="w-3 h-3" />
+            <span>{{ t('settings.provider.keyStatus.usage') }}: {{ keyStatus.usage }}</span>
+          </div>
+          <div v-if="keyStatus.limit_remaining !== undefined" class="flex items-center gap-1">
+            <Icon icon="lucide:coins" class="w-3 h-3" />
+            <span>{{ t('settings.provider.keyStatus.remaining') }}: {{ keyStatus.limit_remaining }}</span>
+          </div>
+        </div>
       </div>
       <div v-if="!provider.custom" class="text-xs text-muted-foreground">
         {{ t('settings.provider.getKeyTip') }}
@@ -86,14 +97,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import GitHubCopilotOAuth from './GitHubCopilotOAuth.vue'
-import type { LLM_PROVIDER } from '@shared/presenter'
+import { usePresenter } from '@/composables/usePresenter'
+import type { LLM_PROVIDER, KeyStatus } from '@shared/presenter'
 
 interface ProviderWebsites {
   official: string
@@ -104,6 +116,7 @@ interface ProviderWebsites {
 }
 
 const { t } = useI18n()
+const llmProviderPresenter = usePresenter('llmproviderPresenter')
 
 const props = defineProps<{
   provider: LLM_PROVIDER
@@ -121,6 +134,7 @@ const emit = defineEmits<{
 
 const apiKey = ref(props.provider.apiKey || '')
 const apiHost = ref(props.provider.baseUrl || '')
+const keyStatus = ref<KeyStatus | null>(null)
 
 watch(
   () => props.provider,
@@ -153,4 +167,19 @@ const handleOAuthSuccess = () => {
 const handleOAuthError = (error: string) => {
   emit('oauth-error', error)
 }
+
+const getKeyStatus = async () => {
+  if ((props.provider.id === 'ppio' || props.provider.id === 'openrouter') && props.provider.apiKey) {
+    try {
+      keyStatus.value = await llmProviderPresenter.getKeyStatus(props.provider.id)
+    } catch (error) {
+      console.error('Failed to get key status:', error)
+      keyStatus.value = null
+    }
+  }
+}
+
+onMounted(() => {
+  getKeyStatus()
+})
 </script>
