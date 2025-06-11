@@ -206,7 +206,9 @@ if (!codeLanguage.value || codeLanguage.value === '') {
 watch(
   () => themeStore.isDark,
   () => {
-    updateCode(artifactStore.currentArtifact?.content || '', codeLanguage.value)
+    setTimeout(() => {
+      updateCode(artifactStore.currentArtifact?.content || '', codeLanguage.value)
+    })
   }
 )
 
