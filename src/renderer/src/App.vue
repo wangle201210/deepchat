@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, onBeforeUnmount, computed } from 'vue'
+import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
