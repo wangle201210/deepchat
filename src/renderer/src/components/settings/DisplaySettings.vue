@@ -3,7 +3,7 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 语言选择 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
           <Icon icon="lucide:languages" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.language') }}</span>
         </span>
@@ -29,7 +29,7 @@
       <!-- 系统通知设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
         <div class="flex flex-row items-center gap-2">
-          <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
             <Icon icon="lucide:bell" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{
               t('settings.common.notifications') || '系统通知'
@@ -50,7 +50,10 @@
 
       <!-- 字体大小设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full mb-1">
+        <span
+          class="flex flex-row items-center gap-2 flex-grow w-full mb-1"
+          :dir="languageStore.dir"
+        >
           <Icon icon="lucide:a-large-small" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.display.fontSize') }}</span>
         </span>
@@ -72,7 +75,7 @@
 
       <!-- 投屏保护开关 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
           <Icon icon="lucide:monitor" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{
             t('settings.common.contentProtection') || '投屏保护'

@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full py-4 flex flex-col">
     <div class="pb-4 px-4 flex flex-row items-center justify-between">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2" :dir="languageStore.dir">
         <Icon icon="lucide:keyboard" class="w-5 h-5 text-primary" />
         <span class="text-lg font-semibold">{{ t('settings.shortcuts.title') }}</span>
       </div>
@@ -22,7 +22,10 @@
             :key="shortcut.id"
             class="flex flex-row p-2 items-center gap-2 px-2"
           >
-            <span class="flex flex-row items-center gap-2 flex-grow w-full">
+            <span
+              class="flex flex-row items-center gap-2 flex-grow w-full"
+              :dir="languageStore.dir"
+            >
               <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
               <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
             </span>
@@ -78,11 +81,13 @@ import { Icon } from '@iconify/vue'
 import { Loader2 } from 'lucide-vue-next'
 
 import { useShortcutKeyStore } from '@/stores/shortcutKey'
+import { useLanguageStore } from '@/stores/language'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ShortcutKey } from '@shared/presenter'
 
 const { t } = useI18n()
+const languageStore = useLanguageStore()
 const shortcutKeyStore = useShortcutKeyStore()
 const { shortcutKeys } = storeToRefs(shortcutKeyStore)
 
