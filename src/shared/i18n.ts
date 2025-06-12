@@ -17,7 +17,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: '重做',
     saveImage: '图片另存为...',
     copyImage: '复制图片',
-    open: '打开/隐藏',
+    open: '打开/隐藏(Command/Ctrl+O)',
     quit: '退出',
     translate: '翻译',
     askAI: '询问AI'
@@ -31,7 +31,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: '重做',
     saveImage: '圖片另存為...',
     copyImage: '複製圖片',
-    open: '打開/隱藏',
+    open: '打開/隱藏(Command/Ctrl+O)',
     quit: '退出',
     translate: '翻譯',
     askAI: '詢問AI'
@@ -45,7 +45,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: 'Redo',
     saveImage: 'Save Image...',
     copyImage: 'Copy Image',
-    open: 'Open/Hide',
+    open: 'Open/Hide(Command/Ctrl+O)',
     quit: 'Quit',
     translate: 'Translate',
     askAI: 'Ask AI'
@@ -59,7 +59,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: 'やり直し',
     saveImage: '画像を保存...',
     copyImage: '画像をコピー',
-    open: '開く/隠す',
+    open: '開く/隠す(Command/Ctrl+O)',
     quit: '終了',
     translate: '翻訳',
     askAI: 'AIに質問'
@@ -73,7 +73,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: '다시 실행',
     saveImage: '이미지 저장...',
     copyImage: '이미지 복사',
-    open: '열기/숨기기',
+    open: '열기/숨기기(Command/Ctrl+O)',
     quit: '종료',
     translate: '번역',
     askAI: 'AI에게 질문'
@@ -87,7 +87,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: 'Rétablir',
     saveImage: "Enregistrer l'image...",
     copyImage: "Copier l'image",
-    open: 'Ouvrir/Cache',
+    open: 'Ouvrir/Cache(Command/Ctrl+O)',
     quit: 'Quitter',
     translate: 'Traduire',
     askAI: "Demander à l'AI"
@@ -101,7 +101,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: 'Wiederholen',
     saveImage: 'Bild speichern...',
     copyImage: 'Bild kopieren',
-    open: 'Öffnen/Verstecken',
+    open: 'Öffnen/Verstecken(Command/Ctrl+O)',
     quit: 'Beenden',
     translate: 'Übersetzen',
     askAI: 'KI fragen'
@@ -115,7 +115,7 @@ export const contextMenuTranslations: Record<string, TranslationMap> = {
     redo: 'Rehacer',
     saveImage: 'Guardar imagen...',
     copyImage: 'Copiar imagen',
-    open: 'Abrir/Esconder',
+    open: 'Abrir/Esconder(Command/Ctrl+O)',
     quit: 'Salir',
     translate: 'Traducir',
     askAI: 'Preguntar a la AI'
