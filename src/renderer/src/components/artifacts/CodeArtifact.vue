@@ -43,7 +43,6 @@ import { useI18n } from 'vue-i18n'
 import { useThrottleFn } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
 import { MermaidBlockNode } from 'vue-renderer-markdown'
-import { useThemeStore } from '@/stores/theme'
 import { useArtifactStore } from '@/stores/artifact'
 import { getLanguageIcon } from 'vue-renderer-markdown'
 import { detectLanguage, useMonaco } from 'vue-use-monaco'
@@ -65,7 +64,6 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const { createEditor, updateCode } = useMonaco()
-const themeStore = useThemeStore()
 const artifactStore = useArtifactStore()
 const copyText = ref(t('common.copy'))
 const codeEditor = ref<HTMLElement>()
@@ -189,14 +187,6 @@ const previewCode = () => {
     props.threadId
   )
 }
-
-// 监听主题变化
-watch(
-  () => themeStore.isDark,
-  () => {
-    updateCode(props.block.content, codeLanguage.value)
-  }
-)
 
 // 监听代码变化
 watch(

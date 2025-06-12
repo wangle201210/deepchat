@@ -202,16 +202,6 @@ if (!codeLanguage.value || codeLanguage.value === '') {
   throttledDetectLanguage(artifactStore.currentArtifact?.content || '')
 }
 
-// 监听主题变化
-watch(
-  () => themeStore.isDark,
-  () => {
-    setTimeout(() => {
-      updateCode(artifactStore.currentArtifact?.content || '', codeLanguage.value)
-    })
-  }
-)
-
 watch(
   () => codeLanguage.value,
   () => {
