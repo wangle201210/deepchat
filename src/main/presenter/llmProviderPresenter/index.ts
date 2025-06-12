@@ -26,6 +26,7 @@ import { AnthropicProvider } from './providers/anthropicProvider'
 import { DoubaoProvider } from './providers/doubaoProvider'
 import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS } from '@/events'
+import { TogetherProvider } from './providers/togetherProvider'
 import { GrokProvider } from './providers/grokProvider'
 import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
@@ -138,6 +139,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new OpenAIResponsesProvider(provider, this.configPresenter)
         case 'lmstudio':
           return new LMStudioProvider(provider, this.configPresenter)
+        case 'together':
+          return new TogetherProvider(provider, this.configPresenter)
         default:
           console.warn(`Unknown provider type: ${provider.apiType}`)
           return undefined
