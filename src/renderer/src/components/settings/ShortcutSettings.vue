@@ -33,7 +33,7 @@
               <div class="relative w-full">
                 <Button
                   variant="outline"
-                  class="min-w-[150px] justify-between relative ring-offset-background"
+                  class="h-10 min-w-[200px] justify-end relative px-2"
                   :class="{
                     'ring-2 ring-primary': recordingShortcutId === shortcut.id && !shortcutError,
                     'ring-2 ring-destructive': recordingShortcutId === shortcut.id && shortcutError
@@ -57,7 +57,11 @@
                     </span>
                     <span v-else>{{ t('settings.shortcuts.pressKeys') }}</span>
                   </span>
-                  <span v-else class="text-sm">{{ shortcut.key }}</span>
+                  <span v-else class="text-sm">
+                    <template v-for="key in shortcut.key" :key="key">
+                      <span class="tw-keycap">{{ key }}</span>
+                    </template>
+                  </span>
                   <Icon
                     v-if="recordingShortcutId !== shortcut.id"
                     icon="lucide:pencil"
@@ -243,6 +247,8 @@ const formatShortcut = (_shortcut: string | undefined | null) => {
     .replace('Alt', '⌥')
     .replace('Shift', '⇧')
     .replace(/\+/g, ' + ')
+    .split('+')
+    .map((k) => k.trim())
 }
 
 const resetShortcutKeys = async () => {
@@ -395,3 +401,10 @@ const saveChanges = async () => {
   }
 }
 </script>
+
+<style scoped>
+.tw-keycap {
+  @apply inline-flex min-w-8 h-8 items-center justify-center px-2 py-0.5 mx-0.5 rounded-md text-sm align-middle border shadow-sm transition-colors select-none;
+  @apply border-border bg-background;
+}
+</style>
