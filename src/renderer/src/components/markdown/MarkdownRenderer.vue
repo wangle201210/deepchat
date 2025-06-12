@@ -39,6 +39,7 @@ const nodeComponents = {
             id: v.id,
             type: v.artifactType,
             title: v.artifactTitle,
+            language: v.language,
             content: v.node.code,
             status: 'loaded'
           },

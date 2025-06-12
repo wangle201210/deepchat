@@ -181,6 +181,7 @@ const previewCode = () => {
       id: `temp-${lowerLang}-${nanoid()}`,
       type: artifactType,
       title: artifactTitle,
+      language: lowerLang || props.block.artifact?.language,
       content: props.block.content,
       status: 'loaded'
     },

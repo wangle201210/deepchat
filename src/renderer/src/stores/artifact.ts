@@ -7,6 +7,7 @@ export interface ArtifactState {
   title: string
   content: string
   status: 'loading' | 'loaded' | 'error'
+  language?: string
 }
 
 export const useArtifactStore = defineStore('artifact', () => {
