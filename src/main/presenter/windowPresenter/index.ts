@@ -913,7 +913,7 @@ export class WindowPresenter implements IWindowPresenter {
    * @param args 消息参数。
    * @returns 如果消息已发送，返回 true，否则返回 false。
    */
-  async sendTodefaultTab(
+  async sendToDefaultTab(
     channel: string,
     switchToTarget: boolean = false,
     ...args: unknown[]

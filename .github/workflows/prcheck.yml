@@ -14,7 +14,6 @@ jobs:
         arch: [x64]
         include:
           - arch: x64
-            platform: win-x64
     steps:
       - uses: actions/checkout@v4
       - name: Setup Node.js
