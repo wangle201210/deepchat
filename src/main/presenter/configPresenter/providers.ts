@@ -200,7 +200,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   {
     id: 'together',
     name: 'Together',
-    apiType: 'openai',
+    apiType: 'together',
     apiKey: '',
     baseUrl: 'https://api.together.xyz/v1',
     enable: false,
