@@ -202,6 +202,15 @@ DeepChatは、様々な大規模言語モデルと対話するための統一さ
       <a href="https://cloud.tencent.com/product/hunyuan">Hunyuan</a>
     </td>
   </tr>
+  <tr align="center">
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/302ai.svg" width="50" height="50" alt="302.AI Icon"><br/>
+      <a href="https://302.ai/">302.AI</a>
+    </td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
 
 </table>
 

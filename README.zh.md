@@ -202,6 +202,15 @@ DeepChat是一个功能强大的开源AI聊天平台，为用户提供与多种�
       <a href="https://cloud.tencent.com/product/hunyuan">混元</a>
     </td>
   </tr>
+  <tr align="center">
+    <td>
+      <img src="./src/renderer/src/assets/llm-icons/302ai.svg" width="50" height="50" alt="302.AI图标"><br/>
+      <a href="https://302.ai/">302.AI</a>
+    </td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
 
 </table>
 
