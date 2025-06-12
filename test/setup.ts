@@ -46,7 +46,14 @@ vi.mock('fs', () => ({
   readFileSync: vi.fn(),
   writeFileSync: vi.fn(),
   mkdirSync: vi.fn(),
-  readdirSync: vi.fn()
+  readdirSync: vi.fn(),
+  promises: {
+    access: vi.fn(),
+    readFile: vi.fn(),
+    writeFile: vi.fn(),
+    mkdir: vi.fn(),
+    readdir: vi.fn()
+  }
 }))
 
 // Mock path module

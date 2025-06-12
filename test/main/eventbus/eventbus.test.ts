@@ -14,7 +14,7 @@ describe('EventBus 事件总线', () => {
     mockWindowPresenter = {
       sendToWindow: vi.fn(),
       sendToAllWindows: vi.fn(),
-      sendTodefaultTab: vi.fn()
+      sendToDefaultTab: vi.fn()
     } as Partial<IWindowPresenter> as IWindowPresenter
 
     // Mock TabPresenter
@@ -125,7 +125,7 @@ describe('EventBus 事件总线', () => {
 
       eventBus.sendToRenderer(eventName, SendTarget.DEFAULT_TAB, testData)
 
-      expect(mockWindowPresenter.sendTodefaultTab).toHaveBeenCalledWith(
+      expect(mockWindowPresenter.sendToDefaultTab).toHaveBeenCalledWith(
         eventName,
         true,
         testData
