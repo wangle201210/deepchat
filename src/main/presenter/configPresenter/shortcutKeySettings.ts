@@ -22,7 +22,7 @@ export const rendererShortcutKey = {
 
 // 系统层面 快捷键
 export const systemShortcutKey = {
-  ShowHideWindow: `${CommandKey}+O`,
+  // ShowHideWindow: `${CommandKey}+O`,
   Quit: `${CommandKey}+Q`
 }
 
