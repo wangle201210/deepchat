@@ -99,9 +99,9 @@ export class DataImporter {
     try {
       // 执行事务并返回导入的会话数量
       return importTransaction()
-    } catch (error) {
+    } catch {
       // 事务会自动回滚，直接抛出错误
-      throw error
+      throw new Error('Failed to import data')
     }
   }
 

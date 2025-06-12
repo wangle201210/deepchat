@@ -205,7 +205,7 @@ export class FilePresenter implements IFilePresenter {
       const fullPath = path.join(absPath)
       const stats = await fs.stat(fullPath)
       return stats.isDirectory()
-    } catch (error) {
+    } catch {
       // If the path doesn't exist or there's any other error, return false
       return false
     }

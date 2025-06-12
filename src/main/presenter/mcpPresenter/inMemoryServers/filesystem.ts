@@ -175,7 +175,7 @@ export class FileSystemServer {
         throw new Error('Access denied - symlink target outside allowed directories')
       }
       return realPath
-    } catch (error) {
+    } catch {
       // For new files that don't exist yet, verify parent directory
       const parentDir = path.dirname(absolute)
       try {
