@@ -58,16 +58,16 @@
                     <span v-else>{{ t('settings.shortcuts.pressKeys') }}</span>
                   </span>
                   <span v-else class="text-sm">
-                    <template v-for="(key, idx) in shortcut.key" :key="idx">
-                      <span
-                        class="tw-keycap"
-                        :class="{
-                          'font-mono tracking-widest': key === '0'
-                        }"
-                      >
-                        {{ key }}
-                      </span>
-                    </template>
+                    <span
+                      v-for="(key, idx) in shortcut.key"
+                      :key="idx"
+                      class="tw-keycap"
+                      :class="{
+                        'font-mono tracking-widest': key === '0'
+                      }"
+                    >
+                      {{ key }}
+                    </span>
                   </span>
                   <Icon
                     v-if="recordingShortcutId !== shortcut.id"
