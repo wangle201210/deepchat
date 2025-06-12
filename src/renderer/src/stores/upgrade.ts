@@ -94,6 +94,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           updateInfo.value = null
           isDownloading.value = false
           isUpdating.value = false
+          openUpdateDialog()
           break
         case 'downloading':
           hasUpdate.value = true
