@@ -80,12 +80,12 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           hasUpdate.value = true
           updateInfo.value = info
             ? {
-              version: info.version,
-              releaseDate: info.releaseDate,
-              releaseNotes: info.releaseNotes,
-              githubUrl: info.githubUrl,
-              downloadUrl: info.downloadUrl
-            }
+                version: info.version,
+                releaseDate: info.releaseDate,
+                releaseNotes: info.releaseNotes,
+                githubUrl: info.githubUrl,
+                downloadUrl: info.downloadUrl
+              }
             : null
           // 不自动弹出对话框，由主进程自动开始下载
           break
@@ -94,6 +94,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           updateInfo.value = null
           isDownloading.value = false
           isUpdating.value = false
+          openUpdateDialog()
           break
         case 'downloading':
           hasUpdate.value = true
