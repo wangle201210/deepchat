@@ -394,6 +394,7 @@
     "closeTab": "Close the current tab page",
     "newTab": "Create a new tab",
     "newWindow": "Open a new window",
+    "showHideWindow": "Show/Hide window",
     "newConversation": "New conversation",
     "nextTab": "Switch to next tab",
     "previousTab": "Switch to previous tab",

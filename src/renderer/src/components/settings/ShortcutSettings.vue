@@ -58,8 +58,15 @@
                     <span v-else>{{ t('settings.shortcuts.pressKeys') }}</span>
                   </span>
                   <span v-else class="text-sm">
-                    <template v-for="key in shortcut.key" :key="key">
-                      <span class="tw-keycap">{{ key }}</span>
+                    <template v-for="(key, idx) in shortcut.key" :key="idx">
+                      <span
+                        class="tw-keycap"
+                        :class="{
+                          'font-mono tracking-widest': key === '0'
+                        }"
+                      >
+                        {{ key }}
+                      </span>
                     </template>
                   </span>
                   <Icon
@@ -150,6 +157,10 @@ const shortcutMapping: Record<
   ShortcutKey,
   { icon: string; label: string; key?: string; disabled?: boolean }
 > = {
+  ShowHideWindow: {
+    icon: 'lucide:plus-square',
+    label: 'settings.shortcuts.showHideWindow'
+  },
   NewConversation: {
     icon: 'lucide:plus-square',
     label: 'settings.shortcuts.newConversation'
