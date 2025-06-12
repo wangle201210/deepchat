@@ -6,6 +6,7 @@
   "author": "ThinkInAIXYZ",
   "type": "module",
   "scripts": {
+    "test": "vitest",
     "test:main": "vitest --config vitest.config.ts test/main",
     "test:renderer": "vitest --config vitest.config.renderer.ts test/renderer",
     "test:coverage": "vitest --coverage",
