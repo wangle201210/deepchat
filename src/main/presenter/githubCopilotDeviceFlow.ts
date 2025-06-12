@@ -46,7 +46,8 @@ export class GitHubCopilotDeviceFlow {
 
       return accessToken
     } catch (error) {
-      throw error
+      console.error('Failed to start device flow', error)
+      throw new Error('Failed to start device flow')
     }
   }
 
@@ -265,9 +266,10 @@ export class GitHubCopilotDeviceFlow {
             if (mainWindow) {
               mainWindow.webContents.executeJavaScript(`window.api.copyText('${msg.text}')`)
             }
-
           }
-        } catch (e) {}
+        } catch {
+          // ignore
+        }
       })
 
       instructionWindow.show()
@@ -303,6 +305,10 @@ export class GitHubCopilotDeviceFlow {
 
       const poll = async () => {
         pollCount++
+        if (pollCount > 50) {
+          reject(new Error('Poll count exceeded'))
+          return
+        }
 
         // 检查是否超时
         if (Date.now() >= expiresAt) {
@@ -378,7 +384,9 @@ export class GitHubCopilotDeviceFlow {
             resolve(data.access_token)
             return
           }
-        } catch (error) {}
+        } catch {
+          // ignore
+        }
       }
 
       // 开始轮询
@@ -418,4 +426,3 @@ export function createGitHubCopilotDeviceFlow(): GitHubCopilotDeviceFlow {
 
   return new GitHubCopilotDeviceFlow(config)
 }
-
