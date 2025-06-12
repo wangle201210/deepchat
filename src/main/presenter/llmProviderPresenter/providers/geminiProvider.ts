@@ -72,7 +72,7 @@ export class GeminiProvider extends BaseLLMProvider {
       vision: true,
       functionCall: true,
       reasoning: false,
-      description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
+      description: 'Gemini 2.5 Pro Preview 06-05 模型（付费）'
     },
     {
       id: 'gemini-2.5-pro-exp-03-25',
