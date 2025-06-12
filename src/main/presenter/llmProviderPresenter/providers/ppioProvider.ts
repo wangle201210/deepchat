@@ -1,6 +1,11 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
+
+// Define interface for PPIO API key response
+interface PPIOKeyResponse {
+  credit_balance: number
+}
 
 export class PPIOProvider extends OpenAICompatibleProvider {
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
@@ -52,5 +57,65 @@ export class PPIOProvider extends OpenAICompatibleProvider {
       temperature,
       maxTokens
     )
+  }
+
+  /**
+   * Get current API key status from PPIO
+   * @returns Promise<KeyStatus> API key status information
+   */
+  public async getKeyStatus(): Promise<KeyStatus> {
+    if (!this.provider.apiKey) {
+      throw new Error('API key is required')
+    }
+
+    const response = await fetch('https://api.ppinfra.com/v3/user', {
+      method: 'GET',
+      headers: {
+        'Authorization': this.provider.apiKey,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`PPIO API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    const keyResponse: PPIOKeyResponse = await response.json()
+    const remaining = '¥'+keyResponse.credit_balance/10000
+    return {
+      limit_remaining: remaining,
+      remainNum: keyResponse.credit_balance
+    }
+  }
+
+  /**
+   * Override check method to use PPIO's API key status endpoint
+   * @returns Promise<{ isOk: boolean; errorMsg: string | null }>
+   */
+  public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
+    try {
+      const keyStatus = await this.getKeyStatus()
+
+      // Check if there's remaining quota
+      if (keyStatus.remainNum !== undefined && keyStatus.remainNum <= 0) {
+        return {
+          isOk: false,
+          errorMsg: `API key quota exhausted. Remaining: ${keyStatus.limit_remaining}`
+        }
+      }
+
+      return { isOk: true, errorMsg: null }
+    } catch (error: unknown) {
+      let errorMessage = 'An unknown error occurred during PPIO API key check.'
+      if (error instanceof Error) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+
+      console.error('PPIO API key check failed:', error)
+      return { isOk: false, errorMsg: errorMessage }
+    }
   }
 }

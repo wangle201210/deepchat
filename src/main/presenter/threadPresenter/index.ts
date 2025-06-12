@@ -17,7 +17,7 @@ import {
 } from '../../../shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './messageManager'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import {
   AssistantMessage,
   Message,
@@ -34,7 +34,7 @@ import { approximateTokenSize } from 'tokenx'
 import { generateSearchPrompt, SearchManager } from './searchManager'
 import { getFileContext } from './fileContext'
 import { ContentEnricher } from './contentEnricher'
-import { CONVERSATION_EVENTS, STREAM_EVENTS } from '@/events'
+import { CONVERSATION_EVENTS, STREAM_EVENTS, TAB_EVENTS } from '@/events'
 import { DEFAULT_SETTINGS } from './const'
 
 interface GeneratingMessageState {
@@ -67,6 +67,7 @@ export class ThreadPresenter implements IThreadPresenter {
   public searchAssistantProviderId: string | null = null
   private searchingMessages: Set<string> = new Set()
   private activeConversationIds: Map<number, string> = new Map()
+  private fetchThreadLength: number = 300
 
   constructor(
     sqlitePresenter: ISQLitePresenter,
@@ -79,9 +80,39 @@ export class ThreadPresenter implements IThreadPresenter {
     this.searchManager = new SearchManager()
     this.configPresenter = configPresenter
 
+    // 监听Tab关闭事件，清理绑定关系
+    eventBus.on(TAB_EVENTS.CLOSED, (tabId: number) => {
+      if (this.activeConversationIds.has(tabId)) {
+        this.activeConversationIds.delete(tabId)
+        console.log(`ThreadPresenter: Cleaned up conversation binding for closed tab ${tabId}.`)
+      }
+    })
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_READY, () => {
+      this.broadcastThreadListUpdate()
+    })
+
     // 初始化时处理所有未完成的消息
     this.messageManager.initializeUnfinishedMessages()
   }
+
+  /**
+   * 新增：查找指定会话ID所在的Tab ID
+   * @param conversationId 会话ID
+   * @returns 如果找到，返回tabId，否则返回null
+   */
+  async findTabForConversation(conversationId: string): Promise<number | null> {
+    for (const [tabId, activeId] of this.activeConversationIds.entries()) {
+      if (activeId === conversationId) {
+        // 验证该tab是否还真实存在
+        const tabView = await presenter.tabPresenter.getTab(tabId)
+        if (tabView && !tabView.webContents.isDestroyed()) {
+          return tabId
+        }
+      }
+    }
+    return null
+  }
+
   async handleLLMAgentError(msg: LLMAgentEventData) {
     const { eventId, error } = msg
     const state = this.generatingMessages.get(eventId)
@@ -89,8 +120,9 @@ export class ThreadPresenter implements IThreadPresenter {
       await this.messageManager.handleMessageError(eventId, String(error))
       this.generatingMessages.delete(eventId)
     }
-    eventBus.emit(STREAM_EVENTS.ERROR, msg)
+    eventBus.sendToRenderer(STREAM_EVENTS.ERROR, SendTarget.ALL_WINDOWS, msg)
   }
+
   async handleLLMAgentEnd(msg: LLMAgentEventData) {
     const { eventId, userStop } = msg
     const state = this.generatingMessages.get(eventId)
@@ -161,16 +193,42 @@ export class ThreadPresenter implements IThreadPresenter {
       await this.messageManager.updateMessageStatus(eventId, 'sent')
       await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
       this.generatingMessages.delete(eventId)
-      this.sqlitePresenter
-        .updateConversation(state.conversationId, {
-          updatedAt: Date.now()
-        })
-        .then(() => {
-          console.log('updated conv time', state.conversationId)
-        })
+
+      // 检查是否需要总结标题
+      const conversation = await this.sqlitePresenter.getConversation(state.conversationId)
+      let titleUpdated = false
+      if (conversation.is_new === 1) {
+        try {
+          // 注意：第二个参数直接传入 conversationId
+          const title = await this.summaryTitles(undefined, state.conversationId)
+          if (title) {
+            // renameConversation 会更新标题和updatedAt，并广播
+            await this.renameConversation(state.conversationId, title)
+            titleUpdated = true
+          }
+        } catch (e) {
+          console.error('Failed to summarize title in main process:', e)
+        }
+      }
+
+      // 如果标题没有被更新（即不是新会话，或生成标题失败），
+      // 我们仍然需要更新updatedAt并广播
+      if (!titleUpdated) {
+        this.sqlitePresenter
+          .updateConversation(state.conversationId, {
+            updatedAt: Date.now()
+          })
+          .then(() => {
+            console.log('updated conv time', state.conversationId)
+          })
+        // 手动触发一次广播，因为这次更新没有经过其他会触发广播的方法
+        await this.broadcastThreadListUpdate()
+      }
     }
-    eventBus.emit(STREAM_EVENTS.END, msg)
+
+    eventBus.sendToRenderer(STREAM_EVENTS.END, SendTarget.ALL_WINDOWS, msg)
   }
+
   async handleLLMAgentResponse(msg: LLMAgentEventData) {
     const currentTime = Date.now()
     const {
@@ -192,6 +250,20 @@ export class ThreadPresenter implements IThreadPresenter {
     } = msg
     const state = this.generatingMessages.get(eventId)
     if (state) {
+      // 使用保护逻辑
+      const finalizeLastBlock = () => {
+        const lastBlock =
+          state.message.content.length > 0
+            ? state.message.content[state.message.content.length - 1]
+            : undefined
+        if (lastBlock) {
+          // 只有当上一个块不是一个正在等待结果的工具调用时，才将其标记为成功
+          if (!(lastBlock.type === 'tool_call' && lastBlock.status === 'loading')) {
+            lastBlock.status = 'success'
+          }
+        }
+      }
+
       // 记录第一个token的时间
       if (state.firstTokenTime === null && (content || reasoning_content)) {
         state.firstTokenTime = currentTime
@@ -206,10 +278,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 处理工具调用达到最大次数的情况
       if (maximum_tool_calls_reached) {
-        const lastBlock = state.message.content[state.message.content.length - 1]
-        if (lastBlock) {
-          lastBlock.status = 'success'
-        }
+        finalizeLastBlock() // 使用保护逻辑
         state.message.content.push({
           type: 'action',
           content: 'common.error.maximumToolCallsReached',
@@ -343,10 +412,7 @@ export class ThreadPresenter implements IThreadPresenter {
       if (tool_call) {
         if (tool_call === 'start') {
           // 创建新的工具调用块
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
-
+          finalizeLastBlock() // 使用保护逻辑
           state.message.content.push({
             type: 'tool_call',
             content: '',
@@ -425,9 +491,7 @@ export class ThreadPresenter implements IThreadPresenter {
         }
       } else if (image_data) {
         // 处理图像数据
-        if (lastBlock) {
-          lastBlock.status = 'success'
-        }
+        finalizeLastBlock() // 使用保护逻辑
         state.message.content.push({
           type: 'image',
           content: 'image',
@@ -440,9 +504,7 @@ export class ThreadPresenter implements IThreadPresenter {
         if (lastBlock && lastBlock.type === 'content') {
           lastBlock.content += content
         } else {
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
+          finalizeLastBlock() // 使用保护逻辑
           state.message.content.push({
             type: 'content',
             content: content,
@@ -460,9 +522,7 @@ export class ThreadPresenter implements IThreadPresenter {
             lastBlock.reasoning_time.end = currentTime
           }
         } else {
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
+          finalizeLastBlock() // 使用保护逻辑
           state.message.content.push({
             type: 'reasoning_content',
             content: reasoning_content,
@@ -479,7 +539,7 @@ export class ThreadPresenter implements IThreadPresenter {
       // 更新消息内容
       await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
     }
-    eventBus.emit(STREAM_EVENTS.RESPONSE, msg)
+    eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, msg)
   }
 
   setSearchAssistantModel(model: MODEL_META, providerId: string) {
@@ -520,7 +580,32 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   async renameConversation(conversationId: string, title: string): Promise<CONVERSATION> {
-    return await this.sqlitePresenter.renameConversation(conversationId, title)
+    await this.sqlitePresenter.renameConversation(conversationId, title)
+    await this.broadcastThreadListUpdate() // 必须广播
+
+    const conversation = await this.getConversation(conversationId)
+
+    // 新增：找到与此 conversationId 关联的 tabId
+    let tabId: number | undefined
+    for (const [key, value] of this.activeConversationIds.entries()) {
+      if (value === conversationId) {
+        tabId = key
+        break
+      }
+    }
+
+    // 新增：发出事件通知UI更新标题
+    if (tabId !== undefined) {
+      const windowId = presenter.tabPresenter['tabWindowMap'].get(tabId)
+      eventBus.sendToRenderer(TAB_EVENTS.TITLE_UPDATED, SendTarget.ALL_WINDOWS, {
+        tabId,
+        conversationId,
+        title: conversation.title,
+        windowId // 附带 windowId
+      })
+    }
+
+    return conversation
   }
 
   async createConversation(
@@ -572,17 +657,21 @@ export class ThreadPresenter implements IThreadPresenter {
     }
     const conversationId = await this.sqlitePresenter.createConversation(title, mergedSettings)
     await this.setActiveConversation(conversationId, tabId)
+    await this.broadcastThreadListUpdate() // 必须广播
     return conversationId
   }
 
   async deleteConversation(conversationId: string): Promise<void> {
     await this.sqlitePresenter.deleteConversation(conversationId)
-    // 检查所有 tab 中的活跃会话
+
+    // 作为兜底，确保所有与此会话相关的绑定都被移除
     for (const [tabId, activeId] of this.activeConversationIds.entries()) {
       if (activeId === conversationId) {
         this.activeConversationIds.delete(tabId)
       }
     }
+
+    await this.broadcastThreadListUpdate() // 必须广播
   }
 
   async getConversation(conversationId: string): Promise<CONVERSATION> {
@@ -591,10 +680,12 @@ export class ThreadPresenter implements IThreadPresenter {
 
   async toggleConversationPinned(conversationId: string, pinned: boolean): Promise<void> {
     await this.sqlitePresenter.updateConversation(conversationId, { is_pinned: pinned ? 1 : 0 })
+    await this.broadcastThreadListUpdate() // 必须广播
   }
 
   async updateConversationTitle(conversationId: string, title: string): Promise<void> {
     await this.sqlitePresenter.updateConversation(conversationId, { title })
+    await this.broadcastThreadListUpdate() // 必须广播
   }
 
   async updateConversationSettings(
@@ -625,6 +716,7 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     await this.sqlitePresenter.updateConversation(conversationId, { settings: mergedSettings })
+    await this.broadcastThreadListUpdate() // 必须广播
   }
 
   async getConversationList(
@@ -634,11 +726,55 @@ export class ThreadPresenter implements IThreadPresenter {
     return await this.sqlitePresenter.getConversationList(page, pageSize)
   }
 
+  async loadMoreThreads(): Promise<{ hasMore: boolean; total: number }> {
+    // 获取会话总数
+    const total = await this.sqlitePresenter.getConversationCount()
+
+    // 检查是否还有更多会话可以加载
+    const hasMore = this.fetchThreadLength < total
+
+    if (hasMore) {
+      // 增加 fetchThreadLength，每次增加 500
+      this.fetchThreadLength = Math.min(this.fetchThreadLength + 300, total)
+
+      // 广播更新的会话列表
+      await this.broadcastThreadListUpdate()
+    }
+
+    return { hasMore: this.fetchThreadLength < total, total }
+  }
+
   async setActiveConversation(conversationId: string, tabId: number): Promise<void> {
+    // 【核心修正】由主进程负责全部决策（防重和自动切换逻辑）
+    const existingTabId = await this.findTabForConversation(conversationId)
+
+    // 如果会话已在其他Tab打开，并且不是当前Tab，则切换到那个Tab
+    if (existingTabId !== null && existingTabId !== tabId) {
+      console.log(
+        `Conversation ${conversationId} is already open in tab ${existingTabId}. Switching to it.`
+      )
+      // 命令TabPresenter切换到已存在的Tab
+      await presenter.tabPresenter.switchTab(existingTabId)
+      // 注意：这里不应该再为 requesting tab (即 tabId) 设置 activeConversationId
+      // 也不需要发送ACTIVATED事件，因为tab-session的绑定关系没有改变。
+      // switchTab 自身会处理UI的激活。
+      return
+    }
+
+    // 如果会话未在其他Tab打开，或者是请求激活当前Tab已绑定的会话，则正常执行绑定
     const conversation = await this.getConversation(conversationId)
     if (conversation) {
+      // 检查当前Tab是否已经绑定了这个会话，避免不必要的事件广播
+      if (this.activeConversationIds.get(tabId) === conversationId) {
+        return // 状态未改变，无需操作
+      }
+
       this.activeConversationIds.set(tabId, conversationId)
-      eventBus.emit(CONVERSATION_EVENTS.ACTIVATED, { conversationId, tabId })
+      // 广播事件，通知所有渲染进程UI更新
+      eventBus.sendToRenderer(CONVERSATION_EVENTS.ACTIVATED, SendTarget.ALL_WINDOWS, {
+        conversationId,
+        tabId
+      })
     } else {
       throw new Error(`Conversation ${conversationId} not found`)
     }
@@ -809,6 +945,8 @@ export class ThreadPresenter implements IThreadPresenter {
         })
       }
 
+      // 因为handleLLMAgentEnd会处理会话列表广播，所以此处不用广播
+
       return assistantMessage
     }
 
@@ -904,7 +1042,7 @@ export class ThreadPresenter implements IThreadPresenter {
     4. 保持查询简洁，通常不超过3个关键词, 最多不要超过5个关键词，参考当前搜索引擎的查询习惯重写关键字
 
     直接返回优化后的搜索词，不要有任何额外说明。
-    如果你觉得用户的问题不需要进行搜索，请直接返回“无须搜索”。
+    如果你觉得用户的问题不需要进行搜索，请直接返回"无须搜索"。
 
     如下是之前对话的上下文：
     <context_messages>
@@ -1144,7 +1282,7 @@ export class ThreadPresenter implements IThreadPresenter {
         queryMsgId
       )
 
-      const { providerId, modelId, temperature, maxTokens } = conversation.settings
+      const { providerId, modelId } = conversation.settings
       const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
       const { vision } = modelConfig || {}
       // 检查是否已被取消
@@ -1205,13 +1343,22 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(state.message.id)
       // 6. 启动流式生成
 
+      // 重新获取最新的会话设置，以防在之前的 await 期间发生变化
+      const currentConversation = await this.getConversation(conversationId)
+      const {
+        providerId: currentProviderId,
+        modelId: currentModelId,
+        temperature: currentTemperature,
+        maxTokens: currentMaxTokens
+      } = currentConversation.settings
+
       const stream = this.llmProviderPresenter.startStreamCompletion(
-        providerId,
+        currentProviderId, // 使用最新的设置
         finalContent,
-        modelId,
+        currentModelId, // 使用最新的设置
         state.message.id,
-        temperature,
-        maxTokens
+        currentTemperature, // 使用最新的设置
+        currentMaxTokens // 使用最新的设置
       )
       for await (const event of stream) {
         const msg = event.data
@@ -1276,23 +1423,24 @@ export class ThreadPresenter implements IThreadPresenter {
 
         // 4. 检查工具调用参数
         if (!toolCall.id || !toolCall.name || !toolCall.params) {
-          throw new Error('工具调用参数不完整')
+          // 参数不完整就跳过，然后继续执行即可
+          console.warn('工具调用参数不完整')
+        } else {
+          // 5. 调用工具获取结果
+          toolCallResponse = await presenter.mcpPresenter.callTool({
+            id: toolCall.id,
+            type: 'function',
+            function: {
+              name: toolCall.name,
+              arguments: toolCall.params
+            },
+            server: {
+              name: toolCall.server_name || '',
+              icons: toolCall.server_icons || '',
+              description: toolCall.server_description || ''
+            }
+          })
         }
-
-        // 5. 调用工具获取结果
-        toolCallResponse = await presenter.mcpPresenter.callTool({
-          id: toolCall.id,
-          type: 'function',
-          function: {
-            name: toolCall.name,
-            arguments: toolCall.params
-          },
-          server: {
-            name: toolCall.server_name || '',
-            icons: toolCall.server_icons || '',
-            description: toolCall.server_description || ''
-          }
-        })
       }
 
       // 检查是否已被取消
@@ -1329,7 +1477,7 @@ export class ThreadPresenter implements IThreadPresenter {
       // 9. 如果有工具调用结果，发送工具调用结果事件
       if (toolCallResponse && toolCall) {
         // console.log('toolCallResponse', toolCallResponse)
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+        eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, {
           eventId: state.message.id,
           content: '',
           tool_call: 'start',
@@ -1341,7 +1489,7 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_server_icons: toolCall.server_icons,
           tool_call_server_description: toolCall.server_description
         })
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+        eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, {
           eventId: state.message.id,
           content: '',
           tool_call: 'running',
@@ -1353,7 +1501,7 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_server_icons: toolCall.server_icons,
           tool_call_server_description: toolCall.server_description
         })
-        eventBus.emit(STREAM_EVENTS.RESPONSE, {
+        eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, {
           eventId: state.message.id,
           content: '',
           tool_call: 'end',
@@ -1805,13 +1953,13 @@ export class ThreadPresenter implements IThreadPresenter {
 
                 try {
                   parsedParams = JSON.parse(block.tool_call.params)
-                } catch (e) {
+                } catch {
                   parsedParams = block.tool_call.params // 保留原字符串
                 }
 
                 try {
                   parsedResponse = JSON.parse(block.tool_call.response)
-                } catch (e) {
+                } catch {
                   parsedResponse = block.tool_call.response // 保留原字符串
                 }
 
@@ -1948,7 +2096,7 @@ export class ThreadPresenter implements IThreadPresenter {
         } else if (LMC !== undefined && CMC === undefined) {
           // LMC有值, CMC是undefined -> content保持LMC的值，无需改变
           newCombinedContent = LMC
-          contentTypesCompatibleForMerging = true // 视为成功合并（当前消息内容被“吸收”）
+          contentTypesCompatibleForMerging = true // 视为成功合并（当前消息内容被"吸收"）
         }
         // 如果LMC和CMC的类型不兼容 (例如一个是string, 另一个是array)，
         // contentTypesCompatibleForMerging 将保持 false
@@ -2129,8 +2277,13 @@ export class ThreadPresenter implements IThreadPresenter {
     await Promise.all(messageIds.map((messageId) => this.stopMessageGeneration(messageId)))
   }
 
-  async summaryTitles(tabId?: number): Promise<string> {
-    const conversation = await this.getActiveConversation(tabId || 0)
+  async summaryTitles(tabId?: number, conversationId?: string): Promise<string> {
+    const targetConversationId =
+      conversationId ?? (tabId !== undefined ? this.activeConversationIds.get(tabId) : undefined)
+    if (!targetConversationId) {
+      throw new Error('找不到当前对话')
+    }
+    const conversation = await this.getConversation(targetConversationId)
     if (!conversation) {
       throw new Error('找不到当前对话')
     }
@@ -2178,9 +2331,10 @@ export class ThreadPresenter implements IThreadPresenter {
     console.log('-------------> cleanedTitle \n', cleanedTitle)
     return cleanedTitle
   }
+
   async clearActiveThread(tabId: number): Promise<void> {
     this.activeConversationIds.delete(tabId)
-    eventBus.emit(CONVERSATION_EVENTS.DEACTIVATED, { tabId })
+    eventBus.sendToRenderer(CONVERSATION_EVENTS.DEACTIVATED, SendTarget.ALL_WINDOWS, { tabId })
   }
 
   async clearAllMessages(conversationId: string): Promise<void> {
@@ -2302,8 +2456,10 @@ export class ThreadPresenter implements IThreadPresenter {
         )
       }
 
-      // 5. 触发会话创建事件
+      // 在所有数据库操作完成后，调用广播方法
+      await this.broadcastThreadListUpdate()
 
+      // 5. 触发会话创建事件
       return newConversationId
     } catch (error) {
       console.error('分支会话失败:', error)
@@ -2432,5 +2588,40 @@ export class ThreadPresenter implements IThreadPresenter {
       console.error('AI询问失败:', error)
       throw error
     }
+  }
+
+  private async broadcastThreadListUpdate(): Promise<void> {
+    // 1. 获取所有会话 (假设9999足够大)
+    const result = await this.sqlitePresenter.getConversationList(1, this.fetchThreadLength)
+
+    // 2. 对列表进行排序 (置顶优先, 然后按更新时间)
+    result.list.sort((a, b) => {
+      const aIsPinned = a.is_pinned === 1
+      const bIsPinned = b.is_pinned === 1
+      if (aIsPinned && !bIsPinned) return -1
+      if (!aIsPinned && bIsPinned) return 1
+      return b.updatedAt - a.updatedAt
+    })
+
+    // 3. 按日期分组
+    const groupedThreads: Map<string, CONVERSATION[]> = new Map()
+    result.list.forEach((conv) => {
+      const date = new Date(conv.updatedAt).toISOString().split('T')[0]
+      if (!groupedThreads.has(date)) {
+        groupedThreads.set(date, [])
+      }
+      groupedThreads.get(date)!.push(conv)
+    })
+    const finalGroupedList = Array.from(groupedThreads.entries()).map(([dt, dtThreads]) => ({
+      dt,
+      dtThreads
+    }))
+
+    // 4. 广播这个格式化好的完整列表
+    eventBus.sendToRenderer(
+      CONVERSATION_EVENTS.LIST_UPDATED,
+      SendTarget.ALL_WINDOWS,
+      finalGroupedList
+    )
   }
 }

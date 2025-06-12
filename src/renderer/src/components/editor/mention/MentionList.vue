@@ -15,6 +15,12 @@
         @click="selectItem(index)"
       >
         <Icon v-if="item.icon" :icon="item.icon" class="size-4 shrink-0" />
+        <!-- 文件标识图标 -->
+        <Icon 
+          v-if="hasFiles(item)" 
+          icon="lucide:paperclip" 
+          class="size-3 text-blue-500" 
+        />
         <div class="font-medium flex-1 truncate">{{ item.label }}</div>
         <Icon
           v-if="item.type === 'category'"
@@ -46,7 +52,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import { CategorizedData } from './suggestion'
+import { CategorizedData, getPromptFilesHandler } from './suggestion'
 import PromptParamsDialog from './PromptParamsDialog.vue'
 
 const props = defineProps<{
@@ -63,6 +69,14 @@ const selectedIndex = ref(0)
 const currentCategory = ref<string | null>(null)
 const isCategoryView = computed(() => currentCategory.value != null)
 const itemElements = ref<HTMLButtonElement | null[]>([])
+
+// 检测 prompt 是否有关联文件
+const hasFiles = (item: CategorizedData): boolean => {
+  if (item.category !== 'prompts') return false
+  const mcpEntry = item.mcpEntry
+  // 类型保护：检查是否是 PromptListEntry 并且有 files 字段
+  return Boolean(mcpEntry && 'files' in mcpEntry && mcpEntry.files && Array.isArray(mcpEntry.files) && mcpEntry.files.length > 0)
+}
 
 // Compute items to display based on the current category
 const displayItems = computed<CategorizedData[]>(() => {
@@ -148,6 +162,14 @@ const handlePromptParams = (values: Record<string, string>) => {
       content: JSON.stringify(promptContent)
     })
 
+    // 处理关联的文件
+    const handler = getPromptFilesHandler()
+    if (handler && promptContent.files && Array.isArray(promptContent.files)) {
+      handler(promptContent.files).catch(error => {
+        console.error('Failed to handle prompt files:', error)
+      })
+    }
+
     showParamsDialog.value = false
     selectedPrompt.value = null
   }
@@ -197,6 +219,16 @@ const selectItem = (index: number) => {
                 ? JSON.stringify(selectedDisplayItem.mcpEntry)
                 : ''
         })
+      }
+
+      // 检查并处理关联的文件
+      if (hasFiles(selectedDisplayItem)) {
+        const handler = getPromptFilesHandler()
+        if (handler && mcpEntry?.files) {
+          handler(mcpEntry.files).catch(error => {
+            console.error('Failed to handle prompt files:', error)
+          })
+        }
       }
     } else {
       props.command({

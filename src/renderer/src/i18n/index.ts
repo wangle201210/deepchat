@@ -6,6 +6,7 @@ import zhHK from './zh-HK'
 import zhTW from './zh-TW'
 import ruRU from './ru-RU'
 import frFR from './fr-FR'
+import faIR from './fa-IR'
 
 const locales = {
   'zh-CN': zhCN,
@@ -16,6 +17,7 @@ const locales = {
   'ko-KR': koKR,
   'ru-RU': ruRU,
   'fr-FR': frFR,
+  'fa-IR': faIR,
   zh: zhCN,
   en: enUS,
   fr: frFR

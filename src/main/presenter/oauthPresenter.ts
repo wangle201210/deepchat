@@ -1,6 +1,4 @@
 import { BrowserWindow } from 'electron'
-import { eventBus } from '@/eventbus'
-import { CONFIG_EVENTS } from '@/events'
 import { presenter } from '.'
 import * as http from 'http'
 import { URL } from 'url'
@@ -46,7 +44,6 @@ export class OAuthPresenter {
   async startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean> {
     try {
       console.log('Starting GitHub Copilot Device Flow login for provider:', providerId)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
 
       // 使用专门的GitHub Copilot Device Flow实现
       console.log('Creating GitHub Device Flow instance...')
@@ -77,15 +74,9 @@ export class OAuthPresenter {
         console.warn('Provider not found:', providerId)
       }
 
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
-
     } catch (error) {
       console.error('GitHub Copilot Device Flow login failed:', error)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
       return false
     }
   }
@@ -96,7 +87,6 @@ export class OAuthPresenter {
   async startGitHubCopilotLogin(providerId: string): Promise<boolean> {
     try {
       console.log('Starting GitHub Copilot OAuth login for provider:', providerId)
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
 
       // 使用专门的GitHub Copilot OAuth实现
       console.log('Creating GitHub OAuth instance...')
@@ -132,7 +122,6 @@ export class OAuthPresenter {
         console.warn('Provider not found:', providerId)
       }
 
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       console.log('GitHub Copilot OAuth login completed successfully')
       return true
     } catch (error) {
@@ -140,11 +129,6 @@ export class OAuthPresenter {
       console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error)
       console.error('Error message:', error instanceof Error ? error.message : error)
       console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
-
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
       return false
     }
   }
@@ -154,8 +138,6 @@ export class OAuthPresenter {
    */
   async startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean> {
     try {
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START, { providerId })
-
       // 启动回调服务器
       await this.startCallbackServer()
 
@@ -175,15 +157,11 @@ export class OAuthPresenter {
         presenter.configPresenter.setProviderById(providerId, provider)
       }
 
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, { providerId, accessToken })
       return true
     } catch (error) {
       console.error('OAuth login failed:', error)
       this.stopCallbackServer()
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, {
-        providerId,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      })
+
       return false
     }
   }
@@ -393,8 +371,6 @@ export class OAuthPresenter {
     return `${config.authUrl}?${params.toString()}`
   }
 
-
-
   /**
    * 用授权码交换访问令牌
    */
@@ -402,7 +378,7 @@ export class OAuthPresenter {
     const response = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         'User-Agent': 'DeepChat/1.0.0'
       },
@@ -418,7 +394,7 @@ export class OAuthPresenter {
       throw new Error(`Token exchange failed: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       access_token: string
       error?: string
       error_description?: string
@@ -445,7 +421,8 @@ export class OAuthPresenter {
 // GitHub Copilot的OAuth配置
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
-  redirectUri: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+  redirectUri:
+    import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
   clientSecret: import.meta.env.VITE_GITHUB_CLIENT_SECRET,
   scope: 'read:user read:org',

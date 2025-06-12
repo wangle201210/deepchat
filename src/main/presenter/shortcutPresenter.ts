@@ -2,7 +2,7 @@ import { app, globalShortcut } from 'electron'
 
 import { presenter } from '.'
 import { SHORTCUT_EVENTS, TRAY_EVENTS } from '../events'
-import { eventBus } from '../eventbus'
+import { eventBus, SendTarget } from '../eventbus'
 import {
   CommandKey,
   defaultShortcutKey,
@@ -49,7 +49,7 @@ export class ShortcutPresenter {
     globalShortcut.register(this.shortcutKeys.NewWindow, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
+        eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_WINDOW)
       }
     })
 
@@ -57,7 +57,7 @@ export class ShortcutPresenter {
     globalShortcut.register(this.shortcutKeys.NewTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        eventBus.emit(SHORTCUT_EVENTS.CREATE_NEW_TAB, focusedWindow.id)
+        eventBus.sendToMain(SHORTCUT_EVENTS.CREATE_NEW_TAB, focusedWindow.id)
       }
     })
 
@@ -65,7 +65,7 @@ export class ShortcutPresenter {
     globalShortcut.register(this.shortcutKeys.CloseTab, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        eventBus.emit(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, focusedWindow.id)
+        eventBus.sendToMain(SHORTCUT_EVENTS.CLOSE_CURRENT_TAB, focusedWindow.id)
       }
     })
 
@@ -76,33 +76,47 @@ export class ShortcutPresenter {
 
     // Command+= 或 Ctrl+= 放大字体
     globalShortcut.register(this.shortcutKeys.ZoomIn, () => {
-      eventBus.emit(SHORTCUT_EVENTS.ZOOM_IN)
+      eventBus.send(SHORTCUT_EVENTS.ZOOM_IN, SendTarget.ALL_WINDOWS)
     })
 
     // Command+- 或 Ctrl+- 缩小字体
     globalShortcut.register(this.shortcutKeys.ZoomOut, () => {
-      eventBus.emit(SHORTCUT_EVENTS.ZOOM_OUT)
+      eventBus.send(SHORTCUT_EVENTS.ZOOM_OUT, SendTarget.ALL_WINDOWS)
     })
 
     // Command+0 或 Ctrl+0 重置字体大小
     globalShortcut.register(this.shortcutKeys.ZoomResume, () => {
-      eventBus.emit(SHORTCUT_EVENTS.ZOOM_RESUME)
+      eventBus.send(SHORTCUT_EVENTS.ZOOM_RESUME, SendTarget.ALL_WINDOWS)
     })
 
     // Command+, 或 Ctrl+, 打开设置
     globalShortcut.register(this.shortcutKeys.GoSettings, () => {
       const focusedWindow = presenter.windowPresenter.getFocusedWindow()
       if (focusedWindow?.isFocused()) {
-        presenter.windowPresenter.sendToActiveTab(
-          focusedWindow.id,
-          SHORTCUT_EVENTS.GO_SETTINGS
-        )
+        presenter.windowPresenter.sendToActiveTab(focusedWindow.id, SHORTCUT_EVENTS.GO_SETTINGS)
       }
     })
 
     // Command+L 或 Ctrl+L 清除聊天历史
     globalShortcut.register(this.shortcutKeys.CleanChatHistory, () => {
-      eventBus.emit(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY)
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        presenter.windowPresenter.sendToActiveTab(
+          focusedWindow.id,
+          SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY
+        )
+      }
+    })
+
+    // Command+D 或 Ctrl+D 清除聊天历史
+    globalShortcut.register(this.shortcutKeys.DeleteConversation, () => {
+      const focusedWindow = presenter.windowPresenter.getFocusedWindow()
+      if (focusedWindow?.isFocused()) {
+        presenter.windowPresenter.sendToActiveTab(
+          focusedWindow.id,
+          SHORTCUT_EVENTS.DELETE_CONVERSATION
+        )
+      }
     })
 
     // 添加标签页切换相关快捷键
@@ -216,7 +230,7 @@ export class ShortcutPresenter {
   private async showHideWindow() {
     // Command+O 或 Ctrl+O 显示/隐藏窗口
     globalShortcut.register(this.shortcutKeys.ShowHideWindow, () => {
-      eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
+      eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
     })
   }
 

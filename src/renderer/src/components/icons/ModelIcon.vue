@@ -55,8 +55,10 @@ import aihubmixColorIcon from '@/assets/llm-icons/aihubmix.png?url'
 import defaultIcon from '@/assets/logo.png?url'
 import metaColorIcon from '@/assets/llm-icons/meta.svg?url'
 import lmstudioColorIcon from '@/assets/llm-icons/lmstudio.svg?url'
+import _302aiIcon from '@/assets/llm-icons/302ai.svg?url'
 // 导入所有图标
 const icons = {
+  '302ai': _302aiIcon,
   aihubmix: aihubmixColorIcon,
   dashscope: dashscopeColorIcon,
   hunyuan: hunyuanColorIcon,

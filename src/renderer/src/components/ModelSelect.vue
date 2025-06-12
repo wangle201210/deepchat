@@ -1,5 +1,5 @@
 <template>
-  <div class="space-y-2">
+  <div class="space-y-2" :dir="langStore.dir">
     <Input
       v-model="keyword"
       class="w-full border-none border-b ring-0 focus-visible:ring-0 rounded-b-none"
@@ -42,15 +42,18 @@ import { ref, computed, onMounted } from 'vue'
 import Input from './ui/input/Input.vue'
 // import Badge from './ui/badge/Badge.vue'
 import { useChatStore } from '@/stores/chat'
-import type { RENDERER_MODEL_META } from '@shared/presenter'
+import { type RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 import ModelIcon from './icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
 const { t } = useI18n()
 const keyword = ref('')
 const chatStore = useChatStore()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
+const langStore = useLanguageStore()
 const providers = ref<{ id: string; name: string; models: RENDERER_MODEL_META[] }[]>([])
 
 const emit = defineEmits<{
@@ -97,7 +100,7 @@ onMounted(async () => {
       return {
         id: providerId,
         name: provider?.name || providerId,
-        models
+        models: models.filter((model) => model.type === ModelType.Chat)
       }
     })
   } catch (error) {

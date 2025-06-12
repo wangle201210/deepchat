@@ -14,6 +14,7 @@ export const rendererShortcutKey = {
   ZoomResume: `${CommandKey}+0`,
   GoSettings: `${CommandKey}+,`,
   CleanChatHistory: `${CommandKey}+L`,
+  DeleteConversation: `${CommandKey}+D`,
   SwitchNextTab: `${CommandKey}+Tab`,
   SwitchPrevTab: `${CommandKey}+${ShiftKey}+Tab`,
   SwtichToLastTab: `${CommandKey}+9`
@@ -22,7 +23,7 @@ export const rendererShortcutKey = {
 // 系统层面 快捷键
 export const systemShortcutKey = {
   ShowHideWindow: `${CommandKey}+O`,
-  Quit: `${CommandKey}+Q`,
+  Quit: `${CommandKey}+Q`
 }
 
 export const defaultShortcutKey = {

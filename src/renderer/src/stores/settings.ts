@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, onMounted, toRaw, computed } from 'vue'
-import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
+import { type LLM_PROVIDER, type RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 import { usePresenter } from '@/composables/usePresenter'
-import { useI18n } from 'vue-i18n'
 import { SearchEngineTemplate } from '@shared/chat'
 import { CONFIG_EVENTS, OLLAMA_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import type { OllamaModel } from '@shared/presenter'
@@ -19,11 +19,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const llmP = usePresenter('llmproviderPresenter')
   const threadP = usePresenter('threadPresenter')
   const router = useRouter()
-  const { locale } = useI18n({ useScope: 'global' })
   const upgradeStore = useUpgradeStore()
   const providers = ref<LLM_PROVIDER[]>([])
-  const theme = ref<string>('system')
-  const language = ref<string>('system')
   const providerOrder = ref<string[]>([])
   const enabledModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
   const allProviderModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
@@ -33,6 +30,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const artifactsEffectEnabled = ref<boolean>(false) // 默认值与配置文件一致
   const searchPreviewEnabled = ref<boolean>(true) // 搜索预览是否启用，默认启用
   const contentProtectionEnabled = ref<boolean>(true) // 投屏保护是否启用，默认启用
+  const copyWithCotEnabled = ref<boolean>(true)
   const notificationsEnabled = ref<boolean>(true) // 系统通知是否启用，默认启用
   const isRefreshingModels = ref<boolean>(false) // 是否正在刷新模型列表
   const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
@@ -148,7 +146,8 @@ export const useSettingsStore = defineStore('settings', () => {
           isCustom: priorityModel.model.isCustom,
           vision: priorityModel.model.vision || false,
           functionCall: priorityModel.model.functionCall || false,
-          reasoning: priorityModel.model.reasoning || false
+          reasoning: priorityModel.model.reasoning || false,
+          type: priorityModel.model.type || ModelType.Chat
         },
         providerId: priorityModel.providerId
       })
@@ -165,7 +164,8 @@ export const useSettingsStore = defineStore('settings', () => {
           isCustom: priorityModel.model.isCustom,
           vision: priorityModel.model.vision || false,
           functionCall: priorityModel.model.functionCall || false,
-          reasoning: priorityModel.model.reasoning || false
+          reasoning: priorityModel.model.reasoning || false,
+          type: priorityModel.model.type || ModelType.Chat
         },
         toRaw(priorityModel.providerId)
       )
@@ -244,19 +244,13 @@ export const useSettingsStore = defineStore('settings', () => {
   const initSettings = async () => {
     try {
       loggingEnabled.value = await configP.getLoggingEnabled()
+      copyWithCotEnabled.value = await configP.getCopyWithCotEnabled()
+
       // 获取全部 provider
       providers.value = await configP.getProviders()
       defaultProviders.value = await configP.getDefaultProviders()
       // 加载保存的 provider 顺序
       await loadSavedOrder()
-
-      // 获取主题
-      theme.value = (await configP.getSetting('theme')) || 'system'
-
-      // 获取语言
-      language.value = (await configP.getSetting('language')) || 'system'
-      // 设置语言
-      locale.value = await configP.getLanguage()
 
       // 获取字体大小级别
       fontSizeLevel.value =
@@ -268,9 +262,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
       // 获取搜索预览设置
       searchPreviewEnabled.value = await configP.getSearchPreviewEnabled()
-
-      // 获取artifacts效果开关状态
-      // artifactsEffectEnabled.value = await configP.getArtifactsEffectEnabled()
 
       // 获取投屏保护设置
       contentProtectionEnabled.value = await configP.getContentProtectionEnabled()
@@ -316,6 +307,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
       // 设置投屏保护事件监听器
       setupContentProtectionListener()
+
+      // 设置拷贝事件监听器
+      setupCopyWithCotEnabledListener()
 
       // 单独刷新一次 Ollama 模型，确保即使没有启用 Ollama provider 也能获取模型列表
       if (providers.value.some((p) => p.id === 'ollama')) {
@@ -423,7 +417,8 @@ export const useSettingsStore = defineStore('settings', () => {
               providerId,
               vision: meta.vision || false,
               functionCall: meta.functionCall || false,
-              reasoning: meta.reasoning || false
+              reasoning: meta.reasoning || false,
+              type: meta.type || ModelType.Chat
             }))
           }
         } catch (error) {
@@ -588,18 +583,6 @@ export const useSettingsStore = defineStore('settings', () => {
     }
   }
 
-  // 更新主题
-  const updateTheme = async (newTheme: string) => {
-    await configP.setSetting('theme', newTheme)
-    theme.value = newTheme
-  }
-
-  // 更新语言
-  const updateLanguage = async (newLanguage: string) => {
-    await configP.setLanguage(newLanguage)
-    language.value = newLanguage
-  }
-
   // 更新字体大小级别
   const updateFontSizeLevel = async (level: number) => {
     const validLevel = Math.max(0, Math.min(level, FONT_SIZE_CLASSES.length - 1))
@@ -616,15 +599,6 @@ export const useSettingsStore = defineStore('settings', () => {
       providers.value = await configP.getProviders()
       await refreshAllModels()
     })
-
-    // 监听语言变更事件
-    window.electron.ipcRenderer.on(
-      CONFIG_EVENTS.LANGUAGE_CHANGED,
-      async (_event, newLanguage: string) => {
-        language.value = newLanguage
-        locale.value = await configP.getLanguage()
-      }
-    )
 
     // 监听模型列表更新事件
     window.electron.ipcRenderer.on(
@@ -667,6 +641,9 @@ export const useSettingsStore = defineStore('settings', () => {
 
     // 添加对投屏保护变更的监听
     setupContentProtectionListener()
+
+    // 设置拷贝事件监听器
+    setupCopyWithCotEnabledListener()
   }
 
   // 更新本地模型状态，不触发后端请求
@@ -698,7 +675,8 @@ export const useSettingsStore = defineStore('settings', () => {
               enabled: true,
               vision: model.vision || false,
               functionCall: model.functionCall || false,
-              reasoning: model.reasoning || false
+              reasoning: model.reasoning || false,
+              type: model.type || ModelType.Chat
             })
           }
         }
@@ -1042,6 +1020,7 @@ export const useSettingsStore = defineStore('settings', () => {
         vision: existingModel?.vision || false,
         functionCall: existingModel?.functionCall || false,
         reasoning: existingModel?.reasoning || false,
+        type: existingModel?.type || ModelType.Chat,
         // 保留现有的其他配置，但确保更新 Ollama 特有数据
         ...(existingModel ? { ...existingModel } : {}),
         ollamaModel: model
@@ -1277,6 +1256,27 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setLoggingEnabled(enabled)
   }
 
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+  const setCopyWithCotEnabled = async (enabled: boolean) => {
+    copyWithCotEnabled.value = Boolean(enabled)
+    await configP.setCopyWithCotEnabled(enabled)
+  }
+
+  const getCopyWithCotEnabled = async (): Promise<boolean> => {
+    return await configP.getCopyWithCotEnabled()
+  }
+
+  const setupCopyWithCotEnabledListener = () => {
+    window.electron.ipcRenderer.on(
+      CONFIG_EVENTS.COPY_WITH_COT_CHANGED,
+      (_event, enabled: boolean) => {
+        copyWithCotEnabled.value = enabled
+      }
+    )
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////
   const findModelByIdOrName = (
     modelId: string
   ): { model: RENDERER_MODEL_META; providerId: string } | null => {
@@ -1390,8 +1390,6 @@ export const useSettingsStore = defineStore('settings', () => {
 
   return {
     providers,
-    theme,
-    language,
     fontSizeLevel, // Expose font size level
     fontSizeClass, // Expose font size class
     enabledModels,
@@ -1402,11 +1400,10 @@ export const useSettingsStore = defineStore('settings', () => {
     artifactsEffectEnabled,
     searchPreviewEnabled,
     contentProtectionEnabled,
+    copyWithCotEnabled,
     notificationsEnabled, // 暴露系统通知状态
     loggingEnabled,
     updateProvider,
-    updateTheme,
-    updateLanguage,
     updateFontSizeLevel, // Expose update function
     initSettings,
     searchModels,
@@ -1441,8 +1438,6 @@ export const useSettingsStore = defineStore('settings', () => {
     getOllamaPullingModels,
     removeOllamaEventListeners,
     cleanup,
-    // setArtifactsEffectEnabled,
-    // setupArtifactsEffectListener,
     getSearchPreviewEnabled,
     setSearchPreviewEnabled,
     setNotificationsEnabled, // 暴露设置系统通知的方法
@@ -1451,6 +1446,9 @@ export const useSettingsStore = defineStore('settings', () => {
     setContentProtectionEnabled,
     setupContentProtectionListener,
     setLoggingEnabled,
+    getCopyWithCotEnabled,
+    setCopyWithCotEnabled,
+    setupCopyWithCotEnabledListener,
     testSearchEngine,
     refreshSearchEngines,
     findModelByIdOrName,

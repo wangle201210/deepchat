@@ -6,7 +6,11 @@
     "functionSwitch": "Переключатель функций",
     "fileSelect": "Выбрать файл",
     "pasteFiles": "Поддержка копирования и вставки файлов",
-    "dropFiles": "Перетащите файлы сюда"
+    "dropFiles": "Перетащите файлы сюда",
+    "promptFilesAdded": "Файлы промпта добавлены",
+    "promptFilesAddedDesc": "Успешно добавлено {count} файлов",
+    "promptFilesError": "Ошибка обработки файлов",
+    "promptFilesErrorDesc": "Не удалось обработать {count} файлов"
   },
   "features": {
     "deepThinking": "Глубокое мышление",

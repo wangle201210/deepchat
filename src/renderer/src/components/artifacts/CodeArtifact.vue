@@ -37,20 +37,15 @@
     ></div>
   </div>
 </template>
-
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useThrottleFn } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
-import { EditorView, basicSetup } from 'codemirror'
-import { EditorState } from '@codemirror/state'
 import { MermaidBlockNode } from 'vue-renderer-markdown'
-import { getLanguageExtension, getLanguageIcon, prepareLanguage } from '@/lib/code.lang'
-import { useThemeStore } from '@/stores/theme'
 import { useArtifactStore } from '@/stores/artifact'
-import { anysphereThemeDark, anysphereThemeLight } from '@/lib/code.theme'
-import { detectLanguage } from 'vue-renderer-markdown'
+import { getLanguageIcon } from 'vue-renderer-markdown'
+import { detectLanguage, useMonaco } from 'vue-use-monaco'
 import { nanoid } from 'nanoid'
 
 const props = defineProps<{
@@ -67,14 +62,11 @@ const props = defineProps<{
   threadId?: string
 }>()
 
-prepareLanguage()
-
 const { t } = useI18n()
-const themeStore = useThemeStore()
+const { createEditor, updateCode } = useMonaco()
 const artifactStore = useArtifactStore()
 const copyText = ref(t('common.copy'))
 const codeEditor = ref<HTMLElement>()
-const editorInstance = ref<EditorView | null>(null)
 const codeLanguage = ref(props.block.artifact?.language?.trim().toLowerCase() || '')
 
 // 创建节流版本的语言检测函数，1秒内最多执行一次
@@ -187,6 +179,7 @@ const previewCode = () => {
       id: `temp-${lowerLang}-${nanoid()}`,
       type: artifactType,
       title: artifactTitle,
+      language: lowerLang || props.block.artifact?.language,
       content: props.block.content,
       status: 'loaded'
     },
@@ -194,57 +187,6 @@ const previewCode = () => {
     props.threadId
   )
 }
-
-// 创建编辑器实例
-const createEditor = () => {
-  if (!codeEditor.value) return
-
-  // Clean up existing editor if it exists
-  if (editorInstance.value) {
-    editorInstance.value.destroy()
-    editorInstance.value = null
-  }
-
-  // Set up CodeMirror extensions
-  const extensions = [
-    basicSetup,
-    themeStore.isDark ? anysphereThemeDark : anysphereThemeLight,
-    EditorView.lineWrapping,
-    EditorState.tabSize.of(2),
-    getLanguageExtension(codeLanguage.value),
-    EditorState.readOnly.of(true)
-  ]
-
-  try {
-    const editorView = new EditorView({
-      state: EditorState.create({
-        doc: props.block.content,
-        extensions
-      }),
-      parent: codeEditor.value
-    })
-    editorInstance.value = editorView
-    console.log(`Editor initialized for language: ${codeLanguage.value}`)
-  } catch (error) {
-    console.error('Failed to initialize editor:', error)
-    // Fallback: use a simple pre tag
-    const escapedCode = props.block.content
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-    codeEditor.value.innerHTML = `<pre class="whitespace-pre-wrap text-gray-800 dark:text-gray-200 m-0">${escapedCode}</pre>`
-  }
-}
-
-// 监听主题变化
-watch(
-  () => themeStore.isDark,
-  () => {
-    createEditor()
-  }
-)
 
 // 监听代码变化
 watch(
@@ -262,23 +204,7 @@ watch(
       throttledDetectLanguage(newCode)
     }
 
-    // For normal code blocks, update the editor content
-    if (editorInstance.value) {
-      const state = editorInstance.value.state
-
-      editorInstance.value.dispatch({
-        changes: { from: 0, to: state.doc.length, insert: newCode }
-      })
-      nextTick(() => {
-        if (editorInstance.value) {
-          const view = editorInstance.value.scrollDOM.parentElement!.parentElement!
-          view.scrollTop = view.scrollHeight
-        }
-      })
-    } else {
-      // If editor not yet initialized, create it
-      createEditor()
-    }
+    updateCode(props.block.content, codeLanguage.value)
   },
   { immediate: true }
 )
@@ -294,7 +220,6 @@ watch(
       codeLanguage.value = normalizedLang
     }
     // If the language changes, we need to recreate the editor with the new language
-    createEditor()
   }
 )
 
@@ -303,24 +228,16 @@ watch(
   () => codeLanguage.value,
   () => {
     // If the computed language changes, we need to recreate the editor
-    createEditor()
+    updateCode(props.block.content, codeLanguage.value)
   }
 )
 
 // 初始化代码编辑器
 onMounted(() => {
-  createEditor()
-})
-
-// 清理资源
-onUnmounted(() => {
-  if (editorInstance.value) {
-    editorInstance.value.destroy()
-    editorInstance.value = null
-  }
+  if (!codeEditor.value) return
+  createEditor(codeEditor.value, props.block.content, codeLanguage.value)
 })
 </script>
-
 <style>
 /* Ensure CodeMirror inherits the right font in the editor */
 .cm-editor .cm-content {

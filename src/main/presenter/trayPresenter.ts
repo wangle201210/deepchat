@@ -1,5 +1,5 @@
 import { Tray, Menu, app, nativeImage, NativeImage } from 'electron'
-import path from 'path'
+import * as path from 'path'
 import { getContextMenuLabels } from '@shared/i18n'
 import { presenter } from '.'
 import { eventBus } from '@/eventbus'
@@ -16,13 +16,22 @@ export class TrayPresenter {
   private createTray() {
     // 根据平台选择不同的图标
     let image: NativeImage | undefined = undefined
+
     if (process.platform === 'darwin') {
+      // macOS 平台
       image = nativeImage.createFromPath(path.join(this.iconPath, 'macTrayTemplate.png'))
       image = image.resize({ width: 24, height: 24 })
       image.setTemplateImage(true)
-    } else {
+    } else if (process.platform === 'win32') {
+      // Windows 平台
       image = nativeImage.createFromPath(path.join(this.iconPath, 'win_tray.ico'))
+    } else {
+      // Linux 和其他平台
+      image = nativeImage.createFromPath(path.join(this.iconPath, 'linux_tray.png'))
+      // Linux 下通常使用较小的图标尺寸
+      image = image.resize({ width: 22, height: 22 })
     }
+
     this.tray = new Tray(image)
     this.tray.setToolTip('DeepChat')
 
@@ -33,7 +42,7 @@ export class TrayPresenter {
       {
         label: labels.open || '打开/隐藏(Command/Ctrl+O)',
         click: () => {
-          eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
+          eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW)
         }
       },
       {
@@ -48,7 +57,7 @@ export class TrayPresenter {
 
     // 点击托盘图标时显示窗口
     this.tray.on('click', () => {
-      eventBus.emit(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, true)
+      eventBus.sendToMain(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, true)
     })
   }
 

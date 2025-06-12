@@ -120,11 +120,11 @@
           />
         </template>
         <template v-else>
-          <div class="flex-1 p-4 h-0 artifact-dialog-content">
-            <pre
-              class="rounded-lg bg-muted p-4 w-full h-hull overflow-auto"
-            ><code class="text-xs">{{ artifactStore.currentArtifact?.content }}</code></pre>
-          </div>
+          <div
+            ref="codeEditor"
+            class="min-h-[30px] max-h-[500px] text-xs overflow-auto bg-background font-mono leading-relaxed"
+            :data-language="codeLanguage"
+          ></div>
         </template>
       </div>
     </div>
@@ -148,6 +148,8 @@ import { useToast } from '@/components/ui/toast/use-toast'
 import { usePageCapture } from '@/composables/usePageCapture'
 import { useThemeStore } from '@/stores/theme'
 import { usePresenter } from '@/composables/usePresenter'
+import { useThrottleFn } from '@vueuse/core'
+import { useMonaco, detectLanguage } from 'vue-use-monaco'
 
 const artifactStore = useArtifactStore()
 const componentKey = ref(0)
@@ -157,6 +159,63 @@ const { toast } = useToast()
 const themeStore = useThemeStore()
 const devicePresenter = usePresenter('devicePresenter')
 const appVersion = ref('')
+const codeLanguage = ref(
+  artifactStore.currentArtifact?.language || artifactStore.currentArtifact?.type || ''
+)
+const { createEditor, updateCode } = useMonaco()
+const codeEditor = ref<any>(null)
+
+// 创建节流版本的语言检测函数，1秒内最多执行一次
+const throttledDetectLanguage = useThrottleFn(
+  (code: string) => {
+    codeLanguage.value = detectLanguage(code)
+  },
+  1000,
+  true
+)
+
+watch(
+  () => artifactStore.currentArtifact,
+  () => {
+    // 如果当前 artifact 的语言已经被检测过了，就不再进行检测
+    codeLanguage.value =
+      artifactStore.currentArtifact?.language ||
+      getFileExtension(artifactStore.currentArtifact?.type || '')
+    if (codeLanguage.value === 'mermaid') {
+      return
+    }
+    const newCode = artifactStore.currentArtifact?.content || ''
+
+    // Check if we need to detect language
+    if (!codeLanguage.value || codeLanguage.value === '') {
+      throttledDetectLanguage(newCode)
+    }
+    updateCode(artifactStore.currentArtifact?.content || '', codeLanguage.value)
+  },
+  {
+    immediate: true
+  }
+)
+
+// Initialize language detection if needed
+if (!codeLanguage.value || codeLanguage.value === '') {
+  throttledDetectLanguage(artifactStore.currentArtifact?.content || '')
+}
+
+watch(
+  () => codeLanguage.value,
+  () => {
+    updateCode(artifactStore.currentArtifact?.content || '', codeLanguage.value)
+  }
+)
+
+watch(
+  () => codeEditor.value,
+  () => {
+    if (!codeEditor.value) return
+    createEditor(codeEditor.value, artifactStore.currentArtifact?.content || '', codeLanguage.value)
+  }
+)
 
 // 截图相关功能
 const { captureAndCopy } = usePageCapture()
@@ -179,7 +238,6 @@ watch(
 watch(
   () => artifactStore.currentArtifact?.status,
   () => {
-    console.log('artifactStore.currentArtifact?.status', artifactStore.currentArtifact?.status)
     if (artifactStore.currentArtifact?.status === 'loaded') {
       isPreview.value = true
     }
@@ -227,7 +285,7 @@ const artifactComponent = computed(() => {
   }
 })
 
-const getFileExtension = (type: string) => {
+function getFileExtension(type: string) {
   switch (type) {
     case 'application/vnd.ant.code':
       return 'txt'
@@ -291,7 +349,6 @@ const exportCode = () => {
     URL.revokeObjectURL(url)
   }
 }
-
 const copyContent = async () => {
   if (artifactStore.currentArtifact?.content) {
     try {

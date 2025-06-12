@@ -1,9 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
-import { presenter } from '@/presenter'
+import { presenter } from '@/presenter' // 导入全局的 presenter 对象
+import { eventBus } from '@/eventbus' // 引入 eventBus
+import { TAB_EVENTS } from '@/events' // 引入 TAB_EVENTS
 
 // Schema definitions
 const SearchConversationsArgsSchema = z.object({
@@ -41,6 +44,20 @@ const GetConversationStatsArgsSchema = z.object({
   days: z.number().optional().default(30).describe('Statistics period in days (default 30 days)')
 })
 
+const CreateNewTabArgsSchema = z.object({
+  url: z
+    .enum(['local://chat', 'local://settings'])
+    .default('local://chat') // 默认 URL 为 local://chat
+    .describe('URL for the new tab. Defaults to local://chat.'),
+  active: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe('Whether the new tab should be active. Defaults to true.'),
+  position: z.number().optional().describe('Optional position for the new tab in the tab bar.'),
+  userInput: z.string().optional().describe('Optional initial user input for the new chat tab.')
+})
+
 interface SearchResult {
   conversations?: Array<{
     id: string
@@ -60,6 +77,46 @@ interface SearchResult {
     snippet?: string
   }>
   total: number
+}
+
+// 等待 Tab 内容就绪的辅助函数
+function awaitTabReady(webContentsId: number, timeout = 10000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener)
+      reject(new Error(`Timed out waiting for tab ${webContentsId} to be ready.`))
+    }, timeout)
+
+    const listener = (readyTabId: number) => {
+      if (readyTabId === webContentsId) {
+        clearTimeout(timer)
+        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_READY, listener)
+        resolve()
+      }
+    }
+
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_READY, listener)
+  })
+}
+
+// 等待 Tab 会话激活的辅助函数
+function awaitTabActivated(threadId: string, timeout = 5000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
+      reject(new Error(`Timed out waiting for thread ${threadId} to be activated.`))
+    }, timeout)
+
+    const listener = (activatedThreadId: string) => {
+      if (activatedThreadId === threadId) {
+        clearTimeout(timer)
+        eventBus.removeListener(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
+        resolve()
+      }
+    }
+
+    eventBus.on(TAB_EVENTS.RENDERER_TAB_ACTIVATED, listener)
+  })
 }
 
 export class ConversationSearchServer {
@@ -102,7 +159,7 @@ export class ConversationSearchServer {
 
       // 搜索对话标题
       const conversationSql = `
-        SELECT 
+        SELECT
           c.conv_id as id,
           c.title,
           c.created_at as createdAt,
@@ -118,7 +175,7 @@ export class ConversationSearchServer {
 
       // 搜索消息内容并关联对话
       const messageSql = `
-        SELECT 
+        SELECT
           c.conv_id as conversationId,
           c.title as conversationTitle,
           m.content
@@ -195,7 +252,7 @@ export class ConversationSearchServer {
       const searchQuery = `%${query}%`
 
       let sql = `
-        SELECT 
+        SELECT
           m.msg_id as id,
           m.conversation_id as conversationId,
           c.title as conversationTitle,
@@ -328,9 +385,9 @@ export class ConversationSearchServer {
       const messagesByRole = db
         .prepare(
           `
-        SELECT role, COUNT(*) as count 
-        FROM messages 
-        WHERE created_at >= ? 
+        SELECT role, COUNT(*) as count
+        FROM messages
+        WHERE created_at >= ?
         GROUP BY role
       `
         )
@@ -340,7 +397,7 @@ export class ConversationSearchServer {
       const activeConversations = db
         .prepare(
           `
-        SELECT 
+        SELECT
           c.conv_id as id,
           c.title,
           COUNT(m.msg_id) as messageCount,
@@ -435,6 +492,12 @@ export class ConversationSearchServer {
             name: 'get_conversation_stats',
             description: 'Get conversation statistics including totals, recent activity and more',
             inputSchema: zodToJsonSchema(GetConversationStatsArgsSchema)
+          },
+          {
+            name: 'create_new_tab',
+            description:
+              'Creates a new tab. If userInput is provided, it also creates a new chat session and sends the input as the first message, then returns tabId and threadId.',
+            inputSchema: zodToJsonSchema(CreateNewTabArgsSchema)
           }
         ]
       }
@@ -502,7 +565,83 @@ export class ConversationSearchServer {
               ]
             }
           }
+          case 'create_new_tab': {
+            // 解析参数，url默认值 'local://chat'
+            const { url, active, position, userInput } = CreateNewTabArgsSchema.parse(args)
 
+            const mainWindowId = presenter.windowPresenter.mainWindow?.id
+            if (!mainWindowId) {
+              throw new Error('Main application window not found to create a new tab.')
+            }
+
+            // 步骤 1: 创建 Tab，并获取 tabId
+            const newTabId = await presenter.tabPresenter.createTab(mainWindowId, url, {
+              active,
+              position
+            })
+
+            if (!newTabId) {
+              throw new Error('Failed to create new tab.')
+            }
+
+            // 如果没有 userInput，流程结束
+            if (!userInput) {
+              return {
+                content: [{ type: 'text', text: JSON.stringify({ tabId: newTabId }) }]
+              }
+            }
+
+            // 等待 Tab 加载完成
+            const newTabView = await presenter.tabPresenter.getTab(newTabId)
+            if (!newTabView) {
+              throw new Error(`Could not find view for new tab ${newTabId}`)
+            }
+
+            // ★ 等待渲染进程中的 Vue/Pinia 应用初始化完成
+            const newWebContentsId = newTabView.webContents.id
+            try {
+              await awaitTabReady(newWebContentsId)
+            } catch (error) {
+              console.error(error)
+              throw new Error("Failed to communicate with the new tab's renderer process.")
+            }
+
+            // 步骤 2: 主进程创建会话。此操作会触发 CONVERSATION_EVENTS.ACTIVATED 事件，必须在 Vue/Pinia 就绪后执行
+            const newThreadId = await presenter.threadPresenter.createConversation(
+              'New Chat', // 临时标题
+              {}, // 默认设置
+              newTabId
+            )
+
+            if (!newThreadId) {
+              throw new Error('Failed to create a new conversation thread.')
+            }
+
+            // ★ 等待渲染进程确认会话已激活
+            try {
+              await awaitTabActivated(newThreadId)
+            } catch (error) {
+              console.error(error)
+              // 即使超时也尝试继续，但记录警告
+              console.warn(
+                `Continuing despite activation confirmation timeout for thread ${newThreadId}`
+              )
+            }
+
+            // 步骤 3: 发送指令给渲染进程，让它来发送消息，必须页面Activated之后才能发送
+            newTabView.webContents.send('command:send-initial-message', {
+              userInput: userInput
+            })
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify({ tabId: newTabId, threadId: newThreadId })
+                }
+              ]
+            }
+          }
           default:
             throw new Error(`Unknown tool: ${name}`)
         }

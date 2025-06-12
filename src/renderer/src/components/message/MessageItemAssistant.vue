@@ -116,6 +116,7 @@ import MessageBlockError from './MessageBlockError.vue'
 import MessageToolbar from './MessageToolbar.vue'
 import MessageInfo from './MessageInfo.vue'
 import { useChatStore } from '@/stores/chat'
+import { useSettingsStore } from '@/stores/settings'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Icon } from '@iconify/vue'
 import MessageBlockAction from './MessageBlockAction.vue'
@@ -139,6 +140,7 @@ const props = defineProps<{
 
 const themeStore = useThemeStore()
 const chatStore = useChatStore()
+const settingsStore = useSettingsStore()
 const currentVariantIndex = ref(0)
 const { t } = useI18n()
 
@@ -253,13 +255,27 @@ const handleAction = (
   } else if (action === 'copy') {
     window.api.copyText(
       currentContent.value
-        .map((block) => {
-          if (block.type === 'reasoning_content' || block.type === 'artifact-thinking') {
-            return `<think>${block.content}</think>`
+        .filter((block) => {
+          if (
+            (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
+            !settingsStore.copyWithCotEnabled
+          ) {
+            return false
           }
-          return block.content
+          return true
+        })
+        .map((block) => {
+          const trimmedContent = (block.content ?? '').trim()
+          if (
+            (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
+            settingsStore.copyWithCotEnabled
+          ) {
+            return `<think>\n${trimmedContent}\n</think>`
+          }
+          return trimmedContent
         })
         .join('\n')
+        .trim()
     )
   } else if (action === 'prev') {
     if (currentVariantIndex.value > 0) {

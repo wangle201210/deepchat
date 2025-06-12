@@ -3,7 +3,7 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 搜索引擎选择 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
           <Icon icon="lucide:search" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.searchEngine') }}</span>
         </span>
@@ -55,7 +55,7 @@
 
       <!-- 搜索助手模型选择 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
           <Icon icon="lucide:bot" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.searchAssistantModel') }}</span>
         </span>
@@ -84,7 +84,7 @@
       </div>
       <!-- 代理模式选择 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
           <Icon icon="lucide:globe" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.proxyMode') }}</span>
         </span>
@@ -103,7 +103,7 @@
       </div>
       <div v-if="selectedProxyMode === 'custom'" class="flex flex-col p-2 gap-2 px-2">
         <div class="flex flex-row items-center gap-2">
-          <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
             <Icon icon="lucide:link" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t('settings.common.customProxyUrl') }}</span>
           </span>
@@ -123,7 +123,7 @@
       </div>
       <!-- 搜索预览开关 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
           <Icon icon="lucide:eye" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.searchPreview') }}</span>
         </span>
@@ -138,7 +138,7 @@
 
       <!-- 日志开关 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
           <Icon icon="lucide:file-text" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.loggingEnabled') }}</span>
         </span>
@@ -147,6 +147,32 @@
             id="logging-switch"
             :checked="loggingEnabled"
             @update:checked="handleLoggingChange"
+          />
+        </div>
+      </div>
+
+      <!-- 音效开关 -->
+      <div class="flex flex-row p-2 items-center gap-2 px-2">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
+          <Icon icon="lucide:volume-2" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.common.soundEnabled') }}</span>
+        </span>
+        <div class="flex-shrink-0">
+          <Switch id="sound-switch" :checked="soundEnabled" @update:checked="handleSoundChange" />
+        </div>
+      </div>
+
+      <!-- 复制全部（含COT）开关 -->
+      <div class="flex flex-row p-2 items-center gap-2 px-2">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="langStore.dir">
+          <Icon icon="lucide:file-text" class="w-4 h-4 text-muted-foreground" />
+          <span class="text-sm font-medium">{{ t('settings.common.copyWithCotEnabled') }}</span>
+        </span>
+        <div class="flex-shrink-0">
+          <Switch
+            id="copy-with-cot-switch"
+            :checked="copyWithCotEnabled"
+            @update:checked="handleCopyWithCotChange"
           />
         </div>
       </div>
@@ -178,6 +204,7 @@
       <div
         class="p-2 flex flex-row items-center gap-2 hover:bg-accent rounded-lg cursor-pointer"
         @click="openLogFolder"
+        :dir="langStore.dir"
       >
         <Icon icon="lucide:external-link" class="w-4 h-4 text-muted-foreground" />
         <span class="text-sm font-medium">{{ t('settings.common.openLogFolder') }}</span>
@@ -187,6 +214,7 @@
         <DialogTrigger as-child>
           <div
             class="p-2 flex flex-row items-center gap-2 hover:bg-accent rounded-lg cursor-pointer"
+            :dir="langStore.dir"
           >
             <Icon icon="lucide:trash" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t('settings.common.resetData') }}</span>
@@ -341,10 +369,14 @@ import type { SearchEngineTemplate } from '@shared/chat'
 import { Switch } from '@/components/ui/switch'
 import { nanoid } from 'nanoid'
 import { useThemeStore } from '@/stores/theme'
+import { useSoundStore } from '@/stores/sound'
+import { useLanguageStore } from '@/stores/language'
 
 const devicePresenter = usePresenter('devicePresenter')
 const configPresenter = usePresenter('configPresenter')
 const settingsStore = useSettingsStore()
+const soundStore = useSoundStore()
+const langStore = useLanguageStore()
 const { t } = useI18n()
 const themeStore = useThemeStore()
 const selectedSearchEngine = ref(settingsStore.activeSearchEngine?.id ?? 'google')
@@ -625,6 +657,34 @@ const confirmLoggingChange = () => {
 
 const openLogFolder = () => {
   configPresenter.openLoggingFolder()
+}
+
+// 音效开关相关
+const soundEnabled = computed({
+  get: () => {
+    return soundStore.soundEnabled
+  },
+  set: (value) => {
+    soundStore.setSoundEnabled(value)
+  }
+})
+
+// 处理音效开关状态变更
+const handleSoundChange = (value: boolean) => {
+  soundStore.setSoundEnabled(value)
+}
+
+const copyWithCotEnabled = computed({
+  get: () => {
+    return settingsStore.copyWithCotEnabled
+  },
+  set: (value) => {
+    settingsStore.setCopyWithCotEnabled(value)
+  }
+})
+
+const handleCopyWithCotChange = (value: boolean) => {
+  settingsStore.setCopyWithCotEnabled(value)
 }
 
 // 测试搜索引擎相关

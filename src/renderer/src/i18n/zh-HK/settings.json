@@ -38,6 +38,8 @@
     "contentProtectionEnableDesc": "開啟投屏保護可以防止投屏軟件捕獲DeepChat主窗口，用來保護您的內容隱私。請注意，此功能不會徹底隱藏所有界面，請合理合規使用。並且，並不是所有投屏軟件都遵守用戶隱私設定，該功能可能在一些不遵守隱私設定的投屏軟件上失效，且部分環境中可能會殘留一個黑色窗體。",
     "contentProtectionDisableDesc": "關閉投屏保護將允許投屏軟件捕獲DeepChat窗口。",
     "contentProtectionRestartNotice": "切換此設置將導致程序重啟，請確認是否繼續？",
+    "soundEnabled": "啟用音效",
+    "copyWithCotEnabled": "複製COT資訊",
     "loggingEnabled": "啟用日誌",
     "loggingDialogTitle": "確認日誌設定變更",
     "loggingEnableDesc": "啟用日誌將幫助我們診斷問題並改進應用程式。日誌檔案可能包含敏感資訊。",
@@ -196,7 +198,11 @@
     "tokenInvalid": "Token 無效",
     "disconnect": "斷開連接",
     "disconnected": "已成功斷開連接",
-    "disconnectFailed": "斷開連接失敗"
+    "disconnectFailed": "斷開連接失敗",
+    "keyStatus": {
+      "remaining": "剩餘額度",
+      "usage": "已使用"
+    }
   },
   "knowledgeBase": {
     "fastgptTitle": "FastGPT知識庫",
@@ -377,8 +383,8 @@
     "pressEnterToSave": "按Enter保存，Esc取消",
     "noModifierOnly": "不能僅使用修飾鍵作為快捷鍵",
     "keyConflict": "快捷鍵衝突，請選擇其他組合",
-
     "cleanHistory": "清除聊天歷史",
+    "deleteConversation": "刪除對話",
     "goSettings": "打開設置",
     "hideWindow": "隱藏窗口",
     "quitApp": "退出程序",

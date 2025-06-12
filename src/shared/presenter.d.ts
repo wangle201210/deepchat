@@ -3,6 +3,7 @@ import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
+import { ModelType } from '@shared/model'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -42,6 +43,17 @@ export interface Resource {
   text?: string
   blob?: string
 }
+export interface FileItem {
+  id: string
+  name: string
+  type: string
+  size: number
+  path: string
+  description?: string
+  content?: string
+  createdAt: number
+}
+
 export interface Prompt {
   id: string
   name: string
@@ -52,6 +64,7 @@ export interface Prompt {
     description: string
     required: boolean
   }>
+  files?: FileItem[] // 关联的文件
   messages?: Array<{ role: string; content: { text: string } }> // 根据 getPrompt 示例添加
   enabled?: boolean // 是否启用
   source?: 'local' | 'imported' | 'builtin' // 来源类型
@@ -66,6 +79,7 @@ export interface PromptListEntry {
     description?: string
     required: boolean
   }[]
+  files?: FileItem[] // 关联的文件
   client: {
     name: string
     icon: string
@@ -110,6 +124,7 @@ export interface ModelConfig {
   vision: boolean
   functionCall: boolean
   reasoning: boolean
+  type: ModelType
 }
 export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
@@ -161,6 +176,9 @@ export interface ITabPresenter {
   attachTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   moveTab(tabId: number, targetWindowId: number, index?: number): Promise<boolean>
   getWindowTabsData(windowId: number): Promise<Array<TabData>>
+  getActiveTabId(windowId: number): Promise<number | undefined>
+  getTabIdByWebContentsId(webContentsId: number): number | undefined
+  getWindowIdByWebContentsId(webContentsId: number): number | undefined
   moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
   captureTabArea(
     tabId: number,
@@ -178,6 +196,11 @@ export interface ITabPresenter {
       }
     }
   ): Promise<string | null>
+  // 新增渲染进程Tab事件处理方法
+  onRendererTabReady(tabId: number): Promise<void>
+  onRendererTabActivated(threadId: string): Promise<void>
+  isLastTabInWindow(tabId: number): Promise<boolean>
+  resetTabToBlank(tabId: number): Promise<void>
 }
 
 export interface TabCreateOptions {
@@ -208,6 +231,7 @@ export interface ISQLitePresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
+  getConversationCount(): Promise<number>
   insertMessage(
     conversationId: string,
     content: string,
@@ -303,6 +327,12 @@ export interface IConfigPresenter {
   getEnabledProviders(): LLM_PROVIDER[]
   getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
   getAllEnabledModels(): Promise<{ providerId: string; models: RENDERER_MODEL_META[] }[]>
+  // 音效设置
+  getSoundEnabled(): boolean
+  setSoundEnabled(enabled: boolean): void
+  // COT拷贝设置
+  getCopyWithCotEnabled(): boolean
+  setCopyWithCotEnabled(enabled: boolean): void
   // 日志设置
   getLoggingEnabled(): boolean
   setLoggingEnabled(enabled: boolean): void
@@ -330,9 +360,6 @@ export interface IConfigPresenter {
   // 自定义搜索引擎
   getCustomSearchEngines(): Promise<SearchEngineTemplate[]>
   setCustomSearchEngines(engines: SearchEngineTemplate[]): Promise<void>
-  // artifacts效果设置
-  getArtifactsEffectEnabled(): boolean
-  setArtifactsEffectEnabled(enabled: boolean): void
   // 搜索预览设置
   getSearchPreviewEnabled(): Promise<boolean>
   setSearchPreviewEnabled(enabled: boolean): void
@@ -393,6 +420,7 @@ export type RENDERER_MODEL_META = {
   vision?: boolean
   functionCall?: boolean
   reasoning?: boolean
+  type?: ModelType
 }
 export type MODEL_META = {
   id: string
@@ -406,6 +434,7 @@ export type MODEL_META = {
   vision?: boolean
   functionCall?: boolean
   reasoning?: boolean
+  type?: ModelType
 }
 export type LLM_PROVIDER = {
   id: string
@@ -467,6 +496,7 @@ export interface ILlmProviderPresenter {
   ): Promise<string>
   stopStream(eventId: string): Promise<void>
   check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }>
+  getKeyStatus(providerId: string): Promise<KeyStatus | null>
   summaryTitles(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
     providerId: string,
@@ -528,6 +558,7 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
+  loadMoreThreads(): Promise<{ hasMore: boolean; total: number }>
   setActiveConversation(conversationId: string, tabId: number): Promise<void>
   getActiveConversation(tabId: number): Promise<CONVERSATION | null>
   getActiveConversationId(tabId: number): Promise<string | null>
@@ -575,6 +606,7 @@ export interface IThreadPresenter {
   destroy(): void
   continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
   toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
+  findTabForConversation(conversationId: string): Promise<number | null>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'
@@ -1067,3 +1099,24 @@ export type LLMAgentEvent =
   | { type: 'end'; data: { eventId: string; userStop: boolean } }
 
 export { ShortcutKey, ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
+
+export interface DefaultModelSetting {
+  id: string
+  name: string
+  temperature: number
+  contextLength: number
+  maxTokens: number
+  match: string[]
+  vision: boolean
+  functionCall: boolean
+  reasoning?: boolean
+  type?: ModelType
+}
+
+export interface KeyStatus {
+  remainNum?: number
+  /** 剩余额度 */
+  limit_remaining?: string
+  /** 已使用额度 */
+  usage?: string
+}

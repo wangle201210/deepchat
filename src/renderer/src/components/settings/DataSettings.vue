@@ -3,7 +3,7 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 同步功能开关 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
           <Icon icon="lucide:refresh-cw" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.data.syncEnable') }}</span>
         </span>
@@ -15,7 +15,7 @@
       <!-- 同步文件夹设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
         <div class="flex flex-row items-center gap-2">
-          <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
             <Icon icon="lucide:folder" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t('settings.data.syncFolder') }}</span>
           </span>
@@ -40,7 +40,7 @@
       </div>
 
       <!-- 上次同步时间 -->
-      <div class="p-2 flex flex-row items-center gap-2">
+      <div class="p-2 flex flex-row items-center gap-2" :dir="languageStore.dir">
         <Icon icon="lucide:clock" class="w-4 h-4 text-muted-foreground" />
         <span class="text-sm font-medium">{{ t('settings.data.lastSyncTime') }}:</span>
         <span class="text-sm text-muted-foreground">
@@ -58,6 +58,7 @@
         :class="{
           'opacity-50 cursor-not-allowed': !syncStore.syncEnabled || syncStore.isBackingUp
         }"
+        :dir="languageStore.dir"
         @click="syncStore.startBackup"
       >
         <Icon icon="lucide:save" class="w-4 h-4 text-muted-foreground" />
@@ -73,6 +74,7 @@
           <div
             class="p-2 flex flex-row items-center gap-2 hover:bg-accent rounded-lg cursor-pointer"
             :class="{ 'opacity-50 cursor-not-allowed': !syncStore.syncEnabled }"
+            :dir="languageStore.dir"
           >
             <Icon icon="lucide:download" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t('settings.data.importData') }}</span>
@@ -164,8 +166,10 @@ import { Switch } from '@/components/ui/switch'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { useSyncStore } from '@/stores/sync'
+import { useLanguageStore } from '@/stores/language'
 
 const { t } = useI18n()
+const languageStore = useLanguageStore()
 const syncStore = useSyncStore()
 const isImportDialogOpen = ref(false)
 const importMode = ref('increment')

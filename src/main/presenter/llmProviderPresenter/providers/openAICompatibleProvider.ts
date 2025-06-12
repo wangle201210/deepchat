@@ -18,16 +18,16 @@ import {
   ChatCompletionToolMessageParam
 } from 'openai/resources'
 import { ConfigPresenter } from '../../configPresenter'
-import { proxyConfig } from '../../proxyConfig'
-import { HttpsProxyAgent } from 'https-proxy-agent'
 import { presenter } from '@/presenter'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { NOTIFICATION_EVENTS } from '@/events'
 import { jsonrepair } from 'jsonrepair'
 import { app } from 'electron'
 import path from 'path'
 import fs from 'fs'
 import sharp from 'sharp'
+import { proxyConfig } from '../../proxyConfig'
+import { ProxyAgent } from 'undici'
 
 const OPENAI_REASONING_MODELS = ['o3-mini', 'o3-preview', 'o1-mini', 'o1-pro', 'o1-preview', 'o1']
 const OPENAI_IMAGE_GENERATION_MODELS = [
@@ -56,45 +56,53 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
-    const proxyUrl = proxyConfig.getProxyUrl()
-    if (provider.id === 'azure-openai') {
-      try {
-        const apiVersion = this.configPresenter.getSetting<string>('azureApiVersion')
-        this.openai = new AzureOpenAI({
-          apiKey: this.provider.apiKey,
-          baseURL: this.provider.baseUrl,
-          apiVersion: apiVersion || '2024-02-01',
-          httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
-          defaultHeaders: {
-            ...this.defaultHeaders
-          }
-        })
-      } catch (e) {
-        console.warn('create azue openai failed', e)
-      }
-    } else {
-      this.openai = new OpenAI({
-        apiKey: this.provider.apiKey,
-        baseURL: this.provider.baseUrl,
-        httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
-        defaultHeaders: {
-          ...this.defaultHeaders
-        }
-      })
-    }
+    this.createOpenAIClient()
     if (OpenAICompatibleProvider.NO_MODELS_API_LIST.includes(this.provider.id.toLowerCase())) {
       this.isNoModelsApi = true
     }
     this.init()
   }
 
-  public onProxyResolved(): void {
+  private createOpenAIClient(): void {
+    // Get proxy configuration
     const proxyUrl = proxyConfig.getProxyUrl()
-    this.openai = new OpenAI({
-      apiKey: this.provider.apiKey,
-      baseURL: this.provider.baseUrl,
-      httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined
-    })
+    const fetchOptions: { dispatcher?: ProxyAgent } = {}
+
+    if (proxyUrl) {
+      console.log(`[OpenAI Compatible Provider] Using proxy: ${proxyUrl}`)
+      const proxyAgent = new ProxyAgent(proxyUrl)
+      fetchOptions.dispatcher = proxyAgent
+    }
+
+    if (this.provider.id === 'azure-openai') {
+      try {
+        const apiVersion = this.configPresenter.getSetting<string>('azureApiVersion')
+        this.openai = new AzureOpenAI({
+          apiKey: this.provider.apiKey,
+          baseURL: this.provider.baseUrl,
+          apiVersion: apiVersion || '2024-02-01',
+          defaultHeaders: {
+            ...this.defaultHeaders
+          },
+          fetchOptions
+        })
+      } catch (e) {
+        console.warn('create azure openai failed', e)
+      }
+    } else {
+      this.openai = new OpenAI({
+        apiKey: this.provider.apiKey,
+        baseURL: this.provider.baseUrl,
+        defaultHeaders: {
+          ...this.defaultHeaders
+        },
+        fetchOptions
+      })
+    }
+  }
+
+  public onProxyResolved(): void {
+    this.createOpenAIClient()
   }
 
   // 实现BaseLLMProvider中的抽象方法fetchProviderModels
@@ -247,7 +255,6 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
    * 处理图片生成模型请求的内部方法。
    * @param messages 聊天消息数组。
    * @param modelId 模型ID。
-   * @param modelConfig 模型配置。
    * @returns AsyncGenerator<LLMCoreStreamEvent> 流式事件。
    */
   private async *handleImgGeneration(
@@ -1011,10 +1018,10 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
               parsedCall = JSON.parse(content)
               // console.log(`[parseFunctionCalls] Standard JSON.parse successful for match ${index}.`) // Log success
             } catch (initialParseError) {
-              // console.warn(
-              //   `[parseFunctionCalls] Standard JSON.parse failed for match ${index}, attempting jsonrepair. Error:`,
-              //   (initialParseError as Error).message
-              // ) // Log failure and attempt repair
+              console.warn(
+                `[parseFunctionCalls] Standard JSON.parse failed for match ${index}, attempting jsonrepair. Error:`,
+                (initialParseError as Error).message
+              ) // Log failure and attempt repair
               try {
                 // Fallback to jsonrepair for robustness
                 repairedJson = jsonrepair(content)
@@ -1176,7 +1183,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       // Optionally log the full error object for debugging
       console.error('OpenAICompatibleProvider check failed:', error)
 
-      eventBus.emit(NOTIFICATION_EVENTS.SHOW_ERROR, {
+      eventBus.sendToRenderer(NOTIFICATION_EVENTS.SHOW_ERROR, SendTarget.ALL_WINDOWS, {
         title: 'API Check Failed', // More specific title
         message: errorMessage,
         id: `openai-check-error-${Date.now()}`,
@@ -1268,5 +1275,23 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       console.error('Failed to get suggestions:', error)
       return [] // Return empty on error
     }
+  }
+
+  /**
+   * 获取文本的 embedding 表示
+   * @param texts 待编码的文本数组
+   * @param modelId 使用的模型ID
+   * @returns embedding 数组
+   */
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
+    // OpenAI embeddings API
+    const response = await this.openai.embeddings.create({
+      model: modelId,
+      input: texts
+    })
+    // 兼容 OpenAI 返回格式
+    return response.data.map((item) => item.embedding)
   }
 }

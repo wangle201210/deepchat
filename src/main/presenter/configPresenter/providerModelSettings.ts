@@ -1,3 +1,4 @@
+import { ModelType } from '@shared/model'
 import { ModelConfig } from '@shared/presenter'
 
 // 定义每个provider的模型匹配规则和配置的接口，与modelDefaultSettings保持一致的风格
@@ -11,6 +12,7 @@ export interface ProviderModelSetting {
   vision?: boolean // 是否支持视觉
   functionCall?: boolean // 是否支持函数调用
   reasoning?: boolean // 是否支持推理能力
+  type?: ModelType // 模型类型，默认为Chat
 }
 
 // 为每个提供商创建映射对象，使用models数组包装模型配置
@@ -100,13 +102,17 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   // Gemini提供商特定模型配置
   gemini: {
     models: [
-    {
+      {
         id: 'models/gemini-2.5-flash-preview-05-20',
         name: 'Gemini 2.5 Flash Preview 05-20',
         temperature: 0.7,
         maxTokens: 65536,
         contextLength: 1048576,
-        match: ['models/gemini-2.5-flash-preview-05-20', 'gemini-2.5-flash-preview-05-20', 'gemini-2.5-flash-preview'],
+        match: [
+          'models/gemini-2.5-flash-preview-05-20',
+          'gemini-2.5-flash-preview-05-20',
+          'gemini-2.5-flash-preview'
+        ],
         vision: true,
         functionCall: true,
         reasoning: true
@@ -123,8 +129,8 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         reasoning: true
       },
       {
-        id: 'gemini-2.5-pro-preview-05-06',
-        name: 'Gemini 2.5 Pro Preview 05-06',
+        id: 'gemini-2.5-pro-preview-06-05',
+        name: 'Gemini 2.5 Pro Preview 06-05',
         temperature: 0.7,
         maxTokens: 8192,
         contextLength: 2048576,
@@ -225,7 +231,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'deepseek-reasoner',
         name: 'DeepSeek Reasoner',
         temperature: 1,
-        maxTokens: 32768,
+        maxTokens: 65536,
         contextLength: 65536,
         match: ['deepseek-reasoner'],
         vision: false,
@@ -465,7 +471,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
       {
         id: 'deepseek/deepseek-r1-0528',
         name: 'DeepSeek R1 0528',
-        temperature: 0.6,
+        temperature: 1,
         maxTokens: 16000,
         contextLength: 128000,
         match: ['deepseek-r1-0528'],
@@ -474,56 +480,23 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         reasoning: true
       },
       {
+        id: 'deepseek/deepseek-v3-0324',
+        name: 'DeepSeek Chat v3 0324',
+        temperature: 0.6,
+        maxTokens: 16000,
+        contextLength: 128000,
+        match: ['deepseek-chat-v3-0324'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
         id: 'deepseek/deepseek-r1-distill-qwen-32b',
         name: 'DeepSeek R1 Distill Qwen 32B',
         temperature: 0.7,
-        maxTokens: 4000,
-        contextLength: 32768,
+        maxTokens: 8000,
+        contextLength: 64000,
         match: ['deepseek-r1-distill-qwen-32b'],
-        vision: false,
-        functionCall: false,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-r1-distill-qwen-14b',
-        name: 'DeepSeek R1 Distill Qwen 14B',
-        temperature: 0.7,
-        maxTokens: 4000,
-        contextLength: 32768,
-        match: ['deepseek-r1-distill-qwen-14b'],
-        vision: false,
-        functionCall: false,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-r1-distill-qwen-7b',
-        name: 'DeepSeek R1 Distill Qwen 7B',
-        temperature: 0.7,
-        maxTokens: 4000,
-        contextLength: 32768,
-        match: ['deepseek-r1-distill-qwen-7b'],
-        vision: false,
-        functionCall: false,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-r1-distill-qwen-1.5b',
-        name: 'DeepSeek R1 Distill Qwen 1.5B',
-        temperature: 0.6,
-        maxTokens: 4000,
-        contextLength: 65536,
-        match: ['deepseek-r1-distill-qwen-1.5b', 'deepseek-r1-distill-qwen-1-5b'],
-        vision: false,
-        functionCall: false,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-r1-distill-llama-8b',
-        name: 'DeepSeek R1 Distill Llama 8B',
-        temperature: 0.6,
-        maxTokens: 4000,
-        contextLength: 65536,
-        match: ['deepseek-r1-distill-llama-8b'],
         vision: false,
         functionCall: false,
         reasoning: true
@@ -532,18 +505,106 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'deepseek/deepseek-r1-distill-llama-70b',
         name: 'DeepSeek R1 Distill Llama 70B',
         temperature: 0.6,
-        maxTokens: 4000,
-        contextLength: 65536,
+        maxTokens: 8000,
+        contextLength: 32000,
         match: ['deepseek-r1-distill-llama-70b'],
         vision: false,
         functionCall: false,
         reasoning: true
       },
       {
+        id: 'deepseek/deepseek-r1-distill-qwen-14b',
+        name: 'DeepSeek R1 Distill Qwen 14B',
+        temperature: 0.7,
+        maxTokens: 8000,
+        contextLength: 64000,
+        match: ['deepseek-r1-distill-qwen-14b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-0528-qwen3-8b',
+        name: 'DeepSeek R1 0528',
+        temperature: 1,
+        maxTokens: 32000,
+        contextLength: 128000,
+        match: ['deepseek-r1-0528-qwen3-8b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-distill-llama-8b',
+        name: 'DeepSeek R1 Distill Llama 8B',
+        temperature: 0.6,
+        maxTokens: 8000,
+        contextLength: 32000,
+        match: ['deepseek-r1-distill-llama-8b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-prover-v2-671b',
+        name: 'Deepseek Prover V2 671B',
+        temperature: 0.3,
+        maxTokens: 160000,
+        contextLength: 160000,
+        match: ['deepseek-prover-v2-671b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-r1-turbo',
+        name: 'DeepSeek R1 Turbo',
+        temperature: 0.6,
+        maxTokens: 16000,
+        contextLength: 64000,
+        match: ['deepseek-r1-turbo'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'deepseek/deepseek-v3-turbo',
+        name: 'DeepSeek V3 Turbo',
+        temperature: 0.6,
+        maxTokens: 16000,
+        contextLength: 64000,
+        match: ['deepseek-v3-turbo'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'deepseek/deepseek-v3/community',
+        name: 'DeepSeek V3 Community',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 64000,
+        match: ['deepseek-v3/community'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'deepseek/deepseek-r1/community',
+        name: 'DeepSeek R1 Community',
+        temperature: 0.6,
+        maxTokens: 4000,
+        contextLength: 64000,
+        match: ['deepseek-r1/community'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
         id: 'qwen/qwen3-235b-a22b-fp8',
         name: 'Qwen/Qwen3-235B-A22B',
         temperature: 0.6,
-        maxTokens: 8192,
+        maxTokens: 20000,
         contextLength: 40960,
         match: ['qwen3-235b-a22b-fp8', 'qwen3-235b-a22b'],
         vision: false,
@@ -554,19 +615,8 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'qwen/qwen3-30b-a3b-fp8',
         name: 'Qwen/Qwen3-30B-A3B',
         temperature: 0.6,
-        maxTokens: 8192,
-        contextLength: 40960,
-        match: ['qwen3-30b-a3b-fp8', 'qwen3-30b-a3b'],
-        vision: false,
-        functionCall: false,
-        reasoning: true
-      },
-      {
-        id: 'qwen/qwen3-30b-a3b-fp8',
-        name: 'Qwen/Qwen3-30B-A3B',
-        temperature: 0.6,
-        maxTokens: 8192,
-        contextLength: 40960,
+        maxTokens: 20000,
+        contextLength: 128000,
         match: ['qwen3-30b-a3b-fp8', 'qwen3-30b-a3b'],
         vision: false,
         functionCall: false,
@@ -576,99 +626,22 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'qwen/qwen3-32b-fp8',
         name: 'Qwen/Qwen3-32B',
         temperature: 0.6,
-        maxTokens: 8192,
-        contextLength: 40960,
+        maxTokens: 20000,
+        contextLength: 128000,
         match: ['qwen3-32b-fp8', 'qwen3-32b'],
         vision: false,
         functionCall: false,
         reasoning: true
       },
       {
-        id: 'deepseek/deepseek-prover-v2-671b',
-        name: 'Deepseek Prover V2 671B',
-        temperature: 0.3,
-        maxTokens: 10000,
-        contextLength: 150000,
-        match: ['deepseek-prover-v2-671b'],
+        id: 'meta-llama/llama-3.3-70b-instruct',
+        name: 'Llama 3.3 70B Instruct',
+        temperature: 0.6,
+        maxTokens: 8000,
+        contextLength: 131072,
+        match: ['llama-3.3-70b-instruct'],
         vision: false,
         functionCall: false,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-v3-0324',
-        name: 'DeepSeek Chat v3 0324',
-        temperature: 0.6,
-        maxTokens: 10000,
-        contextLength: 110_000,
-        match: ['deepseek-chat-v3-0324'],
-        vision: false,
-        functionCall: true,
-        reasoning: false
-      },
-      {
-        id: 'deepseek/deepseek-r1-turbo',
-        name: 'DeepSeek R1 Turbo',
-        temperature: 0.6,
-        maxTokens: 10000,
-        contextLength: 50000,
-        match: ['deepseek-r1-turbo'],
-        vision: false,
-        functionCall: true,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-v3-turbo',
-        name: 'DeepSeek V3 Turbo',
-        temperature: 0.6,
-        maxTokens: 10000,
-        contextLength: 50000,
-        match: ['deepseek-v3-turbo'],
-        vision: false,
-        functionCall: true,
-        reasoning: false
-      },
-      {
-        id: 'deepseek/deepseek-v3/community',
-        name: 'DeepSeek V3 Community',
-        temperature: 0.6,
-        maxTokens: 3200,
-        contextLength: 62000,
-        match: ['deepseek-v3/community'],
-        vision: false,
-        functionCall: true,
-        reasoning: false
-      },
-      {
-        id: 'deepseek/deepseek-r1/community',
-        name: 'DeepSeek R1 Community',
-        temperature: 0.6,
-        maxTokens: 3200,
-        contextLength: 62000,
-        match: ['deepseek-r1/community'],
-        vision: false,
-        functionCall: true,
-        reasoning: true
-      },
-      {
-        id: 'deepseek/deepseek-v3',
-        name: 'DeepSeek V3',
-        temperature: 0.6,
-        maxTokens: 7000,
-        contextLength: 62000,
-        match: ['deepseek-v3'],
-        vision: false,
-        functionCall: true,
-        reasoning: false
-      },
-      {
-        id: 'deepseek-r1',
-        name: 'DeepSeek R1',
-        temperature: 0.6,
-        maxTokens: 7000,
-        contextLength: 62000,
-        match: ['deepseek-r1'],
-        vision: false,
-        functionCall: true,
         reasoning: true
       }
     ]
@@ -1162,7 +1135,8 @@ export function getProviderSpecificModelConfig(
         temperature: config.temperature || 0.7,
         vision: config.vision || false,
         functionCall: config.functionCall || false,
-        reasoning: config.reasoning || false
+        reasoning: config.reasoning || false,
+        type: config.type || ModelType.Chat
       }
     }
   }

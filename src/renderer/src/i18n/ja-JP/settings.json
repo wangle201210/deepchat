@@ -23,6 +23,8 @@
     "contentProtectionEnableDesc": "画面保護を有効にすると、画面共有ソフトウェアがDeepChatウィンドウをキャプチャするのを防ぎ、コンテンツのプライバシーを保護します。この機能はすべてのインターフェイスを完全に隠すわけではありません。責任を持って規制に準拠して使用してください。また、画面共有ソフトウェアがこの機能をサポートしない場合があります。また、一部の環境では黒いウィンドウが残る可能性があります。",
     "contentProtectionDisableDesc": "画面保護を無効にすると、画面共有ソフトウェアがDeepChatウィンドウをキャプチャできるようになります。",
     "contentProtectionRestartNotice": "この設定を変更するとアプリケーションが再起動します。続行しますか？",
+    "soundEnabled": "サウンドを有効にする",
+    "copyWithCotEnabled": "COT情報をコピー",
     "loggingEnabled": "ログを有効にする",
     "loggingDialogTitle": "ログ設定の変更確認",
     "loggingEnableDesc": "ログを有効にすると、問題の診断とアプリケーションの改善に役立ちます。ログファイルには機密情報が含まれる可能性があります。",
@@ -196,7 +198,11 @@
     "tokenInvalid": "トークンは無効です",
     "disconnect": "切断",
     "disconnected": "切断成功",
-    "disconnectFailed": "切断失敗"
+    "disconnectFailed": "切断失敗",
+    "keyStatus": {
+      "remaining": "残りの金額",
+      "usage": "使用済み"
+    }
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
@@ -377,8 +383,8 @@
     "pressEnterToSave": "Enterキーで保存、Escでキャンセル",
     "noModifierOnly": "修飾キーのみをショートカットキーとして使用することはできません",
     "keyConflict": "ショートカットキーが競合しています。別の組み合わせを選択してください",
-
     "cleanHistory": "明確なチャット履歴",
+    "deleteConversation": "会話を削除",
     "goSettings": "設定を開く",
     "hideWindow": "ウィンドウを非表示にします",
     "quitApp": "プログラムを終了します",

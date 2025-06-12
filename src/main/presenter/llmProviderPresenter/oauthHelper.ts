@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { CONFIG_EVENTS } from '@/events'
 
 export interface OAuthConfig {
@@ -13,7 +13,7 @@ export interface OAuthConfig {
 export class OAuthHelper {
   private authWindow: BrowserWindow | null = null
 
-  constructor(private config: OAuthConfig) {}
+  constructor(private config: OAuthConfig) { }
 
   /**
    * 开始OAuth登录流程
@@ -21,7 +21,7 @@ export class OAuthHelper {
   async startLogin(): Promise<string> {
     return new Promise((resolve, reject) => {
       // 发送登录开始事件
-      eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_START)
+      eventBus.send(CONFIG_EVENTS.OAUTH_LOGIN_START, SendTarget.ALL_WINDOWS)
 
       // 创建授权窗口
       this.authWindow = new BrowserWindow({
@@ -99,11 +99,11 @@ export class OAuthHelper {
 
         if (error) {
           console.error('OAuth error:', error)
-          eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, error)
+          eventBus.send(CONFIG_EVENTS.OAUTH_LOGIN_ERROR, SendTarget.ALL_WINDOWS, error)
           reject(new Error(`OAuth授权失败: ${error}`))
         } else if (code) {
           console.log('OAuth success, received code:', code)
-          eventBus.emit(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, code)
+          eventBus.send(CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS, SendTarget.ALL_WINDOWS, code)
           resolve(code)
         } else {
           reject(new Error('未收到授权码'))
@@ -131,7 +131,8 @@ export class OAuthHelper {
 // GitHub Copilot的OAuth配置
 export const GITHUB_COPILOT_OAUTH_CONFIG: OAuthConfig = {
   authUrl: 'https://github.com/login/oauth/authorize',
-  redirectUri: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
+  redirectUri:
+    import.meta.env.VITE_GITHUB_REDIRECT_URI || 'https://deepchatai.cn/auth/github/callback',
   clientId: import.meta.env.VITE_GITHUB_CLIENT_ID,
   scope: 'read:user read:org',
   responseType: 'code'

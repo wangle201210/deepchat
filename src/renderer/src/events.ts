@@ -10,21 +10,23 @@
 // 配置相关事件
 export const CONFIG_EVENTS = {
   PROVIDER_CHANGED: 'config:provider-changed', // 替代 provider-setting-changed
-  SYSTEM_CHANGED: 'config:system-changed',
   MODEL_LIST_CHANGED: 'config:model-list-changed', // 替代 provider-models-updated（ConfigPresenter）
   MODEL_STATUS_CHANGED: 'config:model-status-changed', // 替代 model-status-changed（ConfigPresenter）
-  ARTIFACTS_EFFECT_CHANGED: 'config:artifacts-effect-changed', // artifacts效果设置变更
   SETTING_CHANGED: 'config:setting-changed', // 替代 setting-changed（ConfigPresenter）
   PROXY_MODE_CHANGED: 'config:proxy-mode-changed',
   CUSTOM_PROXY_URL_CHANGED: 'config:custom-proxy-url-changed',
   SYNC_SETTINGS_CHANGED: 'config:sync-settings-changed',
   SEARCH_ENGINES_UPDATED: 'config:search-engines-updated',
   CONTENT_PROTECTION_CHANGED: 'config:content-protection-changed',
-  LANGUAGE_CHANGED: 'config:language-changed' // 新增：语言变更事件
+  LANGUAGE_CHANGED: 'config:language-changed', // 新增：语言变更事件
+  SOUND_ENABLED_CHANGED: 'config:sound-enabled-changed', // 新增：声音启用状态变更事件
+  COPY_WITH_COT_CHANGED: 'config:copy-with-cot-enabled-changed'
 }
 
 // 会话相关事件
 export const CONVERSATION_EVENTS = {
+  LIST_UPDATED: 'conversation:list-updated', // 新增：用于推送完整的会话列表
+
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
   MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited
@@ -94,7 +96,8 @@ export const SHORTCUT_EVENTS = {
   ZOOM_RESUME: 'shortcut:zoom-resume',
   CREATE_NEW_CONVERSATION: 'shortcut:create-new-conversation',
   GO_SETTINGS: 'shortcut:go-settings',
-  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history'
+  CLEAN_CHAT_HISTORY: 'shortcut:clean-chat-history',
+  DELETE_CONVERSATION: 'shortcut:delete-conversation'
 }
 
 // 标签页相关事件
@@ -102,5 +105,7 @@ export const TAB_EVENTS = {
   TITLE_UPDATED: 'tab:title-updated', // 标签页标题更新
   CONTENT_UPDATED: 'tab:content-updated', // 标签页内容更新
   STATE_CHANGED: 'tab:state-changed', // 标签页状态变化
-  VISIBILITY_CHANGED: 'tab:visibility-changed' // 标签页可见性变化
+  VISIBILITY_CHANGED: 'tab:visibility-changed', // 标签页可见性变化
+  RENDERER_TAB_READY: 'tab:renderer-ready', // 渲染进程标签页就绪
+  RENDERER_TAB_ACTIVATED: 'tab:renderer-activated' // 渲染进程标签页激活
 }

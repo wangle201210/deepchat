@@ -84,12 +84,12 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 4. Install project dependencies:
 
    ```bash
-   yarn install
+   npm install
    ```
 
 5. Start the development server:
    ```bash
-   yarn dev
+   npm run dev
    ```
 
 ## Project Structure
@@ -109,8 +109,8 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 Please ensure your code follows our style guidelines by running:
 
 ```bash
-yarn lint
-yarn format
+npm run build
+npm run i18n
 ```
 
 ## Pull Request Process

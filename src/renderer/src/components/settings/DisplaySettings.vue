@@ -3,7 +3,7 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 语言选择 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
           <Icon icon="lucide:languages" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.common.language') }}</span>
         </span>
@@ -13,7 +13,12 @@
               <SelectValue :placeholder="t('settings.common.languageSelect')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="lang in languageOptions" :key="lang.value" :value="lang.value">
+              <SelectItem
+                v-for="lang in languageOptions"
+                :key="lang.value"
+                :value="lang.value"
+                :dir="languageStore.dir"
+              >
                 {{ lang.label }}
               </SelectItem>
             </SelectContent>
@@ -24,7 +29,7 @@
       <!-- 系统通知设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
         <div class="flex flex-row items-center gap-2">
-          <span class="flex flex-row items-center gap-2 flex-grow w-full">
+          <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
             <Icon icon="lucide:bell" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{
               t('settings.common.notifications') || '系统通知'
@@ -45,7 +50,10 @@
 
       <!-- 字体大小设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full mb-1">
+        <span
+          class="flex flex-row items-center gap-2 flex-grow w-full mb-1"
+          :dir="languageStore.dir"
+        >
           <Icon icon="lucide:a-large-small" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.display.fontSize') }}</span>
         </span>
@@ -67,7 +75,7 @@
 
       <!-- 投屏保护开关 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full">
+        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
           <Icon icon="lucide:monitor" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{
             t('settings.common.contentProtection') || '投屏保护'
@@ -130,7 +138,9 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { ref, onMounted, watch, computed } from 'vue'
+
 import { useSettingsStore } from '@/stores/settings'
+import { useLanguageStore } from '@/stores/language'
 import {
   Dialog,
   DialogContent,
@@ -143,6 +153,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Slider } from '@/components/ui/slider'
 
+const languageStore = useLanguageStore()
 const settingsStore = useSettingsStore()
 const { t } = useI18n()
 
@@ -157,12 +168,13 @@ const languageOptions = [
   { value: 'ko-KR', label: '한국어' },
   { value: 'ru-RU', label: 'Русский' },
   { value: 'ja-JP', label: '日本語' },
-  { value: 'fr-FR', label: 'Français' }
+  { value: 'fr-FR', label: 'Français' },
+  { value: 'fa-IR', label: 'فارسی (ایران)' }
 ]
 
 watch(selectedLanguage, async (newValue) => {
   console.log('selectedLanguage', newValue)
-  await settingsStore.updateLanguage(newValue)
+  await languageStore.updateLanguage(newValue)
 })
 
 // --- Font Size Settings ---
@@ -211,6 +223,6 @@ const handleNotificationsChange = (value: boolean) => {
 
 // --- Lifecycle ---
 onMounted(async () => {
-  selectedLanguage.value = settingsStore.language
+  selectedLanguage.value = languageStore.language
 })
 </script>

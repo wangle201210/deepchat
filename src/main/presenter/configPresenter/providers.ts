@@ -55,7 +55,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     enable: false,
     websites: {
       official: 'https://www.siliconflow.cn/',
-      apiKey: 'https://cloud.siliconflow.cn/account/ak?referrer=clxty1xuy0014lvqwh5z50i88',
+      apiKey: 'https://cloud.siliconflow.cn/account/ak',
       docs: 'https://docs.siliconflow.cn/',
       models: 'https://docs.siliconflow.cn/docs/model-names',
       defaultBaseUrl: 'https://api.siliconflow.cn/v1'
@@ -76,51 +76,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://chat.qwenlm.ai/api'
   //   }
   // },
-  {
-    id: 'doubao',
-    name: 'Doubao',
-    apiType: 'doubao',
-    apiKey: '',
-    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
-    enable: false,
-    websites: {
-      official: 'https://console.volcengine.com/ark/',
-      apiKey: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey',
-      docs: 'https://www.volcengine.com/docs/82379/1182403',
-      models: 'https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint',
-      defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3'
-    }
-  },
-  {
-    id: 'minimax',
-    name: 'MiniMax',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://api.minimax.chat/v1',
-    enable: false,
-    websites: {
-      official: 'https://platform.minimaxi.com/',
-      apiKey: 'https://platform.minimaxi.com/user-center/basic-information/interface-key',
-      docs: 'https://platform.minimaxi.com/document/Announcement',
-      models: 'https://platform.minimaxi.com/document/Models',
-      defaultBaseUrl: 'https://api.minimax.chat/v1'
-    }
-  },
-  {
-    id: 'fireworks',
-    name: 'Fireworks',
-    apiType: 'fireworks',
-    apiKey: '',
-    baseUrl: 'https://api.fireworks.ai/inference',
-    enable: false,
-    websites: {
-      official: 'https://fireworks.ai/',
-      apiKey: 'https://fireworks.ai/account/api-keys',
-      docs: 'https://docs.fireworks.ai/getting-started/introduction',
-      models: 'https://fireworks.ai/dashboard/models',
-      defaultBaseUrl: 'https://api.fireworks.ai/inference'
-    }
-  },
+
   {
     id: 'ppio',
     name: 'PPIO',
@@ -136,6 +92,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       defaultBaseUrl: 'https://api.ppinfra.com/v3/openai'
     }
   },
+
   {
     id: 'openai-responses',
     name: 'OpenAI Responses',
@@ -181,7 +138,51 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       defaultBaseUrl: 'https://generativelanguage.googleapis.com'
     }
   },
-
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    apiType: 'anthropic',
+    apiKey: '',
+    baseUrl: 'https://api.anthropic.com',
+    enable: false,
+    websites: {
+      official: 'https://www.anthropic.com/',
+      apiKey: 'https://console.anthropic.com/settings/keys',
+      docs: 'https://docs.anthropic.com/',
+      models: 'https://docs.anthropic.com/claude/docs/models-overview',
+      defaultBaseUrl: 'https://api.anthropic.com'
+    }
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://openrouter.ai/api/v1/',
+    enable: false,
+    websites: {
+      official: 'https://openrouter.ai/',
+      apiKey: 'https://openrouter.ai/settings/keys',
+      docs: 'https://openrouter.ai/docs/quick-start',
+      models: 'https://openrouter.ai/docs/models',
+      defaultBaseUrl: 'https://openrouter.ai/api/v1/'
+    }
+  },
+  {
+    id: '302ai',
+    name: '302.AI',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.302.ai/v1',
+    enable: false,
+    websites: {
+      official: 'https://302.ai',
+      apiKey: 'https://dash.302.ai/apis/list',
+      docs: 'https://302ai.apifox.cn/doc-3704971',
+      models: 'https://302.ai/pricing/',
+      defaultBaseUrl: 'https://api.302.ai/v1'
+    }
+  },
   // {
   //   id: 'ocoolai',
   //   name: 'OCoolAI',
@@ -238,7 +239,8 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       official: 'https://github.com/features/copilot',
       apiKey: 'https://github.com/settings/tokens',
       docs: 'https://docs.github.com/en/copilot',
-      models: 'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
+      models:
+        'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
       defaultBaseUrl: 'https://api.githubcopilot.com'
     }
   },
@@ -257,6 +259,51 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.lingyiwanwu.com'
   //   }
   // },
+  {
+    id: 'doubao',
+    name: 'Doubao',
+    apiType: 'doubao',
+    apiKey: '',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    enable: false,
+    websites: {
+      official: 'https://console.volcengine.com/ark/',
+      apiKey: 'https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey',
+      docs: 'https://www.volcengine.com/docs/82379/1182403',
+      models: 'https://console.volcengine.com/ark/region:ark+cn-beijing/endpoint',
+      defaultBaseUrl: 'https://ark.cn-beijing.volces.com/api/v3'
+    }
+  },
+  {
+    id: 'minimax',
+    name: 'MiniMax',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.minimax.chat/v1',
+    enable: false,
+    websites: {
+      official: 'https://platform.minimaxi.com/',
+      apiKey: 'https://platform.minimaxi.com/user-center/basic-information/interface-key',
+      docs: 'https://platform.minimaxi.com/document/Announcement',
+      models: 'https://platform.minimaxi.com/document/Models',
+      defaultBaseUrl: 'https://api.minimax.chat/v1'
+    }
+  },
+  {
+    id: 'fireworks',
+    name: 'Fireworks',
+    apiType: 'fireworks',
+    apiKey: '',
+    baseUrl: 'https://api.fireworks.ai/inference',
+    enable: false,
+    websites: {
+      official: 'https://fireworks.ai/',
+      apiKey: 'https://fireworks.ai/account/api-keys',
+      docs: 'https://docs.fireworks.ai/getting-started/introduction',
+      models: 'https://fireworks.ai/dashboard/models',
+      defaultBaseUrl: 'https://api.fireworks.ai/inference'
+    }
+  },
   {
     id: 'zhipu',
     name: 'Zhipu',
@@ -348,21 +395,6 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //   }
   // }
 
-  {
-    id: 'openrouter',
-    name: 'OpenRouter',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://openrouter.ai/api/v1/',
-    enable: false,
-    websites: {
-      official: 'https://openrouter.ai/',
-      apiKey: 'https://openrouter.ai/settings/keys',
-      docs: 'https://openrouter.ai/docs/quick-start',
-      models: 'https://openrouter.ai/docs/models',
-      defaultBaseUrl: 'https://openrouter.ai/api/v1/'
-    }
-  },
   // {
   //   id: 'groq',
   //   name: 'Groq',
@@ -379,21 +411,6 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //   }
   // },
 
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    apiType: 'anthropic',
-    apiKey: '',
-    baseUrl: 'https://api.anthropic.com',
-    enable: false,
-    websites: {
-      official: 'https://www.anthropic.com/',
-      apiKey: 'https://console.anthropic.com/settings/keys',
-      docs: 'https://docs.anthropic.com/',
-      models: 'https://docs.anthropic.com/claude/docs/models-overview',
-      defaultBaseUrl: 'https://api.anthropic.com'
-    }
-  },
   {
     id: 'grok',
     name: 'Grok',

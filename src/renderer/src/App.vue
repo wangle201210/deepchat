@@ -7,10 +7,11 @@ import SelectedTextContextMenu from './components/message/SelectedTextContextMen
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
 import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
-import { useToast } from './components/ui/toast/use-toast'
 import Toaster from './components/ui/toast/Toaster.vue'
+import { useToast } from './components/ui/toast/use-toast'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
 import TranslatePopup from '@/components/popup/TranslatePopup.vue'
 
 const route = useRoute()
@@ -20,7 +21,7 @@ const chatStore = useChatStore()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
-
+const langStore = useLanguageStore()
 // 错误通知队列及当前正在显示的错误
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
 const currentErrorId = ref<string | null>(null)
@@ -30,7 +31,7 @@ const isMacOS = ref(false)
 const devicePresenter = usePresenter('devicePresenter')
 // 监听主题和字体大小变化，直接更新 body class
 watch(
-  [() => settingsStore.theme, () => settingsStore.fontSizeClass],
+  [() => themeStore.themeMode, () => settingsStore.fontSizeClass],
   ([newTheme, newFontSizeClass], [oldTheme, oldFontSizeClass]) => {
     if (oldTheme) {
       document.documentElement.classList.remove(oldTheme)
@@ -169,7 +170,7 @@ onMounted(() => {
     isMacOS.value = deviceInfo.platform === 'darwin'
   })
   // 设置初始 body class
-  document.body.classList.add(settingsStore.theme)
+  document.body.classList.add(themeStore.themeMode)
   document.body.classList.add(settingsStore.fontSizeClass)
 
   // 监听全局错误通知事件
@@ -283,7 +284,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col h-screen bg-container">
-    <div class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]">
+    <div
+      class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]"
+      :dir="langStore.dir"
+    >
       <!-- 主内容区域 -->
 
       <RouterView />

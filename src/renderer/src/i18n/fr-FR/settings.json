@@ -38,6 +38,8 @@
     "contentProtectionEnableDesc": "L'activation de la protection de l'écran empêche les logiciels de partage d'écran de capturer la fenêtre DeepChat, protégeant ainsi la confidentialité de votre contenu. Notez que cette fonctionnalité ne masquera pas complètement toutes les interfaces. Veuillez utiliser cette fonctionnalité de manière responsable et conformément aux réglementations. De plus, tous les logiciels de partage d'écran ne prennent pas en charge cette fonctionnalité. Certains environnements peuvent laisser une fenêtre noire.",
     "contentProtectionDisableDesc": "La désactivation de la protection de l'écran permettra aux logiciels de partage d'écran de capturer la fenêtre DeepChat.",
     "contentProtectionRestartNotice": "La modification de ce paramètre redémarrera l'application. Voulez-vous continuer ?",
+    "soundEnabled": "Activer le son",
+    "copyWithCotEnabled": "Copier les infos COT",
     "loggingEnabled": "Activer la journalisation",
     "loggingDialogTitle": "Confirmer le changement de paramètre de journalisation",
     "loggingEnableDesc": "L'activation de la journalisation nous aidera à diagnostiquer les problèmes et à améliorer l'application. Les fichiers journaux peuvent contenir des informations sensibles.",
@@ -196,7 +198,11 @@
     "tokenInvalid": "Le jeton n'est pas valide",
     "disconnect": "Déconnecter",
     "disconnected": "Déconnecté avec succès",
-    "disconnectFailed": "Échec de la déconnexion"
+    "disconnectFailed": "Échec de la déconnexion",
+    "keyStatus": {
+      "remaining": "Montant restant",
+      "usage": "Utilisé"
+    }
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
@@ -377,8 +383,8 @@
     "pressEnterToSave": "Appuyez sur Entrée pour enregistrer, Échap pour annuler",
     "noModifierOnly": "Impossible d'utiliser uniquement une touche de modification comme raccourci",
     "keyConflict": "Conflit de raccourci clavier, veuillez choisir une autre combinaison",
-
     "cleanHistory": "Historique de chat clair",
+    "deleteConversation": "Supprimer la conversation",
     "goSettings": "Paramètres ouvrir",
     "hideWindow": "Cache-fenêtre",
     "quitApp": "Quitter l'application",

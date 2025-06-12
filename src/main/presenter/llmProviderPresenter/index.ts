@@ -6,13 +6,14 @@ import {
   MODEL_META,
   OllamaModel,
   ChatMessage,
-  LLMAgentEvent
+  LLMAgentEvent,
+  KeyStatus
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
 import { DeepseekProvider } from './providers/deepseekProvider'
 import { SiliconcloudProvider } from './providers/siliconcloudProvider'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { OpenAICompatibleProvider } from './providers/openAICompatibleProvider'
 import { PPIOProvider } from './providers/ppioProvider'
 import { OLLAMA_EVENTS } from '@/events'
@@ -30,6 +31,7 @@ import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
 import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
+import { OpenRouterProvider } from './providers/openRouterProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -93,7 +95,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         console.log('match grok')
         return new GrokProvider(provider, this.configPresenter)
       }
+      // 特殊处理 openrouter
+      if (provider.id === 'openrouter') {
+        return new OpenRouterProvider(provider, this.configPresenter)
+      }
 
+      if (provider.id === 'ppio') {
+        return new PPIOProvider(provider, this.configPresenter)
+      }
+      if(provider.id === 'deepseek') {
+        return new DeepseekProvider(provider, this.configPresenter)
+      }
       switch (provider.apiType) {
         case 'minimax':
           return new OpenAIProvider(provider, this.configPresenter)
@@ -670,14 +682,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     const toolCallInfo = `\n<function_call>
                     {
                       "function_call": ${JSON.stringify(
-                        {
-                          id: toolCall.id,
-                          name: toolCall.name,
-                          arguments: toolCall.arguments // Keep original args here
-                        },
-                        null,
-                        2
-                      )}
+                      {
+                        id: toolCall.id,
+                        name: toolCall.name,
+                        arguments: toolCall.arguments // Keep original args here
+                      },
+                      null,
+                      2
+                    )}
                     }
                     </function_call>\n`
 
@@ -913,6 +925,11 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return provider.check()
   }
 
+  async getKeyStatus(providerId: string): Promise<KeyStatus | null> {
+    const provider = this.getProviderInstance(providerId)
+    return provider.getKeyStatus()
+  }
+
   async addCustomModel(
     providerId: string,
     model: Omit<MODEL_META, 'providerId' | 'isCustom' | 'group'>
@@ -999,7 +1016,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         modelName: modelName,
         ...progress
       })
-      eventBus.emit(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, {
+      eventBus.sendToRenderer(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, SendTarget.ALL_WINDOWS, {
         eventId: 'pullOllamaModels',
         modelName: modelName,
         ...progress
@@ -1012,5 +1029,20 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       throw new Error('Ollama provider not found')
     }
     return provider.deleteModel(modelName)
+  }
+
+  /**
+   * 获取文本的 embedding 表示
+   * @param providerId 提供商ID
+   * @param texts 文本数组
+   * @param modelId 模型ID
+   * @returns embedding 数组
+   */
+  async getEmbeddings(providerId: string, texts: string[], modelId: string): Promise<number[][]> {
+    const provider = this.getProviderInstance(providerId)
+    if (!provider.getEmbeddings) {
+      throw new Error('当前 LLM 提供商未实现 embedding 能力')
+    }
+    return provider.getEmbeddings(texts, modelId)
   }
 }

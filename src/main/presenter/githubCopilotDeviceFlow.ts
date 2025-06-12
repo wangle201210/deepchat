@@ -45,7 +45,6 @@ export class GitHubCopilotDeviceFlow {
       const accessToken = await this.pollForAccessToken(deviceCodeResponse)
 
       return accessToken
-
     } catch (error) {
       throw error
     }
@@ -64,7 +63,7 @@ export class GitHubCopilotDeviceFlow {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Accept': 'application/json',
+        Accept: 'application/json',
         'Content-Type': 'application/json',
         'User-Agent': 'DeepChat/1.0.0'
       },
@@ -75,7 +74,7 @@ export class GitHubCopilotDeviceFlow {
       throw new Error(`Failed to request device code: ${response.status} ${response.statusText}`)
     }
 
-    const data = await response.json() as DeviceCodeResponse
+    const data = (await response.json()) as DeviceCodeResponse
 
     return data
   }
@@ -237,11 +236,13 @@ export class GitHubCopilotDeviceFlow {
         instructionWindow.webContents.executeJavaScript(`
           window.electronAPI = {
             openExternal: (url) => {
-              window.postMessage({ type: 'open-external', url }, '*');
+              // 通过 console.log 发送消息，主进程通过 console-message 事件接收
+              console.log(JSON.stringify({ type: 'open-external', url }));
             },
             copyToClipboard: (text) => {
-              window.postMessage({ type: 'copy-to-clipboard', text }, '*');
-            }
+              // 通过 console.log 发送消息，主进程通过 console-message 事件接收
+              console.log(JSON.stringify({ type: 'copy-to-clipboard', text }));
+            },
           };
         `)
       })
@@ -264,9 +265,9 @@ export class GitHubCopilotDeviceFlow {
             if (mainWindow) {
               mainWindow.webContents.executeJavaScript(`window.api.copyText('${msg.text}')`)
             }
+
           }
-        } catch (e) {
-        }
+        } catch (e) {}
       })
 
       instructionWindow.show()
@@ -297,7 +298,7 @@ export class GitHubCopilotDeviceFlow {
   private async pollForAccessToken(deviceCodeResponse: DeviceCodeResponse): Promise<string> {
     return new Promise((resolve, reject) => {
       const startTime = Date.now()
-      const expiresAt = startTime + (deviceCodeResponse.expires_in * 1000)
+      const expiresAt = startTime + deviceCodeResponse.expires_in * 1000
       let pollCount = 0
 
       const poll = async () => {
@@ -317,7 +318,7 @@ export class GitHubCopilotDeviceFlow {
           const response = await fetch('https://github.com/login/oauth/access_token', {
             method: 'POST',
             headers: {
-              'Accept': 'application/json',
+              Accept: 'application/json',
               'Content-Type': 'application/json',
               'User-Agent': 'DeepChat/1.0.0'
             },
@@ -332,10 +333,9 @@ export class GitHubCopilotDeviceFlow {
             return // 继续轮询
           }
 
-          const data = await response.json() as AccessTokenResponse
+          const data = (await response.json()) as AccessTokenResponse
 
           if (data.error) {
-
             switch (data.error) {
               case 'authorization_pending':
                 return // 继续轮询
@@ -378,9 +378,7 @@ export class GitHubCopilotDeviceFlow {
             resolve(data.access_token)
             return
           }
-
-        } catch (error) {
-        }
+        } catch (error) {}
       }
 
       // 开始轮询
@@ -420,3 +418,4 @@ export function createGitHubCopilotDeviceFlow(): GitHubCopilotDeviceFlow {
 
   return new GitHubCopilotDeviceFlow(config)
 }
+

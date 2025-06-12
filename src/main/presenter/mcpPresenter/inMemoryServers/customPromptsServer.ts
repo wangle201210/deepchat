@@ -16,6 +16,16 @@ interface PromptDefinition {
     description: string
     required: boolean
   }>
+  files?: Array<{
+    id: string
+    name: string
+    type: string
+    size: number
+    path: string
+    description?: string
+    content?: string
+    createdAt: number
+  }>
 }
 
 export class CustomPromptsServer {
@@ -50,7 +60,7 @@ export class CustomPromptsServer {
 
   // 设置事件监听器
   private setupEventListeners(): void {
-    eventBus.on(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED, () => {
+    eventBus.on(CONFIG_EVENTS.CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED, () => {
       this.promptsCache = null
     })
   }
@@ -75,15 +85,16 @@ export class CustomPromptsServer {
         description: prompt.description,
         arguments: prompt.parameters
           ? prompt.parameters.map((param) => ({
-              name: param.name,
-              description: param.description,
-              required: !!param.required
-            }))
-          : []
+            name: param.name,
+            description: param.description,
+            required: !!param.required
+          }))
+          : [],
+        files: prompt.files || []
       }))
 
       return this.promptsCache
-    } catch (error) {
+    } catch {
       this.promptsCache = []
       return []
     }
@@ -104,7 +115,7 @@ export class CustomPromptsServer {
       // 遍历所有参数，并替换内容中的{{参数名}}
       for (const param of prompt.parameters) {
         const value = args[param.name] || ''
-        promptContent = promptContent.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
+        promptContent = promptContent?.replace(new RegExp(`{{${param.name}}}`, 'g'), value)
       }
     }
 

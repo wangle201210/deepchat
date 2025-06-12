@@ -27,6 +27,9 @@ export class TabPresenter implements ITabPresenter {
   // 存储每个标签页的右键菜单处理器
   private tabContextMenuDisposers: Map<number, () => void> = new Map()
 
+  // WebContents ID 到 Tab ID 的映射 (用于IPC调用来源识别)
+  private webContentsToTabId: Map<number, number> = new Map()
+
   private windowPresenter: IWindowPresenter // 窗口管理器实例
 
   constructor(windowPresenter: IWindowPresenter) {
@@ -139,6 +142,9 @@ export class TabPresenter implements ITabPresenter {
       position: options?.position ?? 0
     })
 
+    // 建立 WebContents ID 到 Tab ID 的映射
+    this.webContentsToTabId.set(view.webContents.id, tabId)
+
     // 更新窗口-标签映射
     if (!this.windowTabs.has(windowId)) {
       this.windowTabs.set(windowId, [])
@@ -217,6 +223,14 @@ export class TabPresenter implements ITabPresenter {
     this.tabs.delete(tabId)
     this.tabState.delete(tabId)
     this.tabWindowMap.delete(tabId)
+
+    // 广播Tab关闭事件
+    eventBus.sendToMain(TAB_EVENTS.CLOSED, tabId)
+
+    // 清除 WebContents 映射
+    if (view) {
+      this.webContentsToTabId.delete(view.webContents.id)
+    }
 
     if (this.windowTabs.has(windowId)) {
       const tabs = this.windowTabs.get(windowId)!
@@ -431,6 +445,25 @@ export class TabPresenter implements ITabPresenter {
   }
 
   /**
+   * 根据 WebContents ID 获取对应的 Tab ID
+   * @param webContentsId WebContents ID
+   * @returns Tab ID，如果未找到则返回 undefined
+   */
+  getTabIdByWebContentsId(webContentsId: number): number | undefined {
+    return this.webContentsToTabId.get(webContentsId)
+  }
+
+  /**
+   * 根据 WebContents ID 获取对应的窗口ID
+   * @param webContentsId WebContents ID
+   * @returns 窗口ID，如果未找到则返回 undefined
+   */
+  getWindowIdByWebContentsId(webContentsId: number): number | undefined {
+    const tabId = this.getTabIdByWebContentsId(webContentsId)
+    return tabId ? this.tabWindowMap.get(tabId) : undefined
+  }
+
+  /**
    * 通知渲染进程更新标签列表
    */
   async notifyWindowTabsUpdate(windowId: number): Promise<void> {
@@ -484,10 +517,10 @@ export class TabPresenter implements ITabPresenter {
 
     // 页面加载完成
     if (isFirstTab) {
-      eventBus.emit(WINDOW_EVENTS.READY_TO_SHOW)
+      eventBus.sendToMain(WINDOW_EVENTS.READY_TO_SHOW)
       // Once did-finish-load happens, emit first content loaded
       webContents.once('did-finish-load', () => {
-        eventBus.emit(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
+        eventBus.sendToMain(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
       })
     }
 
@@ -640,6 +673,7 @@ export class TabPresenter implements ITabPresenter {
     this.tabs.clear()
     this.tabState.clear()
     this.windowTabs.clear()
+    this.webContentsToTabId.clear()
   }
 
   // 将标签页移动到新窗口
@@ -740,6 +774,26 @@ export class TabPresenter implements ITabPresenter {
   }
 
   /**
+   * 处理渲染进程标签页就绪事件
+   * @param tabId 标签页ID
+   */
+  async onRendererTabReady(tabId: number): Promise<void> {
+    console.log(`Tab ${tabId} renderer ready`)
+    // 通过事件总线通知其他模块
+    eventBus.sendToMain(TAB_EVENTS.RENDERER_TAB_READY, tabId)
+  }
+
+  /**
+   * 处理渲染进程标签页激活事件
+   * @param threadId 会话ID
+   */
+  async onRendererTabActivated(threadId: string): Promise<void> {
+    console.log(`Thread ${threadId} activated in renderer`)
+    // 通过事件总线通知其他模块
+    eventBus.sendToMain(TAB_EVENTS.RENDERER_TAB_ACTIVATED, threadId)
+  }
+
+  /**
    * 将多张截图拼接成长图并添加水印
    * @param imageDataList base64格式的图片数据数组
    * @param options 水印选项
@@ -792,6 +846,43 @@ export class TabPresenter implements ITabPresenter {
     } catch (error) {
       console.error('Stitch images with watermark error:', error)
       return null
+    }
+  }
+
+  /**
+   * 新增：检查一个Tab是否是其所在窗口的最后一个Tab
+   */
+  async isLastTabInWindow(tabId: number): Promise<boolean> {
+    const windowId = this.tabWindowMap.get(tabId)
+    if (windowId === undefined) return false
+    const tabsInWindow = this.windowTabs.get(windowId) || []
+    return tabsInWindow.length === 1
+  }
+
+  /**
+   * 新增：将指定Tab重置到空白页（新建会话页）
+   */
+  async resetTabToBlank(tabId: number): Promise<void> {
+    const view = this.tabs.get(tabId)
+    if (view && !view.webContents.isDestroyed()) {
+      const url = 'local://chat'
+      if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+        view.webContents.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/chat`)
+      } else {
+        view.webContents.loadFile(join(__dirname, '../renderer/index.html'), {
+          hash: `/chat`
+        })
+      }
+      // 更新 Tab 状态
+      const state = this.tabState.get(tabId)
+      if (state) {
+        state.title = 'New Chat'
+        state.url = url
+        const windowId = this.tabWindowMap.get(tabId)
+        if (windowId) {
+          await this.notifyWindowTabsUpdate(windowId)
+        }
+      }
     }
   }
 }
