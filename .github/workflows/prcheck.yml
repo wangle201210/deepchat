@@ -22,15 +22,13 @@ jobs:
         with:
           node-version: '22'
       - name: Check Lint
-        run: npm run lint
+        run: pnpm run lint
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
         env:
           npm_config_platform: linux
           npm_config_arch: ${{ matrix.arch }}
-      - name: Install Sharp
-        run: npm install --cpu=wasm32 sharp
       - name: Check translations
-        run: npm run i18n && npm run i18n:en
+        run: pnpm run i18n && pnpm run i18n:en
       - name: Build
-        run: npm run build
+        run: pnpm run build
