@@ -113,7 +113,6 @@ ${config.cpu.map(cpu => `    - ${cpu}`).join('\n')}`;
   console.log(`📋 Configuration:`);
   console.log(`   OS: ${config.os.join(', ')}`);
   console.log(`   CPU: ${config.cpu.join(', ')}`);
-  console.log(`   libc: ${config.libc.join(', ')}`);
 } catch (error) {
   console.error(`❌ Failed to update pnpm-workspace.yaml: ${error.message}`);
   process.exit(1);

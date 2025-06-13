@@ -3,5 +3,3 @@ supportedArchitectures:
     - current
   cpu:
     - current
-  libc:
-    - current
