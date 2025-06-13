@@ -110,8 +110,6 @@
     "@tiptap/suggestion": "^2.11.7",
     "@tiptap/vue-3": "^2.11.7",
     "@types/better-sqlite3": "^7.6.0",
-    "@types/dompurify": "^3.0.5",
-    "@types/mermaid": "^9.1.0",
     "@types/node": "^22.14.1",
     "@types/xlsx": "^0.0.35",
     "@vitejs/plugin-vue": "^5.2.3",
