@@ -53,6 +53,9 @@ if (!config) {
 
 const workspaceFile = 'pnpm-workspace.yaml';
 
+import { readFileSync, writeFileSync, existsSync } from 'fs';
+import YAML from 'yaml';
+...
 try {
   let existingContent = '';
   let otherConfigurations = [];
@@ -60,35 +63,24 @@ try {
   // Read existing file if it exists
   if (existsSync(workspaceFile)) {
     existingContent = readFileSync(workspaceFile, 'utf8');
-
-    // Parse existing content to extract non-supportedArchitectures configurations
-    const lines = existingContent.split('\n');
-    let inSupportedArchitectures = false;
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-
-      if (trimmed.startsWith('supportedArchitectures:')) {
-        inSupportedArchitectures = true;
-        continue;
-      }
-
-      if (inSupportedArchitectures) {
-        // Check if we've reached a new top-level configuration
-        if (trimmed && !line.startsWith('  ') && !trimmed.startsWith('-')) {
-          inSupportedArchitectures = false;
-          otherConfigurations.push(line);
-        }
-        // Skip lines that are part of supportedArchitectures
-      } else if (trimmed) {
-        // This is a non-supportedArchitectures configuration
-        otherConfigurations.push(line);
-      } else if (otherConfigurations.length > 0) {
-        // Keep empty lines between configurations
-        otherConfigurations.push(line);
-      }
-    }
   }
+
+  // Update supportedArchitectures via YAML parser
+  const doc = existingContent
+    ? YAML.parseDocument(existingContent)
+    : new YAML.Document();
+
+  doc.set('supportedArchitectures', {
+    os: config.os,
+    cpu: config.cpu,
+  });
+
+  const finalContent = doc.toString();
+
+  writeFileSync(workspaceFile, finalContent, 'utf8');
+  return;
+}
+...
   // Generate supportedArchitectures section
   const supportedArchitecturesSection = `supportedArchitectures:
   os:
