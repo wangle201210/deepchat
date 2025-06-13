@@ -17,28 +17,28 @@ console.log(`🎯 Configuring pnpm workspace for platform: ${targetOS}-${targetA
 // Define platform-specific configurations
 const platformConfigs = {
   'win32-x64': {
-    os: ['win32'],
-    cpu: ['x64']
+    os: ['current', 'win32'],
+    cpu: ['current', 'x64']
   },
   'win32-arm64': {
-    os: ['win32'],
-    cpu: ['arm64']
+    os: ['current', 'win32'],
+    cpu: ['current', 'arm64']
   },
   'linux-x64': {
-    os: ['linux'],
-    cpu: ['wasm32'], // Include wasm32 for Sharp WebAssembly
+    os: ['current', 'linux'],
+    cpu: ['current', 'wasm32'], // Include wasm32 for Sharp WebAssembly
   },
   'linux-arm64': {
     os: ['linux'],
-    cpu: ['wasm32'],
+    cpu: ['current', 'wasm32'],
   },
   'darwin-x64': {
-    os: ['darwin'],
-    cpu: ['x64'],
+    os: ['current', 'darwin'],
+    cpu: ['current', 'x64'],
   },
   'darwin-arm64': {
-    os: ['darwin'],
-    cpu: ['arm64'],
+    os: ['current', 'darwin'],
+    cpu: ['current', 'arm64'],
   }
 };
 
