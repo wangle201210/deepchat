@@ -7,6 +7,7 @@
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { platform, arch } from 'os';
+import YAML from 'yaml';
 
 // Get platform info from environment or system
 const targetOS = process.env.TARGET_OS || process.env.npm_config_os || platform();
@@ -29,7 +30,7 @@ const platformConfigs = {
     cpu: ['current', 'wasm32'], // Include wasm32 for Sharp WebAssembly
   },
   'linux-arm64': {
-    os: ['current', 'linux'],
+    os: ['current','linux'],
     cpu: ['current', 'wasm32'],
   },
   'darwin-x64': {
@@ -53,52 +54,33 @@ if (!config) {
 
 const workspaceFile = 'pnpm-workspace.yaml';
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import YAML from 'yaml';
-...
 try {
-  let existingContent = '';
-  let otherConfigurations = [];
+  let workspaceConfig = {};
 
-  // Read existing file if it exists
+  // Read and parse existing file if it exists
   if (existsSync(workspaceFile)) {
-    existingContent = readFileSync(workspaceFile, 'utf8');
+    const existingContent = readFileSync(workspaceFile, 'utf8');
+    try {
+      workspaceConfig = YAML.parse(existingContent) || {};
+      console.log(`📖 Parsed existing pnpm-workspace.yaml`);
+    } catch (parseError) {
+      console.warn(`⚠️  Failed to parse existing YAML, creating new config: ${parseError.message}`);
+      workspaceConfig = {};
+    }
   }
 
-  // Update supportedArchitectures via YAML parser
-  const doc = existingContent
-    ? YAML.parseDocument(existingContent)
-    : new YAML.Document();
-
-  doc.set('supportedArchitectures', {
+  // Update supportedArchitectures configuration
+  workspaceConfig.supportedArchitectures = {
     os: config.os,
-    cpu: config.cpu,
+    cpu: config.cpu
+  };
+
+  // Convert back to YAML with proper formatting
+  const finalContent = YAML.stringify(workspaceConfig, {
+    indent: 2,
+    lineWidth: 0,
+    minContentWidth: 0
   });
-
-  const finalContent = doc.toString();
-
-  writeFileSync(workspaceFile, finalContent, 'utf8');
-  return;
-}
-...
-  // Generate supportedArchitectures section
-  const supportedArchitecturesSection = `supportedArchitectures:
-  os:
-${config.os.map(os => `    - ${os}`).join('\n')}
-  cpu:
-${config.cpu.map(cpu => `    - ${cpu}`).join('\n')}`;
-
-  let finalContent;
-
-  if (otherConfigurations.length > 0) {
-    // If there are other configurations, preserve them
-    console.log(`📝 Updating supportedArchitectures while preserving other configurations`);
-    const otherContent = otherConfigurations.join('\n').trim();
-    finalContent = supportedArchitecturesSection + '\n\n' + otherContent + '\n';
-  } else {
-    // If no other configurations, just write the supportedArchitectures section
-    finalContent = supportedArchitecturesSection + '\n';
-  }
 
   writeFileSync(workspaceFile, finalContent, 'utf8');
   console.log(`✅ Updated pnpm-workspace.yaml for ${platformKey}`);

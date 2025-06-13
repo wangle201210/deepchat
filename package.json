@@ -151,6 +151,7 @@
     "vue-use-monaco": "^0.0.6",
     "vue-virtual-scroller": "^2.0.0-beta.8",
     "vuedraggable": "^4.1.0",
+    "yaml": "^2.8.0",
     "zod-to-json-schema": "^3.24.5"
   },
   "pnpm": {
