@@ -18,7 +18,7 @@ console.log(`🎯 Configuring pnpm workspace for platform: ${targetOS}-${targetA
 const platformConfigs = {
   'win32-x64': {
     os: ['win32'],
-    cpu: [, 'x64']
+    cpu: ['x64']
   },
   'win32-arm64': {
     os: ['win32'],
