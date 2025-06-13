@@ -89,15 +89,12 @@ try {
       }
     }
   }
-
   // Generate supportedArchitectures section
   const supportedArchitecturesSection = `supportedArchitectures:
   os:
 ${config.os.map(os => `    - ${os}`).join('\n')}
   cpu:
-${config.cpu.map(cpu => `    - ${cpu}`).join('\n')}
-  libc:
-${config.libc.map(libc => `    - ${libc}`).join('\n')}`;
+${config.cpu.map(cpu => `    - ${cpu}`).join('\n')}`;
 
   let finalContent;
 
