@@ -3,10 +3,12 @@
     <Label class="flex-1 cursor-pointer">
       {{ t('settings.provider.githubCopilotAuth') }}
     </Label>
-    
+
     <!-- 如果已经有Token -->
     <div v-if="hasToken" class="w-full space-y-2">
-      <div class="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+      <div
+        class="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800"
+      >
         <Icon icon="lucide:check-circle" class="w-4 h-4 text-green-600 dark:text-green-400" />
         <span class="text-sm text-green-700 dark:text-green-300">
           {{ t('settings.provider.githubCopilotConnected') }}
@@ -17,12 +19,12 @@
           variant="outline"
           size="xs"
           class="text-xs text-normal rounded-lg"
-          @click="validateToken"
           :disabled="isValidating"
+          @click="validateToken"
         >
-          <Icon 
-            :icon="isValidating ? 'lucide:loader-2' : 'lucide:check-check'" 
-            :class="['w-4 h-4 text-muted-foreground', { 'animate-spin': isValidating }]" 
+          <Icon
+            :icon="isValidating ? 'lucide:loader-2' : 'lucide:check-check'"
+            :class="['w-4 h-4 text-muted-foreground', { 'animate-spin': isValidating }]"
           />
           {{ t('settings.provider.verifyKey') }}
         </Button>
@@ -40,7 +42,9 @@
 
     <!-- 如果没有Token -->
     <div v-else class="w-full space-y-2">
-      <div class="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+      <div
+        class="flex items-center gap-2 p-2 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800"
+      >
         <Icon icon="lucide:info" class="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
         <span class="text-sm text-yellow-700 dark:text-yellow-300">
           {{ t('settings.provider.githubCopilotNotConnected') }}
@@ -50,26 +54,26 @@
         variant="default"
         size="sm"
         class="w-full"
-        @click="startDeviceFlowLogin"
         :disabled="isLoggingIn"
+        @click="startDeviceFlowLogin"
       >
-        <Icon 
-          :icon="isLoggingIn ? 'lucide:loader-2' : 'lucide:smartphone'" 
-          :class="['w-4 h-4 mr-2', { 'animate-spin': isLoggingIn }]" 
+        <Icon
+          :icon="isLoggingIn ? 'lucide:loader-2' : 'lucide:smartphone'"
+          :class="['w-4 h-4 mr-2', { 'animate-spin': isLoggingIn }]"
         />
         {{ isLoggingIn ? t('settings.provider.loggingIn') : 'Device Flow 登录 (推荐)' }}
       </Button>
-      
+
       <Button
         variant="outline"
         size="sm"
         class="w-full"
-        @click="startOAuthLogin"
         :disabled="isLoggingIn"
+        @click="startOAuthLogin"
       >
-        <Icon 
-          :icon="isLoggingIn ? 'lucide:loader-2' : 'lucide:github'" 
-          :class="['w-4 h-4 mr-2', { 'animate-spin': isLoggingIn }]" 
+        <Icon
+          :icon="isLoggingIn ? 'lucide:loader-2' : 'lucide:github'"
+          :class="['w-4 h-4 mr-2', { 'animate-spin': isLoggingIn }]"
         />
         {{ isLoggingIn ? t('settings.provider.loggingIn') : '传统 OAuth 登录' }}
       </Button>
@@ -80,27 +84,27 @@
 
     <!-- 验证结果提示 -->
     <div v-if="validationResult" class="w-full">
-      <div 
+      <div
         :class="[
           'flex items-center gap-2 p-2 rounded-lg border',
-          validationResult.success 
+          validationResult.success
             ? 'bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800'
             : 'bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800'
         ]"
       >
-        <Icon 
-          :icon="validationResult.success ? 'lucide:check-circle' : 'lucide:x-circle'" 
+        <Icon
+          :icon="validationResult.success ? 'lucide:check-circle' : 'lucide:x-circle'"
           :class="[
             'w-4 h-4',
-            validationResult.success 
+            validationResult.success
               ? 'text-green-600 dark:text-green-400'
               : 'text-red-600 dark:text-red-400'
-          ]" 
+          ]"
         />
-        <span 
+        <span
           :class="[
             'text-sm',
-            validationResult.success 
+            validationResult.success
               ? 'text-green-700 dark:text-green-300'
               : 'text-red-700 dark:text-red-300'
           ]"
@@ -153,10 +157,10 @@ const hasToken = computed(() => {
 const startDeviceFlowLogin = async () => {
   isLoggingIn.value = true
   validationResult.value = null
-  
+
   try {
     const success = await oauthPresenter.startGitHubCopilotDeviceFlowLogin(props.provider.id)
-    
+
     if (success) {
       emit('auth-success')
       validationResult.value = {
@@ -188,10 +192,10 @@ const startDeviceFlowLogin = async () => {
 const startOAuthLogin = async () => {
   isLoggingIn.value = true
   validationResult.value = null
-  
+
   try {
     const success = await oauthPresenter.startGitHubCopilotLogin(props.provider.id)
-    
+
     if (success) {
       emit('auth-success')
       validationResult.value = {
@@ -222,16 +226,16 @@ const startOAuthLogin = async () => {
  */
 const validateToken = async () => {
   if (!hasToken.value) return
-  
+
   isValidating.value = true
   validationResult.value = null
-  
+
   try {
     const result = await llmProviderPresenter.check(props.provider.id)
     validationResult.value = {
       success: result.isOk,
-      message: result.isOk 
-        ? t('settings.provider.tokenValid') 
+      message: result.isOk
+        ? t('settings.provider.tokenValid')
         : result.errorMsg || t('settings.provider.tokenInvalid')
     }
   } catch (error) {
@@ -295,4 +299,4 @@ watch(validationResult, (newVal) => {
     clearValidationAfterDelay()
   }
 })
-</script> 
+</script>

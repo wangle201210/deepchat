@@ -10,5 +10,7 @@
   "autoUpdate": "Mise à jour automatique",
   "downloading": "Téléchargement",
   "installNow": "Installer maintenant",
-  "restarting": "Redémarrage"
+  "restarting": "Redémarrage",
+  "alreadyUpToDate": "Déjà à jour",
+  "alreadyUpToDateDesc": "Votre DeepChat est déjà à jour avec la dernière version, aucune mise à jour n'est nécessaire."
 }

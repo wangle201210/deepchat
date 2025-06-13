@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import type {
   UserMessageContent,
   AssistantMessageBlock,
@@ -12,6 +12,10 @@ import { usePresenter } from '@/composables/usePresenter'
 import { CONVERSATION_EVENTS, DEEPLINK_EVENTS } from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
+import { useSoundStore } from './sound'
+import sfxfcMp3 from '../../public/sounds/sfx-fc.mp3?url'
+import sfxtyMp3 from '../../public/sounds/sfx-typing.mp3?url'
+
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
 
@@ -19,7 +23,11 @@ export const useChatStore = defineStore('chat', () => {
   const threadP = usePresenter('threadPresenter')
   const windowP = usePresenter('windowPresenter')
   const notificationP = usePresenter('notificationPresenter')
+  const tabP = usePresenter('tabPresenter')
   const { t } = useI18n()
+
+  const soundStore = useSoundStore()
+
   // 状态
   const activeThreadIdMap = ref<Map<number, string | null>>(new Map())
   const threads = ref<
@@ -29,10 +37,7 @@ export const useChatStore = defineStore('chat', () => {
     }[]
   >([])
   const messagesMap = ref<Map<number, AssistantMessage[] | UserMessage[]>>(new Map())
-  const isLoading = ref(false)
   const generatingThreadIds = ref(new Set<string>())
-  const pageSize = ref(40)
-  const hasMore = ref(true)
   const isSidebarOpen = ref(false)
 
   // 使用Map来存储会话工作状态
@@ -90,82 +95,9 @@ export const useChatStore = defineStore('chat', () => {
   })
 
   // Actions
-  const loadThreads = async (page: number) => {
-    if (isLoading.value || (!hasMore.value && page !== 1)) {
-      return
-    }
-    try {
-      isLoading.value = true
-      const result = await threadP.getConversationList(page, pageSize.value)
-
-      // Sort conversations: Pinned first, then by date
-      result.list.sort((a, b) => {
-        // Treat is_pinned undefined as 0 (not pinned)
-        const aIsPinned = a.is_pinned === 1
-        const bIsPinned = b.is_pinned === 1
-
-        if (aIsPinned && !bIsPinned) {
-          return -1 // a comes first
-        }
-        if (!aIsPinned && bIsPinned) {
-          return 1 // b comes first
-        }
-        // If both have the same pinned status, sort by updatedAt
-        return b.updatedAt - a.updatedAt
-      })
-
-      // 按日期分组处理会话列表
-      const groupedThreads: Map<string, CONVERSATION[]> = new Map()
-
-      result.list.forEach((conv) => {
-        const date = new Date(conv.updatedAt).toISOString().split('T')[0]
-        if (!groupedThreads.has(date)) {
-          groupedThreads.set(date, [])
-        }
-        // Ensure is_pinned is part of the conversation object
-        // The spread operator `...conv` already includes `is_pinned` if it exists.
-        // Explicitly setting `is_pinned: conv.is_pinned` is redundant but harmless.
-        groupedThreads.get(date)?.push({
-          ...conv
-        })
-      })
-
-      // 转换为组件所需的数据结构
-      const newThreads = Array.from(groupedThreads.entries()).map(([dt, dtThreads]) => ({
-        dt,
-        dtThreads
-      }))
-
-      // 判断是否还有更多数据
-      hasMore.value = result.list.length === pageSize.value
-
-      if (page === 1) {
-        threads.value = newThreads
-      } else {
-        // 合并现有数据和新数据，需要处理同一天的数据
-        newThreads.forEach((newThread) => {
-          const existingThread = threads.value.find((t) => t.dt === newThread.dt)
-          if (existingThread) {
-            existingThread.dtThreads.push(...newThread.dtThreads)
-          } else {
-            threads.value.push(newThread)
-          }
-        })
-      }
-      // 按日期排序
-      threads.value.sort((a, b) => new Date(b.dt).getTime() - new Date(a.dt).getTime())
-    } catch (error) {
-      console.error('加载会话列表失败:', error)
-      throw error
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   const createNewEmptyThread = async () => {
     try {
       await clearActiveThread()
-      await loadThreads(1)
     } catch (error) {
       console.error('清空活动会话并加载第一页失败:', error)
       throw error
@@ -175,7 +107,10 @@ export const useChatStore = defineStore('chat', () => {
   const createThread = async (title: string, settings: Partial<CONVERSATION_SETTINGS>) => {
     try {
       const threadId = await threadP.createConversation(title, settings, getTabId())
-      await loadThreads(1)
+      // 因为 createConversation 内部已经调用了 setActiveConversation
+      // 并且可以确定是为当前tab激活，所以在这里可以直接、安全地更新本地状态
+      // 以确保后续的 sendMessage 能正确获取 activeThreadId。
+      setActiveThreadId(threadId)
       return threadId
     } catch (error) {
       console.error('创建会话失败:', error)
@@ -184,16 +119,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const setActiveThread = async (threadId: string) => {
+    // 不在渲染进程进行逻辑判定（查重）和决策，只向主进程发送意图。
+    // 主进程会处理“防重”逻辑，并通过 'ACTIVATED' 事件来通知UI更新。
+    // 如果主进程决定切换到其他tab，当前tab不会收到此事件，状态也就不会被错误地更新。
     const tabId = getTabId()
-    const threadsWorkingStatus = getThreadsWorkingStatus()
-    if (
-      threadsWorkingStatus.get(threadId) === 'completed' ||
-      threadsWorkingStatus.get(threadId) === 'error'
-    ) {
-      threadsWorkingStatus.delete(threadId)
-    }
-    setActiveThreadId(threadId)
-    setMessages([])
     await threadP.setActiveConversation(threadId, tabId)
   }
 
@@ -360,9 +289,6 @@ export const useChatStore = defineStore('chat', () => {
         currentThread.settings
       )
 
-      // 重新加载会话列表
-      await loadThreads(1)
-
       // 切换到新会话
       await setActiveThread(newThreadId)
 
@@ -402,12 +328,21 @@ export const useChatStore = defineStore('chat', () => {
     if (cached) {
       const curMsg = cached.message as AssistantMessage
       if (curMsg.content) {
+        // 提取一个可复用的保护逻辑
+        const finalizeLastBlock = () => {
+          const lastBlock =
+            curMsg.content.length > 0 ? curMsg.content[curMsg.content.length - 1] : undefined
+          if (lastBlock) {
+            // 只有当上一个块不是一个正在等待结果的工具调用时，才将其标记为成功
+            if (!(lastBlock.type === 'tool_call' && lastBlock.status === 'loading')) {
+              lastBlock.status = 'success'
+            }
+          }
+        }
+
         // 处理工具调用达到最大次数的情况
         if (msg.maximum_tool_calls_reached) {
-          const lastBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
+          finalizeLastBlock() // 使用保护逻辑
           curMsg.content.push({
             type: 'action',
             content: 'common.error.maximumToolCallsReached',
@@ -429,10 +364,10 @@ export const useChatStore = defineStore('chat', () => {
         } else if (msg.tool_call) {
           if (msg.tool_call === 'start') {
             // 工具调用开始解析参数 - 创建新的工具调用块
-            const lastBlock = curMsg.content[curMsg.content.length - 1]
-            if (lastBlock) {
-              lastBlock.status = 'success'
-            }
+            finalizeLastBlock() // 使用保护逻辑
+
+            // 工具调用音效，与实际数据流同步
+            playToolcallSound()
 
             curMsg.content.push({
               type: 'tool_call',
@@ -484,10 +419,7 @@ export const useChatStore = defineStore('chat', () => {
               }
             } else {
               // 如果没有找到现有的工具调用块，创建一个新的（兼容旧逻辑）
-              const lastBlock = curMsg.content[curMsg.content.length - 1]
-              if (lastBlock) {
-                lastBlock.status = 'success'
-              }
+              finalizeLastBlock() // 使用保护逻辑
 
               curMsg.content.push({
                 type: 'tool_call',
@@ -531,11 +463,7 @@ export const useChatStore = defineStore('chat', () => {
         }
         // 处理图像数据
         else if (msg.image_data) {
-          const lastBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastBlock) {
-            lastBlock.status = 'success'
-          }
-
+          finalizeLastBlock() // 使用保护逻辑
           curMsg.content.push({
             type: 'image',
             content: 'image',
@@ -552,6 +480,8 @@ export const useChatStore = defineStore('chat', () => {
           const lastContentBlock = curMsg.content[curMsg.content.length - 1]
           if (lastContentBlock && lastContentBlock.type === 'content') {
             lastContentBlock.content += msg.content
+            // 打字机音效，与实际数据流同步
+            playTypewriterSound()
           } else {
             if (lastContentBlock) {
               lastContentBlock.status = 'success'
@@ -562,6 +492,8 @@ export const useChatStore = defineStore('chat', () => {
               status: 'loading',
               timestamp: Date.now()
             })
+            // 如果是新块的第一个字符，也播放声音
+            playTypewriterSound()
           }
         }
 
@@ -675,28 +607,27 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
-      // 检查是否需要更新标题（仅在对话刚开始时）
-      if (getActiveThreadId() === getActiveThreadId()) {
-        const thread = await threadP.getConversation(getActiveThreadId()!)
-        const { list: messages } = await threadP.getMessages(getActiveThreadId()!, 1, 10)
-        // 只有当对话刚开始（只有一问一答两条消息）时才生成标题
-        if (messages.length === 2 && thread && thread.is_new === 1) {
-          try {
-            console.info('自动生成标题 start', messages.length, thread)
-            await threadP.summaryTitles(getTabId()).then(async (title) => {
-              if (title) {
-                console.info('自动生成标题', title)
-                await threadP.renameConversation(getActiveThreadId()!, title)
-                // 重新加载会话列表以更新标题
-                await loadThreads(1)
-              }
-            })
-          } catch (error) {
-            console.error('自动生成标题失败:', error)
-          }
-        }
-      }
-      loadThreads(1)
+      // // 检查是否需要更新标题（仅在对话刚开始时）
+      // if (getActiveThreadId() === getActiveThreadId()) {
+      //   const thread = await threadP.getConversation(getActiveThreadId()!)
+      //   const { list: messages } = await threadP.getMessages(getActiveThreadId()!, 1, 10)
+      //   // 只有当对话刚开始（只有一问一答两条消息）时才生成标题
+      //   if (messages.length === 2 && thread && thread.is_new === 1) {
+      //     try {
+      //       console.info('自动生成标题 start', messages.length, thread)
+      //       await threadP.summaryTitles(getTabId()).then(async (title) => {
+      //         if (title) {
+      //           console.info('自动生成标题', title)
+      //           await threadP.renameConversation(getActiveThreadId()!, title)
+      //           // 重新加载会话列表以更新标题
+      //           await loadThreads(1)
+      //         }
+      //       })
+      //     } catch (error) {
+      //       console.error('自动生成标题失败:', error)
+      //     }
+      //   }
+      // }
     }
   }
 
@@ -775,12 +706,12 @@ export const useChatStore = defineStore('chat', () => {
 
   const renameThread = async (threadId: string, title: string) => {
     await threadP.renameConversation(threadId, title)
-    loadThreads(1)
   }
+
   const toggleThreadPinned = async (threadId: string, isPinned: boolean) => {
     await threadP.toggleConversationPinned(threadId, isPinned)
-    loadThreads(1)
   }
+
   // 配置相关的方法
   const loadChatConfig = async () => {
     if (!getActiveThreadId()) return
@@ -922,36 +853,30 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  window.electron.ipcRenderer.on(CONVERSATION_EVENTS.ACTIVATED, (_, msg) => {
-    // 如果不是当前tab
-    if (msg.tabId !== getTabId()) {
-      // 检查新激活的会话是否在当前窗口的会话列表中
-      const isThreadInCurrentWindow = threads.value
-        .flatMap((t) => t.dtThreads)
-        .some((t) => t.id === msg.conversationId)
-      console.log('isThreadInCurrentWindow', isThreadInCurrentWindow)
-      // 如果新激活的会话不在当前窗口的会话列表中，保持当前激活状态
-      if (!isThreadInCurrentWindow) {
-        loadThreads(1)
+  // 新增：监听来自主进程的初始化并发送消息的指令
+  window.electron.ipcRenderer.on(
+    'command:send-initial-message',
+    async (_, data: { userInput: string }) => {
+      // 确保当前有活动的会话
+      if (!getActiveThreadId()) {
+        console.error('Received send-initial-message command but no active thread is set.')
         return
       }
-      return
-    }
 
-    // 如果是当前tab或新激活的会话在当前窗口中，则正常处理
-    activeThreadIdMap.value.set(getTabId(), msg.conversationId)
-
-    // 如果存在状态为completed或error的会话，从Map中移除
-    if (msg.conversationId) {
-      const status = getThreadsWorkingStatus().get(msg.conversationId)
-      if (status === 'completed' || status === 'error') {
-        getThreadsWorkingStatus().delete(msg.conversationId)
+      try {
+        // 调用已有的 sendMessage 方法，这将复用所有现有逻辑
+        await sendMessage({
+          text: data.userInput,
+          files: [],
+          links: [],
+          think: false,
+          search: false
+        })
+      } catch (error) {
+        console.error('Failed to handle send-initial-message command:', error)
       }
     }
-
-    loadMessages()
-    loadChatConfig() // 加载对话配置
-  })
+  )
 
   const handleMessageEdited = async (msgId: string) => {
     // 首先检查是否在生成缓存中
@@ -994,11 +919,46 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
-  // 注册消息编辑事件处理
-  window.electron.ipcRenderer.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (_, msgId: string) => {
-    handleMessageEdited(msgId)
-  })
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+  let typewriterAudio: HTMLAudioElement | null = null
+  let toolcallAudio: HTMLAudioElement | null = null
 
+  let lastSoundTime = 0
+  const soundInterval = 120
+
+  const initAudio = () => {
+    if (!typewriterAudio) {
+      typewriterAudio = new Audio(sfxtyMp3)
+      typewriterAudio.volume = 0.6
+      typewriterAudio.load()
+    }
+    if (!toolcallAudio) {
+      toolcallAudio = new Audio(sfxfcMp3)
+      toolcallAudio.volume = 1
+      toolcallAudio.load()
+    }
+  }
+
+  initAudio()
+
+  const playTypewriterSound = () => {
+    const now = Date.now()
+    if (!soundStore.soundEnabled || !typewriterAudio) return
+    if (now - lastSoundTime > soundInterval) {
+      typewriterAudio.currentTime = 0
+      typewriterAudio.play().catch(console.error)
+      lastSoundTime = now
+    }
+  }
+
+  const playToolcallSound = () => {
+    if (!soundStore.soundEnabled || !toolcallAudio) return
+    toolcallAudio.currentTime = 0
+    toolcallAudio.play().catch(console.error)
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // 注册消息编辑事件处理
   window.electron.ipcRenderer.on(DEEPLINK_EVENTS.START, async (_, data) => {
     console.log('DEEPLINK_EVENTS.START', data)
     // 检查当前路由，如果不在新会话页面，则跳转
@@ -1048,6 +1008,72 @@ export const useChatStore = defineStore('chat', () => {
     return getThreadsWorkingStatus().get(threadId) || null
   }
 
+  const setupEventListeners = () => {
+    // 监听：主进程推送的完整会话列表
+    window.electron.ipcRenderer.on(
+      CONVERSATION_EVENTS.LIST_UPDATED,
+      (_, updatedGroupedList: { dt: string; dtThreads: CONVERSATION[] }[]) => {
+        console.log('Received full thread list update from main process.')
+
+        // 1. 获取当前活动会话ID，在列表更新前
+        const currentActiveId = getActiveThreadId()
+
+        // 2. 用主进程推送的最新、完整的、已格式化好的列表直接替换本地状态
+        threads.value = updatedGroupedList
+
+        // 3. 检查列表更新之前的活动会话是否还存在于新列表中
+        if (currentActiveId) {
+          const flatList = updatedGroupedList.flatMap((g) => g.dtThreads)
+          const activeThreadExists = flatList.some((thread) => thread.id === currentActiveId)
+
+          // 如果活动会话不存在了（如在其他窗口被删除），只清空当前tab的活动状态，待其他流程处理
+          if (!activeThreadExists) {
+            clearActiveThread()
+          }
+        }
+      }
+    )
+
+    // 监听：定向的会话激活事件
+    window.electron.ipcRenderer.on(CONVERSATION_EVENTS.ACTIVATED, (_, msg) => {
+      // 确保是发给当前Tab的事件
+      if (msg.tabId !== getTabId()) {
+        return
+      }
+
+      // 如果是当前tab或新激活的会话在当前窗口中，则正常处理
+      activeThreadIdMap.value.set(getTabId(), msg.conversationId)
+
+      // 如果存在状态为completed或error的会话，从Map中移除
+      if (msg.conversationId) {
+        const status = getThreadsWorkingStatus().get(msg.conversationId)
+        if (status === 'completed' || status === 'error') {
+          getThreadsWorkingStatus().delete(msg.conversationId)
+        }
+      }
+
+      loadMessages()
+      loadChatConfig() // 加载对话配置
+
+      // 新增：在会话激活处理完成后，通过usePresenter发送确认信号
+      tabP.onRendererTabActivated(msg.conversationId)
+    })
+
+    window.electron.ipcRenderer.on(CONVERSATION_EVENTS.MESSAGE_EDITED, (_, msgId: string) => {
+      handleMessageEdited(msgId)
+    })
+  }
+
+  onMounted(() => {
+    console.log('Chat store is mounted. Setting up event listeners.')
+
+    // store现在是被动的，等待主进程推送数据
+    setupEventListeners()
+
+    // 在 store 初始化完成后，通过usePresenter发送就绪信号
+    tabP.onRendererTabReady(getTabId())
+  })
+
   return {
     renameThread,
     // 状态
@@ -1056,13 +1082,10 @@ export const useChatStore = defineStore('chat', () => {
     activeThreadIdMap,
     threads,
     messagesMap,
-    isLoading,
-    hasMore,
     generatingThreadIds,
     // Getters
     activeThread,
     // Actions
-    loadThreads,
     createThread,
     setActiveThread,
     loadMessages,

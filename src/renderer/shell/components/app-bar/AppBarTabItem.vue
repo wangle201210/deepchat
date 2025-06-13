@@ -11,7 +11,7 @@
     @dragstart="onDragStart"
     @click="onClick"
   >
-    <div class="flex items-center truncate max-w-36">
+    <div class="flex items-center truncate max-w-36" :dir="langStore.dir">
       <slot></slot>
     </div>
     <button
@@ -24,8 +24,10 @@
   </div>
 </template>
 <script setup lang="ts">
+import { useLanguageStore } from '@/stores/language'
 import { Icon } from '@iconify/vue'
 import { ref } from 'vue'
+const langStore = useLanguageStore()
 
 const tabItem = ref<HTMLElement | null>(null)
 

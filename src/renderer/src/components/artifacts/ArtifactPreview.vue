@@ -81,6 +81,7 @@ const props = defineProps<{
       identifier: string
       type: string
       title: string
+      language?: string
     }
     content: string
   }
@@ -308,6 +309,7 @@ const handleClick = () => {
       {
         id: props.block.artifact.identifier,
         type: props.block.artifact.type,
+        language: props.block.artifact.language,
         title: props.block.artifact.title || displayTitle.value,
         content: props.block.content,
         status: 'loaded'

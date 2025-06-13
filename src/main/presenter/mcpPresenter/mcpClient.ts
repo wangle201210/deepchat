@@ -72,6 +72,29 @@ export class McpClient {
     return { key: pathKey, value: pathValue }
   }
 
+  // 展开路径中的各种符号和变量
+  private expandPath(inputPath: string): string {
+    let expandedPath = inputPath
+
+    // 处理 ~ 符号 (用户主目录)
+    if (expandedPath.startsWith('~/') || expandedPath === '~') {
+      const homeDir = app.getPath('home')
+      expandedPath = expandedPath.replace('~', homeDir)
+    }
+
+    // 处理环境变量展开
+    expandedPath = expandedPath.replace(/\$\{([^}]+)\}/g, (match, varName) => {
+      return process.env[varName] || match
+    })
+
+    // 处理简单的 $VAR 格式 (不含花括号)
+    expandedPath = expandedPath.replace(/\$([A-Z_][A-Z0-9_]*)/g, (match, varName) => {
+      return process.env[varName] || match
+    })
+
+    return expandedPath
+  }
+
   // 获取系统特定的默认路径
   private getDefaultPaths(homeDir: string): string[] {
     if (process.platform === 'darwin') {
@@ -157,7 +180,13 @@ export class McpClient {
         this.transport = clientTransport
       } else if (this.serverConfig.type === 'stdio') {
         // 创建合适的transport
-        const command = this.serverConfig.command as string
+        let command = this.serverConfig.command as string
+        let args = this.serverConfig.args as string[]
+
+        // 处理路径展开 (包括 ~ 和环境变量)
+        command = this.expandPath(command)
+        args = args.map((arg) => this.expandPath(arg))
+
         const HOME_DIR = app.getPath('home')
 
         // 定义允许的环境变量白名单
@@ -277,7 +306,7 @@ export class McpClient {
         console.log('mcp env', env)
         this.transport = new StdioClientTransport({
           command,
-          args: this.serverConfig.args as string[],
+          args,
           env,
           stderr: 'pipe'
         })
@@ -538,7 +567,9 @@ export class McpClient {
                 ? String(p.description)
                 : undefined,
             arguments:
-              typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined
+              typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined,
+            files:
+              typeof p === 'object' && p !== null && 'files' in p ? p.files : undefined
           })) as PromptListEntry[]
           // 缓存结果
           this.cachedPrompts = validPrompts

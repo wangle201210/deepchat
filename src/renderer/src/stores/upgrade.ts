@@ -69,6 +69,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
 
   // 监听更新状态
   const setupUpdateListener = () => {
+    console.log('setupUpdateListener')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     window.electron.ipcRenderer.on(UPDATE_EVENTS.STATUS_CHANGED, (_, event: any) => {
       const { status, info, error } = event
@@ -93,6 +94,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           updateInfo.value = null
           isDownloading.value = false
           isUpdating.value = false
+          openUpdateDialog()
           break
         case 'downloading':
           hasUpdate.value = true

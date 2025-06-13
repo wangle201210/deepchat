@@ -1,15 +1,31 @@
 <template>
   <div class="w-full h-full flex-row flex">
-    <div :class="[
-      'flex-1 w-0 h-full transition-all duration-200 max-lg:!mr-0',
-      artifactStore.isOpen && route.name === 'chat' ? 'mr-[calc(60%_-_104px)]' : ''
-    ]">
+    <div
+      :class="[
+        'flex-1 w-0 h-full transition-all duration-200 max-lg:!mr-0',
+        artifactStore.isOpen && route.name === 'chat' ? 'mr-[calc(60%_-_104px)]' : ''
+      ]"
+    >
       <div class="flex h-full">
-        <!-- 左侧会话列表 -->
-        <Transition enter-active-class="transition-all duration-300 ease-out"
-          leave-active-class="transition-all duration-300 ease-in" enter-from-class="-translate-x-full opacity-0"
-          leave-to-class="-translate-x-full opacity-0">
-          <div v-if="chatStore.isSidebarOpen" class="w-60 max-w-60 h-full fixed left-0 z-20 lg:relative">
+        <!-- 会话列表 (根据语言方向自适应位置) -->
+        <Transition
+          enter-active-class="transition-all duration-300 ease-out"
+          leave-active-class="transition-all duration-300 ease-in"
+          :enter-from-class="
+            langStore.dir === 'rtl' ? 'translate-x-full opacity-0' : '-translate-x-full opacity-0'
+          "
+          :leave-to-class="
+            langStore.dir === 'rtl' ? 'translate-x-full opacity-0' : '-translate-x-full opacity-0'
+          "
+        >
+          <div
+            v-show="chatStore.isSidebarOpen"
+            :class="[
+              'w-60 max-w-60 h-full fixed z-20 lg:relative',
+              langStore.dir === 'rtl' ? 'right-0' : 'left-0'
+            ]"
+            :dir="langStore.dir"
+          >
             <ThreadsView class="transform" />
           </div>
         </Transition>
@@ -43,6 +59,7 @@ import { useArtifactStore } from '@/stores/artifact'
 import ArtifactDialog from '@/components/artifacts/ArtifactDialog.vue'
 import { useRoute } from 'vue-router'
 import { useTitle } from '@vueuse/core'
+import { useLanguageStore } from '@/stores/language'
 const ThreadsView = defineAsyncComponent(() => import('@/components/ThreadsView.vue'))
 const TitleView = defineAsyncComponent(() => import('@/components/TitleView.vue'))
 const ChatView = defineAsyncComponent(() => import('@/components/ChatView.vue'))
@@ -52,7 +69,7 @@ const settingsStore = useSettingsStore()
 const route = useRoute()
 const chatStore = useChatStore()
 const title = useTitle()
-
+const langStore = useLanguageStore()
 // 添加标题更新逻辑
 const updateTitle = () => {
   const activeThread = chatStore.activeThread

@@ -24,31 +24,58 @@
       </Button>
     </div>
 
-    <!-- 可滚动的会话列表 -->
-    <ScrollArea ref="scrollAreaRef" class="flex-1" @scroll="handleScroll">
-      <!-- 最近 -->
-      <div v-for="thread in chatStore.threads" :key="thread.dt" class="space-y-1.5 mb-3">
-        <div class="text-xs font-bold text-muted-foreground px-2">{{ thread.dt }}</div>
-        <ul class="space-y-1.5">
-          <ThreadItem
-            v-for="dtThread in thread.dtThreads"
-            :key="dtThread.id"
-            :thread="dtThread"
-            :is-active="dtThread.id === chatStore.getActiveThreadId()"
-            :working-status="chatStore.getThreadWorkingStatus(dtThread.id)"
-            @select="handleThreadSelect"
-            @rename="showRenameDialog(dtThread)"
-            @delete="showDeleteDialog(dtThread)"
-            @cleanmsgs="showCleanMessagesDialog(dtThread)"
-          />
-        </ul>
-      </div>
+    <!-- 可滚动的会话列表 - 使用动态虚拟滚动 -->
+    <div class="flex-1 overflow-hidden">
+      <DynamicScroller
+        ref="dynamicScrollerRef"
+        class="h-full"
+        :items="flattenedThreads"
+        :min-item-size="30"
+        key-field="id"
+        @scroll-end="handleScrollEnd"
+      >
+        <template v-slot="{ item, index, active }">
+          <DynamicScrollerItem
+            :item="item"
+            :active="active"
+            :size-dependencies="[item.data]"
+            :data-index="index"
+          >
+            <!-- 日期标题 -->
+            <div
+              v-if="item.type === 'date'"
+              class="text-xs font-bold text-muted-foreground px-2 py-2"
+            >
+              {{ item.data }}
+            </div>
+
+            <!-- 线程项 -->
+            <div v-else-if="item.type === 'thread'" class="px-0 py-1">
+              <ThreadItem
+                :thread="item.data"
+                :is-active="item.data.id === chatStore.getActiveThreadId()"
+                :working-status="chatStore.getThreadWorkingStatus(item.data.id)"
+                @select="handleThreadSelect"
+                @rename="showRenameDialog(item.data)"
+                @delete="showDeleteDialog(item.data)"
+                @cleanmsgs="showCleanMessagesDialog(item.data)"
+              />
+            </div>
+
+            <!-- 分隔间距 -->
+            <div v-else-if="item.type === 'spacer'" class="h-3"></div>
+          </DynamicScrollerItem>
+        </template>
+      </DynamicScroller>
 
       <!-- 加载状态提示 -->
-      <div v-if="chatStore.isLoading" class="text-xs text-center text-muted-foreground py-2">
+      <div
+        v-if="chatStore.threads.length === 0"
+        class="text-xs text-center text-muted-foreground py-2"
+      >
         {{ t('common.loading') }}
       </div>
-    </ScrollArea>
+    </div>
     <Dialog v-model:open="deleteDialog">
       <DialogContent>
         <DialogHeader>
@@ -108,9 +135,8 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import ThreadItem from './ThreadItem.vue'
-import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Input } from '@/components/ui/input'
 import { useChatStore } from '@/stores/chat'
 import { CONVERSATION } from '@shared/presenter'
@@ -122,22 +148,67 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { useEventListener, useWindowSize } from '@vueuse/core'
+import { useWindowSize } from '@vueuse/core'
 import { SHORTCUT_EVENTS } from '@/events'
+import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 
 const { t } = useI18n()
 const chatStore = useChatStore()
 const threadP = usePresenter('threadPresenter')
-const scrollAreaRef = ref<InstanceType<typeof ScrollArea> | null>(null)
+const dynamicScrollerRef = ref<InstanceType<typeof DynamicScroller> | null>(null)
 const deleteDialog = ref(false)
 const deleteThread = ref<CONVERSATION | null>(null)
 const renameDialog = ref(false)
 const renameThread = ref<CONVERSATION | null>(null)
 const cleanMessagesDialog = ref(false)
 const cleanMessagesThread = ref<CONVERSATION | null>(null)
-const currentPage = ref(1) // 当前页码
+
+// 加载更多状态 - 只用于防重复触发
+let isLoadingMore = false
+const hasMoreThreads = ref(true)
 
 const windowSize = useWindowSize()
+
+// 虚拟滚动项目类型定义
+type VirtualScrollItem = {
+  id: string
+  type: 'date' | 'thread' | 'spacer'
+  data: string | CONVERSATION | null
+}
+
+// 扁平化线程数据，用于虚拟滚动
+const flattenedThreads = computed<VirtualScrollItem[]>(() => {
+  const items: VirtualScrollItem[] = []
+
+  chatStore.threads.forEach((thread, threadIndex) => {
+    // 添加日期标题
+    items.push({
+      id: `date-${thread.dt}`,
+      type: 'date',
+      data: thread.dt
+    })
+
+    // 添加该日期下的所有线程
+    thread.dtThreads.forEach((dtThread) => {
+      items.push({
+        id: `thread-${dtThread.id}`,
+        type: 'thread',
+        data: dtThread
+      })
+    })
+
+    // 在组之间添加分隔间距(除了最后一组)
+    if (threadIndex < chatStore.threads.length - 1) {
+      items.push({
+        id: `spacer-${thread.dt}`,
+        type: 'spacer',
+        data: null
+      })
+    }
+  })
+
+  return items
+})
 
 // 创建新会话
 const createNewThread = async () => {
@@ -145,36 +216,6 @@ const createNewThread = async () => {
     await chatStore.createNewEmptyThread()
   } catch (error) {
     console.error(t('common.error.createChatFailed'), error)
-  }
-}
-
-// 处理滚动事件
-const handleScroll = async () => {
-  // 通过event.target获取滚动元素
-  // const target = event.target as HTMLElement
-  // const { scrollTop, scrollHeight, clientHeight } = target
-  // 使用viewportRef直接获取
-  const viewportElement = scrollAreaRef.value?.$el?.querySelector('.h-full.w-full') as HTMLElement
-  const viewportScrollTop = viewportElement?.scrollTop || 0
-  const viewportScrollHeight = viewportElement?.scrollHeight || 0
-  const viewportClientHeight = viewportElement?.clientHeight || 0
-  // console.log('滚动检测数据:', {
-  //   scrollTop, scrollHeight, clientHeight,
-  //   viewportScrollTop, viewportScrollHeight, viewportClientHeight,
-  //   diff: viewportScrollHeight - viewportScrollTop - viewportClientHeight,
-  //   isLoading: chatStore.isLoading,
-  //   hasMore: chatStore.hasMore
-  // })
-
-  // 使用viewport的滚动位置判断
-  if (
-    viewportScrollHeight - viewportScrollTop - viewportClientHeight < 30 &&
-    !chatStore.isLoading &&
-    chatStore.hasMore
-  ) {
-    currentPage.value++
-    console.log('触发加载更多, 下一页:', currentPage.value)
-    await chatStore.loadThreads(currentPage.value)
   }
 }
 
@@ -215,30 +256,15 @@ const handleDeleteDialogCancel = () => {
   deleteThread.value = null
 }
 
-// 删除会话
+// 删除会话 - 逻辑已移至主进程，此处仅触发
 const handleThreadDelete = async () => {
   try {
     if (!deleteThread.value) {
       return
     }
+    // 只需调用presenter方法，后续的UI更新（tab关闭/重置、列表刷新）
+    // 将由主进程编排并通过事件广播回来。
     await threadP.deleteConversation(deleteThread.value.id)
-
-    // 删除后重新加载第一页
-    currentPage.value = 1
-    await chatStore.loadThreads(1)
-
-    if (chatStore.threads.length > 0 && chatStore.threads[0].dtThreads.length > 0) {
-      chatStore.setActiveThread(chatStore.threads[0].dtThreads[0].id)
-    } else {
-      chatStore.createThread(t('common.newChat'), {
-        systemPrompt: '',
-        temperature: 0.7,
-        contextLength: 1000,
-        maxTokens: 2000,
-        providerId: '',
-        modelId: ''
-      })
-    }
   } catch (error) {
     console.error(t('common.error.deleteChatFailed'), error)
   }
@@ -293,21 +319,19 @@ const handleCleanChatHistory = () => {
 
 // 在组件挂载时加载会话列表
 onMounted(async () => {
-  currentPage.value = 1 // 重置页码
-  await chatStore.loadThreads(1)
+  // 初始化hasMoreThreads状态，默认为true，让用户可以尝试加载更多
+  hasMoreThreads.value = true
 
-  // 使用nextTick确保DOM已更新
-  nextTick(() => {
-    const viewportElement = scrollAreaRef.value?.$el?.querySelector('.h-full.w-full') as HTMLElement
-    if (viewportElement) {
-      console.log('设置直接DOM滚动监听')
-      useEventListener(viewportElement, 'scroll', handleScroll)
-    }
-  })
-
-  // 监听清除聊天历史的快捷键事件
+  // 监听快捷键事件
   window.electron.ipcRenderer.on(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY, () => {
     handleCleanChatHistory()
+  })
+
+  // 快捷键删除时弹出确认框
+  window.electron.ipcRenderer.on(SHORTCUT_EVENTS.DELETE_CONVERSATION, () => {
+    if (chatStore.activeThread) {
+      showDeleteDialog(chatStore.activeThread)
+    }
   })
 })
 
@@ -315,7 +339,37 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   // 移除清除聊天历史的事件监听
   window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY)
+  // 确保快捷键监听被移除
+  window.electron.ipcRenderer.removeAllListeners(SHORTCUT_EVENTS.DELETE_CONVERSATION)
 })
+
+const handleScrollEnd = async () => {
+  // 如果正在加载或者没有更多会话，则不执行
+  if (isLoadingMore || !hasMoreThreads.value) {
+    return
+  }
+
+  try {
+    isLoadingMore = true
+
+    // 调用loadMoreThreads方法
+    const result = await threadP.loadMoreThreads()
+
+    // 更新是否还有更多会话的状态
+    hasMoreThreads.value = result.hasMore
+
+    // 如果没有更多会话了，可以在这里添加一些提示逻辑
+    if (!result.hasMore) {
+      console.log('所有会话已加载完成')
+    }
+  } catch (error) {
+    console.error('加载更多会话失败:', error)
+  } finally {
+    isLoadingMore = false
+  }
+}
 </script>
 
-<style scoped></style>
+<style scoped>
+/* 组件特定样式 */
+</style>

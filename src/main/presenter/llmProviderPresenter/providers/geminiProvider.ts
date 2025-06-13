@@ -62,8 +62,8 @@ export class GeminiProvider extends BaseLLMProvider {
       description: 'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 05-20）'
     },
     {
-      id: 'gemini-2.5-pro-preview-05-06',
-      name: 'Gemini 2.5 Pro Preview 05-06',
+      id: 'gemini-2.5-pro-preview-06-05',
+      name: 'Gemini 2.5 Pro Preview 06-05',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
@@ -72,7 +72,7 @@ export class GeminiProvider extends BaseLLMProvider {
       vision: true,
       functionCall: true,
       reasoning: false,
-      description: 'Gemini 2.5 Pro Preview 05-06 模型（付费）'
+      description: 'Gemini 2.5 Pro Preview 06-05 模型（付费）'
     },
     {
       id: 'gemini-2.5-pro-exp-03-25',
@@ -971,5 +971,22 @@ export class GeminiProvider extends BaseLLMProvider {
       }
       yield { type: 'stop', stop_reason: 'error' }
     }
+  }
+
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    if (!this.genAI) throw new Error('Google Generative AI client is not initialized')
+    // Gemini embedContent 支持批量输入
+    const resp = await this.genAI.models.embedContent({
+      model: modelId,
+      contents: texts.map((text) => ({
+        parts: [{ text }]
+      }))
+    })
+    // resp.embeddings?: ContentEmbedding[]
+    if (resp && Array.isArray(resp.embeddings)) {
+      return resp.embeddings.map((e) => (Array.isArray(e.values) ? e.values : []))
+    }
+    // 若无返回，抛出异常
+    throw new Error('Gemini embedding API did not return embeddings')
   }
 }

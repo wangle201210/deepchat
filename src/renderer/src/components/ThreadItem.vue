@@ -1,5 +1,6 @@
 <template>
   <li
+    :dir="langStore.dir"
     :class="[
       ' select-none px-2 py-2 rounded-md text-accent-foreground text-xs cursor-pointer group flex items-center justify-between',
       isActive ? 'bg-slate-200 dark:bg-accent' : 'hover:bg-accent'
@@ -77,6 +78,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
+import { useLanguageStore } from '@/stores/language'
+
+const langStore = useLanguageStore()
 
 const chatStore = useChatStore()
 

@@ -90,6 +90,19 @@ app.whenReady().then(() => {
   // 注册全局快捷键
   presenter.shortcutPresenter.registerShortcuts()
 
+  // 托盘 检测更新
+  eventBus.on(TRAY_EVENTS.CHECK_FOR_UPDATES, () => {
+    const allWindows = presenter.windowPresenter.getAllWindows()
+
+    // 查找目标窗口 (焦点窗口或第一个窗口)
+    const targetWindow = presenter.windowPresenter.getFocusedWindow() || allWindows![0]
+    presenter.windowPresenter.show(targetWindow.id)
+    targetWindow.focus() // 确保窗口置顶
+
+    // 触发更新
+    presenter.upgradePresenter.checkUpdate()
+  })
+
   // 监听显示/隐藏窗口事件 (从托盘或快捷键触发)
   eventBus.on(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, (trayClick: boolean) => {
     const allWindows = presenter.windowPresenter.getAllWindows()
@@ -127,7 +140,7 @@ app.whenReady().then(() => {
   app.on('browser-window-focus', () => {
     // 当任何窗口获得焦点时，注册快捷键
     presenter.shortcutPresenter.registerShortcuts()
-    eventBus.emit(WINDOW_EVENTS.APP_FOCUS)
+    eventBus.sendToMain(WINDOW_EVENTS.APP_FOCUS)
   })
 
   // 监听浏览器窗口失去焦点事件
@@ -140,7 +153,7 @@ app.whenReady().then(() => {
 
       if (!isAnyWindowFocused) {
         presenter.shortcutPresenter.unregisterShortcuts()
-        eventBus.emit(WINDOW_EVENTS.APP_BLUR)
+        eventBus.sendToMain(WINDOW_EVENTS.APP_BLUR)
       }
     }, 50) // 50毫秒延迟
   })

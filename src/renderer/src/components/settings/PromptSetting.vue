@@ -178,131 +178,271 @@
       </div>
     </div>
 
-    <!-- 新增/编辑弹窗 -->
-    <Dialog v-model:open="openAddDialog">
-      <DialogContent class="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{{
-            editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle')
-          }}</DialogTitle>
-          <DialogDescription>
+    <!-- 新增/编辑抽屉窗口 -->
+    <Sheet v-model:open="openAddDialog">
+      <SheetContent 
+        side="right" 
+        class="!w-[75vw] !max-w-[95vw] h-full flex flex-col p-0 bg-background"
+      >
+        <SheetHeader class="px-6 py-4 border-b bg-card/50">
+          <SheetTitle class="flex items-center gap-2">
+            <Icon 
+              :icon="editingIdx === null ? 'lucide:plus-circle' : 'lucide:edit-3'" 
+              class="w-5 h-5 text-primary" 
+            />
+            <span>
+              {{ editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle') }}
+            </span>
+          </SheetTitle>
+          <SheetDescription>
             {{
               editingIdx === null
                 ? t('promptSetting.addDescription')
                 : t('promptSetting.editDescription')
             }}
-          </DialogDescription>
-        </DialogHeader>
-        <div class="space-y-4 py-4">
-          <div>
-            <Label>{{ t('promptSetting.name') }}</Label>
-            <Input v-model="form.name" :placeholder="t('promptSetting.namePlaceholder')" />
-          </div>
-          <div>
-            <Label>{{ t('promptSetting.description') }}</Label>
-            <Input
-              v-model="form.description"
-              :placeholder="t('promptSetting.descriptionPlaceholder')"
-            />
-          </div>
-          <div class="flex items-center space-x-2">
-            <Checkbox
-              id="prompt-enabled"
-              :checked="form.enabled"
-              @update:checked="(value) => (form.enabled = value)"
-            />
-            <Label for="prompt-enabled">{{ t('promptSetting.enablePrompt') }}</Label>
-          </div>
-          <div>
-            <Label>{{ t('promptSetting.content') }}</Label>
-            <textarea
-              v-model="form.content"
-              class="w-full min-h-32 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
-              :placeholder="t('promptSetting.contentPlaceholder')"
-            ></textarea>
-          </div>
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <Label>{{ t('promptSetting.parameters') }}</Label>
-              <Button variant="outline" size="sm" @click="addParameter">
-                <Icon icon="lucide:plus" class="w-4 h-4 mr-1" />
-                {{ t('promptSetting.addParameter') }}
-              </Button>
+          </SheetDescription>
+        </SheetHeader>
+        
+        <ScrollArea class="flex-1 px-6">
+          <div class="py-6 space-y-6">
+            <!-- 基本信息区域 -->
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 pb-2 border-b border-border">
+                <Icon icon="lucide:info" class="w-4 h-4 text-primary" />
+                <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.basicInfo') }}</Label>
+              </div>
+              
+          <div class="space-y-4">
+            <div>
+                  <Label class="text-sm font-medium">{{ t('promptSetting.name') }}</Label>
+                  <Input 
+                    v-model="form.name" 
+                    :placeholder="t('promptSetting.namePlaceholder')" 
+                    class="mt-2"
+                  />
             </div>
-            <div v-if="form.parameters?.length" class="space-y-3">
-              <div
-                v-for="(param, index) in form.parameters"
-                :key="index"
-                class="relative p-3 border rounded-lg bg-muted/30"
-              >
-                <!-- 删除按钮 - 放在右上角 -->
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="absolute top-2 right-2 h-6 w-6 bg-muted/50 border border-border/50 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
-                  :title="t('common.delete')"
-                  @click="removeParameter(index)"
-                >
-                  <Icon icon="lucide:trash-2" class="w-3.5 h-3.5" />
-                </Button>
+            <div>
+                  <Label class="text-sm font-medium">{{ t('promptSetting.description') }}</Label>
+              <Input
+                v-model="form.description"
+                :placeholder="t('promptSetting.descriptionPlaceholder')"
+                    class="mt-2"
+              />
+            </div>
+              </div>
+              
+              <div class="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="prompt-enabled"
+                :checked="form.enabled"
+                @update:checked="(value) => (form.enabled = value)"
+              />
+                <Label for="prompt-enabled" class="text-sm">{{ t('promptSetting.enablePrompt') }}</Label>
+            </div>
+            </div>
 
-                <!-- 参数内容 -->
-                <div class="space-y-3 pr-8">
-                  <!-- 参数名称行 -->
-                  <div class="flex items-center gap-3">
-                    <div class="flex-1">
+            <!-- 内容区域 -->
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 pb-2 border-b border-border">
+                <Icon icon="lucide:file-text" class="w-4 h-4 text-primary" />
+                <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.content') }}</Label>
+              </div>
+              
+            <div>
+              <textarea
+                v-model="form.content"
+                  class="w-full min-h-48 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
+                :placeholder="t('promptSetting.contentPlaceholder')"
+              ></textarea>
+                <p class="text-xs text-muted-foreground mt-2">
+                  {{ t('promptSetting.contentTip', { openBrace: '{', closeBrace: '}' }) }}
+                </p>
+            </div>
+            </div>
+
+            <!-- 参数区域 -->
+            <div class="space-y-4">
+              <div class="flex items-center justify-between pb-2 border-b border-border">
+                <div class="flex items-center gap-2">
+                  <Icon icon="lucide:settings" class="w-4 h-4 text-primary" />
+                  <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.parameters') }}</Label>
+                </div>
+                <Button variant="outline" size="sm" @click="addParameter">
+                  <Icon icon="lucide:plus" class="w-4 h-4 mr-1" />
+                  {{ t('promptSetting.addParameter') }}
+                </Button>
+              </div>
+              
+              <div v-if="form.parameters?.length" class="space-y-4">
+                <div
+                  v-for="(param, index) in form.parameters"
+                  :key="index"
+                  class="relative p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
+                  <!-- 删除按钮 -->
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="absolute top-3 right-3 h-7 w-7 bg-background/80 border border-border/50 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
+                    :title="t('common.delete')"
+                    @click="removeParameter(index)"
+                  >
+                    <Icon icon="lucide:trash-2" class="w-3.5 h-3.5" />
+                  </Button>
+
+                  <!-- 参数内容 -->
+                  <div class="space-y-4 pr-12">
+                    <!-- 参数名称和必填选项 -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      <div class="md:col-span-2">
+                        <Label class="text-sm text-muted-foreground">{{
+                          t('promptSetting.parameterName')
+                        }}</Label>
+                        <Input
+                          v-model="param.name"
+                          :placeholder="t('promptSetting.parameterNamePlaceholder')"
+                          class="mt-2"
+                        />
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <Checkbox
+                          :id="'required-' + index"
+                          :checked="param.required"
+                          @update:checked="(value) => (param.required = value)"
+                        />
+                        <Label :for="'required-' + index" class="text-sm whitespace-nowrap">
+                          {{ t('promptSetting.required') }}
+                        </Label>
+                      </div>
+                    </div>
+
+                    <!-- 参数描述 -->
+                    <div>
                       <Label class="text-sm text-muted-foreground">{{
-                        t('promptSetting.parameterName')
+                        t('promptSetting.parameterDescription')
                       }}</Label>
                       <Input
-                        v-model="param.name"
-                        :placeholder="t('promptSetting.parameterNamePlaceholder')"
-                        class="mt-1"
+                        v-model="param.description"
+                        :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
+                        class="mt-2"
                       />
                     </div>
-                    <div class="flex items-center gap-2 shrink-0 pt-6">
-                      <Checkbox
-                        :id="'required-' + index"
-                        :checked="param.required"
-                        @update:checked="(value) => (param.required = value)"
-                      />
-                      <Label :for="'required-' + index" class="text-sm whitespace-nowrap">
-                        {{ t('promptSetting.required') }}
-                      </Label>
-                    </div>
-                  </div>
-
-                  <!-- 描述行 -->
-                  <div>
-                    <Label class="text-sm text-muted-foreground">{{
-                      t('promptSetting.parameterDescription')
-                    }}</Label>
-                    <Input
-                      v-model="param.description"
-                      :placeholder="t('promptSetting.parameterDescriptionPlaceholder')"
-                      class="mt-1"
-                    />
                   </div>
                 </div>
               </div>
+              
+              <div
+                v-else
+                class="text-center text-muted-foreground py-12 border-2 border-dashed border-muted rounded-lg bg-muted/20"
+              >
+                <Icon icon="lucide:settings" class="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p class="text-sm">{{ t('promptSetting.noParameters') }}</p>
+                <p class="text-xs text-muted-foreground/70 mt-1">{{ t('promptSetting.noParametersDesc') }}</p>
+              </div>
             </div>
-            <div
-              v-else
-              class="text-center text-muted-foreground py-8 border-2 border-dashed border-muted rounded-lg"
-            >
-              <Icon icon="lucide:settings" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>{{ t('promptSetting.noParameters') }}</p>
+
+            <!-- 文件管理区域 -->
+            <div class="space-y-4">
+              <div class="flex items-center gap-2 pb-2 border-b border-border">
+                <Icon icon="lucide:folder" class="w-4 h-4 text-primary" />
+                <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.fileManagement') }}</Label>
+              </div>
+
+              <!-- 上传选项 -->
+              <div>
+                <!-- 上传文件 -->
+                <div 
+                  class="group border-2 border-dashed border-muted rounded-lg p-4 hover:border-primary/50 hover:bg-muted/20 transition-all cursor-pointer"
+                  @click="uploadFile"
+                >
+                  <div class="flex items-center gap-3">
+                    <div class="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                      <Icon icon="lucide:upload" class="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p class="text-sm font-medium">{{ t('promptSetting.uploadFromDevice') }}</p>
+                      <p class="text-xs text-muted-foreground">{{ t('promptSetting.uploadFromDeviceDesc') }}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 已上传文件列表 -->
+              <div v-if="form.files?.length" class="space-y-3">
+                <Label class="text-sm text-muted-foreground">{{ t('promptSetting.uploadedFiles') }}</Label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div
+                    v-for="(file, index) in form.files"
+                    :key="index"
+                    class="relative p-3 border rounded-lg bg-card hover:bg-muted/50 transition-colors group"
+                  >
+                    <!-- 删除按钮 -->
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      class="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 bg-background/80 border border-border/50 text-muted-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
+                      :title="t('common.delete')"
+                      @click="removeFile(index)"
+                    >
+                      <Icon icon="lucide:trash-2" class="w-3 h-3" />
+                    </Button>
+
+                    <!-- 文件信息 -->
+                    <div class="pr-8">
+                      <div class="flex items-center gap-2 mb-2">
+                        <div class="p-1.5 bg-primary/10 rounded">
+                          <Icon :icon="getFileIcon(file.type)" class="w-4 h-4 text-primary" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium truncate" :title="file.name">{{ file.name }}</p>
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center justify-between text-xs text-muted-foreground">
+                        <span class="px-2 py-0.5 bg-muted rounded uppercase">{{ file.type || 'unknown' }}</span>
+                        <span>{{ formatFileSize(file.size) }}</span>
+                      </div>
+                      
+                      <p v-if="file.description" class="text-xs text-muted-foreground mt-2 line-clamp-2">
+                        {{ file.description }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 空状态 -->
+              <div
+                v-else
+                class="text-center text-muted-foreground py-12 border-2 border-dashed border-muted rounded-lg bg-muted/20"
+              >
+                <Icon icon="lucide:folder-open" class="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p class="text-sm">{{ t('promptSetting.noFiles') }}</p>
+                <p class="text-xs text-muted-foreground/70 mt-1">{{ t('promptSetting.noFilesUploadDesc') }}</p>
+              </div>
             </div>
           </div>
-        </div>
-        <DialogFooter>
+        </ScrollArea>
+        
+        <SheetFooter class="px-6 py-4 border-t bg-card/50">
+          <div class="flex items-center justify-between w-full">
+            <div class="text-xs text-muted-foreground">
+              {{ form.content.length }} {{ t('promptSetting.characters') }}
+            </div>
+            <div class="flex items-center gap-3">
           <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
-          <Button :disabled="!form.name || !form.content" @click="savePrompt">{{
-            t('common.confirm')
-          }}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+              <Button :disabled="!form.name || !form.content" @click="savePrompt">
+                <Icon 
+                  :icon="editingIdx === null ? 'lucide:plus' : 'lucide:save'" 
+                  class="w-4 h-4 mr-1" 
+                />
+                {{ t('common.confirm') }}
+              </Button>
+            </div>
+          </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   </ScrollArea>
 </template>
 
@@ -316,13 +456,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter
+} from '@/components/ui/sheet'
 import { useToast } from '@/components/ui/toast'
 import { usePromptsStore } from '@/stores/prompts'
 import { useSettingsStore } from '@/stores/settings'
@@ -338,6 +478,17 @@ const defaultSystemPrompt = ref('')
 const defaultPromptSaveStatus = ref<'idle' | 'typing' | 'saving' | 'saved'>('idle')
 const defaultPromptTextarea = ref<HTMLTextAreaElement>()
 
+interface FileItem {
+  id: string
+  name: string
+  type: string
+  size: number
+  path: string
+  description?: string
+  content?: string
+  createdAt: number
+}
+
 interface PromptItem {
   id: string
   name: string
@@ -348,6 +499,7 @@ interface PromptItem {
     description: string
     required: boolean
   }>
+  files?: FileItem[] // 关联的文件
   enabled?: boolean // 是否启用
   source?: 'local' | 'imported' | 'builtin' // 来源类型
   createdAt?: number // 创建时间
@@ -364,6 +516,7 @@ const form = reactive<PromptItem>({
   description: '',
   content: '',
   parameters: [],
+  files: [],
   enabled: true,
   source: 'local'
 })
@@ -465,6 +618,7 @@ const resetForm = () => {
   form.description = ''
   form.content = ''
   form.parameters = []
+  form.files = []
   form.enabled = true
   form.source = 'local'
   editingIdx.value = null
@@ -517,6 +671,12 @@ const editPrompt = (idx: number) => {
     })
   } else {
     form.parameters = []
+  }
+  // 复制文件数组
+  if (p.files) {
+    form.files = [...p.files]
+  } else {
+    form.files = []
   }
   editingIdx.value = idx
   openAddDialog.value = true
@@ -804,6 +964,82 @@ const getStatusColor = () => {
     default:
       return 'text-primary'
   }
+}
+
+// 文件管理相关方法
+const uploadFile = () => {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.multiple = true
+  input.accept = '.txt,.md,.csv,.json,.xml,.pdf,.doc,.docx'
+  input.onchange = (e) => {
+    const files = (e.target as HTMLInputElement).files
+    if (files) {
+      Array.from(files).forEach(file => {
+        const fileItem: FileItem = {
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          name: file.name,
+          type: file.name.split('.').pop()?.toLowerCase() || 'unknown',
+          size: file.size,
+          path: file.name, // 在实际应用中应该是文件的保存路径
+          description: '',
+          createdAt: Date.now()
+        }
+        
+        // 读取文件内容（对于文本文件）
+        if (file.type.startsWith('text/') || ['.txt', '.md', '.csv', '.json', '.xml'].some(ext => file.name.toLowerCase().endsWith(ext))) {
+          const reader = new FileReader()
+          reader.onload = (event) => {
+            fileItem.content = event.target?.result as string
+          }
+          reader.readAsText(file)
+        }
+        
+        if (!form.files) {
+          form.files = []
+        }
+        form.files.push(fileItem)
+      })
+      
+      toast({
+        title: t('promptSetting.uploadSuccess'),
+        description: `${t('promptSetting.uploadedCount', { count: files.length })}`,
+        variant: 'default'
+      })
+    }
+  }
+  input.click()
+}
+
+
+
+const removeFile = (index: number) => {
+  if (form.files) {
+    form.files.splice(index, 1)
+  }
+}
+
+const getFileIcon = (type: string) => {
+  const iconMap: Record<string, string> = {
+    txt: 'lucide:file-text',
+    md: 'lucide:file-text',
+    csv: 'lucide:file-spreadsheet',
+    json: 'lucide:file-code',
+    xml: 'lucide:file-code',
+    pdf: 'lucide:file-type',
+    doc: 'lucide:file-text',
+    docx: 'lucide:file-text',
+    unknown: 'lucide:file'
+  }
+  return iconMap[type] || 'lucide:file'
+}
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 onMounted(async () => {

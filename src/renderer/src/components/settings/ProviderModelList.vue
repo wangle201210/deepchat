@@ -16,6 +16,7 @@
         :vision="model.vision"
         :function-call="model.functionCall"
         :reasoning="model.reasoning"
+        :type="model.type ?? ModelType.Chat"
         @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         @delete-model="() => handleDeleteCustomModel(model)"
       />
@@ -35,6 +36,18 @@
         :placeholder="t('model.add.maxTokensPlaceholder')"
         class="w-32"
       />
+      <Select v-model="model.type" class="w-16">
+        <SelectTrigger class="w-full">
+          <div class="flex items-center gap-1">
+            <SelectValue class="text-xs font-bold truncate" />
+          </div>
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="type in Object.values(ModelType)" :key="type" :value="type">
+            {{ type }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
       <Button
         variant="outline"
         size="sm"
@@ -97,6 +110,7 @@
           :vision="model.vision"
           :function-call="model.functionCall"
           :reasoning="model.reasoning"
+          :type="model.type ?? ModelType.Chat"
           @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         />
       </div>
@@ -108,9 +122,17 @@ import { useI18n } from 'vue-i18n'
 import { computed, ref } from 'vue'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { Icon } from '@iconify/vue'
 import ModelConfigItem from './ModelConfigItem.vue'
-import type { RENDERER_MODEL_META } from '@shared/presenter'
+import { type RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 import { useSettingsStore } from '@/stores/settings'
 
 const { t } = useI18n()
@@ -119,6 +141,7 @@ interface ModelEdit {
   modelId: string
   contextLength: number
   maxTokens: number
+  type: ModelType
 }
 
 const addModelList = ref<ModelEdit[]>([])
@@ -184,7 +207,8 @@ const addEdit = () => {
     modelName: '',
     modelId: '',
     contextLength: 4096,
-    maxTokens: 2048
+    maxTokens: 2048,
+    type: ModelType.Chat
   })
 }
 
@@ -208,7 +232,8 @@ const confirmAdd = async (idx: number) => {
       maxTokens: model.maxTokens || 2048,
       vision: false,
       functionCall: false,
-      reasoning: false
+      reasoning: false,
+      type: model.type
     })
     removeEdit(idx)
   } catch (error) {

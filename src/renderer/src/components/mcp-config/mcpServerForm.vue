@@ -27,12 +27,13 @@ import { useSettingsStore } from '@/stores/settings'
 import type { RENDERER_MODEL_META } from '@shared/presenter'
 import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from './const'
 import { usePresenter } from '@/composables/usePresenter'
+import { useThemeStore } from '@/stores/theme'
 
 const { t } = useI18n()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
 const devicePresenter = usePresenter('devicePresenter')
-
+const themeStore = useThemeStore()
 const props = defineProps<{
   serverName?: string
   initialConfig?: MCPServerConfig
@@ -779,7 +780,11 @@ HTTP-Referer=deepchatai.cn`
             <PopoverTrigger as-child>
               <Button variant="outline" class="w-full justify-between">
                 <div class="flex items-center gap-2">
-                  <ModelIcon :model-id="selectedImageModel?.id || ''" class="h-4 w-4" />
+                  <ModelIcon
+                    :model-id="selectedImageModel?.id || ''"
+                    class="h-4 w-4"
+                    :is-dark="themeStore.isDark"
+                  />
                   <span class="truncate">{{
                     selectedImageModel?.name || t('settings.common.selectModel')
                   }}</span>
@@ -899,9 +904,12 @@ HTTP-Referer=deepchatai.cn`
             t('settings.mcp.serverForm.descriptions')
           }}</Label>
           <div
-            class="flex h-9 items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background opacity-50"
+            class="flex h-9 items-center rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background opacity-50"
+            :title="getLocalizedDesc"
           >
-            {{ getLocalizedDesc }}
+            <span class="block truncate min-w-0">
+              {{ getLocalizedDesc }}
+            </span>
           </div>
         </div>
         <div v-else class="space-y-2">

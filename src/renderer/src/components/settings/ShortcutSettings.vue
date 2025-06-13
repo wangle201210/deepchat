@@ -1,7 +1,7 @@
 <template>
   <div class="w-full h-full py-4 flex flex-col">
     <div class="pb-4 px-4 flex flex-row items-center justify-between">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2" :dir="languageStore.dir">
         <Icon icon="lucide:keyboard" class="w-5 h-5 text-primary" />
         <span class="text-lg font-semibold">{{ t('settings.shortcuts.title') }}</span>
       </div>
@@ -22,7 +22,10 @@
             :key="shortcut.id"
             class="flex flex-row p-2 items-center gap-2 px-2"
           >
-            <span class="flex flex-row items-center gap-2 flex-grow w-full">
+            <span
+              class="flex flex-row items-center gap-2 flex-grow w-full"
+              :dir="languageStore.dir"
+            >
               <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
               <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
             </span>
@@ -30,7 +33,7 @@
               <div class="relative w-full">
                 <Button
                   variant="outline"
-                  class="min-w-[150px] justify-between relative ring-offset-background"
+                  class="h-10 min-w-[200px] justify-end relative px-2"
                   :class="{
                     'ring-2 ring-primary': recordingShortcutId === shortcut.id && !shortcutError,
                     'ring-2 ring-destructive': recordingShortcutId === shortcut.id && shortcutError
@@ -54,7 +57,18 @@
                     </span>
                     <span v-else>{{ t('settings.shortcuts.pressKeys') }}</span>
                   </span>
-                  <span v-else class="text-sm">{{ shortcut.key }}</span>
+                  <span v-else class="text-sm">
+                    <span
+                      v-for="(key, idx) in shortcut.key"
+                      :key="idx"
+                      class="tw-keycap"
+                      :class="{
+                        'font-mono tracking-widest': key === '0'
+                      }"
+                    >
+                      {{ key }}
+                    </span>
+                  </span>
                   <Icon
                     v-if="recordingShortcutId !== shortcut.id"
                     icon="lucide:pencil"
@@ -78,11 +92,13 @@ import { Icon } from '@iconify/vue'
 import { Loader2 } from 'lucide-vue-next'
 
 import { useShortcutKeyStore } from '@/stores/shortcutKey'
+import { useLanguageStore } from '@/stores/language'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { ShortcutKey } from '@shared/presenter'
 
 const { t } = useI18n()
+const languageStore = useLanguageStore()
 const shortcutKeyStore = useShortcutKeyStore()
 const { shortcutKeys } = storeToRefs(shortcutKeyStore)
 
@@ -141,6 +157,10 @@ const shortcutMapping: Record<
   ShortcutKey,
   { icon: string; label: string; key?: string; disabled?: boolean }
 > = {
+  ShowHideWindow: {
+    icon: 'lucide:plus-square',
+    label: 'settings.shortcuts.showHideWindow'
+  },
   NewConversation: {
     icon: 'lucide:plus-square',
     label: 'settings.shortcuts.newConversation'
@@ -192,8 +212,12 @@ const shortcutMapping: Record<
     label: 'settings.shortcuts.goSettings'
   },
   CleanChatHistory: {
-    icon: 'lucide:trash-2',
+    icon: 'lucide:eraser',
     label: 'settings.shortcuts.cleanHistory'
+  },
+  DeleteConversation: {
+    icon: 'lucide:trash-2',
+    label: 'settings.shortcuts.deleteConversation'
   },
   Quit: {
     icon: 'lucide:log-out',
@@ -220,7 +244,10 @@ const shortcuts = computed(() => {
   }
 })
 
-const formatShortcut = (_shortcut: string) => {
+const formatShortcut = (_shortcut: string | undefined | null) => {
+  // 如果 _shortcut 为空，返回空字符串或一个默认值
+  if (!_shortcut) return ''
+
   return _shortcut
     .replace(
       'CommandOrControl',
@@ -231,6 +258,8 @@ const formatShortcut = (_shortcut: string) => {
     .replace('Alt', '⌥')
     .replace('Shift', '⇧')
     .replace(/\+/g, ' + ')
+    .split('+')
+    .map((k) => k.trim())
 }
 
 const resetShortcutKeys = async () => {
@@ -383,3 +412,10 @@ const saveChanges = async () => {
   }
 }
 </script>
+
+<style scoped>
+.tw-keycap {
+  @apply inline-flex min-w-8 h-8 items-center justify-center px-2 py-0.5 mx-0.5 rounded-md text-sm align-middle border shadow-sm transition-colors select-none;
+  @apply border-border bg-background;
+}
+</style>

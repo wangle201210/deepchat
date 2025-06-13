@@ -19,60 +19,20 @@ import { NotificationPresenter } from './notifactionPresenter'
 import { TabPresenter } from './tabPresenter'
 import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
-import {
-  CONFIG_EVENTS,
-  CONVERSATION_EVENTS,
-  STREAM_EVENTS,
-  WINDOW_EVENTS,
-  UPDATE_EVENTS,
-  OLLAMA_EVENTS,
-  MCP_EVENTS,
-  SYNC_EVENTS,
-  DEEPLINK_EVENTS,
-  NOTIFICATION_EVENTS,
-  SHORTCUT_EVENTS
-} from '@/events'
+import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
 
-// 需要通过 forward 函数转发到渲染进程的事件列表
-const eventsToForward: string[] = [
-  CONFIG_EVENTS.PROVIDER_CHANGED,
-  STREAM_EVENTS.RESPONSE,
-  STREAM_EVENTS.END,
-  STREAM_EVENTS.ERROR,
-  CONVERSATION_EVENTS.ACTIVATED,
-  CONVERSATION_EVENTS.DEACTIVATED,
-  CONFIG_EVENTS.MODEL_LIST_CHANGED,
-  CONFIG_EVENTS.MODEL_STATUS_CHANGED,
-  UPDATE_EVENTS.STATUS_CHANGED,
-  UPDATE_EVENTS.PROGRESS,
-  UPDATE_EVENTS.WILL_RESTART,
-  UPDATE_EVENTS.ERROR,
-  CONVERSATION_EVENTS.MESSAGE_EDITED,
-  MCP_EVENTS.SERVER_STARTED,
-  MCP_EVENTS.SERVER_STOPPED,
-  MCP_EVENTS.CONFIG_CHANGED,
-  MCP_EVENTS.TOOL_CALL_RESULT,
-  OLLAMA_EVENTS.PULL_MODEL_PROGRESS,
-  SYNC_EVENTS.BACKUP_STARTED,
-  SYNC_EVENTS.BACKUP_COMPLETED,
-  SYNC_EVENTS.BACKUP_ERROR,
-  SYNC_EVENTS.IMPORT_STARTED,
-  SYNC_EVENTS.IMPORT_COMPLETED,
-  SYNC_EVENTS.IMPORT_ERROR,
-  DEEPLINK_EVENTS.START,
-  DEEPLINK_EVENTS.MCP_INSTALL,
-  NOTIFICATION_EVENTS.SHOW_ERROR,
-  NOTIFICATION_EVENTS.SYS_NOTIFY_CLICKED,
-  SHORTCUT_EVENTS.GO_SETTINGS,
-  SHORTCUT_EVENTS.CLEAN_CHAT_HISTORY,
-  SHORTCUT_EVENTS.ZOOM_IN,
-  SHORTCUT_EVENTS.ZOOM_OUT,
-  SHORTCUT_EVENTS.ZOOM_RESUME,
-  CONFIG_EVENTS.LANGUAGE_CHANGED,
-  CONFIG_EVENTS.OAUTH_LOGIN_START,
-  CONFIG_EVENTS.OAUTH_LOGIN_SUCCESS,
-  CONFIG_EVENTS.OAUTH_LOGIN_ERROR
-]
+// IPC调用上下文接口
+interface IPCCallContext {
+  tabId?: number
+  windowId?: number
+  webContentsId: number
+  presenterName: string
+  methodName: string
+  timestamp: number
+}
+
+// 注意: 现在大部分事件已在各自的 presenter 中直接发送到渲染进程
+// 剩余的自动转发事件已在 EventBus 的 DEFAULT_RENDERER_EVENTS 中定义
 
 // 主 Presenter 类，负责协调其他 Presenter 并处理 IPC 通信
 export class Presenter implements IPresenter {
@@ -126,55 +86,26 @@ export class Presenter implements IPresenter {
 
   // 设置事件总线监听和转发
   setupEventBus() {
-    // 事件转发辅助函数（包含特定逻辑处理）
-    const forward = (eventName: string) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      eventBus.on(eventName, (...payload: any[]) => {
-        // 特定事件的处理逻辑
-        if (eventName === STREAM_EVENTS.RESPONSE) {
-          const [msg] = payload
-          const dataToRender = { ...msg }
-          delete dataToRender.tool_call_response_raw // 删除原始数据
-          this.windowPresenter.sendToAllWindows(eventName, dataToRender)
-        } else if (eventName === STREAM_EVENTS.END) {
-          const [msg] = payload
-          console.log('stream-end', msg.eventId) // 保留日志
-          this.windowPresenter.sendToAllWindows(eventName, msg)
-        } else if (eventName === CONFIG_EVENTS.PROVIDER_CHANGED) {
-          const providers = this.configPresenter.getProviders()
-          this.llmproviderPresenter.setProviders(providers)
-          this.windowPresenter.sendToAllWindows(eventName) // 此事件转发无需 payload
-        } else if (
-          eventName === UPDATE_EVENTS.STATUS_CHANGED ||
-          eventName === UPDATE_EVENTS.PROGRESS ||
-          eventName === UPDATE_EVENTS.WILL_RESTART ||
-          eventName === UPDATE_EVENTS.ERROR ||
-          eventName === DEEPLINK_EVENTS.START
-        ) {
-          const [msg] = payload
-          console.log(eventName, msg) // 保留日志
-          this.windowPresenter.sendToAllWindows(eventName, msg)
-        } else if (eventName === DEEPLINK_EVENTS.MCP_INSTALL) {
-          // Note: DEEPLINK_EVENTS.START is handled above
-          // 特殊处理：向默认标签页发送消息，并切换到目标标签页
-          const [msg] = payload
-          console.log(eventName, msg) // 保留日志
-          // Pass true as the second argument to indicate it's an internal event causing tab switch
-          this.windowPresenter.sendTodefaultTab(eventName, true, msg)
-        } else {
-          // 默认处理：直接转发所有 payload 到所有窗口
-          this.windowPresenter.sendToAllWindows(eventName, ...payload)
-        }
-      })
-    }
+    // 设置 WindowPresenter 和 TabPresenter 到 EventBus
+    eventBus.setWindowPresenter(this.windowPresenter)
+    eventBus.setTabPresenter(this.tabPresenter)
+
+    // 设置特殊事件的处理逻辑
+    this.setupSpecialEventHandlers()
 
     // 应用主窗口准备就绪时触发初始化
     eventBus.on(WINDOW_EVENTS.READY_TO_SHOW, () => {
       this.init()
     })
+  }
 
-    // 统一注册需要转发的事件
-    eventsToForward.forEach(forward)
+  // 设置需要特殊处理的事件
+  private setupSpecialEventHandlers() {
+    // CONFIG_EVENTS.PROVIDER_CHANGED 需要更新 providers（已在 configPresenter 中处理发送到渲染进程）
+    eventBus.on(CONFIG_EVENTS.PROVIDER_CHANGED, () => {
+      const providers = this.configPresenter.getProviders()
+      this.llmproviderPresenter.setProviders(providers)
+    })
   }
   setupTray() {
     console.info('setupTray', !!this.trayPresenter)
@@ -206,7 +137,8 @@ export class Presenter implements IPresenter {
             id: model.id,
             name: model.name,
             contextLength: model.contextLength,
-            maxTokens: model.maxTokens
+            maxTokens: model.maxTokens,
+            type: model.type
           })
         }
       }
@@ -233,17 +165,38 @@ function isFunction(obj: any, prop: string): obj is { [key: string]: (...args: a
   return typeof obj[prop] === 'function'
 }
 
-// IPC 主进程处理程序：动态调用 Presenter 的方法
+// IPC 主进程处理程序：动态调用 Presenter 的方法 (支持Tab上下文)
 ipcMain.handle(
   'presenter:call',
-  (_event: IpcMainInvokeEvent, name: string, method: string, ...payloads: unknown[]) => {
+  (event: IpcMainInvokeEvent, name: string, method: string, ...payloads: unknown[]) => {
     try {
+      // 构建调用上下文
+      const webContentsId = event.sender.id
+      const tabId = presenter.tabPresenter.getTabIdByWebContentsId(webContentsId)
+      const windowId = presenter.tabPresenter.getWindowIdByWebContentsId(webContentsId)
+
+      const context: IPCCallContext = {
+        tabId,
+        windowId,
+        webContentsId,
+        presenterName: name,
+        methodName: method,
+        timestamp: Date.now()
+      }
+
+      // 记录调用日志 (包含tab上下文)
+      if (import.meta.env.VITE_LOG_IPC_CALL === '1') {
+        console.log(
+          `[IPC Call] Tab:${context.tabId || 'unknown'} Window:${context.windowId || 'unknown'} -> ${context.presenterName}.${context.methodName}`
+        )
+      }
+
       // 通过名称获取对应的 Presenter 实例
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calledPresenter: any = presenter[name as keyof Presenter]
 
       if (!calledPresenter) {
-        console.warn('calling wrong presenter', name) // 保留警告
+        console.warn(`[IPC Warning] Tab:${context.tabId} calling wrong presenter: ${name}`)
         return { error: `Presenter "${name}" not found` }
       }
 
@@ -252,14 +205,20 @@ ipcMain.handle(
         // 调用方法并返回结果
         return calledPresenter[method](...payloads)
       } else {
-        console.warn('called method is not a function or does not exist', name, method) // 保留警告
+        console.warn(
+          `[IPC Warning] Tab:${context.tabId} called method is not a function or does not exist: ${name}.${method}`
+        )
         return { error: `Method "${method}" not found or not a function on "${name}"` }
       }
     } catch (
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    e: any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      e: any
     ) {
-      console.error('error on presenter handle', e) // 保留错误日志
+      // 尝试获取调用上下文以改进错误日志
+      const webContentsId = event.sender.id
+      const tabId = presenter.tabPresenter.getTabIdByWebContentsId(webContentsId)
+
+      console.error(`[IPC Error] Tab:${tabId || 'unknown'} ${name}.${method}:`, e)
       return { error: e.message || String(e) }
     }
   }

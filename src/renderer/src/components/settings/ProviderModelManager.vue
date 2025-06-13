@@ -41,6 +41,7 @@
         :vision="model.vision ?? false"
         :function-call="model.functionCall ?? false"
         :reasoning="model.reasoning ?? false"
+        :type="model.type ?? ModelType.Chat"
         @enabled-change="$emit('model-enabled-change', model, $event)"
       />
     </div>
@@ -54,6 +55,7 @@ import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import ModelConfigItem from './ModelConfigItem.vue'
 import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
+import { ModelType } from '@shared/model'
 
 const { t } = useI18n()
 

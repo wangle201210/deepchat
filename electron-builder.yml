@@ -5,6 +5,7 @@ directories:
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!test/*'
   - '!docs/*'
   - '!keys/*'
   - '!scripts/*'
@@ -46,6 +47,8 @@ electronLanguages:
   - en
   - ko
   - fr
+  - fa-IR
+  - fa
 win:
   executableName: DeepChat
 nsis:

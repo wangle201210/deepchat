@@ -16,6 +16,11 @@
     <div class="flex-grow"></div>
     <div class="flex flex-row items-center gap-2">
       <span v-if="group" class="text-xs text-muted-foreground">{{ group }}</span>
+      <span
+        class="px-2 py-0.5 rounded-full bg-muted text-xs text-muted-foreground border border-muted-foreground/20 select-none"
+      >
+        {{ type }}
+      </span>
       <Button
         v-if="!enabled"
         variant="link"
@@ -50,17 +55,24 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
+import { ModelType } from '@shared/model'
 
-defineProps<{
-  modelName: string
-  modelId: string
-  group?: string
-  enabled: boolean
-  isCustomModel?: boolean
-  vision?: boolean
-  functionCall?: boolean
-  reasoning?: boolean
-}>()
+withDefaults(
+  defineProps<{
+    modelName: string
+    modelId: string
+    group?: string
+    enabled: boolean
+    isCustomModel?: boolean
+    vision?: boolean
+    functionCall?: boolean
+    reasoning?: boolean
+    type?: ModelType
+  }>(),
+  {
+    type: ModelType.Chat
+  }
+)
 
 const emit = defineEmits<{
   enabledChange: [boolean]

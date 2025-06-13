@@ -92,7 +92,7 @@ export class ProxyConfig {
           })
         )
       }
-      eventBus.emit(CONFIG_EVENTS.PROXY_RESOLVED)
+      eventBus.sendToMain(CONFIG_EVENTS.PROXY_RESOLVED)
     } catch (error) {
       console.error('Failed to resolve proxy:', error)
       return
@@ -147,7 +147,7 @@ export class ProxyConfig {
     try {
       // 检查URL格式，确保开头是http://或https://
       const urlPattern =
-        /^(http|https):\/\/(?:([^:@\/]+)(?::([^@\/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
+        /^(http|https):\/\/(?:([^:@/]+)(?::([^@/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
       if (!urlPattern.test(url)) {
         return false
       }

@@ -9,6 +9,7 @@
   >
     <TooltipProvider>
       <div
+        :dir="langStore.dir"
         class="bg-card border border-border rounded-lg focus-within:border-primary p-2 flex flex-col gap-2 shadow-sm relative"
       >
         <!-- {{  t('chat.input.fileArea') }} -->
@@ -37,11 +38,7 @@
           </TransitionGroup>
         </div>
         <!-- {{ t('chat.input.inputArea') }} -->
-        <editor-content
-          :editor="editor"
-          class="p-2 text-sm"
-          @keydown.enter.exact="handleEditorEnter"
-        />
+        <editor-content :editor="editor" class="p-2 text-sm" @keydown="onKeydown" />
 
         <div class="flex items-center justify-between">
           <!-- {{ t('chat.input.functionSwitch') }} -->
@@ -74,6 +71,7 @@
                   :class="{
                     'border-primary': settings.webSearch
                   }"
+                  :dir="langStore.dir"
                 >
                   <Button
                     variant="outline"
@@ -83,6 +81,7 @@
                         ? 'dark:!bg-primary bg-primary border-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground'
                         : ''
                     ]"
+                    :dir="langStore.dir"
                     size="icon"
                     @click="onWebSearchClick"
                   >
@@ -203,7 +202,7 @@ import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import { Mention } from './editor/mention/mention'
-import suggestion, { mentionData } from './editor/mention/suggestion'
+import suggestion, { mentionData, setPromptFilesHandler } from './editor/mention/suggestion'
 import { mentionSelected } from './editor/mention/suggestion'
 import Placeholder from '@tiptap/extension-placeholder'
 import HardBreak from '@tiptap/extension-hard-break'
@@ -211,8 +210,15 @@ import CodeBlock from '@tiptap/extension-code-block'
 import History from '@tiptap/extension-history'
 import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntry } from '@shared/presenter'
+import { searchHistory } from '@/lib/searchHistory'
+import { useLanguageStore } from '@/stores/language'
+import { useToast } from '@/components/ui/toast/use-toast'
+
+const langStore = useLanguageStore()
 const mcpStore = useMcpStore()
+const { toast } = useToast()
 const { t } = useI18n()
+searchHistory.resetIndex()
 const editor = new Editor({
   editorProps: {
     attributes: {
@@ -545,6 +551,7 @@ const tiptapJSONtoMessageBlock = async (docJSON: JSONContent) => {
 
 const emitSend = async () => {
   if (inputText.value.trim()) {
+    searchHistory.addSearch(inputText.value.trim())
     const blocks = await tiptapJSONtoMessageBlock(editor.getJSON())
 
     const messageContent: UserMessageContent = {
@@ -577,6 +584,87 @@ const deleteFile = (idx: number) => {
   selectedFiles.value.splice(idx, 1)
   if (fileInput.value) {
     fileInput.value.value = ''
+  }
+}
+
+// 处理来自 Prompt 的文件
+const handlePromptFiles = async (
+  files: Array<{
+    id: string
+    name: string
+    type: string
+    size: number
+    path: string
+    description?: string
+    content?: string
+    createdAt: number
+  }>
+) => {
+  if (!files || files.length === 0) return
+
+  let addedCount = 0
+  let errorCount = 0
+
+  for (const fileItem of files) {
+    try {
+      // 检查文件是否已存在（基于文件名去重）
+      const exists = selectedFiles.value.some((f) => f.name === fileItem.name)
+      if (exists) {
+        continue
+      }
+
+      // 转换 FileItem -> MessageFile
+      const messageFile: MessageFile = {
+        name: fileItem.name,
+        content: fileItem.content || '', // 如果没有内容，尝试从路径读取
+        mimeType: fileItem.type || 'application/octet-stream',
+        metadata: {
+          fileName: fileItem.name,
+          fileSize: fileItem.size || 0,
+          fileDescription: fileItem.description || '',
+          fileCreated: new Date(fileItem.createdAt || Date.now()),
+          fileModified: new Date(fileItem.createdAt || Date.now())
+        },
+        token: approximateTokenSize(fileItem.content || ''),
+        path: fileItem.path || fileItem.name
+      }
+
+      // 如果没有内容但有路径，尝试读取文件
+      if (!messageFile.content && fileItem.path) {
+        try {
+          const fileContent = await filePresenter.readFile(fileItem.path)
+          messageFile.content = fileContent
+          messageFile.token = approximateTokenSize(fileContent)
+        } catch (error) {
+          console.warn(`Failed to read file content: ${fileItem.path}`, error)
+          // 如果读取失败，仍然添加文件但内容为空
+        }
+      }
+
+      selectedFiles.value.push(messageFile)
+      addedCount++
+    } catch (error) {
+      console.error('Failed to process prompt file:', fileItem, error)
+      errorCount++
+    }
+  }
+
+  // 显示结果反馈
+  if (addedCount > 0) {
+    toast({
+      title: t('chat.input.promptFilesAdded'),
+      description: t('chat.input.promptFilesAddedDesc', { count: addedCount }),
+      variant: 'default'
+    })
+    emit('file-upload', selectedFiles.value)
+  }
+
+  if (errorCount > 0) {
+    toast({
+      title: t('chat.input.promptFilesError'),
+      description: t('chat.input.promptFilesErrorDesc', { count: errorCount }),
+      variant: 'destructive'
+    })
   }
 }
 
@@ -733,6 +821,9 @@ const handleSearchMouseLeave = () => {
 onMounted(() => {
   initSettings()
 
+  // 设置 prompt 文件处理回调
+  setPromptFilesHandler(handlePromptFiles)
+
   // Add event listeners for search engine selector hover with auto remove
   const searchElement = document.querySelector('.search-engine-select')
   if (searchElement) {
@@ -827,6 +918,67 @@ watch(
       )
   }
 )
+
+function onKeydown(e: KeyboardEvent) {
+  if (e.code === 'Enter' && !e.shiftKey) {
+    // 阻止默认行为，避免换行
+    handleEditorEnter(e)
+    e.preventDefault()
+  }
+  if (e.code === 'ArrowUp') {
+    const contentEditableDiv = e.target as HTMLDivElement
+    if (isCursorInFirstLine(contentEditableDiv)) {
+      const previousSearch = searchHistory.getPrevious()
+      if (previousSearch !== null) {
+        editor.commands.setContent(previousSearch)
+      }
+      e.preventDefault()
+    }
+  } else if (e.code === 'ArrowDown') {
+    const contentEditableDiv = e.target as HTMLDivElement
+    if (isCursorInLastLine(contentEditableDiv)) {
+      const nextSearch = searchHistory.getNext()
+      if (nextSearch !== null) {
+        editor.commands.setContent(nextSearch)
+      }
+      e.preventDefault()
+    }
+  }
+}
+
+function isCursorInFirstLine(contentEditableDiv: HTMLDivElement): boolean {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount) return false
+
+  const range = selection.getRangeAt(0)
+  const startContainer = range.startContainer
+  const parentElement =
+    startContainer.nodeType === Node.TEXT_NODE
+      ? startContainer.parentElement
+      : (startContainer as HTMLElement)
+
+  if (!parentElement) return false
+
+  const firstLineElement = contentEditableDiv.firstChild
+  return parentElement === firstLineElement || contentEditableDiv.contains(firstLineElement)
+}
+
+function isCursorInLastLine(contentEditableDiv: HTMLDivElement): boolean {
+  const selection = window.getSelection()
+  if (!selection || !selection.rangeCount) return false
+
+  const range = selection.getRangeAt(0)
+  const endContainer = range.endContainer
+  const parentElement =
+    endContainer.nodeType === Node.TEXT_NODE
+      ? endContainer.parentElement
+      : (endContainer as HTMLElement)
+
+  if (!parentElement) return false
+
+  const lastLineElement = contentEditableDiv.lastChild
+  return parentElement === lastLineElement || contentEditableDiv.contains(lastLineElement)
+}
 
 defineExpose({
   setText: (text: string) => {

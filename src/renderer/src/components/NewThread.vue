@@ -1,7 +1,12 @@
 <template>
   <div class="h-full w-full flex flex-col items-center justify-start">
     <div class="w-full p-2 flex flex-row gap-2 items-center">
-      <Button class="w-7 h-7 rounded-md" size="icon" variant="outline" @click="onSidebarButtonClick">
+      <Button
+        class="w-7 h-7 rounded-md"
+        size="icon"
+        variant="outline"
+        @click="onSidebarButtonClick"
+      >
         <Icon v-if="chatStore.isSidebarOpen" icon="lucide:panel-left-close" class="w-4 h-4" />
         <Icon v-else icon="lucide:panel-left-open" class="w-4 h-4" />
       </Button>
@@ -11,20 +16,44 @@
       <h1 class="text-2xl font-bold px-8 pt-4">{{ t('newThread.greeting') }}</h1>
       <h3 class="text-lg px-8 pb-2">{{ t('newThread.prompt') }}</h3>
       <div class="h-12"></div>
-      <ChatInput ref="chatInputRef" key="newThread" class="!max-w-2xl flex-shrink-0 px-4" :rows="3" :max-rows="10"
-        :context-length="contextLength" @send="handleSend">
+      <ChatInput
+        ref="chatInputRef"
+        key="newThread"
+        class="!max-w-2xl flex-shrink-0 px-4"
+        :rows="3"
+        :max-rows="10"
+        :context-length="contextLength"
+        @send="handleSend"
+      >
         <template #addon-buttons>
-          <div key="newThread-model-select"
-            class="new-thread-model-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-input transition-all duration-300">
+          <div
+            key="newThread-model-select"
+            class="new-thread-model-select overflow-hidden flex items-center h-7 rounded-lg shadow-sm border border-input transition-all duration-300"
+            :dir="langStore.dir"
+          >
             <Popover v-model:open="modelSelectOpen">
               <PopoverTrigger as-child>
-                <Button variant="outline"
-                  class="flex border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full" size="sm">
-                  <ModelIcon class="w-4 h-4" :model-id="activeModel.id"></ModelIcon>
+                <Button
+                  variant="outline"
+                  class="flex border-none rounded-none shadow-none items-center gap-1.5 px-2 h-full"
+                  size="sm"
+                >
+                  <ModelIcon
+                    class="w-4 h-4"
+                    :model-id="activeModel.providerId"
+                    :is-dark="themeStore.isDark"
+                  ></ModelIcon>
                   <!-- <Icon icon="lucide:message-circle" class="w-5 h-5 text-muted-foreground" /> -->
                   <h2 class="text-xs font-bold max-w-[150px] truncate">{{ name }}</h2>
-                  <Badge v-for="tag in activeModel.tags" :key="tag" variant="outline" class="py-0 rounded-lg" size="xs">
-                    {{ t(`model.tags.${tag}`) }}</Badge>
+                  <Badge
+                    v-for="tag in activeModel.tags"
+                    :key="tag"
+                    variant="outline"
+                    class="py-0 rounded-lg"
+                    size="xs"
+                  >
+                    {{ t(`model.tags.${tag}`) }}</Badge
+                  >
                   <Icon icon="lucide:chevron-right" class="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
@@ -34,17 +63,28 @@
             </Popover>
             <Popover v-model:open="settingsPopoverOpen" @update:open="handleSettingsPopoverUpdate">
               <PopoverTrigger as-child>
-                <Button class="w-7 h-full rounded-none border-none shadow-none transition-all duration-300" :class="{
-                  'w-0 opacity-0 p-0 overflow-hidden': !showSettingsButton && !isHovering,
-                  'w-7 opacity-100': showSettingsButton || isHovering
-                }" size="icon" variant="outline">
+                <Button
+                  class="w-7 h-full rounded-none border-none shadow-none transition-all duration-300"
+                  :class="{
+                    'w-0 opacity-0 p-0 overflow-hidden': !showSettingsButton && !isHovering,
+                    'w-7 opacity-100': showSettingsButton || isHovering
+                  }"
+                  size="icon"
+                  variant="outline"
+                >
                   <Icon icon="lucide:settings-2" class="w-4 h-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" class="p-0 w-80">
-                <ChatConfig v-model:temperature="temperature" v-model:context-length="contextLength"
-                  v-model:max-tokens="maxTokens" v-model:system-prompt="systemPrompt" v-model:artifacts="artifacts"
-                  :context-length-limit="contextLengthLimit" :max-tokens-limit="maxTokensLimit" />
+                <ChatConfig
+                  v-model:temperature="temperature"
+                  v-model:context-length="contextLength"
+                  v-model:max-tokens="maxTokens"
+                  v-model:system-prompt="systemPrompt"
+                  v-model:artifacts="artifacts"
+                  :context-length-limit="contextLengthLimit"
+                  :max-tokens-limit="maxTokensLimit"
+                />
               </PopoverContent>
             </Popover>
           </div>
@@ -72,9 +112,12 @@ import { UserMessageContent } from '@shared/chat'
 import ChatConfig from './ChatConfig.vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { useEventListener } from '@vueuse/core'
+import { useThemeStore } from '@/stores/theme'
+import { useLanguageStore } from '@/stores/language'
 
 const configPresenter = usePresenter('configPresenter')
-
+const themeStore = useThemeStore()
+const langStore = useLanguageStore()
 // 定义偏好模型的类型
 interface PreferredModel {
   modelId: string
@@ -318,7 +361,6 @@ const handleSend = async (content: UserMessageContent) => {
     artifacts: artifacts.value as 0 | 1
   })
   console.log('threadId', threadId, activeModel.value)
-  await chatStore.setActiveThread(threadId)
   chatStore.sendMessage(content)
 }
 </script>

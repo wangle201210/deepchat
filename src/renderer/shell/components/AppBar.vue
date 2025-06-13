@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row h-10">
+  <div class="flex flex-row h-10" :dir="langStore.dir">
     <div
       class="h-10 flex-shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start window-drag-region"
       :class="['', isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2']"
@@ -115,7 +115,9 @@ import AppBarTabItem from './app-bar/AppBarTabItem.vue'
 import { useTabStore } from '@shell/stores/tab'
 import { useThemeStore } from '@/stores/theme'
 import { useElementSize } from '@vueuse/core'
+import { useLanguageStore } from '@/stores/language'
 const tabStore = useTabStore()
+const langStore = useLanguageStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
 const tabPresenter = usePresenter('tabPresenter')

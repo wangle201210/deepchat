@@ -20,7 +20,7 @@ export class CsvFileAdapter extends BaseFileAdapter {
     const rows = content
       .split('\n')
       .map((row) => row.split(',').map((cell) => cell.trim().replace(/^["'](.*)["']$/, '$1')))
-    return rows.filter((row) => row.length > 0 && row.some((cell) => cell.length > 0))
+    return rows.filter((row) => row.some((cell) => cell.length > 0))
   }
 
   private generateTableMarkdown(rows: string[][]): string {

@@ -81,6 +81,7 @@ watch(
                   id: part.artifact.identifier,
                   type: part.artifact.type,
                   title: part.artifact.title,
+                  language: part.artifact.language,
                   content: part.content,
                   status: part.loading ? 'loading' : 'loaded'
                 },

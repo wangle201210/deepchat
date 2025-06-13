@@ -11,9 +11,9 @@ import { BaseLLMProvider } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import Anthropic from '@anthropic-ai/sdk'
 import { presenter } from '@/presenter'
-import { HttpsProxyAgent } from 'https-proxy-agent'
-import { proxyConfig } from '../../proxyConfig'
 import { Usage } from '@anthropic-ai/sdk/resources'
+import { proxyConfig } from '../../proxyConfig'
+import { ProxyAgent } from 'undici'
 
 export class AnthropicProvider extends BaseLLMProvider {
   private anthropic!: Anthropic
@@ -32,14 +32,24 @@ export class AnthropicProvider extends BaseLLMProvider {
     if (this.provider.enable) {
       try {
         const apiKey = this.provider.apiKey || process.env.ANTHROPIC_API_KEY
+
+        // Get proxy configuration
         const proxyUrl = proxyConfig.getProxyUrl()
+        const fetchOptions: { dispatcher?: ProxyAgent } = {}
+
+        if (proxyUrl) {
+          console.log(`[Anthropic Provider] Using proxy: ${proxyUrl}`)
+          const proxyAgent = new ProxyAgent(proxyUrl)
+          fetchOptions.dispatcher = proxyAgent
+        }
+
         this.anthropic = new Anthropic({
           apiKey: apiKey,
           baseURL: this.provider.baseUrl || 'https://api.anthropic.com',
-          httpAgent: proxyUrl ? new HttpsProxyAgent(proxyUrl) : undefined,
           defaultHeaders: {
             ...this.defaultHeaders
-          }
+          },
+          fetchOptions
         })
         await super.init()
       } catch (error) {
@@ -50,11 +60,7 @@ export class AnthropicProvider extends BaseLLMProvider {
 
   protected async fetchProviderModels(): Promise<MODEL_META[]> {
     try {
-      const models = await this.anthropic.models.list({
-        headers: {
-          'anthropic-version': '2023-06-01'
-        }
-      })
+      const models = await this.anthropic.models.list()
       // 引入getModelConfig函数
       if (models && models.data && Array.isArray(models.data)) {
         const processedModels: MODEL_META[] = []
@@ -231,9 +237,9 @@ export class AnthropicProvider extends BaseLLMProvider {
             ? msg.content
             : msg.content && Array.isArray(msg.content)
               ? msg.content
-                  .filter((c) => c.type === 'text')
-                  .map((c) => c.text || '')
-                  .join('\n')
+                .filter((c) => c.type === 'text')
+                .map((c) => c.text || '')
+                .join('\n')
               : '') + '\n'
       }
     }
@@ -306,14 +312,14 @@ export class AnthropicProvider extends BaseLLMProvider {
                 type: 'image',
                 source: c.image_url.url.startsWith('data:image')
                   ? {
-                      type: 'base64',
-                      data: c.image_url.url.split(',')[1],
-                      media_type: c.image_url.url.split(';')[0].split(':')[1] as
-                        | 'image/jpeg'
-                        | 'image/png'
-                        | 'image/gif'
-                        | 'image/webp'
-                    }
+                    type: 'base64',
+                    data: c.image_url.url.split(',')[1],
+                    media_type: c.image_url.url.split(';')[0].split(':')[1] as
+                      | 'image/jpeg'
+                      | 'image/png'
+                      | 'image/gif'
+                      | 'image/webp'
+                  }
                   : { type: 'url', url: c.image_url.url }
               } as ContentBlock
             } else {
@@ -383,14 +389,14 @@ export class AnthropicProvider extends BaseLLMProvider {
                   type: 'image',
                   source: content.image_url.url.startsWith('data:image')
                     ? {
-                        type: 'base64',
-                        data: content.image_url.url.split(',')[1],
-                        media_type: content.image_url.url.split(';')[0].split(':')[1] as
-                          | 'image/jpeg'
-                          | 'image/png'
-                          | 'image/gif'
-                          | 'image/webp'
-                      }
+                      type: 'base64',
+                      data: content.image_url.url.split(',')[1],
+                      media_type: content.image_url.url.split(';')[0].split(':')[1] as
+                        | 'image/jpeg'
+                        | 'image/png'
+                        | 'image/gif'
+                        | 'image/webp'
+                    }
                     : { type: 'url', url: content.image_url.url }
                 } as ContentBlock)
               }

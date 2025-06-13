@@ -84,13 +84,14 @@
 4. 安装项目依赖：
 
    ```bash
-   yarn install
+   npm install
+   npm run installRuntime
    ```
 
 5. 启动开发服务器：
-   ```bash
-   yarn dev
-   ```
+```bash
+npm run dev
+```
 
 ## 项目结构
 
@@ -109,8 +110,8 @@
 请确保您的代码符合我们的代码风格指南，可以运行以下命令：
 
 ```bash
-yarn lint
-yarn format
+npm run build
+npm run i18n
 ```
 
 ## Pull Request 流程

@@ -1,5 +1,5 @@
 <template>
-  <div class="text-sm whitespace-pre-wrap break-all">
+  <div class="text-sm whitespace-pre-wrap break-all" :dir="langStore.dir">
     <template v-for="(block, index) in contentBlocks" :key="index">
       <!-- 文本块 -->
       <span v-if="block.type === 'text'">{{ block.content }}</span>
@@ -34,6 +34,7 @@ import type {
   UserMessageMentionBlock,
   UserMessageCodeBlock
 } from '@shared/chat'
+import { useLanguageStore } from '@/stores/language'
 
 type ContentBlock = UserMessageTextBlock | UserMessageMentionBlock | UserMessageCodeBlock
 
@@ -44,7 +45,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   mentionClick: [block: UserMessageMentionBlock]
 }>()
-
+const langStore = useLanguageStore()
 // 计算属性：处理内容块
 const contentBlocks = computed(() => {
   return props.content || []

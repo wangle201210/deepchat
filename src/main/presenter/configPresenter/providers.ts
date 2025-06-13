@@ -55,7 +55,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     enable: false,
     websites: {
       official: 'https://www.siliconflow.cn/',
-      apiKey: 'https://cloud.siliconflow.cn/account/ak?referrer=clxty1xuy0014lvqwh5z50i88',
+      apiKey: 'https://cloud.siliconflow.cn/account/ak',
       docs: 'https://docs.siliconflow.cn/',
       models: 'https://docs.siliconflow.cn/docs/model-names',
       defaultBaseUrl: 'https://api.siliconflow.cn/v1'
@@ -74,6 +74,189 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     docs: 'https://chat.qwenlm.ai',
   //     models: 'https://chat.qwenlm.ai',
   //     defaultBaseUrl: 'https://chat.qwenlm.ai/api'
+  //   }
+  // },
+
+  {
+    id: 'ppio',
+    name: 'PPIO',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.ppinfra.com/v3/openai',
+    enable: false,
+    websites: {
+      official: 'https://ppinfra.com/',
+      apiKey: 'https://ppinfra.com/settings/key-management',
+      docs: 'https://ppinfra.com/docs/get-started/quickstart.html',
+      models: 'https://ppinfra.com/model-api/console',
+      defaultBaseUrl: 'https://api.ppinfra.com/v3/openai'
+    }
+  },
+
+  {
+    id: 'openai-responses',
+    name: 'OpenAI Responses',
+    apiType: 'openai-responses',
+    apiKey: '',
+    baseUrl: 'https://api.openai.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://openai.com/',
+      apiKey: 'https://platform.openai.com/api-keys',
+      docs: 'https://platform.openai.com/docs/api-reference/responses',
+      models: 'https://platform.openai.com/docs/models',
+      defaultBaseUrl: 'https://api.openai.com/v1'
+    }
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.openai.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://openai.com/',
+      apiKey: 'https://platform.openai.com/api-keys',
+      docs: 'https://platform.openai.com/docs',
+      models: 'https://platform.openai.com/docs/models',
+      defaultBaseUrl: 'https://api.openai.com/v1'
+    }
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    apiType: 'gemini',
+    apiKey: '',
+    baseUrl: 'https://generativelanguage.googleapis.com',
+    enable: false,
+    websites: {
+      official: 'https://gemini.google.com/',
+      apiKey: 'https://aistudio.google.com/app/apikey',
+      docs: 'https://ai.google.dev/gemini-api/docs',
+      models: 'https://ai.google.dev/gemini-api/docs/models/gemini',
+      defaultBaseUrl: 'https://generativelanguage.googleapis.com'
+    }
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    apiType: 'anthropic',
+    apiKey: '',
+    baseUrl: 'https://api.anthropic.com',
+    enable: false,
+    websites: {
+      official: 'https://www.anthropic.com/',
+      apiKey: 'https://console.anthropic.com/settings/keys',
+      docs: 'https://docs.anthropic.com/',
+      models: 'https://docs.anthropic.com/claude/docs/models-overview',
+      defaultBaseUrl: 'https://api.anthropic.com'
+    }
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://openrouter.ai/api/v1/',
+    enable: false,
+    websites: {
+      official: 'https://openrouter.ai/',
+      apiKey: 'https://openrouter.ai/settings/keys',
+      docs: 'https://openrouter.ai/docs/quick-start',
+      models: 'https://openrouter.ai/docs/models',
+      defaultBaseUrl: 'https://openrouter.ai/api/v1/'
+    }
+  },
+  {
+    id: '302ai',
+    name: '302.AI',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://api.302.ai/v1',
+    enable: false,
+    websites: {
+      official: 'https://302.ai',
+      apiKey: 'https://dash.302.ai/apis/list',
+      docs: 'https://302ai.apifox.cn/doc-3704971',
+      models: 'https://302.ai/pricing/',
+      defaultBaseUrl: 'https://api.302.ai/v1'
+    }
+  },
+  // {
+  //   id: 'ocoolai',
+  //   name: 'OCoolAI',
+  //   apiType: 'ocoolai',
+  //   apiKey: '',
+  //   baseUrl: 'https://api.ocoolai.com',
+  //   enable: false,
+  //   websites: {
+  //     official: 'https://one.ocoolai.com/',
+  //     apiKey: 'https://one.ocoolai.com/token',
+  //     docs: 'https://docs.ooo.cool/',
+  //     models: 'https://docs.ooo.cool/guides/jiage/',
+  //     defaultBaseUrl: 'https://api.ocoolai.com'
+  //   }
+  // },
+  {
+    id: 'together',
+    name: 'Together',
+    apiType: 'together',
+    apiKey: '',
+    baseUrl: 'https://api.together.xyz/v1',
+    enable: false,
+    websites: {
+      official: 'https://www.together.ai/',
+      apiKey: 'https://api.together.ai/settings/api-keys',
+      docs: 'https://docs.together.ai/docs/introduction',
+      models: 'https://docs.together.ai/docs/chat-models',
+      defaultBaseUrl: 'https://api.tohgether.xyz/v1'
+    }
+  },
+  {
+    id: 'github',
+    name: 'GitHub Models',
+    apiType: 'openai',
+    apiKey: '',
+    baseUrl: 'https://models.inference.ai.azure.com',
+    enable: false,
+    websites: {
+      official: 'https://github.com/marketplace/models',
+      apiKey: 'https://github.com/settings/tokens',
+      docs: 'https://docs.github.com/en/github-models',
+      models: 'https://github.com/marketplace/models',
+      defaultBaseUrl: 'https://models.inference.ai.azure.com'
+    }
+  },
+  {
+    id: 'github-copilot',
+    name: 'GitHub Copilot',
+    apiType: 'github-copilot',
+    apiKey: '',
+    baseUrl: 'https://api.githubcopilot.com',
+    enable: false,
+    websites: {
+      official: 'https://github.com/features/copilot',
+      apiKey: 'https://github.com/settings/tokens',
+      docs: 'https://docs.github.com/en/copilot',
+      models:
+        'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
+      defaultBaseUrl: 'https://api.githubcopilot.com'
+    }
+  },
+  // {
+  //   id: 'yi',
+  //   name: 'Yi',
+  //   apiType: 'yi',
+  //   apiKey: '',
+  //   baseUrl: 'https://api.lingyiwanwu.com',
+  //   enable: false,
+  //   websites: {
+  //     official: 'https://platform.lingyiwanwu.com/',
+  //     apiKey: 'https://platform.lingyiwanwu.com/apikeys',
+  //     docs: 'https://platform.lingyiwanwu.com/docs',
+  //     models: 'https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B',
+  //     defaultBaseUrl: 'https://api.lingyiwanwu.com'
   //   }
   // },
   {
@@ -121,142 +304,6 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       defaultBaseUrl: 'https://api.fireworks.ai/inference'
     }
   },
-  {
-    id: 'ppio',
-    name: 'PPIO',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://api.ppinfra.com/v3/openai',
-    enable: false,
-    websites: {
-      official: 'https://ppinfra.com/',
-      apiKey: 'https://ppinfra.com/settings/key-management',
-      docs: 'https://ppinfra.com/docs/get-started/quickstart.html',
-      models: 'https://ppinfra.com/model-api/console',
-      defaultBaseUrl: 'https://api.ppinfra.com/v3/openai'
-    }
-  },
-  {
-    id: 'openai-responses',
-    name: 'OpenAI Responses',
-    apiType: 'openai-responses',
-    apiKey: '',
-    baseUrl: 'https://api.openai.com/v1',
-    enable: false,
-    websites: {
-      official: 'https://openai.com/',
-      apiKey: 'https://platform.openai.com/api-keys',
-      docs: 'https://platform.openai.com/docs/api-reference/responses',
-      models: 'https://platform.openai.com/docs/models',
-      defaultBaseUrl: 'https://api.openai.com/v1'
-    }
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://api.openai.com/v1',
-    enable: false,
-    websites: {
-      official: 'https://openai.com/',
-      apiKey: 'https://platform.openai.com/api-keys',
-      docs: 'https://platform.openai.com/docs',
-      models: 'https://platform.openai.com/docs/models',
-      defaultBaseUrl: 'https://api.openai.com/v1'
-    }
-  },
-  {
-    id: 'gemini',
-    name: 'Gemini',
-    apiType: 'gemini',
-    apiKey: '',
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    enable: false,
-    websites: {
-      official: 'https://gemini.google.com/',
-      apiKey: 'https://aistudio.google.com/app/apikey',
-      docs: 'https://ai.google.dev/gemini-api/docs',
-      models: 'https://ai.google.dev/gemini-api/docs/models/gemini',
-      defaultBaseUrl: 'https://generativelanguage.googleapis.com'
-    }
-  },
-
-  // {
-  //   id: 'ocoolai',
-  //   name: 'OCoolAI',
-  //   apiType: 'ocoolai',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.ocoolai.com',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://one.ocoolai.com/',
-  //     apiKey: 'https://one.ocoolai.com/token',
-  //     docs: 'https://docs.ooo.cool/',
-  //     models: 'https://docs.ooo.cool/guides/jiage/',
-  //     defaultBaseUrl: 'https://api.ocoolai.com'
-  //   }
-  // },
-  // {
-  //   id: 'together',
-  //   name: 'Together',
-  //   apiType: 'together',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.tohgether.xyz',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://www.together.ai/',
-  //     apiKey: 'https://api.together.ai/settings/api-keys',
-  //     docs: 'https://docs.together.ai/docs/introduction',
-  //     models: 'https://docs.together.ai/docs/chat-models',
-  //     defaultBaseUrl: 'https://api.tohgether.xyz'
-  //   }
-  // },
-  {
-    id: 'github',
-    name: 'GitHub Models',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://models.inference.ai.azure.com',
-    enable: false,
-    websites: {
-      official: 'https://github.com/marketplace/models',
-      apiKey: 'https://github.com/settings/tokens',
-      docs: 'https://docs.github.com/en/github-models',
-      models: 'https://github.com/marketplace/models',
-      defaultBaseUrl: 'https://models.inference.ai.azure.com'
-    }
-  },
-  {
-    id: 'github-copilot',
-    name: 'GitHub Copilot',
-    apiType: 'github-copilot',
-    apiKey: '',
-    baseUrl: 'https://api.githubcopilot.com',
-    enable: false,
-    websites: {
-      official: 'https://github.com/features/copilot',
-      apiKey: 'https://github.com/settings/tokens',
-      docs: 'https://docs.github.com/en/copilot',
-      models: 'https://docs.github.com/en/copilot/using-github-copilot/using-github-copilot-chat-in-your-ide',
-      defaultBaseUrl: 'https://api.githubcopilot.com'
-    }
-  },
-  // {
-  //   id: 'yi',
-  //   name: 'Yi',
-  //   apiType: 'yi',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.lingyiwanwu.com',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://platform.lingyiwanwu.com/',
-  //     apiKey: 'https://platform.lingyiwanwu.com/apikeys',
-  //     docs: 'https://platform.lingyiwanwu.com/docs',
-  //     models: 'https://platform.lingyiwanwu.com/docs#%E6%A8%A1%E5%9E%8B',
-  //     defaultBaseUrl: 'https://api.lingyiwanwu.com'
-  //   }
-  // },
   {
     id: 'zhipu',
     name: 'Zhipu',
@@ -348,21 +395,6 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //   }
   // }
 
-  {
-    id: 'openrouter',
-    name: 'OpenRouter',
-    apiType: 'openai',
-    apiKey: '',
-    baseUrl: 'https://openrouter.ai/api/v1/',
-    enable: false,
-    websites: {
-      official: 'https://openrouter.ai/',
-      apiKey: 'https://openrouter.ai/settings/keys',
-      docs: 'https://openrouter.ai/docs/quick-start',
-      models: 'https://openrouter.ai/docs/models',
-      defaultBaseUrl: 'https://openrouter.ai/api/v1/'
-    }
-  },
   // {
   //   id: 'groq',
   //   name: 'Groq',
@@ -379,21 +411,6 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //   }
   // },
 
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    apiType: 'anthropic',
-    apiKey: '',
-    baseUrl: 'https://api.anthropic.com',
-    enable: false,
-    websites: {
-      official: 'https://www.anthropic.com/',
-      apiKey: 'https://console.anthropic.com/settings/keys',
-      docs: 'https://docs.anthropic.com/',
-      models: 'https://docs.anthropic.com/claude/docs/models-overview',
-      defaultBaseUrl: 'https://api.anthropic.com'
-    }
-  },
   {
     id: 'grok',
     name: 'Grok',

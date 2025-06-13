@@ -5,6 +5,7 @@ directories:
 files:
   - '!**/.vscode/*'
   - '!src/*'
+  - '!test/*'
   - '!docs/*'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
@@ -47,6 +48,8 @@ electronLanguages:
   - en
   - ko
   - fr
+  - fa-IR
+  - fa
 mac:
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
