@@ -263,45 +263,37 @@ For Mac-related signing and packaging, please refer to the [Mac Release Guide](h
 ### Install Dependencies
 
 ```bash
-$ npm install
-$ npm run installRuntime
+$ pnpm install
+$ pnpm run installRuntime
 # if got err: No module named 'distutils'
 $ pip install setuptools
-# for windows x64
-$ npm install --cpu=x64 --os=win32 sharp
-# for mac apple silicon
-$ npm install --cpu=arm64 --os=darwin sharp
-# for mac intel
-$ npm install --cpu=x64 --os=darwin sharp
-# for linux x64
-$ npm install --cpu=x64 --os=linux sharp
 ```
 
 ### Start Development
 
 ```bash
-$ npm run dev
+$ pnpm run dev
 ```
 
 ### Build
 
 ```bash
 # For Windows
-$ npm run build:win
+$ pnpm run build:win
 
 # For macOS
-$ npm run build:mac
+$ pnpm run build:mac
 
 # For Linux
-$ npm run build:linux
+$ pnpm run build:linux
 
 # Specify architecture packaging
-$ npm run build:win:x64
-$ npm run build:win:arm64
-$ npm run build:mac:x64
-$ npm run build:mac:arm64
-$ npm run build:linux:x64
-$ npm run build:linux:arm64
+$ pnpm run build:win:x64
+$ pnpm run build:win:arm64
+$ pnpm run build:mac:x64
+$ pnpm run build:mac:arm64
+$ pnpm run build:linux:x64
+$ pnpm run build:linux:arm64
 ```
 
 For a more detailed guide on development, project structure, and architecture, please see the [Developer Guide](./docs/developer-guide.md).

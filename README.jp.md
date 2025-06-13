@@ -259,45 +259,37 @@ Mac関連の署名とパッケージングについては、[Mac リリースガ
 ### 依存関係のインストール
 
 ```bash
-$ npm install
-$ npm run installRuntime
+$ pnpm install
+$ pnpm run installRuntime
 # エラーが出た場合: No module named 'distutils'
 $ pip install setuptools
-# Windows x64の場合
-$ npm install --cpu=x64 --os=win32 sharp
-# Mac Apple Siliconの場合
-$ npm install --cpu=arm64 --os=darwin sharp
-# Mac Intelの場合
-$ npm install --cpu=x64 --os=darwin sharp
-# Linux x64の場合
-$ npm install --cpu=x64 --os=linux sharp
 ```
 
 ### 開発を開始
 
 ```bash
-$ npm run dev
+$ pnpm run dev
 ```
 
 ### ビルド
 
 ```bash
 # Windowsの場合
-$ npm run build:win
+$ pnpm run build:win
 
 # macOSの場合
-$ npm run build:mac
+$ pnpm run build:mac
 
 # Linuxの場合
-$ npm run build:linux
+$ pnpm run build:linux
 
 # アーキテクチャを指定してパッケージング
-$ npm run build:win:x64
-$ npm run build:win:arm64
-$ npm run build:mac:x64
-$ npm run build:mac:arm64
-$ npm run build:linux:x64
-$ npm run build:linux:arm64
+$ pnpm run build:win:x64
+$ pnpm run build:win:arm64
+$ pnpm run build:mac:x64
+$ pnpm run build:mac:arm64
+$ pnpm run build:linux:x64
+$ pnpm run build:linux:arm64
 ```
 
 ## 👥 コミュニティと貢献
