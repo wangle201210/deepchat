@@ -29,7 +29,7 @@ const platformConfigs = {
     cpu: ['current', 'wasm32'], // Include wasm32 for Sharp WebAssembly
   },
   'linux-arm64': {
-    os: ['linux'],
+    os: ['current', 'linux'],
     cpu: ['current', 'wasm32'],
   },
   'darwin-x64': {
