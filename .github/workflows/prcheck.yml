@@ -16,20 +16,34 @@ jobs:
           - arch: x64
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-      - name: Check Lint
-        run: npm run lint
+          node-version: '22.13.1'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.1
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
+
+      - name: Configure pnpm workspace for Linux ${{ matrix.arch }}
+        run: pnpm run install:sharp
         env:
-          npm_config_platform: linux
-          npm_config_arch: ${{ matrix.arch }}
-      - name: Install Sharp
-        run: npm install --cpu=wasm32 sharp
+          TARGET_OS: linux
+          TARGET_ARCH: ${{ matrix.arch }}
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Check Lint
+        run: pnpm run lint
+
       - name: Check translations
-        run: npm run i18n && npm run i18n:en
+        run: pnpm run i18n
+
       - name: Build
-        run: npm run build
+        run: pnpm run build
