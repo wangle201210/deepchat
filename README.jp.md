@@ -265,6 +265,8 @@ $ pnpm run installRuntime
 $ pip install setuptools
 ```
 
+* For Windows: 非管理者ユーザーがシンボリックリンクやハードリンクを作成できるようにするには、設定で「開発者モード」を有効にするか、管理者アカウントを使用してください。それ以外の場合、pnpm の操作は失敗します。
+
 ### 開発を開始
 
 ```bash

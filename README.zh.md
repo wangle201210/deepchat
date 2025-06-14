@@ -265,6 +265,8 @@ $ pnpm run installRuntime
 $ pip install setuptools
 ```
 
+* For Windows: 为允许非管理员用户创建符号链接和硬链接，请在设置中开启``开发者模式``或使用管理员账号，否则 ``pnpm`` 操作将失败。
+
 ### 开始开发
 
 ```bash
