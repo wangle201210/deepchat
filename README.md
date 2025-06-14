@@ -269,6 +269,8 @@ $ pnpm run installRuntime
 $ pip install setuptools
 ```
 
+* For Windows: To allow non-admin users to create symlinks and hardlinks, enable `Developer Mode` in Settings or use an administrator account. Otherwise `pnpm` ops will fail.
+
 ### Start Development
 
 ```bash
