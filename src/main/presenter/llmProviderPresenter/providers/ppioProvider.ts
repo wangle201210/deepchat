@@ -71,18 +71,20 @@ export class PPIOProvider extends OpenAICompatibleProvider {
     const response = await fetch('https://api.ppinfra.com/v3/user', {
       method: 'GET',
       headers: {
-        'Authorization': this.provider.apiKey,
+        Authorization: this.provider.apiKey,
         'Content-Type': 'application/json'
       }
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`PPIO API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
+      throw new Error(
+        `PPIO API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+      )
     }
 
     const keyResponse: PPIOKeyResponse = await response.json()
-    const remaining = '¥'+keyResponse.credit_balance/10000
+    const remaining = '¥' + keyResponse.credit_balance / 10000
     return {
       limit_remaining: remaining,
       remainNum: keyResponse.credit_balance

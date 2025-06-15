@@ -16,11 +16,7 @@
       >
         <Icon v-if="item.icon" :icon="item.icon" class="size-4 shrink-0" />
         <!-- 文件标识图标 -->
-        <Icon 
-          v-if="hasFiles(item)" 
-          icon="lucide:paperclip" 
-          class="size-3 text-blue-500" 
-        />
+        <Icon v-if="hasFiles(item)" icon="lucide:paperclip" class="size-3 text-blue-500" />
         <div class="font-medium flex-1 truncate">{{ item.label }}</div>
         <Icon
           v-if="item.type === 'category'"
@@ -75,7 +71,13 @@ const hasFiles = (item: CategorizedData): boolean => {
   if (item.category !== 'prompts') return false
   const mcpEntry = item.mcpEntry
   // 类型保护：检查是否是 PromptListEntry 并且有 files 字段
-  return Boolean(mcpEntry && 'files' in mcpEntry && mcpEntry.files && Array.isArray(mcpEntry.files) && mcpEntry.files.length > 0)
+  return Boolean(
+    mcpEntry &&
+      'files' in mcpEntry &&
+      mcpEntry.files &&
+      Array.isArray(mcpEntry.files) &&
+      mcpEntry.files.length > 0
+  )
 }
 
 // Compute items to display based on the current category
@@ -165,7 +167,7 @@ const handlePromptParams = (values: Record<string, string>) => {
     // 处理关联的文件
     const handler = getPromptFilesHandler()
     if (handler && promptContent.files && Array.isArray(promptContent.files)) {
-      handler(promptContent.files).catch(error => {
+      handler(promptContent.files).catch((error) => {
         console.error('Failed to handle prompt files:', error)
       })
     }
@@ -225,7 +227,7 @@ const selectItem = (index: number) => {
       if (hasFiles(selectedDisplayItem)) {
         const handler = getPromptFilesHandler()
         if (handler && mcpEntry?.files) {
-          handler(mcpEntry.files).catch(error => {
+          handler(mcpEntry.files).catch((error) => {
             console.error('Failed to handle prompt files:', error)
           })
         }

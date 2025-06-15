@@ -623,9 +623,6 @@ export class WindowPresenter implements IWindowPresenter {
       eventBus.sendToMain(WINDOW_EVENTS.WINDOW_RESIZE, windowId)
     })
 
-
-
-
     // 'close' 事件：用户尝试关闭窗口 (点击关闭按钮等)。
     // 此处理程序决定是隐藏窗口还是允许其关闭/销毁。
     shellWindow.on('close', (event) => {

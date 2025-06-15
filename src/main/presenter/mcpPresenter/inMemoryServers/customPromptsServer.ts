@@ -85,10 +85,10 @@ export class CustomPromptsServer {
         description: prompt.description,
         arguments: prompt.parameters
           ? prompt.parameters.map((param) => ({
-            name: param.name,
-            description: param.description,
-            required: !!param.required
-          }))
+              name: param.name,
+              description: param.description,
+              required: !!param.required
+            }))
           : [],
         files: prompt.files || []
       }))

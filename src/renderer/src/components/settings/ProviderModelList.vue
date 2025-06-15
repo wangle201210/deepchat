@@ -11,6 +11,7 @@
         :key="model.name"
         :model-name="model.name"
         :model-id="model.id"
+        :provider-id="model.providerId"
         :enabled="model.enabled ?? false"
         :is-custom-model="true"
         :vision="model.vision"
@@ -19,6 +20,7 @@
         :type="model.type ?? ModelType.Chat"
         @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
         @delete-model="() => handleDeleteCustomModel(model)"
+        @config-changed="$emit('config-changed')"
       />
     </div>
     <div v-for="(model, idx) in addModelList" :key="idx" class="flex flex-row gap-2 items-center">
@@ -106,12 +108,14 @@
           :key="model.id"
           :model-name="model.name"
           :model-id="model.id"
+          :provider-id="provider.providerId"
           :enabled="model.enabled ?? false"
           :vision="model.vision"
           :function-call="model.functionCall"
           :reasoning="model.reasoning"
           :type="model.type ?? ModelType.Chat"
           @enabled-change="(enabled) => handleModelEnabledChange(model, enabled)"
+          @config-changed="$emit('config-changed')"
         />
       </div>
     </div>
@@ -156,6 +160,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   enabledChange: [model: RENDERER_MODEL_META, enabled: boolean]
+  'config-changed': []
 }>()
 
 const filteredProviderModels = computed(() => {

@@ -40,6 +40,15 @@
         <Icon icon="lucide:circle-check" class="w-4 h-4 text-green-500" />
       </Button>
       <Button
+        variant="link"
+        size="icon"
+        class="w-7 h-7 text-xs text-normal rounded-lg"
+        @click="onConfigModel"
+        :title="$t('settings.model.configureModel')"
+      >
+        <Icon icon="lucide:settings" class="w-4 h-4 text-muted-foreground" />
+      </Button>
+      <Button
         v-if="isCustomModel"
         variant="link"
         size="icon"
@@ -50,17 +59,29 @@
       </Button>
     </div>
   </div>
+
+  <!-- 模型配置对话框 -->
+  <ModelConfigDialog
+    v-model:open="showConfigDialog"
+    :model-id="modelId"
+    :model-name="modelName"
+    :provider-id="providerId"
+    @saved="onConfigSaved"
+  />
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Icon } from '@iconify/vue'
 import { ModelType } from '@shared/model'
+import ModelConfigDialog from './ModelConfigDialog.vue'
 
 withDefaults(
   defineProps<{
     modelName: string
     modelId: string
+    providerId: string
     group?: string
     enabled: boolean
     isCustomModel?: boolean
@@ -77,8 +98,18 @@ withDefaults(
 const emit = defineEmits<{
   enabledChange: [boolean]
   deleteModel: []
+  configChanged: []
 }>()
+
+// 配置对话框状态
+const showConfigDialog = ref(false)
 
 const onEnabledChange = (enabled: boolean) => emit('enabledChange', enabled)
 const onDeleteModel = () => emit('deleteModel')
+const onConfigModel = () => {
+  showConfigDialog.value = true
+}
+const onConfigSaved = () => {
+  emit('configChanged')
+}
 </script>

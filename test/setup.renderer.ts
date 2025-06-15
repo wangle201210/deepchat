@@ -71,11 +71,13 @@ vi.mock('@iconify/vue', () => ({
 Object.defineProperty(window, 'api', {
   value: {
     devicePresenter: {
-      getDeviceInfo: vi.fn(() => Promise.resolve({
-        platform: 'darwin',
-        arch: 'arm64',
-        version: '14.0.0'
-      }))
+      getDeviceInfo: vi.fn(() =>
+        Promise.resolve({
+          platform: 'darwin',
+          arch: 'arm64',
+          version: '14.0.0'
+        })
+      )
     },
     windowPresenter: {
       minimize: vi.fn(),

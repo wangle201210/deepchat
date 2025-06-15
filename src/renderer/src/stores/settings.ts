@@ -333,19 +333,19 @@ export const useSettingsStore = defineStore('settings', () => {
       // 如果customModelsList为null或undefined，使用空数组
       const safeCustomModelsList = customModelsList || []
 
-      // 获取自定义模型状态并合并
-      const customModelsWithStatus = await Promise.all(
-        safeCustomModelsList.map(async (model) => {
-          // 获取模型状态
-          const enabled = await configP.getModelStatus(providerId, model.id)
-          return {
-            ...model,
-            enabled,
-            providerId,
-            isCustom: true
-          } as RENDERER_MODEL_META
-        })
-      )
+      // 批量获取自定义模型状态并合并
+      const modelIds = safeCustomModelsList.map((model) => model.id)
+      const modelStatusMap =
+        modelIds.length > 0 ? await configP.getBatchModelStatus(providerId, modelIds) : {}
+
+      const customModelsWithStatus = safeCustomModelsList.map((model) => {
+        return {
+          ...model,
+          enabled: modelStatusMap[model.id] ?? true,
+          providerId,
+          isCustom: true
+        } as RENDERER_MODEL_META
+      })
 
       // 更新自定义模型列表
       const customIndex = customModels.value.findIndex((item) => item.providerId === providerId)
@@ -438,19 +438,19 @@ export const useSettingsStore = defineStore('settings', () => {
         }
       }
 
-      // 获取模型状态并合并
-      const modelsWithStatus = await Promise.all(
-        models.map(async (model) => {
-          // 获取模型状态
-          const enabled = await configP.getModelStatus(providerId, model.id)
-          return {
-            ...model,
-            enabled,
-            providerId,
-            isCustom: model.isCustom || false
-          }
-        })
-      )
+      // 批量获取模型状态并合并
+      const modelIds = models.map((model) => model.id)
+      const modelStatusMap =
+        modelIds.length > 0 ? await configP.getBatchModelStatus(providerId, modelIds) : {}
+
+      const modelsWithStatus = models.map((model) => {
+        return {
+          ...model,
+          enabled: modelStatusMap[model.id] ?? true,
+          providerId,
+          isCustom: model.isCustom || false
+        }
+      })
 
       // 更新全局模型列表中的标准模型
       const allProviderIndex = allProviderModels.value.findIndex(
@@ -1256,7 +1256,6 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setLoggingEnabled(enabled)
   }
 
-
   ///////////////////////////////////////////////////////////////////////////////////////
   const setCopyWithCotEnabled = async (enabled: boolean) => {
     copyWithCotEnabled.value = Boolean(enabled)
@@ -1388,6 +1387,27 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setDefaultSystemPrompt(prompt)
   }
 
+  // 模型配置相关方法
+  const getModelConfig = async (modelId: string, providerId: string): Promise<any> => {
+    return await configP.getModelDefaultConfig(modelId, providerId)
+  }
+
+  const setModelConfig = async (
+    modelId: string,
+    providerId: string,
+    config: any
+  ): Promise<void> => {
+    await configP.setModelConfig(modelId, providerId, config)
+    // 配置变更后刷新相关模型数据
+    await refreshProviderModels(providerId)
+  }
+
+  const resetModelConfig = async (modelId: string, providerId: string): Promise<void> => {
+    await configP.resetModelConfig(modelId, providerId)
+    // 配置重置后刷新相关模型数据
+    await refreshProviderModels(providerId)
+  }
+
   return {
     providers,
     fontSizeLevel, // Expose font size level
@@ -1464,6 +1484,9 @@ export const useSettingsStore = defineStore('settings', () => {
     getGeminiSafety,
     getDefaultSystemPrompt,
     setDefaultSystemPrompt,
-    setupProviderListener
+    setupProviderListener,
+    getModelConfig,
+    setModelConfig,
+    resetModelConfig
   }
 })

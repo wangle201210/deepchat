@@ -111,9 +111,9 @@ const hasErrors = computed(() => {
   if (Object.keys(errors.value).length > 0) {
     return true
   }
-  
+
   // 检查是否有必填参数未填写
-  return props.params.some(param => {
+  return props.params.some((param) => {
     if (param.required) {
       const value = paramValues.value[param.name]
       return !value || value.trim() === ''

@@ -91,8 +91,6 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     this.init()
   }
 
-
-
   private async getCopilotToken(): Promise<string> {
     console.log('🔍 [GitHub Copilot] Starting getCopilotToken process...')
 

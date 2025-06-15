@@ -104,7 +104,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       if (provider.id === 'ppio') {
         return new PPIOProvider(provider, this.configPresenter)
       }
-      if(provider.id === 'deepseek') {
+      if (provider.id === 'deepseek') {
         return new DeepseekProvider(provider, this.configPresenter)
       }
       switch (provider.apiType) {
@@ -685,7 +685,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                       eventId,
                       tool_call: 'end',
                       tool_call_id: toolCall.id,
-                      tool_call_response: 
+                      tool_call_response:
                         typeof toolResponse.content === 'string'
                           ? toolResponse.content
                           : JSON.stringify(toolResponse.content), // Simplified content for UI
@@ -733,13 +733,13 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     lastAssistantMessage = conversationMessages[conversationMessages.length - 1] // Update lastAssistantMessage reference
                   }
 
-
                   // 3. Add a role: 'user' message to conversationMessages (containing prompt text).
-                  const userPromptText = '以上是你刚执行的工具调用及其响应信息，已帮你插入，请仔细阅读工具响应，并继续你的回答。';
+                  const userPromptText =
+                    '以上是你刚执行的工具调用及其响应信息，已帮你插入，请仔细阅读工具响应，并继续你的回答。'
                   conversationMessages.push({
                     role: 'user',
                     content: [{ type: 'text', text: userPromptText }] // Content should be an array
-                  });
+                  })
 
                   // Yield tool end event for ThreadPresenter to save the result
                   // This event is separate from the messages added to conversationMessages.
@@ -770,14 +770,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                 const errorMessage =
                   toolError instanceof Error ? toolError.message : String(toolError)
 
-                const supportsFunctionCallInAgent = modelConfig?.functionCall || false;
+                const supportsFunctionCallInAgent = modelConfig?.functionCall || false
                 if (supportsFunctionCallInAgent) {
                   // Native FC Error Handling: Add role: 'tool' message with error
                   conversationMessages.push({
                     role: 'tool',
                     content: `The tool call with ID ${toolCall.id} and name ${toolCall.name} failed to execute: ${errorMessage}`,
                     tool_call_id: toolCall.id
-                  });
+                  })
 
                   // Yield the 'error' event for ThreadPresenter
                   yield {
@@ -793,36 +793,44 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                       tool_call_server_icons: toolDef.server.icons,
                       tool_call_server_description: toolDef.server.description
                     }
-                  };
+                  }
                 } else {
                   // Non-native FC Error Handling: Add error to Assistant content and add User prompt.
 
                   // 1. Construct error text
-                  const formattedErrorText = `编号为 ${toolCall.id} 的工具 ${toolCall.name} 调用执行失败: ${errorMessage}`;
+                  const formattedErrorText = `编号为 ${toolCall.id} 的工具 ${toolCall.name} 调用执行失败: ${errorMessage}`
 
                   // 2. Add formattedErrorText to Assistant content
-                  let lastAssistantMessage = conversationMessages.findLast(m => m.role === 'assistant');
+                  let lastAssistantMessage = conversationMessages.findLast(
+                    (m) => m.role === 'assistant'
+                  )
                   if (lastAssistantMessage) {
                     if (typeof lastAssistantMessage.content === 'string') {
-                      lastAssistantMessage.content += '\n' + formattedErrorText + '\n';
+                      lastAssistantMessage.content += '\n' + formattedErrorText + '\n'
                     } else if (Array.isArray(lastAssistantMessage.content)) {
-                      lastAssistantMessage.content.push({ type: 'text', text: '\n' + formattedErrorText + '\n' });
+                      lastAssistantMessage.content.push({
+                        type: 'text',
+                        text: '\n' + formattedErrorText + '\n'
+                      })
                     } else {
-                      lastAssistantMessage.content = [{ type: 'text', text: '\n' + formattedErrorText + '\n' }];
+                      lastAssistantMessage.content = [
+                        { type: 'text', text: '\n' + formattedErrorText + '\n' }
+                      ]
                     }
                   } else {
                     conversationMessages.push({
                       role: 'assistant',
                       content: [{ type: 'text', text: formattedErrorText + '\n' }]
-                    });
+                    })
                   }
 
                   // 3. Add a role: 'user' message (prompt text)
-                  const userPromptText = '以上是你刚调用的工具及其执行的错误信息，已帮你插入，请根据情况继续回答或重新尝试。';
+                  const userPromptText =
+                    '以上是你刚调用的工具及其执行的错误信息，已帮你插入，请根据情况继续回答或重新尝试。'
                   conversationMessages.push({
                     role: 'user',
                     content: [{ type: 'text', text: userPromptText }]
-                  });
+                  })
 
                   // Yield the 'error' event for ThreadPresenter
                   yield {

@@ -29,16 +29,20 @@ export const mentionSelected = ref(false)
 export const mentionData: Ref<CategorizedData[]> = ref(categorizedData)
 
 // 存储文件处理回调函数
-let promptFilesHandler: ((files: Array<{
-  id: string
-  name: string
-  type: string
-  size: number
-  path: string
-  description?: string
-  content?: string
-  createdAt: number
-}>) => Promise<void>) | null = null
+let promptFilesHandler:
+  | ((
+      files: Array<{
+        id: string
+        name: string
+        type: string
+        size: number
+        path: string
+        description?: string
+        content?: string
+        createdAt: number
+      }>
+    ) => Promise<void>)
+  | null = null
 
 // 设置文件处理回调函数
 export const setPromptFilesHandler = (handler: typeof promptFilesHandler) => {

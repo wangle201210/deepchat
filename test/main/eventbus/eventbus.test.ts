@@ -24,7 +24,6 @@ describe('EventBus 事件总线', () => {
     } as Partial<ITabPresenter> as ITabPresenter
   })
 
-
   describe('发送事件到主进程', () => {
     it('应该能够正确发送事件到主进程', () => {
       const eventName = 'test:event'
@@ -69,11 +68,7 @@ describe('EventBus 事件总线', () => {
 
       eventBus.sendToWindow(eventName, windowId, testData)
 
-      expect(mockWindowPresenter.sendToWindow).toHaveBeenCalledWith(
-        windowId,
-        eventName,
-        testData
-      )
+      expect(mockWindowPresenter.sendToWindow).toHaveBeenCalledWith(windowId, eventName, testData)
     })
 
     it('当WindowPresenter未设置时应该显示警告', () => {
@@ -101,10 +96,7 @@ describe('EventBus 事件总线', () => {
 
       eventBus.sendToRenderer(eventName, undefined, testData)
 
-      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(
-        eventName,
-        testData
-      )
+      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(eventName, testData)
     })
 
     it('应该能够发送事件到所有窗口（显式指定）', () => {
@@ -113,10 +105,7 @@ describe('EventBus 事件总线', () => {
 
       eventBus.sendToRenderer(eventName, SendTarget.ALL_WINDOWS, testData)
 
-      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(
-        eventName,
-        testData
-      )
+      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(eventName, testData)
     })
 
     it('应该能够发送事件到默认标签页', () => {
@@ -125,11 +114,7 @@ describe('EventBus 事件总线', () => {
 
       eventBus.sendToRenderer(eventName, SendTarget.DEFAULT_TAB, testData)
 
-      expect(mockWindowPresenter.sendToDefaultTab).toHaveBeenCalledWith(
-        eventName,
-        true,
-        testData
-      )
+      expect(mockWindowPresenter.sendToDefaultTab).toHaveBeenCalledWith(eventName, true, testData)
     })
 
     it('当WindowPresenter未设置时应该显示警告', () => {
@@ -164,10 +149,7 @@ describe('EventBus 事件总线', () => {
       expect(mockListener).toHaveBeenCalledWith(testData)
 
       // 验证渲染进程收到事件
-      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(
-        eventName,
-        testData
-      )
+      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(eventName, testData)
     })
 
     it('应该使用默认的SendTarget', () => {
@@ -176,10 +158,7 @@ describe('EventBus 事件总线', () => {
 
       eventBus.send(eventName, undefined, testData)
 
-      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(
-        eventName,
-        testData
-      )
+      expect(mockWindowPresenter.sendToAllWindows).toHaveBeenCalledWith(eventName, testData)
     })
   })
 
@@ -205,7 +184,7 @@ describe('EventBus 事件总线', () => {
       eventBus.sendToTab(tabId, eventName, testData)
 
       // 等待异步操作完成
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(mockTabPresenter.getTab).toHaveBeenCalledWith(tabId)
       expect(mockTabView.webContents.send).toHaveBeenCalledWith(eventName, testData)
@@ -219,7 +198,7 @@ describe('EventBus 事件总线', () => {
       eventBus.sendToActiveTab(windowId, eventName, testData)
 
       // 等待异步操作完成
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(mockTabPresenter.getActiveTabId).toHaveBeenCalledWith(windowId)
       expect(mockTabPresenter.getTab).toHaveBeenCalledWith(1)
@@ -233,7 +212,7 @@ describe('EventBus 事件总线', () => {
       eventBus.broadcastToTabs(tabIds, eventName, testData)
 
       // 等待异步操作完成
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(mockTabPresenter.getTab).toHaveBeenCalledTimes(3)
       expect(mockTabPresenter.getTab).toHaveBeenCalledWith(1)
@@ -300,7 +279,7 @@ describe('EventBus 事件总线', () => {
       eventBus.sendToTab(999, 'test:event', 'data')
 
       // 等待异步操作完成
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Tab 999 not found or destroyed, cannot send event test:event'
@@ -321,7 +300,7 @@ describe('EventBus 事件总线', () => {
       eventBus.sendToTab(1, 'test:event', 'data')
 
       // 等待异步操作完成
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'Tab 1 not found or destroyed, cannot send event test:event'
@@ -338,12 +317,9 @@ describe('EventBus 事件总线', () => {
       eventBus.sendToTab(1, 'test:event', 'data')
 
       // 等待异步操作完成
-      await new Promise(resolve => setTimeout(resolve, 0))
+      await new Promise((resolve) => setTimeout(resolve, 0))
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Error sending event test:event to tab 1:',
-        error
-      )
+      expect(consoleSpy).toHaveBeenCalledWith('Error sending event test:event to tab 1:', error)
 
       consoleSpy.mockRestore()
     })
