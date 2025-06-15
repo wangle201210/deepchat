@@ -17,6 +17,6 @@ vitest.config.*
 Dockerfile*
 .env*
 src/renderer/src/components/ui/*
-.gitlab
+.github
 .cursor
 .vscode
