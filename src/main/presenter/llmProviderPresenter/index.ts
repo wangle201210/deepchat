@@ -685,7 +685,10 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                       eventId,
                       tool_call: 'end',
                       tool_call_id: toolCall.id,
-                      tool_call_response: toolResponse.content, // Simplified content for UI
+                      tool_call_response: 
+                        typeof toolResponse.content === 'string'
+                          ? toolResponse.content
+                          : JSON.stringify(toolResponse.content), // Simplified content for UI
                       tool_call_name: toolCall.name,
                       tool_call_params: toolCall.arguments, // Original params
                       tool_call_server_name: toolDef.server.name,
