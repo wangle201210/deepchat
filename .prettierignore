@@ -6,3 +6,13 @@ tsconfig.json
 tsconfig.*.json
 CONTRIBUTING*.md
 README*.md
+docs
+resources
+runtime
+scripts
+build
+*.yaml
+tailwind.config.js
+vitest.config.*
+Dockerfile*
+.env*
