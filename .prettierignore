@@ -20,3 +20,4 @@ src/renderer/src/components/ui/*
 .github
 .cursor
 .vscode
+electron.vite.config.ts
