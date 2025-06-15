@@ -1388,6 +1388,23 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setDefaultSystemPrompt(prompt)
   }
 
+  // 模型配置相关方法
+  const getModelConfig = async (modelId: string, providerId: string): Promise<any> => {
+    return await configP.getModelDefaultConfig(modelId, providerId)
+  }
+
+  const setModelConfig = async (modelId: string, providerId: string, config: any): Promise<void> => {
+    return await configP.setModelConfig(modelId, providerId, config)
+  }
+
+  const resetModelConfig = async (modelId: string, providerId: string): Promise<void> => {
+    return await configP.resetModelConfig(modelId, providerId)
+  }
+
+  const hasUserModelConfig = async (modelId: string, providerId: string): Promise<boolean> => {
+    return await configP.hasUserModelConfig(modelId, providerId)
+  }
+
   return {
     providers,
     fontSizeLevel, // Expose font size level
@@ -1464,6 +1481,10 @@ export const useSettingsStore = defineStore('settings', () => {
     getGeminiSafety,
     getDefaultSystemPrompt,
     setDefaultSystemPrompt,
-    setupProviderListener
+    setupProviderListener,
+    getModelConfig,
+    setModelConfig,
+    resetModelConfig,
+    hasUserModelConfig
   }
 })
