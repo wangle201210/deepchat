@@ -6,7 +6,8 @@ import {
   ModelConfig,
   RENDERER_MODEL_META,
   MCPServerConfig,
-  Prompt
+  Prompt,
+  IModelConfig
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { ModelType } from '@shared/model'
@@ -856,7 +857,7 @@ export class ConfigPresenter implements IConfigPresenter {
   /**
    * Get all user-defined model configurations
    */
-  getAllModelConfigs(): Record<string, any> {
+  getAllModelConfigs(): Record<string, IModelConfig> {
     return this.modelConfigHelper.getAllModelConfigs()
   }
 
@@ -880,7 +881,7 @@ export class ConfigPresenter implements IConfigPresenter {
   /**
    * Export all model configurations for backup/sync
    */
-  exportModelConfigs(): Record<string, any> {
+  exportModelConfigs(): Record<string, IModelConfig> {
     return this.modelConfigHelper.exportConfigs()
   }
 
@@ -889,7 +890,7 @@ export class ConfigPresenter implements IConfigPresenter {
    * @param configs - Model configurations to import
    * @param overwrite - Whether to overwrite existing configurations
    */
-  importModelConfigs(configs: Record<string, any>, overwrite: boolean = false): void {
+  importModelConfigs(configs: Record<string, IModelConfig>, overwrite: boolean = false): void {
     this.modelConfigHelper.importConfigs(configs, overwrite)
     // 触发批量导入事件（需要通知所有标签页）
     eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_CONFIGS_IMPORTED, SendTarget.ALL_WINDOWS, overwrite)

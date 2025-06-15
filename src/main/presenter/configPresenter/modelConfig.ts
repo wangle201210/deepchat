@@ -1,14 +1,8 @@
 import { ModelType } from '@shared/model'
-import { ModelConfig } from '@shared/presenter'
+import { IModelConfig, ModelConfig } from '@shared/presenter'
 import ElectronStore from 'electron-store'
 import { defaultModelsSettings } from './modelDefaultSettings'
 import { getProviderSpecificModelConfig } from './providerModelSettings'
-
-interface IModelConfig {
-  id: string
-  providerId: string
-  config: ModelConfig
-}
 
 const SPECIAL_CONCAT_CHAR = '-_-'
 
@@ -113,7 +107,8 @@ export class ModelConfigHelper {
     const result: Array<{ modelId: string; config: ModelConfig }> = []
 
     Object.entries(allConfigs).forEach(([key, value]) => {
-      if (key.startsWith(providerId + SPECIAL_CONCAT_CHAR)) {
+      const [keyProviderId] = key.split(SPECIAL_CONCAT_CHAR)
+      if (keyProviderId === providerId) {
         result.push({
           modelId: value.id,
           config: value.config

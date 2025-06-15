@@ -238,6 +238,16 @@ const loadConfig = async () => {
     config.value = { ...modelConfig }
   } catch (error) {
     console.error('Failed to load model config:', error)
+    // 如果加载失败，则使用默认配置
+    config.value = {
+      maxTokens: 4096,
+      contextLength: 8192,
+      temperature: 0.7,
+      vision: false,
+      functionCall: false,
+      reasoning: false,
+      type: ModelType.Chat
+    }
   }
 }
 
@@ -255,7 +265,7 @@ const validateForm = () => {
   // 验证上下文长度
   if (!config.value.contextLength || config.value.contextLength <= 0) {
     errors.value.contextLength = t('settings.model.modelConfig.validation.contextLengthMin')
-  } else if (config.value.contextLength > 10000000) {
+  } else if (config.value.contextLength > 100_000_000) {
     errors.value.contextLength = t('settings.model.modelConfig.validation.contextLengthMax')
   }
 

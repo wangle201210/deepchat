@@ -126,6 +126,11 @@ export interface ModelConfig {
   reasoning: boolean
   type: ModelType
 }
+export interface IModelConfig {
+  id: string
+  providerId: string
+  config: ModelConfig
+}
 export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
 }
