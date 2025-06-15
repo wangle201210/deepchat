@@ -20,8 +20,6 @@ import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
 import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
-import { defaultModelsSettings } from './modelDefaultSettings'
-import { getProviderSpecificModelConfig } from './providerModelSettings'
 import { ModelConfigHelper } from './modelConfig'
 
 // 定义应用设置的接口
@@ -873,13 +871,6 @@ export class ConfigPresenter implements IConfigPresenter {
     eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_CONFIGS_IMPORTED, SendTarget.ALL_WINDOWS, overwrite)
   }
 
-  /**
-   * Get model config helper for advanced operations
-   */
-  getModelConfigHelper(): ModelConfigHelper {
-    return this.modelConfigHelper
-  }
-
   getNotificationsEnabled(): boolean {
     const value = this.getSetting<boolean>('notificationsEnabled')
     if (value === undefined) {
@@ -1002,7 +993,4 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 }
 
-// 导出配置相关内容，方便其他组件使用
-export { defaultModelsSettings } from './modelDefaultSettings'
-export { providerModelSettings } from './providerModelSettings'
 export { defaultShortcutKey } from './shortcutKeySettings'

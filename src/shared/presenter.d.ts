@@ -387,6 +387,13 @@ export interface IConfigPresenter {
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
   getModelConfig(modelId: string, providerId?: string): ModelConfig
+  setModelConfig(modelId: string, providerId: string, config: ModelConfig): void
+  resetModelConfig(modelId: string, providerId: string): void
+  getAllModelConfigs(): Record<string, IModelConfig>
+  getProviderModelConfigs(providerId: string): Array<{ modelId: string; config: ModelConfig }>
+  hasUserModelConfig(modelId: string, providerId: string): boolean
+  exportModelConfigs(): Record<string, IModelConfig>
+  importModelConfigs(configs: Record<string, IModelConfig>, overwrite: boolean): void
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
   // 主题设置
