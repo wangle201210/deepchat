@@ -2,9 +2,9 @@
   <Dialog :open="open" @update:open="$emit('update:open', $event)">
     <DialogContent class="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
       <DialogHeader>
-        <DialogTitle>{{ t('settings.model.modelConfig.title') }}</DialogTitle>
+        <DialogTitle>{{ t('settings.model.modelConfig.title') }} - {{ modelName }}</DialogTitle>
         <p class="text-sm text-muted-foreground">
-          {{ t('settings.model.modelConfig.description') }} - {{ modelName }}
+          {{ t('settings.model.modelConfig.description') }}
         </p>
       </DialogHeader>
 
@@ -134,11 +134,10 @@
       </div>
 
       <DialogFooter class="gap-2">
-        <Button
+                <Button
           type="button"
           variant="outline"
           @click="handleReset"
-          :disabled="!hasUserConfig"
         >
           {{ t('settings.model.modelConfig.resetToDefault') }}
         </Button>
@@ -226,9 +225,6 @@ const config = ref<ModelConfig>({
   type: ModelType.Chat
 })
 
-// 是否有用户自定义配置
-const hasUserConfig = ref(false)
-
 // 重置确认对话框
 const showResetConfirm = ref(false)
 
@@ -239,11 +235,9 @@ const errors = ref<Record<string, string>>({})
 const loadConfig = async () => {
   if (!props.modelId || !props.providerId) return
 
-  try {
+    try {
     const modelConfig = await settingsStore.getModelConfig(props.modelId, props.providerId)
     config.value = { ...modelConfig }
-
-    hasUserConfig.value = await settingsStore.hasUserModelConfig(props.modelId, props.providerId)
   } catch (error) {
     console.error('Failed to load model config:', error)
   }
@@ -287,7 +281,6 @@ const handleSave = async () => {
 
   try {
     await settingsStore.setModelConfig(props.modelId, props.providerId, config.value)
-    hasUserConfig.value = true
     emit('saved')
     emit('update:open', false)
   } catch (error) {
@@ -297,9 +290,7 @@ const handleSave = async () => {
 
 // 重置配置
 const handleReset = () => {
-  if (hasUserConfig.value) {
-    showResetConfirm.value = true
-  }
+  showResetConfirm.value = true
 }
 
 // 确认重置
@@ -307,7 +298,6 @@ const confirmReset = async () => {
   try {
     await settingsStore.resetModelConfig(props.modelId, props.providerId)
     await loadConfig() // 重新加载默认配置
-    hasUserConfig.value = false
     showResetConfirm.value = false
     emit('saved')
   } catch (error) {

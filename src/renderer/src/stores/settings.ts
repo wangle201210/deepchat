@@ -1394,16 +1394,18 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   const setModelConfig = async (modelId: string, providerId: string, config: any): Promise<void> => {
-    return await configP.setModelConfig(modelId, providerId, config)
+    await configP.setModelConfig(modelId, providerId, config)
+    // 配置变更后刷新相关模型数据
+    await refreshProviderModels(providerId)
   }
 
   const resetModelConfig = async (modelId: string, providerId: string): Promise<void> => {
-    return await configP.resetModelConfig(modelId, providerId)
+    await configP.resetModelConfig(modelId, providerId)
+    // 配置重置后刷新相关模型数据
+    await refreshProviderModels(providerId)
   }
 
-  const hasUserModelConfig = async (modelId: string, providerId: string): Promise<boolean> => {
-    return await configP.hasUserModelConfig(modelId, providerId)
-  }
+
 
   return {
     providers,
@@ -1484,7 +1486,6 @@ export const useSettingsStore = defineStore('settings', () => {
     setupProviderListener,
     getModelConfig,
     setModelConfig,
-    resetModelConfig,
-    hasUserModelConfig
+    resetModelConfig
   }
 })

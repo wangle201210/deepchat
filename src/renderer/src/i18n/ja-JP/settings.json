@@ -100,7 +100,64 @@
     "modelList": "モデルリスト",
     "provider": "サービスプロバイダー",
     "providerSetting": "サービスプロバイダーの設定",
-    "selectModel": "モデルを選択します"
+    "selectModel": "モデルを選択します",
+    "modelConfig": {
+      "cancel": "キャンセル",
+      "contextLength": {
+        "description": "モデルが処理できるコンテキスト長を設定します",
+        "label": "コンテキストの長さ"
+      },
+      "description": "この構成は現在のモデルに対してのみ有効であり、他のモデルには影響しないことに注意してください。注意して変更してください。パラメーターが誤っていると、モデルが適切に機能しない場合があります。",
+      "functionCall": {
+        "description": "モデルが機能コールをネイティブにサポートするかどうか（このオプションをオフにした後、DeepChatは機能コールを自動的にシミュレートします）",
+        "label": "関数呼び出し"
+      },
+      "maxTokens": {
+        "description": "モデルの単一出力に最大数のトークンを設定します",
+        "label": "最大出力長"
+      },
+      "reasoning": {
+        "description": "モデルは推論能力をサポートしていますか？",
+        "label": "推論能力"
+      },
+      "resetConfirm": {
+        "confirm": "リセットを確認します",
+        "message": "このモデルの構成をデフォルトにリセットする必要がありますか？この操作は取消不能です。",
+        "title": "リセットを確認します"
+      },
+      "resetToDefault": "デフォルトにリセットします",
+      "saveConfig": "構成を保存します",
+      "temperature": {
+        "description": "出力のランダム性を制御します。ほとんどのモデルは0-1で、0〜2の間のサポートがあります。ランダム性が高くなるほど。",
+        "label": "温度"
+      },
+      "title": "カスタムモデルパラメーター",
+      "type": {
+        "description": "モデルのタイプを選択します",
+        "label": "モデルタイプ",
+        "options": {
+          "chat": "言語モデル",
+          "embedding": "埋め込みモデル",
+          "imageGeneration": "画像生成モデル",
+          "rerank": "モデルを並べ替えます"
+        }
+      },
+      "validation": {
+        "contextLengthMax": "コンテキストの長さは10000000を超えることはできません",
+        "contextLengthMin": "コンテキストの長さは0より大きくなければなりません",
+        "contextLengthRequired": "コンテキストの長さを空にすることはできません",
+        "maxTokensMax": "最大出力長は1000000を超えることはできません",
+        "maxTokensMin": "最大出力長は0より大きくなければなりません",
+        "maxTokensRequired": "最大出力長を空にすることはできません",
+        "temperatureMax": "温度は2以下でなければなりません",
+        "temperatureMin": "温度は0以上でなければなりません",
+        "temperatureRequired": "温度を空にすることはできません"
+      },
+      "vision": {
+        "description": "モデルは視覚能力をサポートしていますか？",
+        "label": "視覚能力"
+      }
+    }
   },
   "provider": {
     "enable": "サービスを有効にする",

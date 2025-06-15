@@ -102,8 +102,8 @@
     "configureModel": "配置模型",
     "addModel": "添加模型",
     "modelConfig": {
-      "title": "模型配置",
-      "description": "配置模型的详细参数",
+      "title": "自定义模型参数",
+      "description": "请注意，此配置仅对当前模型有效，不会影响其他模型，请谨慎修改，错误的参数可能导致模型无法正常工作。",
       "maxTokens": {
         "label": "最大输出长度",
         "description": "设置模型单次输出的最大Token数量"
@@ -114,28 +114,28 @@
       },
       "temperature": {
         "label": "温度",
-        "description": "控制输出的随机性，0-1之间，越高越随机"
+        "description": "控制输出的随机性，大部分模型0-1，部分支持0-2之间，越高越随机"
       },
       "vision": {
         "label": "视觉能力",
-        "description": "是否启用模型的图像识别功能"
+        "description": "模型是否支持视觉能力"
       },
       "functionCall": {
         "label": "函数调用",
-        "description": "是否启用模型的函数调用能力"
+        "description": "模型是否原生支持函数调用(关闭这个选项后DeepChat会自动模拟函数调用)"
       },
       "reasoning": {
         "label": "推理能力",
-        "description": "是否启用模型的推理能力"
+        "description": "模型是否支持推理能力"
       },
       "type": {
         "label": "模型类型",
-        "description": "选择模型的使用类型",
+        "description": "选择模型的类型",
         "options": {
-          "chat": "对话",
-          "embedding": "嵌入",
-          "rerank": "重排序",
-          "imageGeneration": "图像生成"
+          "chat": "语言模型",
+          "embedding": "嵌入模型",
+          "rerank": "重排序模型",
+          "imageGeneration": "图像生成模型"
         }
       },
       "resetToDefault": "重置为默认",
