@@ -96,7 +96,11 @@ export class SyncPresenter implements ISyncPresenter {
       await this.performBackup()
     } catch (error: unknown) {
       console.error('备份失败:', error)
-      eventBus.send(SYNC_EVENTS.BACKUP_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
+      eventBus.send(
+        SYNC_EVENTS.BACKUP_ERROR,
+        SendTarget.ALL_WINDOWS,
+        (error as Error).message || 'sync.error.unknown'
+      )
       throw error
     }
   }
@@ -165,8 +169,6 @@ export class SyncPresenter implements ISyncPresenter {
         fs.copyFileSync(this.MODEL_CONFIG_PATH, tempModelConfigPath)
       }
 
-
-
       // 如果 provider_models 目录存在，备份整个目录
       if (fs.existsSync(this.PROVIDER_MODELS_DIR_PATH)) {
         this.copyDirectory(this.PROVIDER_MODELS_DIR_PATH, tempProviderModelsPath)
@@ -226,8 +228,6 @@ export class SyncPresenter implements ISyncPresenter {
           fs.copyFileSync(modelConfigBackupPath, this.MODEL_CONFIG_PATH)
         }
 
-
-
         eventBus.send(SYNC_EVENTS.IMPORT_COMPLETED, SendTarget.ALL_WINDOWS)
         return { success: true, message: 'sync.success.importComplete' }
       } catch (error: unknown) {
@@ -258,9 +258,11 @@ export class SyncPresenter implements ISyncPresenter {
           fs.copyFileSync(tempModelConfigPath, this.MODEL_CONFIG_PATH)
         }
 
-
-
-        eventBus.send(SYNC_EVENTS.IMPORT_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
+        eventBus.send(
+          SYNC_EVENTS.IMPORT_ERROR,
+          SendTarget.ALL_WINDOWS,
+          (error as Error).message || 'sync.error.unknown'
+        )
         return { success: false, message: 'sync.error.importFailed' }
       } finally {
         // 清理临时文件
@@ -287,7 +289,11 @@ export class SyncPresenter implements ISyncPresenter {
       }
     } catch (error: unknown) {
       console.error('导入过程出错:', error)
-      eventBus.send(SYNC_EVENTS.IMPORT_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
+      eventBus.send(
+        SYNC_EVENTS.IMPORT_ERROR,
+        SendTarget.ALL_WINDOWS,
+        (error as Error).message || 'sync.error.unknown'
+      )
       return { success: false, message: 'sync.error.importProcess' }
     }
   }
@@ -333,7 +339,6 @@ export class SyncPresenter implements ISyncPresenter {
       const finalMcpSettingsBackupPath = path.join(syncFolderPath, 'mcp-settings.json')
       const finalModelConfigBackupPath = path.join(syncFolderPath, 'model-config.json')
 
-
       // 确保数据库文件存在
       if (!fs.existsSync(this.DB_PATH)) {
         console.warn('数据库文件不存在:', this.DB_PATH)
@@ -378,8 +383,6 @@ export class SyncPresenter implements ISyncPresenter {
         fs.copyFileSync(this.MODEL_CONFIG_PATH, tempModelConfigBackupPath)
       }
 
-
-
       // 备份 provider_models 目录
       if (fs.existsSync(this.PROVIDER_MODELS_DIR_PATH)) {
         // 确保临时目录存在
@@ -419,7 +422,7 @@ export class SyncPresenter implements ISyncPresenter {
         fs.unlinkSync(finalMcpSettingsBackupPath)
       }
 
-            // 清理之前的模型配置文件备份
+      // 清理之前的模型配置文件备份
       if (fs.existsSync(finalModelConfigBackupPath)) {
         fs.unlinkSync(finalModelConfigBackupPath)
       }
@@ -429,7 +432,7 @@ export class SyncPresenter implements ISyncPresenter {
       fs.renameSync(tempAppSettingsBackupPath, finalAppSettingsBackupPath)
       fs.renameSync(tempMcpSettingsBackupPath, finalMcpSettingsBackupPath)
 
-            // 重命名模型配置文件
+      // 重命名模型配置文件
       if (fs.existsSync(tempModelConfigBackupPath)) {
         fs.renameSync(tempModelConfigBackupPath, finalModelConfigBackupPath)
       }
@@ -447,7 +450,11 @@ export class SyncPresenter implements ISyncPresenter {
       eventBus.send(SYNC_EVENTS.BACKUP_COMPLETED, SendTarget.ALL_WINDOWS, now)
     } catch (error: unknown) {
       console.error('备份过程出错:', error)
-      eventBus.send(SYNC_EVENTS.BACKUP_ERROR, SendTarget.ALL_WINDOWS, (error as Error).message || 'sync.error.unknown')
+      eventBus.send(
+        SYNC_EVENTS.BACKUP_ERROR,
+        SendTarget.ALL_WINDOWS,
+        (error as Error).message || 'sync.error.unknown'
+      )
       throw error
     } finally {
       // 标记备份结束

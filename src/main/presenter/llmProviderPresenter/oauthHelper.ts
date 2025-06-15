@@ -13,7 +13,7 @@ export interface OAuthConfig {
 export class OAuthHelper {
   private authWindow: BrowserWindow | null = null
 
-  constructor(private config: OAuthConfig) { }
+  constructor(private config: OAuthConfig) {}
 
   /**
    * 开始OAuth登录流程

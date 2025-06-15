@@ -46,54 +46,54 @@ describe('LLMProviderPresenter Integration Tests', () => {
     enable: true
   }
 
-     beforeAll(() => {
-     // Mock ConfigPresenter methods
-     const mockConfigPresenterInstance = {
-       getProviders: vi.fn().mockReturnValue([mockProvider]),
-       getProviderById: vi.fn().mockReturnValue(mockProvider),
-       getModelConfig: vi.fn().mockReturnValue({
-         maxTokens: 4096,
-         contextLength: 4096,
-         temperature: 0.7,
-         vision: false,
-         functionCall: false,
-         reasoning: false
-       }),
-       getSetting: vi.fn().mockImplementation((key: string) => {
-         if (key === 'azureApiVersion') return '2024-02-01'
-         return undefined
-       }),
-       setModelStatus: vi.fn(),
-       updateCustomModel: vi.fn(),
-       setProviderModels: vi.fn(),
-       getCustomModels: vi.fn().mockReturnValue([]),
-       getProviderModels: vi.fn().mockReturnValue([]),
-       getModelStatus: vi.fn().mockReturnValue(true),
-       enableModel: vi.fn(),
-       setCustomModels: vi.fn(),
-       addCustomModel: vi.fn(),
-       removeCustomModel: vi.fn()
-     }
+  beforeAll(() => {
+    // Mock ConfigPresenter methods
+    const mockConfigPresenterInstance = {
+      getProviders: vi.fn().mockReturnValue([mockProvider]),
+      getProviderById: vi.fn().mockReturnValue(mockProvider),
+      getModelConfig: vi.fn().mockReturnValue({
+        maxTokens: 4096,
+        contextLength: 4096,
+        temperature: 0.7,
+        vision: false,
+        functionCall: false,
+        reasoning: false
+      }),
+      getSetting: vi.fn().mockImplementation((key: string) => {
+        if (key === 'azureApiVersion') return '2024-02-01'
+        return undefined
+      }),
+      setModelStatus: vi.fn(),
+      updateCustomModel: vi.fn(),
+      setProviderModels: vi.fn(),
+      getCustomModels: vi.fn().mockReturnValue([]),
+      getProviderModels: vi.fn().mockReturnValue([]),
+      getModelStatus: vi.fn().mockReturnValue(true),
+      enableModel: vi.fn(),
+      setCustomModels: vi.fn(),
+      addCustomModel: vi.fn(),
+      removeCustomModel: vi.fn()
+    }
 
-     mockConfigPresenter = mockConfigPresenterInstance as unknown as ConfigPresenter
-   })
+    mockConfigPresenter = mockConfigPresenterInstance as unknown as ConfigPresenter
+  })
 
-      beforeEach(() => {
-     // Clear all mocks before each test
-     vi.clearAllMocks()
+  beforeEach(() => {
+    // Clear all mocks before each test
+    vi.clearAllMocks()
 
-     // Reset mock implementations
-     mockConfigPresenter.getProviders = vi.fn().mockReturnValue([mockProvider])
-     mockConfigPresenter.getProviderById = vi.fn().mockReturnValue(mockProvider)
-     mockConfigPresenter.enableModel = vi.fn()
-     mockConfigPresenter.setProviderModels = vi.fn()
-     mockConfigPresenter.getCustomModels = vi.fn().mockReturnValue([])
-     mockConfigPresenter.getProviderModels = vi.fn().mockReturnValue([])
-     mockConfigPresenter.getModelStatus = vi.fn().mockReturnValue(true)
+    // Reset mock implementations
+    mockConfigPresenter.getProviders = vi.fn().mockReturnValue([mockProvider])
+    mockConfigPresenter.getProviderById = vi.fn().mockReturnValue(mockProvider)
+    mockConfigPresenter.enableModel = vi.fn()
+    mockConfigPresenter.setProviderModels = vi.fn()
+    mockConfigPresenter.getCustomModels = vi.fn().mockReturnValue([])
+    mockConfigPresenter.getProviderModels = vi.fn().mockReturnValue([])
+    mockConfigPresenter.getModelStatus = vi.fn().mockReturnValue(true)
 
-     // Create new instance for each test
-     llmProviderPresenter = new LLMProviderPresenter(mockConfigPresenter)
-   })
+    // Create new instance for each test
+    llmProviderPresenter = new LLMProviderPresenter(mockConfigPresenter)
+  })
 
   afterEach(() => {
     // Stop all active streams after each test
@@ -136,7 +136,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
       expect(Array.isArray(models)).toBe(true)
 
       // 验证返回的模型包含预期的mock模型
-      const modelIds = models.map(m => m.id)
+      const modelIds = models.map((m) => m.id)
       expect(modelIds).toContain('mock-gpt-thinking')
       expect(modelIds).toContain('gpt-4-mock')
       expect(modelIds).toContain('mock-gpt-markdown')
@@ -163,9 +163,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
     })
 
     it('should handle basic stream completion', async () => {
-      const messages: ChatMessage[] = [
-        { role: 'user', content: 'Hello, how are you?' }
-      ]
+      const messages: ChatMessage[] = [{ role: 'user', content: 'Hello, how are you?' }]
 
       const eventId = 'test-stream-1'
       const events: LLMAgentEvent[] = []
@@ -198,11 +196,11 @@ describe('LLMProviderPresenter Integration Tests', () => {
       expect(events.length).toBeGreaterThan(0)
 
       // 检查事件类型
-      const eventTypes = events.map(e => e.type)
+      const eventTypes = events.map((e) => e.type)
       expect(eventTypes).toContain('response')
 
       // 验证事件数据结构
-      const responseEvents = events.filter(e => e.type === 'response')
+      const responseEvents = events.filter((e) => e.type === 'response')
       if (responseEvents.length > 0) {
         const firstResponse = responseEvents[0] as { type: 'response'; data: any }
         expect(firstResponse.data).toHaveProperty('eventId', eventId)
@@ -210,9 +208,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
     }, 20000)
 
     it('should handle stream for markdown model', async () => {
-      const messages: ChatMessage[] = [
-        { role: 'user', content: 'Generate some markdown content' }
-      ]
+      const messages: ChatMessage[] = [{ role: 'user', content: 'Generate some markdown content' }]
 
       const eventId = 'test-markdown-stream'
       const events: LLMAgentEvent[] = []
@@ -253,9 +249,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
     }, 20000)
 
     it('should handle function calling model', async () => {
-      const messages: ChatMessage[] = [
-        { role: 'user', content: 'What time is it now?' }
-      ]
+      const messages: ChatMessage[] = [{ role: 'user', content: 'What time is it now?' }]
 
       const eventId = 'test-function-call'
       const events: LLMAgentEvent[] = []
@@ -287,10 +281,8 @@ describe('LLMProviderPresenter Integration Tests', () => {
       expect(events.length).toBeGreaterThan(0)
 
       // 检查是否有工具调用相关的事件
-      const toolCallEvents = events.filter(e =>
-        e.type === 'response' &&
-        e.data &&
-        (e.data.tool_call_name || e.data.tool_call)
+      const toolCallEvents = events.filter(
+        (e) => e.type === 'response' && e.data && (e.data.tool_call_name || e.data.tool_call)
       )
 
       console.log('Total events:', events.length)
@@ -304,9 +296,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
     })
 
     it('should generate completion without streaming', async () => {
-      const messages = [
-        { role: 'user' as const, content: '1' }
-      ]
+      const messages = [{ role: 'user' as const, content: '1' }]
 
       const response = await llmProviderPresenter.generateCompletion(
         'mock-openai-api',
@@ -322,9 +312,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
     }, 15000)
 
     it('should generate completion standalone', async () => {
-      const messages: ChatMessage[] = [
-        { role: 'user', content: '1' }
-      ]
+      const messages: ChatMessage[] = [{ role: 'user', content: '1' }]
 
       const response = await llmProviderPresenter.generateCompletionStandalone(
         'mock-openai-api',
@@ -341,7 +329,10 @@ describe('LLMProviderPresenter Integration Tests', () => {
     it('should summarize titles', async () => {
       const messages = [
         { role: 'user' as const, content: 'Hello, I want to learn about artificial intelligence' },
-        { role: 'assistant' as const, content: 'I can help you learn about AI. What specific aspects interest you?' }
+        {
+          role: 'assistant' as const,
+          content: 'I can help you learn about AI. What specific aspects interest you?'
+        }
       ]
 
       const title = await llmProviderPresenter.summaryTitles(
@@ -366,9 +357,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
 
       expect(llmProviderPresenter.isGenerating(eventId)).toBe(false)
 
-      const messages: ChatMessage[] = [
-        { role: 'user', content: 'Start a stream' }
-      ]
+      const messages: ChatMessage[] = [{ role: 'user', content: 'Start a stream' }]
 
       // 启动流但不等待完成
       const streamPromise = (async () => {
@@ -387,7 +376,7 @@ describe('LLMProviderPresenter Integration Tests', () => {
       })()
 
       // 短暂等待让流开始
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       // 检查流状态
       expect(llmProviderPresenter.isGenerating(eventId)).toBe(true)
@@ -411,28 +400,29 @@ describe('LLMProviderPresenter Integration Tests', () => {
       llmProviderPresenter.setMaxConcurrentStreams(2)
       expect(llmProviderPresenter.getMaxConcurrentStreams()).toBe(2)
 
-      const messages: ChatMessage[] = [
-        { role: 'user', content: 'Concurrent test' }
-      ]
+      const messages: ChatMessage[] = [{ role: 'user', content: 'Concurrent test' }]
 
-             // 启动多个流
-       const streams: Array<{eventId: string, stream: AsyncGenerator<LLMAgentEvent, void, unknown>}> = []
-       for (let i = 0; i < 3; i++) {
-         const eventId = `concurrent-${i}`
-         const stream = llmProviderPresenter.startStreamCompletion(
-           'mock-openai-api',
-           messages,
-           'mock-gpt-thinking',
-           eventId
-         )
-         streams.push({ eventId, stream })
-       }
+      // 启动多个流
+      const streams: Array<{
+        eventId: string
+        stream: AsyncGenerator<LLMAgentEvent, void, unknown>
+      }> = []
+      for (let i = 0; i < 3; i++) {
+        const eventId = `concurrent-${i}`
+        const stream = llmProviderPresenter.startStreamCompletion(
+          'mock-openai-api',
+          messages,
+          'mock-gpt-thinking',
+          eventId
+        )
+        streams.push({ eventId, stream })
+      }
 
-       // 处理流，第三个应该被限制
-       let errorCount = 0
-       let successCount = 0
+      // 处理流，第三个应该被限制
+      let errorCount = 0
+      let successCount = 0
 
-       for (const { eventId, stream } of streams) {
+      for (const { eventId, stream } of streams) {
         try {
           let count = 0
           for await (const event of stream) {

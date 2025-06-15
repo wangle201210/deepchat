@@ -77,14 +77,16 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     const response = await fetch('https://api.deepseek.com/user/balance', {
       method: 'GET',
       headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${this.provider.apiKey}`
+        Accept: 'application/json',
+        Authorization: `Bearer ${this.provider.apiKey}`
       }
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`DeepSeek API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
+      throw new Error(
+        `DeepSeek API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+      )
     }
 
     const balanceResponse: DeepSeekBalanceResponse = await response.json()
@@ -94,9 +96,10 @@ export class DeepseekProvider extends OpenAICompatibleProvider {
     }
 
     // Find CNY balance info first, then USD, then default to first available
-    const balanceInfo = balanceResponse.balance_infos.find(info => info.currency === 'CNY')
-      || balanceResponse.balance_infos.find(info => info.currency === 'USD')
-      || balanceResponse.balance_infos[0]
+    const balanceInfo =
+      balanceResponse.balance_infos.find((info) => info.currency === 'CNY') ||
+      balanceResponse.balance_infos.find((info) => info.currency === 'USD') ||
+      balanceResponse.balance_infos[0]
 
     if (!balanceInfo) {
       throw new Error('No balance information available')

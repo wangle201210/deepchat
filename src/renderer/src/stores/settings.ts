@@ -334,9 +334,9 @@ export const useSettingsStore = defineStore('settings', () => {
       const safeCustomModelsList = customModelsList || []
 
       // 批量获取自定义模型状态并合并
-      const modelIds = safeCustomModelsList.map(model => model.id)
-      const modelStatusMap = modelIds.length > 0 ?
-        await configP.getBatchModelStatus(providerId, modelIds) : {}
+      const modelIds = safeCustomModelsList.map((model) => model.id)
+      const modelStatusMap =
+        modelIds.length > 0 ? await configP.getBatchModelStatus(providerId, modelIds) : {}
 
       const customModelsWithStatus = safeCustomModelsList.map((model) => {
         return {
@@ -439,9 +439,9 @@ export const useSettingsStore = defineStore('settings', () => {
       }
 
       // 批量获取模型状态并合并
-      const modelIds = models.map(model => model.id)
-      const modelStatusMap = modelIds.length > 0 ?
-        await configP.getBatchModelStatus(providerId, modelIds) : {}
+      const modelIds = models.map((model) => model.id)
+      const modelStatusMap =
+        modelIds.length > 0 ? await configP.getBatchModelStatus(providerId, modelIds) : {}
 
       const modelsWithStatus = models.map((model) => {
         return {
@@ -1256,7 +1256,6 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setLoggingEnabled(enabled)
   }
 
-
   ///////////////////////////////////////////////////////////////////////////////////////
   const setCopyWithCotEnabled = async (enabled: boolean) => {
     copyWithCotEnabled.value = Boolean(enabled)
@@ -1393,7 +1392,11 @@ export const useSettingsStore = defineStore('settings', () => {
     return await configP.getModelDefaultConfig(modelId, providerId)
   }
 
-  const setModelConfig = async (modelId: string, providerId: string, config: any): Promise<void> => {
+  const setModelConfig = async (
+    modelId: string,
+    providerId: string,
+    config: any
+  ): Promise<void> => {
     await configP.setModelConfig(modelId, providerId, config)
     // 配置变更后刷新相关模型数据
     await refreshProviderModels(providerId)
@@ -1404,8 +1407,6 @@ export const useSettingsStore = defineStore('settings', () => {
     // 配置重置后刷新相关模型数据
     await refreshProviderModels(providerId)
   }
-
-
 
   return {
     providers,

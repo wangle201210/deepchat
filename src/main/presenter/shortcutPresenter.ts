@@ -1,7 +1,7 @@
 import { app, globalShortcut } from 'electron'
 
 import { presenter } from '.'
-import { SHORTCUT_EVENTS, TRAY_EVENTS} from '../events'
+import { SHORTCUT_EVENTS, TRAY_EVENTS } from '../events'
 import { eventBus, SendTarget } from '../eventbus'
 import {
   CommandKey,

@@ -70,7 +70,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
     )
   }
 
-    /**
+  /**
    * Get current API key status from OpenRouter
    * @returns Promise<KeyStatus> API key status information
    */
@@ -82,14 +82,16 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
     const response = await fetch('https://openrouter.ai/api/v1/key', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${this.provider.apiKey}`,
+        Authorization: `Bearer ${this.provider.apiKey}`,
         'Content-Type': 'application/json'
-      },
+      }
     })
 
     if (response.status !== 200) {
       const errorText = await response.text()
-      throw new Error(`OpenRouter API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
+      throw new Error(
+        `OpenRouter API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+      )
     }
 
     const responseText = await response.text()
@@ -104,12 +106,12 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
 
     // Build KeyStatus based on available data
     const keyStatus: KeyStatus = {
-      usage: '$'+keyResponse.data.usage,
+      usage: '$' + keyResponse.data.usage
     }
 
     // Only include limit_remaining if it's not null (has actual limit)
     if (keyResponse.data.limit_remaining !== null) {
-      keyStatus.limit_remaining = '$'+keyResponse.data.limit_remaining
+      keyStatus.limit_remaining = '$' + keyResponse.data.limit_remaining
       keyStatus.remainNum = keyResponse.data.limit_remaining
     }
 
@@ -120,7 +122,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
    * Override check method to use OpenRouter's API key status endpoint
    * @returns Promise<{ isOk: boolean; errorMsg: string | null }>
    */
-    public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
+  public async check(): Promise<{ isOk: boolean; errorMsg: string | null }> {
     try {
       const keyStatus = await this.getKeyStatus()
 

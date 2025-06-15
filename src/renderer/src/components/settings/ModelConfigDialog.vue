@@ -32,7 +32,9 @@
 
           <!-- 上下文长度 -->
           <div class="space-y-2">
-            <Label for="contextLength">{{ t('settings.model.modelConfig.contextLength.label') }}</Label>
+            <Label for="contextLength">{{
+              t('settings.model.modelConfig.contextLength.label')
+            }}</Label>
             <Input
               id="contextLength"
               v-model.number="config.contextLength"
@@ -134,11 +136,7 @@
       </div>
 
       <DialogFooter class="gap-2">
-                <Button
-          type="button"
-          variant="outline"
-          @click="handleReset"
-        >
+        <Button type="button" variant="outline" @click="handleReset">
           {{ t('settings.model.modelConfig.resetToDefault') }}
         </Button>
         <Button type="button" variant="ghost" @click="$emit('update:open', false)">
@@ -235,7 +233,7 @@ const errors = ref<Record<string, string>>({})
 const loadConfig = async () => {
   if (!props.modelId || !props.providerId) return
 
-    try {
+  try {
     const modelConfig = await settingsStore.getModelConfig(props.modelId, props.providerId)
     config.value = { ...modelConfig }
   } catch (error) {
@@ -306,11 +304,15 @@ const confirmReset = async () => {
 }
 
 // 监听props变化，重新加载配置
-watch(() => [props.modelId, props.providerId, props.open], () => {
-  if (props.open) {
-    loadConfig()
-  }
-}, { immediate: true })
+watch(
+  () => [props.modelId, props.providerId, props.open],
+  () => {
+    if (props.open) {
+      loadConfig()
+    }
+  },
+  { immediate: true }
+)
 
 onMounted(() => {
   if (props.open) {

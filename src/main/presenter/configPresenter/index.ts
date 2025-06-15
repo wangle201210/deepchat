@@ -324,7 +324,13 @@ export class ConfigPresenter implements IConfigPresenter {
     const statusKey = this.getModelStatusKey(providerId, modelId)
     this.setSetting(statusKey, enabled)
     // 触发模型状态变更事件（需要通知所有标签页）
-    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_STATUS_CHANGED, SendTarget.ALL_WINDOWS, providerId, modelId, enabled)
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.MODEL_STATUS_CHANGED,
+      SendTarget.ALL_WINDOWS,
+      providerId,
+      modelId,
+      enabled
+    )
   }
 
   // 启用模型
@@ -409,7 +415,7 @@ export class ConfigPresenter implements IConfigPresenter {
         ]
 
         // 批量获取模型状态
-        const modelIds = allModels.map(model => model.id)
+        const modelIds = allModels.map((model) => model.id)
         const modelStatusMap = this.getBatchModelStatus(providerId, modelIds)
 
         // 根据批量获取的状态过滤启用的模型
@@ -822,10 +828,14 @@ export class ConfigPresenter implements IConfigPresenter {
   setModelConfig(modelId: string, providerId: string, config: ModelConfig): void {
     this.modelConfigHelper.setModelConfig(modelId, providerId, config)
     // 触发模型配置变更事件（需要通知所有标签页）
-    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_CONFIG_CHANGED, SendTarget.ALL_WINDOWS, providerId, modelId, config)
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.MODEL_CONFIG_CHANGED,
+      SendTarget.ALL_WINDOWS,
+      providerId,
+      modelId,
+      config
+    )
   }
-
-
 
   /**
    * Reset model configuration for a specific provider and model
@@ -835,10 +845,13 @@ export class ConfigPresenter implements IConfigPresenter {
   resetModelConfig(modelId: string, providerId: string): void {
     this.modelConfigHelper.resetModelConfig(modelId, providerId)
     // 触发模型配置重置事件（需要通知所有标签页）
-    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_CONFIG_RESET, SendTarget.ALL_WINDOWS, providerId, modelId)
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.MODEL_CONFIG_RESET,
+      SendTarget.ALL_WINDOWS,
+      providerId,
+      modelId
+    )
   }
-
-
 
   /**
    * Get all user-defined model configurations
@@ -846,8 +859,6 @@ export class ConfigPresenter implements IConfigPresenter {
   getAllModelConfigs(): Record<string, any> {
     return this.modelConfigHelper.getAllModelConfigs()
   }
-
-
 
   /**
    * Get configurations for a specific provider
@@ -873,15 +884,12 @@ export class ConfigPresenter implements IConfigPresenter {
     return this.modelConfigHelper.exportConfigs()
   }
 
-    /**
+  /**
    * Import model configurations for restore/sync
    * @param configs - Model configurations to import
    * @param overwrite - Whether to overwrite existing configurations
    */
-  importModelConfigs(
-    configs: Record<string, any>,
-    overwrite: boolean = false
-  ): void {
+  importModelConfigs(configs: Record<string, any>, overwrite: boolean = false): void {
     this.modelConfigHelper.importConfigs(configs, overwrite)
     // 触发批量导入事件（需要通知所有标签页）
     eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_CONFIGS_IMPORTED, SendTarget.ALL_WINDOWS, overwrite)

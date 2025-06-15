@@ -51,7 +51,9 @@ export class TabPresenter implements ITabPresenter {
   // 初始化事件总线处理器
   private initBusHandlers(): void {
     // 窗口尺寸变化，更新视图 bounds
-    eventBus.on(WINDOW_EVENTS.WINDOW_RESIZE, (windowId: number) => this.onWindowSizeChange(windowId))
+    eventBus.on(WINDOW_EVENTS.WINDOW_RESIZE, (windowId: number) =>
+      this.onWindowSizeChange(windowId)
+    )
     eventBus.on(WINDOW_EVENTS.WINDOW_MAXIMIZED, (windowId: number) => {
       setTimeout(() => {
         this.onWindowSizeChange(windowId)

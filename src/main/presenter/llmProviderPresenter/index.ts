@@ -104,7 +104,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       if (provider.id === 'ppio') {
         return new PPIOProvider(provider, this.configPresenter)
       }
-      if(provider.id === 'deepseek') {
+      if (provider.id === 'deepseek') {
         return new DeepseekProvider(provider, this.configPresenter)
       }
       switch (provider.apiType) {
@@ -685,14 +685,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     const toolCallInfo = `\n<function_call>
                     {
                       "function_call": ${JSON.stringify(
-                      {
-                        id: toolCall.id,
-                        name: toolCall.name,
-                        arguments: toolCall.arguments // Keep original args here
-                      },
-                      null,
-                      2
-                    )}
+                        {
+                          id: toolCall.id,
+                          name: toolCall.name,
+                          arguments: toolCall.arguments // Keep original args here
+                        },
+                        null,
+                        2
+                      )}
                     }
                     </function_call>\n`
 

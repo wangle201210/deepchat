@@ -237,9 +237,9 @@ export class AnthropicProvider extends BaseLLMProvider {
             ? msg.content
             : msg.content && Array.isArray(msg.content)
               ? msg.content
-                .filter((c) => c.type === 'text')
-                .map((c) => c.text || '')
-                .join('\n')
+                  .filter((c) => c.type === 'text')
+                  .map((c) => c.text || '')
+                  .join('\n')
               : '') + '\n'
       }
     }
@@ -312,14 +312,14 @@ export class AnthropicProvider extends BaseLLMProvider {
                 type: 'image',
                 source: c.image_url.url.startsWith('data:image')
                   ? {
-                    type: 'base64',
-                    data: c.image_url.url.split(',')[1],
-                    media_type: c.image_url.url.split(';')[0].split(':')[1] as
-                      | 'image/jpeg'
-                      | 'image/png'
-                      | 'image/gif'
-                      | 'image/webp'
-                  }
+                      type: 'base64',
+                      data: c.image_url.url.split(',')[1],
+                      media_type: c.image_url.url.split(';')[0].split(':')[1] as
+                        | 'image/jpeg'
+                        | 'image/png'
+                        | 'image/gif'
+                        | 'image/webp'
+                    }
                   : { type: 'url', url: c.image_url.url }
               } as ContentBlock
             } else {
@@ -389,14 +389,14 @@ export class AnthropicProvider extends BaseLLMProvider {
                   type: 'image',
                   source: content.image_url.url.startsWith('data:image')
                     ? {
-                      type: 'base64',
-                      data: content.image_url.url.split(',')[1],
-                      media_type: content.image_url.url.split(';')[0].split(':')[1] as
-                        | 'image/jpeg'
-                        | 'image/png'
-                        | 'image/gif'
-                        | 'image/webp'
-                    }
+                        type: 'base64',
+                        data: content.image_url.url.split(',')[1],
+                        media_type: content.image_url.url.split(';')[0].split(':')[1] as
+                          | 'image/jpeg'
+                          | 'image/png'
+                          | 'image/gif'
+                          | 'image/webp'
+                      }
                     : { type: 'url', url: content.image_url.url }
                 } as ContentBlock)
               }

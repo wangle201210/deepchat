@@ -37,7 +37,7 @@ vi.mock('electron-store', () => {
       }
 
       clear() {
-        Object.keys(this.data).forEach(key => delete this.data[key])
+        Object.keys(this.data).forEach((key) => delete this.data[key])
       }
 
       get store() {
@@ -79,7 +79,7 @@ describe('Model Configuration Tests', () => {
     vi.clearAllMocks()
   })
 
-    describe('Core CRUD Operations', () => {
+  describe('Core CRUD Operations', () => {
     const testModelId = 'test-gpt-4'
     const testProviderId = 'test-openai'
     const testConfig: ModelConfig = {
@@ -140,8 +140,8 @@ describe('Model Configuration Tests', () => {
 
       const providerConfigs = modelConfigHelper.getProviderModelConfigs(testProviderId)
       expect(providerConfigs).toHaveLength(2)
-      expect(providerConfigs.map(c => c.modelId)).toContain('model1')
-      expect(providerConfigs.map(c => c.modelId)).toContain('model2')
+      expect(providerConfigs.map((c) => c.modelId)).toContain('model1')
+      expect(providerConfigs.map((c) => c.modelId)).toContain('model2')
 
       // Test export/import
       const exportedConfigs = modelConfigHelper.exportConfigs()
