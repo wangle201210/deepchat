@@ -1114,7 +1114,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
             }
 
             // Generate a unique ID if not provided in the parsed content
-            const id = parsedCall.id || functionName || `${fallbackIdPrefix}-${index}-${Date.now()}`
+            const id =
+              parsedCall.id ??
+              (functionName
+                ? `${functionName}-${index}-${Date.now()}`
+                : `${fallbackIdPrefix}-${index}-${Date.now()}`)
+
             // console.log(
             //   `[parseFunctionCalls] Finalizing tool call for match ${index}: ID='${id}', Name='${functionName}', Args='${functionArgs}'`
             // ) // Log final object details
