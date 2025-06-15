@@ -634,6 +634,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                 const supportsFunctionCall = modelConfig?.functionCall || false
 
                 if (supportsFunctionCall) {
+                  // Native Function Calling:
                   // Add original tool call message from assistant
                   const lastAssistantMsg = conversationMessages.findLast(
                     (m) => m.role === 'assistant'
@@ -674,88 +675,86 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                         : JSON.stringify(toolResponse.content),
                     tool_call_id: toolCall.id
                   })
-                } else {
-                  // Non-native function calling: Append call and response differently
 
-                  // 1. Append tool call info to the last assistant message
-                  const lastAssistantMessage = conversationMessages.findLast(
-                    (message) => message.role === 'assistant'
-                  )
-                  if (lastAssistantMessage) {
-                    const toolCallInfo = `\n<function_call>
-                    {
-                      "function_call": ${JSON.stringify(
-                      {
-                        id: toolCall.id,
-                        name: toolCall.name,
-                        arguments: toolCall.arguments // Keep original args here
-                      },
-                      null,
-                      2
-                    )}
-                    }
-                    </function_call>\n`
-
-                    if (typeof lastAssistantMessage.content === 'string') {
-                      lastAssistantMessage.content += toolCallInfo
-                    } else if (Array.isArray(lastAssistantMessage.content)) {
-                      // Find the last text part or add a new one
-                      const lastTextPart = lastAssistantMessage.content.findLast(
-                        (part) => part.type === 'text'
-                      )
-                      if (lastTextPart) {
-                        lastTextPart.text += toolCallInfo
-                      } else {
-                        lastAssistantMessage.content.push({ type: 'text', text: toolCallInfo })
-                      }
+                  // Yield the 'end' event for ThreadPresenter
+                  // ThreadPresenter needs this event to update the structured message state (DB/UI).
+                  // Yield tool end event with response
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      tool_call: 'end',
+                      tool_call_id: toolCall.id,
+                      tool_call_response: toolResponse.content, // Simplified content for UI
+                      tool_call_name: toolCall.name,
+                      tool_call_params: toolCall.arguments, // Original params
+                      tool_call_server_name: toolDef.server.name,
+                      tool_call_server_icons: toolDef.server.icons,
+                      tool_call_server_description: toolDef.server.description,
+                      tool_call_response_raw: toolResponse.rawData // Full raw data
                     }
                   }
+                } else {
+                  // Non-native FC: Add tool result to conversation history for next LLM turn.
 
-                  // 2. Create a user message containing the tool response
-                  const toolResponseContent =
-                    '以下是刚刚执行的工具调用响应，请根据响应内容更新你的回答：\n' +
-                    JSON.stringify({
-                      role: 'tool', // Indicate it's a tool response
-                      content:
-                        typeof toolResponse.content === 'string'
-                          ? toolResponse.content
-                          : JSON.stringify(toolResponse.content), // Stringify complex content
-                      tool_call_id: toolCall.id
-                    })
+                  // 1. Format tool execution result into prompt-defined text.
+                  const formattedToolResultText = `<function_call>${JSON.stringify({ function_call_result: { name: toolCall.name, arguments: toolCall.arguments, response: toolResponse.content } })}</function_call>`
 
-                  // Append to last user message or create new one
-                  const lastMessage = conversationMessages[conversationMessages.length - 1]
-                  if (lastMessage && lastMessage.role === 'user') {
-                    if (typeof lastMessage.content === 'string') {
-                      lastMessage.content += '\n' + toolResponseContent
-                    } else if (Array.isArray(lastMessage.content)) {
-                      lastMessage.content.push({
+                  // 2. Add a role: 'assistant' message to conversationMessages (containing the result text).
+                  // Find or create the last assistant message to append the result text
+                  let lastAssistantMessage = conversationMessages.findLast(
+                    (m) => m.role === 'assistant'
+                  )
+
+                  if (lastAssistantMessage) {
+                    // Append formatted result text to the existing assistant message's content
+                    if (typeof lastAssistantMessage.content === 'string') {
+                      lastAssistantMessage.content += formattedToolResultText + '\n'
+                    } else if (Array.isArray(lastAssistantMessage.content)) {
+                      lastAssistantMessage.content.push({
                         type: 'text',
-                        text: toolResponseContent
+                        text: formattedToolResultText + '\n'
                       })
+                    } else {
+                      // If content is undefined or null, set it as an array with the new text part
+                      lastAssistantMessage.content = [
+                        { type: 'text', text: formattedToolResultText + '\n' }
+                      ]
                     }
                   } else {
+                    // Create a new assistant message just for the tool result feedback
                     conversationMessages.push({
-                      role: 'user',
-                      content: toolResponseContent
+                      role: 'assistant',
+                      content: [{ type: 'text', text: formattedToolResultText + '\n' }] // Content should be an array for multi-part messages
                     })
+                    lastAssistantMessage = conversationMessages[conversationMessages.length - 1] // Update lastAssistantMessage reference
                   }
-                }
 
-                // Yield tool end event with response
-                yield {
-                  type: 'response',
-                  data: {
-                    eventId,
-                    tool_call: 'end',
-                    tool_call_id: toolCall.id,
-                    tool_call_response: toolResponse.content, // Simplified content for UI
-                    tool_call_name: toolCall.name,
-                    tool_call_params: toolCall.arguments, // Original params
-                    tool_call_server_name: toolDef.server.name,
-                    tool_call_server_icons: toolDef.server.icons,
-                    tool_call_server_description: toolDef.server.description,
-                    tool_call_response_raw: toolResponse.rawData // Full raw data
+
+                  // 3. Add a role: 'user' message to conversationMessages (containing prompt text).
+                  const userPromptText = '以上是你刚执行的工具调用及其响应信息，已帮你插入，请仔细阅读工具响应，并继续你的回答。';
+                  conversationMessages.push({
+                    role: 'user',
+                    content: [{ type: 'text', text: userPromptText }] // Content should be an array
+                  });
+
+                  // Yield tool end event for ThreadPresenter to save the result
+                  // This event is separate from the messages added to conversationMessages.
+                  // ThreadPresenter uses this to save the raw result into the structured Assistant message block in DB.
+                  yield {
+                    type: 'response', // Still a response event, but indicates tool execution ended
+                    data: {
+                      eventId,
+                      tool_call: 'end', // Indicate tool execution ended
+                      tool_call_id: toolCall.id,
+                      tool_call_response: toolResponse.content, // Simplified content for UI/ThreadPresenter
+                      tool_call_name: toolCall.name,
+                      tool_call_params: toolCall.arguments, // Original params
+                      tool_call_server_name: toolDef.server.name,
+                      tool_call_server_icons: toolDef.server.icons,
+                      tool_call_server_description: toolDef.server.description,
+                      tool_call_response_raw: toolResponse.rawData // Full raw data for ThreadPresenter to store
+                    }
                   }
                 }
               } catch (toolError) {
@@ -768,30 +767,79 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                 const errorMessage =
                   toolError instanceof Error ? toolError.message : String(toolError)
 
-                // Yield tool error event
-                yield {
-                  type: 'response', // Still a response event, but indicates tool error
-                  data: {
-                    eventId,
-                    tool_call: 'error',
-                    tool_call_id: toolCall.id,
-                    tool_call_name: toolCall.name,
-                    tool_call_params: toolCall.arguments,
-                    tool_call_response: errorMessage, // Error message as response
-                    tool_call_server_name: toolDef.server.name,
-                    tool_call_server_icons: toolDef.server.icons,
-                    tool_call_server_description: toolDef.server.description
-                  }
-                }
+                const supportsFunctionCallInAgent = modelConfig?.functionCall || false;
+                if (supportsFunctionCallInAgent) {
+                  // Native FC Error Handling: Add role: 'tool' message with error
+                  conversationMessages.push({
+                    role: 'tool',
+                    content: `The tool call with ID ${toolCall.id} and name ${toolCall.name} failed to execute: ${errorMessage}`,
+                    tool_call_id: toolCall.id
+                  });
 
-                // Add error message to conversation history for the LLM
-                conversationMessages.push({
-                  role: 'user', // Or 'tool' with error? Use user for now.
-                  content: `Error executing tool ${toolCall.name}: ${errorMessage}`
-                })
-                // Decide if the loop should continue after a tool error.
-                // For now, let's assume it should try to continue if possible.
-                // needContinueConversation might need adjustment based on error type.
+                  // Yield the 'error' event for ThreadPresenter
+                  yield {
+                    type: 'response', // Still a response event, but indicates tool error
+                    data: {
+                      eventId,
+                      tool_call: 'error', // Indicate tool execution error
+                      tool_call_id: toolCall.id,
+                      tool_call_name: toolCall.name,
+                      tool_call_params: toolCall.arguments,
+                      tool_call_response: errorMessage, // Error message as response
+                      tool_call_server_name: toolDef.server.name,
+                      tool_call_server_icons: toolDef.server.icons,
+                      tool_call_server_description: toolDef.server.description
+                    }
+                  };
+                } else {
+                  // Non-native FC Error Handling: Add error to Assistant content and add User prompt.
+
+                  // 1. Construct error text
+                  const formattedErrorText = `编号为 ${toolCall.id} 的工具 ${toolCall.name} 调用执行失败: ${errorMessage}`;
+
+                  // 2. Add formattedErrorText to Assistant content
+                  let lastAssistantMessage = conversationMessages.findLast(m => m.role === 'assistant');
+                  if (lastAssistantMessage) {
+                    if (typeof lastAssistantMessage.content === 'string') {
+                      lastAssistantMessage.content += '\n' + formattedErrorText + '\n';
+                    } else if (Array.isArray(lastAssistantMessage.content)) {
+                      lastAssistantMessage.content.push({ type: 'text', text: '\n' + formattedErrorText + '\n' });
+                    } else {
+                      lastAssistantMessage.content = [{ type: 'text', text: '\n' + formattedErrorText + '\n' }];
+                    }
+                  } else {
+                    conversationMessages.push({
+                      role: 'assistant',
+                      content: [{ type: 'text', text: formattedErrorText + '\n' }]
+                    });
+                  }
+
+                  // 3. Add a role: 'user' message (prompt text)
+                  const userPromptText = '以上是你刚调用的工具及其执行的错误信息，已帮你插入，请根据情况继续回答或重新尝试。';
+                  conversationMessages.push({
+                    role: 'user',
+                    content: [{ type: 'text', text: userPromptText }]
+                  });
+
+                  // Yield the 'error' event for ThreadPresenter
+                  yield {
+                    type: 'response', // Still a response event, but indicates tool error
+                    data: {
+                      eventId,
+                      tool_call: 'error', // Indicate tool execution error
+                      tool_call_id: toolCall.id,
+                      tool_call_name: toolCall.name,
+                      tool_call_params: toolCall.arguments,
+                      tool_call_response: errorMessage, // Error message as response
+                      tool_call_server_name: toolDef.server.name,
+                      tool_call_server_icons: toolDef.server.icons,
+                      tool_call_server_description: toolDef.server.description
+                    }
+                  }
+                  // Decide if the loop should continue after a tool error.
+                  // For now, let's assume it should try to continue if possible.
+                  // needContinueConversation might need adjustment based on error type.
+                }
               }
             } // End of tool execution loop
 
