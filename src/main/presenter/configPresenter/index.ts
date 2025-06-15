@@ -307,6 +307,18 @@ export class ConfigPresenter implements IConfigPresenter {
     return typeof status === 'boolean' ? status : true
   }
 
+  // 批量获取模型启用状态
+  getBatchModelStatus(providerId: string, modelIds: string[]): Record<string, boolean> {
+    const result: Record<string, boolean> = {}
+    for (const modelId of modelIds) {
+      const statusKey = this.getModelStatusKey(providerId, modelId)
+      const status = this.getSetting<boolean>(statusKey)
+      // 如果状态不是布尔值，则返回 true
+      result[modelId] = typeof status === 'boolean' ? status : true
+    }
+    return result
+  }
+
   // 设置模型启用状态
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void {
     const statusKey = this.getModelStatusKey(providerId, modelId)
@@ -396,9 +408,13 @@ export class ConfigPresenter implements IConfigPresenter {
           ...this.getCustomModels(providerId)
         ]
 
-        // 根据单独存储的状态过滤启用的模型
+        // 批量获取模型状态
+        const modelIds = allModels.map(model => model.id)
+        const modelStatusMap = this.getBatchModelStatus(providerId, modelIds)
+
+        // 根据批量获取的状态过滤启用的模型
         const enabledModels = allModels
-          .filter((model) => this.getModelStatus(providerId, model.id))
+          .filter((model) => modelStatusMap[model.id])
           .map((model) => ({
             ...model,
             enabled: true,

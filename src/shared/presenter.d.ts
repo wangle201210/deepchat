@@ -348,6 +348,8 @@ export interface IConfigPresenter {
   setCloseToQuit(value: boolean): void
   getModelStatus(providerId: string, modelId: string): boolean
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void
+  // 批量获取模型状态
+  getBatchModelStatus(providerId: string, modelIds: string[]): Record<string, boolean>
   // 语言设置
   getLanguage(): string
   setLanguage(language: string): void
