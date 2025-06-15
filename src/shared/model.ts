@@ -4,5 +4,6 @@
 export enum ModelType {
   Chat = 'chat',
   Embedding = 'embedding',
-  Rerank = 'rerank'
+  Rerank = 'rerank',
+  ImageGeneration = 'imageGeneration'
 }
