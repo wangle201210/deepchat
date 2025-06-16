@@ -410,7 +410,7 @@ export class McpClient {
           env.npm_config_registry = this.npmRegistry
         }
 
-        console.log('mcp env', command, args, env)
+        console.log('mcp env', command)
         this.transport = new StdioClientTransport({
           command,
           args,
