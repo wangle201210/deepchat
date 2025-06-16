@@ -52,7 +52,8 @@ export class McpClient {
   public serverConfig: Record<string, unknown>
   private isConnected: boolean = false
   private connectionTimeout: NodeJS.Timeout | null = null
-  private nodeRuntimePath: string | null = null
+  private bunRuntimePath: string | null = null
+  private uvRuntimePath: string | null = null
   private npmRegistry: string | null = null
 
   // 缓存
@@ -95,6 +96,72 @@ export class McpClient {
     return expandedPath
   }
 
+  // 替换命令为 runtime 版本
+  private replaceWithRuntimeCommand(command: string): string {
+    // 获取命令的基本名称（去掉路径）
+    const basename = path.basename(command)
+
+    // 根据命令类型选择对应的 runtime 路径
+    if (['node', 'npm', 'npx', 'bun'].includes(basename)) {
+      if (!this.bunRuntimePath) {
+        return command
+      }
+
+      // 对于 node/npm/npx，统一替换为 bun
+      const targetCommand = ['node', 'npm', 'npx'].includes(basename) ? 'bun' : 'bun'
+
+      if (process.platform === 'win32') {
+        return path.join(this.bunRuntimePath, `${targetCommand}.exe`)
+      } else {
+        return path.join(this.bunRuntimePath, targetCommand)
+      }
+    } else if (['uv', 'uvx'].includes(basename)) {
+      if (!this.uvRuntimePath) {
+        return command
+      }
+
+      // uv 和 uvx 都使用对应的命令
+      const targetCommand = basename === 'uvx' ? 'uvx' : 'uv'
+
+      if (process.platform === 'win32') {
+        return path.join(this.uvRuntimePath, `${targetCommand}.exe`)
+      } else {
+        return path.join(this.uvRuntimePath, targetCommand)
+      }
+    }
+
+    return command
+  }
+
+  // 处理特殊参数替换（如 npx -> bun x, uvx -> uv x）
+  private processCommandWithArgs(
+    command: string,
+    args: string[]
+  ): { command: string; args: string[] } {
+    const basename = path.basename(command)
+
+    // 如果原命令是 npx，需要在参数前添加 'x'
+    if (basename === 'npx' || command.includes('npx')) {
+      return {
+        command: this.replaceWithRuntimeCommand(command),
+        args: ['x', ...args]
+      }
+    }
+
+    // 如果原命令是 uvx，需要在参数前添加 'x'
+    if (basename === 'uvx' || command.includes('uvx')) {
+      return {
+        command: this.replaceWithRuntimeCommand(command),
+        args: ['x', ...args]
+      }
+    }
+
+    return {
+      command: this.replaceWithRuntimeCommand(command),
+      args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
+    }
+  }
+
   // 获取系统特定的默认路径
   private getDefaultPaths(homeDir: string): string[] {
     if (process.platform === 'darwin') {
@@ -126,26 +193,46 @@ export class McpClient {
     this.serverConfig = serverConfig
     this.npmRegistry = npmRegistry
 
-    const runtimePath = path
-      .join(app.getAppPath(), 'runtime', 'node')
+    const runtimeBasePath = path
+      .join(app.getAppPath(), 'runtime')
       .replace('app.asar', 'app.asar.unpacked')
-    console.info('runtimePath', runtimePath)
-    // 检查运行时文件是否存在
+    console.info('runtimeBasePath', runtimeBasePath)
+
+    // 检查 bun 运行时文件是否存在
+    const bunRuntimePath = path.join(runtimeBasePath, 'bun')
     if (process.platform === 'win32') {
-      const nodeExe = path.join(runtimePath, 'node.exe')
-      const npxCmd = path.join(runtimePath, 'npx.cmd')
-      if (fs.existsSync(nodeExe) && fs.existsSync(npxCmd)) {
-        this.nodeRuntimePath = runtimePath
+      const bunExe = path.join(bunRuntimePath, 'bun.exe')
+      if (fs.existsSync(bunExe)) {
+        this.bunRuntimePath = bunRuntimePath
       } else {
-        this.nodeRuntimePath = null
+        this.bunRuntimePath = null
       }
     } else {
-      const nodeBin = path.join(runtimePath, 'bin', 'node')
-      const npxBin = path.join(runtimePath, 'bin', 'npx')
-      if (fs.existsSync(nodeBin) && fs.existsSync(npxBin)) {
-        this.nodeRuntimePath = runtimePath
+      const bunBin = path.join(bunRuntimePath, 'bun')
+      if (fs.existsSync(bunBin)) {
+        this.bunRuntimePath = bunRuntimePath
       } else {
-        this.nodeRuntimePath = null
+        this.bunRuntimePath = null
+      }
+    }
+
+    // 检查 uv 运行时文件是否存在
+    const uvRuntimePath = path.join(runtimeBasePath, 'uv')
+    if (process.platform === 'win32') {
+      const uvExe = path.join(uvRuntimePath, 'uv.exe')
+      const uvxExe = path.join(uvRuntimePath, 'uvx.exe')
+      if (fs.existsSync(uvExe) && fs.existsSync(uvxExe)) {
+        this.uvRuntimePath = uvRuntimePath
+      } else {
+        this.uvRuntimePath = null
+      }
+    } else {
+      const uvBin = path.join(uvRuntimePath, 'uv')
+      const uvxBin = path.join(uvRuntimePath, 'uvx')
+      if (fs.existsSync(uvBin) && fs.existsSync(uvxBin)) {
+        this.uvRuntimePath = uvRuntimePath
+      } else {
+        this.uvRuntimePath = null
       }
     }
   }
@@ -201,7 +288,9 @@ export class McpClient {
           'NPM_CONFIG_REGISTRY',
           'NPM_CONFIG_CACHE',
           'NPM_CONFIG_PREFIX',
-          'NPM_CONFIG_TMP'
+          'NPM_CONFIG_TMP',
+          'BUN_CONFIG_REGISTRY',
+          'UV_CONFIG_REGISTRY'
           // 'GRPC_PROXY',
           // 'grpc_proxy'
         ]
@@ -209,11 +298,18 @@ export class McpClient {
         // 修复env类型问题
         const env: Record<string, string> = {}
 
-        // 判断是否是 Node.js 相关命令
-        const isNodeCommand = ['node', 'npm', 'npx'].some((cmd) => command.includes(cmd))
+        // 处理命令和参数替换
+        const processedCommand = this.processCommandWithArgs(command, args)
+        command = processedCommand.command
+        args = processedCommand.args
+
+        // 判断是否是 Node.js/Bun/UV 相关命令
+        const isNodeCommand = ['node', 'npm', 'npx', 'bun', 'uv', 'uvx'].some(
+          (cmd) => command.includes(cmd) || args.some((arg) => arg.includes(cmd))
+        )
 
         if (isNodeCommand) {
-          // Node.js 命令使用白名单处理
+          // Node.js/Bun/UV 命令使用白名单处理
           if (process.env) {
             const existingPaths: string[] = []
 
@@ -236,10 +332,13 @@ export class McpClient {
 
             // 合并所有路径
             const allPaths = [...existingPaths, ...defaultPaths]
-            if (this.nodeRuntimePath) {
-              allPaths.unshift(
-                process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
-              )
+            // 添加 bun runtime 路径
+            if (this.bunRuntimePath) {
+              allPaths.unshift(this.bunRuntimePath)
+            }
+            // 添加 uv runtime 路径
+            if (this.uvRuntimePath) {
+              allPaths.unshift(this.uvRuntimePath)
             }
 
             // 规范化并设置PATH
@@ -247,7 +346,7 @@ export class McpClient {
             env[key] = value
           }
         } else {
-          // 非 Node.js 命令，保留所有系统环境变量，只补充 PATH
+          // 非 Node.js/Bun/UV 命令，保留所有系统环境变量，只补充 PATH
           Object.entries(process.env).forEach(([key, value]) => {
             if (value !== undefined) {
               env[key] = value
@@ -268,10 +367,13 @@ export class McpClient {
 
           // 合并所有路径
           const allPaths = [...existingPaths, ...defaultPaths]
-          if (this.nodeRuntimePath) {
-            allPaths.unshift(
-              process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
-            )
+          // 添加 bun runtime 路径
+          if (this.bunRuntimePath) {
+            allPaths.unshift(this.bunRuntimePath)
+          }
+          // 添加 uv runtime 路径
+          if (this.uvRuntimePath) {
+            allPaths.unshift(this.uvRuntimePath)
           }
 
           // 规范化并设置PATH
@@ -301,6 +403,9 @@ export class McpClient {
 
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
+          // 为 bun 和 uv 也设置对应的 registry
+          env.BUN_CONFIG_REGISTRY = this.npmRegistry
+          env.UV_CONFIG_REGISTRY = this.npmRegistry
         }
 
         console.log('mcp env', env)
