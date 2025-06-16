@@ -55,6 +55,7 @@ export class McpClient {
   private bunRuntimePath: string | null = null
   private uvRuntimePath: string | null = null
   private npmRegistry: string | null = null
+  private uvRegistry: string | null = null
 
   // 缓存
   private cachedTools: Tool[] | null = null
@@ -148,7 +149,18 @@ export class McpClient {
       }
     }
 
-    // uvx 保持原样，不需要额外处理
+    // 如果是 uv 或 uvx 命令，且存在 uvRegistry，添加 --index 参数
+    if (['uv', 'uvx'].includes(basename) && this.uvRegistry) {
+      return {
+        command: this.replaceWithRuntimeCommand(command),
+        args: [
+          '--index',
+          this.uvRegistry,
+          ...args.map((arg) => this.replaceWithRuntimeCommand(arg))
+        ]
+      }
+    }
+
     return {
       command: this.replaceWithRuntimeCommand(command),
       args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
@@ -180,11 +192,13 @@ export class McpClient {
   constructor(
     serverName: string,
     serverConfig: Record<string, unknown>,
-    npmRegistry: string | null = null
+    npmRegistry: string | null = null,
+    uvRegistry: string | null = null
   ) {
     this.serverName = serverName
     this.serverConfig = serverConfig
     this.npmRegistry = npmRegistry
+    this.uvRegistry = uvRegistry
 
     const runtimeBasePath = path
       .join(app.getAppPath(), 'runtime')
@@ -281,9 +295,7 @@ export class McpClient {
           'NPM_CONFIG_REGISTRY',
           'NPM_CONFIG_CACHE',
           'NPM_CONFIG_PREFIX',
-          'NPM_CONFIG_TMP',
-          'BUN_CONFIG_REGISTRY',
-          'UV_CONFIG_REGISTRY'
+          'NPM_CONFIG_TMP'
           // 'GRPC_PROXY',
           // 'grpc_proxy'
         ]
@@ -396,12 +408,9 @@ export class McpClient {
 
         if (this.npmRegistry) {
           env.npm_config_registry = this.npmRegistry
-          // 为 bun 和 uv 也设置对应的 registry
-          env.BUN_CONFIG_REGISTRY = this.npmRegistry
-          env.UV_CONFIG_REGISTRY = this.npmRegistry
         }
 
-        console.log('mcp env', env)
+        console.log('mcp env', command, args, env)
         this.transport = new StdioClientTransport({
           command,
           args,

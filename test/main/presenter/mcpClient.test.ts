@@ -112,7 +112,10 @@ describe('McpClient Runtime Command Processing Tests', () => {
       const client = new McpClient('everything', serverConfig)
 
       // Access private method for testing
-      const processedCommand = (client as any).processCommandWithArgs('npx', ['-y', '@modelcontextprotocol/server-everything'])
+      const processedCommand = (client as any).processCommandWithArgs('npx', [
+        '-y',
+        '@modelcontextprotocol/server-everything'
+      ])
 
       // Should convert npx to bun and add 'x' as first argument
       expect(processedCommand.command).toContain('bun')
@@ -129,15 +132,21 @@ describe('McpClient Runtime Command Processing Tests', () => {
       const client = new McpClient('everything', serverConfig)
 
       // Mock the runtime path for testing
-      const bunRuntimePath = path.join('/mock/app/runtime/bun').replace('app.asar', 'app.asar.unpacked')
+      const bunRuntimePath = path
+        .join('/mock/app/runtime/bun')
+        .replace('app.asar', 'app.asar.unpacked')
       ;(client as any).bunRuntimePath = bunRuntimePath
 
-      const processedCommand = (client as any).processCommandWithArgs('npx', ['-y', '@modelcontextprotocol/server-everything'])
+      const processedCommand = (client as any).processCommandWithArgs('npx', [
+        '-y',
+        '@modelcontextprotocol/server-everything'
+      ])
 
       // Should use the runtime path
-      const expectedBunPath = process.platform === 'win32'
-        ? path.join(bunRuntimePath, 'bun.exe')
-        : path.join(bunRuntimePath, 'bun')
+      const expectedBunPath =
+        process.platform === 'win32'
+          ? path.join(bunRuntimePath, 'bun.exe')
+          : path.join(bunRuntimePath, 'bun')
 
       expect(processedCommand.command).toBe(expectedBunPath)
       expect(processedCommand.args).toEqual(['x', '-y', '@modelcontextprotocol/server-everything'])
@@ -152,7 +161,10 @@ describe('McpClient Runtime Command Processing Tests', () => {
 
       const client = new McpClient('everything', serverConfig)
 
-      const processedCommand = (client as any).processCommandWithArgs('/usr/local/bin/npx', ['-y', '@modelcontextprotocol/server-everything'])
+      const processedCommand = (client as any).processCommandWithArgs('/usr/local/bin/npx', [
+        '-y',
+        '@modelcontextprotocol/server-everything'
+      ])
 
       // Should still convert to bun x regardless of npx path
       expect(processedCommand.command).toContain('bun')
@@ -187,15 +199,18 @@ describe('McpClient Runtime Command Processing Tests', () => {
       const client = new McpClient('osm-mcp-server', serverConfig)
 
       // Mock the runtime path for testing
-      const uvRuntimePath = path.join('/mock/app/runtime/uv').replace('app.asar', 'app.asar.unpacked')
+      const uvRuntimePath = path
+        .join('/mock/app/runtime/uv')
+        .replace('app.asar', 'app.asar.unpacked')
       ;(client as any).uvRuntimePath = uvRuntimePath
 
       const processedCommand = (client as any).processCommandWithArgs('uvx', ['osm-mcp-server'])
 
       // Should use the runtime path
-      const expectedUvxPath = process.platform === 'win32'
-        ? path.join(uvRuntimePath, 'uvx.exe')
-        : path.join(uvRuntimePath, 'uvx')
+      const expectedUvxPath =
+        process.platform === 'win32'
+          ? path.join(uvRuntimePath, 'uvx.exe')
+          : path.join(uvRuntimePath, 'uvx')
 
       expect(processedCommand.command).toBe(expectedUvxPath)
       expect(processedCommand.args).toEqual(['osm-mcp-server'])
@@ -210,7 +225,9 @@ describe('McpClient Runtime Command Processing Tests', () => {
 
       const client = new McpClient('osm-mcp-server', serverConfig)
 
-      const processedCommand = (client as any).processCommandWithArgs('/usr/local/bin/uvx', ['osm-mcp-server'])
+      const processedCommand = (client as any).processCommandWithArgs('/usr/local/bin/uvx', [
+        'osm-mcp-server'
+      ])
 
       // Should replace with runtime uvx path
       expect(processedCommand.command).toContain('uvx')
@@ -285,7 +302,7 @@ describe('McpClient Runtime Command Processing Tests', () => {
   })
 
   describe('Runtime Path Detection', () => {
-        it('should detect bun runtime when files exist', () => {
+    it('should detect bun runtime when files exist', () => {
       mockFsExistsSync.mockImplementation((filePath: string | Buffer | URL) => {
         const pathStr = String(filePath)
         return pathStr.includes('runtime/bun/bun')
