@@ -133,7 +133,7 @@ export class McpClient {
     return command
   }
 
-  // 处理特殊参数替换（如 npx -> bun x, uvx -> uv x）
+  // 处理特殊参数替换（如 npx -> bun x）
   private processCommandWithArgs(
     command: string,
     args: string[]
@@ -148,14 +148,7 @@ export class McpClient {
       }
     }
 
-    // 如果原命令是 uvx，需要在参数前添加 'x'
-    if (basename === 'uvx' || command.includes('uvx')) {
-      return {
-        command: this.replaceWithRuntimeCommand(command),
-        args: ['x', ...args]
-      }
-    }
-
+    // uvx 保持原样，不需要额外处理
     return {
       command: this.replaceWithRuntimeCommand(command),
       args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
