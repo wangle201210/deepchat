@@ -72,11 +72,11 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
 
 export class PowerpackServer {
   private server: Server
-  private nodeRuntimePath: string | null = null
+  private bunRuntimePath: string | null = null
 
   constructor() {
-    // 查找内置的Node运行时路径
-    this.setupNodeRuntime()
+    // 查找内置的Bun运行时路径
+    this.setupBunRuntime()
 
     // 创建服务器实例
     this.server = new Server(
@@ -95,26 +95,26 @@ export class PowerpackServer {
     this.setupRequestHandlers()
   }
 
-  // 设置Node运行时路径
-  private setupNodeRuntime(): void {
+  // 设置Bun运行时路径
+  private setupBunRuntime(): void {
     const runtimePath = path
-      .join(app.getAppPath(), 'runtime', 'node')
+      .join(app.getAppPath(), 'runtime', 'bun')
       .replace('app.asar', 'app.asar.unpacked')
 
     if (process.platform === 'win32') {
-      const nodeExe = path.join(runtimePath, 'node.exe')
-      if (fs.existsSync(nodeExe)) {
-        this.nodeRuntimePath = runtimePath
+      const bunExe = path.join(runtimePath, 'bun.exe')
+      if (fs.existsSync(bunExe)) {
+        this.bunRuntimePath = runtimePath
       }
     } else {
-      const nodeBin = path.join(runtimePath, 'bin', 'node')
-      if (fs.existsSync(nodeBin)) {
-        this.nodeRuntimePath = path.join(runtimePath, 'bin')
+      const bunBin = path.join(runtimePath, 'bun')
+      if (fs.existsSync(bunBin)) {
+        this.bunRuntimePath = runtimePath
       }
     }
 
-    if (!this.nodeRuntimePath) {
-      console.warn('未找到内置Node运行时，代码执行功能将不可用')
+    if (!this.bunRuntimePath) {
+      console.warn('未找到内置Bun运行时，代码执行功能将不可用')
     }
   }
 
@@ -138,10 +138,10 @@ export class PowerpackServer {
     return `${userQuery} ${actualTime}`
   }
 
-  // 执行Node代码
-  private async executeNodeCode(code: string, timeout: number): Promise<string> {
-    if (!this.nodeRuntimePath) {
-      throw new Error('Node运行时未找到，无法执行代码')
+  // 执行Bun代码
+  private async executeBunCode(code: string, timeout: number): Promise<string> {
+    if (!this.bunRuntimePath) {
+      throw new Error('Bun运行时未找到，无法执行代码')
     }
 
     // 检查代码安全性
@@ -158,13 +158,13 @@ export class PowerpackServer {
       fs.writeFileSync(tempFile, code)
 
       // 准备执行命令
-      const nodeExecutable =
+      const bunExecutable =
         process.platform === 'win32'
-          ? path.join(this.nodeRuntimePath, 'node.exe')
-          : path.join(this.nodeRuntimePath, 'node')
+          ? path.join(this.bunRuntimePath, 'bun.exe')
+          : path.join(this.bunRuntimePath, 'bun')
 
       // 执行代码并添加超时控制
-      const execPromise = promisify(execFile)(nodeExecutable, [tempFile], {
+      const execPromise = promisify(execFile)(bunExecutable, [tempFile], {
         timeout,
         windowsHide: true
       })
@@ -236,16 +236,16 @@ export class PowerpackServer {
         }
       ]
 
-      // 只有在Node运行时可用时才添加代码执行工具
-      if (this.nodeRuntimePath) {
+      // 只有在Bun运行时可用时才添加代码执行工具
+      if (this.bunRuntimePath) {
         tools.push({
           name: 'run_node_code',
           description:
-            'Execute simple Node.js code in a secure sandbox environment. Suitable for calculations, data transformations, encryption/decryption, and network operations. ' +
+            'Execute simple JavaScript/TypeScript code in a secure Bun sandbox environment. Suitable for calculations, data transformations, encryption/decryption, and network operations. ' +
             'The code needs to be output to the console, and the output content needs to be formatted as a string. ' +
             'For security reasons, the code cannot perform file operations, modify system settings, spawn child processes, or execute external code from network. ' +
             'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
-            'When a problem can be solved by a simple and secure Node.js code or you have generated a simple code for the user and want to execute it, please use this tool, providing more reliable information to the user.',
+            'When a problem can be solved by a simple and secure JavaScript/TypeScript code or you have generated a simple code for the user and want to execute it, please use this tool, providing more reliable information to the user.',
           inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
         })
       }
@@ -335,9 +335,9 @@ export class PowerpackServer {
           }
 
           case 'run_node_code': {
-            // 再次检查Node运行时是否可用
-            if (!this.nodeRuntimePath) {
-              throw new Error('Node runtime is not available, cannot execute code')
+            // 再次检查Bun运行时是否可用
+            if (!this.bunRuntimePath) {
+              throw new Error('Bun runtime is not available, cannot execute code')
             }
 
             const parsed = RunNodeCodeArgsSchema.safeParse(args)
@@ -346,7 +346,7 @@ export class PowerpackServer {
             }
 
             const { code, timeout } = parsed.data
-            const result = await this.executeNodeCode(code, timeout)
+            const result = await this.executeBunCode(code, timeout)
 
             return {
               content: [
