@@ -230,7 +230,9 @@ watch(
 
     // 如果没有偏好模型或偏好模型不可用，使用第一个可用模型
     if (settingsStore.enabledModels.length > 0) {
-      const model = settingsStore.enabledModels[0]?.models.find(m => m.type === ModelType.Chat)
+      const model = settingsStore.enabledModels
+        .flatMap(provider => provider.models)
+        .find(m => m.type === ModelType.Chat)
       if (model) {
         activeModel.value = {
           name: model.name,
