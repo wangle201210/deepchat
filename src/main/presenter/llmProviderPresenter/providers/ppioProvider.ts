@@ -154,8 +154,6 @@ export class PPIOProvider extends OpenAICompatibleProvider {
 
         // Extract model information
         const modelId = ppioModel.id
-        const contextLength = ppioModel.context_size || 4096
-        const maxTokens = ppioModel.max_output_tokens || 2048
         const features = ppioModel.features || []
 
         // Check features for capabilities
@@ -163,8 +161,12 @@ export class PPIOProvider extends OpenAICompatibleProvider {
         const hasVision = features.includes('vision')
         // const hasStructuredOutputs = features.includes('structured-outputs')
 
-        // Get existing model configuration
+        // Get existing model configuration first
         const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
+
+        // Extract configuration values with proper fallback priority: API -> existing config -> default
+        const contextLength = ppioModel.context_size || existingConfig.contextLength || 4096
+        const maxTokens = ppioModel.max_output_tokens || existingConfig.maxTokens || 2048
 
         // Build new configuration based on API response
         const newConfig = {
