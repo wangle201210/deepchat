@@ -234,7 +234,7 @@ watch(
         .flatMap((provider) =>
           provider.models.map((m) => ({ ...m, providerId: provider.providerId }))
         )
-        .find((m) => m.type === ModelType.Chat)
+        .find((m) => m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
       if (model) {
         activeModel.value = {
           name: model.name,
