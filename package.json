@@ -43,14 +43,14 @@
     "afterSign": "scripts/notarize.js",
     "installRuntime": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun",
     "installRuntime:win:x64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a x64 -p win32 && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a x64 -p win32",
-    "installRuntime:win:arm64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a arm64 -p win32 && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a arm64 -p win32",
+    "installRuntime:win:arm64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a arm64 -p win32 && npx -y tiny-runtime-injector --type node --dir ./runtime/node -a arm64 -p win32",
     "installRuntime:mac:arm64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a arm64 -p darwin && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a arm64 -p darwin",
     "installRuntime:mac:x64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a x64 -p darwin && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a x64 -p darwin",
     "installRuntime:linux:x64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a x64 -p linux && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a x64 -p linux",
     "installRuntime:linux:arm64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a arm64 -p linux && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a arm64 -p linux",
     "i18n": "i18n-check -s zh-CN -f i18next --locales src/renderer/src/i18n",
     "i18n:en": "i18n-check -s en-US -f i18next --locales src/renderer/src/i18n",
-    "cleanRuntime": "rm -rf runtime/uv runtime/bun"
+    "cleanRuntime": "rm -rf runtime/uv runtime/bun runtime/node"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.53.0",

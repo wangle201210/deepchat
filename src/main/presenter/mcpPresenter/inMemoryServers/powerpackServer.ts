@@ -73,10 +73,11 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
 export class PowerpackServer {
   private server: Server
   private bunRuntimePath: string | null = null
+  private nodeRuntimePath: string | null = null
 
   constructor() {
-    // 查找内置的Bun运行时路径
-    this.setupBunRuntime()
+    // 查找内置的运行时路径
+    this.setupRuntimes()
 
     // 创建服务器实例
     this.server = new Server(
@@ -95,26 +96,46 @@ export class PowerpackServer {
     this.setupRequestHandlers()
   }
 
-  // 设置Bun运行时路径
-  private setupBunRuntime(): void {
-    const runtimePath = path
-      .join(app.getAppPath(), 'runtime', 'bun')
+  // 设置运行时路径
+  private setupRuntimes(): void {
+    const runtimeBasePath = path
+      .join(app.getAppPath(), 'runtime')
       .replace('app.asar', 'app.asar.unpacked')
 
+    // 设置 Bun 运行时路径
+    const bunRuntimePath = path.join(runtimeBasePath, 'bun')
     if (process.platform === 'win32') {
-      const bunExe = path.join(runtimePath, 'bun.exe')
+      const bunExe = path.join(bunRuntimePath, 'bun.exe')
       if (fs.existsSync(bunExe)) {
-        this.bunRuntimePath = runtimePath
+        this.bunRuntimePath = bunRuntimePath
       }
     } else {
-      const bunBin = path.join(runtimePath, 'bun')
+      const bunBin = path.join(bunRuntimePath, 'bun')
       if (fs.existsSync(bunBin)) {
-        this.bunRuntimePath = runtimePath
+        this.bunRuntimePath = bunRuntimePath
       }
     }
 
-    if (!this.bunRuntimePath) {
-      console.warn('未找到内置Bun运行时，代码执行功能将不可用')
+    // 设置 Node.js 运行时路径
+    const nodeRuntimePath = path.join(runtimeBasePath, 'node')
+    if (process.platform === 'win32') {
+      const nodeExe = path.join(nodeRuntimePath, 'node.exe')
+      if (fs.existsSync(nodeExe)) {
+        this.nodeRuntimePath = nodeRuntimePath
+      }
+    } else {
+      const nodeBin = path.join(nodeRuntimePath, 'bin', 'node')
+      if (fs.existsSync(nodeBin)) {
+        this.nodeRuntimePath = nodeRuntimePath
+      }
+    }
+
+    if (!this.bunRuntimePath && !this.nodeRuntimePath) {
+      console.warn('未找到内置运行时（Bun或Node.js），代码执行功能将不可用')
+    } else if (this.bunRuntimePath) {
+      console.info('使用内置Bun运行时')
+    } else if (this.nodeRuntimePath) {
+      console.info('使用内置Node.js运行时')
     }
   }
 
@@ -138,10 +159,10 @@ export class PowerpackServer {
     return `${userQuery} ${actualTime}`
   }
 
-  // 执行Bun代码
-  private async executeBunCode(code: string, timeout: number): Promise<string> {
-    if (!this.bunRuntimePath) {
-      throw new Error('Bun运行时未找到，无法执行代码')
+  // 执行JavaScript代码
+  private async executeJavaScriptCode(code: string, timeout: number): Promise<string> {
+    if (!this.bunRuntimePath && !this.nodeRuntimePath) {
+      throw new Error('运行时未找到，无法执行代码')
     }
 
     // 检查代码安全性
@@ -157,14 +178,28 @@ export class PowerpackServer {
       // 写入代码到临时文件
       fs.writeFileSync(tempFile, code)
 
-      // 准备执行命令
-      const bunExecutable =
-        process.platform === 'win32'
-          ? path.join(this.bunRuntimePath, 'bun.exe')
-          : path.join(this.bunRuntimePath, 'bun')
+      let executable: string
+      let args: string[]
+
+      // 优先使用 Bun，如果不可用则使用 Node.js
+      if (this.bunRuntimePath) {
+        executable =
+          process.platform === 'win32'
+            ? path.join(this.bunRuntimePath, 'bun.exe')
+            : path.join(this.bunRuntimePath, 'bun')
+        args = [tempFile]
+      } else if (this.nodeRuntimePath) {
+        executable =
+          process.platform === 'win32'
+            ? path.join(this.nodeRuntimePath, 'node.exe')
+            : path.join(this.nodeRuntimePath, 'bin', 'node')
+        args = [tempFile]
+      } else {
+        throw new Error('未找到可用的JavaScript运行时')
+      }
 
       // 执行代码并添加超时控制
-      const execPromise = promisify(execFile)(bunExecutable, [tempFile], {
+      const execPromise = promisify(execFile)(executable, args, {
         timeout,
         windowsHide: true
       })
@@ -236,12 +271,12 @@ export class PowerpackServer {
         }
       ]
 
-      // 只有在Bun运行时可用时才添加代码执行工具
-      if (this.bunRuntimePath) {
+      // 只有在JavaScript运行时可用时才添加代码执行工具
+      if (this.bunRuntimePath || this.nodeRuntimePath) {
         tools.push({
           name: 'run_node_code',
           description:
-            'Execute simple JavaScript/TypeScript code in a secure Bun sandbox environment. Suitable for calculations, data transformations, encryption/decryption, and network operations. ' +
+            'Execute simple JavaScript/TypeScript code in a secure sandbox environment (Bun or Node.js). Suitable for calculations, data transformations, encryption/decryption, and network operations. ' +
             'The code needs to be output to the console, and the output content needs to be formatted as a string. ' +
             'For security reasons, the code cannot perform file operations, modify system settings, spawn child processes, or execute external code from network. ' +
             'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
@@ -335,9 +370,9 @@ export class PowerpackServer {
           }
 
           case 'run_node_code': {
-            // 再次检查Bun运行时是否可用
-            if (!this.bunRuntimePath) {
-              throw new Error('Bun runtime is not available, cannot execute code')
+            // 再次检查JavaScript运行时是否可用
+            if (!this.bunRuntimePath && !this.nodeRuntimePath) {
+              throw new Error('JavaScript runtime is not available, cannot execute code')
             }
 
             const parsed = RunNodeCodeArgsSchema.safeParse(args)
@@ -346,7 +381,7 @@ export class PowerpackServer {
             }
 
             const { code, timeout } = parsed.data
-            const result = await this.executeBunCode(code, timeout)
+            const result = await this.executeJavaScriptCode(code, timeout)
 
             return {
               content: [

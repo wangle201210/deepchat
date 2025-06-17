@@ -53,6 +53,7 @@ export class McpClient {
   private isConnected: boolean = false
   private connectionTimeout: NodeJS.Timeout | null = null
   private bunRuntimePath: string | null = null
+  private nodeRuntimePath: string | null = null
   private uvRuntimePath: string | null = null
   private npmRegistry: string | null = null
   private uvRegistry: string | null = null
@@ -104,17 +105,36 @@ export class McpClient {
 
     // 根据命令类型选择对应的 runtime 路径
     if (['node', 'npm', 'npx', 'bun'].includes(basename)) {
-      if (!this.bunRuntimePath) {
-        return command
-      }
+      // 优先使用 Bun，如果不可用则使用 Node.js
+      if (this.bunRuntimePath) {
+        // 对于 node/npm/npx，统一替换为 bun
+        const targetCommand = ['node', 'npm', 'npx'].includes(basename) ? 'bun' : 'bun'
 
-      // 对于 node/npm/npx，统一替换为 bun
-      const targetCommand = ['node', 'npm', 'npx'].includes(basename) ? 'bun' : 'bun'
+        if (process.platform === 'win32') {
+          return path.join(this.bunRuntimePath, `${targetCommand}.exe`)
+        } else {
+          return path.join(this.bunRuntimePath, targetCommand)
+        }
+      } else if (this.nodeRuntimePath) {
+        // 使用 Node.js 运行时
+        let targetCommand: string
+        if (basename === 'node') {
+          targetCommand = 'node'
+        } else if (basename === 'npm') {
+          targetCommand = 'npm'
+        } else if (basename === 'npx') {
+          targetCommand = 'npx'
+        } else if (basename === 'bun') {
+          targetCommand = 'node' // 将 bun 命令映射到 node
+        } else {
+          targetCommand = basename
+        }
 
-      if (process.platform === 'win32') {
-        return path.join(this.bunRuntimePath, `${targetCommand}.exe`)
-      } else {
-        return path.join(this.bunRuntimePath, targetCommand)
+        if (process.platform === 'win32') {
+          return path.join(this.nodeRuntimePath, `${targetCommand}.exe`)
+        } else {
+          return path.join(this.nodeRuntimePath, 'bin', targetCommand)
+        }
       }
     } else if (['uv', 'uvx'].includes(basename)) {
       if (!this.uvRuntimePath) {
@@ -141,11 +161,23 @@ export class McpClient {
   ): { command: string; args: string[] } {
     const basename = path.basename(command)
 
-    // 如果原命令是 npx，需要在参数前添加 'x'
-    if (basename === 'npx' || command.includes('npx')) {
+    // 如果原命令是 npx 且使用 Bun 运行时，需要在参数前添加 'x'
+    if ((basename === 'npx' || command.includes('npx')) && this.bunRuntimePath) {
       return {
         command: this.replaceWithRuntimeCommand(command),
         args: ['x', ...args]
+      }
+    }
+
+    // 如果原命令是 npx 且使用 Node.js 运行时，保持原有参数
+    if (
+      (basename === 'npx' || command.includes('npx')) &&
+      this.nodeRuntimePath &&
+      !this.bunRuntimePath
+    ) {
+      return {
+        command: this.replaceWithRuntimeCommand(command),
+        args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
       }
     }
 
@@ -220,6 +252,24 @@ export class McpClient {
         this.bunRuntimePath = bunRuntimePath
       } else {
         this.bunRuntimePath = null
+      }
+    }
+
+    // 检查 node 运行时文件是否存在
+    const nodeRuntimePath = path.join(runtimeBasePath, 'node')
+    if (process.platform === 'win32') {
+      const nodeExe = path.join(nodeRuntimePath, 'node.exe')
+      if (fs.existsSync(nodeExe)) {
+        this.nodeRuntimePath = nodeRuntimePath
+      } else {
+        this.nodeRuntimePath = null
+      }
+    } else {
+      const nodeBin = path.join(nodeRuntimePath, 'bin', 'node')
+      if (fs.existsSync(nodeBin)) {
+        this.nodeRuntimePath = nodeRuntimePath
+      } else {
+        this.nodeRuntimePath = null
       }
     }
 
@@ -337,11 +387,17 @@ export class McpClient {
 
             // 合并所有路径
             const allPaths = [...existingPaths, ...defaultPaths]
-            // 添加 bun runtime 路径
+            // 添加运行时路径（优先级：bun > node > uv）
             if (this.bunRuntimePath) {
               allPaths.unshift(this.bunRuntimePath)
             }
-            // 添加 uv runtime 路径
+            if (this.nodeRuntimePath) {
+              if (process.platform === 'win32') {
+                allPaths.unshift(this.nodeRuntimePath)
+              } else {
+                allPaths.unshift(path.join(this.nodeRuntimePath, 'bin'))
+              }
+            }
             if (this.uvRuntimePath) {
               allPaths.unshift(this.uvRuntimePath)
             }
@@ -372,11 +428,17 @@ export class McpClient {
 
           // 合并所有路径
           const allPaths = [...existingPaths, ...defaultPaths]
-          // 添加 bun runtime 路径
+          // 添加运行时路径（优先级：bun > node > uv）
           if (this.bunRuntimePath) {
             allPaths.unshift(this.bunRuntimePath)
           }
-          // 添加 uv runtime 路径
+          if (this.nodeRuntimePath) {
+            if (process.platform === 'win32') {
+              allPaths.unshift(this.nodeRuntimePath)
+            } else {
+              allPaths.unshift(path.join(this.nodeRuntimePath, 'bin'))
+            }
+          }
           if (this.uvRuntimePath) {
             allPaths.unshift(this.uvRuntimePath)
           }
