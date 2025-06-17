@@ -114,6 +114,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { useEventListener } from '@vueuse/core'
 import { useThemeStore } from '@/stores/theme'
 import { useLanguageStore } from '@/stores/language'
+import { ModelType } from '@shared/model'
 
 const configPresenter = usePresenter('configPresenter')
 const themeStore = useThemeStore()
@@ -229,12 +230,12 @@ watch(
 
     // 如果没有偏好模型或偏好模型不可用，使用第一个可用模型
     if (settingsStore.enabledModels.length > 0) {
-      const model = settingsStore.enabledModels[0].models[0]
+      const model = settingsStore.enabledModels[0]?.models.find(m => m.type === ModelType.Chat)
       if (model) {
         activeModel.value = {
           name: model.name,
           id: model.id,
-          providerId: settingsStore.enabledModels[0].providerId,
+          providerId: model.providerId,
           tags: []
         }
       }
