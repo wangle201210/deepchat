@@ -196,7 +196,7 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
         // Type the model as OpenRouter specific response
         const openRouterModel = model as unknown as OpenRouterModelResponse
 
-                // Extract model information
+        // Extract model information
         const modelId = openRouterModel.id
         const supportedParameters = openRouterModel.supported_parameters || []
         const inputModalities = openRouterModel.architecture?.input_modalities || []
@@ -204,14 +204,21 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
         // Check capabilities based on supported parameters and architecture
         const hasFunctionCalling = supportedParameters.includes('tools')
         const hasVision = inputModalities.includes('image')
-        const hasReasoning = supportedParameters.includes('reasoning') || supportedParameters.includes('include_reasoning')
+        const hasReasoning =
+          supportedParameters.includes('reasoning') ||
+          supportedParameters.includes('include_reasoning')
 
         // Get existing model configuration first
         const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
 
         // Extract configuration values with proper fallback priority: API -> existing config -> default
-        const contextLength = openRouterModel.context_length || openRouterModel.top_provider?.context_length || existingConfig.contextLength || 4096
-        const maxTokens = openRouterModel.top_provider?.max_completion_tokens || existingConfig.maxTokens || 2048
+        const contextLength =
+          openRouterModel.context_length ||
+          openRouterModel.top_provider?.context_length ||
+          existingConfig.contextLength ||
+          4096
+        const maxTokens =
+          openRouterModel.top_provider?.max_completion_tokens || existingConfig.maxTokens || 2048
 
         // Build new configuration based on API response
         const newConfig = {
@@ -268,7 +275,6 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
 
       console.log(`Processed ${models.length} OpenRouter models with dynamic configuration updates`)
       return models
-
     } catch (error) {
       console.error('Error fetching OpenRouter models:', error)
       // Fallback to parent implementation

@@ -221,7 +221,6 @@ export class PPIOProvider extends OpenAICompatibleProvider {
 
       console.log(`Processed ${models.length} PPIO models with dynamic configuration updates`)
       return models
-
     } catch (error) {
       console.error('Error fetching PPIO models:', error)
       // Fallback to parent implementation
