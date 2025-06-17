@@ -469,6 +469,17 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   ppio: {
     models: [
       {
+        id: 'minimaxai/minimax-m1-80k',
+        name: 'Minimax M1 80K',
+        temperature: 0.6,
+        maxTokens: 40_000,
+        contextLength: 128000,
+        match: ['minimaxai/minimax-m1-80k'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      {
         id: 'deepseek/deepseek-r1-0528',
         name: 'DeepSeek R1 0528',
         temperature: 1,

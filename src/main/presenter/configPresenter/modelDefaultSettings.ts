@@ -1350,6 +1350,17 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
 
   // MiniMax模型配置
   {
+    id: 'minimax-m1-80k',
+    name: 'MiniMax M1 80K',
+    temperature: 0.7,
+    maxTokens: 40_000,
+    contextLength: 128_000,
+    match: ['minimax-m1-80k'],
+    vision: false,
+    functionCall: true,
+    reasoning: false
+  },
+  {
     id: 'minimax-01',
     name: 'MiniMax 01',
     temperature: 0.7,
