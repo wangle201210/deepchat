@@ -698,37 +698,37 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
                     }
                   }
                 } else {
-                  // Non-native FC: Add tool result to conversation history for next LLM turn.
+                  // Non-native FC: Add tool execution record to conversation history for next LLM turn.
 
-                  // 1. Format tool execution result into prompt-defined text.
-                  const formattedToolResultText = `<function_call>${JSON.stringify({ function_call_result: { name: toolCall.name, arguments: toolCall.arguments, response: toolResponse.content } })}</function_call>`
+                  // 1. Format tool execution record (including the function calling request & response) into prompt-defined text.
+                  const formattedToolRecordText = `<function_call>${JSON.stringify({ function_call_record: { name: toolCall.name, arguments: toolCall.arguments, response: toolResponse.content } })}</function_call>`
 
-                  // 2. Add a role: 'assistant' message to conversationMessages (containing the result text).
-                  // Find or create the last assistant message to append the result text
+                  // 2. Add a role: 'assistant' message to conversationMessages (containing the full record text).
+                  // Find or create the last assistant message to append the record text
                   let lastAssistantMessage = conversationMessages.findLast(
                     (m) => m.role === 'assistant'
                   )
 
                   if (lastAssistantMessage) {
-                    // Append formatted result text to the existing assistant message's content
+                    // Append formatted record text to the existing assistant message's content
                     if (typeof lastAssistantMessage.content === 'string') {
-                      lastAssistantMessage.content += formattedToolResultText + '\n'
+                      lastAssistantMessage.content += formattedToolRecordText + '\n'
                     } else if (Array.isArray(lastAssistantMessage.content)) {
                       lastAssistantMessage.content.push({
                         type: 'text',
-                        text: formattedToolResultText + '\n'
+                        text: formattedToolRecordText + '\n'
                       })
                     } else {
                       // If content is undefined or null, set it as an array with the new text part
                       lastAssistantMessage.content = [
-                        { type: 'text', text: formattedToolResultText + '\n' }
+                        { type: 'text', text: formattedToolRecordText + '\n' }
                       ]
                     }
                   } else {
-                    // Create a new assistant message just for the tool result feedback
+                    // Create a new assistant message just for the tool record feedback
                     conversationMessages.push({
                       role: 'assistant',
-                      content: [{ type: 'text', text: formattedToolResultText + '\n' }] // Content should be an array for multi-part messages
+                      content: [{ type: 'text', text: formattedToolRecordText + '\n' }] // Content should be an array for multi-part messages
                     })
                     lastAssistantMessage = conversationMessages[conversationMessages.length - 1] // Update lastAssistantMessage reference
                   }
