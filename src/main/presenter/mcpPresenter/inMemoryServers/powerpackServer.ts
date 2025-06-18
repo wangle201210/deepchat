@@ -85,61 +85,16 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   /process\.env/gi
 ]
 
-// E2B 管理器
-class E2BManager {
-  private static instance: E2BManager
-  private initialized = false
-  private apiKey: string = ''
-
-  static getInstance(): E2BManager {
-    if (!E2BManager.instance) {
-      E2BManager.instance = new E2BManager()
-    }
-    return E2BManager.instance
-  }
-
-  async initialize(apiKey: string): Promise<void> {
-    if (this.initialized) return
-
-    try {
-      // 设置 API Key
-      this.apiKey = apiKey
-      process.env.E2B_API_KEY = apiKey
-      this.initialized = true
-    } catch (error) {
-      throw new Error(
-        `Failed to initialize E2B: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease ensure @e2b/code-interpreter is installed:\nnpm install @e2b/code-interpreter`
-      )
-    }
-  }
-
-  async createSandbox(): Promise<Sandbox> {
-    if (!this.initialized) {
-      throw new Error('E2B not initialized. Please call initialize() first.')
-    }
-
-    return await Sandbox.create()
-  }
-
-  isInitialized(): boolean {
-    return this.initialized
-  }
-}
-
 export class PowerpackServer {
   private server: Server
   private bunRuntimePath: string | null = null
   private nodeRuntimePath: string | null = null
-  private e2bManager: E2BManager
   private useE2B: boolean = false
   private e2bApiKey: string = ''
 
   constructor(env?: Record<string, any>) {
     // 从环境变量中获取 E2B 配置
     this.parseE2BConfig(env)
-
-    // 初始化 E2B 管理器
-    this.e2bManager = E2BManager.getInstance()
 
     // 查找内置的运行时路径
     this.setupRuntimes()
@@ -220,26 +175,8 @@ export class PowerpackServer {
     }
   }
 
-  // 初始化 E2B（如果需要）
-  private async initializeE2B(): Promise<void> {
-    if (this.useE2B && !this.e2bManager.isInitialized()) {
-      try {
-        await this.e2bManager.initialize(this.e2bApiKey)
-        console.info('E2B initialized successfully')
-      } catch (error) {
-        console.error('Failed to initialize E2B:', error)
-        throw error
-      }
-    }
-  }
-
   // 启动服务器
   public async startServer(transport: Transport): Promise<void> {
-    // 如果启用了 E2B，先初始化
-    if (this.useE2B) {
-      await this.initializeE2B()
-    }
-
     this.server.connect(transport)
   }
 
@@ -348,13 +285,13 @@ export class PowerpackServer {
 
   // 使用 E2B 执行代码
   private async executeE2BCode(code: string): Promise<string> {
-    if (!this.useE2B || !this.e2bManager.isInitialized()) {
-      throw new Error('E2B is not initialized')
+    if (!this.useE2B) {
+      throw new Error('E2B is not enabled')
     }
 
     let sandbox: Sandbox | null = null
     try {
-      sandbox = await this.e2bManager.createSandbox()
+      sandbox = await Sandbox.create()
       const result = await sandbox.runCode(code)
 
       // 格式化结果
