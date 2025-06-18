@@ -3,7 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS } from '@/events'
 import path from 'path'
 import { presenter } from '@/presenter'
@@ -535,10 +535,14 @@ export class McpClient {
           console.info(`MCP server ${this.serverName} connected successfully`)
 
           // 触发服务器状态变更事件
-          eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
-            name: this.serverName,
-            status: 'running'
-          })
+          eventBus.send(
+            (MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED,
+            SendTarget.ALL_WINDOWS,
+            {
+              name: this.serverName,
+              status: 'running'
+            }
+          )
         })
         .catch((error) => {
           console.error(`Failed to connect to MCP server ${this.serverName}:`, error)
@@ -560,7 +564,7 @@ export class McpClient {
       console.error(`Failed to connect to MCP server ${this.serverName}:`, error)
 
       // 触发服务器状态变更事件
-      eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
+      eventBus.send((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         name: this.serverName,
         status: 'stopped'
       })
@@ -582,7 +586,7 @@ export class McpClient {
       console.log(`Disconnected from MCP server: ${this.serverName}`)
 
       // 触发服务器状态变更事件
-      eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
+      eventBus.send((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         name: this.serverName,
         status: 'stopped'
       })

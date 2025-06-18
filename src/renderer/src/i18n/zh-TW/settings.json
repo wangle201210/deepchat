@@ -377,7 +377,13 @@
       "selectFolderError": "文件夾選擇錯誤",
       "folders": "允許訪問的文件夾",
       "addFolder": "添加文件夾",
-      "noFoldersSelected": "未選擇任何文件夾"
+      "noFoldersSelected": "未選擇任何文件夾",
+      "useE2B": "啟用E2B沙盒",
+      "e2bDescription": "使用E2B沙盒執行Python代碼",
+      "e2bApiKey": "E2B ApiKey",
+      "e2bApiKeyPlaceholder": "這裡輸入你的E2B Api Keys，如 e2b_1111xx*****",
+      "e2bApiKeyHelp": "訪問https://e2b.dev/dashboard/ 獲取你的 ApiKey",
+      "e2bApiKeyRequired": "啟用E2B功能必須要輸入 ApiKey"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",

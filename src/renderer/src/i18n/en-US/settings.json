@@ -385,7 +385,13 @@
       "selectFolderError": "Folder selection error",
       "folders": "Folders allowed to access",
       "addFolder": "Add folder",
-      "noFoldersSelected": "No folders were selected"
+      "noFoldersSelected": "No folders were selected",
+      "useE2B": "Enable E2B Sandbox",
+      "e2bDescription": "Execute Python code using E2B sandbox",
+      "e2bApiKey": "E2B ApiKey",
+      "e2bApiKeyPlaceholder": "Enter your E2B Api Keys here, such as e2b_1111xx*******",
+      "e2bApiKeyHelp": "Visit https://e2b.dev/dashboard/ to get your ApiKey",
+      "e2bApiKeyRequired": "ApiKey must be entered to enable E2B function"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
