@@ -28,6 +28,8 @@
         <DifyKnowledgeSettings ref="difySettingsRef" />
         <!-- FastGPT知识库 -->
         <FastGptKnowledgeSettings ref="fastGptSettingsRef" />
+        <!-- 内置知识库 -->
+        <BuiltinKnowledgeSettings ref="builtinSettingsRef" />
         <!-- 未来可以添加更多知识库类型 -->
         <div
           class="border rounded-lg p-4 border-dashed flex items-center justify-center text-muted-foreground"
@@ -52,7 +54,7 @@
             >
               <img src="@/assets/images/dify.png" class="h-5 mr-3" />
               <div class="flex-1">
-                <h3 class="text-sm font-medium">Dify知识库</h3>
+                <h3 class="text-sm font-medium">{{ t('settings.knowledgeBase.dify') }}</h3>
                 <p class="text-xs text-muted-foreground">
                   {{ t('settings.knowledgeBase.difyDescription') }}
                 </p>
@@ -64,7 +66,7 @@
             >
               <img src="@/assets/images/ragflow.png" class="h-5 mr-3" />
               <div class="flex-1">
-                <h3 class="text-sm font-medium">RAGFlow</h3>
+                <h3 class="text-sm font-medium">{{ t('settings.knowledgeBase.ragflowTitle') }}</h3>
                 <p class="text-xs text-muted-foreground">
                   {{ t('settings.knowledgeBase.ragflowDescription') }}
                 </p>
@@ -76,9 +78,21 @@
             >
               <img src="@/assets/images/fastgpt.png" class="h-5 mr-3" />
               <div class="flex-1">
-                <h3 class="text-sm font-medium">FastGPT</h3>
+                <h3 class="text-sm font-medium">{{ t('settings.knowledgeBase.fastgptTitle') }}</h3>
                 <p class="text-xs text-muted-foreground">
                   {{ t('settings.knowledgeBase.fastgptDescription') }}
+                </p>
+              </div>
+            </div>
+            <div
+              class="flex items-center p-3 border rounded-md cursor-pointer hover:bg-accent"
+              @click="selectKnowledgeBaseType('builtin')"
+            >
+              <Icon icon="lucide:book-open" class="h-5 mr-3 text-primary" />
+              <div class="flex-1">
+                <h3 class="text-sm font-medium">{{ t('settings.knowledgeBase.builtInKnowledgeTitle') }}</h3>
+                <p class="text-xs text-muted-foreground">
+                  {{ t('settings.knowledgeBase.builtInKnowledgeDescription') }}
                 </p>
               </div>
             </div>
@@ -111,10 +125,12 @@ import {
 import RagflowKnowledgeSettings from './RagflowKnowledgeSettings.vue'
 import DifyKnowledgeSettings from './DifyKnowledgeSettings.vue'
 import FastGptKnowledgeSettings from './FastGptKnowledgeSettings.vue'
+import BuiltinKnowledgeSettings from './BuiltinKnowledgeSettings.vue'
 
 const difySettingsRef = ref<InstanceType<typeof DifyKnowledgeSettings> | null>(null)
 const ragflowSettingsRef = ref<InstanceType<typeof RagflowKnowledgeSettings> | null>(null)
 const fastGptSettingsRef = ref<InstanceType<typeof FastGptKnowledgeSettings> | null>(null)
+const builtinSettingsRef = ref<InstanceType<typeof BuiltinKnowledgeSettings> | null>(null)
 
 const { t } = useI18n()
 
@@ -134,6 +150,11 @@ const closeAddKnowledgeBaseDialog = () => {
 // 选择知识库类型
 const selectKnowledgeBaseType = (type: string) => {
   closeAddKnowledgeBaseDialog()
+  if (type === 'builtin') {
+    if (builtinSettingsRef.value) {
+      builtinSettingsRef.value.openAddConfig()
+    }
+  }
   if (type === 'dify') {
     if (difySettingsRef.value) {
       difySettingsRef.value.openAddConfig()

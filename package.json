@@ -57,6 +57,8 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.5.1",
+    "@llm-tools/embedjs": "^0.1.29",
+    "@llm-tools/embedjs-libsql": "^0.1.29",
     "@modelcontextprotocol/sdk": "^1.12.3",
     "axios": "^1.7.9",
     "better-sqlite3-multiple-ciphers": "11.10.0",

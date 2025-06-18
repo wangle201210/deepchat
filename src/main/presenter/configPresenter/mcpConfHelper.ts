@@ -4,6 +4,7 @@ import { MCP_EVENTS } from '@/events'
 import ElectronStore from 'electron-store'
 import { app } from 'electron'
 import { compare } from 'compare-versions'
+import { BuiltinKnowledgeServer } from '../mcpPresenter/inMemoryServers/builtinKnowledgeServer'
 
 // MCP设置的接口
 interface IMcpSettings {
@@ -134,6 +135,23 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
           apiKey: 'YOUR_FastGPT_API_KEY',
           datasetId: 'YOUR_DATASET_ID',
           endpoint: 'http://localhost:3000/api'
+        }
+      ]
+    },
+    disable: false
+  },
+  builtinKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'builtinKnowledge',
+    env: {
+      configs: [
+        {
+          description: '这是一个内置知识库的描述',
+          enabled: true
         }
       ]
     },

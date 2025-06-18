@@ -288,7 +288,11 @@
     "fastgptTitle": "FastGPT知识库",
     "fastgptDescription": "FastGPT是一个强大的知识库管理系统，支持多种检索方式和文档管理功能。",
     "addFastGptConfig": "添加FastGPT配置",
-    "editFastGptConfig": "编辑FastGPT配置"
+    "editFastGptConfig": "编辑FastGPT配置",
+    "builtInKnowledgeTitle": "内置知识库",
+    "builtInKnowledgeDescription": "内置知识库提供了一些简单实现，能够在离线环境下实现部分基础功能。",
+    "addBuiltinKnowledgeConfig": "添加内置知识库配置",
+    "editBuiltinKnowledgeConfig": "编辑内置知识库配置"
   },
   "mcp": {
     "title": "MCP设置",

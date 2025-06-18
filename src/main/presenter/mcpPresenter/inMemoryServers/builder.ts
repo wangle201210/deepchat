@@ -11,6 +11,7 @@ import { CustomPromptsServer } from './customPromptsServer'
 import { DeepResearchServer } from './deepResearchServer'
 import { AutoPromptingServer } from './autoPromptingServer'
 import { ConversationSearchServer } from './conversationSearchServer'
+import { BuiltinKnowledgeServer } from './builtinKnowledgeServer'
 
 export function getInMemoryServer(
   serverName: string,
@@ -63,6 +64,15 @@ export function getInMemoryServer(
             apiKey: string
             endpoint: string
             datasetId: string
+            description: string
+            enabled: boolean
+          }[]
+        }
+      )
+    case 'builtinKnowledge':
+      return new BuiltinKnowledgeServer(
+        env as {
+          configs: {
             description: string
             enabled: boolean
           }[]
