@@ -343,7 +343,8 @@ export const useSettingsStore = defineStore('settings', () => {
           ...model,
           enabled: modelStatusMap[model.id] ?? true,
           providerId,
-          isCustom: true
+          isCustom: true,
+          type: model.type || ModelType.Chat
         } as RENDERER_MODEL_META
       })
 
