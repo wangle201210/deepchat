@@ -59,6 +59,12 @@ const providers = ref<{ id: string; name: string; models: RENDERER_MODEL_META[] 
 const emit = defineEmits<{
   (e: 'update:model', model: RENDERER_MODEL_META, providerId: string): void
 }>()
+
+const props = defineProps<{
+  type?: ModelType[]
+  tag?: string[]
+}>()
+
 const filteredProviders = computed(() => {
   if (!keyword.value) return providers.value
   return providers.value
@@ -100,7 +106,15 @@ onMounted(async () => {
       return {
         id: providerId,
         name: provider?.name || providerId,
-        models: models.filter((model) => model.type === ModelType.Chat)
+        models:
+          props.type && props.type.length === 0
+            ? models
+            : models.filter(
+                (model) =>
+                  model.type !== undefined &&
+                  props.type &&
+                  props.type.includes(model.type as ModelType)
+              )
       }
     })
   } catch (error) {

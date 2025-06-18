@@ -1676,5 +1676,17 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
     functionCall: false,
     reasoning: false,
     type: ModelType.Embedding
+  },
+  {
+    id: 'embedding',
+    name: 'embedding',
+    temperature: 0.0,
+    maxTokens: 4096,
+    contextLength: 4096,
+    match: ['embedding', 'embed'],
+    vision: false,
+    functionCall: false,
+    reasoning: false,
+    type: ModelType.Embedding
   }
 ]
