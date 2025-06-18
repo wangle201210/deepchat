@@ -62,7 +62,6 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   type?: ModelType[]
-  tag?: string[]
 }>()
 
 const filteredProviders = computed(() => {
