@@ -81,10 +81,17 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     // 如果没有找到匹配优先级的模型，返回第一个可用的模型
-    if (enabledModels.value[0]?.models.length > 0) {
+
+    const model = enabledModels.value
+      .flatMap((provider) =>
+        provider.models.map((m) => ({ ...m, providerId: provider.providerId }))
+      )
+      .find((m) => m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
+
+    if (model) {
       return {
-        model: enabledModels.value[0].models[0],
-        providerId: enabledModels.value[0].providerId
+        model: model,
+        providerId: model.providerId
       }
     }
 

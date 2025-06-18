@@ -28,6 +28,7 @@ import type { RENDERER_MODEL_META } from '@shared/presenter'
 import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from './const'
 import { usePresenter } from '@/composables/usePresenter'
 import { useThemeStore } from '@/stores/theme'
+import { ModelType } from '@shared/model'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -828,7 +829,10 @@ HTTP-Referer=deepchatai.cn`
               </Button>
             </PopoverTrigger>
             <PopoverContent class="w-80 p-0">
-              <ModelSelect @update:model="handleImageModelSelect" />
+              <ModelSelect
+                :type="[ModelType.Chat, ModelType.ImageGeneration]"
+                @update:model="handleImageModelSelect"
+              />
             </PopoverContent>
           </Popover>
         </div>
