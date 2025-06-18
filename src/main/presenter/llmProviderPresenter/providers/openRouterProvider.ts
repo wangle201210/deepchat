@@ -25,7 +25,7 @@ interface OpenRouterModelResponse {
   description: string
   created: number
   context_length: number
-  architecture: {
+  architecture?: {
     input_modalities: string[] // ["file", "image", "text"]
     output_modalities: string[] // ["text"]
     tokenizer: string
@@ -41,13 +41,13 @@ interface OpenRouterModelResponse {
     input_cache_read: string
     input_cache_write: string
   }
-  top_provider: {
+  top_provider?: {
     context_length: number
     max_completion_tokens: number
     is_moderated: boolean
   }
   per_request_limits: any
-  supported_parameters: string[]
+  supported_parameters?: string[]
 }
 
 export class OpenRouterProvider extends OpenAICompatibleProvider {
@@ -209,7 +209,8 @@ export class OpenRouterProvider extends OpenAICompatibleProvider {
           supportedParameters.includes('include_reasoning')
 
         // Get existing model configuration first
-        const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
+        const existingConfig =
+          this.configPresenter.getModelConfig(modelId, this.provider.id) ?? ({} as const)
 
         // Extract configuration values with proper fallback priority: API -> existing config -> default
         const contextLength =
