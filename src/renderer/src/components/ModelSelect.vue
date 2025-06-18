@@ -38,7 +38,7 @@
 </template>
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, PropType } from 'vue'
 import Input from './ui/input/Input.vue'
 // import Badge from './ui/badge/Badge.vue'
 import { useChatStore } from '@/stores/chat'
@@ -60,9 +60,12 @@ const emit = defineEmits<{
   (e: 'update:model', model: RENDERER_MODEL_META, providerId: string): void
 }>()
 
-const props = defineProps<{
-  type?: ModelType[]
-}>()
+const props = defineProps({
+  type: {
+    type: Array as PropType<ModelType[]>,
+    default: undefined // ←  explicit for clarity
+  }
+})
 
 const filteredProviders = computed(() => {
   if (!keyword.value) return providers.value
@@ -106,13 +109,10 @@ onMounted(async () => {
         id: providerId,
         name: provider?.name || providerId,
         models:
-          props.type && props.type.length === 0
+          !props.type || props.type.length === 0
             ? models
             : models.filter(
-                (model) =>
-                  model.type !== undefined &&
-                  props.type &&
-                  props.type.includes(model.type as ModelType)
+                (model) => model.type !== undefined && props.type!.includes(model.type as ModelType)
               )
       }
     })
