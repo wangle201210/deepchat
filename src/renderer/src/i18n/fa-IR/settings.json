@@ -390,7 +390,7 @@
       "e2bDescription": "کد پایتون را با استفاده از جعبه ماسه ای E2B اجرا کنید",
       "e2bApiKey": "e2b apikey",
       "e2bApiKeyPlaceholder": "کلیدهای API E2B خود را در اینجا وارد کنید ، مانند E2B_11111XX *******",
-      "e2bApiKeyHelp": "برای دریافت apikey خود به https://e2b.dev/dashboard/ مراجعه کنید",
+      "e2bApiKeyHelp": "برای بدست آوردن apikey خود به e2b.dev بروید",
       "e2bApiKeyRequired": "برای فعال کردن عملکرد E2B باید Apikey وارد شود"
     },
     "deleteServer": "پاک کردن کارساز",

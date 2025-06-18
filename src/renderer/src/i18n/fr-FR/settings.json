@@ -382,7 +382,7 @@
       "e2bDescription": "Exécuter le code Python à l'aide de Sandbox E2B",
       "e2bApiKey": "E2B APIKEY",
       "e2bApiKeyPlaceholder": "Entrez ici vos touches API E2B, comme E2B_1111XX *******",
-      "e2bApiKeyHelp": "Visitez https://e2b.dev/dashboard/ pour obtenir votre apikey",
+      "e2bApiKeyHelp": "Allez sur e2b.dev pour obtenir votre apikey",
       "e2bApiKeyRequired": "Apikey doit être entré pour activer la fonction E2B"
     },
     "builtIn": "intégré",

@@ -389,7 +389,7 @@
       "e2bDescription": "使用E2B沙盒执行Python代码",
       "e2bApiKey": "E2B ApiKey",
       "e2bApiKeyPlaceholder": "这里输入你的E2B Api Keys，如 e2b_1111xx*****",
-      "e2bApiKeyHelp": "访问https://e2b.dev/dashboard/ 获取你的 ApiKey",
+      "e2bApiKeyHelp": "前往 e2b.dev 获取你的 ApiKey",
       "e2bApiKeyRequired": "启用E2B功能必须要输入 ApiKey"
     },
     "deleteServer": "删除服务器",

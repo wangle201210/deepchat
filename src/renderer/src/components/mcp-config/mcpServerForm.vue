@@ -919,7 +919,7 @@ HTTP-Referer=deepchatai.cn`
         </div>
 
         <!-- 环境变量 -->
-        <div v-if="showCommandFields || isInMemoryType" class="space-y-2">
+        <div v-if="(showCommandFields || isInMemoryType) && !isPowerpackServer" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-env">{{
             t('settings.mcp.serverForm.env')
           }}</Label>
