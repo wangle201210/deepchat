@@ -129,7 +129,10 @@ export class GeminiProvider extends BaseLLMProvider {
 
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
-    this.genAI = new GoogleGenAI({ apiKey: this.provider.apiKey })
+    this.genAI = new GoogleGenAI({
+      apiKey: this.provider.apiKey,
+      httpOptions: { baseUrl: this.provider.baseUrl}
+    })
     this.init()
   }
 
