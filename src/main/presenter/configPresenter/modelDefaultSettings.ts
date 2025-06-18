@@ -1358,7 +1358,7 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
     match: ['minimax-m1-80k'],
     vision: false,
     functionCall: true,
-    reasoning: false
+    reasoning: true
   },
   {
     id: 'minimax-01',

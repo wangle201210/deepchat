@@ -1,10 +1,25 @@
-import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus } from '@shared/presenter'
+import { LLM_PROVIDER, LLMResponse, ChatMessage, KeyStatus, MODEL_META } from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
 import { ConfigPresenter } from '../../configPresenter'
 
 // Define interface for PPIO API key response
 interface PPIOKeyResponse {
   credit_balance: number
+}
+
+// Define interface for PPIO model response
+interface PPIOModelResponse {
+  id: string
+  object: string
+  owned_by: string
+  created: number
+  display_name: string
+  description: string
+  context_size: number
+  max_output_tokens: number
+  features?: string[]
+  status: number
+  model_type: string
 }
 
 export class PPIOProvider extends OpenAICompatibleProvider {
@@ -118,6 +133,98 @@ export class PPIOProvider extends OpenAICompatibleProvider {
 
       console.error('PPIO API key check failed:', error)
       return { isOk: false, errorMsg: errorMessage }
+    }
+  }
+
+  /**
+   * Override fetchOpenAIModels to parse PPIO specific model data and update model configurations
+   * @param options - Request options
+   * @returns Promise<MODEL_META[]> - Array of model metadata
+   */
+  protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+    try {
+      const response = await this.openai.models.list(options)
+      // console.log('PPIO models response:', JSON.stringify(response, null, 2))
+
+      const models: MODEL_META[] = []
+
+      for (const model of response.data) {
+        // Type the model as PPIO specific response
+        const ppioModel = model as unknown as PPIOModelResponse
+
+        // Extract model information
+        const modelId = ppioModel.id
+        const features = ppioModel.features || []
+
+        // Check features for capabilities
+        const hasFunctionCalling = features.includes('function-calling')
+        const hasVision = features.includes('vision')
+        // const hasStructuredOutputs = features.includes('structured-outputs')
+
+        // Get existing model configuration first
+        const existingConfig = this.configPresenter.getModelConfig(modelId, this.provider.id)
+
+        // Extract configuration values with proper fallback priority: API -> existing config -> default
+        const contextLength = ppioModel.context_size || existingConfig.contextLength || 4096
+        const maxTokens = ppioModel.max_output_tokens || existingConfig.maxTokens || 2048
+
+        // Build new configuration based on API response
+        const newConfig = {
+          contextLength: contextLength,
+          maxTokens: maxTokens,
+          functionCall: hasFunctionCalling,
+          vision: hasVision,
+          reasoning: existingConfig.reasoning, // Keep existing reasoning setting
+          temperature: existingConfig.temperature, // Keep existing temperature
+          type: existingConfig.type // Keep existing type
+        }
+
+        // Check if configuration has changed
+        const configChanged =
+          existingConfig.contextLength !== newConfig.contextLength ||
+          existingConfig.maxTokens !== newConfig.maxTokens ||
+          existingConfig.functionCall !== newConfig.functionCall ||
+          existingConfig.vision !== newConfig.vision
+
+        // Update configuration if changed
+        if (configChanged) {
+          // console.log(`Updating configuration for model ${modelId}:`, {
+          //   old: {
+          //     contextLength: existingConfig.contextLength,
+          //     maxTokens: existingConfig.maxTokens,
+          //     functionCall: existingConfig.functionCall,
+          //     vision: existingConfig.vision
+          //   },
+          //   new: newConfig
+          // })
+
+          this.configPresenter.setModelConfig(modelId, this.provider.id, newConfig)
+        }
+
+        // Create MODEL_META object
+        const modelMeta: MODEL_META = {
+          id: modelId,
+          name: ppioModel.display_name || modelId,
+          group: 'default',
+          providerId: this.provider.id,
+          isCustom: false,
+          contextLength: contextLength,
+          maxTokens: maxTokens,
+          description: ppioModel.description,
+          vision: hasVision,
+          functionCall: hasFunctionCalling,
+          reasoning: existingConfig.reasoning || false
+        }
+
+        models.push(modelMeta)
+      }
+
+      console.log(`Processed ${models.length} PPIO models with dynamic configuration updates`)
+      return models
+    } catch (error) {
+      console.error('Error fetching PPIO models:', error)
+      // Fallback to parent implementation
+      return super.fetchOpenAIModels(options)
     }
   }
 }
