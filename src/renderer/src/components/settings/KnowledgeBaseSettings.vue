@@ -86,7 +86,7 @@
             </div>
             <div
               class="flex items-center p-3 border rounded-md cursor-pointer hover:bg-accent"
-              @click="selectKnowledgeBaseType('builtin')"
+              @click="selectKnowledgeBaseType('builtinKnowledge')"
             >
               <Icon icon="lucide:book-open" class="h-5 mr-3 text-primary" />
               <div class="flex-1">
@@ -150,7 +150,7 @@ const closeAddKnowledgeBaseDialog = () => {
 // 选择知识库类型
 const selectKnowledgeBaseType = (type: string) => {
   closeAddKnowledgeBaseDialog()
-  if (type === 'builtin') {
+  if (type === 'builtinKnowledge') {
     if (builtinSettingsRef.value) {
       builtinSettingsRef.value.openAddConfig()
     }

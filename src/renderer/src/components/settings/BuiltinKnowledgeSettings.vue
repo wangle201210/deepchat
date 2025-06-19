@@ -108,7 +108,7 @@
             </Label>
             <Popover v-model:open="modelSelectOpen">
               <PopoverTrigger as-child>
-                <Button variant="outline" class="w-full justify-between">
+                <Button variant="outline" class="w-full justify-between" :disabled="isEditing">
                   <div class="flex items-center gap-2">
                     <ModelIcon
                       :model-id="editingBuiltinConfig?.model?.id || ''"
@@ -158,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, toRaw, computed } from 'vue'
+import { ref, onMounted, toRaw, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -181,6 +181,7 @@ import { ModelType } from '@shared/model'
 import { useThemeStore } from '@/stores/theme'
 import { RENDERER_MODEL_META } from '@shared/presenter'
 import { toast } from '../ui/toast'
+import { useRoute } from 'vue-router'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -380,4 +381,17 @@ const loadBuiltinConfigFromMcp = async () => {
 onMounted(async () => {
   await loadBuiltinConfigFromMcp()
 })
+
+const route = useRoute()
+
+// 监听URL查询参数，设置活动标签页
+watch(
+  () => route.query.subtab,
+  (newSubtab) => {
+    if (newSubtab === 'builtinKnowledge') {
+      isBuiltinConfigPanelOpen.value = true
+    }
+  },
+  { immediate: true }
+)
 </script>
