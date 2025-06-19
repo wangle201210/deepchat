@@ -23,6 +23,7 @@ import {
 } from '@google/genai'
 import { ConfigPresenter } from '../../configPresenter'
 import { presenter } from '@/presenter'
+import { ModelType } from '@shared/model'
 
 // Mapping from simple keys to API HarmCategory constants
 const keyToHarmCategoryMap: Record<string, HarmCategory> = {
@@ -49,8 +50,8 @@ export class GeminiProvider extends BaseLLMProvider {
   // 定义静态的模型配置
   private static readonly GEMINI_MODELS: MODEL_META[] = [
     {
-      id: 'models/gemini-2.5-flash-preview-05-20',
-      name: 'Gemini 2.5 Flash Preview 0520',
+      id: 'gemini-2.5-pro',
+      name: 'Gemini 2.5 Pro',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
@@ -58,34 +59,31 @@ export class GeminiProvider extends BaseLLMProvider {
       maxTokens: 65536,
       vision: true,
       functionCall: true,
-      reasoning: true,
-      description: 'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 05-20）'
+      reasoning: true
     },
     {
-      id: 'gemini-2.5-pro-preview-06-05',
-      name: 'Gemini 2.5 Pro Preview 06-05',
+      id: 'models/gemini-2.5-flash',
+      name: 'Gemini 2.5 Flash',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 2048576,
-      maxTokens: 8192,
+      contextLength: 1048576,
+      maxTokens: 65536,
       vision: true,
       functionCall: true,
-      reasoning: false,
-      description: 'Gemini 2.5 Pro Preview 06-05 模型（付费）'
+      reasoning: true
     },
     {
-      id: 'gemini-2.5-pro-exp-03-25',
-      name: 'Gemini 2.5 Pro Exp 03-25',
+      id: 'models/gemini-2.5-flash-lite-preview-06-17',
+      name: 'Gemini 2.5 Flash-Lite Preview',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 2048576,
-      maxTokens: 8192,
+      contextLength: 1_000_000,
+      maxTokens: 64_000,
       vision: true,
       functionCall: true,
-      reasoning: false,
-      description: 'Gemini 2.5 Pro Exp 03-25 模型'
+      reasoning: true
     },
     {
       id: 'models/gemini-2.0-flash',
@@ -93,33 +91,44 @@ export class GeminiProvider extends BaseLLMProvider {
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1048576,
+      contextLength: 1_048_576,
       maxTokens: 8192,
       vision: true,
       functionCall: true,
-      reasoning: false,
-      description: 'Gemini 2.0 Flash 模型'
+      reasoning: true
     },
     {
       id: 'models/gemini-2.0-flash-lite',
-      name: 'Gemini 2.0 Flash-Lite',
+      name: 'Gemini 2.0 Flash Lite',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1048576,
+      contextLength: 1_048_576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false
+    },
+    {
+      id: 'models/gemini-2.0-flash-preview-image-generation',
+      name: 'Gemini 2.0 Flash Preview Image Generation',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 32000,
       maxTokens: 8192,
       vision: true,
       functionCall: true,
       reasoning: false,
-      description: 'Gemini 2.0 Flash-Lite 模型（更轻量级）'
+      type: ModelType.ImageGeneration
     },
     {
-      id: 'gemini-2.0-flash-exp-image-generation',
-      name: 'Gemini 2.0 Flash Exp Image Generation',
+      id: 'models/gemini-1.5-flash',
+      name: 'Gemini 1.5 Flash',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1048576,
+      contextLength: 1_048_576,
       maxTokens: 8192,
       vision: true,
       functionCall: true,
@@ -131,7 +140,7 @@ export class GeminiProvider extends BaseLLMProvider {
     super(provider, configPresenter)
     this.genAI = new GoogleGenAI({
       apiKey: this.provider.apiKey,
-      httpOptions: { baseUrl: this.provider.baseUrl}
+      httpOptions: { baseUrl: this.provider.baseUrl }
     })
     this.init()
   }
@@ -258,7 +267,7 @@ export class GeminiProvider extends BaseLLMProvider {
       temperature,
       maxOutputTokens: maxTokens
     } as GenerationConfig & { responseModalities?: string[] }
-    if (modelId === 'gemini-2.0-flash-exp-image-generation') {
+    if (modelId === 'models/gemini-2.0-flash-preview-image-generation') {
       generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
     }
     return generationConfig
@@ -683,7 +692,7 @@ export class GeminiProvider extends BaseLLMProvider {
     console.log('modelConfig', modelConfig, modelId)
 
     // 检查是否是图片生成模型
-    const isImageGenerationModel = modelId === 'gemini-2.0-flash-exp-image-generation'
+    const isImageGenerationModel = modelId === 'models/gemini-2.0-flash-preview-image-generation'
 
     // 如果是图片生成模型，使用特殊处理
     if (isImageGenerationModel) {
