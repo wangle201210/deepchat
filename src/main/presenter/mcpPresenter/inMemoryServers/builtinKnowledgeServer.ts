@@ -113,6 +113,7 @@ export class BuiltinKnowledgeServer {
     parameters: Record<string, unknown> | undefined,
     configIndex: number = 0
   ): Promise<{ content: MCPTextContent[] }> {
+    console.log(parameters, configIndex)
     // 搜索逻辑留空
     return {
       content: [

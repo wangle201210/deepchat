@@ -292,7 +292,12 @@
     "builtInKnowledgeDescription": "내장 지식 기반은 오프라인 환경에서 몇 가지 기본 기능을 가능하게하는 간단한 구현을 제공합니다.",
     "builtInKnowledgeTitle": "내장 지식 기반",
     "addBuiltinKnowledgeConfig": "내장 된 지식 기반 구성을 추가하십시오",
-    "editBuiltinKnowledgeConfig": "내장 된 지식 기반 구성을 편집하십시오"
+    "editBuiltinKnowledgeConfig": "내장 된 지식 기반 구성을 편집하십시오",
+    "chunkSize": "블록 크기",
+    "chunkSizeHelper": "문서를 세그먼트로 자르면 각 세그먼트의 크기는 모델 컨텍스트 한계를 초과 할 수 없습니다.",
+    "chunkOverlap": "겹치는 크기",
+    "chunkOverlapHelper": "인접한 텍스트 블록 사이에 반복되는 콘텐츠의 양은 세그먼트 된 텍스트 블록 사이에 여전히 상황에 맞는 연결이 있음을 보장하여 긴 텍스트의 모델 처리의 전반적인 효과를 향상시킵니다.",
+    "selectEmbeddingModel": "임베드 모델을 선택하십시오"
   },
   "mcp": {
     "title": "MCP 설정",

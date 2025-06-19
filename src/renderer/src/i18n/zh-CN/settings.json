@@ -293,7 +293,11 @@
     "builtInKnowledgeDescription": "内置知识库提供了一些简单实现，能够在离线环境下实现部分基础功能。",
     "addBuiltinKnowledgeConfig": "添加内置知识库配置",
     "editBuiltinKnowledgeConfig": "编辑内置知识库配置",
-    "selectEmbeddingModel": "选择嵌入模型"
+    "selectEmbeddingModel": "选择嵌入模型",
+    "chunkSize": "分块大小",
+    "chunkOverlap": "重叠大小",
+    "chunkSizeHelper": "将文档切割分段，每段的大小，不能超过模型上下文限制",
+    "chunkOverlapHelper": "相邻文本块之间重复的内容量，确保分段后的文本块之间仍然有上下文联系，提升模型处理长文本的整体效果"
   },
   "mcp": {
     "title": "MCP设置",

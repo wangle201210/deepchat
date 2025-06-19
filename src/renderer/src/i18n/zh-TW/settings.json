@@ -292,7 +292,12 @@
     "builtInKnowledgeDescription": "內置知識庫提供了一些簡單實現，能夠在離線環境下實現部分基礎功能。",
     "builtInKnowledgeTitle": "內置知識庫",
     "addBuiltinKnowledgeConfig": "添加內置知識庫配置",
-    "editBuiltinKnowledgeConfig": "編輯內置知識庫配置"
+    "editBuiltinKnowledgeConfig": "編輯內置知識庫配置",
+    "chunkSize": "分塊大小",
+    "chunkSizeHelper": "將文檔切割分段，每段的大小，不能超過模型上下文限制",
+    "chunkOverlap": "重疊大小",
+    "chunkOverlapHelper": "相鄰文本塊之間重複的內容量，確保分段後的文本塊之間仍然有上下文聯繫，提升模型處理長文本的整體效果",
+    "selectEmbeddingModel": "選擇嵌入模型"
   },
   "mcp": {
     "title": "MCP設定",

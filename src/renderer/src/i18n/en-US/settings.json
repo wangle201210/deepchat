@@ -292,7 +292,12 @@
     "builtInKnowledgeDescription": "The built-in knowledge base provides some simple implementations that enable some basic functions in an offline environment.",
     "builtInKnowledgeTitle": "Built-in knowledge base",
     "addBuiltinKnowledgeConfig": "Add built-in knowledge base configuration",
-    "editBuiltinKnowledgeConfig": "Edit the built-in knowledge base configuration"
+    "editBuiltinKnowledgeConfig": "Edit the built-in knowledge base configuration",
+    "chunkSize": "Block size",
+    "chunkSizeHelper": "Cut the document into segments, the size of each segment cannot exceed the model context limit",
+    "chunkOverlap": "Overlapping size",
+    "chunkOverlapHelper": "The amount of content repeated between adjacent text blocks ensures that there is still a contextual connection between segmented text blocks, improving the overall effect of the model processing of long texts",
+    "selectEmbeddingModel": "Select an embed model"
   },
   "mcp": {
     "title": "MCP Settings",

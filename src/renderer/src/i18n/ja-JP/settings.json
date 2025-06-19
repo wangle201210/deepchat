@@ -292,7 +292,12 @@
     "builtInKnowledgeDescription": "組み込みのナレッジベースは、オフライン環境でいくつかの基本機能を可能にするいくつかの簡単な実装を提供します。",
     "builtInKnowledgeTitle": "組み込みの知識ベース",
     "addBuiltinKnowledgeConfig": "組み込みのナレッジベースの構成を追加します",
-    "editBuiltinKnowledgeConfig": "組み込みのナレッジベースの構成を編集します"
+    "editBuiltinKnowledgeConfig": "組み込みのナレッジベースの構成を編集します",
+    "chunkSize": "ブロックサイズ",
+    "chunkSizeHelper": "ドキュメントをセグメントにカットすると、各セグメントのサイズがモデルコンテキスト制限を超えることはできません",
+    "chunkOverlap": "重複するサイズ",
+    "chunkOverlapHelper": "隣接するテキストブロック間で繰り返されるコンテンツの量により、セグメント化されたテキストブロック間にコンテキスト接続がまだあることが保証され、長いテキストのモデル処理の全体的な効果が改善されます。",
+    "selectEmbeddingModel": "埋め込みモデルを選択します"
   },
   "mcp": {
     "title": "MCP設定",

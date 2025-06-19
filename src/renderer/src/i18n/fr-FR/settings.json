@@ -292,7 +292,12 @@
     "builtInKnowledgeDescription": "La base de connaissances intégrée fournit des implémentations simples qui permettent certaines fonctions de base dans un environnement hors ligne.",
     "builtInKnowledgeTitle": "Base de connaissances intégrée",
     "addBuiltinKnowledgeConfig": "Ajouter une configuration de base de connaissances intégrée",
-    "editBuiltinKnowledgeConfig": "Modifier la configuration de base de connaissances intégrée"
+    "editBuiltinKnowledgeConfig": "Modifier la configuration de base de connaissances intégrée",
+    "chunkSize": "Taille de blocage",
+    "chunkSizeHelper": "Coupez le document en segments, la taille de chaque segment ne peut pas dépasser la limite de contexte du modèle",
+    "chunkOverlap": "Taille de chevauchement",
+    "chunkOverlapHelper": "La quantité de contenu répété entre les blocs de texte adjacents garantit qu'il existe toujours une connexion contextuelle entre les blocs de texte segmentés, améliorant l'effet global du traitement du modèle de textes longs",
+    "selectEmbeddingModel": "Sélectionnez un modèle intégré"
   },
   "mcp": {
     "title": "Paramètres MCP",

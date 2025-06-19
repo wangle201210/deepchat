@@ -191,6 +191,9 @@
     "deepchat-inmemory/conversation-search-server": {
       "name": "Conversation History Search",
       "desc": "DeepChat built-in conversation history search service, can search historical conversation records and message contents"
+    },
+    "builtinKnowledge": {
+      "desc": "DeepChat built-in knowledge base search service, which can search the content of DeepChat built-in knowledge base"
     }
   },
   "prompts": {
