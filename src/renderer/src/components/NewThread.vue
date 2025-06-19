@@ -58,7 +58,10 @@
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" class="p-0 w-80">
-                <ModelSelect @update:model="handleModelUpdate" />
+                <ModelSelect
+                  :type="[ModelType.Chat, ModelType.ImageGeneration]"
+                  @update:model="handleModelUpdate"
+                />
               </PopoverContent>
             </Popover>
             <Popover v-model:open="settingsPopoverOpen" @update:open="handleSettingsPopoverUpdate">

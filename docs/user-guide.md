@@ -138,7 +138,7 @@ DeepChat enhances LLM responses by integrating with search engines. This provide
 
 ## Using Tool Calling (MCP)
 
-DeepChat features excellent Model Controller Platform (MCP) support, allowing LLMs to use tools and access external resources.
+DeepChat features excellent Model Context Protocol (MCP) support, allowing LLMs to use tools and access external resources.
 
 -   **Configuration**: MCP services can be configured through a user-friendly interface. DeepLink support allows for one-click installation of MCP services.
 -   **Capabilities**: MCP enables:

@@ -266,7 +266,7 @@ export class McpConfHelper {
   // 设置MCP服务器配置
   async setMcpServers(servers: Record<string, MCPServerConfig>): Promise<void> {
     this.mcpStore.set('mcpServers', servers)
-    eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
+    eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: servers,
       defaultServers: this.mcpStore.get('defaultServers') || [],
       mcpEnabled: this.mcpStore.get('mcpEnabled')

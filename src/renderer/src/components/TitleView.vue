@@ -27,7 +27,10 @@
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" class="p-0 w-80">
-          <ModelSelect @update:model="handleModelUpdate" />
+          <ModelSelect
+            :type="[ModelType.Chat, ModelType.ImageGeneration]"
+            @update:model="handleModelUpdate"
+          />
         </PopoverContent>
       </Popover>
     </div>
@@ -71,6 +74,8 @@ import { onMounted, ref, watch } from 'vue'
 import { useChatStore } from '@/stores/chat'
 import { usePresenter } from '@/composables/usePresenter'
 import { useThemeStore } from '@/stores/theme'
+import { ModelType } from '@shared/model'
+
 const configPresenter = usePresenter('configPresenter')
 
 const { t } = useI18n()

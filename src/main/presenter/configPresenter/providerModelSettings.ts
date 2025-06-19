@@ -477,7 +477,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         match: ['minimaxai/minimax-m1-80k'],
         vision: false,
         functionCall: true,
-        reasoning: false
+        reasoning: true
       },
       {
         id: 'deepseek/deepseek-r1-0528',

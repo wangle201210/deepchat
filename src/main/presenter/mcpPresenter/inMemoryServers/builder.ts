@@ -32,7 +32,7 @@ export function getInMemoryServer(
     case 'imageServer':
       return new ImageServer(args[0], args[1])
     case 'powerpack':
-      return new PowerpackServer()
+      return new PowerpackServer(env)
     case 'difyKnowledge':
       return new DifyKnowledgeServer(
         env as {

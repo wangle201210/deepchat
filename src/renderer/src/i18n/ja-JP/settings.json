@@ -377,7 +377,13 @@
       "selectFolderError": "フォルダーの選択エラー",
       "folders": "アクセスが許可されています",
       "addFolder": "フォルダーを追加します",
-      "noFoldersSelected": "フォルダーは選択されていません"
+      "noFoldersSelected": "フォルダーは選択されていません",
+      "useE2B": "E2Bサンドボックスを有効にします",
+      "e2bDescription": "E2Bサンドボックスを使用してPythonコードを実行します",
+      "e2bApiKey": "E2B Apikey",
+      "e2bApiKeyPlaceholder": "e2b_1111xx *******など、E2B APIキーをこちらから入力してください。",
+      "e2bApiKeyHelp": "e2b.devにアクセスして、アピケイを取得します",
+      "e2bApiKeyRequired": "E2B関数を有効にするには、Apikeyを入力する必要があります"
     },
     "deleteServer": "サーバーを削除",
     "editServer": "サーバーを編集",

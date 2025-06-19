@@ -388,7 +388,13 @@
       "selectFolderError": "文件夹选择错误",
       "folders": "允许访问的文件夹",
       "addFolder": "添加文件夹",
-      "noFoldersSelected": "未选择任何文件夹"
+      "noFoldersSelected": "未选择任何文件夹",
+      "useE2B": "启用E2B沙盒",
+      "e2bDescription": "使用E2B沙盒执行Python代码",
+      "e2bApiKey": "E2B ApiKey",
+      "e2bApiKeyPlaceholder": "这里输入你的E2B Api Keys，如 e2b_1111xx*****",
+      "e2bApiKeyHelp": "前往 e2b.dev 获取你的 ApiKey",
+      "e2bApiKeyRequired": "启用E2B功能必须要输入 ApiKey"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",
@@ -444,7 +450,6 @@
     "pressEnterToSave": "按Enter保存，Esc取消",
     "noModifierOnly": "不能仅使用修饰键作为快捷键",
     "keyConflict": "快捷键冲突，请选择其他组合",
-
     "zoomIn": "放大字体",
     "zoomOut": "缩小字体",
     "zoomReset": "重置字体",
