@@ -302,6 +302,100 @@ export class GeminiProvider extends BaseLLMProvider {
     }
   }
 
+  /**
+   * 重写 autoEnableModelsIfNeeded 方法
+   * 只自动启用与 GEMINI_MODELS 中定义的推荐模型相匹配的模型
+   */
+  protected async autoEnableModelsIfNeeded() {
+    if (!this.models || this.models.length === 0) return
+    const providerId = this.provider.id
+
+    // 检查是否有自定义模型
+    const customModels = this.configPresenter.getCustomModels(providerId)
+    if (customModels && customModels.length > 0) return
+
+    // 检查是否有任何模型的状态被手动修改过
+    const hasManuallyModifiedModels = this.models.some((model) =>
+      this.configPresenter.getModelStatus(providerId, model.id)
+    )
+    if (hasManuallyModifiedModels) return
+
+    // 检查是否有任何已启用的模型
+    const hasEnabledModels = this.models.some((model) =>
+      this.configPresenter.getModelStatus(providerId, model.id)
+    )
+
+    // 如果没有任何已启用的模型，则自动启用推荐的模型
+    if (!hasEnabledModels) {
+      // 提取推荐模型ID列表
+      const recommendedModelIds = GeminiProvider.GEMINI_MODELS.map((model) => model.id)
+
+      // 过滤出匹配推荐列表的模型
+      const modelsToEnable = this.models.filter((model) => {
+        return this.isModelRecommended(model.id, recommendedModelIds)
+      })
+
+      if (modelsToEnable.length > 0) {
+        console.info(
+          `Auto enabling ${modelsToEnable.length} recommended models for provider: ${this.provider.name}`
+        )
+        modelsToEnable.forEach((model) => {
+          console.info(`Enabling recommended model: ${model.id}`)
+          this.configPresenter.enableModel(providerId, model.id)
+        })
+      } else {
+        console.warn(`No recommended models found for provider: ${this.provider.name}`)
+      }
+    }
+  }
+
+  /**
+   * 检查模型ID是否与推荐模型列表匹配（模糊匹配）
+   * @param modelId 要检查的模型ID
+   * @param recommendedIds 推荐模型ID列表
+   * @returns 是否匹配
+   */
+  private isModelRecommended(modelId: string, recommendedIds: string[]): boolean {
+    // 标准化模型ID，移除 models/ 前缀进行比较
+    const normalizeId = (id: string) => id.replace(/^models\//, '')
+    const normalizedModelId = normalizeId(modelId)
+
+    return recommendedIds.some((recommendedId) => {
+      const normalizedRecommendedId = normalizeId(recommendedId)
+
+      // 精确匹配
+      if (normalizedModelId === normalizedRecommendedId) {
+        return true
+      }
+
+      // 模糊匹配：检查是否包含核心模型名称
+      // 例如 "gemini-2.5-pro" 匹配 "gemini-2.5-pro-experimental"
+      if (
+        normalizedModelId.includes(normalizedRecommendedId) ||
+        normalizedRecommendedId.includes(normalizedModelId)
+      ) {
+        return true
+      }
+
+      // 版本匹配：检查基础模型名称是否相同
+      // 例如 "gemini-2.5-flash" 匹配 "gemini-2.5-flash-8b"
+      const getBaseModelName = (id: string) => {
+        // 移除版本号、实验标识等后缀
+        return id
+          .replace(/-\d+$/, '') // 移除末尾数字
+          .replace(/-latest$/, '') // 移除 -latest
+          .replace(/-exp.*$/, '') // 移除实验版本标识
+          .replace(/-preview.*$/, '') // 移除预览版本标识
+          .replace(/-\d{3,}$/, '') // 移除长数字版本号
+      }
+
+      const baseModelId = getBaseModelName(normalizedModelId)
+      const baseRecommendedId = getBaseModelName(normalizedRecommendedId)
+
+      return baseModelId === baseRecommendedId
+    })
+  }
+
   // Helper function to get and format safety settings
   private async getFormattedSafetySettings(): Promise<SafetySetting[] | undefined> {
     const safetySettings: SafetySetting[] = []
