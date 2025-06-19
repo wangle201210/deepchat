@@ -168,6 +168,16 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 
   private migrateModelData(oldVersion: string | undefined): void {
+    // 0.2.4 版本之前，minimax 的 baseUrl 是错误的，需要修正
+    if (oldVersion && compare(oldVersion, '0.2.4', '<')) {
+      const providers = this.getProviders()
+      for (const provider of providers) {
+        if (provider.id === 'minimax') {
+          provider.baseUrl = 'https://api.minimax.chat/v1'
+          this.setProviderById('minimax', provider)
+        }
+      }
+    }
     // 0.0.10 版本之前，模型数据存储在app-settings.json中
     if (oldVersion && compare(oldVersion, '0.0.10', '<')) {
       // 迁移旧的模型数据

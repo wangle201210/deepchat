@@ -33,6 +33,7 @@ import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
 import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
 import { OpenRouterProvider } from './providers/openRouterProvider'
+import { MinimaxProvider } from './providers/minimaxProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -91,6 +92,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
   private createProviderInstance(provider: LLM_PROVIDER): BaseLLMProvider | undefined {
     try {
+      if (provider.id === 'minimax') {
+        return new MinimaxProvider(provider, this.configPresenter)
+      }
       // 特殊处理 grok
       if (provider.apiType === 'grok' || provider.id === 'grok') {
         console.log('match grok')
