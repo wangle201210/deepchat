@@ -288,7 +288,11 @@
     "fastgptTitle": "FastGPT Knowledge Base",
     "fastgptDescription": "FastGPT is a powerful knowledge base management system that supports multiple retrieval methods and document management features.",
     "addFastGptConfig": "Add FastGPT Configuration",
-    "editFastGptConfig": "Edit FastGPT Configuration"
+    "editFastGptConfig": "Edit FastGPT Configuration",
+    "builtInKnowledgeDescription": "The built-in knowledge base provides some simple implementations that enable some basic functions in an offline environment.",
+    "builtInKnowledgeTitle": "Built-in knowledge base",
+    "addBuiltinKnowledgeConfig": "Add built-in knowledge base configuration",
+    "editBuiltinKnowledgeConfig": "Edit the built-in knowledge base configuration"
   },
   "mcp": {
     "title": "MCP Settings",

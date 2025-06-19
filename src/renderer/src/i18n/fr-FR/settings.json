@@ -288,7 +288,11 @@
     "fastgptTitle": "Base de connaissances FastGPT",
     "fastgptDescription": "FastGPT est un puissant système de gestion des connaissances prenant en charge plusieurs méthodes de recherche et des fonctionnalités de gestion de documents.",
     "addFastGptConfig": "Ajouter la configuration FastGPT",
-    "editFastGptConfig": "Éditer la configuration FastGPT"
+    "editFastGptConfig": "Éditer la configuration FastGPT",
+    "builtInKnowledgeDescription": "La base de connaissances intégrée fournit des implémentations simples qui permettent certaines fonctions de base dans un environnement hors ligne.",
+    "builtInKnowledgeTitle": "Base de connaissances intégrée",
+    "addBuiltinKnowledgeConfig": "Ajouter une configuration de base de connaissances intégrée",
+    "editBuiltinKnowledgeConfig": "Modifier la configuration de base de connaissances intégrée"
   },
   "mcp": {
     "title": "Paramètres MCP",

@@ -288,7 +288,11 @@
     "fastgptTitle": "FastGPT知識ベース",
     "fastgptDescription": "FastGPTは、複数の検索方法とドキュメント管理機能をサポートする強力な知識ベース管理システムです。",
     "addFastGptConfig": "FastGPT設定を追加",
-    "editFastGptConfig": "FastGPT設定を編集"
+    "editFastGptConfig": "FastGPT設定を編集",
+    "builtInKnowledgeDescription": "組み込みのナレッジベースは、オフライン環境でいくつかの基本機能を可能にするいくつかの簡単な実装を提供します。",
+    "builtInKnowledgeTitle": "組み込みの知識ベース",
+    "addBuiltinKnowledgeConfig": "組み込みのナレッジベースの構成を追加します",
+    "editBuiltinKnowledgeConfig": "組み込みのナレッジベースの構成を編集します"
   },
   "mcp": {
     "title": "MCP設定",

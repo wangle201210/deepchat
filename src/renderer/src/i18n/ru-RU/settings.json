@@ -288,7 +288,11 @@
     "fastgptTitle": "База знаний FastGPT",
     "fastgptDescription": "FastGPT - это мощная система управления базами знаний, поддерживающая несколько методов поиска и функции управления документами.",
     "addFastGptConfig": "Добавить конфигурацию FastGPT",
-    "editFastGptConfig": "Редактировать конфигурацию FastGPT"
+    "editFastGptConfig": "Редактировать конфигурацию FastGPT",
+    "builtInKnowledgeDescription": "Встроенная база знаний предоставляет некоторые простые реализации, которые позволяют некоторые основные функции в автономной среде.",
+    "builtInKnowledgeTitle": "Встроенная база знаний",
+    "addBuiltinKnowledgeConfig": "Добавить встроенную конфигурацию базы знаний",
+    "editBuiltinKnowledgeConfig": "Редактировать встроенную конфигурацию базы знаний"
   },
   "mcp": {
     "title": "Настройки MCP",

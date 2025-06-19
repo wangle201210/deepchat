@@ -288,7 +288,11 @@
     "addRagflowConfig": "新增 RAGFlow 設定",
     "editRagflowConfig": "編輯 RAGFlow 設定",
     "dify": "Dify知識庫",
-    "editDifyConfig": "修改Dify配置"
+    "editDifyConfig": "修改Dify配置",
+    "builtInKnowledgeDescription": "內置知識庫提供了一些簡單實現，能夠在離線環境下實現部分基礎功能。",
+    "builtInKnowledgeTitle": "內置知識庫",
+    "addBuiltinKnowledgeConfig": "添加內置知識庫配置",
+    "editBuiltinKnowledgeConfig": "編輯內置知識庫配置"
   },
   "mcp": {
     "title": "MCP設置",
