@@ -442,7 +442,7 @@ export class GeminiProvider extends BaseLLMProvider {
 
     // 从当前模型列表中查找指定的模型
     if (modelId && this.models) {
-      const model = this.models.find(m => m.id === modelId)
+      const model = this.models.find((m) => m.id === modelId)
       if (model && model.type === ModelType.ImageGeneration) {
         generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
       }
