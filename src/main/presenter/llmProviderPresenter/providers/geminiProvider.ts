@@ -439,9 +439,15 @@ export class GeminiProvider extends BaseLLMProvider {
       temperature,
       maxOutputTokens: maxTokens
     } as GenerationConfig & { responseModalities?: string[] }
-    if (modelId === 'models/gemini-2.0-flash-preview-image-generation') {
-      generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
+
+    // 从当前模型列表中查找指定的模型
+    if (modelId && this.models) {
+      const model = this.models.find(m => m.id === modelId)
+      if (model && model.type === ModelType.ImageGeneration) {
+        generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
+      }
     }
+
     return generationConfig
   }
 
