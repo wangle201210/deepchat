@@ -337,89 +337,82 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
 
   // Gemini 系列模型
   {
-    id: 'models/gemini-2.5-flash-preview-04-17',
-    name: 'Gemini 2.5 Flash Preview',
+    id: 'gemini-2.5-pro',
+    name: 'Gemini 2.5 Pro',
     temperature: 0.7,
     maxTokens: 65536,
     contextLength: 1048576,
-    match: ['models/gemini-2.5-flash-preview-04-17', 'gemini-2.5-flash-preview-04-17'],
+    match: ['gemini-2.5-pro'],
     vision: true,
     functionCall: true,
     reasoning: true
   },
   {
-    id: 'gemini-2.5-pro-preview-06-05',
-    name: 'Gemini 2.5 Pro Preview 06-05',
-    temperature: 0.7,
-    maxTokens: 8192,
-    contextLength: 2048576,
-    match: ['gemini-2.5-pro-preview'],
-    vision: true,
-    functionCall: true,
-    reasoning: false
-  },
-  {
-    id: 'gemini-2.5-pro-exp-03-25',
-    name: 'Gemini 2.5 Pro Exp 03-25',
+    id: 'models/gemini-2.5-flash',
+    name: 'Gemini 2.5 Flash',
     temperature: 0.7,
     maxTokens: 65536,
-    contextLength: 2048576,
-    match: ['gemini-2.5-pro-exp-03-25'],
-    vision: true,
-    functionCall: true,
-    reasoning: false
-  },
-  {
-    id: 'gemini-2.0-flash-exp-image-generation',
-    name: 'Gemini 2.0 Flash Exp Image Generation',
-    temperature: 0.7,
-    maxTokens: 8192,
     contextLength: 1048576,
-    match: ['gemini-2.0-flash-exp-image-generation'],
+    match: ['models/gemini-2.5-flash', 'gemini-2.5-flash'],
     vision: true,
     functionCall: true,
-    reasoning: false
+    reasoning: true
   },
   {
-    id: 'gemini-2.0-pro-exp-02-05',
-    name: 'Gemini 2.0 Pro Exp 02-05',
+    id: 'models/gemini-2.5-flash-lite-preview-06-17',
+    name: 'Gemini 2.5 Flash-Lite Preview',
     temperature: 0.7,
-    maxTokens: 8192,
-    contextLength: 2048576,
-    match: ['gemini-2.0-pro-exp-02-05'],
+    maxTokens: 64000,
+    contextLength: 1000000,
+    match: ['models/gemini-2.5-flash-lite-preview-06-17', 'gemini-2.5-flash-lite-preview'],
     vision: true,
     functionCall: true,
-    reasoning: false
+    reasoning: true
   },
   {
-    id: 'gemini-2.0-flash',
+    id: 'models/gemini-2.0-flash',
     name: 'Gemini 2.0 Flash',
     temperature: 0.7,
     maxTokens: 8192,
     contextLength: 1048576,
-    match: ['gemini-2.0-flash'],
+    match: ['models/gemini-2.0-flash', 'gemini-2.0-flash'],
+    vision: true,
+    functionCall: true,
+    reasoning: true
+  },
+  {
+    id: 'models/gemini-2.0-flash-lite',
+    name: 'Gemini 2.0 Flash Lite',
+    temperature: 0.7,
+    maxTokens: 8192,
+    contextLength: 1048576,
+    match: ['models/gemini-2.0-flash-lite', 'gemini-2.0-flash-lite'],
     vision: true,
     functionCall: true,
     reasoning: false
   },
   {
-    id: 'gemini-1.5-flash',
+    id: 'models/gemini-2.0-flash-preview-image-generation',
+    name: 'Gemini 2.0 Flash Preview Image Generation',
+    temperature: 0.7,
+    maxTokens: 8192,
+    contextLength: 32000,
+    match: [
+      'models/gemini-2.0-flash-preview-image-generation',
+      'gemini-2.0-flash-preview-image-generation'
+    ],
+    vision: true,
+    functionCall: true,
+    reasoning: false,
+    type: ModelType.ImageGeneration
+  },
+  {
+    id: 'models/gemini-1.5-flash',
     name: 'Gemini 1.5 Flash',
     temperature: 0.7,
     maxTokens: 8192,
     contextLength: 1048576,
-    match: ['gemini-1.5-flash'],
-    vision: true,
-    functionCall: true,
-    reasoning: false
-  },
-  {
-    id: 'gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
-    temperature: 0.7,
-    maxTokens: 8192,
-    contextLength: 2097152,
-    match: ['gemini-1.5-pro'],
+    match: ['models/gemini-1.5-flash', 'gemini-1.5-flash'],
     vision: true,
     functionCall: true,
     reasoning: false
