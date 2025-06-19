@@ -103,8 +103,34 @@
                 :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
               />
             </div>
-            <!-- 选择向量模型 -->
-            <ModelSelect></ModelSelect>
+            <div>
+              <Label class="text-xs text-muted-foreground" for="server-model">
+                {{ t('settings.knowledgeBase.selectEmbeddingModel') }}
+              </Label>
+              <Popover v-model:open="modelSelectOpen">
+                <PopoverTrigger as-child>
+                  <Button variant="outline" class="w-full justify-between">
+                    <div class="flex items-center gap-2">
+                      <ModelIcon
+                        :model-id="selectedEmbeddingModel?.id || ''"
+                        class="h-4 w-4"
+                        :is-dark="themeStore.isDark"
+                      />
+                      <span class="truncate">{{
+                        selectedEmbeddingModel?.name || t('settings.common.selectModel')
+                      }}</span>
+                    </div>
+                    <ChevronDown class="h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent class="w-80 p-0">
+                  <ModelSelect
+                    :type="[ModelType.Embedding]"
+                    @update:model="handleEmbeddingModelSelect"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" @click="closeBuiltinConfigDialog">{{
@@ -138,6 +164,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useMcpStore } from '@/stores/mcp'
 import ModelSelect from '@/components/ModelSelect.vue'
+import { ModelType } from '@shared/model'
+import { useThemeStore } from '@/stores/theme'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -145,6 +173,10 @@ const isBuiltinMcpEnabled = ref(false)
 const isBuiltinConfigPanelOpen = ref(false)
 const isBuiltinConfigDialogOpen = ref(false)
 const isEditMode = ref(false)
+const modelSelectOpen = ref(false)
+const selectedEmbeddingModel = ref<{ id: string; name: string } | null>(null)
+const themeStore = useThemeStore()
+
 const builtinConfigs = ref<Array<{ description: string; enabled: boolean }>>([])
 
 interface BuiltinKnowledgeConfig {
@@ -207,5 +239,10 @@ function saveBuiltinConfig() {
 }
 function closeBuiltinConfigDialog() {
   isBuiltinConfigDialogOpen.value = false
+}
+
+function handleEmbeddingModelSelect(model: { id: string; name: string }) {
+  selectedEmbeddingModel.value = model
+  modelSelectOpen.value = false
 }
 </script>

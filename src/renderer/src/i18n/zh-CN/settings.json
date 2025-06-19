@@ -292,7 +292,8 @@
     "builtInKnowledgeTitle": "内置知识库",
     "builtInKnowledgeDescription": "内置知识库提供了一些简单实现，能够在离线环境下实现部分基础功能。",
     "addBuiltinKnowledgeConfig": "添加内置知识库配置",
-    "editBuiltinKnowledgeConfig": "编辑内置知识库配置"
+    "editBuiltinKnowledgeConfig": "编辑内置知识库配置",
+    "selectEmbeddingModel": "选择嵌入模型"
   },
   "mcp": {
     "title": "MCP设置",
