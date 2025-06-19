@@ -151,11 +151,92 @@ export class GeminiProvider extends BaseLLMProvider {
 
   // 实现BaseLLMProvider中的抽象方法fetchProviderModels
   protected async fetchProviderModels(): Promise<MODEL_META[]> {
-    // 返回静态定义的模型列表，并设置正确的providerId
-    return GeminiProvider.GEMINI_MODELS.map((model) => ({
-      ...model,
-      providerId: this.provider.id
-    }))
+    try {
+      const modelsResponse = await this.genAI.models.list()
+      // console.log('gemini models response:', modelsResponse)
+
+      // 将 pager 转换为数组
+      const models: any[] = []
+      for await (const model of modelsResponse) {
+        models.push(model)
+      }
+
+      if (models.length === 0) {
+        console.warn('No models found in Gemini API response, using static models')
+        return GeminiProvider.GEMINI_MODELS.map((model) => ({
+          ...model,
+          providerId: this.provider.id
+        }))
+      }
+
+      // 映射 API 返回的模型数据
+      const apiModels: MODEL_META[] = models
+        .filter((model: any) => {
+          // 过滤掉嵌入模型和其他非聊天模型
+          const name = model.name.toLowerCase()
+          return (
+            !name.includes('embedding') &&
+            !name.includes('aqa') &&
+            !name.includes('text-embedding') &&
+            !name.includes('gemma-3n-e4b-it')
+          ) // 过滤掉特定的小模型
+        })
+        .map((model: any) => {
+          const modelName = model.name
+          const displayName = model.displayName
+
+          // 判断模型功能支持
+          const isVisionModel =
+            displayName.toLowerCase().includes('vision') || modelName.includes('gemini-') // Gemini 系列一般都支持视觉
+
+          const isFunctionCallSupported = !modelName.includes('gemma-3') // Gemma 模型不支持函数调用
+
+          // 判断是否支持推理（thinking）
+          const isReasoningSupported =
+            modelName.includes('thinking') ||
+            modelName.includes('2.5') ||
+            modelName.includes('2.0-flash') ||
+            modelName.includes('exp-1206')
+
+          // 判断模型类型
+          let modelType = ModelType.Chat
+          if (modelName.includes('image-generation')) {
+            modelType = ModelType.ImageGeneration
+          }
+
+          // 确定模型分组
+          let group = 'default'
+          if (modelName.includes('exp') || modelName.includes('preview')) {
+            group = 'experimental'
+          } else if (modelName.includes('gemma')) {
+            group = 'gemma'
+          }
+
+          return {
+            id: modelName,
+            name: displayName,
+            group,
+            providerId: this.provider.id,
+            isCustom: false,
+            contextLength: model.inputTokenLimit,
+            maxTokens: model.outputTokenLimit,
+            vision: isVisionModel,
+            functionCall: isFunctionCallSupported,
+            reasoning: isReasoningSupported,
+            ...(modelType !== ModelType.Chat && { type: modelType })
+          } as MODEL_META
+        })
+
+      // console.log('Mapped Gemini models:', apiModels)
+      return apiModels
+    } catch (error) {
+      console.warn('Failed to fetch models from Gemini API:', error)
+      // 如果 API 调用失败，回退到静态模型列表
+      return GeminiProvider.GEMINI_MODELS.map((model) => ({
+        ...model,
+        providerId: this.provider.id
+      }))
+    }
   }
 
   // 实现BaseLLMProvider中的summaryTitles抽象方法
@@ -211,11 +292,8 @@ export class GeminiProvider extends BaseLLMProvider {
     if (this.provider.enable) {
       try {
         this.isInitialized = true
-        // 使用静态定义的模型列表，并设置正确的providerId
-        this.models = GeminiProvider.GEMINI_MODELS.map((model) => ({
-          ...model,
-          providerId: this.provider.id
-        }))
+        // 使用API获取模型列表，如果失败则回退到静态列表
+        this.models = await this.fetchProviderModels()
         await this.autoEnableModelsIfNeeded()
         console.info('Provider initialized successfully:', this.provider.name)
       } catch (error) {
