@@ -44,6 +44,45 @@ type MCPEventsType = typeof MCP_EVENTS & {
   SERVER_STATUS_CHANGED: string
 }
 
+// Session management related types
+interface SessionError extends Error {
+  httpStatus?: number
+  isSessionExpired?: boolean
+}
+
+// Helper function to check if error is session-related
+function isSessionError(error: unknown): error is SessionError {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+
+    // Check for specific MCP Streamable HTTP session error patterns
+    const sessionErrorPatterns = [
+      'no valid session',
+      'session expired',
+      'session not found',
+      'invalid session',
+      'session id',
+      'mcp-session-id'
+    ]
+
+    const httpErrorPatterns = ['http 400', 'http 404', 'bad request', 'not found']
+
+    // Check for session-specific errors first (high confidence)
+    const hasSessionPattern = sessionErrorPatterns.some((pattern) => message.includes(pattern))
+    if (hasSessionPattern) {
+      return true
+    }
+
+    // Check for HTTP errors that might be session-related (lower confidence)
+    // Only treat as session error if it's an HTTP transport
+    const hasHttpPattern = httpErrorPatterns.some((pattern) => message.includes(pattern))
+    if (hasHttpPattern && (message.includes('posting') || message.includes('endpoint'))) {
+      return true
+    }
+  }
+  return false
+}
+
 // MCP 客户端类
 export class McpClient {
   private client: Client | null = null
@@ -57,6 +96,10 @@ export class McpClient {
   private uvRuntimePath: string | null = null
   private npmRegistry: string | null = null
   private uvRegistry: string | null = null
+
+  // Session management
+  private isRecovering: boolean = false
+  private hasRestarted: boolean = false
 
   // 缓存
   private cachedTools: Tool[] | null = null
@@ -580,16 +623,8 @@ export class McpClient {
     }
 
     try {
-      // 清理资源
-      this.cleanupResources()
-
-      console.log(`Disconnected from MCP server: ${this.serverName}`)
-
-      // 触发服务器状态变更事件
-      eventBus.send((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
-        name: this.serverName,
-        status: 'stopped'
-      })
+      // Use internal disconnect method for normal disconnection
+      await this.internalDisconnect()
     } catch (error) {
       console.error(`Failed to disconnect from MCP server ${this.serverName}:`, error)
       throw error
@@ -629,22 +664,94 @@ export class McpClient {
     return this.isConnected && !!this.client
   }
 
+  // Check and handle session errors by restarting the service
+  private async checkAndHandleSessionError(error: unknown): Promise<void> {
+    if (isSessionError(error) && !this.isRecovering) {
+      // If already restarted once and still getting session errors, stop the service
+      if (this.hasRestarted) {
+        console.error(
+          `Session error persists after restart for server ${this.serverName}, stopping service...`,
+          error
+        )
+        await this.stopService()
+        throw new Error(`MCP服务 ${this.serverName} 重启后仍然出现session错误，已停止服务`)
+      }
+
+      console.warn(
+        `Session error detected for server ${this.serverName}, restarting service...`,
+        error
+      )
+
+      this.isRecovering = true
+
+      try {
+        // Clean up current connection
+        this.cleanupResources()
+
+        // Clear all caches to ensure fresh data after reconnection
+        this.cachedTools = null
+        this.cachedPrompts = null
+        this.cachedResources = null
+
+        // Mark as restarted
+        this.hasRestarted = true
+
+        console.info(`Service ${this.serverName} restarted due to session error`)
+      } catch (restartError) {
+        console.error(`Failed to restart service ${this.serverName}:`, restartError)
+      } finally {
+        this.isRecovering = false
+      }
+    }
+  }
+
+  // Stop the service completely due to persistent session errors
+  private async stopService(): Promise<void> {
+    try {
+      // Use the same disconnect logic but with different reason
+      await this.internalDisconnect('persistent session errors')
+    } catch (error) {
+      console.error(`Failed to stop service ${this.serverName}:`, error)
+    }
+  }
+
+  // Internal disconnect with custom reason
+  private async internalDisconnect(reason?: string): Promise<void> {
+    // Clean up all resources
+    this.cleanupResources()
+
+    const logMessage = reason
+      ? `MCP service ${this.serverName} has been stopped due to ${reason}`
+      : `Disconnected from MCP server: ${this.serverName}`
+
+    console.log(logMessage)
+
+    // Trigger server status changed event to notify the system
+    eventBus.send((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
+      name: this.serverName,
+      status: 'stopped'
+    })
+  }
+
   // 调用 MCP 工具
   async callTool(toolName: string, args: Record<string, unknown>): Promise<ToolCallResult> {
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // 调用工具
       const result = (await this.client.callTool({
         name: toolName,
         arguments: args
       })) as ToolCallResult
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 检查结果
       if (result.isError) {
@@ -658,6 +765,9 @@ export class McpClient {
       }
       return result
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       console.error(`Failed to call MCP tool ${toolName}:`, error)
       // 调用失败，清空工具缓存
       this.cachedTools = null
@@ -672,16 +782,20 @@ export class McpClient {
       return this.cachedTools
     }
 
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       const response = await this.client.listTools()
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
+
       // 检查响应格式
       if (response && typeof response === 'object' && 'tools' in response) {
         const toolsArray = response.tools
@@ -693,6 +807,9 @@ export class McpClient {
       }
       throw new Error('无效的工具响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
@@ -715,17 +832,20 @@ export class McpClient {
       return this.cachedPrompts
     }
 
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // SDK可能没有 listPrompts 方法，需要使用通用的 request
       const response = await this.client.listPrompts()
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 检查响应格式
       if (response && typeof response === 'object' && 'prompts' in response) {
@@ -750,6 +870,9 @@ export class McpClient {
       }
       throw new Error('无效的提示响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
@@ -767,19 +890,23 @@ export class McpClient {
 
   // 获取指定提示
   async getPrompt(name: string, args?: Record<string, unknown>): Promise<Prompt> {
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       const response = await this.client.getPrompt({
         name,
         arguments: (args as Record<string, string>) || {}
       })
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
+
       // 检查响应格式并转换为 Prompt 类型
       if (
         response &&
@@ -796,6 +923,9 @@ export class McpClient {
       }
       throw new Error('无效的获取提示响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       console.error(`Failed to get MCP prompt ${name}:`, error)
       // 获取失败，清空提示缓存
       this.cachedPrompts = null
@@ -810,17 +940,20 @@ export class McpClient {
       return this.cachedResources
     }
 
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // SDK可能没有 listResources 方法，需要使用通用的 request
       const response = await this.client.listResources()
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 检查响应格式
       if (response && typeof response === 'object' && 'resources' in response) {
@@ -838,6 +971,9 @@ export class McpClient {
       }
       throw new Error('无效的资源列表响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
@@ -855,17 +991,20 @@ export class McpClient {
 
   // 读取资源
   async readResource(resourceUri: string): Promise<Resource> {
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // 使用 unknown 作为中间类型进行转换
       const rawResource = await this.client.readResource({ uri: resourceUri })
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 手动构造 Resource 对象
       const resource: Resource = {
@@ -878,6 +1017,9 @@ export class McpClient {
 
       return resource
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       console.error(`Failed to read MCP resource ${resourceUri}:`, error)
       // 读取失败，清空资源缓存
       this.cachedResources = null
