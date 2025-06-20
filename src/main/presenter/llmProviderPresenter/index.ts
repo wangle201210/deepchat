@@ -227,12 +227,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return instance
   }
 
-  // Add a method to check if provider instance is ready
-  private isProviderInstanceReady(providerId: string): boolean {
-    const instance = this.providerInstances.get(providerId)
-    return instance !== undefined
-  }
-
   async getModelList(providerId: string): Promise<MODEL_META[]> {
     const provider = this.getProviderInstance(providerId)
     let models = await provider.fetchModels()
