@@ -197,8 +197,15 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const enabledProviders = Array.from(this.providers.values()).filter(
       (provider) => provider.enable
     )
+
+    // Initialize provider instances sequentially to avoid race conditions
     for (const provider of enabledProviders) {
-      this.getProviderInstance(provider.id)
+      try {
+        console.log(`Initializing provider instance: ${provider.id}`)
+        this.getProviderInstance(provider.id)
+      } catch (error) {
+        console.error(`Failed to initialize provider ${provider.id}:`, error)
+      }
     }
 
     // 如果当前 provider 不在新的列表中，清除当前 provider
@@ -218,6 +225,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       this.providerInstances.set(providerId, instance)
     }
     return instance
+  }
+
+  // Add a method to check if provider instance is ready
+  private isProviderInstanceReady(providerId: string): boolean {
+    const instance = this.providerInstances.get(providerId)
+    return instance !== undefined
   }
 
   async getModelList(providerId: string): Promise<MODEL_META[]> {
@@ -1021,8 +1034,18 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   }
 
   async getCustomModels(providerId: string): Promise<MODEL_META[]> {
-    const provider = this.getProviderInstance(providerId)
-    return provider.getCustomModels()
+    try {
+      // First try to get from provider instance
+      const provider = this.getProviderInstance(providerId)
+      return provider.getCustomModels()
+    } catch (error) {
+      console.warn(
+        `Failed to get custom models from provider instance ${providerId}, falling back to config:`,
+        error
+      )
+      // Fallback to config presenter if provider instance fails
+      return this.configPresenter.getCustomModels(providerId)
+    }
   }
 
   async summaryTitles(
