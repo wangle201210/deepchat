@@ -297,7 +297,9 @@
     "chunkSize": "分块大小",
     "chunkOverlap": "重叠大小",
     "chunkSizeHelper": "将文档切割分段，每段的大小，不能超过模型上下文限制",
-    "chunkOverlapHelper": "相邻文本块之间重复的内容量，确保分段后的文本块之间仍然有上下文联系，提升模型处理长文本的整体效果"
+    "chunkOverlapHelper": "相邻文本块之间重复的内容量，确保分段后的文本块之间仍然有上下文联系，提升模型处理长文本的整体效果",
+    "modelNotFound": "服务商 {provider} 或模型 {model} 未找到",
+    "modelNotFoundDesc": "请确保已正确配置模型，并且模型处于启用状态。您可以在服务商设置中检查模型配置。"
   },
   "mcp": {
     "title": "MCP设置",

@@ -13,11 +13,21 @@
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <Switch
-          :checked="isBuiltinMcpEnabled"
-          :disabled="!mcpStore.mcpEnabled"
-          @update:checked="toggleBuiltinMcpServer"
-        />
+        <!-- MCP开关 -->
+        <TooltipProvider>
+          <Tooltip :delay-duration="200">
+            <TooltipTrigger as-child>
+              <Switch
+                :checked="isBuiltinMcpEnabled"
+                :disabled="!mcpStore.mcpEnabled"
+                @update:checked="toggleBuiltinMcpServer"
+              />
+            </TooltipTrigger>
+            <TooltipContent v-if="!mcpStore.mcpEnabled">
+              <p>{{ t('settings.mcp.enableToAccess') }}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <Button
           variant="outline"
           size="sm"
@@ -111,12 +121,12 @@
                 <Button variant="outline" class="w-full justify-between" :disabled="isEditing">
                   <div class="flex items-center gap-2">
                     <ModelIcon
-                      :model-id="editingBuiltinConfig?.model?.id || ''"
+                      :model-id="selectEmbeddingModel?.id || ''"
                       class="h-4 w-4"
                       :is-dark="themeStore.isDark"
                     />
                     <span class="truncate">{{
-                      editingBuiltinConfig?.model?.name || t('settings.common.selectModel')
+                      selectEmbeddingModel?.name || t('settings.common.selectModel')
                     }}</span>
                   </div>
                   <ChevronDown class="h-4 w-4 opacity-50" />
@@ -135,19 +145,28 @@
             <Input
               type="number"
               :min="1"
-              :max="editingBuiltinConfig?.model?.maxTokens"
+              :max="selectEmbeddingModel?.maxTokens"
               v-model="editingBuiltinConfig.chunkSize"
             ></Input>
           </div>
           <div class="space-y-2">
             <Label>{{ t('settings.knowledgeBase.chunkOverlap') }}</Label>
-            <Input type="number" :min="0" v-model="editingBuiltinConfig.chunkOverlap"></Input>
+            <Input
+              type="number"
+              :min="0"
+              :max="editingBuiltinConfig.chunkSize"
+              v-model="editingBuiltinConfig.chunkOverlap"
+            ></Input>
           </div>
           <DialogFooter>
             <Button variant="outline" @click="closeBuiltinConfigDialog">{{
               t('common.cancel')
             }}</Button>
-            <Button type="button" :disabled="!isEditingBuiltinConfigValid" @click="saveBuiltinConfig">
+            <Button
+              type="button"
+              :disabled="!isEditingBuiltinConfigValid"
+              @click="saveBuiltinConfig"
+            >
               {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
             </Button>
           </DialogFooter>
@@ -174,6 +193,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useMcpStore } from '@/stores/mcp'
@@ -182,9 +202,11 @@ import { useThemeStore } from '@/stores/theme'
 import { RENDERER_MODEL_META } from '@shared/presenter'
 import { toast } from '../ui/toast'
 import { useRoute } from 'vue-router'
+import { useSettingsStore } from '@/stores/settings'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
+const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
 
 // 模型选择相关
@@ -197,20 +219,24 @@ const builtinConfigs = ref<Array<BuiltinKnowledgeConfig>>([])
 interface BuiltinKnowledgeConfig {
   description: string
   providerId: string
-  model: RENDERER_MODEL_META | null
+  modelId: string
   chunkSize?: number // defualt 1000
   chunkOverlap?: number // default 0
   enabled?: boolean
 }
 
+// 正在编辑的配置
 const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
   description: '',
   providerId: '',
-  model: null,
+  modelId: '',
   chunkSize: 512,
   chunkOverlap: 0,
   enabled: true
 })
+
+// 当前选择的嵌入模型
+const selectEmbeddingModel = ref<RENDERER_MODEL_META | null>(null)
 
 // 对话框状态
 const isBuiltinConfigDialogOpen = ref(false)
@@ -221,7 +247,7 @@ function openAddConfig() {
   editingBuiltinConfig.value = {
     description: '',
     providerId: '',
-    model: null,
+    modelId: '',
     chunkSize: 512,
     chunkOverlap: 0,
     enabled: true
@@ -240,17 +266,46 @@ const isEditingBuiltinConfigValid = computed(() => {
   return (
     editingBuiltinConfig.value.description.trim() !== '' &&
     editingBuiltinConfig.value.providerId.trim() !== '' &&
-    editingBuiltinConfig.value.model !== null &&
+    editingBuiltinConfig.value.modelId.trim() !== '' &&
     editingBuiltinConfig.value.chunkSize !== undefined &&
     editingBuiltinConfig.value.chunkOverlap !== undefined &&
-    editingBuiltinConfig.value.chunkSize > 0 &&
-    editingBuiltinConfig.value.chunkOverlap >= 0
+    editingBuiltinConfig.value.chunkSize <=
+      (selectEmbeddingModel.value?.maxTokens || 1024 * 1024) &&
+    editingBuiltinConfig.value.chunkOverlap >= 0 &&
+    editingBuiltinConfig.value.chunkOverlap < editingBuiltinConfig.value.chunkSize
   )
 })
 
+// 获取已启用的模型配置
+const getEnableModelConfig = (modelId: string, providerId: string): RENDERER_MODEL_META | null => {
+  const provider = settingsStore.enabledModels.find((p) => p.providerId === providerId)
+  if (!provider || !Array.isArray(provider.models)) return null
+  const model = provider.models.find((m) => m.id === modelId && m.enabled)
+  return model || null
+}
+
 // 打开编辑对话框
-const editBuiltinConfig = (index: number) => {
+const editBuiltinConfig = async (index: number) => {
+  const config = builtinConfigs.value[index]
+  // 设置当前选择的嵌入模型
+  const model = (await getEnableModelConfig(
+    config.modelId,
+    config.providerId
+  )) as RENDERER_MODEL_META
+  // 如果模型不存在或被禁用
+  if (!model || !model.enabled) {
+    toast({
+      title: t('settings.knowledgeBase.modelNotFound', {
+        provider: t(config.providerId),
+        model: config.modelId
+      }),
+      description: t('settings.knowledgeBase.modelNotFoundDesc'),
+      variant: 'destructive'
+    })
+    return
+  }
   isEditing.value = true
+  selectEmbeddingModel.value = model
   editingConfigIndex.value = index
   editingBuiltinConfig.value = { ...builtinConfigs.value[index] }
   isBuiltinConfigDialogOpen.value = true
@@ -263,7 +318,7 @@ const closeBuiltinConfigDialog = () => {
   editingBuiltinConfig.value = {
     description: '',
     providerId: '',
-    model: null,
+    modelId: '',
     chunkSize: 512,
     chunkOverlap: 0,
     enabled: true
@@ -273,7 +328,6 @@ const closeBuiltinConfigDialog = () => {
 // 保存配置
 const saveBuiltinConfig = async () => {
   if (!isEditingBuiltinConfigValid.value) return
-
   if (isEditing.value) {
     // 更新配置
     if (editingConfigIndex.value !== -1) {
@@ -307,7 +361,8 @@ const removeBuiltinConfig = async (index: number) => {
 
 // 选择嵌入模型
 const handleEmbeddingModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
-  editingBuiltinConfig.value.model = model
+  selectEmbeddingModel.value = model
+  editingBuiltinConfig.value.modelId = model.id
   editingBuiltinConfig.value.providerId = providerId
   modelSelectOpen.value = false
 }
