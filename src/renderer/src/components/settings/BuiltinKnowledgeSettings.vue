@@ -64,13 +64,31 @@
                 >
                   <Icon icon="lucide:edit" class="h-4 w-4" />
                 </button>
-                <button
-                  type="button"
-                  class="text-muted-foreground hover:text-destructive"
-                  @click="removeBuiltinConfig(index)"
-                >
-                  <Icon icon="lucide:trash-2" class="h-4 w-4" />
-                </button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <button type="button" class="text-muted-foreground hover:text-destructive">
+                      <Icon icon="lucide:trash-2" class="h-4 w-4" />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{{
+                        t('settings.knowledgeBase.removeBuiltinKnowledgeConfirmTitle', {
+                          name: config.description
+                        })
+                      }}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {{ t('settings.knowledgeBase.removeBuiltinKnowledgeConfirmDesc') }}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
+                      <AlertDialogAction @click="removeBuiltinConfig(index)">{{
+                        t('common.confirm')
+                      }}</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
               <div class="grid gap-2">
                 <div class="flex items-center">
@@ -190,6 +208,17 @@ import {
   DialogTitle,
   DialogFooter
 } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'

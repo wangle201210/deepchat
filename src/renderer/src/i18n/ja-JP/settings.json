@@ -297,7 +297,11 @@
     "chunkSizeHelper": "ドキュメントをセグメントにカットすると、各セグメントのサイズがモデルコンテキスト制限を超えることはできません",
     "chunkOverlap": "重複するサイズ",
     "chunkOverlapHelper": "隣接するテキストブロック間で繰り返されるコンテンツの量により、セグメント化されたテキストブロック間にコンテキスト接続がまだあることが保証され、長いテキストのモデル処理の全体的な効果が改善されます。",
-    "selectEmbeddingModel": "埋め込みモデルを選択します"
+    "selectEmbeddingModel": "埋め込みモデルを選択します",
+    "modelNotFound": "サービスプロバイダー {provider} またはモデル {model} が見つかりません",
+    "modelNotFoundDesc": "モデルが正しく構成されており、モデルが有効になっていることを確認してください。サービスプロバイダーの設定でモデル構成を確認できます。",
+    "removeBuiltinKnowledgeConfirmDesc": "組み込みのナレッジベース構成を削除すると、関連するすべてのデータが削除され、復元できません。注意してください。",
+    "removeBuiltinKnowledgeConfirmTitle": "組み込みのナレッジベース{name}を削除することを確認しますか？"
   },
   "mcp": {
     "title": "MCP設定",

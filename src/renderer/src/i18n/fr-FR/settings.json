@@ -297,7 +297,11 @@
     "chunkSizeHelper": "Coupez le document en segments, la taille de chaque segment ne peut pas dépasser la limite de contexte du modèle",
     "chunkOverlap": "Taille de chevauchement",
     "chunkOverlapHelper": "La quantité de contenu répété entre les blocs de texte adjacents garantit qu'il existe toujours une connexion contextuelle entre les blocs de texte segmentés, améliorant l'effet global du traitement du modèle de textes longs",
-    "selectEmbeddingModel": "Sélectionnez un modèle intégré"
+    "selectEmbeddingModel": "Sélectionnez un modèle intégré",
+    "modelNotFound": "Fournisseur de services {provider} ou modèle {model} introuvable",
+    "modelNotFoundDesc": "Assurez-vous que le modèle est configuré correctement et que le modèle est activé. Vous pouvez vérifier la configuration du modèle dans les paramètres du fournisseur de services.",
+    "removeBuiltinKnowledgeConfirmDesc": "La suppression de la configuration de base de connaissances intégrée supprimera toutes les données pertinentes et ne peut pas être restaurée. Soyez prudent.",
+    "removeBuiltinKnowledgeConfirmTitle": "Confirmer pour supprimer la base de connaissances intégrée {name}?"
   },
   "mcp": {
     "title": "Paramètres MCP",
