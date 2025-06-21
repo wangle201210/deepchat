@@ -81,10 +81,17 @@ export const useSettingsStore = defineStore('settings', () => {
     }
 
     // 如果没有找到匹配优先级的模型，返回第一个可用的模型
-    if (enabledModels.value[0]?.models.length > 0) {
+
+    const model = enabledModels.value
+      .flatMap((provider) =>
+        provider.models.map((m) => ({ ...m, providerId: provider.providerId }))
+      )
+      .find((m) => m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
+
+    if (model) {
       return {
-        model: enabledModels.value[0].models[0],
-        providerId: enabledModels.value[0].providerId
+        model: model,
+        providerId: model.providerId
       }
     }
 
@@ -327,25 +334,26 @@ export const useSettingsStore = defineStore('settings', () => {
   // 刷新单个提供商的自定义模型
   const refreshCustomModels = async (providerId: string): Promise<void> => {
     try {
-      // 获取自定义模型列表
-      const customModelsList = await llmP.getCustomModels(providerId)
+      // 直接从配置存储获取自定义模型列表，不依赖provider实例
+      const customModelsList = await configP.getCustomModels(providerId)
 
       // 如果customModelsList为null或undefined，使用空数组
       const safeCustomModelsList = customModelsList || []
 
-      // 获取自定义模型状态并合并
-      const customModelsWithStatus = await Promise.all(
-        safeCustomModelsList.map(async (model) => {
-          // 获取模型状态
-          const enabled = await configP.getModelStatus(providerId, model.id)
-          return {
-            ...model,
-            enabled,
-            providerId,
-            isCustom: true
-          } as RENDERER_MODEL_META
-        })
-      )
+      // 批量获取自定义模型状态并合并
+      const modelIds = safeCustomModelsList.map((model) => model.id)
+      const modelStatusMap =
+        modelIds.length > 0 ? await configP.getBatchModelStatus(providerId, modelIds) : {}
+
+      const customModelsWithStatus = safeCustomModelsList.map((model) => {
+        return {
+          ...model,
+          enabled: modelStatusMap[model.id] ?? true,
+          providerId,
+          isCustom: true,
+          type: model.type || ModelType.Chat
+        } as RENDERER_MODEL_META
+      })
 
       // 更新自定义模型列表
       const customIndex = customModels.value.findIndex((item) => item.providerId === providerId)
@@ -438,19 +446,19 @@ export const useSettingsStore = defineStore('settings', () => {
         }
       }
 
-      // 获取模型状态并合并
-      const modelsWithStatus = await Promise.all(
-        models.map(async (model) => {
-          // 获取模型状态
-          const enabled = await configP.getModelStatus(providerId, model.id)
-          return {
-            ...model,
-            enabled,
-            providerId,
-            isCustom: model.isCustom || false
-          }
-        })
-      )
+      // 批量获取模型状态并合并
+      const modelIds = models.map((model) => model.id)
+      const modelStatusMap =
+        modelIds.length > 0 ? await configP.getBatchModelStatus(providerId, modelIds) : {}
+
+      const modelsWithStatus = models.map((model) => {
+        return {
+          ...model,
+          enabled: modelStatusMap[model.id] ?? true,
+          providerId,
+          isCustom: model.isCustom || false
+        }
+      })
 
       // 更新全局模型列表中的标准模型
       const allProviderIndex = allProviderModels.value.findIndex(
@@ -522,8 +530,17 @@ export const useSettingsStore = defineStore('settings', () => {
       return
     }
 
-    // 并行刷新标准模型和自定义模型
-    await Promise.all([refreshStandardModels(providerId), refreshCustomModels(providerId)])
+    try {
+      // 自定义模型直接从配置存储获取，不需要等待provider实例
+      await refreshCustomModels(providerId)
+
+      // 标准模型需要provider实例，可能需要等待实例初始化
+      await refreshStandardModels(providerId)
+    } catch (error) {
+      console.error(`刷新模型失败: ${providerId}`, error)
+      // 如果标准模型刷新失败，至少确保自定义模型可用
+      await refreshCustomModels(providerId)
+    }
   }
 
   // 刷新所有模型列表
@@ -1256,7 +1273,6 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setLoggingEnabled(enabled)
   }
 
-
   ///////////////////////////////////////////////////////////////////////////////////////
   const setCopyWithCotEnabled = async (enabled: boolean) => {
     copyWithCotEnabled.value = Boolean(enabled)
@@ -1388,6 +1404,27 @@ export const useSettingsStore = defineStore('settings', () => {
     await configP.setDefaultSystemPrompt(prompt)
   }
 
+  // 模型配置相关方法
+  const getModelConfig = async (modelId: string, providerId: string): Promise<any> => {
+    return await configP.getModelDefaultConfig(modelId, providerId)
+  }
+
+  const setModelConfig = async (
+    modelId: string,
+    providerId: string,
+    config: any
+  ): Promise<void> => {
+    await configP.setModelConfig(modelId, providerId, config)
+    // 配置变更后刷新相关模型数据
+    await refreshProviderModels(providerId)
+  }
+
+  const resetModelConfig = async (modelId: string, providerId: string): Promise<void> => {
+    await configP.resetModelConfig(modelId, providerId)
+    // 配置重置后刷新相关模型数据
+    await refreshProviderModels(providerId)
+  }
+
   return {
     providers,
     fontSizeLevel, // Expose font size level
@@ -1464,6 +1501,9 @@ export const useSettingsStore = defineStore('settings', () => {
     getGeminiSafety,
     getDefaultSystemPrompt,
     setDefaultSystemPrompt,
-    setupProviderListener
+    setupProviderListener,
+    getModelConfig,
+    setModelConfig,
+    resetModelConfig
   }
 })

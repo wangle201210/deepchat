@@ -38,6 +38,7 @@
           @show-model-list-dialog="showModelListDialog = true"
           @disable-all-models="disableAllModelsConfirm"
           @model-enabled-change="handleModelEnabledChange"
+          @config-changed="handleConfigChanged"
         />
       </div>
     </ScrollArea>
@@ -342,5 +343,11 @@ const handleOAuthSuccess = async () => {
 const handleOAuthError = (error: string) => {
   console.error('OAuth authentication failed:', error)
   // 可以在这里显示错误提示
+}
+
+// Handler for config changes
+const handleConfigChanged = async () => {
+  // 模型配置变更后重新初始化数据
+  await initData()
 }
 </script>

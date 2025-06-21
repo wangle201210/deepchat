@@ -1966,7 +1966,7 @@ export class ThreadPresenter implements IThreadPresenter {
                 return (
                   '<function_call>' +
                   JSON.stringify({
-                    function_call_result: {
+                    function_call_record: {
                       name: block.tool_call.name,
                       arguments: parsedParams,
                       response: parsedResponse

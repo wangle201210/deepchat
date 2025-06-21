@@ -100,7 +100,64 @@
     "modelList": "Model List",
     "provider": "Service provider",
     "providerSetting": "Service provider settings",
-    "selectModel": "Select a model"
+    "selectModel": "Select a model",
+    "modelConfig": {
+      "cancel": "Cancel",
+      "contextLength": {
+        "description": "Set the context length that the model can handle",
+        "label": "Context length"
+      },
+      "description": "Please note that this configuration is only valid for the current model and will not affect other models. Please modify it with caution. Incorrect parameters may cause the model to not work properly.",
+      "functionCall": {
+        "description": "Whether the model supports function calls natively (DeepChat will automatically simulate function calls after turning off this option)",
+        "label": "Function Calls"
+      },
+      "maxTokens": {
+        "description": "Set the maximum number of tokens for a single output of the model",
+        "label": "Maximum output length"
+      },
+      "reasoning": {
+        "description": "Does the model support reasoning ability?",
+        "label": "Reasoning ability"
+      },
+      "resetConfirm": {
+        "confirm": "Confirm reset",
+        "message": "Are you sure you want to reset the configuration of this model to the default? \nThis operation is irrevocable.",
+        "title": "Confirm reset"
+      },
+      "resetToDefault": "Reset to default",
+      "saveConfig": "Save configuration",
+      "temperature": {
+        "description": "Control the randomness of the output. Most models are 0-1, and some support between 0-2. The higher the higher the randomness.",
+        "label": "temperature"
+      },
+      "title": "Custom model parameters",
+      "type": {
+        "description": "Select the type of model",
+        "label": "Model Type",
+        "options": {
+          "chat": "Language Model",
+          "embedding": "Embed Model",
+          "imageGeneration": "Image generation model",
+          "rerank": "Reorder the model"
+        }
+      },
+      "validation": {
+        "contextLengthMax": "The context length cannot exceed 10000000",
+        "contextLengthMin": "The context length must be greater than 0",
+        "contextLengthRequired": "The context length cannot be empty",
+        "maxTokensMax": "The maximum output length cannot exceed 1000000",
+        "maxTokensMin": "The maximum output length must be greater than 0",
+        "maxTokensRequired": "The maximum output length cannot be empty",
+        "temperatureMax": "The temperature must be less than or equal to 2",
+        "temperatureMin": "The temperature must be greater than or equal to 0",
+        "temperatureRequired": "The temperature cannot be empty"
+      },
+      "vision": {
+        "description": "Does the model support visual ability?",
+        "label": "Visual ability"
+      }
+    }
   },
   "provider": {
     "enable": "Enable Service",
@@ -328,7 +385,13 @@
       "selectFolderError": "Folder selection error",
       "folders": "Folders allowed to access",
       "addFolder": "Add folder",
-      "noFoldersSelected": "No folders were selected"
+      "noFoldersSelected": "No folders were selected",
+      "useE2B": "Enable E2B Sandbox",
+      "e2bDescription": "Execute Python code using E2B sandbox",
+      "e2bApiKey": "E2B ApiKey",
+      "e2bApiKeyPlaceholder": "Enter your E2B Api Keys here, such as e2b_1111xx*******",
+      "e2bApiKeyHelp": "Go to e2b.dev to get your ApiKey",
+      "e2bApiKeyRequired": "ApiKey must be entered to enable E2B function"
     },
     "deleteServer": "Delete Server",
     "editServer": "Edit Server",
@@ -394,6 +457,7 @@
     "closeTab": "Close the current tab page",
     "newTab": "Create a new tab",
     "newWindow": "Open a new window",
+    "showHideWindow": "Show/Hide window",
     "newConversation": "New conversation",
     "nextTab": "Switch to next tab",
     "previousTab": "Switch to previous tab",

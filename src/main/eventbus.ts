@@ -48,7 +48,7 @@ export class EventBus extends EventEmitter {
         this.windowPresenter.sendToAllWindows(eventName, ...args)
         break
       case SendTarget.DEFAULT_TAB:
-        this.windowPresenter.sendTodefaultTab(eventName, true, ...args)
+        this.windowPresenter.sendToDefaultTab(eventName, true, ...args)
         break
       default:
         this.windowPresenter.sendToAllWindows(eventName, ...args)

@@ -102,14 +102,16 @@ export class SiliconcloudProvider extends OpenAICompatibleProvider {
     const response = await fetch('https://api.siliconflow.cn/v1/user/info', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${this.provider.apiKey}`,
+        Authorization: `Bearer ${this.provider.apiKey}`,
         'Content-Type': 'application/json'
       }
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      throw new Error(`SiliconCloud API key check failed: ${response.status} ${response.statusText} - ${errorText}`)
+      throw new Error(
+        `SiliconCloud API key check failed: ${response.status} ${response.statusText} - ${errorText}`
+      )
     }
 
     const keyResponse: SiliconCloudKeyResponse = await response.json()

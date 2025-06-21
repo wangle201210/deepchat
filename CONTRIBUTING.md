@@ -20,7 +20,7 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 - Code submitted to the `dev` branch must ensure:
   - Basic functionality works
   - No compilation errors
-  - Project can start normally with `npm run dev`
+  - Project can start normally with `pnpm run dev`
 
 #### Major Features or Refactoring
 
@@ -84,12 +84,13 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 4. Install project dependencies:
 
    ```bash
-   npm install
+   pnpm install
+   pnpm run installRuntime
    ```
 
 5. Start the development server:
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
 ## Project Structure
@@ -109,8 +110,9 @@ We use GitHub to host code, to track issues and feature requests, as well as acc
 Please ensure your code follows our style guidelines by running:
 
 ```bash
-npm run build
-npm run i18n
+pnpm run lint
+pnpm run build
+pnpm run i18n
 ```
 
 ## Pull Request Process

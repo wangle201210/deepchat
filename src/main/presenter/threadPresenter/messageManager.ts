@@ -96,7 +96,11 @@ export class MessageManager implements IMessageManager {
     const msg = this.convertToMessage(message)
     eventBus.sendToRenderer(CONVERSATION_EVENTS.MESSAGE_EDITED, SendTarget.ALL_WINDOWS, messageId)
     if (msg.parentId) {
-      eventBus.sendToRenderer(CONVERSATION_EVENTS.MESSAGE_EDITED, SendTarget.ALL_WINDOWS, msg.parentId)
+      eventBus.sendToRenderer(
+        CONVERSATION_EVENTS.MESSAGE_EDITED,
+        SendTarget.ALL_WINDOWS,
+        msg.parentId
+      )
     }
     return msg
   }
@@ -279,7 +283,7 @@ export class MessageManager implements IMessageManager {
     let content: AssistantMessageBlock[] = []
     try {
       content = message.content as AssistantMessageBlock[]
-    } catch (e) {
+    } catch {
       content = []
     }
 

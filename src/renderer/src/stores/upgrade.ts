@@ -27,8 +27,10 @@ export const useUpgradeStore = defineStore('upgrade', () => {
   const isReadyToInstall = ref(false)
   const isRestarting = ref(false)
   const updateError = ref<string | null>(null)
+  const isSilent = ref(false)
   // 检查更新
-  const checkUpdate = async () => {
+  const checkUpdate = async (silent = false) => {
+    isSilent.value = silent
     if (isChecking.value) return
     isChecking.value = true
     try {
@@ -80,12 +82,12 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           hasUpdate.value = true
           updateInfo.value = info
             ? {
-              version: info.version,
-              releaseDate: info.releaseDate,
-              releaseNotes: info.releaseNotes,
-              githubUrl: info.githubUrl,
-              downloadUrl: info.downloadUrl
-            }
+                version: info.version,
+                releaseDate: info.releaseDate,
+                releaseNotes: info.releaseNotes,
+                githubUrl: info.githubUrl,
+                downloadUrl: info.downloadUrl
+              }
             : null
           // 不自动弹出对话框，由主进程自动开始下载
           break
@@ -94,6 +96,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
           updateInfo.value = null
           isDownloading.value = false
           isUpdating.value = false
+          openUpdateDialog()
           break
         case 'downloading':
           hasUpdate.value = true
@@ -240,6 +243,7 @@ export const useUpgradeStore = defineStore('upgrade', () => {
     isDownloading,
     isReadyToInstall,
     isRestarting,
-    updateError
+    updateError,
+    isSilent
   }
 })

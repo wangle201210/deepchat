@@ -90,6 +90,19 @@ app.whenReady().then(() => {
   // 注册全局快捷键
   presenter.shortcutPresenter.registerShortcuts()
 
+  // 托盘 检测更新
+  eventBus.on(TRAY_EVENTS.CHECK_FOR_UPDATES, () => {
+    const allWindows = presenter.windowPresenter.getAllWindows()
+
+    // 查找目标窗口 (焦点窗口或第一个窗口)
+    const targetWindow = presenter.windowPresenter.getFocusedWindow() || allWindows![0]
+    presenter.windowPresenter.show(targetWindow.id)
+    targetWindow.focus() // 确保窗口置顶
+
+    // 触发更新
+    presenter.upgradePresenter.checkUpdate()
+  })
+
   // 监听显示/隐藏窗口事件 (从托盘或快捷键触发)
   eventBus.on(TRAY_EVENTS.SHOW_HIDDEN_WINDOW, (trayClick: boolean) => {
     const allWindows = presenter.windowPresenter.getAllWindows()

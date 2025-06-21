@@ -221,7 +221,10 @@ export class McpPresenter implements IMCPPresenter {
           await this.serverManager.startServer(customPromptsServerName)
           eventBus.send(MCP_EVENTS.SERVER_STARTED, SendTarget.ALL_WINDOWS, customPromptsServerName)
         } catch (error) {
-          console.error(`Failed to restart custom prompts server ${customPromptsServerName}:`, error)
+          console.error(
+            `Failed to restart custom prompts server ${customPromptsServerName}:`,
+            error
+          )
         }
       }
 
@@ -378,7 +381,7 @@ export class McpPresenter implements IMCPPresenter {
       } catch (error) {
         console.error(`[MCP] Failed to restart server ${serverName}:`, error)
         // 即使重启失败，也要确保状态正确，标记为未运行
-        eventBus.emit(MCP_EVENTS.SERVER_STOPPED, serverName)
+        eventBus.send(MCP_EVENTS.SERVER_STOPPED, SendTarget.ALL_WINDOWS, serverName)
       }
     }
   }

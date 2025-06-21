@@ -23,6 +23,7 @@ import {
 } from '@google/genai'
 import { ConfigPresenter } from '../../configPresenter'
 import { presenter } from '@/presenter'
+import { ModelType } from '@shared/model'
 
 // Mapping from simple keys to API HarmCategory constants
 const keyToHarmCategoryMap: Record<string, HarmCategory> = {
@@ -49,8 +50,8 @@ export class GeminiProvider extends BaseLLMProvider {
   // 定义静态的模型配置
   private static readonly GEMINI_MODELS: MODEL_META[] = [
     {
-      id: 'models/gemini-2.5-flash-preview-05-20',
-      name: 'Gemini 2.5 Flash Preview 0520',
+      id: 'gemini-2.5-pro',
+      name: 'Gemini 2.5 Pro',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
@@ -58,34 +59,31 @@ export class GeminiProvider extends BaseLLMProvider {
       maxTokens: 65536,
       vision: true,
       functionCall: true,
-      reasoning: true,
-      description: 'Gemini 2.5 Flash Preview 模型（支持文本、图片、视频、音频输入，预览版本 05-20）'
+      reasoning: true
     },
     {
-      id: 'gemini-2.5-pro-preview-06-05',
-      name: 'Gemini 2.5 Pro Preview 06-05',
+      id: 'models/gemini-2.5-flash',
+      name: 'Gemini 2.5 Flash',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 2048576,
-      maxTokens: 8192,
+      contextLength: 1048576,
+      maxTokens: 65536,
       vision: true,
       functionCall: true,
-      reasoning: false,
-      description: 'Gemini 2.5 Pro Preview 06-05 模型（付费）'
+      reasoning: true
     },
     {
-      id: 'gemini-2.5-pro-exp-03-25',
-      name: 'Gemini 2.5 Pro Exp 03-25',
+      id: 'models/gemini-2.5-flash-lite-preview-06-17',
+      name: 'Gemini 2.5 Flash-Lite Preview',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 2048576,
-      maxTokens: 8192,
+      contextLength: 1_000_000,
+      maxTokens: 64_000,
       vision: true,
       functionCall: true,
-      reasoning: false,
-      description: 'Gemini 2.5 Pro Exp 03-25 模型'
+      reasoning: true
     },
     {
       id: 'models/gemini-2.0-flash',
@@ -93,33 +91,44 @@ export class GeminiProvider extends BaseLLMProvider {
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1048576,
+      contextLength: 1_048_576,
       maxTokens: 8192,
       vision: true,
       functionCall: true,
-      reasoning: false,
-      description: 'Gemini 2.0 Flash 模型'
+      reasoning: true
     },
     {
       id: 'models/gemini-2.0-flash-lite',
-      name: 'Gemini 2.0 Flash-Lite',
+      name: 'Gemini 2.0 Flash Lite',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1048576,
+      contextLength: 1_048_576,
+      maxTokens: 8192,
+      vision: true,
+      functionCall: true,
+      reasoning: false
+    },
+    {
+      id: 'models/gemini-2.0-flash-preview-image-generation',
+      name: 'Gemini 2.0 Flash Preview Image Generation',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 32000,
       maxTokens: 8192,
       vision: true,
       functionCall: true,
       reasoning: false,
-      description: 'Gemini 2.0 Flash-Lite 模型（更轻量级）'
+      type: ModelType.ImageGeneration
     },
     {
-      id: 'gemini-2.0-flash-exp-image-generation',
-      name: 'Gemini 2.0 Flash Exp Image Generation',
+      id: 'models/gemini-1.5-flash',
+      name: 'Gemini 1.5 Flash',
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1048576,
+      contextLength: 1_048_576,
       maxTokens: 8192,
       vision: true,
       functionCall: true,
@@ -129,7 +138,10 @@ export class GeminiProvider extends BaseLLMProvider {
 
   constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
     super(provider, configPresenter)
-    this.genAI = new GoogleGenAI({ apiKey: this.provider.apiKey })
+    this.genAI = new GoogleGenAI({
+      apiKey: this.provider.apiKey,
+      httpOptions: { baseUrl: this.provider.baseUrl }
+    })
     this.init()
   }
 
@@ -139,11 +151,92 @@ export class GeminiProvider extends BaseLLMProvider {
 
   // 实现BaseLLMProvider中的抽象方法fetchProviderModels
   protected async fetchProviderModels(): Promise<MODEL_META[]> {
-    // 返回静态定义的模型列表，并设置正确的providerId
-    return GeminiProvider.GEMINI_MODELS.map((model) => ({
-      ...model,
-      providerId: this.provider.id
-    }))
+    try {
+      const modelsResponse = await this.genAI.models.list()
+      // console.log('gemini models response:', modelsResponse)
+
+      // 将 pager 转换为数组
+      const models: any[] = []
+      for await (const model of modelsResponse) {
+        models.push(model)
+      }
+
+      if (models.length === 0) {
+        console.warn('No models found in Gemini API response, using static models')
+        return GeminiProvider.GEMINI_MODELS.map((model) => ({
+          ...model,
+          providerId: this.provider.id
+        }))
+      }
+
+      // 映射 API 返回的模型数据
+      const apiModels: MODEL_META[] = models
+        .filter((model: any) => {
+          // 过滤掉嵌入模型和其他非聊天模型
+          const name = model.name.toLowerCase()
+          return (
+            !name.includes('embedding') &&
+            !name.includes('aqa') &&
+            !name.includes('text-embedding') &&
+            !name.includes('gemma-3n-e4b-it')
+          ) // 过滤掉特定的小模型
+        })
+        .map((model: any) => {
+          const modelName = model.name
+          const displayName = model.displayName
+
+          // 判断模型功能支持
+          const isVisionModel =
+            displayName.toLowerCase().includes('vision') || modelName.includes('gemini-') // Gemini 系列一般都支持视觉
+
+          const isFunctionCallSupported = !modelName.includes('gemma-3') // Gemma 模型不支持函数调用
+
+          // 判断是否支持推理（thinking）
+          const isReasoningSupported =
+            modelName.includes('thinking') ||
+            modelName.includes('2.5') ||
+            modelName.includes('2.0-flash') ||
+            modelName.includes('exp-1206')
+
+          // 判断模型类型
+          let modelType = ModelType.Chat
+          if (modelName.includes('image-generation')) {
+            modelType = ModelType.ImageGeneration
+          }
+
+          // 确定模型分组
+          let group = 'default'
+          if (modelName.includes('exp') || modelName.includes('preview')) {
+            group = 'experimental'
+          } else if (modelName.includes('gemma')) {
+            group = 'gemma'
+          }
+
+          return {
+            id: modelName,
+            name: displayName,
+            group,
+            providerId: this.provider.id,
+            isCustom: false,
+            contextLength: model.inputTokenLimit,
+            maxTokens: model.outputTokenLimit,
+            vision: isVisionModel,
+            functionCall: isFunctionCallSupported,
+            reasoning: isReasoningSupported,
+            ...(modelType !== ModelType.Chat && { type: modelType })
+          } as MODEL_META
+        })
+
+      // console.log('Mapped Gemini models:', apiModels)
+      return apiModels
+    } catch (error) {
+      console.warn('Failed to fetch models from Gemini API:', error)
+      // 如果 API 调用失败，回退到静态模型列表
+      return GeminiProvider.GEMINI_MODELS.map((model) => ({
+        ...model,
+        providerId: this.provider.id
+      }))
+    }
   }
 
   // 实现BaseLLMProvider中的summaryTitles抽象方法
@@ -199,17 +292,108 @@ export class GeminiProvider extends BaseLLMProvider {
     if (this.provider.enable) {
       try {
         this.isInitialized = true
-        // 使用静态定义的模型列表，并设置正确的providerId
-        this.models = GeminiProvider.GEMINI_MODELS.map((model) => ({
-          ...model,
-          providerId: this.provider.id
-        }))
+        // 使用API获取模型列表，如果失败则回退到静态列表
+        this.models = await this.fetchProviderModels()
         await this.autoEnableModelsIfNeeded()
         console.info('Provider initialized successfully:', this.provider.name)
       } catch (error) {
         console.warn('Provider initialization failed:', this.provider.name, error)
       }
     }
+  }
+
+  /**
+   * 重写 autoEnableModelsIfNeeded 方法
+   * 只自动启用与 GEMINI_MODELS 中定义的推荐模型相匹配的模型
+   */
+  protected async autoEnableModelsIfNeeded() {
+    if (!this.models || this.models.length === 0) return
+    const providerId = this.provider.id
+
+    // 检查是否有自定义模型
+    const customModels = this.configPresenter.getCustomModels(providerId)
+    if (customModels && customModels.length > 0) return
+
+    // 检查是否有任何模型的状态被手动修改过
+    const hasManuallyModifiedModels = this.models.some((model) =>
+      this.configPresenter.getModelStatus(providerId, model.id)
+    )
+    if (hasManuallyModifiedModels) return
+
+    // 检查是否有任何已启用的模型
+    const hasEnabledModels = this.models.some((model) =>
+      this.configPresenter.getModelStatus(providerId, model.id)
+    )
+
+    // 如果没有任何已启用的模型，则自动启用推荐的模型
+    if (!hasEnabledModels) {
+      // 提取推荐模型ID列表
+      const recommendedModelIds = GeminiProvider.GEMINI_MODELS.map((model) => model.id)
+
+      // 过滤出匹配推荐列表的模型
+      const modelsToEnable = this.models.filter((model) => {
+        return this.isModelRecommended(model.id, recommendedModelIds)
+      })
+
+      if (modelsToEnable.length > 0) {
+        console.info(
+          `Auto enabling ${modelsToEnable.length} recommended models for provider: ${this.provider.name}`
+        )
+        modelsToEnable.forEach((model) => {
+          console.info(`Enabling recommended model: ${model.id}`)
+          this.configPresenter.enableModel(providerId, model.id)
+        })
+      } else {
+        console.warn(`No recommended models found for provider: ${this.provider.name}`)
+      }
+    }
+  }
+
+  /**
+   * 检查模型ID是否与推荐模型列表匹配（模糊匹配）
+   * @param modelId 要检查的模型ID
+   * @param recommendedIds 推荐模型ID列表
+   * @returns 是否匹配
+   */
+  private isModelRecommended(modelId: string, recommendedIds: string[]): boolean {
+    // 标准化模型ID，移除 models/ 前缀进行比较
+    const normalizeId = (id: string) => id.replace(/^models\//, '')
+    const normalizedModelId = normalizeId(modelId)
+
+    return recommendedIds.some((recommendedId) => {
+      const normalizedRecommendedId = normalizeId(recommendedId)
+
+      // 精确匹配
+      if (normalizedModelId === normalizedRecommendedId) {
+        return true
+      }
+
+      // 模糊匹配：检查是否包含核心模型名称
+      // 例如 "gemini-2.5-pro" 匹配 "gemini-2.5-pro-experimental"
+      if (
+        normalizedModelId.includes(normalizedRecommendedId) ||
+        normalizedRecommendedId.includes(normalizedModelId)
+      ) {
+        return true
+      }
+
+      // 版本匹配：检查基础模型名称是否相同
+      // 例如 "gemini-2.5-flash" 匹配 "gemini-2.5-flash-8b"
+      const getBaseModelName = (id: string) => {
+        // 移除版本号、实验标识等后缀
+        return id
+          .replace(/-\d+$/, '') // 移除末尾数字
+          .replace(/-latest$/, '') // 移除 -latest
+          .replace(/-exp.*$/, '') // 移除实验版本标识
+          .replace(/-preview.*$/, '') // 移除预览版本标识
+          .replace(/-\d{3,}$/, '') // 移除长数字版本号
+      }
+
+      const baseModelId = getBaseModelName(normalizedModelId)
+      const baseRecommendedId = getBaseModelName(normalizedRecommendedId)
+
+      return baseModelId === baseRecommendedId
+    })
   }
 
   // Helper function to get and format safety settings
@@ -255,9 +439,15 @@ export class GeminiProvider extends BaseLLMProvider {
       temperature,
       maxOutputTokens: maxTokens
     } as GenerationConfig & { responseModalities?: string[] }
-    if (modelId === 'gemini-2.0-flash-exp-image-generation') {
-      generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
+
+    // 从当前模型列表中查找指定的模型
+    if (modelId && this.models) {
+      const model = this.models.find((m) => m.id === modelId)
+      if (model && model.type === ModelType.ImageGeneration) {
+        generationConfig.responseModalities = [Modality.TEXT, Modality.IMAGE]
+      }
     }
+
     return generationConfig
   }
 
@@ -680,7 +870,7 @@ export class GeminiProvider extends BaseLLMProvider {
     console.log('modelConfig', modelConfig, modelId)
 
     // 检查是否是图片生成模型
-    const isImageGenerationModel = modelId === 'gemini-2.0-flash-exp-image-generation'
+    const isImageGenerationModel = modelId === 'models/gemini-2.0-flash-preview-image-generation'
 
     // 如果是图片生成模型，使用特殊处理
     if (isImageGenerationModel) {

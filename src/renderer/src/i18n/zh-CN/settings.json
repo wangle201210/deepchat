@@ -100,7 +100,64 @@
     "selectModel": "选择模型",
     "providerSetting": "服务商设置",
     "configureModel": "配置模型",
-    "addModel": "添加模型"
+    "addModel": "添加模型",
+    "modelConfig": {
+      "title": "自定义模型参数",
+      "description": "请注意，此配置仅对当前模型有效，不会影响其他模型，请谨慎修改，错误的参数可能导致模型无法正常工作。",
+      "maxTokens": {
+        "label": "最大输出长度",
+        "description": "设置模型单次输出的最大Token数量"
+      },
+      "contextLength": {
+        "label": "上下文长度",
+        "description": "设置模型能够处理的上下文长度"
+      },
+      "temperature": {
+        "label": "温度",
+        "description": "控制输出的随机性，大部分模型0-1，部分支持0-2之间，越高越随机"
+      },
+      "vision": {
+        "label": "视觉能力",
+        "description": "模型是否支持视觉能力"
+      },
+      "functionCall": {
+        "label": "函数调用",
+        "description": "模型是否原生支持函数调用(关闭这个选项后DeepChat会自动模拟函数调用)"
+      },
+      "reasoning": {
+        "label": "推理能力",
+        "description": "模型是否支持推理能力"
+      },
+      "type": {
+        "label": "模型类型",
+        "description": "选择模型的类型",
+        "options": {
+          "chat": "语言模型",
+          "embedding": "嵌入模型",
+          "rerank": "重排序模型",
+          "imageGeneration": "图像生成模型"
+        }
+      },
+      "resetToDefault": "重置为默认",
+      "saveConfig": "保存配置",
+      "cancel": "取消",
+      "resetConfirm": {
+        "title": "确认重置",
+        "message": "确定要重置此模型的配置为默认值吗？此操作不可撤销。",
+        "confirm": "确定重置"
+      },
+      "validation": {
+        "maxTokensRequired": "最大输出长度不能为空",
+        "maxTokensMin": "最大输出长度必须大于0",
+        "maxTokensMax": "最大输出长度不能超过1000000",
+        "contextLengthRequired": "上下文长度不能为空",
+        "contextLengthMin": "上下文长度必须大于0",
+        "contextLengthMax": "上下文长度不能超过10000000",
+        "temperatureRequired": "温度不能为空",
+        "temperatureMin": "温度必须大于等于0",
+        "temperatureMax": "温度必须小于等于2"
+      }
+    }
   },
   "provider": {
     "enable": "开启服务",
@@ -327,7 +384,13 @@
       "selectFolderError": "文件夹选择错误",
       "folders": "允许访问的文件夹",
       "addFolder": "添加文件夹",
-      "noFoldersSelected": "未选择任何文件夹"
+      "noFoldersSelected": "未选择任何文件夹",
+      "useE2B": "启用E2B沙盒",
+      "e2bDescription": "使用E2B沙盒执行Python代码",
+      "e2bApiKey": "E2B ApiKey",
+      "e2bApiKeyPlaceholder": "这里输入你的E2B Api Keys，如 e2b_1111xx*****",
+      "e2bApiKeyHelp": "前往 e2b.dev 获取你的 ApiKey",
+      "e2bApiKeyRequired": "启用E2B功能必须要输入 ApiKey"
     },
     "deleteServer": "删除服务器",
     "editServer": "编辑服务器",
@@ -383,7 +446,6 @@
     "pressEnterToSave": "按Enter保存，Esc取消",
     "noModifierOnly": "不能仅使用修饰键作为快捷键",
     "keyConflict": "快捷键冲突，请选择其他组合",
-
     "zoomIn": "放大字体",
     "zoomOut": "缩小字体",
     "zoomReset": "重置字体",
@@ -395,6 +457,7 @@
     "newWindow": "打开新窗口",
     "newTab": "新建标签页",
     "closeTab": "关闭当前标签页",
+    "showHideWindow": "显示/隐藏窗口",
     "newConversation": "新会话",
     "nextTab": "切换到下一个标签页",
     "previousTab": "切换到上一个标签页",

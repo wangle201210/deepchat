@@ -100,7 +100,64 @@
     "modelList": "模型列表",
     "provider": "服務商",
     "providerSetting": "服務商設置",
-    "selectModel": "選擇模型"
+    "selectModel": "選擇模型",
+    "modelConfig": {
+      "cancel": "取消",
+      "contextLength": {
+        "description": "設置模型能夠處理的上下文長度",
+        "label": "上下文長度"
+      },
+      "description": "請注意，此配置僅對當前模型有效，不會影響其他模型，請謹慎修改，錯誤的參數可能導致模型無法正常工作。",
+      "functionCall": {
+        "description": "模型是否原生支持函數調用(關閉這個選項後DeepChat會自動模擬函數調用)",
+        "label": "函數調用"
+      },
+      "maxTokens": {
+        "description": "設置模型單次輸出的最大Token數量",
+        "label": "最大輸出長度"
+      },
+      "reasoning": {
+        "description": "模型是否支持推理能力",
+        "label": "推理能力"
+      },
+      "resetConfirm": {
+        "confirm": "確定重置",
+        "message": "確定要重置此模型的配置為默認值嗎？\n此操作不可撤銷。",
+        "title": "確認重置"
+      },
+      "resetToDefault": "重置為默認",
+      "saveConfig": "保存配置",
+      "temperature": {
+        "description": "控制輸出的隨機性，大部分模型0-1，部分支持0-2之間，越高越隨機",
+        "label": "溫度"
+      },
+      "title": "自定義模型參數",
+      "type": {
+        "description": "選擇模型的類型",
+        "label": "模型類型",
+        "options": {
+          "chat": "語言模型",
+          "embedding": "嵌入模型",
+          "imageGeneration": "圖像生成模型",
+          "rerank": "重排序模型"
+        }
+      },
+      "validation": {
+        "contextLengthMax": "上下文長度不能超過10000000",
+        "contextLengthMin": "上下文長度必須大於0",
+        "contextLengthRequired": "上下文長度不能為空",
+        "maxTokensMax": "最大輸出長度不能超過1000000",
+        "maxTokensMin": "最大輸出長度必須大於0",
+        "maxTokensRequired": "最大輸出長度不能為空",
+        "temperatureMax": "溫度必須小於等於2",
+        "temperatureMin": "溫度必須大於等於0",
+        "temperatureRequired": "溫度不能為空"
+      },
+      "vision": {
+        "description": "模型是否支持視覺能力",
+        "label": "視覺能力"
+      }
+    }
   },
   "provider": {
     "enable": "開啟服務",
@@ -320,7 +377,13 @@
       "selectFolderError": "文件夾選擇錯誤",
       "folders": "允許訪問的文件夾",
       "addFolder": "添加文件夾",
-      "noFoldersSelected": "未選擇任何文件夾"
+      "noFoldersSelected": "未選擇任何文件夾",
+      "useE2B": "啟用E2B沙盒",
+      "e2bDescription": "使用E2B沙盒執行Python代碼",
+      "e2bApiKey": "E2B ApiKey",
+      "e2bApiKeyPlaceholder": "這裡輸入你的E2B Api Keys，如 e2b_1111xx*****",
+      "e2bApiKeyHelp": "前往 e2b.dev 獲取你的 ApiKey",
+      "e2bApiKeyRequired": "啟用E2B功能必須要輸入 ApiKey"
     },
     "deleteServer": "刪除伺服器",
     "editServer": "編輯伺服器",
@@ -394,6 +457,7 @@
     "closeTab": "關閉當前標籤頁",
     "newTab": "新建標籤頁",
     "newWindow": "打開新窗口",
+    "showHideWindow": "顯示/隱藏窗口",
     "newConversation": "新會話",
     "lastTab": "切換到最後一個標籤頁",
     "previousTab": "切換到上一個標籤頁",

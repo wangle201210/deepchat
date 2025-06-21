@@ -363,6 +363,7 @@ const isFirstStep = computed(() => currentStep.value === 0)
                   :key="model.id"
                   :model-name="model.name"
                   :model-id="model.id"
+                  :provider-id="selectedProvider"
                   :group="model.group"
                   :enabled="model.enabled ?? false"
                   :type="model.type ?? ModelType.Chat"

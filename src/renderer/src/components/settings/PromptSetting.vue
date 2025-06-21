@@ -180,15 +180,15 @@
 
     <!-- 新增/编辑抽屉窗口 -->
     <Sheet v-model:open="openAddDialog">
-      <SheetContent 
-        side="right" 
+      <SheetContent
+        side="right"
         class="!w-[75vw] !max-w-[95vw] h-full flex flex-col p-0 bg-background"
       >
         <SheetHeader class="px-6 py-4 border-b bg-card/50">
           <SheetTitle class="flex items-center gap-2">
-            <Icon 
-              :icon="editingIdx === null ? 'lucide:plus-circle' : 'lucide:edit-3'" 
-              class="w-5 h-5 text-primary" 
+            <Icon
+              :icon="editingIdx === null ? 'lucide:plus-circle' : 'lucide:edit-3'"
+              class="w-5 h-5 text-primary"
             />
             <span>
               {{ editingIdx === null ? t('promptSetting.addTitle') : t('promptSetting.editTitle') }}
@@ -202,62 +202,68 @@
             }}
           </SheetDescription>
         </SheetHeader>
-        
+
         <ScrollArea class="flex-1 px-6">
           <div class="py-6 space-y-6">
             <!-- 基本信息区域 -->
             <div class="space-y-4">
               <div class="flex items-center gap-2 pb-2 border-b border-border">
                 <Icon icon="lucide:info" class="w-4 h-4 text-primary" />
-                <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.basicInfo') }}</Label>
+                <Label class="text-sm font-medium text-muted-foreground">{{
+                  t('promptSetting.basicInfo')
+                }}</Label>
               </div>
-              
-          <div class="space-y-4">
-            <div>
+
+              <div class="space-y-4">
+                <div>
                   <Label class="text-sm font-medium">{{ t('promptSetting.name') }}</Label>
-                  <Input 
-                    v-model="form.name" 
-                    :placeholder="t('promptSetting.namePlaceholder')" 
+                  <Input
+                    v-model="form.name"
+                    :placeholder="t('promptSetting.namePlaceholder')"
                     class="mt-2"
                   />
-            </div>
-            <div>
+                </div>
+                <div>
                   <Label class="text-sm font-medium">{{ t('promptSetting.description') }}</Label>
-              <Input
-                v-model="form.description"
-                :placeholder="t('promptSetting.descriptionPlaceholder')"
+                  <Input
+                    v-model="form.description"
+                    :placeholder="t('promptSetting.descriptionPlaceholder')"
                     class="mt-2"
-              />
-            </div>
+                  />
+                </div>
               </div>
-              
+
               <div class="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="prompt-enabled"
-                :checked="form.enabled"
-                @update:checked="(value) => (form.enabled = value)"
-              />
-                <Label for="prompt-enabled" class="text-sm">{{ t('promptSetting.enablePrompt') }}</Label>
-            </div>
+                <Checkbox
+                  id="prompt-enabled"
+                  :checked="form.enabled"
+                  @update:checked="(value) => (form.enabled = value)"
+                />
+                <Label for="prompt-enabled" class="text-sm">{{
+                  t('promptSetting.enablePrompt')
+                }}</Label>
+              </div>
             </div>
 
             <!-- 内容区域 -->
             <div class="space-y-4">
               <div class="flex items-center gap-2 pb-2 border-b border-border">
                 <Icon icon="lucide:file-text" class="w-4 h-4 text-primary" />
-                <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.content') }}</Label>
+                <Label class="text-sm font-medium text-muted-foreground">{{
+                  t('promptSetting.content')
+                }}</Label>
               </div>
-              
-            <div>
-              <textarea
-                v-model="form.content"
+
+              <div>
+                <textarea
+                  v-model="form.content"
                   class="w-full min-h-48 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 font-mono resize-y"
-                :placeholder="t('promptSetting.contentPlaceholder')"
-              ></textarea>
+                  :placeholder="t('promptSetting.contentPlaceholder')"
+                ></textarea>
                 <p class="text-xs text-muted-foreground mt-2">
                   {{ t('promptSetting.contentTip', { openBrace: '{', closeBrace: '}' }) }}
                 </p>
-            </div>
+              </div>
             </div>
 
             <!-- 参数区域 -->
@@ -265,14 +271,16 @@
               <div class="flex items-center justify-between pb-2 border-b border-border">
                 <div class="flex items-center gap-2">
                   <Icon icon="lucide:settings" class="w-4 h-4 text-primary" />
-                  <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.parameters') }}</Label>
+                  <Label class="text-sm font-medium text-muted-foreground">{{
+                    t('promptSetting.parameters')
+                  }}</Label>
                 </div>
                 <Button variant="outline" size="sm" @click="addParameter">
                   <Icon icon="lucide:plus" class="w-4 h-4 mr-1" />
                   {{ t('promptSetting.addParameter') }}
                 </Button>
               </div>
-              
+
               <div v-if="form.parameters?.length" class="space-y-4">
                 <div
                   v-for="(param, index) in form.parameters"
@@ -330,14 +338,16 @@
                   </div>
                 </div>
               </div>
-              
+
               <div
                 v-else
                 class="text-center text-muted-foreground py-12 border-2 border-dashed border-muted rounded-lg bg-muted/20"
               >
                 <Icon icon="lucide:settings" class="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p class="text-sm">{{ t('promptSetting.noParameters') }}</p>
-                <p class="text-xs text-muted-foreground/70 mt-1">{{ t('promptSetting.noParametersDesc') }}</p>
+                <p class="text-xs text-muted-foreground/70 mt-1">
+                  {{ t('promptSetting.noParametersDesc') }}
+                </p>
               </div>
             </div>
 
@@ -345,23 +355,29 @@
             <div class="space-y-4">
               <div class="flex items-center gap-2 pb-2 border-b border-border">
                 <Icon icon="lucide:folder" class="w-4 h-4 text-primary" />
-                <Label class="text-sm font-medium text-muted-foreground">{{ t('promptSetting.fileManagement') }}</Label>
+                <Label class="text-sm font-medium text-muted-foreground">{{
+                  t('promptSetting.fileManagement')
+                }}</Label>
               </div>
 
               <!-- 上传选项 -->
               <div>
                 <!-- 上传文件 -->
-                <div 
+                <div
                   class="group border-2 border-dashed border-muted rounded-lg p-4 hover:border-primary/50 hover:bg-muted/20 transition-all cursor-pointer"
                   @click="uploadFile"
                 >
                   <div class="flex items-center gap-3">
-                    <div class="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors">
+                    <div
+                      class="p-2 bg-primary/10 rounded-lg group-hover:bg-primary/20 transition-colors"
+                    >
                       <Icon icon="lucide:upload" class="w-5 h-5 text-primary" />
                     </div>
                     <div>
                       <p class="text-sm font-medium">{{ t('promptSetting.uploadFromDevice') }}</p>
-                      <p class="text-xs text-muted-foreground">{{ t('promptSetting.uploadFromDeviceDesc') }}</p>
+                      <p class="text-xs text-muted-foreground">
+                        {{ t('promptSetting.uploadFromDeviceDesc') }}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -369,7 +385,9 @@
 
               <!-- 已上传文件列表 -->
               <div v-if="form.files?.length" class="space-y-3">
-                <Label class="text-sm text-muted-foreground">{{ t('promptSetting.uploadedFiles') }}</Label>
+                <Label class="text-sm text-muted-foreground">{{
+                  t('promptSetting.uploadedFiles')
+                }}</Label>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   <div
                     v-for="(file, index) in form.files"
@@ -394,16 +412,23 @@
                           <Icon :icon="getFileIcon(file.type)" class="w-4 h-4 text-primary" />
                         </div>
                         <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium truncate" :title="file.name">{{ file.name }}</p>
+                          <p class="text-sm font-medium truncate" :title="file.name">
+                            {{ file.name }}
+                          </p>
                         </div>
                       </div>
-                      
+
                       <div class="flex items-center justify-between text-xs text-muted-foreground">
-                        <span class="px-2 py-0.5 bg-muted rounded uppercase">{{ file.type || 'unknown' }}</span>
+                        <span class="px-2 py-0.5 bg-muted rounded uppercase">{{
+                          file.type || 'unknown'
+                        }}</span>
                         <span>{{ formatFileSize(file.size) }}</span>
                       </div>
-                      
-                      <p v-if="file.description" class="text-xs text-muted-foreground mt-2 line-clamp-2">
+
+                      <p
+                        v-if="file.description"
+                        class="text-xs text-muted-foreground mt-2 line-clamp-2"
+                      >
                         {{ file.description }}
                       </p>
                     </div>
@@ -418,23 +443,25 @@
               >
                 <Icon icon="lucide:folder-open" class="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <p class="text-sm">{{ t('promptSetting.noFiles') }}</p>
-                <p class="text-xs text-muted-foreground/70 mt-1">{{ t('promptSetting.noFilesUploadDesc') }}</p>
+                <p class="text-xs text-muted-foreground/70 mt-1">
+                  {{ t('promptSetting.noFilesUploadDesc') }}
+                </p>
               </div>
             </div>
           </div>
         </ScrollArea>
-        
+
         <SheetFooter class="px-6 py-4 border-t bg-card/50">
           <div class="flex items-center justify-between w-full">
             <div class="text-xs text-muted-foreground">
               {{ form.content.length }} {{ t('promptSetting.characters') }}
             </div>
             <div class="flex items-center gap-3">
-          <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
+              <Button variant="outline" @click="closeDialog">{{ t('common.cancel') }}</Button>
               <Button :disabled="!form.name || !form.content" @click="savePrompt">
-                <Icon 
-                  :icon="editingIdx === null ? 'lucide:plus' : 'lucide:save'" 
-                  class="w-4 h-4 mr-1" 
+                <Icon
+                  :icon="editingIdx === null ? 'lucide:plus' : 'lucide:save'"
+                  class="w-4 h-4 mr-1"
                 />
                 {{ t('common.confirm') }}
               </Button>
@@ -975,7 +1002,7 @@ const uploadFile = () => {
   input.onchange = (e) => {
     const files = (e.target as HTMLInputElement).files
     if (files) {
-      Array.from(files).forEach(file => {
+      Array.from(files).forEach((file) => {
         const fileItem: FileItem = {
           id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           name: file.name,
@@ -985,22 +1012,27 @@ const uploadFile = () => {
           description: '',
           createdAt: Date.now()
         }
-        
+
         // 读取文件内容（对于文本文件）
-        if (file.type.startsWith('text/') || ['.txt', '.md', '.csv', '.json', '.xml'].some(ext => file.name.toLowerCase().endsWith(ext))) {
+        if (
+          file.type.startsWith('text/') ||
+          ['.txt', '.md', '.csv', '.json', '.xml'].some((ext) =>
+            file.name.toLowerCase().endsWith(ext)
+          )
+        ) {
           const reader = new FileReader()
           reader.onload = (event) => {
             fileItem.content = event.target?.result as string
           }
           reader.readAsText(file)
         }
-        
+
         if (!form.files) {
           form.files = []
         }
         form.files.push(fileItem)
       })
-      
+
       toast({
         title: t('promptSetting.uploadSuccess'),
         description: `${t('promptSetting.uploadedCount', { count: files.length })}`,
@@ -1010,8 +1042,6 @@ const uploadFile = () => {
   }
   input.click()
 }
-
-
 
 const removeFile = (index: number) => {
   if (form.files) {

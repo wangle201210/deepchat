@@ -6,7 +6,8 @@ import {
   ModelConfig,
   RENDERER_MODEL_META,
   MCPServerConfig,
-  Prompt
+  Prompt,
+  IModelConfig
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { ModelType } from '@shared/model'
@@ -20,8 +21,7 @@ import { McpConfHelper, SYSTEM_INMEM_MCP_SERVERS } from './mcpConfHelper'
 import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
 import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
-import { defaultModelsSettings } from './modelDefaultSettings'
-import { getProviderSpecificModelConfig } from './providerModelSettings'
+import { ModelConfigHelper } from './modelConfig'
 
 // 定义应用设置的接口
 interface IAppSettings {
@@ -77,6 +77,7 @@ export class ConfigPresenter implements IConfigPresenter {
   private userDataPath: string
   private currentAppVersion: string
   private mcpConfHelper: McpConfHelper // 使用MCP配置助手
+  private modelConfigHelper: ModelConfigHelper // 模型配置助手
 
   constructor() {
     this.userDataPath = app.getPath('userData')
@@ -117,6 +118,9 @@ export class ConfigPresenter implements IConfigPresenter {
 
     // 初始化MCP配置助手
     this.mcpConfHelper = new McpConfHelper()
+
+    // 初始化模型配置助手
+    this.modelConfigHelper = new ModelConfigHelper()
 
     // 初始化provider models目录
     this.initProviderModelsDir()
@@ -164,6 +168,16 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 
   private migrateModelData(oldVersion: string | undefined): void {
+    // 0.2.4 版本之前，minimax 的 baseUrl 是错误的，需要修正
+    if (oldVersion && compare(oldVersion, '0.2.4', '<')) {
+      const providers = this.getProviders()
+      for (const provider of providers) {
+        if (provider.id === 'minimax') {
+          provider.baseUrl = 'https://api.minimax.chat/v1'
+          this.setProviderById('minimax', provider)
+        }
+      }
+    }
     // 0.0.10 版本之前，模型数据存储在app-settings.json中
     if (oldVersion && compare(oldVersion, '0.0.10', '<')) {
       // 迁移旧的模型数据
@@ -304,12 +318,30 @@ export class ConfigPresenter implements IConfigPresenter {
     return typeof status === 'boolean' ? status : true
   }
 
+  // 批量获取模型启用状态
+  getBatchModelStatus(providerId: string, modelIds: string[]): Record<string, boolean> {
+    const result: Record<string, boolean> = {}
+    for (const modelId of modelIds) {
+      const statusKey = this.getModelStatusKey(providerId, modelId)
+      const status = this.getSetting<boolean>(statusKey)
+      // 如果状态不是布尔值，则返回 true
+      result[modelId] = typeof status === 'boolean' ? status : true
+    }
+    return result
+  }
+
   // 设置模型启用状态
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void {
     const statusKey = this.getModelStatusKey(providerId, modelId)
     this.setSetting(statusKey, enabled)
     // 触发模型状态变更事件（需要通知所有标签页）
-    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_STATUS_CHANGED, SendTarget.ALL_WINDOWS, providerId, modelId, enabled)
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.MODEL_STATUS_CHANGED,
+      SendTarget.ALL_WINDOWS,
+      providerId,
+      modelId,
+      enabled
+    )
   }
 
   // 启用模型
@@ -393,9 +425,13 @@ export class ConfigPresenter implements IConfigPresenter {
           ...this.getCustomModels(providerId)
         ]
 
-        // 根据单独存储的状态过滤启用的模型
+        // 批量获取模型状态
+        const modelIds = allModels.map((model) => model.id)
+        const modelStatusMap = this.getBatchModelStatus(providerId, modelIds)
+
+        // 根据批量获取的状态过滤启用的模型
         const enabledModels = allModels
-          .filter((model) => this.getModelStatus(providerId, model.id))
+          .filter((model) => modelStatusMap[model.id])
           .map((model) => ({
             ...model,
             enabled: true,
@@ -791,44 +827,83 @@ export class ConfigPresenter implements IConfigPresenter {
    * @returns ModelConfig 模型配置
    */
   getModelConfig(modelId: string, providerId?: string): ModelConfig {
-    // 如果提供了providerId，先尝试查找特定提供商的配置
-    if (providerId) {
-      const providerConfig = getProviderSpecificModelConfig(providerId, modelId)
-      if (providerConfig) {
-        // console.log('providerConfig Matched', providerId, modelId)
-        return providerConfig
-      }
-    }
+    return this.modelConfigHelper.getModelConfig(modelId, providerId)
+  }
 
-    // 如果没有找到特定提供商的配置，或者没有提供providerId，则查找通用配置
-    // 将modelId转为小写以进行不区分大小写的匹配
-    const lowerModelId = modelId.toLowerCase()
+  /**
+   * Set custom model configuration for a specific provider and model
+   * @param modelId - The model ID
+   * @param providerId - The provider ID
+   * @param config - The model configuration
+   */
+  setModelConfig(modelId: string, providerId: string, config: ModelConfig): void {
+    this.modelConfigHelper.setModelConfig(modelId, providerId, config)
+    // 触发模型配置变更事件（需要通知所有标签页）
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.MODEL_CONFIG_CHANGED,
+      SendTarget.ALL_WINDOWS,
+      providerId,
+      modelId,
+      config
+    )
+  }
 
-    // 检查是否有任何匹配条件符合
-    for (const config of defaultModelsSettings) {
-      if (config.match.some((matchStr) => lowerModelId.includes(matchStr.toLowerCase()))) {
-        return {
-          maxTokens: config.maxTokens,
-          contextLength: config.contextLength,
-          temperature: config.temperature,
-          vision: config.vision,
-          functionCall: config.functionCall || false,
-          reasoning: config.reasoning || false,
-          type: config.type || ModelType.Chat
-        }
-      }
-    }
+  /**
+   * Reset model configuration for a specific provider and model
+   * @param modelId - The model ID
+   * @param providerId - The provider ID
+   */
+  resetModelConfig(modelId: string, providerId: string): void {
+    this.modelConfigHelper.resetModelConfig(modelId, providerId)
+    // 触发模型配置重置事件（需要通知所有标签页）
+    eventBus.sendToRenderer(
+      CONFIG_EVENTS.MODEL_CONFIG_RESET,
+      SendTarget.ALL_WINDOWS,
+      providerId,
+      modelId
+    )
+  }
 
-    // 如果没有找到匹配的配置，返回默认的安全配置
-    return {
-      maxTokens: 4096,
-      contextLength: 8192,
-      temperature: 0.6,
-      vision: false,
-      functionCall: false,
-      reasoning: false,
-      type: ModelType.Chat
-    }
+  /**
+   * Get all user-defined model configurations
+   */
+  getAllModelConfigs(): Record<string, IModelConfig> {
+    return this.modelConfigHelper.getAllModelConfigs()
+  }
+
+  /**
+   * Get configurations for a specific provider
+   * @param providerId - The provider ID
+   */
+  getProviderModelConfigs(providerId: string): Array<{ modelId: string; config: ModelConfig }> {
+    return this.modelConfigHelper.getProviderModelConfigs(providerId)
+  }
+
+  /**
+   * Check if a model has user-defined configuration
+   * @param modelId - The model ID
+   * @param providerId - The provider ID
+   */
+  hasUserModelConfig(modelId: string, providerId: string): boolean {
+    return this.modelConfigHelper.hasUserConfig(modelId, providerId)
+  }
+
+  /**
+   * Export all model configurations for backup/sync
+   */
+  exportModelConfigs(): Record<string, IModelConfig> {
+    return this.modelConfigHelper.exportConfigs()
+  }
+
+  /**
+   * Import model configurations for restore/sync
+   * @param configs - Model configurations to import
+   * @param overwrite - Whether to overwrite existing configurations
+   */
+  importModelConfigs(configs: Record<string, IModelConfig>, overwrite: boolean = false): void {
+    this.modelConfigHelper.importConfigs(configs, overwrite)
+    // 触发批量导入事件（需要通知所有标签页）
+    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_CONFIGS_IMPORTED, SendTarget.ALL_WINDOWS, overwrite)
   }
 
   getNotificationsEnabled(): boolean {
@@ -953,7 +1028,4 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 }
 
-// 导出配置相关内容，方便其他组件使用
-export { defaultModelsSettings } from './modelDefaultSettings'
-export { providerModelSettings } from './providerModelSettings'
 export { defaultShortcutKey } from './shortcutKeySettings'
