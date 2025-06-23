@@ -1,6 +1,6 @@
 {
   "name": "DeepChat",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "DeepChat，一个简单易用的AI客户端",
   "main": "./out/main/index.js",
   "author": "ThinkInAIXYZ",
@@ -54,6 +54,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.53.0",
+    "@e2b/code-interpreter": "^1.5.1",
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.5.1",
@@ -144,7 +145,7 @@
     "vitest": "^3.2.3",
     "vue": "^3.5.14",
     "vue-i18n": "^11.1.3",
-    "vue-renderer-markdown": "^0.0.29",
+    "vue-renderer-markdown": "^0.0.30",
     "vue-router": "4",
     "vue-tsc": "^2.2.10",
     "vue-use-monaco": "^0.0.6",

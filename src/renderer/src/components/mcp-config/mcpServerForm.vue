@@ -28,6 +28,7 @@ import type { RENDERER_MODEL_META } from '@shared/presenter'
 import { MCP_MARKETPLACE_URL, HIGRESS_MCP_MARKETPLACE_URL } from './const'
 import { usePresenter } from '@/composables/usePresenter'
 import { useThemeStore } from '@/stores/theme'
+import { ModelType } from '@shared/model'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -62,6 +63,10 @@ const modelSelectOpen = ref(false)
 const selectedImageModel = ref<RENDERER_MODEL_META | null>(null)
 const selectedImageModelProvider = ref('')
 
+// E2B 配置相关
+const useE2B = ref(false)
+const e2bApiKey = ref('')
+
 // 判断是否是inmemory类型
 const isInMemoryType = computed(() => type.value === 'inmemory')
 // 判断是否是imageServer
@@ -70,6 +75,8 @@ const isImageServer = computed(() => isInMemoryType.value && name.value === 'ima
 const isBuildInFileSystem = computed(
   () => isInMemoryType.value && name.value === 'buildInFileSystem'
 )
+// 判断是否是powerpack服务器
+const isPowerpackServer = computed(() => isInMemoryType.value && name.value === 'powerpack')
 // 判断字段是否只读(inmemory类型除了args和env外都是只读的)
 const isFieldReadOnly = computed(() => props.editMode && isInMemoryType.value)
 
@@ -125,11 +132,14 @@ const jsonConfig = ref('')
 const showBaseUrl = computed(() => type.value === 'sse' || type.value === 'http')
 // 添加计算属性来控制命令相关字段的显示
 const showCommandFields = computed(() => type.value === 'stdio')
-// 控制参数输入框的显示 (stdio 或 非imageServer且非buildInFileSystem的inmemory)
+// 控制参数输入框的显示 (stdio 或 非imageServer且非buildInFileSystem且非powerpack的inmemory)
 const showArgsInput = computed(
   () =>
     showCommandFields.value ||
-    (isInMemoryType.value && !isImageServer.value && !isBuildInFileSystem.value)
+    (isInMemoryType.value &&
+      !isImageServer.value &&
+      !isBuildInFileSystem.value &&
+      !isPowerpackServer.value)
 )
 
 // 控制文件夹选择界面的显示 (仅针对 buildInFileSystem)
@@ -270,9 +280,19 @@ const validateKeyValueHeaders = (text: string): boolean => {
 // 新增：计算属性用于验证 Key=Value 格式
 const isCustomHeadersFormatValid = computed(() => validateKeyValueHeaders(customHeaders.value))
 
+// E2B 配置验证
+const isE2BConfigValid = computed(() => {
+  if (!isPowerpackServer.value) return true
+  if (!useE2B.value) return true
+  return e2bApiKey.value.trim().length > 0
+})
+
 const isFormValid = computed(() => {
   // 基本验证：名称必须有效
   if (!isNameValid.value) return false
+
+  // E2B 配置验证
+  if (!isE2BConfigValid.value) return false
 
   // 对于SSE类型，只需要名称和baseUrl有效
   if (type.value === 'sse' || type.value === 'http') {
@@ -439,6 +459,15 @@ const handleSubmit = (): void => {
     return
   }
 
+  // 如果是 powerpack 服务器，添加 E2B 配置到环境变量
+  if (isPowerpackServer.value) {
+    parsedEnv = {
+      ...parsedEnv,
+      USE_E2B: useE2B.value,
+      E2B_API_KEY: useE2B.value ? e2bApiKey.value.trim() : ''
+    }
+  }
+
   // 解析 customHeaders
   let parsedCustomHeaders = {}
   try {
@@ -563,6 +592,13 @@ watch(
       type.value = newConfig.type || 'stdio'
       baseUrl.value = newConfig.baseUrl || ''
       npmRegistry.value = newConfig.customNpmRegistry || ''
+
+      // 解析 E2B 配置（仅针对 powerpack 服务器）
+      if (props.serverName === 'powerpack' && newConfig.env) {
+        const envConfig = newConfig.env as Record<string, any>
+        useE2B.value = envConfig.USE_E2B === true || envConfig.USE_E2B === 'true'
+        e2bApiKey.value = envConfig.E2B_API_KEY || ''
+      }
 
       // Format customHeaders from initialConfig
       if (newConfig.customHeaders) {
@@ -793,7 +829,10 @@ HTTP-Referer=deepchatai.cn`
               </Button>
             </PopoverTrigger>
             <PopoverContent class="w-80 p-0">
-              <ModelSelect @update:model="handleImageModelSelect" />
+              <ModelSelect
+                :type="[ModelType.Chat, ModelType.ImageGeneration]"
+                @update:model="handleImageModelSelect"
+              />
             </PopoverContent>
           </Popover>
         </div>
@@ -884,7 +923,7 @@ HTTP-Referer=deepchatai.cn`
         </div>
 
         <!-- 环境变量 -->
-        <div v-if="showCommandFields || isInMemoryType" class="space-y-2">
+        <div v-if="(showCommandFields || isInMemoryType) && !isPowerpackServer" class="space-y-2">
           <Label class="text-xs text-muted-foreground" for="server-env">{{
             t('settings.mcp.serverForm.env')
           }}</Label>
@@ -895,6 +934,58 @@ HTTP-Referer=deepchatai.cn`
             :placeholder="t('settings.mcp.serverForm.envPlaceholder')"
             :class="{ 'border-red-500': !isEnvValid }"
           />
+        </div>
+
+        <!-- E2B 配置 (仅针对 powerpack 服务器) -->
+        <div
+          v-if="isPowerpackServer"
+          class="space-y-4 p-4 border border-border rounded-lg bg-background/50"
+        >
+          <div class="flex items-center justify-between">
+            <div class="space-y-1">
+              <Label class="text-sm font-medium">{{
+                t('settings.mcp.serverForm.useE2B') || '使用 E2B 代码执行'
+              }}</Label>
+              <div class="text-xs text-muted-foreground">
+                {{
+                  t('settings.mcp.serverForm.e2bDescription') ||
+                  '启用 E2B 云端沙盒环境执行代码，更安全且支持完整的 Python 生态系统'
+                }}
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <Checkbox id="use-e2b" v-model:checked="useE2B" />
+            </div>
+          </div>
+
+          <!-- E2B API Key 输入框 -->
+          <div v-if="useE2B" class="space-y-2">
+            <Label class="text-xs text-muted-foreground" for="e2b-api-key">
+              {{ t('settings.mcp.serverForm.e2bApiKey') || 'E2B API Key' }}
+              <span class="text-red-500">*</span>
+            </Label>
+            <Input
+              id="e2b-api-key"
+              v-model="e2bApiKey"
+              type="password"
+              :placeholder="
+                t('settings.mcp.serverForm.e2bApiKeyPlaceholder') || '输入您的 E2B API Key'
+              "
+              required
+              :class="{ 'border-red-500': useE2B && !e2bApiKey.trim() }"
+            />
+            <div class="text-xs text-muted-foreground">
+              {{
+                t('settings.mcp.serverForm.e2bApiKeyHelp') || '您可以在 E2B 控制台获取 API Key：'
+              }}
+              <a href="https://e2b.dev/docs" target="_blank" class="text-primary hover:underline">
+                https://e2b.dev/docs
+              </a>
+            </div>
+            <div v-if="useE2B && !e2bApiKey.trim()" class="text-xs text-red-500">
+              {{ t('settings.mcp.serverForm.e2bApiKeyRequired') || 'E2B API Key 是必需的' }}
+            </div>
+          </div>
         </div>
 
         <!-- 描述 -->

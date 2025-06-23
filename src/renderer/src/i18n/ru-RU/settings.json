@@ -377,7 +377,13 @@
       "selectFolderError": "Ошибка выбора папки",
       "folders": "Папки разрешены доступа",
       "addFolder": "Добавить папку",
-      "noFoldersSelected": "Не было выбрано папки"
+      "noFoldersSelected": "Не было выбрано папки",
+      "useE2B": "Включить песочницу E2B",
+      "e2bDescription": "Выполните код Python с помощью песочницы E2B",
+      "e2bApiKey": "E2b apikey",
+      "e2bApiKeyPlaceholder": "Введите здесь свои клавиши E2B API, такие как E2B_1111XX *******",
+      "e2bApiKeyHelp": "Перейдите в E2B.DEV, чтобы получить свой Apikey",
+      "e2bApiKeyRequired": "Apikey должен быть введен, чтобы включить функцию E2B"
     },
     "deleteServer": "Удалить сервер",
     "editServer": "Редактировать сервер",
