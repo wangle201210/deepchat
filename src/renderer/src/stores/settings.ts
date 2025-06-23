@@ -334,8 +334,8 @@ export const useSettingsStore = defineStore('settings', () => {
   // 刷新单个提供商的自定义模型
   const refreshCustomModels = async (providerId: string): Promise<void> => {
     try {
-      // 获取自定义模型列表
-      const customModelsList = await llmP.getCustomModels(providerId)
+      // 直接从配置存储获取自定义模型列表，不依赖provider实例
+      const customModelsList = await configP.getCustomModels(providerId)
 
       // 如果customModelsList为null或undefined，使用空数组
       const safeCustomModelsList = customModelsList || []
@@ -530,8 +530,17 @@ export const useSettingsStore = defineStore('settings', () => {
       return
     }
 
-    // 并行刷新标准模型和自定义模型
-    await Promise.all([refreshStandardModels(providerId), refreshCustomModels(providerId)])
+    try {
+      // 自定义模型直接从配置存储获取，不需要等待provider实例
+      await refreshCustomModels(providerId)
+
+      // 标准模型需要provider实例，可能需要等待实例初始化
+      await refreshStandardModels(providerId)
+    } catch (error) {
+      console.error(`刷新模型失败: ${providerId}`, error)
+      // 如果标准模型刷新失败，至少确保自定义模型可用
+      await refreshCustomModels(providerId)
+    }
   }
 
   // 刷新所有模型列表

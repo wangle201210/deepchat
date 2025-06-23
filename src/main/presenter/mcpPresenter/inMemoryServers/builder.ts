@@ -11,6 +11,7 @@ import { CustomPromptsServer } from './customPromptsServer'
 import { DeepResearchServer } from './deepResearchServer'
 import { AutoPromptingServer } from './autoPromptingServer'
 import { ConversationSearchServer } from './conversationSearchServer'
+import { MeetingServer } from './meetingServer'
 import { BuiltinKnowledgeServer } from './builtinKnowledgeServer'
 
 export function getInMemoryServer(
@@ -86,6 +87,8 @@ export function getInMemoryServer(
       return new AutoPromptingServer()
     case 'deepchat-inmemory/conversation-search-server':
       return new ConversationSearchServer()
+    case 'deepchat-inmemory/meeting-server':
+      return new MeetingServer()
     default:
       throw new Error(`Unknown in-memory server: ${serverName}`)
   }

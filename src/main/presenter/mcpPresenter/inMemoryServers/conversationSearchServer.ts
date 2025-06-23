@@ -6,7 +6,7 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
 import { presenter } from '@/presenter' // 导入全局的 presenter 对象
 import { eventBus } from '@/eventbus' // 引入 eventBus
-import { TAB_EVENTS } from '@/events' // 引入 TAB_EVENTS
+import { TAB_EVENTS } from '@/events'
 
 // Schema definitions
 const SearchConversationsArgsSchema = z.object({

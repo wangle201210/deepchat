@@ -194,6 +194,10 @@
     },
     "builtinKnowledge": {
       "desc": "DeepChat built-in knowledge base search service, which can search the content of DeepChat built-in knowledge base"
+    },
+    "deepchat-inmemory/meeting-server": {
+      "name": "Multi-Agent Meeting",
+      "desc": "DeepChat's built-in meeting service enables hosting and facilitating multi-agent discussions."
     }
   },
   "prompts": {
