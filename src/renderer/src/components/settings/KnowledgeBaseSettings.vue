@@ -1,6 +1,6 @@
 <template>
   <ScrollArea class="w-full h-full p-2">
-    <div class="w-full h-full flex flex-col gap-1.5">
+    <div v-show="!showBuiltinKnowledgeDetail" class="w-full h-full flex flex-col gap-1.5">
       <!-- 知识库配置标题 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
         <span class="flex flex-row items-center gap-2 flex-grow w-full">
@@ -29,7 +29,7 @@
         <!-- FastGPT知识库 -->
         <FastGptKnowledgeSettings ref="fastGptSettingsRef" />
         <!-- 内置知识库 -->
-        <BuiltinKnowledgeSettings ref="builtinSettingsRef" />
+        <BuiltinKnowledgeSettings ref="builtinSettingsRef" @showDetail="showDetail" />
         <!-- 未来可以添加更多知识库类型 -->
         <div
           class="border rounded-lg p-4 border-dashed flex items-center justify-center text-muted-foreground"
@@ -90,7 +90,9 @@
             >
               <Icon icon="lucide:book-open" class="h-5 mr-3 text-primary" />
               <div class="flex-1">
-                <h3 class="text-sm font-medium">{{ t('settings.knowledgeBase.builtInKnowledgeTitle') }}</h3>
+                <h3 class="text-sm font-medium">
+                  {{ t('settings.knowledgeBase.builtInKnowledgeTitle') }}
+                </h3>
                 <p class="text-xs text-muted-foreground">
                   {{ t('settings.knowledgeBase.builtInKnowledgeDescription') }}
                 </p>
@@ -104,6 +106,9 @@
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+    <div v-show="showBuiltinKnowledgeDetail">
+      <KnowledgeFile :builtinKnowledgeDetail="builtinKnowledgeDetail" @hideKnowledgeFile="showBuiltinKnowledgeDetail=false"></KnowledgeFile>
     </div>
   </ScrollArea>
 </template>
@@ -126,6 +131,7 @@ import RagflowKnowledgeSettings from './RagflowKnowledgeSettings.vue'
 import DifyKnowledgeSettings from './DifyKnowledgeSettings.vue'
 import FastGptKnowledgeSettings from './FastGptKnowledgeSettings.vue'
 import BuiltinKnowledgeSettings from './BuiltinKnowledgeSettings.vue'
+import KnowledgeFile from './KnowledgeFile.vue'
 
 const difySettingsRef = ref<InstanceType<typeof DifyKnowledgeSettings> | null>(null)
 const ragflowSettingsRef = ref<InstanceType<typeof RagflowKnowledgeSettings> | null>(null)
@@ -133,6 +139,13 @@ const fastGptSettingsRef = ref<InstanceType<typeof FastGptKnowledgeSettings> | n
 const builtinSettingsRef = ref<InstanceType<typeof BuiltinKnowledgeSettings> | null>(null)
 
 const { t } = useI18n()
+// 是否展示内置知识库文件详情
+const showBuiltinKnowledgeDetail = ref(false)
+const builtinKnowledgeDetail = ref({})
+const showDetail = (detail) => {
+  showBuiltinKnowledgeDetail.value = true
+  builtinKnowledgeDetail.value = detail
+}
 
 // 对话框状态
 const isAddKnowledgeBaseDialogOpen = ref(false)

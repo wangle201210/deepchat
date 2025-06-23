@@ -60,6 +60,13 @@
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-primary"
+                  @click="handleSetting(config)"
+                >
+                  <Icon icon="lucide:settings" class="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:text-primary"
                   @click="editBuiltinConfig(index)"
                 >
                   <Icon icon="lucide:edit" class="h-4 w-4" />
@@ -237,6 +244,9 @@ const { t } = useI18n()
 const mcpStore = useMcpStore()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
+const emit = defineEmits<{
+  (e: 'showDetail',value:Object): void
+}>()
 
 // 模型选择相关
 const modelSelectOpen = ref(false)
@@ -353,7 +363,10 @@ const closeBuiltinConfigDialog = () => {
     enabled: true
   }
 }
-
+// 进入设置页面
+const handleSetting = (config) => {
+  emit('showDetail',config)
+}
 // 保存配置
 const saveBuiltinConfig = async () => {
   if (!isEditingBuiltinConfigValid.value) return
