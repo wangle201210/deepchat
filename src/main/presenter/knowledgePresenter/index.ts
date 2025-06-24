@@ -1,7 +1,12 @@
 import * as fs from 'node:fs'
 import path from 'node:path'
 
-import { IConfigPresenter, IKnowledgePresenter, KnowledgeBaseParams } from '@shared/presenter'
+import {
+  IConfigPresenter,
+  IKnowledgePresenter,
+  KnowledgeBaseParams,
+  MCPServerConfig
+} from '@shared/presenter'
 import Embeddings from './Embeddings'
 import { RAGApplication, RAGApplicationBuilder } from '@llm-tools/embedjs'
 import { LibSqlDb } from '@llm-tools/embedjs-libsql'
@@ -37,33 +42,31 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   private setupEventBus = (): void => {
     // 监听知识库相关事件
     eventBus.on(MCP_EVENTS.CONFIG_CHANGED, async (payload) => {
-      const mcpServers = payload?.mcpServers || {}
-      const builtinConfig = mcpServers['builtinKnowledge']
-      if (builtinConfig) {
-        console.log('[RAG] Received builtinKnowledge config update:', builtinConfig)
-        /* // 取出 configs
-        const newConfigs = builtinConfig.env?.configs || []
-        // 读取旧配置（如有缓存可用缓存，否则从磁盘/数据库读取）
-        const oldConfigs = (await this.configPresenter.getBuiltinKnowledgeConfigs?.()) || []
-
-        // diff 新旧配置，自动判断新增、更新、删除
-        const oldMap = new Map(oldConfigs.map((cfg) => [cfg.id, cfg]))
-        const newMap = new Map(newConfigs.map((cfg) => [cfg.id, cfg]))
-
-        // 新增和更新
-        for (const cfg of newConfigs) {
-          if (!oldMap.has(cfg.id)) {
-            await this.create(cfg)
-          } else if (JSON.stringify(cfg) !== JSON.stringify(oldMap.get(cfg.id))) {
-            await this.reset({ base: cfg })
-          }
+      try {
+        if (!payload || typeof payload !== 'object' || !payload.mcpServers || typeof payload.mcpServers !== 'object') {
+          console.warn('[RAG] Invalid payload for CONFIG_CHANGED event:', payload)
+          return
         }
-        // 删除
-        for (const cfg of oldConfigs) {
-          if (!newMap.has(cfg.id)) {
-            await this.delete(cfg.id)
+        const mcpServers = payload.mcpServers
+        const builtinConfig = mcpServers['builtinKnowledge'] as MCPServerConfig
+        if (builtinConfig && builtinConfig.env && Array.isArray(builtinConfig.env.configs)) {
+          const configs = builtinConfig.env.configs as KnowledgeBaseParams[]
+          console.log('[RAG] Received builtinKnowledge config update:', configs)
+
+          const diffs = this.configPresenter.diffKnowledgeConfigs(configs)
+          if (diffs.added.length > 0) {
           }
-        } */
+          if (diffs.updated.length > 0) {
+          }
+          if (diffs.deleted.length > 0) {
+          }
+          this.configPresenter.setKnowledgeConfigs(configs)
+          console.log('[RAG] Updated knowledge configs:', configs)
+        } else {
+          console.warn('[RAG] builtinKnowledge config missing or invalid:', builtinConfig)
+        }
+      } catch (err) {
+        console.error('[RAG] Error handling CONFIG_CHANGED event:', err)
       }
     })
   }

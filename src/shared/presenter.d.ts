@@ -421,6 +421,14 @@ export interface IConfigPresenter {
   getShortcutKey(): ShortcutKeySetting
   setShortcutKey(customShortcutKey: ShortcutKeySetting): void
   resetShortcutKeys(): void
+  // 知识库设置
+  getKnowledgeConfigs(): KnowledgeBaseParams[]
+  setKnowledgeConfigs(configs: KnowledgeBaseParams[]): void
+  diffKnowledgeConfigs(configs: KnowledgeBaseParams[]): {
+    added: KnowledgeBaseParams[]
+    deleted: KnowledgeBaseParams[]
+    updated: KnowledgeBaseParams[]
+  }
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -1144,6 +1152,7 @@ export interface IKnowledgePresenter {
 
 export type KnowledgeBaseParams = {
   id: string
+  description: string
   model: string
   provider: string
   dimensions?: number

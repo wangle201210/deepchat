@@ -235,6 +235,7 @@ import { toast } from '../ui/toast'
 import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { ChevronDown } from 'lucide-vue-next'
+import { nanoid } from 'nanoid'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -269,6 +270,7 @@ const builtinConfigs = computed(() => {
 }) /* ref<Array<BuiltinKnowledgeConfig>>([]) */
 
 interface BuiltinKnowledgeConfig {
+  id: string
   description: string
   providerId: string
   modelId: string
@@ -279,6 +281,7 @@ interface BuiltinKnowledgeConfig {
 
 // 正在编辑的配置
 const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
+  id: '',
   description: '',
   providerId: '',
   modelId: '',
@@ -297,6 +300,7 @@ const isBuiltinConfigDialogOpen = ref(false)
 function openAddConfig() {
   isEditing.value = false
   editingBuiltinConfig.value = {
+    id: nanoid(),
     description: '',
     providerId: '',
     modelId: '',
@@ -368,6 +372,7 @@ const closeBuiltinConfigDialog = () => {
   isBuiltinConfigDialogOpen.value = false
   editingConfigIndex.value = -1
   editingBuiltinConfig.value = {
+    id: '',
     description: '',
     providerId: '',
     modelId: '',
