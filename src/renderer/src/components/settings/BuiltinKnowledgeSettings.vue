@@ -165,6 +165,7 @@
               :min="1"
               :max="selectEmbeddingModel?.maxTokens"
               v-model="editingBuiltinConfig.chunkSize"
+              :step="128"
             ></Input>
           </div>
           <div class="space-y-2">
@@ -174,6 +175,7 @@
               :min="0"
               :max="editingBuiltinConfig.chunkSize"
               v-model="editingBuiltinConfig.chunkOverlap"
+              :step="128"
             ></Input>
           </div>
           <DialogFooter>
@@ -232,6 +234,7 @@ import { RENDERER_MODEL_META } from '@shared/presenter'
 import { toast } from '../ui/toast'
 import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
+import { ChevronDown } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -243,7 +246,27 @@ const modelSelectOpen = ref(false)
 const isBuiltinConfigPanelOpen = ref(false)
 const isEditing = ref(false)
 
-const builtinConfigs = ref<Array<BuiltinKnowledgeConfig>>([])
+const builtinConfigs = computed(() => {
+  try {
+    const serverConfig = mcpStore.config.mcpServers['builtinKnowledge']
+    if (serverConfig && serverConfig.env) {
+      // 解析配置 - env可能是JSON字符串
+      try {
+        // 尝试解析JSON字符串
+        const envObj =
+          typeof serverConfig.env === 'string' ? JSON.parse(serverConfig.env) : serverConfig.env
+        // const envObj = serverConfig.env
+        if (envObj.configs && Array.isArray(envObj.configs)) {
+          return envObj.configs
+        }
+      } catch (parseError) {
+        console.error('解析BuiltinKnowledge配置JSON失败:', parseError)
+      }
+    }
+  } catch (error) {
+    console.error('加载BuiltinKnowledge配置失败:', error)
+  }
+}) /* ref<Array<BuiltinKnowledgeConfig>>([]) */
 
 interface BuiltinKnowledgeConfig {
   description: string
@@ -439,10 +462,9 @@ const updateBuiltinConfigToMcp = async () => {
 }
 
 // 从MCP加载内置配置
-const loadBuiltinConfigFromMcp = async () => {
+/* const loadBuiltinConfigFromMcp = async () => {
   try {
     const serverConfig = mcpStore.config.mcpServers['builtinKnowledge']
-    console.log(serverConfig)
     if (serverConfig && serverConfig.env) {
       // 解析配置 - env可能是JSON字符串
       try {
@@ -460,10 +482,10 @@ const loadBuiltinConfigFromMcp = async () => {
   } catch (error) {
     console.error('加载BuiltinKnowledge配置失败:', error)
   }
-}
+} */
 
 onMounted(async () => {
-  await loadBuiltinConfigFromMcp()
+  // await loadBuiltinConfigFromMcp()
 })
 
 const route = useRoute()

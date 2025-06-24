@@ -85,7 +85,6 @@ export class BuiltinKnowledgeServer {
           if (configIndex < 0 || configIndex >= enabledConfigs.length) {
             throw new Error(`无效的知识库索引: ${configIndex}`)
           }
-          // 搜索逻辑留空
           return await this.performBuiltinKnowledgeSearch(parameters, configIndex)
         } catch (error) {
           return {

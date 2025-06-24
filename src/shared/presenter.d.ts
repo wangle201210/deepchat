@@ -1135,3 +1135,26 @@ export interface KeyStatus {
   /** 已使用额度 */
   usage?: string
 }
+
+export interface IKnowledgePresenter {
+  create(base: KnowledgeBaseParams): Promise<void>
+  reset(params: { base: KnowledgeBaseParams }): Promise<void>
+  delete(id: string): Promise<void>
+}
+
+export type KnowledgeBaseParams = {
+  id: string
+  model: string
+  provider: string
+  dimensions?: number
+  apiKey: string
+  apiVersion?: string
+  baseURL: string
+  chunkSize?: number
+  chunkOverlap?: number
+  rerankApiKey?: string
+  rerankBaseURL?: string
+  rerankModel?: string
+  rerankModelProvider?: string
+  documentCount?: number
+}

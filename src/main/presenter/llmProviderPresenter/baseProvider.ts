@@ -11,6 +11,7 @@ import {
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
 import { jsonrepair } from 'jsonrepair'
+import { BaseEmbeddings } from '@llm-tools/embedjs-interfaces'
 
 /**
  * 基础LLM提供商抽象类
@@ -553,7 +554,16 @@ ${this.convertToolsToXml(tools)}
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   public async getEmbeddings(_texts: string[], _modelId: string): Promise<number[][]> {
-    throw new Error('getEmbeddings is not supported by this provider')
+    throw new Error('embedding is not supported by this provider')
+  }
+
+  /**
+   * 获取嵌入向量对象
+   * @param _params 知识库参数
+   * @returns embedjs/Embeddings 对象
+   */
+  public getEmbedding(_model: string): BaseEmbeddings {
+    throw new Error('embedding is not supported by this provider')
   }
 
   /**

@@ -1,0 +1,2 @@
+- [ ] 创建和更新知识库配置时，触发 knowledgePresenter 事件
+- [ ] builtinKnowledgeService performBuiltinKnowledgeSearch 触发 knowledgePresenter 事件
