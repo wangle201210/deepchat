@@ -141,9 +141,28 @@
                 />
               </div>
               <div class="space-y-2">
-                <Label class="text-xs text-muted-foreground" for="edit-builtin-config-model">
-                  {{ t('settings.knowledgeBase.selectEmbeddingModel') }}
-                </Label>
+                <div class="flex items-center gap-1">
+                  <Label class="text-xs text-muted-foreground" for="edit-builtin-config-model">
+                    {{ t('settings.knowledgeBase.selectEmbeddingModel') }}
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <span tabindex="-1" style="outline: none">
+                          <CircleQuestionMark
+                            color="hsl(var(--primary))"
+                            :size="16"
+                            class="cursor-pointer"
+                            style="outline: none; box-shadow: none"
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{{ t('settings.knowledgeBase.selectEmbeddingModelHelper') }}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <Popover v-model:open="modelSelectOpen">
                   <PopoverTrigger as-child>
                     <Button
@@ -173,34 +192,70 @@
                   </PopoverContent>
                 </Popover>
               </div>
-              <div class="space-y-2" v-if="!isEditing">
-                <div class="flex items-center gap-1">
-                  <Label class="text-xs text-muted-foreground" for="edit-builtin-config-dimensions">
-                    {{ t('settings.knowledgeBase.dimensions') }}
-                  </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <span tabindex="-1" style="outline: none">
-                          <CircleQuestionMark
-                            color="hsl(var(--primary))"
-                            :size="16"
-                            class="cursor-pointer outline-none focus:outline-none"
-                          />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{{ t('settings.knowledgeBase.autoDetectHelper') }}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              <div class="space-y-2">
+                <div class="flex items-center gap-1 justify-between">
+                  <div class="flex items-center gap-1">
+                    <Label
+                      class="text-xs text-muted-foreground"
+                      for="edit-builtin-config-dimensions"
+                    >
+                      {{ t('settings.knowledgeBase.autoDetectDimensions') }}
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <span tabindex="-1" style="outline: none">
+                            <CircleQuestionMark
+                              color="hsl(var(--primary))"
+                              :size="16"
+                              class="cursor-pointer"
+                              disabled
+                              style="outline: none; box-shadow: none"
+                            />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{{ t('settings.knowledgeBase.autoDetectHelper') }}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
                 </div>
                 <Switch
                   id="edit-builtin-config-auto-detect-switch"
                   v-model:checked="autoDetectDimensionsSwitch"
                 ></Switch>
+              </div>
+              <div class="space-y-2" v-if="!autoDetectDimensionsSwitch">
+                <div class="flex items-center gap-1 justify-between">
+                  <div class="flex items-center gap-1">
+                    <Label
+                      class="text-xs text-muted-foreground"
+                      for="edit-builtin-config-dimensions"
+                    >
+                      {{ t('settings.knowledgeBase.dimensions') }}
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger as-child>
+                          <span tabindex="-1" style="outline: none">
+                            <CircleQuestionMark
+                              color="hsl(var(--primary))"
+                              :size="16"
+                              class="cursor-pointer"
+                              disabled
+                              style="outline: none; box-shadow: none"
+                            />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{{ t('settings.knowledgeBase.autoDetectHelper') }}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
                 <Input
-                  :disabled="autoDetectDimensionsSwitch"
                   id="edit-builtin-config-dimensions"
                   type="number"
                   :min="1"
@@ -208,75 +263,89 @@
                   :placeholder="t('settings.knowledgeBase.dimensionsPlaceholder')"
                 ></Input>
               </div>
-              <div class="space-y-2">
-                <div class="flex items-center gap-1">
-                  <Label class="text-xs text-muted-foreground" for="edit-builtin-config-chunk-size">
-                    {{ t('settings.knowledgeBase.chunkSize') }}
-                  </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <span tabindex="-1" style="outline: none">
-                          <CircleQuestionMark
-                            color="hsl(var(--primary))"
-                            :size="16"
-                            class="cursor-pointer outline-none focus:outline-none"
-                            style="outline: none; box-shadow: none"
-                          />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p class="w-64">{{ t('settings.knowledgeBase.chunkSizeHelper') }}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input
-                  id="edit-builtin-config-chunk-size"
-                  type="number"
-                  :min="1"
-                  :max="selectEmbeddingModel?.maxTokens"
-                  v-model="editingBuiltinConfig.chunkSize"
-                  :Placeholder="t('settings.knowledgeBase.chunkSizePlaceholder')"
-                  :step="128"
-                ></Input>
-              </div>
-              <div class="space-y-2">
-                <div class="flex items-center gap-1">
-                  <Label
-                    class="text-xs text-muted-foreground"
-                    for="edit-builtin-config-chunk-overlap"
-                  >
-                    {{ t('settings.knowledgeBase.chunkOverlap') }}
-                  </Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger as-child>
-                        <span tabindex="-1" style="outline: none">
-                          <CircleQuestionMark
-                            color="hsl(var(--primary))"
-                            :size="16"
-                            class="cursor-pointer outline-none focus:outline-none"
-                            style="outline: none; box-shadow: none"
-                          />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p class="w-64">{{ t('settings.knowledgeBase.chunkOverlapHelper') }}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <Input
-                  id="edit-builtin-config-chunk-overlap"
-                  type="number"
-                  :min="0"
-                  :max="editingBuiltinConfig.chunkSize"
-                  v-model="editingBuiltinConfig.chunkOverlap"
-                  :placeholder="t('settings.knowledgeBase.chunkOverlapPlaceholder')"
-                  :step="128"
-                ></Input>
-              </div>
+              <Accordion type="multiple" collapsed>
+                <AccordionItem value="chunkSize" class="border-none">
+                  <AccordionTrigger>
+                    <p>{{ t('settings.knowledgeBase.advanced') }}</p>
+                  </AccordionTrigger>
+                  <AccordionContent class="space-y-4">
+                    <div class="space-y-2">
+                      <div class="flex items-center gap-1">
+                        <Label
+                          class="text-xs text-muted-foreground"
+                          for="edit-builtin-config-chunk-size"
+                        >
+                          {{ t('settings.knowledgeBase.chunkSize') }}
+                        </Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger as-child>
+                              <span tabindex="-1" style="outline: none">
+                                <CircleQuestionMark
+                                  color="hsl(var(--primary))"
+                                  :size="16"
+                                  class="cursor-pointer outline-none focus:outline-none"
+                                  style="outline: none; box-shadow: none"
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p class="w-64">{{ t('settings.knowledgeBase.chunkSizeHelper') }}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Input
+                        id="edit-builtin-config-chunk-size"
+                        type="number"
+                        :min="1"
+                        :max="selectEmbeddingModel?.maxTokens"
+                        v-model="editingBuiltinConfig.chunkSize"
+                        :Placeholder="t('settings.knowledgeBase.chunkSizePlaceholder')"
+                        :step="128"
+                      ></Input>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex items-center gap-1">
+                        <Label
+                          class="text-xs text-muted-foreground"
+                          for="edit-builtin-config-chunk-overlap"
+                        >
+                          {{ t('settings.knowledgeBase.chunkOverlap') }}
+                        </Label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger as-child>
+                              <span tabindex="-1" style="outline: none">
+                                <CircleQuestionMark
+                                  color="hsl(var(--primary))"
+                                  :size="16"
+                                  class="cursor-pointer outline-none focus:outline-none"
+                                  style="outline: none; box-shadow: none"
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p class="w-64">
+                                {{ t('settings.knowledgeBase.chunkOverlapHelper') }}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      <Input
+                        id="edit-builtin-config-chunk-overlap"
+                        type="number"
+                        :min="0"
+                        :max="editingBuiltinConfig.chunkSize"
+                        v-model="editingBuiltinConfig.chunkOverlap"
+                        :placeholder="t('settings.knowledgeBase.chunkOverlapPlaceholder')"
+                        :step="128"
+                      ></Input>
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </div>
         </ScrollArea>
@@ -323,6 +392,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@/components/ui/accordion'
 import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -335,7 +410,6 @@ import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { ChevronDown, CircleQuestionMark } from 'lucide-vue-next'
 import { nanoid } from 'nanoid'
-import Placeholder from '@tiptap/extension-placeholder'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -423,12 +497,7 @@ const isEditingBuiltinConfigValid = computed(() => {
     editingBuiltinConfig.value.description.trim() !== '' &&
     editingBuiltinConfig.value.providerId.trim() !== '' &&
     editingBuiltinConfig.value.modelId.trim() !== '' &&
-    editingBuiltinConfig.value.chunkSize !== undefined &&
-    editingBuiltinConfig.value.chunkOverlap !== undefined &&
-    editingBuiltinConfig.value.chunkSize <=
-      (selectEmbeddingModel.value?.maxTokens || 1024 * 1024) &&
-    editingBuiltinConfig.value.chunkOverlap >= 0 &&
-    editingBuiltinConfig.value.chunkOverlap < editingBuiltinConfig.value.chunkSize
+    (autoDetectDimensionsSwitch.value || editingBuiltinConfig.value.dimensions)
   )
 })
 

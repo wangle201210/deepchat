@@ -302,7 +302,15 @@
     "modelNotFoundDesc": "Assurez-vous que le modèle est configuré correctement et que le modèle est activé. Vous pouvez vérifier la configuration du modèle dans les paramètres du fournisseur de services.",
     "removeBuiltinKnowledgeConfirmDesc": "La suppression de la configuration de base de connaissances intégrée supprimera toutes les données pertinentes et ne peut pas être restaurée. Soyez prudent.",
     "removeBuiltinKnowledgeConfirmTitle": "Confirmer pour supprimer la base de connaissances intégrée {name}?",
-    "descriptionDesc": "Description de la base de connaissances afin que l'IA décide de récupérer cette base de connaissances"
+    "descriptionDesc": "Description de la base de connaissances afin que l'IA décide de récupérer cette base de connaissances",
+    "advanced": "Options avancées",
+    "autoDetectDimensions": "Détecter automatiquement les dimensions intégrées",
+    "autoDetectHelper": "Détecter automatiquement les dimensions intégrées, consomme une petite quantité de jetons",
+    "chunkOverlapPlaceholder": "Valeur par défaut, aucune modification n'est recommandée",
+    "chunkSizePlaceholder": "Valeur par défaut, aucune modification n'est recommandée",
+    "dimensions": "Dimensions de l'incorporation",
+    "dimensionsPlaceholder": "Taille de dimension intégrée, comme 1024",
+    "selectEmbeddingModelHelper": "Les modèles d'intégration sont interdits après la création d'une base de connaissances"
   },
   "mcp": {
     "title": "Paramètres MCP",

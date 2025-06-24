@@ -302,7 +302,15 @@
     "modelNotFoundDesc": "請確保已正確配置模型，並且模型處於啟用狀態。\n您可以在服務商設置中檢查模型配置。",
     "removeBuiltinKnowledgeConfirmDesc": "刪除內置知識庫配置將會刪除所有相關數據，且無法恢復，請謹慎操作。",
     "removeBuiltinKnowledgeConfirmTitle": "確認刪除內置知識庫 {name} 嗎？",
-    "descriptionDesc": "知識庫的描述，以便 AI 決定是否檢索此知識庫"
+    "descriptionDesc": "知識庫的描述，以便 AI 決定是否檢索此知識庫",
+    "advanced": "高級選項",
+    "autoDetectDimensions": "自動檢測嵌入維度",
+    "autoDetectHelper": "自動檢測嵌入維度，會消耗少量 Tokens",
+    "chunkOverlapPlaceholder": "默認值，不建議修改",
+    "chunkSizePlaceholder": "默認值，不建議修改",
+    "dimensions": "嵌入維度",
+    "dimensionsPlaceholder": "嵌入維度大小，如 1024",
+    "selectEmbeddingModelHelper": "嵌入模型在知識庫創建後禁止修改"
   },
   "mcp": {
     "title": "MCP設置",

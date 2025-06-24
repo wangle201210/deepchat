@@ -302,7 +302,15 @@
     "modelNotFoundDesc": "モデルが正しく構成されており、モデルが有効になっていることを確認してください。サービスプロバイダーの設定でモデル構成を確認できます。",
     "removeBuiltinKnowledgeConfirmDesc": "組み込みのナレッジベース構成を削除すると、関連するすべてのデータが削除され、復元できません。注意してください。",
     "removeBuiltinKnowledgeConfirmTitle": "組み込みのナレッジベース{name}を削除することを確認しますか？",
-    "descriptionDesc": "AIがこの知識ベースを取得するかどうかを決定するように、知識ベースの説明"
+    "descriptionDesc": "AIがこの知識ベースを取得するかどうかを決定するように、知識ベースの説明",
+    "advanced": "高度なオプション",
+    "autoDetectDimensions": "埋め込み寸法を自動的に検出します",
+    "autoDetectHelper": "埋め込み寸法を自動的に検出し、少量のトークンを消費します",
+    "chunkOverlapPlaceholder": "デフォルト値、変更は推奨されません",
+    "chunkSizePlaceholder": "デフォルト値、変更は推奨されません",
+    "dimensions": "埋め込まれた寸法",
+    "dimensionsPlaceholder": "1024などの寸法サイズを埋め込みます",
+    "selectEmbeddingModelHelper": "埋め込みモデルは、知識ベースの作成後に禁止されています"
   },
   "mcp": {
     "title": "MCP設定",

@@ -302,7 +302,15 @@
     "modelNotFoundDesc": "모델이 올바르게 구성되고 모델이 활성화되어 있는지 확인하십시오. 서비스 제공 업체 설정에서 모델 구성을 확인할 수 있습니다.",
     "removeBuiltinKnowledgeConfirmDesc": "내장 지식 기반 구성을 삭제하면 모든 관련 데이터가 삭제되며 복원 할 수 없습니다. 조심하세요.",
     "removeBuiltinKnowledgeConfirmTitle": "내장 지식 기반 {name}을 삭제하도록 확인 하시겠습니까?",
-    "descriptionDesc": "AI 가이 지식 기반을 검색할지 여부를 결정하도록 지식 기반에 대한 설명"
+    "descriptionDesc": "AI 가이 지식 기반을 검색할지 여부를 결정하도록 지식 기반에 대한 설명",
+    "advanced": "고급 옵션",
+    "autoDetectDimensions": "내장 치수를 자동으로 감지합니다",
+    "autoDetectHelper": "내장 치수를 자동으로 감지하고 소량의 토큰을 소비합니다.",
+    "chunkOverlapPlaceholder": "기본값, 수정은 권장되지 않습니다",
+    "chunkSizePlaceholder": "기본값, 수정은 권장되지 않습니다",
+    "dimensions": "치수를 포함시킵니다",
+    "dimensionsPlaceholder": "1024와 같은 치수 크기를 포함시킵니다",
+    "selectEmbeddingModelHelper": "임베딩 모델은 지식 기반을 창출 한 후 금지됩니다"
   },
   "mcp": {
     "title": "MCP 설정",
