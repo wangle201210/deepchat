@@ -55,6 +55,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
           const diffs = this.configPresenter.diffKnowledgeConfigs(configs)
           if (diffs.added.length > 0) {
+            diffs.added.forEach((config) => {
+              console.log(`[RAG] New knowledge config added: ${config.id}`)
+              this.create(config)
+            })
           }
           if (diffs.updated.length > 0) {
           }
