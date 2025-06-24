@@ -122,11 +122,14 @@
               ? t('settings.knowledgeBase.editDifyConfig')
               : t('settings.knowledgeBase.addDifyConfig')
           }}</DialogTitle>
+          <DialogDescription>
+            {{ t('settings.knowledgeBase.difyDescription') }}
+          </DialogDescription>
         </DialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground" for="edit-dify-description">
-              {{ t('settings.knowledgeBase.difyDescription') }}
+              {{ t('settings.knowledgeBase.descriptionDesc') }}
             </Label>
             <Input
               id="edit-dify-description"
@@ -195,7 +198,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'

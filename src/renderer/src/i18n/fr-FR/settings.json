@@ -301,7 +301,8 @@
     "modelNotFound": "Fournisseur de services {provider} ou modèle {model} introuvable",
     "modelNotFoundDesc": "Assurez-vous que le modèle est configuré correctement et que le modèle est activé. Vous pouvez vérifier la configuration du modèle dans les paramètres du fournisseur de services.",
     "removeBuiltinKnowledgeConfirmDesc": "La suppression de la configuration de base de connaissances intégrée supprimera toutes les données pertinentes et ne peut pas être restaurée. Soyez prudent.",
-    "removeBuiltinKnowledgeConfirmTitle": "Confirmer pour supprimer la base de connaissances intégrée {name}?"
+    "removeBuiltinKnowledgeConfirmTitle": "Confirmer pour supprimer la base de connaissances intégrée {name}?",
+    "descriptionDesc": "Description de la base de connaissances afin que l'IA décide de récupérer cette base de connaissances"
   },
   "mcp": {
     "title": "Paramètres MCP",

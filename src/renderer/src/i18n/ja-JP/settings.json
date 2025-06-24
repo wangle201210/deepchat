@@ -301,7 +301,8 @@
     "modelNotFound": "サービスプロバイダー {provider} またはモデル {model} が見つかりません",
     "modelNotFoundDesc": "モデルが正しく構成されており、モデルが有効になっていることを確認してください。サービスプロバイダーの設定でモデル構成を確認できます。",
     "removeBuiltinKnowledgeConfirmDesc": "組み込みのナレッジベース構成を削除すると、関連するすべてのデータが削除され、復元できません。注意してください。",
-    "removeBuiltinKnowledgeConfirmTitle": "組み込みのナレッジベース{name}を削除することを確認しますか？"
+    "removeBuiltinKnowledgeConfirmTitle": "組み込みのナレッジベース{name}を削除することを確認しますか？",
+    "descriptionDesc": "AIがこの知識ベースを取得するかどうかを決定するように、知識ベースの説明"
   },
   "mcp": {
     "title": "MCP設定",

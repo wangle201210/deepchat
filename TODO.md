@@ -1,2 +1,3 @@
-- [ ] 创建和更新知识库配置时，触发 knowledgePresenter 事件
-- [ ] builtinKnowledgeService performBuiltinKnowledgeSearch 触发 knowledgePresenter 事件
+- [ ] saveBuiltinConfig, dimensions 为空，则通过 LLM 尝试获取。
+- [X] knowledgeProvider 实现数据监听，通过对比获取配置变更
+- [ ] BuiltinKnowledgeSettings 页面和逻辑优化

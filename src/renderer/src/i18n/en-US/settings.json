@@ -301,7 +301,8 @@
     "modelNotFound": "Service Provider {provider} or model {model} not found",
     "modelNotFoundDesc": "Make sure the model is configured correctly and that the model is enabled. \nYou can check the model configuration in the service provider settings.",
     "removeBuiltinKnowledgeConfirmDesc": "Deleting the built-in knowledge base configuration will delete all relevant data and cannot be restored. Please be cautious.",
-    "removeBuiltinKnowledgeConfirmTitle": "Confirm to delete the built-in knowledge base {name}?"
+    "removeBuiltinKnowledgeConfirmTitle": "Confirm to delete the built-in knowledge base {name}?",
+    "descriptionDesc": "Description of the knowledge base so that the AI ​​decides whether to retrieve this knowledge base"
   },
   "mcp": {
     "title": "MCP Settings",

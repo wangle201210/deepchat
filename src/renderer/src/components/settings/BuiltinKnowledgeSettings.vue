@@ -120,77 +120,174 @@
               ? t('settings.knowledgeBase.editBuiltinKnowledgeConfig')
               : t('settings.knowledgeBase.addBuiltinKnowledgeConfig')
           }}</DialogTitle>
+          <DialogDescription>
+            {{ t('settings.knowledgeBase.builtInKnowledgeDescription') }}
+          </DialogDescription>
         </DialogHeader>
-        <div class="space-y-4 py-4">
-          <div class="space-y-2">
-            <Label>{{ t('settings.knowledgeBase.builtInKnowledgeDescription') }}</Label>
-            <Input
-              v-model="editingBuiltinConfig.description"
-              required
-              :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
-            />
-          </div>
-          <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="server-model">
-              {{ t('settings.knowledgeBase.selectEmbeddingModel') }}
-            </Label>
-            <Popover v-model:open="modelSelectOpen">
-              <PopoverTrigger as-child>
-                <Button variant="outline" class="w-full justify-between" :disabled="isEditing">
-                  <div class="flex items-center gap-2">
-                    <ModelIcon
-                      :model-id="selectEmbeddingModel?.id || ''"
-                      class="h-4 w-4"
-                      :is-dark="themeStore.isDark"
-                    />
-                    <span class="truncate">{{
-                      selectEmbeddingModel?.name || t('settings.common.selectModel')
-                    }}</span>
-                  </div>
-                  <ChevronDown class="h-4 w-4 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent class="w-80 p-0">
-                <ModelSelect
-                  :type="[ModelType.Embedding]"
-                  @update:model="handleEmbeddingModelSelect"
+        <ScrollArea class="max-h-[500px]">
+          <div class="p-3">
+            <div class="space-y-4 py-4">
+              <div class="space-y-2">
+                <Label
+                  class="text-xs text-muted-foreground"
+                  for="edit-builtin-config-description"
+                  >{{ t('settings.knowledgeBase.descriptionDesc') }}</Label
+                >
+                <Input
+                  id="edit-builtin-config-description"
+                  v-model="editingBuiltinConfig.description"
+                  required
+                  :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+              <div class="space-y-2">
+                <Label class="text-xs text-muted-foreground" for="edit-builtin-config-model">
+                  {{ t('settings.knowledgeBase.selectEmbeddingModel') }}
+                </Label>
+                <Popover v-model:open="modelSelectOpen">
+                  <PopoverTrigger as-child>
+                    <Button
+                      id="edit-builtin-config-model"
+                      variant="outline"
+                      class="w-full justify-between"
+                      :disabled="isEditing"
+                    >
+                      <div class="flex items-center gap-2">
+                        <ModelIcon
+                          :model-id="selectEmbeddingModel?.id || ''"
+                          class="h-4 w-4"
+                          :is-dark="themeStore.isDark"
+                        />
+                        <span class="truncate">{{
+                          selectEmbeddingModel?.name || t('settings.common.selectModel')
+                        }}</span>
+                      </div>
+                      <ChevronDown class="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-80 p-0">
+                    <ModelSelect
+                      :type="[ModelType.Embedding]"
+                      @update:model="handleEmbeddingModelSelect"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div class="space-y-2" v-if="!isEditing">
+                <div class="flex items-center gap-1">
+                  <Label class="text-xs text-muted-foreground" for="edit-builtin-config-dimensions">
+                    {{ t('settings.knowledgeBase.dimensions') }}
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <span tabindex="-1" style="outline: none">
+                          <CircleQuestionMark
+                            color="hsl(var(--primary))"
+                            :size="16"
+                            class="cursor-pointer outline-none focus:outline-none"
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{{ t('settings.knowledgeBase.autoDetectHelper') }}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Switch
+                  id="edit-builtin-config-auto-detect-switch"
+                  v-model:checked="autoDetectDimensionsSwitch"
+                ></Switch>
+                <Input
+                  :disabled="autoDetectDimensionsSwitch"
+                  id="edit-builtin-config-dimensions"
+                  type="number"
+                  :min="1"
+                  v-model="editingBuiltinConfig.dimensions"
+                  :placeholder="t('settings.knowledgeBase.dimensionsPlaceholder')"
+                ></Input>
+              </div>
+              <div class="space-y-2">
+                <div class="flex items-center gap-1">
+                  <Label class="text-xs text-muted-foreground" for="edit-builtin-config-chunk-size">
+                    {{ t('settings.knowledgeBase.chunkSize') }}
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <span tabindex="-1" style="outline: none">
+                          <CircleQuestionMark
+                            color="hsl(var(--primary))"
+                            :size="16"
+                            class="cursor-pointer outline-none focus:outline-none"
+                            style="outline: none; box-shadow: none"
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p class="w-64">{{ t('settings.knowledgeBase.chunkSizeHelper') }}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  id="edit-builtin-config-chunk-size"
+                  type="number"
+                  :min="1"
+                  :max="selectEmbeddingModel?.maxTokens"
+                  v-model="editingBuiltinConfig.chunkSize"
+                  :Placeholder="t('settings.knowledgeBase.chunkSizePlaceholder')"
+                  :step="128"
+                ></Input>
+              </div>
+              <div class="space-y-2">
+                <div class="flex items-center gap-1">
+                  <Label
+                    class="text-xs text-muted-foreground"
+                    for="edit-builtin-config-chunk-overlap"
+                  >
+                    {{ t('settings.knowledgeBase.chunkOverlap') }}
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger as-child>
+                        <span tabindex="-1" style="outline: none">
+                          <CircleQuestionMark
+                            color="hsl(var(--primary))"
+                            :size="16"
+                            class="cursor-pointer outline-none focus:outline-none"
+                            style="outline: none; box-shadow: none"
+                          />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p class="w-64">{{ t('settings.knowledgeBase.chunkOverlapHelper') }}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Input
+                  id="edit-builtin-config-chunk-overlap"
+                  type="number"
+                  :min="0"
+                  :max="editingBuiltinConfig.chunkSize"
+                  v-model="editingBuiltinConfig.chunkOverlap"
+                  :placeholder="t('settings.knowledgeBase.chunkOverlapPlaceholder')"
+                  :step="128"
+                ></Input>
+              </div>
+            </div>
           </div>
-          <div class="space-y-2">
-            <Label>{{ t('settings.knowledgeBase.chunkSize') }}</Label>
-            <Input
-              type="number"
-              :min="1"
-              :max="selectEmbeddingModel?.maxTokens"
-              v-model="editingBuiltinConfig.chunkSize"
-              :step="128"
-            ></Input>
-          </div>
-          <div class="space-y-2">
-            <Label>{{ t('settings.knowledgeBase.chunkOverlap') }}</Label>
-            <Input
-              type="number"
-              :min="0"
-              :max="editingBuiltinConfig.chunkSize"
-              v-model="editingBuiltinConfig.chunkOverlap"
-              :step="128"
-            ></Input>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" @click="closeBuiltinConfigDialog">{{
-              t('common.cancel')
-            }}</Button>
-            <Button
-              type="button"
-              :disabled="!isEditingBuiltinConfigValid"
-              @click="saveBuiltinConfig"
-            >
-              {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
-            </Button>
-          </DialogFooter>
-        </div>
+        </ScrollArea>
+        <DialogFooter>
+          <Button variant="outline" @click="closeBuiltinConfigDialog">{{
+            t('common.cancel')
+          }}</Button>
+          <Button type="button" :disabled="!isEditingBuiltinConfigValid" @click="saveBuiltinConfig">
+            {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
@@ -208,7 +305,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog'
 import {
   AlertDialog,
@@ -227,6 +325,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { useMcpStore } from '@/stores/mcp'
 import { ModelType } from '@shared/model'
 import { useThemeStore } from '@/stores/theme'
@@ -234,8 +333,9 @@ import { RENDERER_MODEL_META } from '@shared/presenter'
 import { toast } from '../ui/toast'
 import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown, CircleQuestionMark } from 'lucide-vue-next'
 import { nanoid } from 'nanoid'
+import Placeholder from '@tiptap/extension-placeholder'
 
 const { t } = useI18n()
 const mcpStore = useMcpStore()
@@ -246,6 +346,9 @@ const themeStore = useThemeStore()
 const modelSelectOpen = ref(false)
 const isBuiltinConfigPanelOpen = ref(false)
 const isEditing = ref(false)
+
+// 自动检测维度开关
+const autoDetectDimensionsSwitch = ref(true)
 
 const builtinConfigs = computed(() => {
   try {
@@ -276,6 +379,7 @@ interface BuiltinKnowledgeConfig {
   modelId: string
   chunkSize?: number // defualt 1000
   chunkOverlap?: number // default 0
+  dimensions?: number
   enabled?: boolean
 }
 
@@ -285,8 +389,6 @@ const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
   description: '',
   providerId: '',
   modelId: '',
-  chunkSize: 512,
-  chunkOverlap: 0,
   enabled: true
 })
 
@@ -304,8 +406,6 @@ function openAddConfig() {
     description: '',
     providerId: '',
     modelId: '',
-    chunkSize: 512,
-    chunkOverlap: 0,
     enabled: true
   }
   isBuiltinConfigDialogOpen.value = true
@@ -376,8 +476,6 @@ const closeBuiltinConfigDialog = () => {
     description: '',
     providerId: '',
     modelId: '',
-    chunkSize: 512,
-    chunkOverlap: 0,
     enabled: true
   }
 }
@@ -395,6 +493,9 @@ const saveBuiltinConfig = async () => {
       description: t('settings.knowledgeBase.configUpdatedDesc')
     })
   } else {
+    if (autoDetectDimensionsSwitch.value) {
+      // 自动获取dimensions
+    }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })
     toast({

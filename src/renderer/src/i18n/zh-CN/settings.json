@@ -265,7 +265,7 @@
     "title": "知识库设置",
     "addKnowledgeBase": "添加知识库",
     "selectKnowledgeBaseType": "请选择要添加的知识库类型",
-    "difyDescription": "Dify知识库可以帮助您管理和使用文档数据",
+    "difyDescription": "Dify知识库可以帮助您管理和使用文档数据。",
     "comingSoon": "即将推出",
     "featureNotAvailable": "该功能暂未开放，敬请期待",
     "addDifyConfig": "添加Dify配置",
@@ -293,6 +293,7 @@
     "builtInKnowledgeDescription": "内置知识库提供了一些简单实现，能够在离线环境下实现部分基础功能。",
     "addBuiltinKnowledgeConfig": "添加内置知识库配置",
     "editBuiltinKnowledgeConfig": "编辑内置知识库配置",
+    "descriptionDesc": "知识库的描述，以便 AI 决定是否检索此知识库",
     "selectEmbeddingModel": "选择嵌入模型",
     "chunkSize": "分块大小",
     "chunkOverlap": "重叠大小",
@@ -301,7 +302,13 @@
     "modelNotFound": "服务商 {provider} 或模型 {model} 未找到",
     "modelNotFoundDesc": "请确保已正确配置模型，并且模型处于启用状态。您可以在服务商设置中检查模型配置。",
     "removeBuiltinKnowledgeConfirmTitle": "确认删除内置知识库 {name} ？",
-    "removeBuiltinKnowledgeConfirmDesc": "删除内置知识库配置将会删除所有相关数据，且无法恢复，请谨慎操作。"
+    "removeBuiltinKnowledgeConfirmDesc": "删除内置知识库配置将会删除所有相关数据，且无法恢复，请谨慎操作。",
+    "dimensions": "嵌入维度",
+    "dimensionsPlaceholder": "嵌入维度大小，如 1024",
+    "autoDetect": "自动检测",
+    "autoDetectHelper": "自动检测嵌入维度，会消耗少量 Tokens",
+    "chunkSizePlaceholder": "默认值，不建议修改",
+    "chunkOverlapPlaceholder": "默认值，不建议修改"
   },
   "mcp": {
     "title": "MCP设置",
