@@ -417,11 +417,13 @@ import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { ChevronDown, CircleQuestionMark } from 'lucide-vue-next'
 import { nanoid } from 'nanoid'
-
+import { usePresenter } from '@/composables/usePresenter'
+// 全局对象
 const { t } = useI18n()
 const mcpStore = useMcpStore()
 const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
+const llmP = usePresenter('llmproviderPresenter')
 const emit = defineEmits<{
   (e: 'showDetail',value:Object): void
 }>()
@@ -576,8 +578,9 @@ const saveBuiltinConfig = async () => {
     })
   } else {
     if (autoDetectDimensionsSwitch.value) {
-      // TODO 自动获取dimensions
-      
+      // 自动获取dimensions
+      const dimensions = await llmP.getDimensions(editingBuiltinConfig.value.providerId, editingBuiltinConfig.value.modelId)
+      console.log('获取到的维度:', dimensions)
     }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })

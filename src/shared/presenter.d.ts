@@ -529,6 +529,8 @@ export interface ILlmProviderPresenter {
   listOllamaRunningModels(): Promise<OllamaModel[]>
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
+  getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
+  getDimensions(providerId: string, modelId: string): Promise<number>
 }
 export type CONVERSATION_SETTINGS = {
   systemPrompt: string

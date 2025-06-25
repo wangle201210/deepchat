@@ -1117,15 +1117,29 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   /**
    * 获取文本的 embedding 表示
    * @param providerId 提供商ID
-   * @param texts 文本数组
    * @param modelId 模型ID
+   * @param texts 文本数组
    * @returns embedding 数组
    */
-  async getEmbeddings(providerId: string, texts: string[], modelId: string): Promise<number[][]> {
+  getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]> {
     const provider = this.getProviderInstance(providerId)
     if (!provider.getEmbeddings) {
       throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
     return provider.getEmbeddings(texts, modelId)
+  }
+
+  /**
+   * 获取指定模型的 embedding 维度
+   * @param providerId 提供商ID
+   * @param modelId 模型ID
+   * @returns 模型的 embedding 维度
+   */
+  getDimensions(providerId: string, modelId: string): Promise<number> {
+    const provider = this.getProviderInstance(providerId)
+    if (!provider.getDimensions) {
+      throw new Error('当前 LLM 提供商未实现 embedding 能力')
+    }
+    return provider.getDimensions(modelId)
   }
 }

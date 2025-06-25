@@ -548,8 +548,8 @@ ${this.convertToolsToXml(tools)}
 
   /**
    * 获取文本的 embedding 表示
-   * @param texts 待编码的文本数组
-   * @param modelId 使用的模型ID
+   * @param _texts 待编码的文本数组
+   * @param _modelId 使用的模型ID
    * @returns embedding 数组，每个元素为 number[]
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -558,8 +558,17 @@ ${this.convertToolsToXml(tools)}
   }
 
   /**
+   * 获取嵌入向量的维度
+   * @param _modelId 模型ID
+   * @returns 嵌入向量的维度
+   */
+  public async getDimensions(_modelId: string): Promise<number> {
+    throw new Error('embedding is not supported by this provider')
+  }
+
+  /**
    * 获取嵌入向量对象
-   * @param _params 知识库参数
+   * @param _model 知识库参数
    * @returns embedjs/Embeddings 对象
    */
   public getEmbedding(_model: string): BaseEmbeddings {

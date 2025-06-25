@@ -1671,6 +1671,18 @@ export const defaultModelsSettings: DefaultModelSetting[] = [
     type: ModelType.Embedding
   },
   {
+    id: 'all-minilm',
+    name: 'all-minilm',
+    temperature: 0.0,
+    maxTokens: 8192,
+    contextLength: 8192,
+    match: ['all-minilm'],
+    vision: false,
+    functionCall: false,
+    reasoning: false,
+    type: ModelType.Embedding
+  },
+  {
     id: 'embedding',
     name: 'embedding',
     temperature: 0.0,
