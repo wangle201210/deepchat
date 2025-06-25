@@ -179,6 +179,10 @@
     "stopModel": "停止模型",
     "pulling": "拉取中...",
     "runModel": "运行模型",
+    "toast": {
+      "modelRunning": "模型正在运行",
+      "modelRunningDesc": "请先停止模型 {model}，然后再删除。"
+    },
     "dialog": {
       "disableModel": {
         "title": "确认禁用模型",

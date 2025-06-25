@@ -57,7 +57,6 @@ import {
 } from '@/components/ui/accordion'
 
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -70,8 +69,6 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'hideKnowledgeFile'): void
 }>()
-
-const { t } = useI18n()
 
 // 返回知识库页面
 const onReturn = () => {

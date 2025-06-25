@@ -531,6 +531,7 @@ export interface ILlmProviderPresenter {
   deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
   getDimensions(providerId: string, modelId: string): Promise<number>
+  getEmbeddingParams(providerId: string, modelId: string): KnowledgeBaseParams
 }
 export type CONVERSATION_SETTINGS = {
   systemPrompt: string
@@ -1155,8 +1156,8 @@ export interface IKnowledgePresenter {
 export type KnowledgeBaseParams = {
   id: string
   description: string
-  model: string
-  provider: string
+  modelId: string
+  providerId: string
   dimensions?: number
   apiKey: string
   apiVersion?: string

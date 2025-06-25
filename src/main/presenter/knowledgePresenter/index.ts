@@ -4,6 +4,7 @@ import path from 'node:path'
 import {
   IConfigPresenter,
   IKnowledgePresenter,
+  ILlmProviderPresenter,
   KnowledgeBaseParams,
   MCPServerConfig
 } from '@shared/presenter'
@@ -19,11 +20,14 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   private readonly storageDir
 
-  configPresenter: IConfigPresenter
+  private readonly configP: IConfigPresenter
 
-  constructor(configPresenter: IConfigPresenter, dbDir: string) {
+  private readonly llmP: ILlmProviderPresenter
+
+  constructor(configP: IConfigPresenter, llmP: ILlmProviderPresenter, dbDir: string) {
     console.log('[RAG] Initializing Built-in Knowledge Presenter')
-    this.configPresenter = configPresenter
+    this.configP = configP
+    this.llmP = llmP
     this.storageDir = path.join(dbDir, 'KnowledgeBase')
 
     this.initStorageDir()
@@ -43,7 +47,12 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     // 监听知识库相关事件
     eventBus.on(MCP_EVENTS.CONFIG_CHANGED, async (payload) => {
       try {
-        if (!payload || typeof payload !== 'object' || !payload.mcpServers || typeof payload.mcpServers !== 'object') {
+        if (
+          !payload ||
+          typeof payload !== 'object' ||
+          !payload.mcpServers ||
+          typeof payload.mcpServers !== 'object'
+        ) {
           console.warn('[RAG] Invalid payload for CONFIG_CHANGED event:', payload)
           return
         }
@@ -53,7 +62,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
           const configs = builtinConfig.env.configs as KnowledgeBaseParams[]
           console.log('[RAG] Received builtinKnowledge config update:', configs)
 
-          const diffs = this.configPresenter.diffKnowledgeConfigs(configs)
+          const diffs = this.configP.diffKnowledgeConfigs(configs)
           if (diffs.added.length > 0) {
             diffs.added.forEach((config) => {
               console.log(`[RAG] New knowledge config added: ${config.id}`)
@@ -64,7 +73,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
           }
           if (diffs.deleted.length > 0) {
           }
-          this.configPresenter.setKnowledgeConfigs(configs)
+          this.configP.setKnowledgeConfigs(configs)
           console.log('[RAG] Updated knowledge configs:', configs)
         } else {
           console.warn('[RAG] builtinKnowledge config missing or invalid:', builtinConfig)
@@ -103,21 +112,17 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   private getRagApplication = async ({
     id,
-    model,
-    provider,
-    apiKey,
-    apiVersion,
-    baseURL,
+    modelId,
+    providerId,
     dimensions
   }: KnowledgeBaseParams): Promise<RAGApplication> => {
     let ragApplication: RAGApplication
     // 创建 Embeddings 实例
+    const { apiKey } = this.llmP.getEmbeddingParams(providerId, modelId)
     const embeddings = new Embeddings({
-      model,
-      provider,
+      providerId,
+      modelId,
       apiKey,
-      apiVersion,
-      baseURL,
       dimensions
     } as KnowledgeBaseParams)
     try {

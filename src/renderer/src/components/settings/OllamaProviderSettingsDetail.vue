@@ -129,16 +129,16 @@
                   <div class="flex flex-col flex-grow">
                     <div class="flex flex-row items-center gap-1">
                       <span class="text-sm font-medium">{{ model.name }}</span>
-                      <span
-                        class="text-xs text-primary-foreground bg-primary px-1 py-0.5 rounded"
-                      >
+                      <span class="text-xs text-primary-foreground bg-primary px-1 py-0.5 rounded">
                         {{ t('settings.provider.pulling') }}
                       </span>
                       <span class="w-[50px]">
                         <Progress :model-value="pullingModels.get(model.name)" class="h-1.5" />
                       </span>
                     </div>
-                    <span class="text-xs text-muted-foreground">{{ formatModelSize(model.size) }}</span>
+                    <span class="text-xs text-muted-foreground">{{
+                      formatModelSize(model.size)
+                    }}</span>
                   </div>
                 </div>
               </template>
@@ -249,8 +249,10 @@ import { useSettingsStore } from '@/stores/settings'
 import type { LLM_PROVIDER } from '@shared/presenter'
 import ModelConfigItem from './ModelConfigItem.vue'
 import { ModelType } from '@shared/model'
+import { useToast } from '../ui/toast'
 
 const { t } = useI18n()
+const { toast } = useToast()
 
 const props = defineProps<{
   provider: LLM_PROVIDER
@@ -438,6 +440,15 @@ const pullModel = async (modelName: string) => {
 
 // 显示删除模型确认对话框
 const showDeleteModelConfirm = (modelName: string) => {
+  if (isModelRunning(modelName)) {
+    toast({
+      title: t('settings.provider.toast.modelRunning'),
+      description: t('settings.provider.toast.modelRunningDesc', { model: modelName }),
+      variant: 'destructive',
+      duration: 3000
+    })
+    return
+  }
   modelToDelete.value = modelName
   showDeleteModelDialog.value = true
 }

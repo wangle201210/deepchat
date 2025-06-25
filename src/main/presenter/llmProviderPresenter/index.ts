@@ -34,7 +34,7 @@ import { LMStudioProvider } from './providers/lmstudioProvider'
 import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
 import { OpenRouterProvider } from './providers/openRouterProvider'
 import { MinimaxProvider } from './providers/minimaxProvider'
-import { ca } from 'zod/dist/types/v4/locales'
+
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -1123,11 +1123,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
    * @returns embedding 数组
    */
   async getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]> {
-    const provider = this.getProviderInstance(providerId)
-    if (!provider.getEmbeddings) {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      return await provider.getEmbeddings(texts, modelId)
+    } catch (error) {
       throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
-    return await provider.getEmbeddings(texts, modelId)
   }
 
   /**
@@ -1143,6 +1144,21 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     } catch (error) {
       console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
       return -1
+    }
+  }
+
+  /**
+   * 获取指定模型的 embedding 参数
+   * @param providerId 提供商ID
+   * @param modelId 模型ID
+   * @returns 获取模型的 embedding 参数
+   */
+  getEmbeddingParams(providerId: string, modelId: string) {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      return provider.getEmbeddingParams(modelId)
+    } catch (error) {
+      throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
   }
 }

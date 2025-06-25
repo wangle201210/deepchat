@@ -6,18 +6,18 @@ import { KnowledgeBaseParams } from '@shared/presenter'
 
 export default class EmbeddingsFactory {
   static create({
-    model,
-    provider,
+    modelId,
+    providerId,
     apiKey,
     apiVersion,
     baseURL,
     dimensions
   }: KnowledgeBaseParams): BaseEmbeddings {
     const batchSize = 10
-    if (provider === 'ollama') {
+    if (providerId === 'ollama') {
       if (baseURL.includes('v1/')) {
         return new OllamaEmbeddings({
-          model: model,
+          model: modelId,
           baseUrl: baseURL.replace('v1/', ''),
           requestOptions: {
             // @ts-ignore expected
@@ -26,7 +26,7 @@ export default class EmbeddingsFactory {
         })
       }
       return new OllamaEmbeddings({
-        model: model,
+        model: modelId,
         baseUrl: baseURL,
         requestOptions: {
           // @ts-ignore expected
@@ -38,14 +38,14 @@ export default class EmbeddingsFactory {
       return new AzureOpenAiEmbeddings({
         azureOpenAIApiKey: apiKey,
         azureOpenAIApiVersion: apiVersion,
-        azureOpenAIApiDeploymentName: model,
+        azureOpenAIApiDeploymentName: modelId,
         azureOpenAIApiInstanceName: this.getInstanceName(baseURL),
         dimensions,
         batchSize
       })
     }
     return new OpenAiEmbeddings({
-      model,
+      model: modelId,
       apiKey,
       dimensions,
       batchSize,

@@ -81,7 +81,11 @@ export class Presenter implements IPresenter {
     this.notificationPresenter = new NotificationPresenter()
     this.oauthPresenter = new OAuthPresenter()
     this.trayPresenter = new TrayPresenter()
-    this.KnowledgePresenter = new KnowledgePresenter(this.configPresenter, dbDir)
+    this.KnowledgePresenter = new KnowledgePresenter(
+      this.configPresenter,
+      this.llmproviderPresenter,
+      dbDir
+    )
 
     // this.llamaCppPresenter = new LlamaCppPresenter() // 保留原始注释
     this.setupEventBus() // 设置事件总线监听

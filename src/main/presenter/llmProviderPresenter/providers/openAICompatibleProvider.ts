@@ -5,7 +5,8 @@ import {
   MCPToolDefinition,
   LLMCoreStreamEvent,
   ModelConfig,
-  ChatMessage
+  ChatMessage,
+  KnowledgeBaseParams
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
@@ -1311,5 +1312,14 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       console.error('获取维度失败:', error)
       throw new Error('获取维度失败')
     }
+  }
+
+  public getEmbeddingParams(model: string): KnowledgeBaseParams {
+    return {
+      modelId: model,
+      providerId: this.provider.id,
+      apiKey: this.provider.apiKey,
+      baseURL: this.provider.baseUrl
+    } as KnowledgeBaseParams
   }
 }

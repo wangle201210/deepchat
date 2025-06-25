@@ -6,12 +6,12 @@ import {
   LLMCoreStreamEvent,
   ModelConfig,
   ChatMessage,
-  KeyStatus
+  KeyStatus,
+  KnowledgeBaseParams
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
 import { jsonrepair } from 'jsonrepair'
-import { BaseEmbeddings } from '@llm-tools/embedjs-interfaces'
 
 /**
  * 基础LLM提供商抽象类
@@ -567,11 +567,11 @@ ${this.convertToolsToXml(tools)}
   }
 
   /**
-   * 获取嵌入向量对象
+   * 获取嵌入模型的参数
    * @param _model 知识库参数
    * @returns embedjs/Embeddings 对象
    */
-  public getEmbedding(_model: string): BaseEmbeddings {
+  public getEmbeddingParams(_model: string): KnowledgeBaseParams {
     throw new Error('embedding is not supported by this provider')
   }
 

@@ -5,10 +5,10 @@ import { KnowledgeBaseParams } from '@shared/presenter'
 
 export default class Embeddings {
   private sdk: BaseEmbeddings
-  constructor({ model, provider, apiKey, apiVersion, baseURL, dimensions }: KnowledgeBaseParams) {
+  constructor({ modelId, providerId, apiKey, apiVersion, baseURL, dimensions }: KnowledgeBaseParams) {
     this.sdk = EmbeddingsFactory.create({
-      model,
-      provider,
+      modelId,
+      providerId,
       apiKey,
       apiVersion,
       baseURL,
