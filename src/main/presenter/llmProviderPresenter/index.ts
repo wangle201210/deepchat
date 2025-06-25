@@ -1127,6 +1127,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       const provider = this.getProviderInstance(providerId)
       return await provider.getEmbeddings(texts, modelId)
     } catch (error) {
+      console.error(`${modelId} embedding 失败:`, error)
       throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
   }
@@ -1144,21 +1145,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     } catch (error) {
       console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
       return -1
-    }
-  }
-
-  /**
-   * 获取指定模型的 embedding 参数
-   * @param providerId 提供商ID
-   * @param modelId 模型ID
-   * @returns 获取模型的 embedding 参数
-   */
-  getEmbeddingParams(providerId: string, modelId: string) {
-    try {
-      const provider = this.getProviderInstance(providerId)
-      return provider.getEmbeddingParams(modelId)
-    } catch (error) {
-      throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
   }
 }

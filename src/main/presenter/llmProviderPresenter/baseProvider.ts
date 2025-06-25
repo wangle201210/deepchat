@@ -6,8 +6,7 @@ import {
   LLMCoreStreamEvent,
   ModelConfig,
   ChatMessage,
-  KeyStatus,
-  KnowledgeBaseParams
+  KeyStatus
 } from '@shared/presenter'
 import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
@@ -563,15 +562,6 @@ ${this.convertToolsToXml(tools)}
    * @returns 嵌入向量的维度
    */
   public async getDimensions(_modelId: string): Promise<number> {
-    throw new Error('embedding is not supported by this provider')
-  }
-
-  /**
-   * 获取嵌入模型的参数
-   * @param _model 知识库参数
-   * @returns embedjs/Embeddings 对象
-   */
-  public getEmbeddingParams(_model: string): KnowledgeBaseParams {
     throw new Error('embedding is not supported by this provider')
   }
 

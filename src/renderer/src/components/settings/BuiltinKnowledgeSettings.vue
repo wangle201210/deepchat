@@ -425,7 +425,7 @@ const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
 const llmP = usePresenter('llmproviderPresenter')
 const emit = defineEmits<{
-  (e: 'showDetail',value:Object): void
+  (e: 'showDetail', value: object): void
 }>()
 
 // 模型选择相关
@@ -567,7 +567,7 @@ const closeBuiltinConfigDialog = () => {
 
 // 进入设置页面
 const handleSetting = (config) => {
-  emit('showDetail',config)
+  emit('showDetail', config)
 }
 
 // 保存配置
@@ -585,7 +585,10 @@ const saveBuiltinConfig = async () => {
   } else {
     if (autoDetectDimensionsSwitch.value) {
       // 自动获取dimensions
-      const dimensions = await llmP.getDimensions(editingBuiltinConfig.value.providerId, editingBuiltinConfig.value.modelId)
+      const dimensions = await llmP.getDimensions(
+        editingBuiltinConfig.value.providerId,
+        editingBuiltinConfig.value.modelId
+      )
       console.log('获取到模型维度:', dimensions)
       editingBuiltinConfig.value.dimensions = dimensions
     }

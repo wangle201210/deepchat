@@ -1,4 +1,4 @@
 - [X] saveBuiltinConfig, dimensions 为空，则通过 LLM 尝试获取。
 - [X] KnowledgePresenter 实现数据监听，通过对比获取配置变更
-- [ ] KnowledgePresenter 中调用create时，Embeddings 应该通过 LlmProviderPresenter 获取。
+- [X] KnowledgePresenter 中调用create时，Embeddings 应该通过 LlmProviderPresenter 获取。
 - [ ] BuiltinKnowledgeSettings 页面和逻辑优化

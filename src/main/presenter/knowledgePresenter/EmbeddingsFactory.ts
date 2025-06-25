@@ -57,6 +57,7 @@ export default class EmbeddingsFactory {
     try {
       return new URL(baseURL).host.split('.')[0]
     } catch (error) {
+      console.error('Invalid baseURL:', baseURL, error)
       return ''
     }
   }

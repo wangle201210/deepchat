@@ -118,7 +118,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }: KnowledgeBaseParams): Promise<RAGApplication> => {
     let ragApplication: RAGApplication
     // 创建 Embeddings 实例
-    const { apiKey } = this.llmP.getEmbeddingParams(providerId, modelId)
+    const { apiKey } = this.llmP.getProviderById(providerId)
     const embeddings = new Embeddings({
       providerId,
       modelId,
