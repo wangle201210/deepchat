@@ -310,7 +310,8 @@
     "chunkSizePlaceholder": "기본값, 수정은 권장되지 않습니다",
     "dimensions": "치수를 포함시킵니다",
     "dimensionsPlaceholder": "1024와 같은 치수 크기를 포함시킵니다",
-    "selectEmbeddingModelHelper": "임베딩 모델은 지식 기반을 창출 한 후 금지됩니다"
+    "selectEmbeddingModelHelper": "임베딩 모델은 지식 기반을 창출 한 후 금지됩니다",
+    "dimensionsHelper": "모델이 세트 임베드 치수 크기를 지원하는지 확인하십시오."
   },
   "mcp": {
     "title": "MCP 설정",

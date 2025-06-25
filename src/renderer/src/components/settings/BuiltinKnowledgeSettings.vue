@@ -256,7 +256,7 @@
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>{{ t('settings.knowledgeBase.autoDetectHelper') }}</p>
+                          <p>⚠️ {{ t('settings.knowledgeBase.dimensionsHelper') }}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -576,7 +576,8 @@ const saveBuiltinConfig = async () => {
     })
   } else {
     if (autoDetectDimensionsSwitch.value) {
-      // 自动获取dimensions
+      // TODO 自动获取dimensions
+      
     }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })

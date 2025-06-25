@@ -310,7 +310,8 @@
     "chunkSizePlaceholder": "مقدار پیش فرض ، هیچ اصلاح توصیه نمی شود",
     "dimensions": "ابعاد جاسازی شده",
     "dimensionsPlaceholder": "اندازه ابعاد تعبیه شده ، مانند 1024",
-    "selectEmbeddingModelHelper": "مدل های تعبیه شده پس از ایجاد پایگاه دانش ممنوع است"
+    "selectEmbeddingModelHelper": "مدل های تعبیه شده پس از ایجاد پایگاه دانش ممنوع است",
+    "dimensionsHelper": "اطمینان حاصل کنید که مدل از اندازه ابعاد تعبیه شده پشتیبانی می کند"
   },
   "mcp": {
     "title": "تنظیمات MCP",

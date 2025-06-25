@@ -310,7 +310,8 @@
     "chunkSizePlaceholder": "Default value, no modification is recommended",
     "dimensions": "Embed dimensions",
     "dimensionsPlaceholder": "Embed dimension size, such as 1024",
-    "selectEmbeddingModelHelper": "Embedding models are prohibited after creation of knowledge base"
+    "selectEmbeddingModelHelper": "Embedding models are prohibited after creation of knowledge base",
+    "dimensionsHelper": "Make sure the model supports the set embed dimension size"
   },
   "mcp": {
     "title": "MCP Settings",

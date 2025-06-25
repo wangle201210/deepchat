@@ -310,7 +310,8 @@
     "chunkSizePlaceholder": "デフォルト値、変更は推奨されません",
     "dimensions": "埋め込まれた寸法",
     "dimensionsPlaceholder": "1024などの寸法サイズを埋め込みます",
-    "selectEmbeddingModelHelper": "埋め込みモデルは、知識ベースの作成後に禁止されています"
+    "selectEmbeddingModelHelper": "埋め込みモデルは、知識ベースの作成後に禁止されています",
+    "dimensionsHelper": "モデルが設定された埋め込み寸法サイズをサポートしていることを確認してください"
   },
   "mcp": {
     "title": "MCP設定",
