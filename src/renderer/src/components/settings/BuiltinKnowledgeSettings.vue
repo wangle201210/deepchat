@@ -155,14 +155,12 @@
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <span tabindex="-1" style="outline: none">
-                          <CircleQuestionMark
-                            color="hsl(var(--primary))"
-                            :size="16"
-                            class="cursor-pointer"
-                            style="outline: none; box-shadow: none"
-                          />
-                        </span>
+                        <CircleQuestionMark
+                          color="hsl(var(--primary))"
+                          :size="16"
+                          class="cursor-pointer"
+                          style="outline: none; box-shadow: none"
+                        />
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{{ t('settings.knowledgeBase.selectEmbeddingModelHelper') }}</p>
@@ -211,15 +209,12 @@
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
-                          <span tabindex="-1" style="outline: none">
-                            <CircleQuestionMark
-                              color="hsl(var(--primary))"
-                              :size="16"
-                              class="cursor-pointer"
-                              disabled
-                              style="outline: none; box-shadow: none"
-                            />
-                          </span>
+                          <CircleQuestionMark
+                            color="hsl(var(--primary))"
+                            :size="16"
+                            class="cursor-pointer"
+                            style="outline: none; box-shadow: none"
+                          />
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>{{ t('settings.knowledgeBase.autoDetectHelper') }}</p>
@@ -245,15 +240,12 @@
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
-                          <span tabindex="-1" style="outline: none">
-                            <CircleQuestionMark
-                              color="hsl(var(--primary))"
-                              :size="16"
-                              class="cursor-pointer"
-                              disabled
-                              style="outline: none; box-shadow: none"
-                            />
-                          </span>
+                          <CircleQuestionMark
+                            color="hsl(var(--primary))"
+                            :size="16"
+                            class="cursor-pointer"
+                            style="outline: none; box-shadow: none"
+                          />
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>⚠️ {{ t('settings.knowledgeBase.dimensionsHelper') }}</p>
@@ -268,6 +260,7 @@
                   :min="1"
                   v-model="editingBuiltinConfig.dimensions"
                   :placeholder="t('settings.knowledgeBase.dimensionsPlaceholder')"
+                  :disabled="isEditing"
                 ></Input>
               </div>
               <Accordion type="multiple" collapsed>
@@ -287,14 +280,12 @@
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger as-child>
-                              <span tabindex="-1" style="outline: none">
-                                <CircleQuestionMark
-                                  color="hsl(var(--primary))"
-                                  :size="16"
-                                  class="cursor-pointer outline-none focus:outline-none"
-                                  style="outline: none; box-shadow: none"
-                                />
-                              </span>
+                              <CircleQuestionMark
+                                color="hsl(var(--primary))"
+                                :size="16"
+                                class="cursor-pointer outline-none focus:outline-none"
+                                style="outline: none; box-shadow: none"
+                              />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p class="w-64">{{ t('settings.knowledgeBase.chunkSizeHelper') }}</p>
@@ -323,14 +314,12 @@
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger as-child>
-                              <span tabindex="-1" style="outline: none">
-                                <CircleQuestionMark
-                                  color="hsl(var(--primary))"
-                                  :size="16"
-                                  class="cursor-pointer outline-none focus:outline-none"
-                                  style="outline: none; box-shadow: none"
-                                />
-                              </span>
+                              <CircleQuestionMark
+                                color="hsl(var(--primary))"
+                                :size="16"
+                                class="cursor-pointer outline-none focus:outline-none"
+                                style="outline: none; box-shadow: none"
+                              />
                             </TooltipTrigger>
                             <TooltipContent>
                               <p class="w-64">
@@ -547,6 +536,7 @@ const editBuiltinConfig = async (index: number) => {
   selectEmbeddingModel.value = model
   editingConfigIndex.value = index
   editingBuiltinConfig.value = { ...builtinConfigs.value[index] }
+  autoDetectDimensionsSwitch.value = editingBuiltinConfig.value.dimensions === undefined
   isBuiltinConfigDialogOpen.value = true
 }
 

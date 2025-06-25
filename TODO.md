@@ -2,3 +2,6 @@
 - [X] KnowledgePresenter 实现数据监听，通过对比获取配置变更
 - [X] KnowledgePresenter 中调用create时，Embeddings 应该通过 LlmProviderPresenter 获取。
 - [ ] BuiltinKnowledgeSettings 页面和逻辑优化
+  - [ ] 添加匹配阈值参数
+  - [ ] 提交保存时的 loading
+  - [ ] 无法获取模型 dimensions 时的处理逻辑
