@@ -1281,4 +1281,35 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       return [] // Return empty on error
     }
   }
+
+  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+    if (!this.isInitialized) throw new Error('Provider not initialized')
+    if (!modelId) throw new Error('Model ID is required')
+    // OpenAI embeddings API
+    const response = await this.openai.embeddings.create({
+      model: modelId,
+      input: texts,
+      encoding_format: 'float'
+    })
+    // 兼容 OpenAI 返回格式
+    return response.data.map((item) => item.embedding)
+  }
+
+  async getDimensions(modelId: string): Promise<number> {
+    try {
+      switch (modelId) {
+        case 'text-embedding-3-small':
+        case 'text-embedding-ada-002':
+          return 1536
+        case 'text-embedding-3-large':
+          return 3072
+        default:
+          const embeddings = await this.getEmbeddings(['embed'], modelId)
+          return embeddings[0].length
+      }
+    } catch (error) {
+      console.error('获取维度失败:', error)
+      throw new Error('获取维度失败')
+    }
+  }
 }

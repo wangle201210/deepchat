@@ -494,6 +494,8 @@ function openAddConfig() {
     modelId: '',
     enabled: true
   }
+  selectEmbeddingModel.value = null
+  autoDetectDimensionsSwitch.value = true
   isBuiltinConfigDialogOpen.value = true
 }
 
@@ -559,11 +561,15 @@ const closeBuiltinConfigDialog = () => {
     modelId: '',
     enabled: true
   }
+  selectEmbeddingModel.value = null
+  autoDetectDimensionsSwitch.value = true
 }
+
 // 进入设置页面
 const handleSetting = (config) => {
   emit('showDetail',config)
 }
+
 // 保存配置
 const saveBuiltinConfig = async () => {
   if (!isEditingBuiltinConfigValid.value) return
@@ -580,7 +586,8 @@ const saveBuiltinConfig = async () => {
     if (autoDetectDimensionsSwitch.value) {
       // 自动获取dimensions
       const dimensions = await llmP.getDimensions(editingBuiltinConfig.value.providerId, editingBuiltinConfig.value.modelId)
-      console.log('获取到的维度:', dimensions)
+      console.log('获取到模型维度:', dimensions)
+      editingBuiltinConfig.value.dimensions = dimensions
     }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })
