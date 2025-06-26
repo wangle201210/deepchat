@@ -529,7 +529,8 @@ const editBuiltinConfig = async (index: number) => {
         model: config.modelId
       }),
       description: t('settings.knowledgeBase.modelNotFoundDesc'),
-      variant: 'destructive'
+      variant: 'destructive',
+      duration: 3000
     })
     return
   }
@@ -574,7 +575,8 @@ const saveBuiltinConfig = async () => {
     }
     toast({
       title: t('settings.knowledgeBase.configUpdated'),
-      description: t('settings.knowledgeBase.configUpdatedDesc')
+      description: t('settings.knowledgeBase.configUpdatedDesc'),
+      duration: 3000
     })
   } else {
     if (autoDetectDimensionsSwitch.value) {
@@ -587,7 +589,8 @@ const saveBuiltinConfig = async () => {
         toast({
           title: t('settings.knowledgeBase.autoDetectDimensionsError'),
           description: String(result.errorMsg),
-          variant: 'destructive'
+          variant: 'destructive',
+      duration: 3000
         })
         submitLoading.value = false
         return
@@ -599,7 +602,8 @@ const saveBuiltinConfig = async () => {
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })
     toast({
       title: t('settings.knowledgeBase.configAdded'),
-      description: t('settings.knowledgeBase.configAddedDesc')
+      description: t('settings.knowledgeBase.configAddedDesc'),
+      duration: 3000
     })
   }
 
@@ -660,7 +664,8 @@ const updateBuiltinConfigToMcp = async () => {
     toast({
       title: t('common.error.operationFailed'),
       description: String(error),
-      variant: 'destructive'
+      variant: 'destructive',
+      duration: 3000
     })
     return false
   }
