@@ -1157,12 +1157,7 @@ export class OllamaProvider extends BaseLLMProvider {
   }
 
   async getDimensions(modelId: string): Promise<number> {
-    try {
-      const res = await this.getEmbeddings(['sample'], modelId)
-      return res[0].length
-    } catch (error) {
-      console.error('获取Ollama模型维度失败:', error)
-      throw error
-    }
+    const res = await this.getEmbeddings(['sample'], modelId)
+    return res[0].length
   }
 }

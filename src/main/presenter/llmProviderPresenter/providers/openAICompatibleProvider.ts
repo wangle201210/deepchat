@@ -5,7 +5,7 @@ import {
   MCPToolDefinition,
   LLMCoreStreamEvent,
   ModelConfig,
-  ChatMessage,
+  ChatMessage
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
@@ -1296,20 +1296,15 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   }
 
   async getDimensions(modelId: string): Promise<number> {
-    try {
-      switch (modelId) {
-        case 'text-embedding-3-small':
-        case 'text-embedding-ada-002':
-          return 1536
-        case 'text-embedding-3-large':
-          return 3072
-        default:
-          const embeddings = await this.getEmbeddings(['embed'], modelId)
-          return embeddings[0].length
-      }
-    } catch (error) {
-      console.error('获取维度失败:', error)
-      throw new Error('获取维度失败')
+    switch (modelId) {
+      case 'text-embedding-3-small':
+      case 'text-embedding-ada-002':
+        return 1536
+      case 'text-embedding-3-large':
+        return 3072
+      default:
+        const embeddings = await this.getEmbeddings(['sample'], modelId)
+        return embeddings[0].length
     }
   }
 }

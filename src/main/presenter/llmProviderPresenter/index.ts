@@ -1139,13 +1139,19 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
    * @param modelId 模型ID
    * @returns 模型的 embedding 维度
    */
-  async getDimensions(providerId: string, modelId: string): Promise<number> {
+  async getDimensions(
+    providerId: string,
+    modelId: string
+  ): Promise<{ value: number; errorMsg?: string }> {
     try {
       const provider = this.getProviderInstance(providerId)
-      return await provider.getDimensions(modelId)
+      return { value: await provider.getDimensions(modelId) }
     } catch (error) {
       console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
-      return -1
+      return {
+        value: 0,
+        errorMsg: error instanceof Error ? error.message : String(error)
+      }
     }
   }
 }

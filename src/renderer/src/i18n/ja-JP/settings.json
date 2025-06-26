@@ -311,7 +311,8 @@
     "dimensions": "埋め込まれた寸法",
     "dimensionsPlaceholder": "1024などの寸法サイズを埋め込みます",
     "selectEmbeddingModelHelper": "埋め込みモデルは、知識ベースの作成後に禁止されています",
-    "dimensionsHelper": "モデルが設定された埋め込み寸法サイズをサポートしていることを確認してください"
+    "dimensionsHelper": "モデルが設定された埋め込み寸法サイズをサポートしていることを確認してください",
+    "autoDetectDimensionsError": "埋め込まれた寸法障害を自動的に検出します"
   },
   "mcp": {
     "title": "MCP設定",

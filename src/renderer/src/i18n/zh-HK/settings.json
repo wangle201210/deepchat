@@ -311,7 +311,8 @@
     "dimensions": "嵌入維度",
     "dimensionsPlaceholder": "嵌入維度大小，如 1024",
     "selectEmbeddingModelHelper": "嵌入模型在知識庫創建後禁止修改",
-    "dimensionsHelper": "請確保模型支持所設置的嵌入維度大小"
+    "dimensionsHelper": "請確保模型支持所設置的嵌入維度大小",
+    "autoDetectDimensionsError": "自動檢測嵌入維度失敗"
   },
   "mcp": {
     "title": "MCP設置",

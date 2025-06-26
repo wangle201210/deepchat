@@ -530,7 +530,7 @@ export interface ILlmProviderPresenter {
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
-  getDimensions(providerId: string, modelId: string): Promise<number>
+  getDimensions(providerId: string, modelId: string): Promise<{ value: number; errorMsg?: string }>
 }
 export type CONVERSATION_SETTINGS = {
   systemPrompt: string

@@ -155,11 +155,9 @@
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger as-child>
-                        <CircleQuestionMark
-                          color="hsl(var(--primary))"
-                          :size="16"
-                          class="cursor-pointer"
-                          style="outline: none; box-shadow: none"
+                        <Icon
+                          icon="lucide:circle-question-mark"
+                          class="cursor-pointer text-primary outline-none focus:outline-none text-sm"
                         />
                       </TooltipTrigger>
                       <TooltipContent>
@@ -186,7 +184,7 @@
                           selectEmbeddingModel?.name || t('settings.common.selectModel')
                         }}</span>
                       </div>
-                      <ChevronDown class="h-4 w-4 opacity-50" />
+                      <Icon icon="lucide:chevron-down" class="h-4 w-4 opacity-50" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-80 p-0">
@@ -209,11 +207,9 @@
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
-                          <CircleQuestionMark
-                            color="hsl(var(--primary))"
-                            :size="16"
-                            class="cursor-pointer"
-                            style="outline: none; box-shadow: none"
+                          <Icon
+                            icon="lucide:circle-question-mark"
+                            class="cursor-pointer text-primary outline-none focus:outline-none text-sm"
                           />
                         </TooltipTrigger>
                         <TooltipContent>
@@ -240,11 +236,9 @@
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger as-child>
-                          <CircleQuestionMark
-                            color="hsl(var(--primary))"
-                            :size="16"
-                            class="cursor-pointer"
-                            style="outline: none; box-shadow: none"
+                          <Icon
+                            icon="lucide:circle-question-mark"
+                            class="cursor-pointer text-primary outline-none focus:outline-none text-sm"
                           />
                         </TooltipTrigger>
                         <TooltipContent>
@@ -280,11 +274,9 @@
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger as-child>
-                              <CircleQuestionMark
-                                color="hsl(var(--primary))"
-                                :size="16"
-                                class="cursor-pointer outline-none focus:outline-none"
-                                style="outline: none; box-shadow: none"
+                              <Icon
+                                icon="lucide:circle-question-mark"
+                                class="cursor-pointer text-primary outline-none focus:outline-none"
                               />
                             </TooltipTrigger>
                             <TooltipContent>
@@ -314,11 +306,9 @@
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger as-child>
-                              <CircleQuestionMark
-                                color="hsl(var(--primary))"
-                                :size="16"
-                                class="cursor-pointer outline-none focus:outline-none"
-                                style="outline: none; box-shadow: none"
+                              <Icon
+                                icon="lucide:circle-question-mark"
+                                class="cursor-pointer text-primary outline-none focus:outline-none"
                               />
                             </TooltipTrigger>
                             <TooltipContent>
@@ -404,7 +394,6 @@ import { RENDERER_MODEL_META } from '@shared/presenter'
 import { toast } from '../ui/toast'
 import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
-import { ChevronDown, CircleQuestionMark } from 'lucide-vue-next'
 import { nanoid } from 'nanoid'
 import { usePresenter } from '@/composables/usePresenter'
 // 全局对象
@@ -575,12 +564,20 @@ const saveBuiltinConfig = async () => {
   } else {
     if (autoDetectDimensionsSwitch.value) {
       // 自动获取dimensions
-      const dimensions = await llmP.getDimensions(
+      const result = await llmP.getDimensions(
         editingBuiltinConfig.value.providerId,
         editingBuiltinConfig.value.modelId
       )
-      console.log('获取到模型维度:', dimensions)
-      editingBuiltinConfig.value.dimensions = dimensions
+      if (result.errorMsg) {
+        toast({
+          title: t('settings.knowledgeBase.autoDetectDimensionsError'),
+          description: String(result.errorMsg),
+          variant: 'destructive'
+        })
+        return
+      }
+      console.log('获取到模型维度:', result.value)
+      editingBuiltinConfig.value.dimensions = result.value
     }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })

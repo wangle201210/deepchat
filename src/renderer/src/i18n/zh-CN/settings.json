@@ -315,7 +315,8 @@
     "autoDetectHelper": "自动检测嵌入维度，会消耗少量 Tokens",
     "dimensionsHelper": "请确保模型支持所设置的嵌入维度大小",
     "chunkSizePlaceholder": "默认值，不建议修改",
-    "chunkOverlapPlaceholder": "默认值，不建议修改"
+    "chunkOverlapPlaceholder": "默认值，不建议修改",
+    "autoDetectDimensionsError": "自动检测嵌入维度失败"
   },
   "mcp": {
     "title": "MCP设置",
