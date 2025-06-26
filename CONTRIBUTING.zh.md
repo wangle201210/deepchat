@@ -20,7 +20,7 @@
 - 提交到 `dev` 分支的代码必须确保：
   - 功能基本正常
   - 无编译错误
-  - 至少能够 `npm run dev` 正常启动
+  - 至少能够 `pnpm run dev` 正常启动
 
 #### 大型功能新增或重构
 
@@ -84,13 +84,13 @@
 4. 安装项目依赖：
 
    ```bash
-   npm install
-   npm run installRuntime
+   pnpm install
+   pnpm run installRuntime
    ```
 
 5. 启动开发服务器：
 ```bash
-npm run dev
+pnpm run dev
 ```
 
 ## 项目结构
@@ -110,8 +110,9 @@ npm run dev
 请确保您的代码符合我们的代码风格指南，可以运行以下命令：
 
 ```bash
-npm run build
-npm run i18n
+pnpm run lint
+pnpm run i18n
+pnpm run build
 ```
 
 ## Pull Request 流程

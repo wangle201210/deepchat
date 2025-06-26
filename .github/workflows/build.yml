@@ -28,25 +28,43 @@ jobs:
             platform: win-arm64
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22.13.1'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.1
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
+
+      - name: Configure pnpm workspace for Windows ${{ matrix.arch }}
+        run: pnpm run install:sharp
         env:
+          TARGET_OS: win32
+          TARGET_ARCH: ${{ matrix.arch }}
+
+      - name: Install dependencies
+        run: pnpm install
+        env:
+          npm_config_build_from_source: true
           npm_config_platform: win32
           npm_config_arch: ${{ matrix.arch }}
+
       - name: Install Node Runtime
-        run: npm run installRuntime:win:${{ matrix.arch }}
-      - name: Install Sharp
-        run: npm install sharp  --build-from-source
+        run: pnpm run installRuntime:win:${{ matrix.arch }}
+
       - name: Build Windows
-        run: npm run build:win:${{ matrix.arch }}
+        run: pnpm run build:win:${{ matrix.arch }}
         env:
           VITE_GITHUB_CLIENT_ID: ${{ secrets.DC_GITHUB_CLIENT_ID }}
           VITE_GITHUB_CLIENT_SECRET: ${{ secrets.DC_GITHUB_CLIENT_SECRET }}
           VITE_GITHUB_REDIRECT_URI: ${{ secrets.DC_GITHUB_REDIRECT_URI }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -67,25 +85,39 @@ jobs:
             platform: linux-x64
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22.13.1'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.1
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
+
+      - name: Configure pnpm workspace for Linux ${{ matrix.arch }}
+        run: pnpm run install:sharp
         env:
-          npm_config_platform: linux
-          npm_config_arch: ${{ matrix.arch }}
+          TARGET_OS: linux
+          TARGET_ARCH: ${{ matrix.arch }}
+
+      - name: Install dependencies
+        run: pnpm install
+
       - name: Install Node Runtime
-        run: npm run installRuntime:linux:${{ matrix.arch }}
-      - name: Install Sharp
-        run: npm install --cpu=wasm32 sharp
+        run: pnpm run installRuntime:linux:${{ matrix.arch }}
+
       - name: Build Linux
-        run: npm run build:linux:${{ matrix.arch }}
+        run: pnpm run build:linux:${{ matrix.arch }}
         env:
           VITE_GITHUB_CLIENT_ID: ${{ secrets.DC_GITHUB_CLIENT_ID }}
           VITE_GITHUB_CLIENT_SECRET: ${{ secrets.DC_GITHUB_CLIENT_SECRET }}
           VITE_GITHUB_REDIRECT_URI: ${{ secrets.DC_GITHUB_REDIRECT_URI }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -107,21 +139,34 @@ jobs:
             platform: mac-arm64
     steps:
       - uses: actions/checkout@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '22.13.1'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.1
+
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
+
+      - name: Configure pnpm workspace for macOS ${{ matrix.arch }}
+        run: pnpm run install:sharp
         env:
-          npm_config_platform: darwin
-          npm_config_arch: ${{ matrix.arch }}
+          TARGET_OS: darwin
+          TARGET_ARCH: ${{ matrix.arch }}
+
+      - name: Install dependencies
+        run: pnpm install
+
       - name: Install Node Runtime
-        run: npm run installRuntime:mac:${{ matrix.arch }}
-      - name: Install Sharp
-        run: npm i --cpu=${{ matrix.arch }} --os=darwin sharp
+        run: pnpm run installRuntime:mac:${{ matrix.arch }}
+
       - name: Build Mac
-        run: npm run build:mac:${{ matrix.arch }}
+        run: pnpm run build:mac:${{ matrix.arch }}
         env:
           CSC_LINK: ${{ secrets.DEEPCHAT_CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.DEEPCHAT_CSC_KEY_PASS }}
@@ -132,6 +177,8 @@ jobs:
           VITE_GITHUB_CLIENT_ID: ${{ secrets.DC_GITHUB_CLIENT_ID }}
           VITE_GITHUB_CLIENT_SECRET: ${{ secrets.DC_GITHUB_CLIENT_SECRET }}
           VITE_GITHUB_REDIRECT_URI: ${{ secrets.DC_GITHUB_REDIRECT_URI }}
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

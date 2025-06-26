@@ -567,10 +567,10 @@ export class OpenAIResponsesProvider extends BaseLLMProvider {
     let toolUseDetected = false
     let usage:
       | {
-        prompt_tokens: number
-        completion_tokens: number
-        total_tokens: number
-      }
+          prompt_tokens: number
+          completion_tokens: number
+          total_tokens: number
+        }
       | undefined = undefined
 
     // --- Stream Processing Loop ---

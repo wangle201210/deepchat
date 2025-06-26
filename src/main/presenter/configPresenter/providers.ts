@@ -198,21 +198,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   //     defaultBaseUrl: 'https://api.ocoolai.com'
   //   }
   // },
-  // {
-  //   id: 'together',
-  //   name: 'Together',
-  //   apiType: 'together',
-  //   apiKey: '',
-  //   baseUrl: 'https://api.tohgether.xyz',
-  //   enable: false,
-  //   websites: {
-  //     official: 'https://www.together.ai/',
-  //     apiKey: 'https://api.together.ai/settings/api-keys',
-  //     docs: 'https://docs.together.ai/docs/introduction',
-  //     models: 'https://docs.together.ai/docs/chat-models',
-  //     defaultBaseUrl: 'https://api.tohgether.xyz'
-  //   }
-  // },
+  {
+    id: 'together',
+    name: 'Together',
+    apiType: 'together',
+    apiKey: '',
+    baseUrl: 'https://api.together.xyz/v1',
+    enable: false,
+    websites: {
+      official: 'https://www.together.ai/',
+      apiKey: 'https://api.together.ai/settings/api-keys',
+      docs: 'https://docs.together.ai/docs/introduction',
+      models: 'https://docs.together.ai/docs/chat-models',
+      defaultBaseUrl: 'https://api.together.xyz/v1'
+    }
+  },
   {
     id: 'github',
     name: 'GitHub Models',

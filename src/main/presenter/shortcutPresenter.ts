@@ -238,7 +238,6 @@ export class ShortcutPresenter {
     console.log('unreg shortcuts')
     globalShortcut.unregisterAll()
 
-    // 取消注册显示/隐藏窗口快捷键
     this.showHideWindow()
     this.isActive = false
   }

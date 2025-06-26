@@ -55,7 +55,7 @@
   "confirmRemoveServer": "Are you sure you want to delete the server {name}? \nThis operation cannot be cancelled.",
   "default": "default",
   "deleteServer": "Delete the server",
-  "description": "Manage and configure MCP (Model Control Protocol) servers and tools",
+  "description": "Manage and configure MCP (Model Context Protocol) servers and tools",
   "editServer": "Edit the server",
   "editServerDialog": {
     "description": "Edit MCP server configuration",
@@ -191,6 +191,10 @@
     "deepchat-inmemory/conversation-search-server": {
       "name": "Conversation History Search",
       "desc": "DeepChat built-in conversation history search service, can search historical conversation records and message contents"
+    },
+    "deepchat-inmemory/meeting-server": {
+      "name": "Multi-Agent Meeting",
+      "desc": "DeepChat's built-in meeting service enables hosting and facilitating multi-agent discussions."
     }
   },
   "prompts": {

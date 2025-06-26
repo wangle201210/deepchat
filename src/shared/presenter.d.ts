@@ -126,6 +126,11 @@ export interface ModelConfig {
   reasoning: boolean
   type: ModelType
 }
+export interface IModelConfig {
+  id: string
+  providerId: string
+  config: ModelConfig
+}
 export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
 }
@@ -163,7 +168,7 @@ export interface IWindowPresenter {
   isMainWindowFocused(windowId: number): boolean
   sendToAllWindows(channel: string, ...args: unknown[]): void
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
-  sendTodefaultTab(channel: string, switchToTarget?: boolean, ...args: unknown[]): Promise<boolean>
+  sendToDefaultTab(channel: string, switchToTarget?: boolean, ...args: unknown[]): Promise<boolean>
   closeWindow(windowId: number, forceClose?: boolean): Promise<void>
 }
 
@@ -333,6 +338,9 @@ export interface IConfigPresenter {
   // COT拷贝设置
   getCopyWithCotEnabled(): boolean
   setCopyWithCotEnabled(enabled: boolean): void
+  // 悬浮按钮设置
+  getFloatingButtonEnabled(): boolean
+  setFloatingButtonEnabled(enabled: boolean): void
   // 日志设置
   getLoggingEnabled(): boolean
   setLoggingEnabled(enabled: boolean): void
@@ -348,6 +356,8 @@ export interface IConfigPresenter {
   setCloseToQuit(value: boolean): void
   getModelStatus(providerId: string, modelId: string): boolean
   setModelStatus(providerId: string, modelId: string, enabled: boolean): void
+  // 批量获取模型状态
+  getBatchModelStatus(providerId: string, modelIds: string[]): Record<string, boolean>
   // 语言设置
   getLanguage(): string
   setLanguage(language: string): void
@@ -387,6 +397,13 @@ export interface IConfigPresenter {
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // 用于获取MCP配置助手
   getModelConfig(modelId: string, providerId?: string): ModelConfig
+  setModelConfig(modelId: string, providerId: string, config: ModelConfig): void
+  resetModelConfig(modelId: string, providerId: string): void
+  getAllModelConfigs(): Record<string, IModelConfig>
+  getProviderModelConfigs(providerId: string): Array<{ modelId: string; config: ModelConfig }>
+  hasUserModelConfig(modelId: string, providerId: string): boolean
+  exportModelConfigs(): Record<string, IModelConfig>
+  importModelConfigs(configs: Record<string, IModelConfig>, overwrite: boolean): void
   setNotificationsEnabled(enabled: boolean): void
   getNotificationsEnabled(): boolean
   // 主题设置
@@ -534,7 +551,8 @@ export interface IThreadPresenter {
   createConversation(
     title: string,
     settings?: Partial<CONVERSATION_SETTINGS>,
-    tabId: number
+    tabId: number,
+    options?: { forceNewAndActivate?: boolean } // 新增 options 参数, 支持强制新建会话，避免空会话的单例检测
   ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>

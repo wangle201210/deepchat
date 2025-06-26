@@ -3,7 +3,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { type Transport } from '@modelcontextprotocol/sdk/shared/transport.js'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS } from '@/events'
 import path from 'path'
 import { presenter } from '@/presenter'
@@ -44,6 +44,45 @@ type MCPEventsType = typeof MCP_EVENTS & {
   SERVER_STATUS_CHANGED: string
 }
 
+// Session management related types
+interface SessionError extends Error {
+  httpStatus?: number
+  isSessionExpired?: boolean
+}
+
+// Helper function to check if error is session-related
+function isSessionError(error: unknown): error is SessionError {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+
+    // Check for specific MCP Streamable HTTP session error patterns
+    const sessionErrorPatterns = [
+      'no valid session',
+      'session expired',
+      'session not found',
+      'invalid session',
+      'session id',
+      'mcp-session-id'
+    ]
+
+    const httpErrorPatterns = ['http 400', 'http 404', 'bad request', 'not found']
+
+    // Check for session-specific errors first (high confidence)
+    const hasSessionPattern = sessionErrorPatterns.some((pattern) => message.includes(pattern))
+    if (hasSessionPattern) {
+      return true
+    }
+
+    // Check for HTTP errors that might be session-related (lower confidence)
+    // Only treat as session error if it's an HTTP transport
+    const hasHttpPattern = httpErrorPatterns.some((pattern) => message.includes(pattern))
+    if (hasHttpPattern && (message.includes('posting') || message.includes('endpoint'))) {
+      return true
+    }
+  }
+  return false
+}
+
 // MCP 客户端类
 export class McpClient {
   private client: Client | null = null
@@ -52,8 +91,15 @@ export class McpClient {
   public serverConfig: Record<string, unknown>
   private isConnected: boolean = false
   private connectionTimeout: NodeJS.Timeout | null = null
+  private bunRuntimePath: string | null = null
   private nodeRuntimePath: string | null = null
+  private uvRuntimePath: string | null = null
   private npmRegistry: string | null = null
+  private uvRegistry: string | null = null
+
+  // Session management
+  private isRecovering: boolean = false
+  private hasRestarted: boolean = false
 
   // 缓存
   private cachedTools: Tool[] | null = null
@@ -95,6 +141,101 @@ export class McpClient {
     return expandedPath
   }
 
+  // 替换命令为 runtime 版本
+  private replaceWithRuntimeCommand(command: string): string {
+    // 获取命令的基本名称（去掉路径）
+    const basename = path.basename(command)
+
+    // 根据命令类型选择对应的 runtime 路径
+    if (process.platform === 'win32') {
+      // Windows平台只替换Node.js相关命令，bun命令让系统自动处理
+      if (['node', 'npm', 'npx'].includes(basename) && this.nodeRuntimePath) {
+        return path.join(this.nodeRuntimePath, `${basename}.exe`)
+      }
+    } else {
+      // 非Windows平台处理所有命令
+      if (['node', 'npm', 'npx', 'bun'].includes(basename)) {
+        // 优先使用 Bun，如果不可用则使用 Node.js
+        if (this.bunRuntimePath) {
+          // 对于 node/npm/npx，统一替换为 bun
+          const targetCommand = 'bun'
+          return path.join(this.bunRuntimePath, targetCommand)
+        } else if (this.nodeRuntimePath) {
+          // 使用 Node.js 运行时
+          let targetCommand: string
+          if (basename === 'node') {
+            targetCommand = 'node'
+          } else if (basename === 'npm') {
+            targetCommand = 'npm'
+          } else if (basename === 'npx') {
+            targetCommand = 'npx'
+          } else if (basename === 'bun') {
+            targetCommand = 'node' // 将 bun 命令映射到 node
+          } else {
+            targetCommand = basename
+          }
+          return path.join(this.nodeRuntimePath, 'bin', targetCommand)
+        }
+      }
+    }
+
+    // UV命令处理（所有平台）
+    if (['uv', 'uvx'].includes(basename)) {
+      if (!this.uvRuntimePath) {
+        return command
+      }
+
+      // uv 和 uvx 都使用对应的命令
+      const targetCommand = basename === 'uvx' ? 'uvx' : 'uv'
+
+      if (process.platform === 'win32') {
+        return path.join(this.uvRuntimePath, `${targetCommand}.exe`)
+      } else {
+        return path.join(this.uvRuntimePath, targetCommand)
+      }
+    }
+
+    return command
+  }
+
+  // 处理特殊参数替换（如 npx -> bun x）
+  private processCommandWithArgs(
+    command: string,
+    args: string[]
+  ): { command: string; args: string[] } {
+    const basename = path.basename(command)
+
+    // 处理 npx 命令
+    if (basename === 'npx' || command.includes('npx')) {
+      if (process.platform === 'win32') {
+        // Windows 平台使用 Node.js 的 npx，保持原有参数
+        return {
+          command: this.replaceWithRuntimeCommand(command),
+          args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
+        }
+      } else {
+        // 非Windows平台优先使用 Bun，需要在参数前添加 'x'
+        if (this.bunRuntimePath) {
+          return {
+            command: this.replaceWithRuntimeCommand(command),
+            args: ['x', ...args]
+          }
+        } else if (this.nodeRuntimePath) {
+          // 如果没有Bun，使用Node.js，保持原有参数
+          return {
+            command: this.replaceWithRuntimeCommand(command),
+            args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
+          }
+        }
+      }
+    }
+
+    return {
+      command: this.replaceWithRuntimeCommand(command),
+      args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
+    }
+  }
+
   // 获取系统特定的默认路径
   private getDefaultPaths(homeDir: string): string[] {
     if (process.platform === 'darwin') {
@@ -120,32 +261,72 @@ export class McpClient {
   constructor(
     serverName: string,
     serverConfig: Record<string, unknown>,
-    npmRegistry: string | null = null
+    npmRegistry: string | null = null,
+    uvRegistry: string | null = null
   ) {
     this.serverName = serverName
     this.serverConfig = serverConfig
     this.npmRegistry = npmRegistry
+    this.uvRegistry = uvRegistry
 
-    const runtimePath = path
-      .join(app.getAppPath(), 'runtime', 'node')
+    const runtimeBasePath = path
+      .join(app.getAppPath(), 'runtime')
       .replace('app.asar', 'app.asar.unpacked')
-    console.info('runtimePath', runtimePath)
-    // 检查运行时文件是否存在
+    console.info('runtimeBasePath', runtimeBasePath)
+
+    // 检查 bun 运行时文件是否存在
+    const bunRuntimePath = path.join(runtimeBasePath, 'bun')
     if (process.platform === 'win32') {
-      const nodeExe = path.join(runtimePath, 'node.exe')
-      const npxCmd = path.join(runtimePath, 'npx.cmd')
-      if (fs.existsSync(nodeExe) && fs.existsSync(npxCmd)) {
-        this.nodeRuntimePath = runtimePath
+      const bunExe = path.join(bunRuntimePath, 'bun.exe')
+      if (fs.existsSync(bunExe)) {
+        this.bunRuntimePath = bunRuntimePath
+      } else {
+        this.bunRuntimePath = null
+      }
+    } else {
+      const bunBin = path.join(bunRuntimePath, 'bun')
+      if (fs.existsSync(bunBin)) {
+        this.bunRuntimePath = bunRuntimePath
+      } else {
+        this.bunRuntimePath = null
+      }
+    }
+
+    // 检查 node 运行时文件是否存在
+    const nodeRuntimePath = path.join(runtimeBasePath, 'node')
+    if (process.platform === 'win32') {
+      const nodeExe = path.join(nodeRuntimePath, 'node.exe')
+      if (fs.existsSync(nodeExe)) {
+        this.nodeRuntimePath = nodeRuntimePath
       } else {
         this.nodeRuntimePath = null
       }
     } else {
-      const nodeBin = path.join(runtimePath, 'bin', 'node')
-      const npxBin = path.join(runtimePath, 'bin', 'npx')
-      if (fs.existsSync(nodeBin) && fs.existsSync(npxBin)) {
-        this.nodeRuntimePath = runtimePath
+      const nodeBin = path.join(nodeRuntimePath, 'bin', 'node')
+      if (fs.existsSync(nodeBin)) {
+        this.nodeRuntimePath = nodeRuntimePath
       } else {
         this.nodeRuntimePath = null
+      }
+    }
+
+    // 检查 uv 运行时文件是否存在
+    const uvRuntimePath = path.join(runtimeBasePath, 'uv')
+    if (process.platform === 'win32') {
+      const uvExe = path.join(uvRuntimePath, 'uv.exe')
+      const uvxExe = path.join(uvRuntimePath, 'uvx.exe')
+      if (fs.existsSync(uvExe) && fs.existsSync(uvxExe)) {
+        this.uvRuntimePath = uvRuntimePath
+      } else {
+        this.uvRuntimePath = null
+      }
+    } else {
+      const uvBin = path.join(uvRuntimePath, 'uv')
+      const uvxBin = path.join(uvRuntimePath, 'uvx')
+      if (fs.existsSync(uvBin) && fs.existsSync(uvxBin)) {
+        this.uvRuntimePath = uvRuntimePath
+      } else {
+        this.uvRuntimePath = null
       }
     }
   }
@@ -209,11 +390,18 @@ export class McpClient {
         // 修复env类型问题
         const env: Record<string, string> = {}
 
-        // 判断是否是 Node.js 相关命令
-        const isNodeCommand = ['node', 'npm', 'npx'].some((cmd) => command.includes(cmd))
+        // 处理命令和参数替换
+        const processedCommand = this.processCommandWithArgs(command, args)
+        command = processedCommand.command
+        args = processedCommand.args
+
+        // 判断是否是 Node.js/Bun/UV 相关命令
+        const isNodeCommand = ['node', 'npm', 'npx', 'bun', 'uv', 'uvx'].some(
+          (cmd) => command.includes(cmd) || args.some((arg) => arg.includes(cmd))
+        )
 
         if (isNodeCommand) {
-          // Node.js 命令使用白名单处理
+          // Node.js/Bun/UV 命令使用白名单处理
           if (process.env) {
             const existingPaths: string[] = []
 
@@ -236,10 +424,26 @@ export class McpClient {
 
             // 合并所有路径
             const allPaths = [...existingPaths, ...defaultPaths]
-            if (this.nodeRuntimePath) {
-              allPaths.unshift(
-                process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
-              )
+            // 添加运行时路径
+            if (process.platform === 'win32') {
+              // Windows平台只添加 node 和 uv 路径
+              if (this.uvRuntimePath) {
+                allPaths.unshift(this.uvRuntimePath)
+              }
+              if (this.nodeRuntimePath) {
+                allPaths.unshift(this.nodeRuntimePath)
+              }
+            } else {
+              // 其他平台优先级：bun > node > uv
+              if (this.uvRuntimePath) {
+                allPaths.unshift(this.uvRuntimePath)
+              }
+              if (this.nodeRuntimePath) {
+                allPaths.unshift(path.join(this.nodeRuntimePath, 'bin'))
+              }
+              if (this.bunRuntimePath) {
+                allPaths.unshift(this.bunRuntimePath)
+              }
             }
 
             // 规范化并设置PATH
@@ -247,7 +451,7 @@ export class McpClient {
             env[key] = value
           }
         } else {
-          // 非 Node.js 命令，保留所有系统环境变量，只补充 PATH
+          // 非 Node.js/Bun/UV 命令，保留所有系统环境变量，只补充 PATH
           Object.entries(process.env).forEach(([key, value]) => {
             if (value !== undefined) {
               env[key] = value
@@ -268,10 +472,26 @@ export class McpClient {
 
           // 合并所有路径
           const allPaths = [...existingPaths, ...defaultPaths]
-          if (this.nodeRuntimePath) {
-            allPaths.unshift(
-              process.platform === 'win32' ? this.nodeRuntimePath : `${this.nodeRuntimePath}/bin`
-            )
+          // 添加运行时路径
+          if (process.platform === 'win32') {
+            // Windows平台只添加 node 和 uv 路径
+            if (this.uvRuntimePath) {
+              allPaths.unshift(this.uvRuntimePath)
+            }
+            if (this.nodeRuntimePath) {
+              allPaths.unshift(this.nodeRuntimePath)
+            }
+          } else {
+            // 其他平台优先级：bun > node > uv
+            if (this.uvRuntimePath) {
+              allPaths.unshift(this.uvRuntimePath)
+            }
+            if (this.nodeRuntimePath) {
+              allPaths.unshift(path.join(this.nodeRuntimePath, 'bin'))
+            }
+            if (this.bunRuntimePath) {
+              allPaths.unshift(this.bunRuntimePath)
+            }
           }
 
           // 规范化并设置PATH
@@ -303,12 +523,21 @@ export class McpClient {
           env.npm_config_registry = this.npmRegistry
         }
 
-        console.log('mcp env', env)
+        if (this.uvRegistry) {
+          env.UV_DEFAULT_INDEX = this.uvRegistry
+          env.PIP_INDEX_URL = this.uvRegistry
+        }
+
+        // console.log('mcp env', command, env, args)
         this.transport = new StdioClientTransport({
           command,
           args,
           env,
           stderr: 'pipe'
+        })
+
+        ;(this.transport as StdioClientTransport).stderr?.on('data', (data) => {
+          console.info('mcp StdioClientTransport error', this.serverName, data.toString())
         })
       } else if (this.serverConfig.baseUrl && this.serverConfig.type === 'sse') {
         this.transport = new SSEClientTransport(new URL(this.serverConfig.baseUrl as string), {
@@ -366,10 +595,14 @@ export class McpClient {
           console.info(`MCP server ${this.serverName} connected successfully`)
 
           // 触发服务器状态变更事件
-          eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
-            name: this.serverName,
-            status: 'running'
-          })
+          eventBus.send(
+            (MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED,
+            SendTarget.ALL_WINDOWS,
+            {
+              name: this.serverName,
+              status: 'running'
+            }
+          )
         })
         .catch((error) => {
           console.error(`Failed to connect to MCP server ${this.serverName}:`, error)
@@ -391,7 +624,7 @@ export class McpClient {
       console.error(`Failed to connect to MCP server ${this.serverName}:`, error)
 
       // 触发服务器状态变更事件
-      eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
+      eventBus.send((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
         name: this.serverName,
         status: 'stopped'
       })
@@ -407,16 +640,8 @@ export class McpClient {
     }
 
     try {
-      // 清理资源
-      this.cleanupResources()
-
-      console.log(`Disconnected from MCP server: ${this.serverName}`)
-
-      // 触发服务器状态变更事件
-      eventBus.emit((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, {
-        name: this.serverName,
-        status: 'stopped'
-      })
+      // Use internal disconnect method for normal disconnection
+      await this.internalDisconnect()
     } catch (error) {
       console.error(`Failed to disconnect from MCP server ${this.serverName}:`, error)
       throw error
@@ -456,22 +681,94 @@ export class McpClient {
     return this.isConnected && !!this.client
   }
 
+  // Check and handle session errors by restarting the service
+  private async checkAndHandleSessionError(error: unknown): Promise<void> {
+    if (isSessionError(error) && !this.isRecovering) {
+      // If already restarted once and still getting session errors, stop the service
+      if (this.hasRestarted) {
+        console.error(
+          `Session error persists after restart for server ${this.serverName}, stopping service...`,
+          error
+        )
+        await this.stopService()
+        throw new Error(`MCP服务 ${this.serverName} 重启后仍然出现session错误，已停止服务`)
+      }
+
+      console.warn(
+        `Session error detected for server ${this.serverName}, restarting service...`,
+        error
+      )
+
+      this.isRecovering = true
+
+      try {
+        // Clean up current connection
+        this.cleanupResources()
+
+        // Clear all caches to ensure fresh data after reconnection
+        this.cachedTools = null
+        this.cachedPrompts = null
+        this.cachedResources = null
+
+        // Mark as restarted
+        this.hasRestarted = true
+
+        console.info(`Service ${this.serverName} restarted due to session error`)
+      } catch (restartError) {
+        console.error(`Failed to restart service ${this.serverName}:`, restartError)
+      } finally {
+        this.isRecovering = false
+      }
+    }
+  }
+
+  // Stop the service completely due to persistent session errors
+  private async stopService(): Promise<void> {
+    try {
+      // Use the same disconnect logic but with different reason
+      await this.internalDisconnect('persistent session errors')
+    } catch (error) {
+      console.error(`Failed to stop service ${this.serverName}:`, error)
+    }
+  }
+
+  // Internal disconnect with custom reason
+  private async internalDisconnect(reason?: string): Promise<void> {
+    // Clean up all resources
+    this.cleanupResources()
+
+    const logMessage = reason
+      ? `MCP service ${this.serverName} has been stopped due to ${reason}`
+      : `Disconnected from MCP server: ${this.serverName}`
+
+    console.log(logMessage)
+
+    // Trigger server status changed event to notify the system
+    eventBus.send((MCP_EVENTS as MCPEventsType).SERVER_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
+      name: this.serverName,
+      status: 'stopped'
+    })
+  }
+
   // 调用 MCP 工具
   async callTool(toolName: string, args: Record<string, unknown>): Promise<ToolCallResult> {
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // 调用工具
       const result = (await this.client.callTool({
         name: toolName,
         arguments: args
       })) as ToolCallResult
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 检查结果
       if (result.isError) {
@@ -485,6 +782,9 @@ export class McpClient {
       }
       return result
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       console.error(`Failed to call MCP tool ${toolName}:`, error)
       // 调用失败，清空工具缓存
       this.cachedTools = null
@@ -499,16 +799,20 @@ export class McpClient {
       return this.cachedTools
     }
 
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       const response = await this.client.listTools()
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
+
       // 检查响应格式
       if (response && typeof response === 'object' && 'tools' in response) {
         const toolsArray = response.tools
@@ -520,6 +824,9 @@ export class McpClient {
       }
       throw new Error('无效的工具响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
@@ -542,17 +849,20 @@ export class McpClient {
       return this.cachedPrompts
     }
 
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // SDK可能没有 listPrompts 方法，需要使用通用的 request
       const response = await this.client.listPrompts()
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 检查响应格式
       if (response && typeof response === 'object' && 'prompts' in response) {
@@ -568,8 +878,7 @@ export class McpClient {
                 : undefined,
             arguments:
               typeof p === 'object' && p !== null && 'arguments' in p ? p.arguments : undefined,
-            files:
-              typeof p === 'object' && p !== null && 'files' in p ? p.files : undefined
+            files: typeof p === 'object' && p !== null && 'files' in p ? p.files : undefined
           })) as PromptListEntry[]
           // 缓存结果
           this.cachedPrompts = validPrompts
@@ -578,6 +887,9 @@ export class McpClient {
       }
       throw new Error('无效的提示响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
@@ -595,19 +907,23 @@ export class McpClient {
 
   // 获取指定提示
   async getPrompt(name: string, args?: Record<string, unknown>): Promise<Prompt> {
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       const response = await this.client.getPrompt({
         name,
         arguments: (args as Record<string, string>) || {}
       })
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
+
       // 检查响应格式并转换为 Prompt 类型
       if (
         response &&
@@ -624,6 +940,9 @@ export class McpClient {
       }
       throw new Error('无效的获取提示响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       console.error(`Failed to get MCP prompt ${name}:`, error)
       // 获取失败，清空提示缓存
       this.cachedPrompts = null
@@ -638,17 +957,20 @@ export class McpClient {
       return this.cachedResources
     }
 
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // SDK可能没有 listResources 方法，需要使用通用的 request
       const response = await this.client.listResources()
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 检查响应格式
       if (response && typeof response === 'object' && 'resources' in response) {
@@ -666,6 +988,9 @@ export class McpClient {
       }
       throw new Error('无效的资源列表响应格式')
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       // 尝试从错误对象中提取更多信息
       const errorMessage = error instanceof Error ? error.message : String(error)
       // 如果错误表明不支持，则缓存空数组
@@ -683,17 +1008,20 @@ export class McpClient {
 
   // 读取资源
   async readResource(resourceUri: string): Promise<Resource> {
-    if (!this.isConnected) {
-      await this.connect()
-    }
-
-    if (!this.client) {
-      throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
-    }
-
     try {
+      if (!this.isConnected) {
+        await this.connect()
+      }
+
+      if (!this.client) {
+        throw new Error(`MCP客户端 ${this.serverName} 未初始化`)
+      }
+
       // 使用 unknown 作为中间类型进行转换
       const rawResource = await this.client.readResource({ uri: resourceUri })
+
+      // 成功调用后重置重启标志
+      this.hasRestarted = false
 
       // 手动构造 Resource 对象
       const resource: Resource = {
@@ -706,6 +1034,9 @@ export class McpClient {
 
       return resource
     } catch (error) {
+      // 检查并处理session错误
+      await this.checkAndHandleSessionError(error)
+
       console.error(`Failed to read MCP resource ${resourceUri}:`, error)
       // 读取失败，清空资源缓存
       this.cachedResources = null

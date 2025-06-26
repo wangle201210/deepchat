@@ -58,7 +58,10 @@
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="start" class="p-0 w-80">
-                <ModelSelect @update:model="handleModelUpdate" />
+                <ModelSelect
+                  :type="[ModelType.Chat, ModelType.ImageGeneration]"
+                  @update:model="handleModelUpdate"
+                />
               </PopoverContent>
             </Popover>
             <Popover v-model:open="settingsPopoverOpen" @update:open="handleSettingsPopoverUpdate">
@@ -114,6 +117,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { useEventListener } from '@vueuse/core'
 import { useThemeStore } from '@/stores/theme'
 import { useLanguageStore } from '@/stores/language'
+import { ModelType } from '@shared/model'
 
 const configPresenter = usePresenter('configPresenter')
 const themeStore = useThemeStore()
@@ -229,12 +233,16 @@ watch(
 
     // 如果没有偏好模型或偏好模型不可用，使用第一个可用模型
     if (settingsStore.enabledModels.length > 0) {
-      const model = settingsStore.enabledModels[0].models[0]
+      const model = settingsStore.enabledModels
+        .flatMap((provider) =>
+          provider.models.map((m) => ({ ...m, providerId: provider.providerId }))
+        )
+        .find((m) => m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
       if (model) {
         activeModel.value = {
           name: model.name,
           id: model.id,
-          providerId: settingsStore.enabledModels[0].providerId,
+          providerId: model.providerId,
           tags: []
         }
       }

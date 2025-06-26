@@ -330,7 +330,7 @@ export class ContentEnricher {
           let url = href
           try {
             url = href.startsWith('http') ? href : new URL(href, baseUrl).toString()
-          } catch (error) {
+          } catch {
             // 如果URL构建失败，使用原始href
           }
           markdown += `- [${text}](${url})\n`
@@ -348,7 +348,7 @@ export class ContentEnricher {
         let imageUrl = src
         try {
           imageUrl = src.startsWith('http') ? src : new URL(src, baseUrl).toString()
-        } catch (error) {
+        } catch {
           // 如果URL构建失败，使用原始src
         }
         markdown += `![${alt}](${imageUrl})\n`

@@ -36,6 +36,7 @@
         :key="model.id"
         :model-name="model.name"
         :model-id="model.id"
+        :provider-id="provider.id"
         :group="model.group"
         :enabled="model.enabled ?? false"
         :vision="model.vision ?? false"
@@ -43,6 +44,7 @@
         :reasoning="model.reasoning ?? false"
         :type="model.type ?? ModelType.Chat"
         @enabled-change="$emit('model-enabled-change', model, $event)"
+        @config-changed="$emit('config-changed')"
       />
     </div>
   </div>
@@ -69,5 +71,6 @@ defineEmits<{
   'show-model-list-dialog': []
   'disable-all-models': []
   'model-enabled-change': [model: RENDERER_MODEL_META, enabled: boolean]
+  'config-changed': []
 }>()
 </script>

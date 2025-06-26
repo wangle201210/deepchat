@@ -17,6 +17,7 @@ export class ServerManager {
   private clients: Map<string, McpClient> = new Map()
   private configPresenter: IConfigPresenter
   private npmRegistry: string | null = null
+  private uvRegistry: string | null = null
 
   constructor(configPresenter: IConfigPresenter) {
     this.configPresenter = configPresenter
@@ -80,12 +81,25 @@ export class ServerManager {
 
     // 返回响应最快的registry
     this.npmRegistry = successfulResults[0].registry
+
+    // 如果最快的npm源是npmmirror，设置uvRegistry
+    if (this.npmRegistry === 'https://registry.npmmirror.com/') {
+      this.uvRegistry = 'http://mirrors.aliyun.com/pypi/simple'
+    } else {
+      this.uvRegistry = null
+    }
+
     return this.npmRegistry
   }
 
   // 获取npm registry
   getNpmRegistry(): string | null {
     return this.npmRegistry
+  }
+
+  // 获取uv registry
+  getUvRegistry(): string | null {
+    return this.uvRegistry
   }
 
   // 获取默认服务器名称列表
@@ -169,7 +183,8 @@ export class ServerManager {
       const client = new McpClient(
         name,
         serverConfig as unknown as Record<string, unknown>,
-        npmRegistry
+        npmRegistry,
+        this.uvRegistry
       )
       this.clients.set(name, client)
 

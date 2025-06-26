@@ -36,21 +36,33 @@ export class TabPresenter implements ITabPresenter {
     this.windowPresenter = windowPresenter // 注入窗口管理器
     this.initBusHandlers()
   }
-
+  private onWindowSizeChange(windowId: number) {
+    const views = this.windowTabs.get(windowId)
+    const window = BrowserWindow.fromId(windowId)
+    if (window) {
+      views?.forEach((view) => {
+        const tabView = this.tabs.get(view)
+        if (tabView) {
+          this.updateViewBounds(window, tabView)
+        }
+      })
+    }
+  }
   // 初始化事件总线处理器
   private initBusHandlers(): void {
     // 窗口尺寸变化，更新视图 bounds
-    eventBus.on(WINDOW_EVENTS.WINDOW_RESIZE, (windowId: number) => {
-      const views = this.windowTabs.get(windowId)
-      const window = BrowserWindow.fromId(windowId)
-      if (window) {
-        views?.forEach((view) => {
-          const tabView = this.tabs.get(view)
-          if (tabView) {
-            this.updateViewBounds(window, tabView)
-          }
-        })
-      }
+    eventBus.on(WINDOW_EVENTS.WINDOW_RESIZE, (windowId: number) =>
+      this.onWindowSizeChange(windowId)
+    )
+    eventBus.on(WINDOW_EVENTS.WINDOW_MAXIMIZED, (windowId: number) => {
+      setTimeout(() => {
+        this.onWindowSizeChange(windowId)
+      }, 100)
+    })
+    eventBus.on(WINDOW_EVENTS.WINDOW_UNMAXIMIZED, (windowId: number) => {
+      setTimeout(() => {
+        this.onWindowSizeChange(windowId)
+      }, 100)
     })
 
     // 窗口关闭，分离包含的视图

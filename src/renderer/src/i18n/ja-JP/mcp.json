@@ -55,7 +55,7 @@
   "confirmRemoveServer": "サーバー{name}を削除したいですか？この操作はキャンセルできません。",
   "default": "デフォルト",
   "deleteServer": "サーバーを削除します",
-  "description": "MCP（Model Control Protocol）サーバーとツールの管理と設定",
+  "description": "MCP（Model Context Protocol）サーバーとツールの管理と設定",
   "editServer": "サーバーを編集します",
   "editServerDialog": {
     "description": "MCPサーバーの構成を編集します",
@@ -191,6 +191,10 @@
     "deepchat-inmemory/conversation-search-server": {
       "name": "会話履歴検索",
       "desc": "DeepChat内蔵の会話履歴検索サービス、過去の会話記録とメッセージ内容を検索できます"
+    },
+    "deepchat-inmemory/meeting-server": {
+      "name": "マルチエージェント会議",
+      "desc": "DeepChatの内蔵会議サービスは、マルチエージェントによる討論の開催と進行を可能にします。"
     }
   },
   "prompts": {

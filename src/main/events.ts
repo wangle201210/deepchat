@@ -24,6 +24,10 @@ export const CONFIG_EVENTS = {
   PROXY_RESOLVED: 'config:proxy-resolved',
   LANGUAGE_CHANGED: 'config:language-changed', // 新增：语言变更事件
   CUSTOM_PROMPTS_SERVER_CHECK_REQUIRED: 'config:custom-prompts-server-check-required', // 新增：需要检查自定义提示词服务器事件
+  // 模型配置相关事件
+  MODEL_CONFIG_CHANGED: 'config:model-config-changed', // 模型配置变更事件
+  MODEL_CONFIG_RESET: 'config:model-config-reset', // 模型配置重置事件
+  MODEL_CONFIGS_IMPORTED: 'config:model-configs-imported', // 模型配置批量导入事件
   // OAuth相关事件
   OAUTH_LOGIN_START: 'config:oauth-login-start', // OAuth登录开始
   OAUTH_LOGIN_SUCCESS: 'config:oauth-login-success', // OAuth登录成功
@@ -36,7 +40,9 @@ export const CONVERSATION_EVENTS = {
 
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
-  MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited
+  MESSAGE_EDITED: 'conversation:message-edited', // 替代 message-edited
+
+  MESSAGE_GENERATED: 'conversation:message-generated' // 主进程内部事件，一条完整的消息已生成
 }
 
 // 通信相关事件
@@ -150,5 +156,19 @@ export const TAB_EVENTS = {
 
 // 托盘相关事件
 export const TRAY_EVENTS = {
-  SHOW_HIDDEN_WINDOW: 'tray:show-hidden-window' // 从托盘显示/隐藏窗口
+  SHOW_HIDDEN_WINDOW: 'tray:show-hidden-window', // 从托盘显示/隐藏窗口
+  CHECK_FOR_UPDATES: 'tray:check-for-updates' // 托盘检查更新
+}
+
+// MCP会议专用事件
+export const MEETING_EVENTS = {
+  INSTRUCTION: 'mcp:meeting-instruction' // 主进程向渲染进程发送指令
+}
+
+// 悬浮按钮相关事件
+export const FLOATING_BUTTON_EVENTS = {
+  CLICKED: 'floating-button:clicked', // 悬浮按钮被点击
+  VISIBILITY_CHANGED: 'floating-button:visibility-changed', // 悬浮按钮显示状态改变
+  POSITION_CHANGED: 'floating-button:position-changed', // 悬浮按钮位置改变
+  ENABLED_CHANGED: 'floating-button:enabled-changed' // 悬浮按钮启用状态改变
 }

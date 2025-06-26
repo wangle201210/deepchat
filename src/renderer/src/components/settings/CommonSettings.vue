@@ -77,7 +77,10 @@
               </Button>
             </PopoverTrigger>
             <PopoverContent class="w-80 p-0">
-              <ModelSelect @update:model="handleSearchModelSelect" />
+              <ModelSelect
+                :type="[ModelType.Chat, ModelType.ImageGeneration]"
+                @update:model="handleSearchModelSelect"
+              />
             </PopoverContent>
           </Popover>
         </div>
@@ -371,6 +374,7 @@ import { nanoid } from 'nanoid'
 import { useThemeStore } from '@/stores/theme'
 import { useSoundStore } from '@/stores/sound'
 import { useLanguageStore } from '@/stores/language'
+import { ModelType } from '@shared/model'
 
 const devicePresenter = usePresenter('devicePresenter')
 const configPresenter = usePresenter('configPresenter')
@@ -482,7 +486,7 @@ const validateProxyUrl = () => {
   }
 
   const urlPattern =
-    /^(http|https):\/\/(?:([^:@\/]+)(?::([^@\/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
+    /^(http|https):\/\/(?:([^:@/]+)(?::([^@/]*))?@)?([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(:[0-9]+)?(\/[^\s]*)?$/
 
   const isValid = urlPattern.test(customProxyUrl.value)
 

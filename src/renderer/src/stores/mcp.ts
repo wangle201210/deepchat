@@ -79,20 +79,9 @@ export const useMcpStore = defineStore('mcp', () => {
       const aIsInmemory = a.type === 'inmemory'
       const bIsInmemory = b.type === 'inmemory'
 
-      if (a.isRunning && !b.isRunning) return -1 // 启用的服务排在前面
-      if (!a.isRunning && b.isRunning) return 1 // 未启用的服务排在后面
-
-      if (a.isRunning && b.isRunning) {
-        // 两个都启用，inmemory优先
-        if (aIsInmemory && !bIsInmemory) return -1
-        if (!aIsInmemory && bIsInmemory) return 1
-      }
-
-      if (!a.isRunning && !b.isRunning) {
-        // 两个都未启用，inmemory优先
-        if (aIsInmemory && !bIsInmemory) return -1
-        if (!aIsInmemory && bIsInmemory) return 1
-      }
+      // inmemory 都优先
+      if (aIsInmemory && !bIsInmemory) return -1
+      if (!aIsInmemory && bIsInmemory) return 1
 
       return 0 // 保持原有顺序
     })

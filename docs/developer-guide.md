@@ -10,7 +10,7 @@ This guide provides information for developers looking to understand, build, and
   - [Technology Stack](#technology-stack)
   - [Architectural Documents](#architectural-documents)
 - [API Documentation](#api-documentation)
-- [Model Controller Platform (MCP)](#model-controller-platform-mcp)
+- [Model Context Protocol(MCP)](#model-context-protocol-mcp)
 - [Development Setup](#development-setup)
 - [Building the Application](#building-the-application)
 - [Contribution Guidelines](#contribution-guidelines)
@@ -58,7 +58,7 @@ The `docs/` directory contains several documents that provide deeper insights in
 -   [Multi-Window Architecture](./multi-window-architecture.md): Describes how multiple windows are managed.
 -   [Event System Design](./event-system-design.md): Details the application's event system.
 -   [Config Presenter Architecture](./config-presenter-architecture.md) and [Config Presenter Design](./config-presenter-design.md): Explain the configuration management system.
--   [MCP Presenter Architecture](./mcp-presenter-architecture.md) and [MCP Presenter Design](./mcp-presenter-design.md): Detail the architecture of the Model Controller Platform.
+-   [MCP Presenter Architecture](./mcp-presenter-architecture.md) and [MCP Presenter Design](./mcp-presenter-design.md): Detail the architecture of the Model Context Protocol.
 
 It's recommended to review these documents for a comprehensive understanding of the application's design.
 
@@ -71,9 +71,9 @@ While there might not be a dedicated, separately generated API documentation sit
 
 Developers should familiarize themselves with these definition files to understand how different parts of the application interact.
 
-## Model Controller Platform (MCP)
+## Model Context Protocol (MCP)
 
-The Model Controller Platform (MCP) is a core feature of DeepChat, enabling advanced capabilities like tool calling and search enhancement. As described in the `README.md`:
+The Model Context Protocol (MCP) is a core feature of DeepChat, enabling advanced capabilities like tool calling and search enhancement. As described in the `README.md`:
 
 -   It allows LLMs to use **Resources**, **Prompts**, and **Tools**.
 -   It supports features like code execution (via a built-in Node.js runtime), web information retrieval, and file operations.
@@ -85,7 +85,7 @@ For more detailed information on MCP, its design, and how to develop tools or in
 -   [Function Call and MCP](./function-call-and-mcp.md)
 -   [MCP Presenter Architecture](./mcp-presenter-architecture.md)
 -   [MCP Presenter Design](./mcp-presenter-design.md)
--   The "Excellent MCP (Model Controller Platform) Support" section in the main [README.md](../README.md).
+-   The "Excellent MCP (Model Context Protocol) Support" section in the main [README.md](../README.md).
 
 ## Development Setup
 
@@ -128,7 +128,7 @@ This guide should provide a good starting point for developers. For specific que
 -   Project Structure: Based on `ls()` output and `CONTRIBUTING.md`.
 -   Architecture Overview: Explaining Electron's main/renderer architecture, the tech stack (Vue.js, TypeScript), and linking to relevant documents in `docs/` that I identified earlier.
 -   API Documentation: Pointing to `shared/presenter.d.ts` and `src/preload/index.d.ts`.
--   Model Controller Platform (MCP): Explaining its purpose based on `README.md` and linking to `docs/function-call-and-mcp.md` and other MCP-specific architectural documents.
+-   Model Context Protocol (MCP): Explaining its purpose based on `README.md` and linking to `docs/function-call-and-mcp.md` and other MCP-specific architectural documents.
 -   Development Setup: Linking to the relevant sections in `README.md` and `CONTRIBUTING.md`.
 -   Building the Application: Linking to the relevant section in `README.md`.
 -   Contribution Guidelines: Linking to `CONTRIBUTING.md`.

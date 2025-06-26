@@ -171,6 +171,16 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     command: 'deepchat-inmemory/conversation-search-server',
     env: {},
     disable: false
+  },
+  'deepchat-inmemory/meeting-server': {
+    args: [],
+    descriptions: 'DeepChat内置会议服务，用于组织多Agent讨论',
+    icons: '👥',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'deepchat-inmemory/meeting-server',
+    env: {},
+    disable: false
   }
 }
 
@@ -248,7 +258,7 @@ export class McpConfHelper {
   // 设置MCP服务器配置
   async setMcpServers(servers: Record<string, MCPServerConfig>): Promise<void> {
     this.mcpStore.set('mcpServers', servers)
-    eventBus.emit(MCP_EVENTS.CONFIG_CHANGED, {
+    eventBus.send(MCP_EVENTS.CONFIG_CHANGED, SendTarget.ALL_WINDOWS, {
       mcpServers: servers,
       defaultServers: this.mcpStore.get('defaultServers') || [],
       mcpEnabled: this.mcpStore.get('mcpEnabled')

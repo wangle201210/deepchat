@@ -100,7 +100,64 @@
     "modelList": "Liste des modèles",
     "provider": "Fournisseur de service",
     "providerSetting": "Paramètres du fournisseur",
-    "selectModel": "Sélectionner un modèle"
+    "selectModel": "Sélectionner un modèle",
+    "modelConfig": {
+      "cancel": "Annuler",
+      "contextLength": {
+        "description": "Définir la longueur de contexte que le modèle peut gérer",
+        "label": "Durée du contexte"
+      },
+      "description": "Veuillez noter que cette configuration n'est valable que pour le modèle actuel et n'affectera pas d'autres modèles. Veuillez le modifier avec prudence. Des paramètres incorrects peuvent faire en sorte que le modèle ne fonctionne pas correctement.",
+      "functionCall": {
+        "description": "Si le modèle prend en charge les appels de fonction nativement (Deepchat simulera automatiquement les appels de fonction après avoir désactivé cette option)",
+        "label": "Appels de fonction"
+      },
+      "maxTokens": {
+        "description": "Définissez le nombre maximum de jetons pour une seule sortie du modèle",
+        "label": "Longueur de sortie maximale"
+      },
+      "reasoning": {
+        "description": "Le modèle prend-il en charge la capacité de raisonnement?",
+        "label": "Capacité de raisonnement"
+      },
+      "resetConfirm": {
+        "confirm": "Confirmer la réinitialisation",
+        "message": "Êtes-vous sûr de souhaiter réinitialiser la configuration de ce modèle par défaut? Cette opération est irrévocable.",
+        "title": "Confirmer la réinitialisation"
+      },
+      "resetToDefault": "Réinitialiser à la valeur par défaut",
+      "saveConfig": "Enregistrer la configuration",
+      "temperature": {
+        "description": "Contrôlez le caractère aléatoire de la sortie. La plupart des modèles sont de 0-1 et certains soutiennent entre 0-2. Plus l'aléatoire est élevé.",
+        "label": "température"
+      },
+      "title": "Paramètres du modèle personnalisé",
+      "type": {
+        "description": "Sélectionnez le type de modèle",
+        "label": "Type de modèle",
+        "options": {
+          "chat": "Modèle de langue",
+          "embedding": "Modèle d'intégration",
+          "imageGeneration": "Modèle de génération d'images",
+          "rerank": "Réorganiser le modèle"
+        }
+      },
+      "validation": {
+        "contextLengthMax": "La longueur du contexte ne peut pas dépasser 10000000",
+        "contextLengthMin": "La longueur du contexte doit être supérieure à 0",
+        "contextLengthRequired": "La longueur du contexte ne peut pas être vide",
+        "maxTokensMax": "La longueur de sortie maximale ne peut pas dépasser 1000000",
+        "maxTokensMin": "La longueur de sortie maximale doit être supérieure à 0",
+        "maxTokensRequired": "La longueur de sortie maximale ne peut pas être vide",
+        "temperatureMax": "La température doit être inférieure ou égale à 2",
+        "temperatureMin": "La température doit être supérieure ou égale à 0",
+        "temperatureRequired": "La température ne peut pas être vide"
+      },
+      "vision": {
+        "description": "Le modèle soutient-il la capacité visuelle?",
+        "label": "Capacité visuelle"
+      }
+    }
   },
   "provider": {
     "enable": "Activer le service",
@@ -235,7 +292,7 @@
   },
   "mcp": {
     "title": "Paramètres MCP",
-    "description": "Gérer et configurer les serveurs et outils MCP (Model Control Protocol)",
+    "description": "Gérer et configurer les serveurs et outils MCP (Model Context Protocol)",
     "enabledTitle": "Activer MCP",
     "enabledDescription": "Activer ou désactiver les fonctionnalités et outils MCP",
     "enableToAccess": "Veuillez activer MCP pour accéder aux options de configuration",
@@ -320,7 +377,13 @@
       "selectFolderError": "Erreur de sélection du dossier",
       "folders": "Dossiers autorisés à accéder",
       "addFolder": "Ajouter un dossier",
-      "noFoldersSelected": "Aucun dossier n'a été sélectionné"
+      "noFoldersSelected": "Aucun dossier n'a été sélectionné",
+      "useE2B": "Activer E2B Sandbox",
+      "e2bDescription": "Exécuter le code Python à l'aide de Sandbox E2B",
+      "e2bApiKey": "E2B APIKEY",
+      "e2bApiKeyPlaceholder": "Entrez ici vos touches API E2B, comme E2B_1111XX *******",
+      "e2bApiKeyHelp": "Allez sur e2b.dev pour obtenir votre apikey",
+      "e2bApiKeyRequired": "Apikey doit être entré pour activer la fonction E2B"
     },
     "builtIn": "intégré",
     "builtInServerCannotBeRemoved": "Les services intégrés ne peuvent pas être supprimés, seuls les paramètres de modification et les variables d'environnement sont prises en charge.",
@@ -375,7 +438,9 @@
     "text-base": "défaut",
     "text-lg": "grand",
     "text-sm": "Petit",
-    "text-xl": "Extrêmement grand"
+    "text-xl": "Extrêmement grand",
+    "floatingButton": "Bouton flottant",
+    "floatingButtonDesc": "Afficher un bouton flottant sur le bureau pour activer rapidement la fenêtre de l'application"
   },
   "shortcuts": {
     "title": "Paramètres des raccourcis clavier",
@@ -394,6 +459,7 @@
     "closeTab": "Fermez la page d'onglet actuelle",
     "newTab": "Créer un nouvel onglet",
     "newWindow": "Ouvrez une nouvelle fenêtre",
+    "showHideWindow": "Afficher/Masquer la fenêtre",
     "newConversation": "Nouvelle conversation",
     "lastTab": "Passez à la dernière onglet",
     "nextTab": "Passez à l'onglet suivant",

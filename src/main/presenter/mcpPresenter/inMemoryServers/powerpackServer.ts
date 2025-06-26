@@ -11,6 +11,7 @@ import { execFile } from 'child_process'
 import { promisify } from 'util'
 import { nanoid } from 'nanoid'
 import { runCode, type CodeFile } from '../pythonRunner'
+import { Sandbox } from '@e2b/code-interpreter'
 
 // Schema 定义
 const GetTimeArgsSchema = z.object({
@@ -51,6 +52,20 @@ const RunPythonCodeArgsSchema = z.object({
     .describe('Code execution timeout in milliseconds, default 5 seconds')
 })
 
+// E2B 代码执行 Schema
+const E2BRunCodeArgsSchema = z.object({
+  code: z
+    .string()
+    .describe(
+      'Python code to execute in E2B secure sandbox. Supports Jupyter Notebook syntax and has access to common Python libraries.'
+    ),
+  language: z
+    .string()
+    .optional()
+    .default('python')
+    .describe('Programming language for code execution, currently supports python')
+})
+
 // 限制和安全配置
 const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
   // 允许os模块用于系统信息读取，但仍然禁止其他危险模块
@@ -72,11 +87,17 @@ const CODE_EXECUTION_FORBIDDEN_PATTERNS = [
 
 export class PowerpackServer {
   private server: Server
+  private bunRuntimePath: string | null = null
   private nodeRuntimePath: string | null = null
+  private useE2B: boolean = false
+  private e2bApiKey: string = ''
 
-  constructor() {
-    // 查找内置的Node运行时路径
-    this.setupNodeRuntime()
+  constructor(env?: Record<string, any>) {
+    // 从环境变量中获取 E2B 配置
+    this.parseE2BConfig(env)
+
+    // 查找内置的运行时路径
+    this.setupRuntimes()
 
     // 创建服务器实例
     this.server = new Server(
@@ -95,31 +116,67 @@ export class PowerpackServer {
     this.setupRequestHandlers()
   }
 
-  // 设置Node运行时路径
-  private setupNodeRuntime(): void {
-    const runtimePath = path
-      .join(app.getAppPath(), 'runtime', 'node')
+  // 解析 E2B 配置
+  private parseE2BConfig(env?: Record<string, any>): void {
+    if (env) {
+      this.useE2B = env.USE_E2B === true || env.USE_E2B === 'true'
+      this.e2bApiKey = env.E2B_API_KEY || ''
+
+      // 如果启用了 E2B 但没有提供 API Key，记录警告
+      if (this.useE2B && !this.e2bApiKey) {
+        console.warn('E2B is enabled but no API key provided. E2B functionality will be disabled.')
+        this.useE2B = false
+      }
+    }
+  }
+
+  // 设置运行时路径
+  private setupRuntimes(): void {
+    const runtimeBasePath = path
+      .join(app.getAppPath(), 'runtime')
       .replace('app.asar', 'app.asar.unpacked')
 
+    // 设置 Bun 运行时路径
+    const bunRuntimePath = path.join(runtimeBasePath, 'bun')
     if (process.platform === 'win32') {
-      const nodeExe = path.join(runtimePath, 'node.exe')
-      if (fs.existsSync(nodeExe)) {
-        this.nodeRuntimePath = runtimePath
+      const bunExe = path.join(bunRuntimePath, 'bun.exe')
+      if (fs.existsSync(bunExe)) {
+        this.bunRuntimePath = bunRuntimePath
       }
     } else {
-      const nodeBin = path.join(runtimePath, 'bin', 'node')
-      if (fs.existsSync(nodeBin)) {
-        this.nodeRuntimePath = path.join(runtimePath, 'bin')
+      const bunBin = path.join(bunRuntimePath, 'bun')
+      if (fs.existsSync(bunBin)) {
+        this.bunRuntimePath = bunRuntimePath
       }
     }
 
-    if (!this.nodeRuntimePath) {
-      console.warn('未找到内置Node运行时，代码执行功能将不可用')
+    // 设置 Node.js 运行时路径
+    const nodeRuntimePath = path.join(runtimeBasePath, 'node')
+    if (process.platform === 'win32') {
+      const nodeExe = path.join(nodeRuntimePath, 'node.exe')
+      if (fs.existsSync(nodeExe)) {
+        this.nodeRuntimePath = nodeRuntimePath
+      }
+    } else {
+      const nodeBin = path.join(nodeRuntimePath, 'bin', 'node')
+      if (fs.existsSync(nodeBin)) {
+        this.nodeRuntimePath = nodeRuntimePath
+      }
+    }
+
+    if (!this.bunRuntimePath && !this.nodeRuntimePath && !this.useE2B) {
+      console.warn('No runtime found (Bun, Node.js, or E2B), code execution will be unavailable')
+    } else if (this.useE2B) {
+      console.info('Using E2B for code execution')
+    } else if (this.bunRuntimePath) {
+      console.info('Using built-in Bun runtime')
+    } else if (this.nodeRuntimePath) {
+      console.info('Using built-in Node.js runtime')
     }
   }
 
   // 启动服务器
-  public startServer(transport: Transport): void {
+  public async startServer(transport: Transport): Promise<void> {
     this.server.connect(transport)
   }
 
@@ -138,10 +195,16 @@ export class PowerpackServer {
     return `${userQuery} ${actualTime}`
   }
 
-  // 执行Node代码
-  private async executeNodeCode(code: string, timeout: number): Promise<string> {
-    if (!this.nodeRuntimePath) {
-      throw new Error('Node运行时未找到，无法执行代码')
+  // 执行JavaScript代码
+  private async executeJavaScriptCode(code: string, timeout: number): Promise<string> {
+    // Windows平台只检查Node.js，其他平台检查Bun和Node.js
+    const hasRuntime =
+      process.platform === 'win32'
+        ? this.nodeRuntimePath
+        : this.bunRuntimePath || this.nodeRuntimePath
+
+    if (!hasRuntime) {
+      throw new Error('运行时未找到，无法执行代码')
     }
 
     // 检查代码安全性
@@ -157,14 +220,27 @@ export class PowerpackServer {
       // 写入代码到临时文件
       fs.writeFileSync(tempFile, code)
 
-      // 准备执行命令
-      const nodeExecutable =
-        process.platform === 'win32'
-          ? path.join(this.nodeRuntimePath, 'node.exe')
-          : path.join(this.nodeRuntimePath, 'node')
+      let executable: string
+      let args: string[]
+
+      // Windows平台使用Node.js，其他平台优先使用Bun
+      if (process.platform === 'win32') {
+        // Windows只使用Node.js
+        executable = path.join(this.nodeRuntimePath!, 'node.exe')
+        args = [tempFile]
+      } else {
+        // 其他平台优先使用Bun
+        if (this.bunRuntimePath) {
+          executable = path.join(this.bunRuntimePath, 'bun')
+          args = [tempFile]
+        } else {
+          executable = path.join(this.nodeRuntimePath!, 'bin', 'node')
+          args = [tempFile]
+        }
+      }
 
       // 执行代码并添加超时控制
-      const execPromise = promisify(execFile)(nodeExecutable, [tempFile], {
+      const execPromise = promisify(execFile)(executable, args, {
         timeout,
         windowsHide: true
       })
@@ -212,6 +288,65 @@ export class PowerpackServer {
     }
   }
 
+  // 使用 E2B 执行代码
+  private async executeE2BCode(code: string): Promise<string> {
+    if (!this.useE2B) {
+      throw new Error('E2B is not enabled')
+    }
+
+    let sandbox: Sandbox | null = null
+    try {
+      sandbox = await Sandbox.create()
+      const result = await sandbox.runCode(code)
+
+      // 格式化结果
+      const output: string[] = []
+
+      // 添加执行结果
+      if (result.results && result.results.length > 0) {
+        for (const res of result.results) {
+          if ((res as any).isError) {
+            const error = (res as any).error
+            output.push(`Error: ${error?.name || 'Unknown'}: ${error?.value || 'Unknown error'}`)
+            if (error?.traceback) {
+              output.push(error.traceback.join('\n'))
+            }
+          } else if (res.text) {
+            output.push(res.text)
+          } else if ((res as any).data) {
+            output.push(JSON.stringify((res as any).data, null, 2))
+          }
+        }
+      }
+
+      // 添加日志输出
+      if (result.logs) {
+        if (result.logs.stdout.length > 0) {
+          output.push('STDOUT:')
+          output.push(...result.logs.stdout)
+        }
+        if (result.logs.stderr.length > 0) {
+          output.push('STDERR:')
+          output.push(...result.logs.stderr)
+        }
+      }
+
+      return output.join('\n') || 'Code executed successfully (no output)'
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`E2B execution failed: ${errorMessage}`)
+    } finally {
+      // 清理沙箱
+      if (sandbox) {
+        try {
+          await sandbox.kill()
+        } catch (error) {
+          console.error('Failed to close E2B sandbox:', error)
+        }
+      }
+    }
+  }
+
   // 设置请求处理器
   private setupRequestHandlers(): void {
     // 设置工具列表处理器
@@ -236,35 +371,59 @@ export class PowerpackServer {
         }
       ]
 
-      // 只有在Node运行时可用时才添加代码执行工具
-      if (this.nodeRuntimePath) {
+      // 根据配置添加代码执行工具
+      if (this.useE2B) {
+        // 使用 E2B 执行代码
         tools.push({
-          name: 'run_node_code',
+          name: 'run_code',
           description:
-            'Execute simple Node.js code in a secure sandbox environment. Suitable for calculations, data transformations, encryption/decryption, and network operations. ' +
-            'The code needs to be output to the console, and the output content needs to be formatted as a string. ' +
-            'For security reasons, the code cannot perform file operations, modify system settings, spawn child processes, or execute external code from network. ' +
+            'Execute Python code in a secure E2B sandbox environment. Supports Jupyter Notebook syntax and has access to common Python libraries. ' +
+            'The code will be executed in an isolated environment with full Python ecosystem support. ' +
+            'This is safer than local execution as it runs in a controlled cloud sandbox. ' +
+            'Perfect for data analysis, calculations, visualizations, and any Python programming tasks.',
+          inputSchema: zodToJsonSchema(E2BRunCodeArgsSchema)
+        })
+      } else {
+        // 使用本地运行时执行代码
+        const hasLocalRuntime =
+          process.platform === 'win32'
+            ? this.nodeRuntimePath
+            : this.bunRuntimePath || this.nodeRuntimePath
+
+        if (hasLocalRuntime) {
+          const runtimeDescription =
+            process.platform === 'win32'
+              ? 'Execute simple JavaScript/TypeScript code in a secure sandbox environment using Node.js runtime on Windows platform. '
+              : 'Execute simple JavaScript/TypeScript code in a secure sandbox environment (Bun or Node.js). Non-Windows platforms prioritize Bun runtime. '
+
+          tools.push({
+            name: 'run_node_code',
+            description:
+              runtimeDescription +
+              'Suitable for calculations, data transformations, encryption/decryption, and network operations. ' +
+              'The code needs to be output to the console, and the output content needs to be formatted as a string. ' +
+              'For security reasons, the code cannot perform file operations, modify system settings, spawn child processes, or execute external code from network. ' +
+              'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
+              'When a problem can be solved by a simple and secure JavaScript/TypeScript code or you have generated a simple code for the user and want to execute it, please use this tool, providing more reliable information to the user.',
+            inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
+          })
+        }
+
+        tools.push({
+          name: 'run_python_code',
+          description:
+            'Execute simple Python code in a secure sandbox environment. Suitable for calculations, data analysis, and scientific computing. ' +
+            'The code needs to be output to the print function, and the output content needs to be formatted as a string. ' +
+            'The code will be executed with Python 3.12. ' +
             'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
-            'When a problem can be solved by a simple and secure Node.js code or you have generated a simple code for the user and want to execute it, please use this tool, providing more reliable information to the user.',
-          inputSchema: zodToJsonSchema(RunNodeCodeArgsSchema)
+            'Dependencies may be defined via PEP 723 script metadata, e.g. to install "pydantic", the script should startwith a comment of the form:' +
+            `# /// script\n` +
+            `# dependencies = ['pydantic']\n ` +
+            `# ///\n` +
+            `print('hello world').`,
+          inputSchema: zodToJsonSchema(RunPythonCodeArgsSchema)
         })
       }
-
-      // 添加Python代码执行工具
-      tools.push({
-        name: 'run_python_code',
-        description:
-          'Execute simple Python code in a secure sandbox environment. Suitable for calculations, data analysis, and scientific computing. ' +
-          'The code needs to be output to the print function, and the output content needs to be formatted as a string. ' +
-          'The code will be executed with Python 3.12. ' +
-          'Code execution has a timeout limit, default is 5 seconds, you can adjust it based on the estimated time of the code, generally not recommended to exceed 2 minutes. ' +
-          'Dependencies may be defined via PEP 723 script metadata, e.g. to install "pydantic", the script should startwith a comment of the form:' +
-          `# /// script\n` +
-          `# dependencies = ['pydantic']\n ` +
-          `# ///\n` +
-          `print('hello world').`,
-        inputSchema: zodToJsonSchema(RunPythonCodeArgsSchema)
-      })
 
       return { tools }
     })
@@ -334,10 +493,38 @@ export class PowerpackServer {
             }
           }
 
+          case 'run_code': {
+            // E2B 代码执行
+            if (!this.useE2B) {
+              throw new Error('E2B is not enabled')
+            }
+
+            const parsed = E2BRunCodeArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`无效的代码参数: ${parsed.error}`)
+            }
+
+            const { code } = parsed.data
+            const result = await this.executeE2BCode(code)
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `代码执行结果 (E2B Sandbox):\n\n${result}`
+                }
+              ]
+            }
+          }
+
           case 'run_node_code': {
-            // 再次检查Node运行时是否可用
-            if (!this.nodeRuntimePath) {
-              throw new Error('Node runtime is not available, cannot execute code')
+            // 本地 JavaScript 代码执行
+            if (this.useE2B) {
+              throw new Error('Local code execution is disabled when E2B is enabled')
+            }
+
+            if (!this.bunRuntimePath && !this.nodeRuntimePath) {
+              throw new Error('JavaScript runtime is not available, cannot execute code')
             }
 
             const parsed = RunNodeCodeArgsSchema.safeParse(args)
@@ -346,7 +533,7 @@ export class PowerpackServer {
             }
 
             const { code, timeout } = parsed.data
-            const result = await this.executeNodeCode(code, timeout)
+            const result = await this.executeJavaScriptCode(code, timeout)
 
             return {
               content: [
@@ -359,6 +546,11 @@ export class PowerpackServer {
           }
 
           case 'run_python_code': {
+            // 本地 Python 代码执行
+            if (this.useE2B) {
+              throw new Error('Local code execution is disabled when E2B is enabled')
+            }
+
             const parsed = RunPythonCodeArgsSchema.safeParse(args)
             if (!parsed.success) {
               throw new Error(`无效的代码参数: ${parsed.error}`)
