@@ -1020,29 +1020,34 @@ export const useSettingsStore = defineStore('settings', () => {
       allProviderModels.value.find((item) => item.providerId === 'ollama')?.models || []
 
     // 将 Ollama 本地模型转换为全局模型格式
-    const ollamaModelsAsGlobal = ollamaLocalModels.value.map((model) => {
-      // 检查是否已存在相同ID的模型，如果存在，保留其现有的配置
-      const existingModel = existingOllamaModels.find((m) => m.id === model.name)
+    const ollamaModelsAsGlobal = await Promise.all(
+      ollamaLocalModels.value.map(async (model) => {
+        // 检查是否已存在相同ID的模型，如果存在，保留其现有的配置
+        const existingModel = existingOllamaModels.find((m) => m.id === model.name)
+        const config = await configP.getModelConfig(model.name, 'ollama')
 
-      return {
-        id: model.name,
-        name: model.name,
-        contextLength: existingModel?.contextLength || 4096, // 使用现有值或默认值
-        maxTokens: existingModel?.maxTokens || 2048, // 使用现有值或默认值
-        provider: 'ollama',
-        group: existingModel?.group || 'local',
-        enabled: true,
-        isCustom: existingModel?.isCustom || false,
-        providerId: 'ollama',
-        vision: existingModel?.vision || false,
-        functionCall: existingModel?.functionCall || false,
-        reasoning: existingModel?.reasoning || false,
-        type: existingModel?.type || ModelType.Chat,
-        // 保留现有的其他配置，但确保更新 Ollama 特有数据
-        ...(existingModel ? { ...existingModel } : {}),
-        ollamaModel: model
-      } as RENDERER_MODEL_META & { ollamaModel: OllamaModel }
-    })
+        return {
+          ...{
+            contextLength: 4096,
+            maxTokens: 2048,
+            group: 'local',
+            enabled: true,
+            isCustom: false,
+            providerId: 'ollama',
+            vision: false,
+            functionCall: false,
+            reasoning: false,
+            type: ModelType.Chat
+          },
+          ...(existingModel || {}),
+          ...(config || {}),
+          provider: 'ollama',
+          id: model.name,
+          name: model.name,
+          ollamaModel: model
+        } as RENDERER_MODEL_META & { ollamaModel: OllamaModel }
+      })
+    )
 
     // 更新全局模型列表
     const existingIndex = allProviderModels.value.findIndex((item) => item.providerId === 'ollama')
