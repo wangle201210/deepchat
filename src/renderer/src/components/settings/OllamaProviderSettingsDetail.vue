@@ -118,7 +118,7 @@
                   :model-id="model.name"
                   :provider-id="provider.id"
                   :is-custom-model="true"
-                  :type="ModelType.Chat"
+                  :type="model.type"
                   :enabled="true"
                   @configChanged="refreshModels"
                   @deleteModel="showDeleteModelConfirm(model.name)"
@@ -248,7 +248,6 @@ import {
 import { useSettingsStore } from '@/stores/settings'
 import type { LLM_PROVIDER } from '@shared/presenter'
 import ModelConfigItem from './ModelConfigItem.vue'
-import { ModelType } from '@shared/model'
 import { useToast } from '../ui/toast'
 
 const { t } = useI18n()

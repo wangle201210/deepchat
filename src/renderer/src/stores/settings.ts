@@ -5,7 +5,7 @@ import { ModelType } from '@shared/model'
 import { usePresenter } from '@/composables/usePresenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { CONFIG_EVENTS, OLLAMA_EVENTS, DEEPLINK_EVENTS } from '@/events'
-import type { OllamaModel } from '@shared/presenter'
+import type { ModelConfig, OllamaModel } from '@shared/presenter'
 import { useRouter } from 'vue-router'
 import { useMcpStore } from '@/stores/mcp'
 import { useUpgradeStore } from '@/stores/upgrade'
@@ -35,8 +35,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const isRefreshingModels = ref<boolean>(false) // 是否正在刷新模型列表
   const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
   // Ollama 相关状态
-  const ollamaRunningModels = ref<OllamaModel[]>([])
-  const ollamaLocalModels = ref<OllamaModel[]>([])
+  const ollamaRunningModels = ref<Array<OllamaModel & Partial<ModelConfig>>>([])
+  const ollamaLocalModels = ref<Array<OllamaModel & Partial<ModelConfig>>>([])
   const ollamaPullingModels = ref<Map<string, number>>(new Map()) // 模型名 -> 进度
 
   // 搜索助手模型相关

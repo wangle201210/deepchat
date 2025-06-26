@@ -290,21 +290,32 @@ export class OllamaProvider extends BaseLLMProvider {
   }
 
   // Ollama 特有的模型管理功能
-  public async listModels(): Promise<OllamaModel[]> {
+  public async listModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>> {
     try {
       const response = await this.ollama.list()
-      // 返回类型转换，适应我们的 OllamaModel 接口
-      return response.models as unknown as OllamaModel[]
+      const models = response.models as unknown as OllamaModel[]
+      // 合并自定义属性
+      return models.map((model) => {
+        const customConfig = this.configPresenter.getModelConfig(model.name, this.provider.id)
+        // 合并costomConfig的属性到model
+        return { ...model, ...customConfig }
+      })
     } catch (error) {
       console.error('Failed to list Ollama models:', (error as Error).message)
       return []
     }
   }
 
-  public async listRunningModels(): Promise<OllamaModel[]> {
+  public async listRunningModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>> {
     try {
       const response = await this.ollama.ps()
-      return response.models as unknown as OllamaModel[]
+      const runningModels = response.models as unknown as OllamaModel[]
+      // 合并自定义属性
+      return runningModels.map((model) => {
+        const customConfig = this.configPresenter.getModelConfig(model.name, this.provider.id)
+        // 合并costomConfig的属性到model
+        return { ...model, ...customConfig }
+      })
     } catch (error) {
       console.error('Failed to list running Ollama models:', (error as Error).message)
       return []

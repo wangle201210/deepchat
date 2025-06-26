@@ -524,9 +524,9 @@ export interface ILlmProviderPresenter {
     providerId: string,
     modelId: string
   ): Promise<string>
-  listOllamaModels(): Promise<OllamaModel[]>
+  listOllamaModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>>
   showOllamaModelInfo(modelName: string): Promise<ShowResponse>
-  listOllamaRunningModels(): Promise<OllamaModel[]>
+  listOllamaRunningModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>>
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>

@@ -7,7 +7,8 @@ import {
   OllamaModel,
   ChatMessage,
   LLMAgentEvent,
-  KeyStatus
+  KeyStatus,
+  ModelConfig
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -1066,7 +1067,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return null
   }
   // ollama api
-  listOllamaModels(): Promise<OllamaModel[]> {
+  listOllamaModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>> {
     const provider = this.getOllamaProviderInstance()
     if (!provider) {
       // console.error('Ollama provider not found')
@@ -1081,7 +1082,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     }
     return provider.showModelInfo(modelName)
   }
-  listOllamaRunningModels(): Promise<OllamaModel[]> {
+  listOllamaRunningModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>> {
     const provider = this.getOllamaProviderInstance()
     if (!provider) {
       // console.error('Ollama provider not found')
