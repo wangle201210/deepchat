@@ -5,3 +5,4 @@
   - [ ] 添加匹配阈值参数
   - [ ] 提交保存时的 loading
   - [ ] 无法获取模型 dimensions 时的处理逻辑
+- [ ] OllamaProvider 需要增加自定义模型参数覆盖逻辑

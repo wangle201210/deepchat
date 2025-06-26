@@ -72,6 +72,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
           if (diffs.updated.length > 0) {
           }
           if (diffs.deleted.length > 0) {
+            diffs.deleted.forEach((config) => this.delete(config.id))
           }
           this.configP.setKnowledgeConfigs(configs)
           console.log('[RAG] Updated knowledge configs:', configs)
@@ -95,14 +96,18 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 重置知识库内容
    */
   reset = async ({ base }: { base: KnowledgeBaseParams }): Promise<void> => {
-    console.log(base)
+    const ragApplication = await this.getRagApplication(base)
+    await ragApplication.reset()
   }
 
   /**
    * 删除知识库（移除本地存储）
    */
   delete = async (id: string): Promise<void> => {
-    console.log(id)
+    const dbPath = path.join(this.storageDir, id)
+    if (fs.existsSync(dbPath)) {
+      fs.rmSync(dbPath, { recursive: true })
+    }
   }
 
   /**
