@@ -312,7 +312,8 @@
     "dimensionsPlaceholder": "اندازه ابعاد تعبیه شده ، مانند 1024",
     "selectEmbeddingModelHelper": "مدل های تعبیه شده پس از ایجاد پایگاه دانش ممنوع است",
     "dimensionsHelper": "اطمینان حاصل کنید که مدل از اندازه ابعاد تعبیه شده پشتیبانی می کند",
-    "autoDetectDimensionsError": "به طور خودکار خرابی بعد تعبیه شده را تشخیص دهید"
+    "autoDetectDimensionsError": "به طور خودکار خرابی بعد تعبیه شده را تشخیص دهید",
+    "redetectDimensions": "بعد تعبیه شده را دوباره تعیین کنید"
   },
   "mcp": {
     "title": "تنظیمات MCP",

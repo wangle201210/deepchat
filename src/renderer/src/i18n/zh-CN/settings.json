@@ -312,6 +312,7 @@
     "dimensions": "嵌入维度",
     "dimensionsPlaceholder": "嵌入维度大小，如 1024",
     "autoDetectDimensions": "自动检测嵌入维度",
+    "redetectDimensions": "重新检测嵌入维度",
     "autoDetectHelper": "自动检测嵌入维度，会消耗少量 Tokens",
     "dimensionsHelper": "请确保模型支持所设置的嵌入维度大小",
     "chunkSizePlaceholder": "默认值，不建议修改",

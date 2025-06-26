@@ -312,7 +312,8 @@
     "dimensionsPlaceholder": "Taille de dimension intégrée, comme 1024",
     "selectEmbeddingModelHelper": "Les modèles d'intégration sont interdits après la création d'une base de connaissances",
     "dimensionsHelper": "Assurez-vous que le modèle prend en charge la taille de la dimension intégrée de l'ensemble",
-    "autoDetectDimensionsError": "Détecter automatiquement la panne de dimension intégrée"
+    "autoDetectDimensionsError": "Détecter automatiquement la panne de dimension intégrée",
+    "redetectDimensions": "Redecteur la dimension intégrée"
   },
   "mcp": {
     "title": "Paramètres MCP",

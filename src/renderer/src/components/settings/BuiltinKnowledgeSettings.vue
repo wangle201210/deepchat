@@ -202,7 +202,11 @@
                       class="text-xs text-muted-foreground"
                       for="edit-builtin-config-dimensions"
                     >
-                      {{ t('settings.knowledgeBase.autoDetectDimensions') }}
+                      {{
+                        isEditing
+                          ? t('settings.knowledgeBase.redetectDimensions')
+                          : t('settings.knowledgeBase.autoDetectDimensions')
+                      }}
                     </Label>
                     <TooltipProvider>
                       <Tooltip>
@@ -218,11 +222,11 @@
                       </Tooltip>
                     </TooltipProvider>
                   </div>
+                  <Switch
+                    id="edit-builtin-config-auto-detect-switch"
+                    v-model:checked="autoDetectDimensionsSwitch"
+                  ></Switch>
                 </div>
-                <Switch
-                  id="edit-builtin-config-auto-detect-switch"
-                  v-model:checked="autoDetectDimensionsSwitch"
-                ></Switch>
               </div>
               <div class="space-y-2" v-if="!autoDetectDimensionsSwitch">
                 <div class="flex items-center gap-1 justify-between">
@@ -339,8 +343,14 @@
           <Button variant="outline" @click="closeBuiltinConfigDialog">{{
             t('common.cancel')
           }}</Button>
-          <Button type="button" :disabled="!isEditingBuiltinConfigValid" @click="saveBuiltinConfig">
-            {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
+          <Button
+            type="button"
+            :disabled="!isEditingBuiltinConfigValid || submitLoading"
+            @click="saveBuiltinConfig"
+          >
+            <Icon v-if="submitLoading" icon="lucide:loader-circle" class="animate-spin" />{{
+              isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig')
+            }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -410,6 +420,7 @@ const emit = defineEmits<{
 const modelSelectOpen = ref(false)
 const isBuiltinConfigPanelOpen = ref(false)
 const isEditing = ref(false)
+const submitLoading = ref(false)
 
 // 自动检测维度开关
 const autoDetectDimensionsSwitch = ref(true)
@@ -474,6 +485,7 @@ function openAddConfig() {
   }
   selectEmbeddingModel.value = null
   autoDetectDimensionsSwitch.value = true
+  submitLoading.value = false
   isBuiltinConfigDialogOpen.value = true
 }
 
@@ -526,6 +538,7 @@ const editBuiltinConfig = async (index: number) => {
   editingConfigIndex.value = index
   editingBuiltinConfig.value = { ...builtinConfigs.value[index] }
   autoDetectDimensionsSwitch.value = editingBuiltinConfig.value.dimensions === undefined
+  submitLoading.value = false
   isBuiltinConfigDialogOpen.value = true
 }
 
@@ -542,6 +555,7 @@ const closeBuiltinConfigDialog = () => {
   }
   selectEmbeddingModel.value = null
   autoDetectDimensionsSwitch.value = true
+  submitLoading.value = false
 }
 
 // 进入设置页面
@@ -552,6 +566,7 @@ const handleSetting = (config) => {
 // 保存配置
 const saveBuiltinConfig = async () => {
   if (!isEditingBuiltinConfigValid.value) return
+  submitLoading.value = true
   if (isEditing.value) {
     // 更新配置
     if (editingConfigIndex.value !== -1) {
@@ -574,6 +589,7 @@ const saveBuiltinConfig = async () => {
           description: String(result.errorMsg),
           variant: 'destructive'
         })
+        submitLoading.value = false
         return
       }
       console.log('获取到模型维度:', result.value)

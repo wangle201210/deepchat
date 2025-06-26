@@ -312,7 +312,8 @@
     "dimensionsPlaceholder": "Embed dimension size, such as 1024",
     "selectEmbeddingModelHelper": "Embedding models are prohibited after creation of knowledge base",
     "dimensionsHelper": "Make sure the model supports the set embed dimension size",
-    "autoDetectDimensionsError": "Automatically detect embedded dimension failure"
+    "autoDetectDimensionsError": "Automatically detect embedded dimension failure",
+    "redetectDimensions": "Redetect the embedded dimension"
   },
   "mcp": {
     "title": "MCP Settings",
