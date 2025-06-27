@@ -153,7 +153,7 @@
                     {{ t('settings.knowledgeBase.selectEmbeddingModel') }}
                   </Label>
                   <TooltipProvider>
-                    <Tooltip>
+                    <Tooltip :delay-duration="200">
                       <TooltipTrigger as-child>
                         <Icon
                           icon="lucide:circle-question-mark"
@@ -209,7 +209,7 @@
                       }}
                     </Label>
                     <TooltipProvider>
-                      <Tooltip>
+                      <Tooltip :delay-duration="200">
                         <TooltipTrigger as-child>
                           <Icon
                             icon="lucide:circle-question-mark"
@@ -238,7 +238,7 @@
                       {{ t('settings.knowledgeBase.dimensions') }}
                     </Label>
                     <TooltipProvider>
-                      <Tooltip>
+                      <Tooltip :delay-duration="200">
                         <TooltipTrigger as-child>
                           <Icon
                             icon="lucide:circle-question-mark"
@@ -276,7 +276,7 @@
                           {{ t('settings.knowledgeBase.chunkSize') }}
                         </Label>
                         <TooltipProvider>
-                          <Tooltip>
+                          <Tooltip :delay-duration="200">
                             <TooltipTrigger as-child>
                               <Icon
                                 icon="lucide:circle-question-mark"
@@ -308,7 +308,7 @@
                           {{ t('settings.knowledgeBase.chunkOverlap') }}
                         </Label>
                         <TooltipProvider>
-                          <Tooltip>
+                          <Tooltip :delay-duration="200">
                             <TooltipTrigger as-child>
                               <Icon
                                 icon="lucide:circle-question-mark"
@@ -590,7 +590,7 @@ const saveBuiltinConfig = async () => {
           title: t('settings.knowledgeBase.autoDetectDimensionsError'),
           description: String(result.errorMsg),
           variant: 'destructive',
-      duration: 3000
+          duration: 3000
         })
         submitLoading.value = false
         return
