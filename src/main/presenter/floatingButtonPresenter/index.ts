@@ -107,7 +107,7 @@ export class FloatingButtonPresenter {
       try {
         // 触发内置事件处理器
         handleShowHiddenWindow(true)
-      } catch (error) {
+      } catch {
       }
     })
 
