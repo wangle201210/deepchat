@@ -62,12 +62,13 @@
             <div v-for="file in fileList" :key="file.metadata.fileName">
               <KnowledgeFileItem
                 :mime-type="file.mimeType"
-                :tokens="file.token"
                 :thumbnail="file.thumbnail"
                 :file-size="file.metadata.fileSize"
                 :file-name="file.name"
+                :file-status="file.status"
                 :upload-time="new Date().toLocaleString()"
                 @delete="deleteFile(file.name)"
+                @refresh="refreshFile(file)"
                 class="mt-2"
               ></KnowledgeFileItem>
             </div>
@@ -232,5 +233,13 @@ const handleDrop = async (e: DragEvent) => {
 // 刪除文件
 const deleteFile = (fileName) => {
   fileList.value = fileList.value.filter((item) => item.name != fileName)
+}
+
+// 重新上传文件
+const refreshFile = (file) => {
+  file.status = 'loading'
+  setTimeout(() => {
+    file.status ='success'
+  }, 1000);
 }
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex px-3 py-2 gap-2 flex-row bg-card border items-center shadow-sm justify-start rounded-md text-base select-none hover:bg-accent"
+    class="flex px-3 py-2 gap-2 flex-row bg-card border items-center justify-start rounded-md text-base select-none hover:bg-accent"
   >
     <img v-if="thumbnail" :src="thumbnail" class="w-10 h-10 rounded-md border" />
     <Icon
@@ -11,7 +11,7 @@
 
     <div class="flex-grow flex-1">
       <div class="text-sm leading-none pb-2 truncate text-ellipsis whitespace-nowrap">
-        {{ fileName }}
+         {{ fileName }}
       </div>
       <div
         class="text-xs leading-none text-muted-foreground truncate text-ellipsis whitespace-nowrap"
@@ -24,9 +24,28 @@
         variant="ghost"
         size="icon"
         class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-        :title="success ? '已完成' : '未完成'"
+        title="重新上传"
+        v-if="fileStatus !== 'loading'"
+        @click="refreshFile"
       >
-        <Icon v-if="success" icon="lucide:circle-check-big" class="text-base text-green-500" />
+        <Icon icon="lucide:refresh-ccw" class="text-base" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
+        :title="statusList[fileStatus]"
+      >
+        <Icon
+          v-if="fileStatus === 'success'"
+          icon="lucide:circle-check-big"
+          class="text-base text-green-500"
+        />
+        <Icon
+          v-else-if="fileStatus === 'loading'"
+          icon="lucide:loader"
+          class="text-base text-blue-500 animate-spin"
+        />
         <Icon v-else icon="lucide:circle-alert" class="text-base text-yellow-500" />
       </Button>
 
@@ -39,18 +58,6 @@
       >
         <Icon icon="lucide:trash" class="text-base text-red-600" />
       </Button>
-
-      <!-- 看看cherry的刷新做了什么 -->
-
-      <!-- 再判断这个刷新按钮保留与否   -->
-      <!-- <Button
-                variant="ghost"
-                size="icon"
-                class="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
-                title="设置"
-              >
-                <Icon icon="lucide:edit" class="w-4 h-4" />
-              </Button> -->
     </div>
   </div>
 </template>
@@ -61,25 +68,38 @@ import { Icon } from '@iconify/vue'
 const props = withDefaults(
   defineProps<{
     fileName: string
-    mimeType?: string
-    tokens: number
+    mimeType: string
     thumbnail?: string
     fileSize: number
     uploadTime: string
-    success?: boolean
+    // 上传状态
+    fileStatus: string
   }>(),
   {
-    mimeType: 'text/plain'
+    fileStatus: 'fail'
   }
 )
 
 const emit = defineEmits<{
   delete: []
+  refresh: []
 }>()
+
+// 上传状态
+const statusList = {
+  success: '上传成功',
+  loadind: '上传中',
+  fail: '上传失败'
+}
 
 // 删除文件
 const deleteFile = () => {
   emit('delete')
+}
+
+// 重新上传
+const refreshFile = () => {
+  emit('refresh')
 }
 
 // 文件大小的单位转换
