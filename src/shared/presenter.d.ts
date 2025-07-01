@@ -338,6 +338,9 @@ export interface IConfigPresenter {
   // COT拷贝设置
   getCopyWithCotEnabled(): boolean
   setCopyWithCotEnabled(enabled: boolean): void
+  // 悬浮按钮设置
+  getFloatingButtonEnabled(): boolean
+  setFloatingButtonEnabled(enabled: boolean): void
   // 日志设置
   getLoggingEnabled(): boolean
   setLoggingEnabled(enabled: boolean): void
@@ -548,7 +551,8 @@ export interface IThreadPresenter {
   createConversation(
     title: string,
     settings?: Partial<CONVERSATION_SETTINGS>,
-    tabId: number
+    tabId: number,
+    options?: { forceNewAndActivate?: boolean } // 新增 options 参数, 支持强制新建会话，避免空会话的单例检测
   ): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   getConversation(conversationId: string): Promise<CONVERSATION>

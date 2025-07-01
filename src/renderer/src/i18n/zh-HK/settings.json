@@ -292,7 +292,7 @@
   },
   "mcp": {
     "title": "MCP設置",
-    "description": "管理和配置MCP（Model Control Protocol）服務器和工具",
+    "description": "管理和配置MCP（Model Context Protocol）服務器和工具",
     "enabledTitle": "啟用MCP",
     "enabledDescription": "啟用或禁用MCP功能和工具",
     "enableToAccess": "請先啟用MCP以訪問配置選項",
@@ -438,7 +438,9 @@
     "text-base": "預設",
     "text-lg": "大",
     "text-sm": "小",
-    "text-xl": "特大"
+    "text-xl": "特大",
+    "floatingButton": "懸浮按鈕",
+    "floatingButtonDesc": "在桌面顯示一個懸浮按鈕，可以快速喚起應用程式視窗"
   },
   "shortcuts": {
     "title": "快捷鍵設置",

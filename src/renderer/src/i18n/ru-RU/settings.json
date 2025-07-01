@@ -292,7 +292,7 @@
   },
   "mcp": {
     "title": "Настройки MCP",
-    "description": "Управление и настройка серверов и инструментов MCP (Model Control Protocol)",
+    "description": "Управление и настройка серверов и инструментов MCP (Model Context Protocol)",
     "enabledTitle": "Включить MCP",
     "enabledDescription": "Включение или отключение функций и инструментов MCP",
     "enableToAccess": "Пожалуйста, включите MCP для доступа к настройкам",
@@ -438,7 +438,9 @@
     "text-base": "Маленький",
     "text-lg": "по умолчанию",
     "text-sm": "Чрезвычайно маленький",
-    "text-xl": "большой"
+    "text-xl": "большой",
+    "floatingButton": "Плавающая кнопка",
+    "floatingButtonDesc": "Отображать плавающую кнопку на рабочем столе для быстрого активации окна приложения"
   },
   "shortcuts": {
     "title": "Настройки сочетаний клавиш",

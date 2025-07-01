@@ -292,7 +292,7 @@
   },
   "mcp": {
     "title": "MCP設定",
-    "description": "MCP（Model Control Protocol）サーバーとツールを管理および構成します",
+    "description": "MCP（Model Context Protocol）サーバーとツールを管理および構成します",
     "enabledTitle": "MCPを有効化",
     "enabledDescription": "MCP機能とツールを有効または無効にします",
     "enableToAccess": "設定オプションにアクセスするにはMCPを有効にしてください",
@@ -438,7 +438,9 @@
     "text-base": "デフォルト",
     "text-lg": "大きい",
     "text-sm": "小さい",
-    "text-xl": "非常に大きい"
+    "text-xl": "非常に大きい",
+    "floatingButton": "フローティングボタン",
+    "floatingButtonDesc": "デスクトップにフローティングボタンを表示し、アプリケーションウィンドウを素早く起動できます"
   },
   "shortcuts": {
     "title": "ショートカットキー設定",

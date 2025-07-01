@@ -292,7 +292,7 @@
   },
   "mcp": {
     "title": "MCP Settings",
-    "description": "Manage and configure MCP (Model Control Protocol) servers and tools",
+    "description": "Manage and configure MCP (Model Context Protocol) servers and tools",
     "enabledTitle": "Enable MCP",
     "enabledDescription": "Enable or disable MCP functionality and tools",
     "enableToAccess": "Please enable MCP to access configuration options",
@@ -438,7 +438,9 @@
     "text-base": "Default",
     "text-lg": "Big",
     "text-sm": "Small",
-    "text-xl": "Large"
+    "text-xl": "Large",
+    "floatingButton": "Floating Button",
+    "floatingButtonDesc": "Display a floating button on the desktop to quickly activate the application window"
   },
   "shortcuts": {
     "title": "Shortcut Key Settings",

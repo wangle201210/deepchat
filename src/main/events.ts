@@ -40,7 +40,9 @@ export const CONVERSATION_EVENTS = {
 
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
-  MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited
+  MESSAGE_EDITED: 'conversation:message-edited', // 替代 message-edited
+
+  MESSAGE_GENERATED: 'conversation:message-generated' // 主进程内部事件，一条完整的消息已生成
 }
 
 // 通信相关事件
@@ -156,4 +158,17 @@ export const TAB_EVENTS = {
 export const TRAY_EVENTS = {
   SHOW_HIDDEN_WINDOW: 'tray:show-hidden-window', // 从托盘显示/隐藏窗口
   CHECK_FOR_UPDATES: 'tray:check-for-updates' // 托盘检查更新
+}
+
+// MCP会议专用事件
+export const MEETING_EVENTS = {
+  INSTRUCTION: 'mcp:meeting-instruction' // 主进程向渲染进程发送指令
+}
+
+// 悬浮按钮相关事件
+export const FLOATING_BUTTON_EVENTS = {
+  CLICKED: 'floating-button:clicked', // 悬浮按钮被点击
+  VISIBILITY_CHANGED: 'floating-button:visibility-changed', // 悬浮按钮显示状态改变
+  POSITION_CHANGED: 'floating-button:position-changed', // 悬浮按钮位置改变
+  ENABLED_CHANGED: 'floating-button:enabled-changed' // 悬浮按钮启用状态改变
 }

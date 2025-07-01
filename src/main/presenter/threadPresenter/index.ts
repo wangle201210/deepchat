@@ -200,12 +200,14 @@ export class ThreadPresenter implements IThreadPresenter {
       if (conversation.is_new === 1) {
         try {
           // 注意：第二个参数直接传入 conversationId
-          const title = await this.summaryTitles(undefined, state.conversationId)
-          if (title) {
-            // renameConversation 会更新标题和updatedAt，并广播
-            await this.renameConversation(state.conversationId, title)
-            titleUpdated = true
-          }
+          this.summaryTitles(undefined, state.conversationId).then((title) => {
+            if (title) {
+              // renameConversation 会更新标题和updatedAt，并广播
+              this.renameConversation(state.conversationId, title).then(() => {
+                titleUpdated = true
+              })
+            }
+          })
         } catch (e) {
           console.error('Failed to summarize title in main process:', e)
         }
@@ -223,6 +225,17 @@ export class ThreadPresenter implements IThreadPresenter {
           })
         // 手动触发一次广播，因为这次更新没有经过其他会触发广播的方法
         await this.broadcastThreadListUpdate()
+      }
+
+      // --- 新增逻辑：广播消息生成完成事件 ---
+      // 在所有数据库和状态更新完成后，获取最终的消息对象
+      const finalMessage = await this.messageManager.getMessage(eventId)
+      if (finalMessage) {
+        // 该事件仅在主进程内部流通，用于通知其他监听者（如MCP会议主持人）
+        eventBus.sendToMain(CONVERSATION_EVENTS.MESSAGE_GENERATED, {
+          conversationId: finalMessage.conversationId,
+          message: finalMessage
+        })
       }
     }
 
@@ -611,18 +624,24 @@ export class ThreadPresenter implements IThreadPresenter {
   async createConversation(
     title: string,
     settings: Partial<CONVERSATION_SETTINGS> = {},
-    tabId: number
+    tabId: number,
+    options: { forceNewAndActivate?: boolean } = {} // 新增参数，允许强制创建新会话
   ): Promise<string> {
     console.log('createConversation', title, settings)
+
     const latestConversation = await this.getLatestConversation()
 
-    if (latestConversation) {
-      const { list: messages } = await this.getMessages(latestConversation.id, 1, 1)
-      if (messages.length === 0) {
-        await this.setActiveConversation(latestConversation.id, tabId)
-        return latestConversation.id
+    // 只有在非强制模式下，才执行空会话的单例检查
+    if (!options.forceNewAndActivate) {
+      if (latestConversation) {
+        const { list: messages } = await this.getMessages(latestConversation.id, 1, 1)
+        if (messages.length === 0) {
+          await this.setActiveConversation(latestConversation.id, tabId)
+          return latestConversation.id
+        }
       }
     }
+
     let defaultSettings = DEFAULT_SETTINGS
     if (latestConversation?.settings) {
       defaultSettings = { ...latestConversation.settings }
@@ -656,7 +675,20 @@ export class ThreadPresenter implements IThreadPresenter {
       mergedSettings.systemPrompt = settings.systemPrompt
     }
     const conversationId = await this.sqlitePresenter.createConversation(title, mergedSettings)
-    await this.setActiveConversation(conversationId, tabId)
+
+    // 根据 forceNewAndActivate 标志决定激活行为
+    if (options.forceNewAndActivate) {
+      // 强制模式：直接为当前 tabId 激活新会话，不进行任何检查
+      this.activeConversationIds.set(tabId, conversationId)
+      eventBus.sendToRenderer(CONVERSATION_EVENTS.ACTIVATED, SendTarget.ALL_WINDOWS, {
+        conversationId,
+        tabId
+      })
+    } else {
+      // 默认模式：保持原有的、防止重复打开的激活逻辑
+      await this.setActiveConversation(conversationId, tabId)
+    }
+
     await this.broadcastThreadListUpdate() // 必须广播
     return conversationId
   }

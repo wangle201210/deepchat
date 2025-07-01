@@ -147,39 +147,58 @@ export class McpClient {
     const basename = path.basename(command)
 
     // 根据命令类型选择对应的 runtime 路径
-    if (['node', 'npm', 'npx', 'bun'].includes(basename)) {
-      // 优先使用 Bun，如果不可用则使用 Node.js
-      if (this.bunRuntimePath) {
-        // 对于 node/npm/npx，统一替换为 bun
-        const targetCommand = 'bun'
-
-        if (process.platform === 'win32') {
-          return path.join(this.bunRuntimePath, `${targetCommand}.exe`)
-        } else {
-          return path.join(this.bunRuntimePath, targetCommand)
-        }
-      } else if (this.nodeRuntimePath) {
-        // 使用 Node.js 运行时
-        let targetCommand: string
+    if (process.platform === 'win32') {
+      // Windows平台只替换Node.js相关命令，bun命令让系统自动处理
+      if (this.nodeRuntimePath) {
         if (basename === 'node') {
-          targetCommand = 'node'
+          return path.join(this.nodeRuntimePath, 'node.exe')
         } else if (basename === 'npm') {
-          targetCommand = 'npm'
+          // Windows 下 npm 通常是 .cmd 文件
+          const npmCmd = path.join(this.nodeRuntimePath, 'npm.cmd')
+          if (fs.existsSync(npmCmd)) {
+            return npmCmd
+          }
+          // 如果不存在，返回默认路径
+          return path.join(this.nodeRuntimePath, 'npm')
         } else if (basename === 'npx') {
-          targetCommand = 'npx'
-        } else if (basename === 'bun') {
-          targetCommand = 'node' // 将 bun 命令映射到 node
-        } else {
-          targetCommand = basename
+          // Windows 下 npx 通常是 .cmd 文件
+          const npxCmd = path.join(this.nodeRuntimePath, 'npx.cmd')
+          if (fs.existsSync(npxCmd)) {
+            return npxCmd
+          }
+          // 如果不存在，返回默认路径
+          return path.join(this.nodeRuntimePath, 'npx')
         }
-
-        if (process.platform === 'win32') {
-          return path.join(this.nodeRuntimePath, `${targetCommand}.exe`)
-        } else {
+      }
+    } else {
+      // 非Windows平台处理所有命令
+      if (['node', 'npm', 'npx', 'bun'].includes(basename)) {
+        // 优先使用 Bun，如果不可用则使用 Node.js
+        if (this.bunRuntimePath) {
+          // 对于 node/npm/npx，统一替换为 bun
+          const targetCommand = 'bun'
+          return path.join(this.bunRuntimePath, targetCommand)
+        } else if (this.nodeRuntimePath) {
+          // 使用 Node.js 运行时
+          let targetCommand: string
+          if (basename === 'node') {
+            targetCommand = 'node'
+          } else if (basename === 'npm') {
+            targetCommand = 'npm'
+          } else if (basename === 'npx') {
+            targetCommand = 'npx'
+          } else if (basename === 'bun') {
+            targetCommand = 'node' // 将 bun 命令映射到 node
+          } else {
+            targetCommand = basename
+          }
           return path.join(this.nodeRuntimePath, 'bin', targetCommand)
         }
       }
-    } else if (['uv', 'uvx'].includes(basename)) {
+    }
+
+    // UV命令处理（所有平台）
+    if (['uv', 'uvx'].includes(basename)) {
       if (!this.uvRuntimePath) {
         return command
       }
@@ -204,35 +223,28 @@ export class McpClient {
   ): { command: string; args: string[] } {
     const basename = path.basename(command)
 
-    // 如果原命令是 npx 且使用 Bun 运行时，需要在参数前添加 'x'
-    if ((basename === 'npx' || command.includes('npx')) && this.bunRuntimePath) {
-      return {
-        command: this.replaceWithRuntimeCommand(command),
-        args: ['x', ...args]
-      }
-    }
-
-    // 如果原命令是 npx 且使用 Node.js 运行时，保持原有参数
-    if (
-      (basename === 'npx' || command.includes('npx')) &&
-      this.nodeRuntimePath &&
-      !this.bunRuntimePath
-    ) {
-      return {
-        command: this.replaceWithRuntimeCommand(command),
-        args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
-      }
-    }
-
-    // 如果是 uv 或 uvx 命令，且存在 uvRegistry，添加 --index 参数
-    if (['uv', 'uvx'].includes(basename) && this.uvRegistry) {
-      return {
-        command: this.replaceWithRuntimeCommand(command),
-        args: [
-          '--index',
-          this.uvRegistry,
-          ...args.map((arg) => this.replaceWithRuntimeCommand(arg))
-        ]
+    // 处理 npx 命令
+    if (basename === 'npx' || command.includes('npx')) {
+      if (process.platform === 'win32') {
+        // Windows 平台使用 Node.js 的 npx，保持原有参数
+        return {
+          command: this.replaceWithRuntimeCommand(command),
+          args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
+        }
+      } else {
+        // 非Windows平台优先使用 Bun，需要在参数前添加 'x'
+        if (this.bunRuntimePath) {
+          return {
+            command: this.replaceWithRuntimeCommand(command),
+            args: ['x', ...args]
+          }
+        } else if (this.nodeRuntimePath) {
+          // 如果没有Bun，使用Node.js，保持原有参数
+          return {
+            command: this.replaceWithRuntimeCommand(command),
+            args: args.map((arg) => this.replaceWithRuntimeCommand(arg))
+          }
+        }
       }
     }
 
@@ -430,19 +442,26 @@ export class McpClient {
 
             // 合并所有路径
             const allPaths = [...existingPaths, ...defaultPaths]
-            // 添加运行时路径（优先级：bun > node > uv）
-            if (this.bunRuntimePath) {
-              allPaths.unshift(this.bunRuntimePath)
-            }
-            if (this.nodeRuntimePath) {
-              if (process.platform === 'win32') {
+            // 添加运行时路径
+            if (process.platform === 'win32') {
+              // Windows平台只添加 node 和 uv 路径
+              if (this.uvRuntimePath) {
+                allPaths.unshift(this.uvRuntimePath)
+              }
+              if (this.nodeRuntimePath) {
                 allPaths.unshift(this.nodeRuntimePath)
-              } else {
+              }
+            } else {
+              // 其他平台优先级：bun > node > uv
+              if (this.uvRuntimePath) {
+                allPaths.unshift(this.uvRuntimePath)
+              }
+              if (this.nodeRuntimePath) {
                 allPaths.unshift(path.join(this.nodeRuntimePath, 'bin'))
               }
-            }
-            if (this.uvRuntimePath) {
-              allPaths.unshift(this.uvRuntimePath)
+              if (this.bunRuntimePath) {
+                allPaths.unshift(this.bunRuntimePath)
+              }
             }
 
             // 规范化并设置PATH
@@ -471,19 +490,26 @@ export class McpClient {
 
           // 合并所有路径
           const allPaths = [...existingPaths, ...defaultPaths]
-          // 添加运行时路径（优先级：bun > node > uv）
-          if (this.bunRuntimePath) {
-            allPaths.unshift(this.bunRuntimePath)
-          }
-          if (this.nodeRuntimePath) {
-            if (process.platform === 'win32') {
+          // 添加运行时路径
+          if (process.platform === 'win32') {
+            // Windows平台只添加 node 和 uv 路径
+            if (this.uvRuntimePath) {
+              allPaths.unshift(this.uvRuntimePath)
+            }
+            if (this.nodeRuntimePath) {
               allPaths.unshift(this.nodeRuntimePath)
-            } else {
+            }
+          } else {
+            // 其他平台优先级：bun > node > uv
+            if (this.uvRuntimePath) {
+              allPaths.unshift(this.uvRuntimePath)
+            }
+            if (this.nodeRuntimePath) {
               allPaths.unshift(path.join(this.nodeRuntimePath, 'bin'))
             }
-          }
-          if (this.uvRuntimePath) {
-            allPaths.unshift(this.uvRuntimePath)
+            if (this.bunRuntimePath) {
+              allPaths.unshift(this.bunRuntimePath)
+            }
           }
 
           // 规范化并设置PATH
@@ -515,12 +541,20 @@ export class McpClient {
           env.npm_config_registry = this.npmRegistry
         }
 
-        console.log('mcp env', command)
+        if (this.uvRegistry) {
+          env.UV_DEFAULT_INDEX = this.uvRegistry
+          env.PIP_INDEX_URL = this.uvRegistry
+        }
+
+        // console.log('mcp env', command, env, args)
         this.transport = new StdioClientTransport({
           command,
           args,
           env,
           stderr: 'pipe'
+        })
+        ;(this.transport as StdioClientTransport).stderr?.on('data', (data) => {
+          console.info('mcp StdioClientTransport error', this.serverName, data.toString())
         })
       } else if (this.serverConfig.baseUrl && this.serverConfig.type === 'sse') {
         this.transport = new SSEClientTransport(new URL(this.serverConfig.baseUrl as string), {
