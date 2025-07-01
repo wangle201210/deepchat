@@ -11,7 +11,7 @@
               'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
             ]"
           >
-            {{ builtinKnowledgeDetail.modelId?.rerank }}
+            {{ builtinKnowledgeDetail?.embedding?.modelId }}
           </span>
         </span>
       </div>
@@ -90,7 +90,7 @@
         <!-- 空状态 -->
         <div class="text-center text-muted-foreground py-12">
           <Icon icon="lucide:book-open-text" class="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p class="text-sm mt-1"> {{ t('settings.knowledgeBase.noData') }}</p>
+          <p class="text-sm mt-1">{{ t('settings.knowledgeBase.noData') }}</p>
         </div>
       </DialogContent>
     </Dialog>
@@ -117,7 +117,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import KnowledgeFileItem from './KnowledgeFileItem.vue'
 
 defineProps<{
-  builtinKnowledgeDetail: BuiltinKnowledgeConfig
+  builtinKnowledgeDetail
 }>()
 
 const emit = defineEmits<{
@@ -128,24 +128,6 @@ const { t } = useI18n()
 
 // 弹窗状态
 const isSearchDialogOpen = ref(false)
-
-interface BuiltinKnowledgeConfig {
-  id: string
-  description: string
-  providerId: {
-    embedding: string
-    rerank: string
-  }
-  modelId: {
-    embedding: string
-    rerank: string
-  }
-  chunkSize?: number // defualt 1000
-  chunkOverlap?: number // default 0
-  fragmentsNumber?: number // default 6
-  dimensions?: number
-  enabled?: boolean
-}
 
 // 打开搜索弹窗
 const openSearchDialog = () => {
