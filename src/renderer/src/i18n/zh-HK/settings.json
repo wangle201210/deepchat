@@ -311,7 +311,13 @@
     "dimensions": "嵌入維度",
     "dimensionsPlaceholder": "嵌入維度大小，如 1024",
     "selectEmbeddingModelHelper": "嵌入模型在知識庫創建後禁止修改",
-    "dimensionsHelper": "請確保模型支持所設置的嵌入維度大小"
+    "dimensionsHelper": "請確保模型支持所設置的嵌入維度大小",
+    "return": "返回",
+    "uploadHelper": "點擊上傳或拖拽文件到此處",
+    "onlySupport": "僅支持",
+    "searchKnowledge": "搜索知識庫",
+    "searchKnowledgePlaceholder": "請輸入查詢內容",
+    "noData": "暫無數據"
   },
   "mcp": {
     "title": "MCP設置",

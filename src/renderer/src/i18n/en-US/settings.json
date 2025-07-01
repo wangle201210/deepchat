@@ -311,7 +311,13 @@
     "dimensions": "Embed dimensions",
     "dimensionsPlaceholder": "Embed dimension size, such as 1024",
     "selectEmbeddingModelHelper": "Embedding models are prohibited after creation of knowledge base",
-    "dimensionsHelper": "Make sure the model supports the set embed dimension size"
+    "dimensionsHelper": "Make sure the model supports the set embed dimension size",
+    "return": "return",
+    "uploadHelper": "Click to upload or drag the file here",
+    "onlySupport": "Supported only",
+    "searchKnowledge": "Search the Knowledge Base",
+    "searchKnowledgePlaceholder": "Please enter the query content",
+    "noData": "No data yet"
   },
   "mcp": {
     "title": "MCP Settings",

@@ -311,7 +311,13 @@
     "dimensions": "치수를 포함시킵니다",
     "dimensionsPlaceholder": "1024와 같은 치수 크기를 포함시킵니다",
     "selectEmbeddingModelHelper": "임베딩 모델은 지식 기반을 창출 한 후 금지됩니다",
-    "dimensionsHelper": "모델이 세트 임베드 치수 크기를 지원하는지 확인하십시오."
+    "dimensionsHelper": "모델이 세트 임베드 치수 크기를 지원하는지 확인하십시오.",
+    "return": "반품",
+    "uploadHelper": "여기에서 파일을 업로드하거나 드래그하려면 클릭하십시오",
+    "onlySupport": "지원됩니다",
+    "searchKnowledge": "지식 기반을 검색하십시오",
+    "searchKnowledgePlaceholder": "쿼리 내용을 입력하십시오",
+    "noData": "아직 데이터가 없습니다"
   },
   "mcp": {
     "title": "MCP 설정",

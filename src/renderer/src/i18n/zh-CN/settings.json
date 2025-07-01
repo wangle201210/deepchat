@@ -311,7 +311,13 @@
     "autoDetectHelper": "自动检测嵌入维度，会消耗少量 Tokens",
     "dimensionsHelper": "请确保模型支持所设置的嵌入维度大小",
     "chunkSizePlaceholder": "默认值，不建议修改",
-    "chunkOverlapPlaceholder": "默认值，不建议修改"
+    "chunkOverlapPlaceholder": "默认值，不建议修改",
+    "return": "返回",
+    "uploadHelper": "点击上传或拖拽文件到此处",
+    "onlySupport": "仅支持",
+    "searchKnowledge": "搜索知识库",
+    "searchKnowledgePlaceholder": "请输入查询内容",
+    "noData": "暂无数据"
   },
   "mcp": {
     "title": "MCP设置",

@@ -311,7 +311,13 @@
     "dimensions": "Dimensions de l'incorporation",
     "dimensionsPlaceholder": "Taille de dimension intégrée, comme 1024",
     "selectEmbeddingModelHelper": "Les modèles d'intégration sont interdits après la création d'une base de connaissances",
-    "dimensionsHelper": "Assurez-vous que le modèle prend en charge la taille de la dimension intégrée de l'ensemble"
+    "dimensionsHelper": "Assurez-vous que le modèle prend en charge la taille de la dimension intégrée de l'ensemble",
+    "return": "retour",
+    "uploadHelper": "Cliquez pour télécharger ou faire glisser le fichier ici",
+    "onlySupport": "Soutenu uniquement",
+    "searchKnowledge": "Rechercher la base de connaissances",
+    "searchKnowledgePlaceholder": "Veuillez saisir le contenu de la requête",
+    "noData": "Pas encore de données"
   },
   "mcp": {
     "title": "Paramètres MCP",

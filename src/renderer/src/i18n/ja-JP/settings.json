@@ -311,7 +311,13 @@
     "dimensions": "埋め込まれた寸法",
     "dimensionsPlaceholder": "1024などの寸法サイズを埋め込みます",
     "selectEmbeddingModelHelper": "埋め込みモデルは、知識ベースの作成後に禁止されています",
-    "dimensionsHelper": "モデルが設定された埋め込み寸法サイズをサポートしていることを確認してください"
+    "dimensionsHelper": "モデルが設定された埋め込み寸法サイズをサポートしていることを確認してください",
+    "return": "戻る",
+    "uploadHelper": "クリックしてここでファイルをアップロードまたはドラッグします",
+    "onlySupport": "サポートのみ",
+    "searchKnowledge": "ナレッジベースを検索します",
+    "searchKnowledgePlaceholder": "クエリコンテンツを入力してください",
+    "noData": "まだデータはありません"
   },
   "mcp": {
     "title": "MCP設定",

@@ -11,7 +11,7 @@
               'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
             ]"
           >
-            {{ builtinKnowledgeDetail.modelId }}
+            {{ builtinKnowledgeDetail.modelId?.rerank }}
           </span>
         </span>
       </div>
@@ -21,7 +21,7 @@
         </Button>
         <Button variant="outline" size="sm" @click="onReturn">
           <Icon icon="lucide:corner-down-left" class="w-4 h-4" />
-          返回
+          {{ t('settings.knowledgeBase.return') }}
         </Button>
       </div>
     </div>
@@ -31,26 +31,25 @@
         <AccordionItem value="item-1">
           <AccordionTrigger><div class="text-sm">文件</div></AccordionTrigger>
           <AccordionContent className="flex flex-col gap-4 text-balance">
-            <!-- 
-            <div
-    class="w-200 h-200"
-    @dragenter.prevent="handleDragEnter"
-  >拖拽文件到此处</div> -->
             <label for="upload">
               <div
-                @dragenter.prevent="handleDragEnter"
-                @dragover.prevent="handleDragOver"
+                @dragover.prevent
                 @drop.prevent="handleDrop"
                 class="mb-5 h-20 border border-border inset-0 cursor-pointer rounded-lg text-muted-foreground hover:bg-muted/0 transition-colors"
               >
                 <div class="flex flex-col items-center justify-center h-full gap-2">
                   <div class="flex items-center gap-1">
                     <Icon icon="lucide:file-up" class="w-4 h-4" />
-                    <span class="text-sm">点击上传或{{ t('chat.input.dropFiles') }} </span>
+                    <span class="text-sm">
+                      {{ t('settings.knowledgeBase.uploadHelper') }}
+                    </span>
                   </div>
                   <div class="flex items-center gap-1">
                     <Icon icon="lucide:clipboard" class="w-4 h-4" />
-                    <span class="text-sm">仅支持 {{ allowedExts.join('，') }} 类型</span>
+                    <span class="text-sm">
+                      {{ t('settings.knowledgeBase.onlySupport') }}
+                      {{ allowedExts.join('，') }}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -58,16 +57,15 @@
 
             <!-- 拖动上传 -->
             <Input v-show="false" multiple type="file" id="upload" @change="handleChange" />
-
-            <div v-for="file in fileList" :key="file.metadata.fileName">
+            <div v-for="(file, index) in fileList" :key="file.metadata.fileName">
               <KnowledgeFileItem
                 :mime-type="file.mimeType"
                 :thumbnail="file.thumbnail"
                 :file-size="file.metadata.fileSize"
                 :file-name="file.name"
                 :file-status="file.status"
-                :upload-time="new Date().toLocaleString()"
-                @delete="deleteFile(file.name)"
+                :upload-time="file.uploadTime"
+                @delete="deleteFile(index)"
                 @refresh="refreshFile(file)"
                 class="mt-2"
               ></KnowledgeFileItem>
@@ -81,20 +79,18 @@
     <Dialog v-model:open="isSearchDialogOpen">
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>搜索知识库</DialogTitle>
+          <DialogTitle> {{ t('settings.knowledgeBase.searchKnowledge') }} </DialogTitle>
         </DialogHeader>
         <div className="flex w-full items-center gap-1">
-          <Input placeholder="请输入查询内容" />
+          <Input :placeholder="t('settings.knowledgeBase.searchKnowledgePlaceholder')" />
           <Button @click="handleSearch">
             <Icon icon="lucide:search" class="w-4 h-4" />
           </Button>
         </div>
-
         <!-- 空状态 -->
         <div class="text-center text-muted-foreground py-12">
           <Icon icon="lucide:book-open-text" class="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <!-- <p class="text-lg font-medium">暂无数据</p> -->
-          <p class="text-sm mt-1">暂无数据</p>
+          <p class="text-sm mt-1"> {{ t('settings.knowledgeBase.noData') }}</p>
         </div>
       </DialogContent>
     </Dialog>
@@ -121,7 +117,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import KnowledgeFileItem from './KnowledgeFileItem.vue'
 
 defineProps<{
-  builtinKnowledgeDetail: object
+  builtinKnowledgeDetail: BuiltinKnowledgeConfig
 }>()
 
 const emit = defineEmits<{
@@ -132,6 +128,24 @@ const { t } = useI18n()
 
 // 弹窗状态
 const isSearchDialogOpen = ref(false)
+
+interface BuiltinKnowledgeConfig {
+  id: string
+  description: string
+  providerId: {
+    embedding: string
+    rerank: string
+  }
+  modelId: {
+    embedding: string
+    rerank: string
+  }
+  chunkSize?: number // defualt 1000
+  chunkOverlap?: number // default 0
+  fragmentsNumber?: number // default 6
+  dimensions?: number
+  enabled?: boolean
+}
 
 // 打开搜索弹窗
 const openSearchDialog = () => {
@@ -159,23 +173,22 @@ const handleChange = (event: Event) => {
   }
 }
 
-const handleDragEnter = (e) => {
-  console.log('handleDragEnter')
+// 内置知识库文件类型
+type BuiltinKnowledgeFile = MessageFile & {
+  // 文件上传时间
+  uploadTime: string
+  // 文件状态
+  status: 'loading' | 'success' | 'fail'
 }
-
-const handleDragOver = () => {
-  // // 防止默认行为并保持拖拽状态
-  // if (dragLeaveTimer) {
-  //   clearTimeout(dragLeaveTimer)
-  //   dragLeaveTimer = null
-  // }
-}
-const allowedExts = ['txt', 'doc', 'docx']
 
 // 文件列表
-const fileList = ref<MessageFile[]>([])
+const fileList = ref<BuiltinKnowledgeFile[]>([])
 const filePresenter = usePresenter('filePresenter')
 
+// 允许的文件扩展名
+const allowedExts = ['txt', 'doc', 'docx']
+
+// 上传文件到内置知识库
 const handleDrop = async (e: DragEvent) => {
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
     for (const file of e.dataTransfer.files) {
@@ -188,58 +201,44 @@ const handleDrop = async (e: DragEvent) => {
           variant: 'destructive',
           duration: 3000
         })
-
         continue
       }
       try {
         const path = window.api.getPathForFile(file)
-        // 如果 file.type 为空，可能是文件夹
-        if (file.type === '') {
-          const isDirectory = await filePresenter.isDirectory(path)
-          // 是目录则用 prepareDirectory 处理
-          if (isDirectory) {
-            const fileInfo: MessageFile = await filePresenter.prepareDirectory(path)
-            if (fileInfo) {
-              fileList.value.push(fileInfo)
-            }
-          } else {
-            // 不是目录则获取 MIME 类型后用 prepareFile 处理
-            const mimeType = await filePresenter.getMimeType(path)
-            console.log('mimeType', mimeType)
-            const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
-            console.log('fileInfo', fileInfo)
-            if (fileInfo) {
-              fileList.value.push(fileInfo)
-            }
+        const mimeType = await filePresenter.getMimeType(path)
+        const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
+        if (fileInfo) {
+          const builtinFile: BuiltinKnowledgeFile = {
+            ...fileInfo,
+            uploadTime: new Date().toLocaleString(),
+            status: 'success'
           }
-        } else {
-          // 如果有类型，直接用 prepareFile 处理
-          const mimeType = await filePresenter.getMimeType(path)
-          const fileInfo: MessageFile = await filePresenter.prepareFile(path, mimeType)
-          if (fileInfo) {
-            fileList.value.push(fileInfo)
-          }
+          fileList.value.push(builtinFile)
+          toast({
+            title: `"${file.name}"上传成功`,
+            description: `文件已添加到知识库`,
+            variant: 'default',
+            duration: 3000
+          })
         }
       } catch (error) {
         console.error('文件准备失败:', error)
         return
       }
     }
-    console.log(fileList.value, 'fileList')
-    // emit('file-upload', fileList.value)
   }
 }
 
 // 刪除文件
-const deleteFile = (fileName) => {
-  fileList.value = fileList.value.filter((item) => item.name != fileName)
+const deleteFile = (index) => {
+  fileList.value.splice(index, 1)
 }
 
 // 重新上传文件
 const refreshFile = (file) => {
   file.status = 'loading'
   setTimeout(() => {
-    file.status ='success'
-  }, 1000);
+    file.status = 'success'
+  }, 1000)
 }
 </script>
