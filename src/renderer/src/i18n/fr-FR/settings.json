@@ -313,7 +313,10 @@
     "selectEmbeddingModelHelper": "Les modèles d'intégration sont interdits après la création d'une base de connaissances",
     "dimensionsHelper": "Assurez-vous que le modèle prend en charge la taille de la dimension intégrée de l'ensemble",
     "autoDetectDimensionsError": "Détecter automatiquement la panne de dimension intégrée",
-    "redetectDimensions": "Redecteur la dimension intégrée"
+    "redetectDimensions": "Redecteur la dimension intégrée",
+    "fragmentsNumber": "Nombre de fragments de documents demandés",
+    "fragmentsNumberHelper": "Plus il y a de fragments de document demandé, plus il comporte d'informations, mais plus il doit être consommé de jetons",
+    "selectRerankModel": "Sélectionnez le modèle de réorganisation"
   },
   "mcp": {
     "title": "Paramètres MCP",

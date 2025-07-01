@@ -313,7 +313,10 @@
     "selectEmbeddingModelHelper": "Embedding models are prohibited after creation of knowledge base",
     "dimensionsHelper": "Make sure the model supports the set embed dimension size",
     "autoDetectDimensionsError": "Automatically detect embedded dimension failure",
-    "redetectDimensions": "Redetect the embedded dimension"
+    "redetectDimensions": "Redetect the embedded dimension",
+    "fragmentsNumber": "Number of requested document fragments",
+    "fragmentsNumberHelper": "The more fragments of requested document, the more information it comes with, but the more tokens it needs to be consumed",
+    "selectRerankModel": "Select the rerank model"
   },
   "mcp": {
     "title": "MCP Settings",

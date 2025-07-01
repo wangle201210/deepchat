@@ -166,7 +166,7 @@
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Popover v-model:open="modelSelectOpen">
+                <Popover v-model:open="embeddingModelSelectOpen">
                   <PopoverTrigger as-child>
                     <Button
                       id="edit-builtin-config-model"
@@ -191,6 +191,41 @@
                     <ModelSelect
                       :type="[ModelType.Embedding]"
                       @update:model="handleEmbeddingModelSelect"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div class="space-y-2">
+                <div class="flex items-center gap-1">
+                  <Label class="text-xs text-muted-foreground" for="edit-builtin-config-model">
+                    {{ t('settings.knowledgeBase.selectRerankModel') }}
+                  </Label>
+                </div>
+                <Popover v-model:open="rerankModelSelectOpen">
+                  <PopoverTrigger as-child>
+                    <Button
+                      id="edit-builtin-config-model"
+                      variant="outline"
+                      class="w-full justify-between"
+                    >
+                      <div class="flex items-center gap-2">
+                        <ModelIcon
+                          :model-id="selectRerankModel?.id || ''"
+                          class="h-4 w-4"
+                          :is-dark="themeStore.isDark"
+                        />
+                        <span class="truncate">{{
+                          selectRerankModel?.name || t('settings.common.selectModel')
+                        }}</span>
+                      </div>
+                      <ChevronDown class="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent class="w-80 p-0">
+                    <ModelSelect
+                      :type="[ModelType.Rerank]"
+                      @update:model="handleRerankModelSelect"
                     />
                   </PopoverContent>
                 </Popover>
@@ -333,6 +368,38 @@
                         :step="128"
                       ></Input>
                     </div>
+
+                    <div class="space-y-2 mt-1">
+                      <div class="flex justify-between">
+                        <div class="flex items-center gap-1 mb-1">
+                          <Label
+                            class="text-xs text-muted-foreground"
+                            for="edit-builtin-config-chunk-size"
+                          >
+                            {{ t('settings.knowledgeBase.fragmentsNumber') }}
+                          </Label>
+                          <TooltipProvider>
+                            <Tooltip :delay-duration="200">
+                              <TooltipTrigger as-child>
+                                <Icon
+                                  icon="lucide:circle-question-mark"
+                                  class="cursor-pointer text-primary outline-none focus:outline-none"
+                                />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p class="w-64">
+                                  {{ t('settings.knowledgeBase.fragmentsNumberHelper') }}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <span class="text-xs text-muted-foreground mr-1">
+                          {{ fragmentsNumber[0] }}
+                        </span>
+                      </div>
+                      <Slider v-model="fragmentsNumber" :min="1" :max="30" :step="1" />
+                    </div>
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
@@ -373,6 +440,7 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog'
+import { Slider } from '@/components/ui/slider'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -416,8 +484,13 @@ const emit = defineEmits<{
   (e: 'showDetail', value: object): void
 }>()
 
-// 模型选择相关
-const modelSelectOpen = ref(false)
+// 嵌入模型下拉框
+const embeddingModelSelectOpen = ref(false)
+// 重排模型下拉框
+const rerankModelSelectOpen = ref(false)
+// 请求文档片段数量
+const fragmentsNumber = ref<number[]>([6])
+
 const isBuiltinConfigPanelOpen = ref(false)
 const isEditing = ref(false)
 const submitLoading = ref(false)
@@ -450,10 +523,17 @@ const builtinConfigs = computed(() => {
 interface BuiltinKnowledgeConfig {
   id: string
   description: string
-  providerId: string
-  modelId: string
+  embedding: {
+    providerId: string
+    modelId: string
+  }
+  rerank: {
+    providerId: string
+    modelId: string
+  }
   chunkSize?: number // defualt 1000
   chunkOverlap?: number // default 0
+  fragmentsNumber: number // default 6
   dimensions?: number
   enabled?: boolean
 }
@@ -462,13 +542,22 @@ interface BuiltinKnowledgeConfig {
 const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
   id: '',
   description: '',
-  providerId: '',
-  modelId: '',
+  embedding: {
+    providerId: '',
+    modelId: ''
+  },
+  rerank: {
+    providerId: '',
+    modelId: ''
+  },
+  fragmentsNumber: 6,
   enabled: true
 })
 
 // 当前选择的嵌入模型
 const selectEmbeddingModel = ref<RENDERER_MODEL_META | null>(null)
+// 当前选择的重排模型
+const selectRerankModel = ref<RENDERER_MODEL_META | null>(null)
 
 // 对话框状态
 const isBuiltinConfigDialogOpen = ref(false)
@@ -479,11 +568,20 @@ function openAddConfig() {
   editingBuiltinConfig.value = {
     id: nanoid(),
     description: '',
-    providerId: '',
-    modelId: '',
+    embedding: {
+      providerId: '',
+      modelId: ''
+    },
+    rerank: {
+      providerId: '',
+      modelId: ''
+    },
+    fragmentsNumber: 6,
     enabled: true
   }
+  fragmentsNumber.value = [6]
   selectEmbeddingModel.value = null
+  selectRerankModel.value = null
   autoDetectDimensionsSwitch.value = true
   submitLoading.value = false
   isBuiltinConfigDialogOpen.value = true
@@ -499,8 +597,8 @@ const editingConfigIndex = ref<number>(-1)
 const isEditingBuiltinConfigValid = computed(() => {
   return (
     editingBuiltinConfig.value.description.trim() !== '' &&
-    editingBuiltinConfig.value.providerId.trim() !== '' &&
-    editingBuiltinConfig.value.modelId.trim() !== '' &&
+    editingBuiltinConfig.value.embedding.providerId.trim() !== '' &&
+    editingBuiltinConfig.value.embedding.modelId.trim() !== '' &&
     (autoDetectDimensionsSwitch.value || editingBuiltinConfig.value.dimensions)
   )
 })
@@ -516,17 +614,19 @@ const getEnableModelConfig = (modelId: string, providerId: string): RENDERER_MOD
 // 打开编辑对话框
 const editBuiltinConfig = async (index: number) => {
   const config = builtinConfigs.value[index]
+
+  console.log(config, '打开  ')
   // 设置当前选择的嵌入模型
-  const model = (await getEnableModelConfig(
-    config.modelId,
-    config.providerId
+  const embeddingModel = (await getEnableModelConfig(
+    config.embedding.modelId,
+    config.embedding.providerId
   )) as RENDERER_MODEL_META
   // 如果模型不存在或被禁用
-  if (!model || !model.enabled) {
+  if (!embeddingModel || !embeddingModel.enabled) {
     toast({
       title: t('settings.knowledgeBase.modelNotFound', {
-        provider: t(config.providerId),
-        model: config.modelId
+        provider: t(config.embedding.providerId),
+        model: config.embedding.modelId
       }),
       description: t('settings.knowledgeBase.modelNotFoundDesc'),
       variant: 'destructive',
@@ -534,10 +634,29 @@ const editBuiltinConfig = async (index: number) => {
     })
     return
   }
+  // 设置当前选择的重排序模型
+  const rerankModel = (await getEnableModelConfig(
+    config.rerank.modelId,
+    config.rerank.providerId
+  )) as RENDERER_MODEL_META
+  // 如果模型不存在或被禁用
+  if (!rerankModel || !rerankModel.enabled) {
+    toast({
+      title: t('settings.knowledgeBase.modelNotFound', {
+        provider: t(config.rerank.providerId),
+        model: config.rerank.modelId
+      }),
+      description: t('settings.knowledgeBase.modelNotFoundDesc'),
+      variant: 'destructive'
+    })
+    return
+  }
   isEditing.value = true
-  selectEmbeddingModel.value = model
+  selectEmbeddingModel.value = embeddingModel
+  selectRerankModel.value = rerankModel
   editingConfigIndex.value = index
   editingBuiltinConfig.value = { ...builtinConfigs.value[index] }
+  fragmentsNumber.value = [editingBuiltinConfig.value.fragmentsNumber]
   autoDetectDimensionsSwitch.value = editingBuiltinConfig.value.dimensions === undefined
   submitLoading.value = false
   isBuiltinConfigDialogOpen.value = true
@@ -550,8 +669,15 @@ const closeBuiltinConfigDialog = () => {
   editingBuiltinConfig.value = {
     id: '',
     description: '',
-    providerId: '',
-    modelId: '',
+    embedding: {
+      providerId: '',
+      modelId: ''
+    },
+    rerank: {
+      providerId: '',
+      modelId: ''
+    },
+    fragmentsNumber: 6,
     enabled: true
   }
   selectEmbeddingModel.value = null
@@ -567,6 +693,7 @@ const handleSetting = (config) => {
 // 保存配置
 const saveBuiltinConfig = async () => {
   if (!isEditingBuiltinConfigValid.value) return
+  editingBuiltinConfig.value.fragmentsNumber = fragmentsNumber.value[0]
   submitLoading.value = true
   if (isEditing.value) {
     // 更新配置
@@ -582,8 +709,8 @@ const saveBuiltinConfig = async () => {
     if (autoDetectDimensionsSwitch.value) {
       // 自动获取dimensions
       const result = await llmP.getDimensions(
-        editingBuiltinConfig.value.providerId,
-        editingBuiltinConfig.value.modelId
+        editingBuiltinConfig.value.embedding.providerId,
+        editingBuiltinConfig.value.embedding.modelId
       )
       if (result.errorMsg) {
         toast({
@@ -623,9 +750,16 @@ const removeBuiltinConfig = async (index: number) => {
 // 选择嵌入模型
 const handleEmbeddingModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
   selectEmbeddingModel.value = model
-  editingBuiltinConfig.value.modelId = model.id
-  editingBuiltinConfig.value.providerId = providerId
-  modelSelectOpen.value = false
+  editingBuiltinConfig.value.embedding.modelId = model.id
+  editingBuiltinConfig.value.embedding.providerId = providerId
+  embeddingModelSelectOpen.value = false
+}
+// 选择重排模型
+const handleRerankModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
+  selectRerankModel.value = model
+  editingBuiltinConfig.value.rerank.modelId = model.id
+  editingBuiltinConfig.value.rerank.providerId = providerId
+  rerankModelSelectOpen.value = false
 }
 
 // 切换配置启用状态
