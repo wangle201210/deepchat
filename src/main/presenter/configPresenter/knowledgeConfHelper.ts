@@ -1,11 +1,11 @@
 import ElectronStore from 'electron-store'
-import { KnowledgeBaseParams } from '@shared/presenter'
+import { BuiltinKnowledgeConfig } from '@shared/presenter'
 
 export class KnowledgeConfHelper {
-  private store: ElectronStore<{ knowledgeConfigs: KnowledgeBaseParams[] }>
+  private store: ElectronStore<{ knowledgeConfigs: BuiltinKnowledgeConfig[] }>
 
   constructor() {
-    this.store = new ElectronStore<{ knowledgeConfigs: KnowledgeBaseParams[] }>({
+    this.store = new ElectronStore<{ knowledgeConfigs: BuiltinKnowledgeConfig[] }>({
       name: 'knowledge-configs',
       defaults: {
         knowledgeConfigs: []
@@ -14,12 +14,12 @@ export class KnowledgeConfHelper {
   }
 
   // 获取所有知识库配置
-  getKnowledgeConfigs(): KnowledgeBaseParams[] {
+  getKnowledgeConfigs(): BuiltinKnowledgeConfig[] {
     return this.store.get('knowledgeConfigs') || []
   }
 
   // 设置所有知识库配置
-  setKnowledgeConfigs(configs: KnowledgeBaseParams[]): void {
+  setKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): void {
     this.store.set('knowledgeConfigs', configs)
   }
 
@@ -30,12 +30,12 @@ export class KnowledgeConfHelper {
    * @returns
    */
   static diffKnowledgeConfigs(
-    oldConfigs: KnowledgeBaseParams[],
-    newConfigs: KnowledgeBaseParams[]
+    oldConfigs: BuiltinKnowledgeConfig[],
+    newConfigs: BuiltinKnowledgeConfig[]
   ): {
-    added: KnowledgeBaseParams[]
-    deleted: KnowledgeBaseParams[]
-    updated: KnowledgeBaseParams[]
+    added: BuiltinKnowledgeConfig[]
+    deleted: BuiltinKnowledgeConfig[]
+    updated: BuiltinKnowledgeConfig[]
   } {
     const oldMap = new Map(oldConfigs.map((cfg) => [cfg.id, cfg]))
     const newMap = new Map(newConfigs.map((cfg) => [cfg.id, cfg]))

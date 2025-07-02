@@ -5,14 +5,13 @@ import {
   IConfigPresenter,
   IKnowledgePresenter,
   ILlmProviderPresenter,
-  KnowledgeBaseParams,
+  BuiltinKnowledgeConfig,
   MCPServerConfig
 } from '@shared/presenter'
-import Embeddings from './Embeddings'
-import { RAGApplication, RAGApplicationBuilder } from '@llm-tools/embedjs'
-import { LibSqlDb } from '@llm-tools/embedjs-libsql'
 import { eventBus } from '@/eventbus'
 import { MCP_EVENTS } from '@/events'
+import { DuckDBPresenter } from './database/duckdbPresenter'
+import { RagPresenter } from './RagPresenter'
 
 export class KnowledgePresenter implements IKnowledgePresenter {
   /**
@@ -59,7 +58,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
         const mcpServers = payload.mcpServers
         const builtinConfig = mcpServers['builtinKnowledge'] as MCPServerConfig
         if (builtinConfig && builtinConfig.env && Array.isArray(builtinConfig.env.configs)) {
-          const configs = builtinConfig.env.configs as KnowledgeBaseParams[]
+          const configs = builtinConfig.env.configs as BuiltinKnowledgeConfig[]
           console.log('[RAG] Received builtinKnowledge config update:', configs)
 
           const diffs = this.configP.diffKnowledgeConfigs(configs)
@@ -88,60 +87,69 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   /**
    * 创建知识库（初始化 RAG 应用）
    */
-  create = async (base: KnowledgeBaseParams): Promise<void> => {
-    this.getRagApplication(base)
+  create = async (base: BuiltinKnowledgeConfig): Promise<void> => {
+    this.getRagPresenter(base)
   }
 
   /**
    * 重置知识库内容
    */
-  reset = async ({ base }: { base: KnowledgeBaseParams }): Promise<void> => {
-    const ragApplication = await this.getRagApplication(base)
-    await ragApplication.reset()
+  reset = async ({ base }: { base: BuiltinKnowledgeConfig }): Promise<void> => {
+    const RagPresenter = await this.getRagPresenter(base)
+    await RagPresenter.reset()
   }
 
   /**
    * 删除知识库（移除本地存储）
    */
   delete = async (id: string): Promise<void> => {
-    const dbPath = path.join(this.storageDir, id)
-    if (fs.existsSync(dbPath)) {
-      fs.rmSync(dbPath, { recursive: true })
+    if (this.ragPresenterCache.has(id)) {
+      const rag = this.ragPresenterCache.get(id) as RagPresenter
+      rag.destory()
+    } else {
+      const dbPath = path.join(this.storageDir, id)
+      if (fs.existsSync(dbPath)) {
+        fs.rmSync(dbPath, { recursive: true })
+      }
     }
   }
 
   /**
-   * 获取或创建 RAG 应用实例
-   * @param params KnowledgeBaseParams
-   * @returns RAGApplication
+   * 缓存 RAG 应用实例
    */
-  private getRagApplication = async ({
+  private ragPresenterCache: Map<string, RagPresenter> = new Map()
+
+  /**
+   * 获取或创建 RAG 应用实例
+   * @param params BuiltinKnowledgeConfig
+   * @returns RagPresenter
+   */
+  private getRagPresenter = async ({
     id,
-    modelId,
-    providerId,
+    embedding,
     dimensions
-  }: KnowledgeBaseParams): Promise<RAGApplication> => {
-    let ragApplication: RAGApplication
-    // 创建 Embeddings 实例
-    const { apiKey, baseUrl } = this.llmP.getProviderById(providerId)
-    const embeddings = new Embeddings({
-      providerId,
-      modelId,
-      apiKey,
-      dimensions,
-      baseURL: baseUrl
-    } as KnowledgeBaseParams)
-    try {
-      // 构建 RAG 应用，集成嵌入模型与向量数据库
-      ragApplication = await new RAGApplicationBuilder()
-        .setModel('NO_MODEL')
-        .setEmbeddingModel(embeddings)
-        .setVectorDatabase(new LibSqlDb({ path: path.join(this.storageDir, id) }))
-        .build()
-    } catch (e) {
-      throw new Error(`Failed to create RAGApplication: ${e}`)
+  }: BuiltinKnowledgeConfig): Promise<RagPresenter> => {
+    // 缓存命中直接返回
+    if (this.ragPresenterCache.has(id)) {
+      return this.ragPresenterCache.get(id) as RagPresenter
     }
 
-    return ragApplication
+    // 创建代理函数，只暴露 text 参数
+    const embeddingProxy = async (texts: string[]) => {
+      return this.llmP.getEmbeddings(embedding.modelId, embedding.providerId, texts)
+    }
+
+    let rag: RagPresenter
+    try {
+      rag = new RagPresenter(
+        new DuckDBPresenter(path.join(this.storageDir, id), dimensions),
+        embeddingProxy
+      )
+    } catch (e) {
+      throw new Error(`Failed to create RagPresenter: ${e}`)
+    }
+
+    this.ragPresenterCache.set(id, rag)
+    return rag
   }
 }

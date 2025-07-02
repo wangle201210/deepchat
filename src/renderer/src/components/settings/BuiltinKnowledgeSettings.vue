@@ -492,7 +492,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { useMcpStore } from '@/stores/mcp'
 import { ModelType } from '@shared/model'
 import { useThemeStore } from '@/stores/theme'
-import { RENDERER_MODEL_META } from '@shared/presenter'
+import { BuiltinKnowledgeConfig, RENDERER_MODEL_META } from '@shared/presenter'
 import { toast } from '../ui/toast'
 import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
@@ -523,48 +523,10 @@ const submitLoading = ref(false)
 const autoDetectDimensionsSwitch = ref(true)
 const clearRerankModel = () => {
   selectRerankModel.value = null
-  editingBuiltinConfig.value.rerank = null
+  delete editingBuiltinConfig.value.rerank
   rerankModelSelectOpen.value = false
 }
-const builtinConfigs = computed(() => {
-  try {
-    const serverConfig = mcpStore.config.mcpServers['builtinKnowledge']
-    if (serverConfig && serverConfig.env) {
-      // 解析配置 - env可能是JSON字符串
-      try {
-        // 尝试解析JSON字符串
-        const envObj =
-          typeof serverConfig.env === 'string' ? JSON.parse(serverConfig.env) : serverConfig.env
-        // const envObj = serverConfig.env
-        if (envObj.configs && Array.isArray(envObj.configs)) {
-          return envObj.configs
-        }
-      } catch (parseError) {
-        console.error('解析BuiltinKnowledge配置JSON失败:', parseError)
-      }
-    }
-  } catch (error) {
-    console.error('加载BuiltinKnowledge配置失败:', error)
-  }
-}) /* ref<Array<BuiltinKnowledgeConfig>>([]) */
-
-interface BuiltinKnowledgeConfig {
-  id: string
-  description: string
-  embedding: {
-    providerId: string
-    modelId: string
-  }
-  rerank: {
-    providerId: string
-    modelId: string
-  } | null
-  chunkSize?: number // defualt 1000
-  chunkOverlap?: number // default 0
-  fragmentsNumber: number // default 6
-  dimensions?: number
-  enabled?: boolean
-}
+const builtinConfigs = ref<Array<BuiltinKnowledgeConfig>>([])
 
 // 正在编辑的配置
 const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
@@ -574,7 +536,7 @@ const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
     providerId: '',
     modelId: ''
   },
-  rerank: null,
+  dimensions: NaN,
   fragmentsNumber: 6,
   enabled: true
 })
@@ -597,7 +559,7 @@ function openAddConfig() {
       providerId: '',
       modelId: ''
     },
-    rerank: null,
+    dimensions: NaN,
     fragmentsNumber: 6,
     enabled: true
   }
@@ -698,7 +660,7 @@ const closeBuiltinConfigDialog = () => {
       providerId: '',
       modelId: ''
     },
-    rerank: null,
+    dimensions: NaN,
     fragmentsNumber: 6,
     enabled: true
   }
@@ -780,7 +742,7 @@ const handleEmbeddingModelSelect = (model: RENDERER_MODEL_META, providerId: stri
 const handleRerankModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
   if (!model || !model.id) {
     selectRerankModel.value = null
-    editingBuiltinConfig.value.rerank = null
+    delete editingBuiltinConfig.value.rerank
     rerankModelSelectOpen.value = false
     return
   }
@@ -836,7 +798,7 @@ const updateBuiltinConfigToMcp = async () => {
 }
 
 // 从MCP加载内置配置
-/* const loadBuiltinConfigFromMcp = async () => {
+const loadBuiltinConfigFromMcp = async () => {
   try {
     const serverConfig = mcpStore.config.mcpServers['builtinKnowledge']
     if (serverConfig && serverConfig.env) {
@@ -856,10 +818,10 @@ const updateBuiltinConfigToMcp = async () => {
   } catch (error) {
     console.error('加载BuiltinKnowledge配置失败:', error)
   }
-} */
+}
 
 onMounted(async () => {
-  // await loadBuiltinConfigFromMcp()
+  await loadBuiltinConfigFromMcp()
 })
 
 const route = useRoute()

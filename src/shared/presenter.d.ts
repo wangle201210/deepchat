@@ -422,12 +422,12 @@ export interface IConfigPresenter {
   setShortcutKey(customShortcutKey: ShortcutKeySetting): void
   resetShortcutKeys(): void
   // 知识库设置
-  getKnowledgeConfigs(): KnowledgeBaseParams[]
-  setKnowledgeConfigs(configs: KnowledgeBaseParams[]): void
-  diffKnowledgeConfigs(configs: KnowledgeBaseParams[]): {
-    added: KnowledgeBaseParams[]
-    deleted: KnowledgeBaseParams[]
-    updated: KnowledgeBaseParams[]
+  getKnowledgeConfigs(): BuiltinKnowledgeConfig[]
+  setKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): void
+  diffKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): {
+    added: BuiltinKnowledgeConfig[]
+    deleted: BuiltinKnowledgeConfig[]
+    updated: BuiltinKnowledgeConfig[]
   }
 }
 export type RENDERER_MODEL_META = {
@@ -1146,26 +1146,100 @@ export interface KeyStatus {
   usage?: string
 }
 
+// built-in 知识库相关
 export interface IKnowledgePresenter {
-  create(base: KnowledgeBaseParams): Promise<void>
-  reset(params: { base: KnowledgeBaseParams }): Promise<void>
+  create(base: BuiltinKnowledgeConfig): Promise<void>
+  reset(params: { base: BuiltinKnowledgeConfig }): Promise<void>
   delete(id: string): Promise<void>
 }
-
-export type KnowledgeBaseParams = {
-  id: string
-  description: string
+type ModelProvider = {
   modelId: string
   providerId: string
-  dimensions?: number
-  apiKey: string
-  apiVersion?: string
-  baseURL: string
+}
+export type BuiltinKnowledgeConfig = {
+  id: string
+  description: string
+  embedding: ModelProvider
+  rerank?: ModelProvider
+  dimensions: number
   chunkSize?: number
   chunkOverlap?: number
-  rerankApiKey?: string
-  rerankBaseURL?: string
-  rerankModel?: string
-  rerankModelProvider?: string
   documentCount?: number
+  fragmentsNumber: numner
+  enabled: boolean
+}
+export interface IndexOptions {
+  /** 距离度量：'l2' | 'cosine' | 'ip' */
+  metric?: 'l2' | 'cosine' | 'ip'
+  /** HNSW 参数 M */
+  M?: number
+  /** HNSW 构建时 ef */
+  efConstruction?: number
+}
+export interface InsertOptions {
+  /** 数值数组，长度等于 dimension */
+  vector: number[]
+  /** 可选元数据 */
+  metadata?: Record<string, any>
+}
+export interface QueryOptions {
+  /** 查询顶点数 */
+  topK: number
+  /** 搜索时 ef */
+  efSearch?: number
+  /** 最小距离阈值 */
+  threshold?: number
+}
+export interface QueryResult {
+  id: string
+  metadata: any
+  distance: number
+}
+
+/**
+ * DuckDB 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
+ * 所有方法均为异步，推荐配合 await 使用。
+ */
+export interface IVectorDatabasePresenter {
+  /**
+   * 插入单条向量记录。
+   * @param opts 插入参数，包含 id（可选，未提供时自动生成）、vector（向量数据）、metadata（可选元数据）
+   * @returns Promise<void>
+   */
+  insert(opts: InsertOptions): Promise<void>
+
+  /**
+   * 批量插入多条向量记录。
+   * @param records 插入参数数组，每项同 insert，id 可选，未提供时自动生成
+   * @returns Promise<void>
+   */
+  bulkInsert(records: Array<InsertOptions>): Promise<void>
+
+  /**
+   * 查询向量最近邻（TopK 检索）。
+   * @param options 查询参数：
+   *   - vector: 查询向量
+   *   - topK: 返回最近邻数量
+   *   - efSearch: 检索时 HNSW 的 ef 参数（可选）
+   *   - threshold: 最小距离阈值（可选）
+   * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
+   */
+  query(options: QueryOptions & { vector: number[] }): Promise<QueryResult[]>
+
+  /**
+   * 根据 id 删除指定向量记录。
+   * @param id 记录 id
+   * @returns Promise<void>
+   */
+  deleteById(id: string): Promise<void>
+
+  /**
+   * 关闭数据库连接，释放资源。
+   * @returns Promise<void>
+   */
+  close(): Promise<void>
+}
+
+export interface IRagPresenter {
+
 }

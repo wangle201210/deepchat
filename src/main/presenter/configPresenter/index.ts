@@ -8,7 +8,7 @@ import {
   MCPServerConfig,
   Prompt,
   IModelConfig,
-  KnowledgeBaseParams
+  BuiltinKnowledgeConfig
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { ModelType } from '@shared/model'
@@ -1034,17 +1034,17 @@ export class ConfigPresenter implements IConfigPresenter {
   }
 
   // 获取知识库配置
-  getKnowledgeConfigs(): KnowledgeBaseParams[] {
+  getKnowledgeConfigs(): BuiltinKnowledgeConfig[] {
     return this.knowledgeConfHelper.getKnowledgeConfigs()
   }
 
   // 设置知识库配置
-  setKnowledgeConfigs(configs: KnowledgeBaseParams[]): void {
+  setKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): void {
     this.knowledgeConfHelper.setKnowledgeConfigs(configs)
   }
 
   // 对比知识库配置差异
-  diffKnowledgeConfigs(newConfigs: KnowledgeBaseParams[]) {
+  diffKnowledgeConfigs(newConfigs: BuiltinKnowledgeConfig[]) {
     return KnowledgeConfHelper.diffKnowledgeConfigs(
       this.knowledgeConfHelper.getKnowledgeConfigs(),
       newConfigs
