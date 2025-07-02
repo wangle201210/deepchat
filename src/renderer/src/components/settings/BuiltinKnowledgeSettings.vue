@@ -184,7 +184,13 @@
                           selectEmbeddingModel?.name || t('settings.common.selectModel')
                         }}</span>
                       </div>
-                      <Icon icon="lucide:chevron-down" class="h-4 w-4 opacity-50" />
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center"
+                      >
+                        <Icon icon="lucide:chevron-down" class="w-4 h-4 text-muted-foreground" />
+                      </Button>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-80 p-0">
@@ -195,7 +201,6 @@
                   </PopoverContent>
                 </Popover>
               </div>
-
               <div class="space-y-2">
                 <div class="flex items-center gap-1">
                   <Label class="text-xs text-muted-foreground" for="edit-builtin-config-model">
@@ -215,11 +220,30 @@
                           class="h-4 w-4"
                           :is-dark="themeStore.isDark"
                         />
-                        <span class="truncate">{{
-                          selectRerankModel?.name || t('settings.common.selectModel')
-                        }}</span>
+                        <span class="truncate">
+                          {{ selectRerankModel?.name || t('settings.common.selectModel') }}
+                        </span>
                       </div>
-                      <ChevronDown class="h-4 w-4 opacity-50" />
+                      <div class="flex items-center gap-1">
+                        <ChevronDown class="h-4 w-4 opacity-50" />
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          v-if="selectRerankModel"
+                          class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-zinc-200"
+                          @click.stop="clearRerankModel"
+                        >
+                          <Icon icon="lucide:x" class="w-4 h-4 text-muted-foreground" />
+                        </Button>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          v-else
+                          class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center"
+                        >
+                          <Icon icon="lucide:chevron-down" class="w-4 h-4 text-muted-foreground" />
+                        </Button>
+                      </div>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-80 p-0">
@@ -497,7 +521,11 @@ const submitLoading = ref(false)
 
 // 自动检测维度开关
 const autoDetectDimensionsSwitch = ref(true)
-
+const clearRerankModel = () => {
+  selectRerankModel.value = null
+  editingBuiltinConfig.value.rerank = null
+  rerankModelSelectOpen.value = false
+}
 const builtinConfigs = computed(() => {
   try {
     const serverConfig = mcpStore.config.mcpServers['builtinKnowledge']
@@ -530,7 +558,7 @@ interface BuiltinKnowledgeConfig {
   rerank: {
     providerId: string
     modelId: string
-  }
+  } | null
   chunkSize?: number // defualt 1000
   chunkOverlap?: number // default 0
   fragmentsNumber: number // default 6
@@ -546,10 +574,7 @@ const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
     providerId: '',
     modelId: ''
   },
-  rerank: {
-    providerId: '',
-    modelId: ''
-  },
+  rerank: null,
   fragmentsNumber: 6,
   enabled: true
 })
@@ -572,10 +597,7 @@ function openAddConfig() {
       providerId: '',
       modelId: ''
     },
-    rerank: {
-      providerId: '',
-      modelId: ''
-    },
+    rerank: null,
     fragmentsNumber: 6,
     enabled: true
   }
@@ -614,8 +636,6 @@ const getEnableModelConfig = (modelId: string, providerId: string): RENDERER_MOD
 // 打开编辑对话框
 const editBuiltinConfig = async (index: number) => {
   const config = builtinConfigs.value[index]
-
-  console.log(config, '打开  ')
   // 设置当前选择的嵌入模型
   const embeddingModel = (await getEnableModelConfig(
     config.embedding.modelId,
@@ -634,26 +654,31 @@ const editBuiltinConfig = async (index: number) => {
     })
     return
   }
-  // 设置当前选择的重排序模型
-  const rerankModel = (await getEnableModelConfig(
-    config.rerank.modelId,
-    config.rerank.providerId
-  )) as RENDERER_MODEL_META
-  // 如果模型不存在或被禁用
-  if (!rerankModel || !rerankModel.enabled) {
-    toast({
-      title: t('settings.knowledgeBase.modelNotFound', {
-        provider: t(config.rerank.providerId),
-        model: config.rerank.modelId
-      }),
-      description: t('settings.knowledgeBase.modelNotFoundDesc'),
-      variant: 'destructive'
-    })
-    return
+  if (config.rerank && config.rerank.providerId && config.rerank.modelId) {
+    // 设置当前选择的重排序模型
+    const rerankModel = (await getEnableModelConfig(
+      config.rerank.modelId,
+      config.rerank.providerId
+    )) as RENDERER_MODEL_META
+    // 如果模型不存在或被禁用
+    if (!rerankModel || !rerankModel.enabled) {
+      toast({
+        title: t('settings.knowledgeBase.modelNotFound', {
+          provider: t(config.rerank.providerId),
+          model: config.rerank.modelId
+        }),
+        description: t('settings.knowledgeBase.modelNotFoundDesc'),
+        variant: 'destructive',
+        duration: 3000
+      })
+      return
+    }
+    selectRerankModel.value = rerankModel
+  } else {
+    selectRerankModel.value = null
   }
   isEditing.value = true
   selectEmbeddingModel.value = embeddingModel
-  selectRerankModel.value = rerankModel
   editingConfigIndex.value = index
   editingBuiltinConfig.value = { ...builtinConfigs.value[index] }
   fragmentsNumber.value = [editingBuiltinConfig.value.fragmentsNumber]
@@ -673,10 +698,7 @@ const closeBuiltinConfigDialog = () => {
       providerId: '',
       modelId: ''
     },
-    rerank: {
-      providerId: '',
-      modelId: ''
-    },
+    rerank: null,
     fragmentsNumber: 6,
     enabled: true
   }
@@ -756,9 +778,17 @@ const handleEmbeddingModelSelect = (model: RENDERER_MODEL_META, providerId: stri
 }
 // 选择重排模型
 const handleRerankModelSelect = (model: RENDERER_MODEL_META, providerId: string) => {
+  if (!model || !model.id) {
+    selectRerankModel.value = null
+    editingBuiltinConfig.value.rerank = null
+    rerankModelSelectOpen.value = false
+    return
+  }
   selectRerankModel.value = model
-  editingBuiltinConfig.value.rerank.modelId = model.id
-  editingBuiltinConfig.value.rerank.providerId = providerId
+  editingBuiltinConfig.value.rerank = {
+    modelId: model.id,
+    providerId: providerId
+  }
   rerankModelSelectOpen.value = false
 }
 
