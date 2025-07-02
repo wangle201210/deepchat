@@ -313,7 +313,10 @@
     "selectEmbeddingModelHelper": "埋め込みモデルは、知識ベースの作成後に禁止されています",
     "dimensionsHelper": "モデルが設定された埋め込み寸法サイズをサポートしていることを確認してください",
     "autoDetectDimensionsError": "埋め込まれた寸法障害を自動的に検出します",
-    "redetectDimensions": "埋め込み寸法を再検出します"
+    "redetectDimensions": "埋め込み寸法を再検出します",
+    "fragmentsNumber": "要求されたドキュメントフラグメントの数",
+    "fragmentsNumberHelper": "要求されたドキュメントの断片が多いほど、より多くの情報が付属していますが、より多くのトークンを消費する必要があります",
+    "selectRerankModel": "再注文モデルを選択します"
   },
   "mcp": {
     "title": "MCP設定",

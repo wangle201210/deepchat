@@ -313,7 +313,10 @@
     "selectEmbeddingModelHelper": "嵌入模型在知識庫創建後禁止修改",
     "dimensionsHelper": "請確保模型支持所設置的嵌入維度大小",
     "autoDetectDimensionsError": "自動檢測嵌入維度失敗",
-    "redetectDimensions": "重新檢測嵌入維度"
+    "redetectDimensions": "重新檢測嵌入維度",
+    "fragmentsNumber": "請求文檔片段數量",
+    "fragmentsNumberHelper": "請求文檔片段數量越多，附帶的信息越多，但需要消耗的token也越多",
+    "selectRerankModel": "選擇重排序模型"
   },
   "mcp": {
     "title": "MCP設置",
