@@ -316,7 +316,9 @@
     "redetectDimensions": "重新檢測嵌入維度",
     "fragmentsNumber": "請求文檔片段數量",
     "fragmentsNumberHelper": "請求文檔片段數量越多，附帶的信息越多，但需要消耗的token也越多",
-    "selectRerankModel": "選擇重排序模型"
+    "selectRerankModel": "選擇重排序模型",
+    "rerankModel": "重排序模型",
+    "embeddingModel": "嵌入模型"
   },
   "mcp": {
     "title": "MCP設置",

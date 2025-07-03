@@ -316,7 +316,9 @@
     "redetectDimensions": "Redecteur la dimension intégrée",
     "fragmentsNumber": "Nombre de fragments de documents demandés",
     "fragmentsNumberHelper": "Plus il y a de fragments de document demandé, plus il comporte d'informations, mais plus il doit être consommé de jetons",
-    "selectRerankModel": "Sélectionnez le modèle de réorganisation"
+    "selectRerankModel": "Sélectionnez le modèle de réorganisation",
+    "rerankModel": "Réorganiser le modèle",
+    "embeddingModel": "Modèle d'intégration"
   },
   "mcp": {
     "title": "Paramètres MCP",

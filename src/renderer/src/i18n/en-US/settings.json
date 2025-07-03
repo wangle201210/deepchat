@@ -316,7 +316,9 @@
     "redetectDimensions": "Redetect the embedded dimension",
     "fragmentsNumber": "Number of requested document fragments",
     "fragmentsNumberHelper": "The more fragments of requested document, the more information it comes with, but the more tokens it needs to be consumed",
-    "selectRerankModel": "Select the rerank model"
+    "selectRerankModel": "Select the rerank model",
+    "rerankModel": "Reorder the model",
+    "embeddingModel": "Embed Model"
   },
   "mcp": {
     "title": "MCP Settings",
