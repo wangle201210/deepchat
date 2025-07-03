@@ -1146,12 +1146,23 @@ export interface KeyStatus {
   usage?: string
 }
 
+export type KnowledgeFileMessage = {
+  id: string,
+  status: 'processing' | 'completed' | 'error'
+  uploadedAt: number
+} & MessageFile
+
 // built-in 知识库相关
 export interface IKnowledgePresenter {
   create(base: BuiltinKnowledgeConfig): Promise<void>
   reset(params: { base: BuiltinKnowledgeConfig }): Promise<void>
   delete(id: string): Promise<void>
+  addFile(id: string, path: string): Promise<void>
+  deleteFile(id: string, fileId: string): Promise<void>
+  reAddFile(id: string, fileId: string): Promise<void>
+  listFiles(id: string): Promise<KnowledgeFileMessage[]>
 }
+
 type ModelProvider = {
   modelId: string
   providerId: string
