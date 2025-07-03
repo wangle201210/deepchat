@@ -4,7 +4,7 @@
       <div class="flex flex-row items-center gap-2">
         <Icon icon="lucide:book-marked" class="w-4 h-4 text-muted-foreground" />
         <span class="text-sm font-bold">
-          {{ builtinKnowledgeDetail.description }}
+          {{ builtinKnowledgeDetail?.description }}
           <span
             :class="[
               'text-xs px-2 py-0.5 rounded-md ml-2',
