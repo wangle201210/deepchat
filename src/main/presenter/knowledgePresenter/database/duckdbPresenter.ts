@@ -1,4 +1,6 @@
-import * as fs from 'node:fs'
+import fs from 'node:fs'
+import path from 'node:path'
+
 import { DuckDBInstance } from '@duckdb/node-api'
 import {
   IndexOptions,
@@ -7,7 +9,14 @@ import {
   QueryResult,
   IVectorDatabasePresenter
 } from '@shared/presenter'
+
 import { nanoid } from 'nanoid'
+import { app } from 'electron'
+
+const runtimeBasePath = path
+  .join(app.getAppPath(), 'runtime')
+  .replace('app.asar', 'app.asar.unpacked')
+const extensionPath = path.join(runtimeBasePath, 'duckdb', 'extensions', 'vss.duckdb_extension')
 
 export class DuckDBPresenter implements IVectorDatabasePresenter {
   private dbInstance: any
@@ -38,8 +47,12 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadVSS(): Promise<void> {
     if (!this.connection) await this.connect()
-    await this.connection.run(`INSTALL vss;`)
-    await this.connection.run(`LOAD vss;`)
+    if (!fs.existsSync(extensionPath)) {
+      await this.connection.run(`LOAD '${extensionPath}';`)
+    } else {
+      await this.connection.run(`INSTALL vss;`)
+      await this.connection.run(`LOAD vss;`)
+    }
     await this.connection.run(`SET hnsw_enable_experimental_persistence = true;`)
   }
 
