@@ -318,7 +318,13 @@
     "fragmentsNumberHelper": "Plus il y a de fragments de document demandé, plus il comporte d'informations, mais plus il doit être consommé de jetons",
     "selectRerankModel": "Sélectionnez le modèle de réorganisation",
     "rerankModel": "Réorganiser le modèle",
-    "embeddingModel": "Modèle d'intégration"
+    "embeddingModel": "Modèle d'intégration",
+    "return": "retour",
+    "uploadHelper": "Cliquez pour télécharger ou faire glisser le fichier ici",
+    "onlySupport": "Soutenu uniquement",
+    "searchKnowledge": "Rechercher la base de connaissances",
+    "searchKnowledgePlaceholder": "Veuillez saisir le contenu de la requête",
+    "noData": "Pas encore de données"
   },
   "mcp": {
     "title": "Paramètres MCP",

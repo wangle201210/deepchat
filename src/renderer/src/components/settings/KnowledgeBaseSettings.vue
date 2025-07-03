@@ -107,8 +107,11 @@
         </DialogContent>
       </Dialog>
     </div>
-    <div v-show="showBuiltinKnowledgeDetail">
-      <KnowledgeFile :builtinKnowledgeDetail="builtinKnowledgeDetail" @hideKnowledgeFile="showBuiltinKnowledgeDetail=false"></KnowledgeFile>
+    <div v-if="showBuiltinKnowledgeDetail">
+      <KnowledgeFile
+        :builtinKnowledgeDetail="builtinKnowledgeDetail"
+        @hideKnowledgeFile="showBuiltinKnowledgeDetail = false"
+      ></KnowledgeFile>
     </div>
   </ScrollArea>
 </template>
@@ -132,6 +135,7 @@ import DifyKnowledgeSettings from './DifyKnowledgeSettings.vue'
 import FastGptKnowledgeSettings from './FastGptKnowledgeSettings.vue'
 import BuiltinKnowledgeSettings from './BuiltinKnowledgeSettings.vue'
 import KnowledgeFile from './KnowledgeFile.vue'
+import { BuiltinKnowledgeConfig } from '@shared/presenter'
 
 const difySettingsRef = ref<InstanceType<typeof DifyKnowledgeSettings> | null>(null)
 const ragflowSettingsRef = ref<InstanceType<typeof RagflowKnowledgeSettings> | null>(null)
@@ -141,7 +145,7 @@ const builtinSettingsRef = ref<InstanceType<typeof BuiltinKnowledgeSettings> | n
 const { t } = useI18n()
 // 是否展示内置知识库文件详情
 const showBuiltinKnowledgeDetail = ref(false)
-const builtinKnowledgeDetail = ref({})
+const builtinKnowledgeDetail = ref<BuiltinKnowledgeConfig | null>(null)
 const showDetail = (detail) => {
   showBuiltinKnowledgeDetail.value = true
   builtinKnowledgeDetail.value = detail
