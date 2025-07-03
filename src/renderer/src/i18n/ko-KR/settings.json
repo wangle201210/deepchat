@@ -318,7 +318,13 @@
     "fragmentsNumberHelper": "요청 된 문서의 조각이 많을수록 더 많은 정보가 제공되지만 더 많은 토큰을 소비해야합니다.",
     "selectRerankModel": "재주문 모델을 선택하십시오",
     "rerankModel": "모델을 재정렬하십시오",
-    "embeddingModel": "임베드 모델"
+    "embeddingModel": "임베드 모델",
+    "return": "반품",
+    "uploadHelper": "여기에서 파일을 업로드하거나 드래그하려면 클릭하십시오",
+    "onlySupport": "지원됩니다",
+    "searchKnowledge": "지식 기반을 검색하십시오",
+    "searchKnowledgePlaceholder": "쿼리 내용을 입력하십시오",
+    "noData": "아직 데이터가 없습니다"
   },
   "mcp": {
     "title": "MCP 설정",

@@ -318,7 +318,13 @@
     "fragmentsNumberHelper": "The more fragments of requested document, the more information it comes with, but the more tokens it needs to be consumed",
     "selectRerankModel": "Select the rerank model",
     "rerankModel": "Reorder the model",
-    "embeddingModel": "Embed Model"
+    "embeddingModel": "Embed Model",
+    "return": "return",
+    "uploadHelper": "Click to upload or drag the file here",
+    "onlySupport": "Supported only",
+    "searchKnowledge": "Search the Knowledge Base",
+    "searchKnowledgePlaceholder": "Please enter the query content",
+    "noData": "No data yet"
   },
   "mcp": {
     "title": "MCP Settings",

@@ -318,7 +318,13 @@
     "fragmentsNumberHelper": "要求されたドキュメントの断片が多いほど、より多くの情報が付属していますが、より多くのトークンを消費する必要があります",
     "selectRerankModel": "再注文モデルを選択します",
     "rerankModel": "モデルを並べ替えます",
-    "embeddingModel": "埋め込みモデル"
+    "embeddingModel": "埋め込みモデル",
+    "return": "戻る",
+    "uploadHelper": "クリックしてここでファイルをアップロードまたはドラッグします",
+    "onlySupport": "サポートのみ",
+    "searchKnowledge": "ナレッジベースを検索します",
+    "searchKnowledgePlaceholder": "クエリコンテンツを入力してください",
+    "noData": "まだデータはありません"
   },
   "mcp": {
     "title": "MCP設定",
