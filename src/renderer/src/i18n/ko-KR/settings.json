@@ -316,7 +316,9 @@
     "redetectDimensions": "임베디드 치수를 다시 설정하십시오",
     "fragmentsNumber": "요청 된 문서 조각의 수",
     "fragmentsNumberHelper": "요청 된 문서의 조각이 많을수록 더 많은 정보가 제공되지만 더 많은 토큰을 소비해야합니다.",
-    "selectRerankModel": "재주문 모델을 선택하십시오"
+    "selectRerankModel": "재주문 모델을 선택하십시오",
+    "rerankModel": "모델을 재정렬하십시오",
+    "embeddingModel": "임베드 모델"
   },
   "mcp": {
     "title": "MCP 설정",

@@ -101,9 +101,42 @@
                 <div class="flex items-center">
                   <span class="font-medium text-sm">{{ config.description }}</span>
                 </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                  <div>
+                    <span class="font-medium">
+                      {{ t('settings.knowledgeBase.embeddingModel') }}:
+                    </span>
+                    <span> {{ config.embedding.modelId }} </span>
+                  </div>
+                  <div v-if="config.rerank && config.rerank.modelId">
+                    <span class="font-medium">
+                      {{ t('settings.knowledgeBase.rerankModel') }}:
+                    </span>
+                    <span> {{ config.rerank.modelId }} </span>
+                  </div>
+                  <div v-if="config.dimensions">
+                    <span class="font-medium"> {{ t('settings.knowledgeBase.dimensions') }}: </span>
+                    <span>{{ config.dimensions }}</span>
+                  </div>
+                  <div v-if="config.chunkSize">
+                    <span class="font-medium"> {{ t('settings.knowledgeBase.chunkSize') }}:</span>
+                    <span>{{ config.chunkSize }}</span>
+                  </div>
+                  <div v-if="config.chunkOverlap">
+                    <span class="font-medium">{{ t('settings.knowledgeBase.chunkOverlap') }}:</span>
+                    <span>{{ config.chunkOverlap }}</span>
+                  </div>
+                  <div>
+                    <span class="font-medium">
+                      {{ t('settings.knowledgeBase.fragmentsNumber') }}:
+                    </span>
+                    <span>{{ config.fragmentsNumber }}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
           <div class="flex justify-center">
             <Button
               type="button"
