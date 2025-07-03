@@ -107,7 +107,7 @@
         </DialogContent>
       </Dialog>
     </div>
-    <div v-show="showBuiltinKnowledgeDetail">
+    <div v-if="showBuiltinKnowledgeDetail">
       <KnowledgeFile :builtinKnowledgeDetail="builtinKnowledgeDetail" @hideKnowledgeFile="showBuiltinKnowledgeDetail=false"></KnowledgeFile>
     </div>
   </ScrollArea>

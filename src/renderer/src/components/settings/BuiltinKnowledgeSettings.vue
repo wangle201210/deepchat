@@ -62,7 +62,7 @@
                   class="text-muted-foreground hover:text-primary"
                   @click="handleSetting(config)"
                 >
-                  <Icon icon="lucide:settings" class="h-4 w-4" />
+                  <Icon icon="lucide:file-diff" class="h-4 w-4" />
                 </button>
                 <button
                   type="button"
