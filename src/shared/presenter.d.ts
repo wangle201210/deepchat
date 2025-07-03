@@ -1188,7 +1188,9 @@ export interface QueryOptions {
   /** 搜索时 ef */
   efSearch?: number
   /** 最小距离阈值 */
-  threshold?: number
+  threshold?: number,
+  /** 查询向量的维度 */
+  metric?: 'l2sq' | 'cosine' | 'ip'
 }
 export interface QueryResult {
   id: string
