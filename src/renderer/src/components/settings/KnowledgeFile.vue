@@ -56,7 +56,14 @@
             </label>
 
             <!-- 拖动上传 -->
-            <Input v-show="false" multiple type="file" id="upload" @change="handleChange" accept=".txt,.doc,.docx" />
+            <Input
+              v-show="false"
+              multiple
+              type="file"
+              id="upload"
+              @change="handleChange"
+              accept=".txt,.doc,.docx"
+            />
             <div v-for="(file, index) in fileList" :key="file.metadata.fileName">
               <KnowledgeFileItem
                 :mime-type="file.mimeType"
@@ -115,9 +122,10 @@ import { Input } from '@/components/ui/input'
 import { MessageFile } from '@shared/chat'
 import { usePresenter } from '@/composables/usePresenter'
 import KnowledgeFileItem from './KnowledgeFileItem.vue'
+import { BuiltinKnowledgeConfig } from '@shared/presenter'
 
 defineProps<{
-  builtinKnowledgeDetail
+  builtinKnowledgeDetail: BuiltinKnowledgeConfig | null
 }>()
 
 const emit = defineEmits<{
