@@ -6,7 +6,8 @@ import {
   IKnowledgePresenter,
   ILlmProviderPresenter,
   BuiltinKnowledgeConfig,
-  MCPServerConfig
+  MCPServerConfig,
+  KnowledgeFileMessage
 } from '@shared/presenter'
 import { eventBus } from '@/eventbus'
 import { MCP_EVENTS } from '@/events'
@@ -113,6 +114,30 @@ export class KnowledgePresenter implements IKnowledgePresenter {
       }
     }
   }
+
+  /**
+   * 添加文件到知识库
+   * @param id 知识库 ID
+   * @param filePath 文件路径
+   */
+  async addFile(id: string, filePath: string): Promise<void> {
+    const configs = this.configP.getKnowledgeConfigs()
+    const config = configs.find(cfg => cfg.id === id)
+    if (!config) throw new Error('Knowledge config not found for id: ' + id)
+    const rag = await this.getRagPresenter(config)
+    await rag.addFile(filePath)
+  }
+
+  deleteFile(id: string, fileId: string): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  reAddFile(id: string, fileId: string): Promise<void> {
+    throw new Error('Method not implemented.')
+  }
+  listFiles(id: string): Promise<KnowledgeFileMessage[]> {
+    throw new Error('Method not implemented.')
+  }
+
 
   /**
    * 缓存 RAG 应用实例

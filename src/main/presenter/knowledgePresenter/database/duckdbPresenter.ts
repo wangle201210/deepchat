@@ -1,13 +1,14 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { DuckDBInstance } from '@duckdb/node-api'
+import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api'
 import {
   IndexOptions,
   InsertOptions,
   QueryOptions,
   QueryResult,
-  IVectorDatabasePresenter
+  IVectorDatabasePresenter,
+  KnowledgeFileMessage
 } from '@shared/presenter'
 
 import { nanoid } from 'nanoid'
@@ -19,11 +20,14 @@ const runtimeBasePath = path
 const extensionPath = path.join(runtimeBasePath, 'duckdb', 'extensions', 'vss.duckdb_extension')
 
 export class DuckDBPresenter implements IVectorDatabasePresenter {
-  private dbInstance: any
-  private connection: any
+  private dbInstance: DuckDBInstance
+  private connection: DuckDBConnection
+
   private readonly path: string
   private readonly dimension: number
-  private readonly table = 'vectors'
+
+  private readonly chunkTable = 'vectors'
+  private readonly filesTable = 'knowledge_files'
 
   constructor(path: string, dimension: number) {
     this.path = path
@@ -34,8 +38,25 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private async init() {
     await this.connect()
     await this.installAndLoadVSS()
-    await this.initTable()
+    await this.initChunkTable()
+    await this.initFilesTable()
     await this.initIndex()
+  }
+
+  /**
+   * 统一安全 SQL 执行，自动捕获异常并输出日志
+   */
+  private async safeRun(sql: string, params?: any[]): Promise<any> {
+    try {
+      if (params) {
+        return await this.connection.run(sql, params)
+      } else {
+        return await this.connection.run(sql)
+      }
+    } catch (err) {
+      console.error('[DuckDB SQL Error]', sql, params, err)
+      throw err
+    }
   }
 
   private async connect() {
@@ -46,25 +67,39 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadVSS(): Promise<void> {
-    if (!this.connection) await this.connect()
     if (!fs.existsSync(extensionPath)) {
-      await this.connection.run(`LOAD '${extensionPath}';`)
+      await this.safeRun(`LOAD ?;`, [extensionPath])
     } else {
-      await this.connection.run(`INSTALL vss;`)
-      await this.connection.run(`LOAD vss;`)
+      await this.safeRun(`INSTALL vss;`)
+      await this.safeRun(`LOAD vss;`)
     }
-    await this.connection.run(`SET hnsw_enable_experimental_persistence = true;`)
+    await this.safeRun(`SET hnsw_enable_experimental_persistence = true;`)
   }
 
   /** 创建定长向量表 */
-  private async initTable(): Promise<void> {
-    if (!this.connection) await this.connect()
-    await this.connection.run(
-      `CREATE TABLE IF NOT EXISTS ${this.table} (
+  private async initChunkTable(): Promise<void> {
+    await this.safeRun(
+      `CREATE TABLE IF NOT EXISTS ${this.chunkTable} (
          id VARCHAR PRIMARY KEY,
          embedding FLOAT[${this.dimension}],
          metadata JSON
        );`
+    )
+  }
+
+  /** 创建文件元数据表 */
+  private async initFilesTable(): Promise<void> {
+    await this.safeRun(
+      `CREATE TABLE IF NOT EXISTS ${this.filesTable} (
+        id VARCHAR PRIMARY KEY,
+        name VARCHAR,
+        path VARCHAR,
+        size BIGINT,
+        mime_type VARCHAR,
+        status VARCHAR,
+        uploaded_at BIGINT,
+        metadata JSON
+      );`
     )
   }
 
@@ -74,61 +109,67 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
     const M = opts?.M || 16
     const efConstruction = opts?.efConstruction || 200
-
-    await this.connection.run(
-      `CREATE INDEX IF NOT EXISTS idx_${this.table}_emb
-         ON ${this.table}
+    const sql = `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_emb
+         ON ${this.chunkTable}
          USING HNSW (embedding)
          WITH (
-           metric='${metric}',
-           M=${M},
-           ef_construction=${efConstruction}
+           metric=?,
+           M=?,
+           ef_construction=?
          );`
-    )
+    await this.safeRun(sql, [metric, M, efConstruction])
   }
 
-  public async insert(opts: InsertOptions): Promise<void> {
+  public async insertChunk(opts: InsertOptions): Promise<void> {
     const id = nanoid()
-    const vecLiteral = `[${opts.vector.join(',')}]::FLOAT[${this.dimension}]`
+    const vec = opts.vector
     const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
-    await this.connection.run(
-      `INSERT INTO ${this.table} (id, embedding, metadata)
+    await this.safeRun(
+      `INSERT INTO ${this.chunkTable} (id, embedding, metadata)
        VALUES (?, ?, ?::JSON);`,
-      [id, vecLiteral, meta]
+      [id, vec, meta]
     )
   }
 
-  public async bulkInsert(records: InsertOptions[]): Promise<void> {
+  public async bulkInsertChunks(records: InsertOptions[]): Promise<void> {
     if (!this.connection) await this.connect()
     if (!records.length) return
-    const sql = `INSERT INTO ${this.table} (id, embedding, metadata) VALUES (?, ?, ?::JSON);`
+    // 构造批量插入 SQL
+    const valuesSql = records.map(() => '(?, ?, ?::JSON)').join(', ')
+    const sql = `INSERT INTO ${this.chunkTable} (id, embedding, metadata) VALUES ${valuesSql};`
+    const params: any[] = []
     for (const r of records) {
-      const id = nanoid()
-      const vecLiteral = `[${r.vector.join(',')}]::FLOAT[${this.dimension}]`
-      const meta = r.metadata ? JSON.stringify(r.metadata) : null
-      await this.connection.run(sql, [id, vecLiteral, meta])
+      params.push(nanoid())
+      params.push(r.vector)
+      params.push(r.metadata ? JSON.stringify(r.metadata) : null)
     }
+    await this.safeRun(sql, params)
   }
 
-  public async query(params: QueryOptions & { vector: number[] }): Promise<QueryResult[]> {
+  public async similarityQuery(
+    params: QueryOptions & { vector: number[] }
+  ): Promise<QueryResult[]> {
     const k = params.topK
-    const vecLiteral = `[${params.vector.join(',')}]::FLOAT[${this.dimension}]`
     const fn =
       params.metric === 'ip'
         ? 'array_negative_inner_product'
         : params.metric === 'cosine'
           ? 'array_cosine_distance'
           : 'array_distance'
-    const where =
-      params.threshold != null ? `WHERE ${fn}(embedding, ${vecLiteral}) <= ${params.threshold}` : ''
+    const where = params.threshold != null ? `WHERE ${fn}(embedding, ?) <= ?` : ''
     const sql = `
-    SELECT id, metadata, ${fn}(embedding, ${vecLiteral}) AS distance
-      FROM ${this.table}
+      SELECT id, metadata, ${fn}(embedding, ?) AS distance
+      FROM ${this.chunkTable}
       ${where}
-    ORDER BY distance
-    LIMIT ${k};
-  `
-    const reader = await this.connection.runAndReadAll(sql)
+      ORDER BY distance
+      LIMIT ?;
+    `
+    const paramsArr: any[] = [params.vector]
+    if (params.threshold != null) {
+      paramsArr.push(params.vector, params.threshold)
+    }
+    paramsArr.push(k)
+    const reader = await this.connection.runAndReadAll(sql, paramsArr)
     const rows = reader.getRowObjectsJson() as Array<QueryResult>
     return rows.map((r) => ({
       id: r.id,
@@ -139,26 +180,110 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   public async deleteById(id: string): Promise<void> {
     if (!this.connection) await this.connect()
-    await this.connection.run(`DELETE FROM ${this.table} WHERE id = ?;`, [id])
+    await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE id = ?;`, [id])
   }
 
+  /**
+   * 插入文件元数据
+   */
+  public async insertFile(file: KnowledgeFileMessage): Promise<void> {
+    if (!this.connection) await this.connect()
+    await this.safeRun(
+      `INSERT INTO ${this.filesTable} (id, name, path, mime_type, status, uploaded_at, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?::JSON);`,
+      [
+        file.id,
+        file.name,
+        file.path,
+        file.mimeType,
+        file.status,
+        file.uploadedAt,
+        file.metadata ? JSON.stringify(file.metadata) : null
+      ]
+    )
+  }
+
+  /**
+   * 更新文件状态
+   */
+  public async updateFileStatus(id: string, status: string): Promise<void> {
+    if (!this.connection) await this.connect()
+    await this.safeRun(`UPDATE ${this.filesTable} SET status = ? WHERE id = ?;`, [status, id])
+  }
+
+  /**
+   * 查询文件
+   */
+  public async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
+    if (!this.connection) await this.connect()
+    const reader = await this.connection.runAndReadAll(
+      `SELECT * FROM ${this.filesTable} WHERE id = ?;`,
+      [id]
+    )
+    const rows = reader.getRowObjectsJson()
+    if (rows.length === 0) return null
+    const row = rows[0]
+    return {
+      ...row,
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
+    }
+  }
+
+  /**
+   * 查询知识库下所有文件
+   */
+  public async listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]> {
+    if (!this.connection) await this.connect()
+    const reader = await this.connection.runAndReadAll(
+      `SELECT * FROM ${this.filesTable} WHERE knowledge_id = ? ORDER BY uploaded_at DESC;`,
+      [knowledgeId]
+    )
+    const rows = reader.getRowObjectsJson()
+    return rows.map((r: any) => ({
+      ...r,
+      metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata
+    }))
+  }
+
+  /**
+   * 删除文件元数据
+   */
+  public async deleteFile(id: string): Promise<void> {
+    if (!this.connection) await this.connect()
+    await this.safeRun(`DELETE FROM ${this.filesTable} WHERE id = ?;`, [id])
+  }
+
+  /**
+   * 关闭数据库连接
+   */
   public async close(): Promise<void> {
-    if (this.connection) {
-      this.connection.closeSync()
-      this.connection = null
+    try {
+      if (this.connection) {
+        this.connection.closeSync()
+        this.connection = null
+      }
+      if (this.dbInstance) {
+        this.dbInstance.closeSync()
+        this.dbInstance = null
+      }
+      console.log('DuckDB connection closed')
+    } catch (err) {
+      console.error('[DuckDB Close Error]', err)
     }
-    if (this.dbInstance) {
-      this.dbInstance.closeSync()
-      this.dbInstance = null
-    }
-    console.log('DuckDB connection closed')
   }
 
-  public async destory(): Promise<void> {
+  /**
+   * 销毁数据库实例，该操作不可恢复
+   */
+  public async destroy(): Promise<void> {
     await this.close()
     // 删除数据库文件
-    if (fs.existsSync(this.path)) {
-      fs.rmSync(this.path, { recursive: true })
+    try {
+      if (fs.existsSync(this.path)) {
+        fs.rmSync(this.path, { recursive: true })
+      }
+    } catch (err) {
+      console.error('[DuckDB Destroy Error]', err)
     }
   }
 }

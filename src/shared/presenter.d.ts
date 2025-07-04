@@ -1211,22 +1211,19 @@ export interface QueryResult {
 
 /**
  * DuckDB 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
- * 所有方法均为异步，推荐配合 await 使用。
  */
 export interface IVectorDatabasePresenter {
   /**
-   * 插入单条向量记录。
-   * @param opts 插入参数，包含 id（可选，未提供时自动生成）、vector（向量数据）、metadata（可选元数据）
-   * @returns Promise<void>
+   * 插入单条向量记录，id未提供时自动生成
+   * @param opts 插入参数，包含向量数据和可选元数据
    */
-  insert(opts: InsertOptions): Promise<void>
+  insertChunk(opts: InsertOptions): Promise<void>
 
   /**
    * 批量插入多条向量记录。
-   * @param records 插入参数数组，每项同 insert，id 可选，未提供时自动生成
-   * @returns Promise<void>
+   * @param records 插入参数数组，每项id未提供时自动生成
    */
-  bulkInsert(records: Array<InsertOptions>): Promise<void>
+  bulkInsertChunks(records: Array<InsertOptions>): Promise<void>
 
   /**
    * 查询向量最近邻（TopK 检索）。
@@ -1237,20 +1234,56 @@ export interface IVectorDatabasePresenter {
    *   - threshold: 最小距离阈值（可选）
    * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
    */
-  query(options: QueryOptions & { vector: number[] }): Promise<QueryResult[]>
+  similarityQuery(options: QueryOptions & { vector: number[] }): Promise<QueryResult[]>
 
   /**
    * 根据 id 删除指定向量记录。
    * @param id 记录 id
-   * @returns Promise<void>
    */
   deleteById(id: string): Promise<void>
 
   /**
+   * 插入文件元数据。
+   * @param file 文件元数据对象
+   */
+  insertFile(file: KnowledgeFileMessage): Promise<void>
+
+  /**
+   * 更新文件状态。
+   * @param id 文件 id
+   * @param status 新状态
+   */
+  updateFileStatus(id: string, status: string): Promise<void>
+
+  /**
+   * 查询文件。
+   * @param id 文件 id
+   * @returns 文件元数据对象或 null
+   */
+  queryFile(id: string): Promise<KnowledgeFileMessage | null>
+
+  /**
+   * 查询知识库下所有文件。
+   * @param knowledgeId 知识库 id
+   * @returns 文件元数据数组
+   */
+  listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]>
+
+  /**
+   * 删除文件元数据。
+   * @param id 文件 id
+   */
+  deleteFile(id: string): Promise<void>
+
+  /**
    * 关闭数据库连接，释放资源。
-   * @returns Promise<void>
    */
   close(): Promise<void>
+
+  /**
+   * 销毁数据库实例，释放所有资源。
+   */
+  destroy(): Promise<void>
 }
 
 export interface IRagPresenter {

@@ -1,4 +1,5 @@
 import { IVectorDatabasePresenter } from '@shared/presenter'
+import { presenter } from '@/presenter'
 
 export class RagPresenter {
   private readonly vectorP: IVectorDatabasePresenter
@@ -12,10 +13,11 @@ export class RagPresenter {
     this.embeddingProxy = embeddingProxy
   }
 
-  async addFile() {
+  async addFile(filePath: string): Promise<void> {
+    
     const tests = ['1', '2', '3']
     const embeddings = await this.embeddingProxy(tests)
-    this.vectorP.bulkInsert(
+    this.vectorP.bulkInsertChunks(
       embeddings.map((embedding) => {
         return {
           vector: embedding.vector,
@@ -28,6 +30,6 @@ export class RagPresenter {
   async reset() {}
 
   async destory() {
-    this.vectorP.destory()
+    this.vectorP.destroy()
   }
 }
