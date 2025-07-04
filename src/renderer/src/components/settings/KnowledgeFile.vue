@@ -203,6 +203,7 @@ const handleDrop = async (e: DragEvent) => {
         } else {
           toast({
             title: `"${file.name}"${t('settings.knowledgeBase.uploadError')}`,
+            description:`${t('settings.knowledgeBase.reason')}:${result.reason}`,
             variant: 'destructive',
             duration: 3000
           })
