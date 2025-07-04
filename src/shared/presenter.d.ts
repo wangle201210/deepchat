@@ -1146,11 +1146,20 @@ export interface KeyStatus {
   usage?: string
 }
 
+export type KnowledgeFileMetadata = {
+  size: number
+  hash: string
+}
+
 export type KnowledgeFileMessage = {
   id: string,
+  name: string
+  path: string
+  mimeType: string
   status: 'processing' | 'completed' | 'error'
   uploadedAt: number
-} & MessageFile
+  metadata: KnowledgeFileMetadata
+}
 
 // built-in 知识库相关
 export interface IKnowledgePresenter {
@@ -1217,13 +1226,13 @@ export interface IVectorDatabasePresenter {
    * 插入单条向量记录，id未提供时自动生成
    * @param opts 插入参数，包含向量数据和可选元数据
    */
-  insertChunk(opts: InsertOptions): Promise<void>
+  insertVector(opts: InsertOptions): Promise<void>
 
   /**
    * 批量插入多条向量记录。
    * @param records 插入参数数组，每项id未提供时自动生成
    */
-  bulkInsertChunks(records: Array<InsertOptions>): Promise<void>
+  insertVectors(records: Array<InsertOptions>): Promise<void>
 
   /**
    * 查询向量最近邻（TopK 检索）。
@@ -1240,7 +1249,7 @@ export interface IVectorDatabasePresenter {
    * 根据 id 删除指定向量记录。
    * @param id 记录 id
    */
-  deleteById(id: string): Promise<void>
+  deleteVector(id: string): Promise<void>
 
   /**
    * 插入文件元数据。
@@ -1274,11 +1283,6 @@ export interface IVectorDatabasePresenter {
    * @param id 文件 id
    */
   deleteFile(id: string): Promise<void>
-
-  /**
-   * 关闭数据库连接，释放资源。
-   */
-  close(): Promise<void>
 
   /**
    * 销毁数据库实例，释放所有资源。

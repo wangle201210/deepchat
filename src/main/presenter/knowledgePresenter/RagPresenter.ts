@@ -17,7 +17,7 @@ export class RagPresenter {
     
     const tests = ['1', '2', '3']
     const embeddings = await this.embeddingProxy(tests)
-    this.vectorP.bulkInsertChunks(
+    this.vectorP.insertVectors(
       embeddings.map((embedding) => {
         return {
           vector: embedding.vector,

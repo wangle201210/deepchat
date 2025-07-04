@@ -20,14 +20,14 @@ const runtimeBasePath = path
 const extensionPath = path.join(runtimeBasePath, 'duckdb', 'extensions', 'vss.duckdb_extension')
 
 export class DuckDBPresenter implements IVectorDatabasePresenter {
-  private dbInstance: DuckDBInstance
-  private connection: DuckDBConnection
+  private dbInstance!: DuckDBInstance
+  private connection!: DuckDBConnection
 
   private readonly path: string
   private readonly dimension: number
 
-  private readonly chunkTable = 'vectors'
-  private readonly filesTable = 'knowledge_files'
+  private readonly vectorTable = 'vector'
+  private readonly fileTable = 'file'
 
   constructor(path: string, dimension: number) {
     this.path = path
@@ -38,8 +38,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private async init() {
     await this.connect()
     await this.installAndLoadVSS()
-    await this.initChunkTable()
-    await this.initFilesTable()
+    await this.initVectorTable()
+    await this.initFileTable()
     await this.initIndex()
   }
 
@@ -67,7 +67,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadVSS(): Promise<void> {
-    if (!fs.existsSync(extensionPath)) {
+    if (fs.existsSync(extensionPath)) {
       await this.safeRun(`LOAD ?;`, [extensionPath])
     } else {
       await this.safeRun(`INSTALL vss;`)
@@ -77,9 +77,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   /** 创建定长向量表 */
-  private async initChunkTable(): Promise<void> {
+  private async initVectorTable(): Promise<void> {
     await this.safeRun(
-      `CREATE TABLE IF NOT EXISTS ${this.chunkTable} (
+      `CREATE TABLE IF NOT EXISTS ${this.vectorTable} (
          id VARCHAR PRIMARY KEY,
          embedding FLOAT[${this.dimension}],
          metadata JSON
@@ -88,13 +88,12 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   /** 创建文件元数据表 */
-  private async initFilesTable(): Promise<void> {
+  private async initFileTable(): Promise<void> {
     await this.safeRun(
-      `CREATE TABLE IF NOT EXISTS ${this.filesTable} (
+      `CREATE TABLE IF NOT EXISTS ${this.fileTable} (
         id VARCHAR PRIMARY KEY,
         name VARCHAR,
         path VARCHAR,
-        size BIGINT,
         mime_type VARCHAR,
         status VARCHAR,
         uploaded_at BIGINT,
@@ -109,8 +108,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
     const M = opts?.M || 16
     const efConstruction = opts?.efConstruction || 200
-    const sql = `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_emb
-         ON ${this.chunkTable}
+    const sql = `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_emb
+         ON ${this.vectorTable}
          USING HNSW (embedding)
          WITH (
            metric=?,
@@ -120,23 +119,23 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.safeRun(sql, [metric, M, efConstruction])
   }
 
-  public async insertChunk(opts: InsertOptions): Promise<void> {
+  public async insertVector(opts: InsertOptions): Promise<void> {
     const id = nanoid()
     const vec = opts.vector
     const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
     await this.safeRun(
-      `INSERT INTO ${this.chunkTable} (id, embedding, metadata)
+      `INSERT INTO ${this.vectorTable} (id, embedding, metadata)
        VALUES (?, ?, ?::JSON);`,
       [id, vec, meta]
     )
   }
 
-  public async bulkInsertChunks(records: InsertOptions[]): Promise<void> {
+  public async insertVectors(records: InsertOptions[]): Promise<void> {
     if (!this.connection) await this.connect()
     if (!records.length) return
     // 构造批量插入 SQL
     const valuesSql = records.map(() => '(?, ?, ?::JSON)').join(', ')
-    const sql = `INSERT INTO ${this.chunkTable} (id, embedding, metadata) VALUES ${valuesSql};`
+    const sql = `INSERT INTO ${this.vectorTable} (id, embedding, metadata) VALUES ${valuesSql};`
     const params: any[] = []
     for (const r of records) {
       params.push(nanoid())
@@ -159,7 +158,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     const where = params.threshold != null ? `WHERE ${fn}(embedding, ?) <= ?` : ''
     const sql = `
       SELECT id, metadata, ${fn}(embedding, ?) AS distance
-      FROM ${this.chunkTable}
+      FROM ${this.vectorTable}
       ${where}
       ORDER BY distance
       LIMIT ?;
@@ -170,17 +169,17 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     }
     paramsArr.push(k)
     const reader = await this.connection.runAndReadAll(sql, paramsArr)
-    const rows = reader.getRowObjectsJson() as Array<QueryResult>
-    return rows.map((r) => ({
+    const rows = reader.getRowObjectsJson()
+    return rows.map((r: any) => ({
       id: r.id,
       metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata,
       distance: r.distance
     }))
   }
 
-  public async deleteById(id: string): Promise<void> {
+  public async deleteVector(id: string): Promise<void> {
     if (!this.connection) await this.connect()
-    await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE id = ?;`, [id])
+    await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE id = ?;`, [id])
   }
 
   /**
@@ -189,7 +188,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   public async insertFile(file: KnowledgeFileMessage): Promise<void> {
     if (!this.connection) await this.connect()
     await this.safeRun(
-      `INSERT INTO ${this.filesTable} (id, name, path, mime_type, status, uploaded_at, metadata)
+      `INSERT INTO ${this.fileTable} (id, name, path, mime_type, status, uploaded_at, metadata)
        VALUES (?, ?, ?, ?, ?, ?, ?::JSON);`,
       [
         file.id,
@@ -208,7 +207,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
    */
   public async updateFileStatus(id: string, status: string): Promise<void> {
     if (!this.connection) await this.connect()
-    await this.safeRun(`UPDATE ${this.filesTable} SET status = ? WHERE id = ?;`, [status, id])
+    await this.safeRun(`UPDATE ${this.fileTable} SET status = ? WHERE id = ?;`, [status, id])
   }
 
   /**
@@ -217,10 +216,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   public async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
     if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
-      `SELECT * FROM ${this.filesTable} WHERE id = ?;`,
+      `SELECT * FROM ${this.fileTable} WHERE id = ?;`,
       [id]
     )
-    const rows = reader.getRowObjectsJson()
+    const rows = reader.getRowObjectsJson() as KnowledgeFileMessage[]
     if (rows.length === 0) return null
     const row = rows[0]
     return {
@@ -235,7 +234,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   public async listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]> {
     if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
-      `SELECT * FROM ${this.filesTable} WHERE knowledge_id = ? ORDER BY uploaded_at DESC;`,
+      `SELECT * FROM ${this.fileTable} WHERE knowledge_id = ? ORDER BY uploaded_at DESC;`,
       [knowledgeId]
     )
     const rows = reader.getRowObjectsJson()
@@ -250,21 +249,19 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
    */
   public async deleteFile(id: string): Promise<void> {
     if (!this.connection) await this.connect()
-    await this.safeRun(`DELETE FROM ${this.filesTable} WHERE id = ?;`, [id])
+    await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
   }
 
   /**
    * 关闭数据库连接
    */
-  public async close(): Promise<void> {
+  private async close(): Promise<void> {
     try {
       if (this.connection) {
         this.connection.closeSync()
-        this.connection = null
       }
       if (this.dbInstance) {
         this.dbInstance.closeSync()
-        this.dbInstance = null
       }
       console.log('DuckDB connection closed')
     } catch (err) {

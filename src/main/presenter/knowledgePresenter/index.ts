@@ -177,4 +177,5 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.ragPresenterCache.set(id, rag)
     return rag
   }
+  
 }
