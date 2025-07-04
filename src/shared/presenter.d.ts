@@ -1148,11 +1148,10 @@ export interface KeyStatus {
 
 export type KnowledgeFileMetadata = {
   size: number
-  hash: string
 }
 
 export type KnowledgeFileMessage = {
-  id: string,
+  id: string
   name: string
   path: string
   mimeType: string
@@ -1163,8 +1162,8 @@ export type KnowledgeFileMessage = {
 
 // built-in 知识库相关
 export interface IKnowledgePresenter {
-  create(base: BuiltinKnowledgeConfig): Promise<void>
-  reset(params: { base: BuiltinKnowledgeConfig }): Promise<void>
+  create(config: BuiltinKnowledgeConfig): Promise<void>
+  reset(id: string): Promise<void>
   delete(id: string): Promise<void>
   addFile(id: string, path: string): Promise<void>
   deleteFile(id: string, fileId: string): Promise<void>
@@ -1208,7 +1207,7 @@ export interface QueryOptions {
   /** 搜索时 ef */
   efSearch?: number
   /** 最小距离阈值 */
-  threshold?: number,
+  threshold?: number
   /** 查询向量的维度 */
   metric?: 'l2sq' | 'cosine' | 'ip'
 }
@@ -1222,6 +1221,13 @@ export interface QueryResult {
  * DuckDB 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
  */
 export interface IVectorDatabasePresenter {
+  /**
+   * 初始化向量数据库
+   * @param dimensions 向量维度
+   * @param opts
+   */
+  initialize(dimensions: number, opts?: IndexOptions): Promise<void>
+  open(): Promise<void>
   /**
    * 插入单条向量记录，id未提供时自动生成
    * @param opts 插入参数，包含向量数据和可选元数据
@@ -1290,6 +1296,4 @@ export interface IVectorDatabasePresenter {
   destroy(): Promise<void>
 }
 
-export interface IRagPresenter {
-
-}
+export interface IRagPresenter {}

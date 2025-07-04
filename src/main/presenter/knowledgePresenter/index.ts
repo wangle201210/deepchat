@@ -61,8 +61,12 @@ export class KnowledgePresenter implements IKnowledgePresenter {
         if (builtinConfig && builtinConfig.env && Array.isArray(builtinConfig.env.configs)) {
           const configs = builtinConfig.env.configs as BuiltinKnowledgeConfig[]
           console.log('[RAG] Received builtinKnowledge config update:', configs)
-
           const diffs = this.configP.diffKnowledgeConfigs(configs)
+          this.configP.setKnowledgeConfigs(configs)
+          // 处理新增、删除和更新的配置
+          if (diffs.deleted.length > 0) {
+            diffs.deleted.forEach((config) => this.delete(config.id))
+          }
           if (diffs.added.length > 0) {
             diffs.added.forEach((config) => {
               console.log(`[RAG] New knowledge config added: ${config.id}`)
@@ -71,10 +75,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
           }
           if (diffs.updated.length > 0) {
           }
-          if (diffs.deleted.length > 0) {
-            diffs.deleted.forEach((config) => this.delete(config.id))
-          }
-          this.configP.setKnowledgeConfigs(configs)
           console.log('[RAG] Updated knowledge configs:', configs)
         } else {
           console.warn('[RAG] builtinKnowledge config missing or invalid:', builtinConfig)
@@ -88,15 +88,15 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   /**
    * 创建知识库（初始化 RAG 应用）
    */
-  create = async (base: BuiltinKnowledgeConfig): Promise<void> => {
-    this.getRagPresenter(base)
+  create = async (config: BuiltinKnowledgeConfig): Promise<void> => {
+    this.createRagPresenter(config)
   }
 
   /**
    * 重置知识库内容
    */
-  reset = async ({ base }: { base: BuiltinKnowledgeConfig }): Promise<void> => {
-    const RagPresenter = await this.getRagPresenter(base)
+  reset = async (id: string): Promise<void> => {
+    const RagPresenter = await this.getRagPresenter(id)
     await RagPresenter.reset()
   }
 
@@ -106,7 +106,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   delete = async (id: string): Promise<void> => {
     if (this.ragPresenterCache.has(id)) {
       const rag = this.ragPresenterCache.get(id) as RagPresenter
-      rag.destory()
+      await rag.destory()
     } else {
       const dbPath = path.join(this.storageDir, id)
       if (fs.existsSync(dbPath)) {
@@ -116,66 +116,97 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   /**
-   * 添加文件到知识库
-   * @param id 知识库 ID
-   * @param filePath 文件路径
-   */
-  async addFile(id: string, filePath: string): Promise<void> {
-    const configs = this.configP.getKnowledgeConfigs()
-    const config = configs.find(cfg => cfg.id === id)
-    if (!config) throw new Error('Knowledge config not found for id: ' + id)
-    const rag = await this.getRagPresenter(config)
-    await rag.addFile(filePath)
-  }
-
-  deleteFile(id: string, fileId: string): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  reAddFile(id: string, fileId: string): Promise<void> {
-    throw new Error('Method not implemented.')
-  }
-  listFiles(id: string): Promise<KnowledgeFileMessage[]> {
-    throw new Error('Method not implemented.')
-  }
-
-
-  /**
    * 缓存 RAG 应用实例
    */
   private ragPresenterCache: Map<string, RagPresenter> = new Map()
 
   /**
-   * 获取或创建 RAG 应用实例
+   * 创建 RAG 应用实例
    * @param params BuiltinKnowledgeConfig
    * @returns RagPresenter
    */
-  private getRagPresenter = async ({
-    id,
-    embedding,
-    dimensions
-  }: BuiltinKnowledgeConfig): Promise<RagPresenter> => {
-    // 缓存命中直接返回
-    if (this.ragPresenterCache.has(id)) {
-      return this.ragPresenterCache.get(id) as RagPresenter
-    }
-
-    // 创建代理函数，只暴露 text 参数
-    const embeddingProxy = async (texts: string[]) => {
-      return this.llmP.getEmbeddings(embedding.modelId, embedding.providerId, texts)
-    }
-
+  private createRagPresenter = async (config: BuiltinKnowledgeConfig): Promise<RagPresenter> => {
     let rag: RagPresenter
+    const db = await this.getVectorDatabasePresenter(config.id, config.dimensions)
     try {
-      rag = new RagPresenter(
-        new DuckDBPresenter(path.join(this.storageDir, id), dimensions),
-        embeddingProxy
-      )
+      rag = new RagPresenter(db, config)
     } catch (e) {
       throw new Error(`Failed to create RagPresenter: ${e}`)
     }
 
+    this.ragPresenterCache.set(config.id, rag)
+    return rag
+  }
+
+  /**
+   * 获取 RAG 应用实例
+   * @param id 知识库 ID
+   */
+  private getRagPresenter = async (id: string): Promise<RagPresenter> => {
+    // 缓存命中直接返回
+    if (this.ragPresenterCache.has(id)) {
+      return this.ragPresenterCache.get(id) as RagPresenter
+    }
+    // 获取配置
+    const configs = this.configP.getKnowledgeConfigs()
+    const config = configs.find((cfg) => cfg.id === id)
+    if (!config) {
+      throw new Error(`Knowledge config not found for id: ${id}`)
+    }
+    // DuckDB 存储
+    const db = await this.getVectorDatabasePresenter(id, config.dimensions)
+    // 创建 RAG 应用实例
+    const rag = new RagPresenter(db, config)
     this.ragPresenterCache.set(id, rag)
     return rag
   }
-  
+
+  /**
+   * 获取向量数据库实例
+   * @param id 知识库 ID
+   * @param dimensions 向量维度
+   * @returns
+   */
+  private getVectorDatabasePresenter = async (id: string, dimensions: number) => {
+    const dbPath = path.join(this.storageDir, id)
+    if (fs.existsSync(dbPath)) {
+      const db = new DuckDBPresenter(dbPath)
+      await db.open()
+      return db
+    }
+    // 如果数据库不存在，则初始化
+    const db = new DuckDBPresenter(dbPath)
+    await db.initialize(dimensions)
+    return db
+  }
+
+  /**
+   * 添加文件到知识库
+   * @param id 知识库 ID
+   * @param filePath 文件路径
+   */
+  async addFile(id: string, filePath: string): Promise<void> {
+    const rag = await this.getRagPresenter(id)
+    await rag.addFile(filePath)
+  }
+
+  async deleteFile(id: string, fileId: string): Promise<void> {
+    const rag = await this.getRagPresenter(id)
+    await rag.deleteFile(fileId)
+  }
+
+  async reAddFile(id: string, fileId: string): Promise<void> {
+    const rag = await this.getRagPresenter(id)
+    await rag.reAddFile(fileId)
+  }
+
+  async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {
+    const rag = await this.getRagPresenter(id)
+    return await rag.queryFile(fileId)
+  }
+
+  async listFiles(id: string): Promise<KnowledgeFileMessage[]> {
+    const rag = await this.getRagPresenter(id)
+    return await rag.listFiles()
+  }
 }

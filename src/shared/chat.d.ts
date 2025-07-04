@@ -73,7 +73,7 @@ export type UserMessageContent = {
 
 export type MessageFile = {
   name: string
-  content: string
+  content: string | string[]
   mimeType: string
   metadata: FileMetaData
   token: number

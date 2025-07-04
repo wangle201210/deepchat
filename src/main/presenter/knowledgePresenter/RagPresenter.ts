@@ -1,30 +1,54 @@
-import { IVectorDatabasePresenter } from '@shared/presenter'
+import { BuiltinKnowledgeConfig, IVectorDatabasePresenter } from '@shared/presenter'
 import { presenter } from '@/presenter'
+import { nanoid } from 'nanoid'
 
 export class RagPresenter {
   private readonly vectorP: IVectorDatabasePresenter
-  private readonly embeddingProxy: (texts: string[]) => Promise<any>
+  private readonly config: BuiltinKnowledgeConfig
 
-  constructor(
-    vectorP: IVectorDatabasePresenter,
-    embeddingProxy: (texts: string[]) => Promise<any>
-  ) {
+  constructor(vectorP: IVectorDatabasePresenter, config: BuiltinKnowledgeConfig) {
     this.vectorP = vectorP
-    this.embeddingProxy = embeddingProxy
+    this.config = config
   }
 
   async addFile(filePath: string): Promise<void> {
+    const mimeType = await presenter.filePresenter.getMimeType(filePath)
+    const fileInfo = await presenter.filePresenter.prepareFile(filePath, mimeType)
+
+    await this.vectorP.insertFile({
+      id: nanoid(),
+      name: fileInfo.name,
+      path: fileInfo.path,
+      mimeType,
+      status: 'processing',
+      uploadedAt: new Date().getTime(),
+      metadata: {
+        size: fileInfo.metadata.fileSize
+      }
+    })
+
+    // 文本切分
+    const content = fileInfo.content
     
-    const tests = ['1', '2', '3']
-    const embeddings = await this.embeddingProxy(tests)
-    this.vectorP.insertVectors(
-      embeddings.map((embedding) => {
-        return {
-          vector: embedding.vector,
-          metadata: embedding.metadata || {}
-        }
-      })
-    )
+  }
+  reAddFile(fileId: string) {
+    throw new Error('Method not implemented.')
+  }
+  deleteFile(fileId: string) {
+    throw new Error('Method not implemented.')
+  }
+  queryFile(
+    fileId: string
+  ):
+    | import('@shared/presenter').KnowledgeFileMessage
+    | PromiseLike<import('@shared/presenter').KnowledgeFileMessage | null>
+    | null {
+    throw new Error('Method not implemented.')
+  }
+  listFiles():
+    | import('@shared/presenter').KnowledgeFileMessage[]
+    | PromiseLike<import('@shared/presenter').KnowledgeFileMessage[]> {
+    throw new Error('Method not implemented.')
   }
 
   async reset() {}

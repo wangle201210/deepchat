@@ -23,24 +23,38 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private dbInstance!: DuckDBInstance
   private connection!: DuckDBConnection
 
-  private readonly path: string
-  private readonly dimension: number
+  private readonly dbPath: string
 
   private readonly vectorTable = 'vector'
   private readonly fileTable = 'file'
 
-  constructor(path: string, dimension: number) {
-    this.path = path
-    this.dimension = dimension
-    void this.init()
+  constructor(dbPath: string) {
+    this.dbPath = dbPath
   }
 
-  private async init() {
+  /**
+   * 首次初始化数据库结构
+   */
+  public async initialize(dimensions: number, opts?: IndexOptions): Promise<void> {
+    if (fs.existsSync(this.dbPath)) {
+      throw new Error('Database already exists, cannot initialize again.')
+    }
     await this.connect()
     await this.installAndLoadVSS()
-    await this.initVectorTable()
+    await this.initVectorTable(dimensions)
     await this.initFileTable()
-    await this.initIndex()
+    await this.initIndex(opts)
+  }
+
+  /**
+   * 连接已存在数据库（不做结构初始化）
+   */
+  public async open(): Promise<void> {
+    if (!fs.existsSync(this.dbPath)) {
+      throw new Error('Database does not exist, please initialize first.')
+    }
+    await this.connect()
+    await this.installAndLoadVSS()
   }
 
   /**
@@ -60,9 +74,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   private async connect() {
-    this.dbInstance = await DuckDBInstance.create(this.path)
+    this.dbInstance = await DuckDBInstance.create(this.dbPath)
     this.connection = await this.dbInstance.connect()
-    console.log(`Connected to DuckDB at ${this.path}`)
+    console.log(`Connected to DuckDB at ${this.dbPath}`)
   }
 
   /** 安装并加载 VSS 扩展 */
@@ -77,11 +91,11 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   /** 创建定长向量表 */
-  private async initVectorTable(): Promise<void> {
+  private async initVectorTable(dimensions: number): Promise<void> {
     await this.safeRun(
       `CREATE TABLE IF NOT EXISTS ${this.vectorTable} (
          id VARCHAR PRIMARY KEY,
-         embedding FLOAT[${this.dimension}],
+         embedding FLOAT[${dimensions}],
          metadata JSON
        );`
     )
@@ -276,8 +290,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.close()
     // 删除数据库文件
     try {
-      if (fs.existsSync(this.path)) {
-        fs.rmSync(this.path, { recursive: true })
+      if (fs.existsSync(this.dbPath)) {
+        fs.rmSync(this.dbPath, { recursive: true })
       }
     } catch (err) {
       console.error('[DuckDB Destroy Error]', err)
