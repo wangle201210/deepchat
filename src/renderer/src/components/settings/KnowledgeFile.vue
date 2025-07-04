@@ -44,7 +44,6 @@
                     <Icon icon="lucide:file-up" class="w-4 h-4" />
                     <span class="text-sm">
                       {{ t('settings.knowledgeBase.uploadHelper') }}
-                      {{ t('settings.knowledgeBase.uploadHelper') }}
                     </span>
                   </div>
                   <div class="flex items-center gap-1">
