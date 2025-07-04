@@ -324,7 +324,19 @@
     "onlySupport": "Supported only",
     "searchKnowledge": "Search the Knowledge Base",
     "searchKnowledgePlaceholder": "Please enter the query content",
-    "noData": "No data yet"
+    "noData": "No data yet",
+    "file": "document",
+    "uploadProcessing": "Uploading",
+    "uploadSuccess": "Upload successfully",
+    "uploadCompleted": "Upload completed",
+    "reAdd": "Re-upload",
+    "uploadError": "Upload failed",
+    "delete": "delete",
+    "deleteSuccess": "Delete successfully",
+    "deleteFailed": "Deletion failed",
+    "reAddSuccess": "Re-uploaded successfully",
+    "reAddFailed": "Re-upload failed",
+    "reason": "reason"
   },
   "mcp": {
     "title": "MCP Settings",

@@ -324,7 +324,19 @@
     "onlySupport": "Поддерживается только",
     "searchKnowledge": "Поиск базы знаний",
     "searchKnowledgePlaceholder": "Пожалуйста, введите содержание запроса",
-    "noData": "Нет данных пока"
+    "noData": "Нет данных пока",
+    "file": "документ",
+    "uploadProcessing": "Загрузка",
+    "uploadSuccess": "Загрузить успешно",
+    "uploadCompleted": "Загрузка завершена",
+    "reAdd": "Повторная загрузка",
+    "uploadError": "Загрузка не удалась",
+    "delete": "удалить",
+    "deleteSuccess": "Удалить успешно",
+    "deleteFailed": "Удаление не удалось",
+    "reAddSuccess": "Повторно загружен успешно",
+    "reAddFailed": "Повторная загрузка не удалась",
+    "reason": "причина"
   },
   "mcp": {
     "title": "Настройки MCP",

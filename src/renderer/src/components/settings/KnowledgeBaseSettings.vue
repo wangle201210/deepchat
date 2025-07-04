@@ -109,6 +109,7 @@
     </div>
     <div v-if="showBuiltinKnowledgeDetail">
       <KnowledgeFile
+        v-if="builtinKnowledgeDetail"
         :builtinKnowledgeDetail="builtinKnowledgeDetail"
         @hideKnowledgeFile="showBuiltinKnowledgeDetail = false"
       ></KnowledgeFile>
@@ -146,7 +147,7 @@ const { t } = useI18n()
 // 是否展示内置知识库文件详情
 const showBuiltinKnowledgeDetail = ref(false)
 const builtinKnowledgeDetail = ref<BuiltinKnowledgeConfig | null>(null)
-const showDetail = (detail) => {
+const showDetail = (detail: BuiltinKnowledgeConfig) => {
   showBuiltinKnowledgeDetail.value = true
   builtinKnowledgeDetail.value = detail
 }

@@ -324,7 +324,19 @@
     "onlySupport": "지원됩니다",
     "searchKnowledge": "지식 기반을 검색하십시오",
     "searchKnowledgePlaceholder": "쿼리 내용을 입력하십시오",
-    "noData": "아직 데이터가 없습니다"
+    "noData": "아직 데이터가 없습니다",
+    "file": "문서",
+    "uploadProcessing": "업로드",
+    "uploadSuccess": "성공적으로 업로드하십시오",
+    "uploadCompleted": "업로드 완료",
+    "reAdd": "재 포장",
+    "uploadError": "업로드 실패",
+    "delete": "삭제",
+    "deleteSuccess": "성공적으로 삭제하십시오",
+    "deleteFailed": "삭제가 실패했습니다",
+    "reAddSuccess": "성공적으로 다시 업로드했습니다",
+    "reAddFailed": "다시 업로드가 실패했습니다",
+    "reason": "이유"
   },
   "mcp": {
     "title": "MCP 설정",

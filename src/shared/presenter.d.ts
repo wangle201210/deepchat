@@ -310,6 +310,7 @@ export interface IPresenter {
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
   oauthPresenter: IOAuthPresenter
+  KnowledgePresenter: IKnowledgePresenter
   init(): void
   destroy(): void
 }
@@ -835,8 +836,6 @@ export interface FileMetaData {
   fileSize: number
   // fileHash: string
   fileDescription?: string
-  fileCreated: Date
-  fileModified: Date
 }
 // 根据 Ollama SDK 定义模型接口
 export interface OllamaModel {
@@ -1149,7 +1148,7 @@ export interface KeyStatus {
 export type KnowledgeFileMessage = {
   id: string,
   status: 'processing' | 'completed' | 'error'
-  uploadedAt: number
+  uploadedAt: string
 } & MessageFile
 
 // built-in 知识库相关

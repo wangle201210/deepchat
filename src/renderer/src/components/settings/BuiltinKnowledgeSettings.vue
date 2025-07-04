@@ -538,7 +538,7 @@ const settingsStore = useSettingsStore()
 const themeStore = useThemeStore()
 const llmP = usePresenter('llmproviderPresenter')
 const emit = defineEmits<{
-  (e: 'showDetail', value: object): void
+  (e: 'showDetail', config: BuiltinKnowledgeConfig): void
 }>()
 
 // 嵌入模型下拉框
@@ -703,7 +703,7 @@ const closeBuiltinConfigDialog = () => {
 }
 
 // 进入设置页面
-const handleSetting = (config) => {
+const handleSetting = (config: BuiltinKnowledgeConfig) => {
   emit('showDetail', config)
 }
 
