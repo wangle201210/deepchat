@@ -115,3 +115,8 @@ export const TAB_EVENTS = {
   RENDERER_TAB_READY: 'tab:renderer-ready', // 渲染进程标签页就绪
   RENDERER_TAB_ACTIVATED: 'tab:renderer-activated' // 渲染进程标签页激活
 }
+
+// 知识库事件
+export const RAG_EVENTS = {
+  FILE_UPDATED: 'rag:file-updated' // 文件状态更新
+}
