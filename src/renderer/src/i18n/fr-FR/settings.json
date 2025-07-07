@@ -324,7 +324,19 @@
     "onlySupport": "Soutenu uniquement",
     "searchKnowledge": "Rechercher la base de connaissances",
     "searchKnowledgePlaceholder": "Veuillez saisir le contenu de la requête",
-    "noData": "Pas encore de données"
+    "noData": "Pas encore de données",
+    "file": "document",
+    "uploadProcessing": "Téléchargement",
+    "uploadSuccess": "Télécharger avec succès",
+    "uploadCompleted": "Téléchargement terminé",
+    "reAdd": "Télécharger à nouveau",
+    "uploadError": "Le téléchargement a échoué",
+    "delete": "supprimer",
+    "deleteSuccess": "Supprimer avec succès",
+    "deleteFailed": "La suppression a échoué",
+    "reAddSuccess": "Re-téléchargé avec succès",
+    "reAddFailed": "REPOLORD TÉLÉPLARCHE Échec",
+    "reason": "raison"
   },
   "mcp": {
     "title": "Paramètres MCP",

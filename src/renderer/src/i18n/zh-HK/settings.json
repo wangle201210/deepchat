@@ -324,7 +324,19 @@
     "onlySupport": "僅支持",
     "searchKnowledge": "搜索知識庫",
     "searchKnowledgePlaceholder": "請輸入查詢內容",
-    "noData": "暫無數據"
+    "noData": "暫無數據",
+    "file": "文件",
+    "uploadProcessing": "上傳中",
+    "uploadSuccess": "上傳成功",
+    "uploadCompleted": "上傳完成",
+    "reAdd": "重新上傳",
+    "uploadError": "上傳失敗",
+    "delete": "刪除",
+    "deleteSuccess": "刪除成功",
+    "deleteFailed": "刪除失敗",
+    "reAddSuccess": "重新上傳成功",
+    "reAddFailed": "重新上傳失敗",
+    "reason": "原因"
   },
   "mcp": {
     "title": "MCP設置",

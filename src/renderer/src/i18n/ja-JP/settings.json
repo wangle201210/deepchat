@@ -324,7 +324,19 @@
     "onlySupport": "サポートのみ",
     "searchKnowledge": "ナレッジベースを検索します",
     "searchKnowledgePlaceholder": "クエリコンテンツを入力してください",
-    "noData": "まだデータはありません"
+    "noData": "まだデータはありません",
+    "file": "書類",
+    "uploadProcessing": "アップロード",
+    "uploadSuccess": "正常にアップロードします",
+    "uploadCompleted": "完了したアップロード",
+    "reAdd": "再アップロード",
+    "uploadError": "アップロードに失敗しました",
+    "delete": "消去",
+    "deleteSuccess": "正常に削除します",
+    "deleteFailed": "削除が失敗しました",
+    "reAddSuccess": "正常に再アップロードされました",
+    "reAddFailed": "再アップロードが失敗しました",
+    "reason": "理由"
   },
   "mcp": {
     "title": "MCP設定",

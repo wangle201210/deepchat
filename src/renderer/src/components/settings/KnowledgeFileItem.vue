@@ -2,16 +2,13 @@
   <div
     class="flex px-3 py-2 gap-2 flex-row bg-card border items-center justify-start rounded-md text-base select-none hover:bg-accent"
   >
-    <img v-if="thumbnail" :src="thumbnail" class="w-10 h-10 rounded-md border" />
     <Icon
-      v-else
       :icon="getFileIcon()"
       class="w-10 h-10 text-muted-foreground p-1 bg-accent rounded-md border"
     />
-
     <div class="flex-grow flex-1">
       <div class="text-sm leading-none pb-2 truncate text-ellipsis whitespace-nowrap">
-         {{ fileName }}
+        {{ fileName }}
       </div>
       <div
         class="text-xs leading-none text-muted-foreground truncate text-ellipsis whitespace-nowrap"
@@ -24,9 +21,9 @@
         variant="ghost"
         size="icon"
         class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-        title="重新上传"
+        :title="t(`settings.knowledgeBase.reAdd`)"
         v-if="fileStatus !== 'loading'"
-        @click="refreshFile"
+        @click="reAddFile"
       >
         <Icon icon="lucide:refresh-ccw" class="text-base" />
       </Button>
@@ -34,26 +31,30 @@
         variant="ghost"
         size="icon"
         class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-        :title="statusList[fileStatus]"
+        :title="t(`settings.knowledgeBase.${fileStatus}`)"
       >
         <Icon
-          v-if="fileStatus === 'success'"
+          v-if="fileStatus === 'completed'"
           icon="lucide:circle-check-big"
           class="text-base text-green-500"
         />
         <Icon
-          v-else-if="fileStatus === 'loading'"
+          v-else-if="fileStatus === 'processing'"
           icon="lucide:loader"
           class="text-base text-blue-500 animate-spin"
         />
-        <Icon v-else icon="lucide:circle-alert" class="text-base text-yellow-500" />
+        <Icon
+          v-else-if="fileStatus === 'error'"
+          icon="lucide:circle-alert"
+          class="text-base text-yellow-500"
+        />
       </Button>
 
       <Button
         variant="ghost"
         size="icon"
         class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-        title="删除"
+        :title="t(`settings.knowledgeBase.delete`)"
         @click="deleteFile"
       >
         <Icon icon="lucide:trash" class="text-base text-red-600" />
@@ -63,35 +64,23 @@
 </template>
 
 <script setup lang="ts">
-import { getMimeTypeIcon } from '@/lib/utils';
+import { getMimeTypeIcon } from '@/lib/utils'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n';
 
-const props = withDefaults(
-  defineProps<{
-    fileName: string
-    mimeType: string
-    thumbnail?: string
-    fileSize: number
-    uploadTime: string
-    // 上传状态
-    fileStatus: string
-  }>(),
-  {
-    fileStatus: 'fail'
-  }
-)
+const { t } = useI18n()
 
+const props = defineProps<{
+  fileName: string
+  mimeType: string
+  fileSize: number
+  uploadTime: string
+  fileStatus: string
+}>()
 const emit = defineEmits<{
   delete: []
-  refresh: []
+  reAdd: []
 }>()
-
-// 上传状态
-const statusList = {
-  success: '上传成功',
-  loadind: '上传中',
-  fail: '上传失败'
-}
 
 // 删除文件
 const deleteFile = () => {
@@ -99,8 +88,8 @@ const deleteFile = () => {
 }
 
 // 重新上传
-const refreshFile = () => {
-  emit('refresh')
+const reAddFile = () => {
+  emit('reAdd')
 }
 
 // 文件大小的单位转换

@@ -310,6 +310,7 @@ export interface IPresenter {
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
   oauthPresenter: IOAuthPresenter
+  KnowledgePresenter: IKnowledgePresenter
   init(): void
   destroy(): void
 }
