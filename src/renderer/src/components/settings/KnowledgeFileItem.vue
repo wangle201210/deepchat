@@ -13,7 +13,9 @@
       <div
         class="text-xs leading-none text-muted-foreground truncate text-ellipsis whitespace-nowrap"
       >
-        {{ uploadTime }} . {{ formatFileSize(fileSize) }}
+        <span class="mr-1">
+          {{ uploadTime }}
+        </span>
       </div>
     </div>
     <div class="ml-auto flex align-center">
@@ -66,7 +68,16 @@
 <script setup lang="ts">
 import { getMimeTypeIcon } from '@/lib/utils'
 import { Icon } from '@iconify/vue'
-import { useI18n } from 'vue-i18n';
+import { useI18n } from 'vue-i18n'
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
+import { computed } from 'vue'
+import { KnowledgeFileMessage } from '@shared/presenter'
+import { Button } from '@/components/ui/button'
+import dayjs from 'dayjs'
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const { t } = useI18n()
 
@@ -82,6 +93,12 @@ const emit = defineEmits<{
   reAdd: []
 }>()
 
+// 获取用户时区
+const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+// 格式化上传时间
+const uploadTime = computed(() => {
+  return dayjs(props.file.uploadedAt).tz(userTimeZone).format('YYYY-MM-DD HH:mm:ss')
+})
 // 删除文件
 const deleteFile = () => {
   emit('delete')
