@@ -21,7 +21,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private readonly configP: IConfigPresenter
 
-
   constructor(configP: IConfigPresenter, dbDir: string) {
     console.log('[RAG] Initializing Built-in Knowledge Presenter')
     this.configP = configP
@@ -124,7 +123,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   private createRagPresenter = async (config: BuiltinKnowledgeConfig): Promise<RagPresenter> => {
     let rag: RagPresenter
-    const db = await this.getVectorDatabasePresenter(config.id, config.dimensions)
+    const db = await this.getVectorDatabasePresenter(
+      config.id,
+      config.dimensions,
+      config.normalized
+    )
     try {
       rag = new RagPresenter(db, config)
     } catch (e) {
@@ -151,7 +154,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
       throw new Error(`Knowledge config not found for id: ${id}`)
     }
     // DuckDB 存储
-    const db = await this.getVectorDatabasePresenter(id, config.dimensions)
+    const db = await this.getVectorDatabasePresenter(id, config.dimensions, config.normalized)
     // 创建 RAG 应用实例
     const rag = new RagPresenter(db, config)
     this.ragPresenterCache.set(id, rag)
@@ -164,7 +167,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * @param dimensions 向量维度
    * @returns
    */
-  private getVectorDatabasePresenter = async (id: string, dimensions: number) => {
+  private getVectorDatabasePresenter = async (
+    id: string,
+    dimensions: number,
+    normalized: boolean
+  ) => {
     const dbPath = path.join(this.storageDir, id)
     if (fs.existsSync(dbPath)) {
       const db = new DuckDBPresenter(dbPath)
@@ -173,7 +180,9 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     }
     // 如果数据库不存在，则初始化
     const db = new DuckDBPresenter(dbPath)
-    await db.initialize(dimensions)
+    await db.initialize(dimensions, {
+      metric: normalized ? 'cosine' : 'ip'
+    })
     return db
   }
 
