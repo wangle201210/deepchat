@@ -32,10 +32,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     this.dbPath = dbPath
   }
 
-  /**
-   * 首次初始化数据库结构
-   */
-  public async initialize(dimensions: number, opts?: IndexOptions): Promise<void> {
+  async initialize(dimensions: number, opts?: IndexOptions): Promise<void> {
     if (fs.existsSync(this.dbPath)) {
       throw new Error('Database already exists, cannot initialize again.')
     }
@@ -46,15 +43,26 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.initIndex(opts)
   }
 
-  /**
-   * 连接已存在数据库（不做结构初始化）
-   */
-  public async open(): Promise<void> {
+  async open(): Promise<void> {
     if (!fs.existsSync(this.dbPath)) {
       throw new Error('Database does not exist, please initialize first.')
     }
     await this.connect()
     await this.installAndLoadVSS()
+  }
+
+  async close(): Promise<void> {
+    try {
+      if (this.connection) {
+        this.connection.closeSync()
+      }
+      if (this.dbInstance) {
+        this.dbInstance.closeSync()
+      }
+      console.log('DuckDB connection closed')
+    } catch (err) {
+      console.error('[DuckDB Close Error]', err)
+    }
   }
 
   /**
@@ -81,6 +89,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadVSS(): Promise<void> {
+    if (!this.connection) await this.connect()
     if (fs.existsSync(extensionPath)) {
       await this.safeRun(`LOAD ?;`, [extensionPath])
     } else {
@@ -92,17 +101,20 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 创建定长向量表 */
   private async initVectorTable(dimensions: number): Promise<void> {
+    if (!this.connection) await this.connect()
     await this.safeRun(
       `CREATE TABLE IF NOT EXISTS ${this.vectorTable} (
          id VARCHAR PRIMARY KEY,
          embedding FLOAT[${dimensions}],
-         metadata JSON
+         metadata JSON,
+         file_id VARCHAR
        );`
     )
   }
 
   /** 创建文件元数据表 */
   private async initFileTable(): Promise<void> {
+    if (!this.connection) await this.connect()
     await this.safeRun(
       `CREATE TABLE IF NOT EXISTS ${this.fileTable} (
         id VARCHAR PRIMARY KEY,
@@ -116,7 +128,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
-  /** 创建 HNSW 索引 */
+  /** 创建索引 */
   private async initIndex(opts?: IndexOptions): Promise<void> {
     if (!this.connection) await this.connect()
     const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
@@ -131,9 +143,13 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
            ef_construction=?
          );`
     await this.safeRun(sql, [metric, M, efConstruction])
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_file_id ON ${this.vectorTable} USING HASH (file_id);`
+    )
   }
 
-  public async insertVector(opts: InsertOptions): Promise<void> {
+  async insertVector(opts: InsertOptions): Promise<void> {
+    if (!this.connection) await this.connect()
     const id = nanoid()
     const vec = opts.vector
     const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
@@ -144,7 +160,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
-  public async insertVectors(records: InsertOptions[]): Promise<void> {
+  async insertVectors(records: InsertOptions[]): Promise<void> {
     if (!this.connection) await this.connect()
     if (!records.length) return
     // 构造批量插入 SQL
@@ -159,9 +175,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.safeRun(sql, params)
   }
 
-  public async similarityQuery(
+  async similarityQuery(
     params: QueryOptions & { vector: number[] }
   ): Promise<QueryResult[]> {
+    if (!this.connection) await this.connect()
     const k = params.topK
     const fn =
       params.metric === 'ip'
@@ -191,15 +208,17 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     }))
   }
 
-  public async deleteVector(id: string): Promise<void> {
+  async deleteVector(id: string): Promise<void> {
     if (!this.connection) await this.connect()
     await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE id = ?;`, [id])
   }
 
-  /**
-   * 插入文件元数据
-   */
-  public async insertFile(file: KnowledgeFileMessage): Promise<void> {
+  async deleteVectorsByFile(fileId: string): Promise<void> {
+    if (!this.connection) await this.connect()
+    await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [fileId])
+  }
+
+  async insertFile(file: KnowledgeFileMessage): Promise<void> {
     if (!this.connection) await this.connect()
     await this.safeRun(
       `INSERT INTO ${this.fileTable} (id, name, path, mime_type, status, uploaded_at, metadata)
@@ -216,18 +235,12 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
-  /**
-   * 更新文件状态
-   */
-  public async updateFileStatus(id: string, status: string): Promise<void> {
+  async updateFileStatus(id: string, status: string): Promise<void> {
     if (!this.connection) await this.connect()
     await this.safeRun(`UPDATE ${this.fileTable} SET status = ? WHERE id = ?;`, [status, id])
   }
 
-  /**
-   * 查询文件
-   */
-  public async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
+  async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
     if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
       `SELECT * FROM ${this.fileTable} WHERE id = ?;`,
@@ -242,10 +255,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     }
   }
 
-  /**
-   * 查询知识库下所有文件
-   */
-  public async listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]> {
+  async listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]> {
     if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
       `SELECT * FROM ${this.fileTable} WHERE knowledge_id = ? ORDER BY uploaded_at DESC;`,
@@ -258,35 +268,12 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     }))
   }
 
-  /**
-   * 删除文件元数据
-   */
-  public async deleteFile(id: string): Promise<void> {
+  async deleteFile(id: string): Promise<void> {
     if (!this.connection) await this.connect()
     await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
   }
 
-  /**
-   * 关闭数据库连接
-   */
-  private async close(): Promise<void> {
-    try {
-      if (this.connection) {
-        this.connection.closeSync()
-      }
-      if (this.dbInstance) {
-        this.dbInstance.closeSync()
-      }
-      console.log('DuckDB connection closed')
-    } catch (err) {
-      console.error('[DuckDB Close Error]', err)
-    }
-  }
-
-  /**
-   * 销毁数据库实例，该操作不可恢复
-   */
-  public async destroy(): Promise<void> {
+  async destroy(): Promise<void> {
     await this.close()
     // 删除数据库文件
     try {

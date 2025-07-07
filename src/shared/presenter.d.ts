@@ -823,6 +823,11 @@ export interface IFilePresenter {
   deleteFile(relativePath: string): Promise<void>
   createFileAdapter(filePath: string, typeInfo?: string): Promise<any> // Return type might need refinement
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
+  prepareFileCompletely(
+    absPath: string,
+    typeInfo?: string,
+    contentType?: null | 'null' | 'origin' | 'llm-friendly'
+  ): Promise<MessageFile>
   prepareDirectory(absPath: string): Promise<MessageFile>
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
   isDirectory(absPath: string): Promise<boolean>
@@ -1199,7 +1204,9 @@ export interface InsertOptions {
   /** 数值数组，长度等于 dimension */
   vector: number[]
   /** 可选元数据 */
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
+  /** 文件id */
+  fileId: string
 }
 export interface QueryOptions {
   /** 查询顶点数 */
@@ -1222,24 +1229,33 @@ export interface QueryResult {
  */
 export interface IVectorDatabasePresenter {
   /**
-   * 初始化向量数据库
+   * 首次初始化向量数据库
    * @param dimensions 向量维度
    * @param opts
    */
   initialize(dimensions: number, opts?: IndexOptions): Promise<void>
+  /**
+   * 打开数据库
+   */
   open(): Promise<void>
+  /**
+   * 关闭数据库
+   */
+  close(): Promise<void>
+  /**
+   * 销毁数据库实例，释放所有资源。
+   */
+  destroy(): Promise<void>
   /**
    * 插入单条向量记录，id未提供时自动生成
    * @param opts 插入参数，包含向量数据和可选元数据
    */
   insertVector(opts: InsertOptions): Promise<void>
-
   /**
    * 批量插入多条向量记录。
    * @param records 插入参数数组，每项id未提供时自动生成
    */
   insertVectors(records: Array<InsertOptions>): Promise<void>
-
   /**
    * 查询向量最近邻（TopK 检索）。
    * @param options 查询参数：
@@ -1250,50 +1266,44 @@ export interface IVectorDatabasePresenter {
    * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
    */
   similarityQuery(options: QueryOptions & { vector: number[] }): Promise<QueryResult[]>
-
   /**
-   * 根据 id 删除指定向量记录。
+   * 根据 id 删除指定向量记录
    * @param id 记录 id
    */
   deleteVector(id: string): Promise<void>
-
+  /**
+   * 根据 file_id 删除指定向量记录
+   * @param id 文件 id
+   */
+  deleteVectorsByFile(id: string): Promise<void>
   /**
    * 插入文件元数据。
    * @param file 文件元数据对象
    */
   insertFile(file: KnowledgeFileMessage): Promise<void>
-
   /**
    * 更新文件状态。
    * @param id 文件 id
    * @param status 新状态
    */
   updateFileStatus(id: string, status: string): Promise<void>
-
   /**
    * 查询文件。
    * @param id 文件 id
    * @returns 文件元数据对象或 null
    */
   queryFile(id: string): Promise<KnowledgeFileMessage | null>
-
   /**
    * 查询知识库下所有文件。
    * @param knowledgeId 知识库 id
    * @returns 文件元数据数组
    */
   listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]>
-
   /**
    * 删除文件元数据。
    * @param id 文件 id
    */
   deleteFile(id: string): Promise<void>
-
-  /**
-   * 销毁数据库实例，释放所有资源。
-   */
-  destroy(): Promise<void>
 }
 
 export interface IRagPresenter {}

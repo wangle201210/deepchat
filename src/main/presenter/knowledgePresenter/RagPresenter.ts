@@ -1,6 +1,12 @@
-import { BuiltinKnowledgeConfig, IVectorDatabasePresenter } from '@shared/presenter'
+import {
+  BuiltinKnowledgeConfig,
+  IVectorDatabasePresenter,
+  KnowledgeFileMessage
+} from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
+import { sanitizeText } from '@/utils/strings'
 
 export class RagPresenter {
   private readonly vectorP: IVectorDatabasePresenter
@@ -13,10 +19,15 @@ export class RagPresenter {
 
   async addFile(filePath: string): Promise<void> {
     const mimeType = await presenter.filePresenter.getMimeType(filePath)
-    const fileInfo = await presenter.filePresenter.prepareFile(filePath, mimeType)
+    const fileInfo = await presenter.filePresenter.prepareFileCompletely(
+      filePath,
+      mimeType,
+      'origin'
+    )
 
+    const fileId = nanoid()
     await this.vectorP.insertFile({
-      id: nanoid(),
+      id: fileId,
       name: fileInfo.name,
       path: fileInfo.path,
       mimeType,
@@ -28,26 +39,47 @@ export class RagPresenter {
     })
 
     // 文本切分
-    const content = fileInfo.content
-    
+    const chunker = new RecursiveCharacterTextSplitter({
+      chunkSize: this.config.chunkSize,
+      chunkOverlap: this.config.chunkOverlap
+    })
+    const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
+
+    const vectors = await presenter.llmproviderPresenter.getEmbeddings(
+      this.config.embedding.providerId,
+      this.config.embedding.providerId,
+      chunks
+    )
+
+    await this.vectorP.insertVectors(
+      vectors.map((vector) => {
+        return {
+          vector,
+          metadata: {
+            from: fileInfo.name,
+            filePath: fileInfo.path
+          },
+          fileId: fileId
+        }
+      })
+    )
+
+    this.vectorP.updateFileStatus(fileId, 'ready')
   }
-  reAddFile(fileId: string) {
-    throw new Error('Method not implemented.')
+  async deleteFile(fileId: string) {
+    await this.vectorP.deleteVectorsByFile(fileId)
+    await this.vectorP.deleteFile(fileId)
   }
-  deleteFile(fileId: string) {
-    throw new Error('Method not implemented.')
+  async reAddFile(fileId: string) {
+    const file = await this.queryFile(fileId)
+    if (file == null) {
+      throw new Error('文件不存在，请重新打开知识库后再试')
+    }
   }
-  queryFile(
-    fileId: string
-  ):
-    | import('@shared/presenter').KnowledgeFileMessage
-    | PromiseLike<import('@shared/presenter').KnowledgeFileMessage | null>
-    | null {
-    throw new Error('Method not implemented.')
+  async queryFile(fileId: string): Promise<KnowledgeFileMessage | null> {
+    return await this.vectorP.queryFile(fileId)
   }
-  listFiles():
-    | import('@shared/presenter').KnowledgeFileMessage[]
-    | PromiseLike<import('@shared/presenter').KnowledgeFileMessage[]> {
+  async listFiles(): Promise<KnowledgeFileMessage[]> {
     throw new Error('Method not implemented.')
   }
 
