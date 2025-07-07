@@ -8,7 +8,8 @@ import {
   ChatMessage,
   LLMAgentEvent,
   KeyStatus,
-  ModelConfig
+  ModelConfig,
+  LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -1142,14 +1143,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   async getDimensions(
     providerId: string,
     modelId: string
-  ): Promise<{ value: number; errorMsg?: string }> {
+  ): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }> {
     try {
       const provider = this.getProviderInstance(providerId)
-      return { value: await provider.getDimensions(modelId) }
+      return { data: await provider.getDimensions(modelId) }
     } catch (error) {
       console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
       return {
-        value: 0,
+        data: {
+          dimensions: 0,
+          normalized: false
+        },
         errorMsg: error instanceof Error ? error.message : String(error)
       }
     }

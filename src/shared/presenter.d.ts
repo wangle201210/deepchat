@@ -1,3 +1,4 @@
+import { normalize } from 'path';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
@@ -485,6 +486,11 @@ export type LLM_PROVIDER_BASE = {
   }
 } & LLM_PROVIDER
 
+export type LLM_EMBEDDING_ATTRS = {
+  dimensions: number
+  normalized: boolean
+}
+
 export interface ILlmProviderPresenter {
   setProviders(provider: LLM_PROVIDER[]): void
   getProviders(): LLM_PROVIDER[]
@@ -531,7 +537,7 @@ export interface ILlmProviderPresenter {
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
-  getDimensions(providerId: string, modelId: string): Promise<{ value: number; errorMsg?: string }>
+  getDimensions(providerId: string, modelId: string): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }>
 }
 export type CONVERSATION_SETTINGS = {
   systemPrompt: string
@@ -1187,6 +1193,7 @@ export type BuiltinKnowledgeConfig = {
   embedding: ModelProvider
   rerank?: ModelProvider
   dimensions: number
+  normalized: boolean
   chunkSize?: number
   chunkOverlap?: number
   documentCount?: number

@@ -7,12 +7,14 @@ import {
   MCPToolDefinition,
   ModelConfig,
   LLMCoreStreamEvent,
-  ChatMessage
+  ChatMessage,
+  LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import { ConfigPresenter } from '../../configPresenter'
 import { Ollama, Message, ShowResponse } from 'ollama'
 import { presenter } from '@/presenter'
+import { EMBEDDING_TEST_KEY, isNormalized } from '@/utils/vector'
 
 // 定义 Ollama 工具类型
 interface OllamaTool {
@@ -1156,8 +1158,11 @@ export class OllamaProvider extends BaseLLMProvider {
     return results
   }
 
-  async getDimensions(modelId: string): Promise<number> {
-    const res = await this.getEmbeddings(['sample'], modelId)
-    return res[0].length
+  async getDimensions(modelId: string): Promise<LLM_EMBEDDING_ATTRS> {
+    const res = await this.getEmbeddings([EMBEDDING_TEST_KEY], modelId)
+    return {
+      dimensions: res[0].length,
+      normalized: isNormalized(res[0])
+    }
   }
 }

@@ -1,3 +1,5 @@
+export const EMBEDDING_TEST_KEY = 'sample'
+
 function calcNorm(vector: number[]): number {
   return Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0))
 }

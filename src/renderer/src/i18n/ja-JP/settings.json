@@ -336,7 +336,9 @@
     "deleteFailed": "削除が失敗しました",
     "reAddSuccess": "正常に再アップロードされました",
     "reAddFailed": "再アップロードが失敗しました",
-    "reason": "理由"
+    "reason": "理由",
+    "normalized": "L2正規化",
+    "normalizedHelper": "モデルが出力ベクトルのL2正規化をサポートしていることを確認してください"
   },
   "mcp": {
     "title": "MCP設定",

@@ -1,3 +1,4 @@
+import { EMBEDDING_TEST_KEY, isNormalized } from '@/utils/vector'
 import {
   LLM_PROVIDER,
   LLMResponse,
@@ -5,7 +6,8 @@ import {
   MCPToolDefinition,
   LLMCoreStreamEvent,
   ModelConfig,
-  ChatMessage
+  ChatMessage,
+  LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
 import { BaseLLMProvider } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
@@ -1295,16 +1297,25 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     return response.data.map((item) => item.embedding)
   }
 
-  async getDimensions(modelId: string): Promise<number> {
+  async getDimensions(modelId: string): Promise<LLM_EMBEDDING_ATTRS> {
     switch (modelId) {
       case 'text-embedding-3-small':
       case 'text-embedding-ada-002':
-        return 1536
+        return {
+          dimensions: 1536,
+          normalized: true
+        }
       case 'text-embedding-3-large':
-        return 3072
+        return {
+          dimensions: 3072,
+          normalized: true
+        }
       default:
-        const embeddings = await this.getEmbeddings(['sample'], modelId)
-        return embeddings[0].length
+        const embeddings = await this.getEmbeddings([EMBEDDING_TEST_KEY], modelId)
+        return {
+          dimensions: embeddings[0].length,
+          normalized: isNormalized(embeddings[0])
+        }
     }
   }
 }

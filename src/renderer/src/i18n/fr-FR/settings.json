@@ -336,7 +336,9 @@
     "deleteFailed": "La suppression a échoué",
     "reAddSuccess": "Re-téléchargé avec succès",
     "reAddFailed": "REPOLORD TÉLÉPLARCHE Échec",
-    "reason": "raison"
+    "reason": "raison",
+    "normalized": "Normalisation L2",
+    "normalizedHelper": "Veuillez confirmer que le modèle prend en charge la normalisation L2 des vecteurs de sortie"
   },
   "mcp": {
     "title": "Paramètres MCP",

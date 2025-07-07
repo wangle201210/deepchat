@@ -4,7 +4,6 @@ import path from 'node:path'
 import {
   IConfigPresenter,
   IKnowledgePresenter,
-  ILlmProviderPresenter,
   BuiltinKnowledgeConfig,
   MCPServerConfig,
   KnowledgeFileMessage
@@ -22,12 +21,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private readonly configP: IConfigPresenter
 
-  private readonly llmP: ILlmProviderPresenter
 
-  constructor(configP: IConfigPresenter, llmP: ILlmProviderPresenter, dbDir: string) {
+  constructor(configP: IConfigPresenter, dbDir: string) {
     console.log('[RAG] Initializing Built-in Knowledge Presenter')
     this.configP = configP
-    this.llmP = llmP
     this.storageDir = path.join(dbDir, 'KnowledgeBase')
 
     this.initStorageDir()

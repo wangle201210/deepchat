@@ -353,6 +353,35 @@
                   :disabled="isEditing"
                 ></Input>
               </div>
+              <div class="space-y-2">
+                <div class="flex items-center gap-1 justify-between">
+                  <div class="flex items-center gap-1">
+                    <Label
+                      class="text-xs text-muted-foreground"
+                      for="edit-builtin-config-dimensions"
+                    >
+                      {{ t('settings.knowledgeBase.normalized') }}
+                    </Label>
+                    <TooltipProvider>
+                      <Tooltip :delay-duration="200">
+                        <TooltipTrigger as-child>
+                          <Icon
+                            icon="lucide:circle-question-mark"
+                            class="cursor-pointer text-primary outline-none focus:outline-none text-sm"
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{{ t('settings.knowledgeBase.normalizedHelper') }}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Switch
+                    id="edit-builtin-config-auto-detect-switch"
+                    v-model:checked="editingBuiltinConfig.normalized"
+                  ></Switch>
+                </div>
+              </div>
               <Accordion type="multiple" collapsed>
                 <AccordionItem value="chunkSize" class="border-none">
                   <AccordionTrigger>
@@ -570,6 +599,7 @@ const editingBuiltinConfig = ref<BuiltinKnowledgeConfig>({
     modelId: ''
   },
   dimensions: NaN,
+  normalized: true,
   fragmentsNumber: 6,
   enabled: true
 })
@@ -593,6 +623,7 @@ function openAddConfig() {
       modelId: ''
     },
     dimensions: NaN,
+    normalized: true,
     fragmentsNumber: 6,
     enabled: true
   }
@@ -694,6 +725,7 @@ const closeBuiltinConfigDialog = () => {
       modelId: ''
     },
     dimensions: NaN,
+    normalized: true,
     fragmentsNumber: 6,
     enabled: true
   }
@@ -739,8 +771,9 @@ const saveBuiltinConfig = async () => {
         submitLoading.value = false
         return
       }
-      console.log('获取到模型维度:', result.value)
-      editingBuiltinConfig.value.dimensions = result.value
+      console.log('获取到向量信息:', result.data)
+      editingBuiltinConfig.value.dimensions = result.data.dimensions
+      editingBuiltinConfig.value.normalized = result.data.normalized
     }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })

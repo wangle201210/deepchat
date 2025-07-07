@@ -336,7 +336,9 @@
     "deleteFailed": "Deletion failed",
     "reAddSuccess": "Re-uploaded successfully",
     "reAddFailed": "Re-upload failed",
-    "reason": "reason"
+    "reason": "reason",
+    "normalized": "L2 Normalization",
+    "normalizedHelper": "Please confirm that the model supports L2 normalization of output vectors"
   },
   "mcp": {
     "title": "MCP Settings",

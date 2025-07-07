@@ -321,6 +321,8 @@
     "autoDetectHelper": "自动检测嵌入维度，会消耗少量 Tokens",
     "dimensionsHelper": "请确保模型支持所设置的嵌入维度大小",
     "autoDetectDimensionsError": "自动检测嵌入维度失败",
+    "normalized": "L2 归一化",
+    "normalizedHelper": "请确认模型支持对输出向量进行 L2 归一化",
     "chunkSizePlaceholder": "默认值，不建议修改",
     "chunkOverlapPlaceholder": "默认值，不建议修改",
     "return": "返回",
