@@ -327,11 +327,11 @@
     "noData": "まだデータはありません",
     "file": "書類",
     "uploadProcessing": "アップロード",
-    "uploadSuccess": "正常にアップロードします",
     "uploadCompleted": "完了したアップロード",
     "reAdd": "再アップロード",
     "uploadError": "アップロードに失敗しました",
     "delete": "消去",
+<<<<<<< HEAD
     "deleteSuccess": "正常に削除します",
     "deleteFailed": "削除が失敗しました",
     "reAddSuccess": "正常に再アップロードされました",
@@ -339,6 +339,10 @@
     "reason": "理由",
     "normalized": "L2正規化",
     "normalizedHelper": "モデルが出力ベクトルのL2正規化をサポートしていることを確認してください"
+=======
+    "reason": "理由",
+    "deleteSuccess": "正常に削除します"
+>>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "MCP設定",

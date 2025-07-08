@@ -12,5 +12,10 @@
     "cpuModel": "CPU型号",
     "totalMemory": "总内存",
     "osVersion": "系统版本"
+  },
+  "settings": {
+    "knowledgeBase": {
+      "deleteSuccess": "删除成功"
+    }
   }
 }

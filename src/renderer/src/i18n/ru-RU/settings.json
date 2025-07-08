@@ -327,11 +327,11 @@
     "noData": "Нет данных пока",
     "file": "документ",
     "uploadProcessing": "Загрузка",
-    "uploadSuccess": "Загрузить успешно",
     "uploadCompleted": "Загрузка завершена",
     "reAdd": "Повторная загрузка",
     "uploadError": "Загрузка не удалась",
     "delete": "удалить",
+<<<<<<< HEAD
     "deleteSuccess": "Удалить успешно",
     "deleteFailed": "Удаление не удалось",
     "reAddSuccess": "Повторно загружен успешно",
@@ -339,6 +339,10 @@
     "reason": "причина",
     "normalized": "L2 Нормализация",
     "normalizedHelper": "Убедитесь, что модель поддерживает нормализацию выходных векторов L2"
+=======
+    "reason": "причина",
+    "deleteSuccess": "Удалить успешно"
+>>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "Настройки MCP",

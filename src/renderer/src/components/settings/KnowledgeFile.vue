@@ -66,12 +66,7 @@
             />
             <div v-for="file in fileList" :key="file.id">
               <KnowledgeFileItem
-                :mime-type="file.mimeType"
-                :thumbnail="file.thumbnail"
-                :file-size="file.metadata.fileSize"
-                :file-name="file.name"
-                :file-status="file.status"
-                :upload-time="file.uploadedAt"
+                :file="file"
                 @delete="deleteFile(file.id)"
                 @reAdd="reAddFile(file)"
                 class="mt-2"
@@ -111,7 +106,7 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion'
 
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -121,7 +116,7 @@ import { Input } from '@/components/ui/input'
 import { usePresenter } from '@/composables/usePresenter'
 import KnowledgeFileItem from './KnowledgeFileItem.vue'
 import { BuiltinKnowledgeConfig, KnowledgeFileMessage } from '@shared/presenter'
-import { nextTick } from 'vue'
+import { RAG_EVENTS } from '@/events'
 
 const props = defineProps<{
   builtinKnowledgeDetail: BuiltinKnowledgeConfig
@@ -174,8 +169,16 @@ const loadList = async () => {
 // 初始化文件列表
 onMounted(() => {
   loadList()
+  // 监听知识库文件更新事件
+  window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
+    if (data.knowledgeId !== props.builtinKnowledgeDetail.id) return
+    // 重新加载文件列表
+    loadList()
+  })
 })
-
+onBeforeUnmount(() => {
+  window.electron.ipcRenderer.removeAllListeners(RAG_EVENTS.FILE_UPDATED)
+})
 // 上传文件到内置知识库
 const handleDrop = async (e: DragEvent) => {
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
@@ -184,7 +187,7 @@ const handleDrop = async (e: DragEvent) => {
       const ext = file.name.split('.').pop()?.toLowerCase()
       if (!ext || !allowedExts.includes(ext)) {
         toast({
-          title: `"${file.name}"${t('settings.knowledgeBase.uploadFailed')}`,
+          title: `"${file.name}"${t('settings.knowledgeBase.uploadError')}`,
           description: `${t('settings.knowledgeBase.onlySupport')} ${allowedExts.join('，')}`,
           variant: 'destructive',
           duration: 3000
@@ -193,22 +196,7 @@ const handleDrop = async (e: DragEvent) => {
       }
       try {
         const path = window.api.getPathForFile(file)
-        const result = await knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        if (result.success) {
-          toast({
-            title: `"${file.name}"${t('settings.knowledgeBase.uploadSuccess')}`,
-            variant: 'default',
-            duration: 3000
-          })
-        } else {
-          toast({
-            title: `"${file.name}"${t('settings.knowledgeBase.uploadError')}`,
-            description:`${t('settings.knowledgeBase.reason')}:${result.reason}`,
-            variant: 'destructive',
-            duration: 3000
-          })
-        }
-
+        knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
         loadList()
       } catch (error) {
         console.error('文件准备失败:', error)
@@ -220,42 +208,18 @@ const handleDrop = async (e: DragEvent) => {
 
 // 刪除文件
 const deleteFile = async (fileId: string) => {
-  const result = await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
-  if (result.success) {
-    toast({
-      title: t('settings.knowledgeBase.deleteSuccess'),
-      variant: 'default',
-      duration: 3000
-    })
-  } else {
-    toast({
-      title: t('settings.knowledgeBase.deleteFailed'),
-      description: `${t('settings.knowledgeBase.reason')}:${result.reason}`,
-      variant: 'destructive',
-      duration: 3000
-    })
-  }
+  await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
+  toast({
+    title: t('settings.knowledgeBase.deleteSuccess'),
+    variant: 'default',
+    duration: 3000
+  })
 }
 
 // 重新上传文件
 const reAddFile = async (file: KnowledgeFileMessage) => {
   file.status = 'processing' // 设置状态为加载中
   await nextTick(() => {})
-  const result = await knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
-  if (result.success) {
-    toast({
-      title: t('settings.knowledgeBase.reAddSuccess'),
-      variant: 'default',
-      duration: 3000
-    })
-  } else {
-    toast({
-      title: t('settings.knowledgeBase.reAddFailed'),
-      description: `${t('settings.knowledgeBase.reason')}:${result.reason}`,
-      variant: 'destructive',
-      duration: 3000
-    })
-  }
-  loadList()
+  knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
 }
 </script>

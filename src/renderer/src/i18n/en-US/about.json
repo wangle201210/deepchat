@@ -12,5 +12,10 @@
   },
   "disclaimerButton": "Disclaimer",
   "disclaimerTitle": "Terms of Use Statement",
-  "checkUpdateButton": "Check for Updates"
+  "checkUpdateButton": "Check for Updates",
+  "settings": {
+    "knowledgeBase": {
+      "deleteSuccess": "Delete successfully"
+    }
+  }
 }

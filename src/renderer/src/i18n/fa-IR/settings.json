@@ -327,11 +327,11 @@
     "noData": "هنوز اطلاعاتی وجود ندارد",
     "file": "مدرک",
     "uploadProcessing": "بارگذاری",
-    "uploadSuccess": "با موفقیت بارگذاری کنید",
     "uploadCompleted": "بارگذاری کامل",
     "reAdd": "بارگذاری مجدد",
     "uploadError": "بارگذاری ناموفق بود",
     "delete": "حذف کردن",
+<<<<<<< HEAD
     "deleteSuccess": "با موفقیت حذف کنید",
     "deleteFailed": "حذف انجام نشد",
     "reAddSuccess": "دوباره با موفقیت بارگذاری شد",
@@ -339,6 +339,10 @@
     "reason": "دلیل",
     "normalized": "عادی سازی L2",
     "normalizedHelper": "لطفاً تأیید کنید که این مدل از نرمال سازی L2 بردارهای خروجی پشتیبانی می کند"
+=======
+    "reason": "دلیل",
+    "deleteSuccess": "با موفقیت حذف کنید"
+>>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "تنظیمات MCP",
