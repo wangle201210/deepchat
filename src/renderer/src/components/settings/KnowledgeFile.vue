@@ -66,12 +66,7 @@
             />
             <div v-for="file in fileList" :key="file.id">
               <KnowledgeFileItem
-                :mime-type="file.mimeType"
-                :thumbnail="file.thumbnail"
-                :file-size="file.metadata.fileSize"
-                :file-name="file.name"
-                :file-status="file.status"
-                :upload-time="file.uploadedAt"
+                :file="file"
                 @delete="deleteFile(file.id)"
                 @reAdd="reAddFile(file)"
                 class="mt-2"
@@ -192,7 +187,7 @@ const handleDrop = async (e: DragEvent) => {
       const ext = file.name.split('.').pop()?.toLowerCase()
       if (!ext || !allowedExts.includes(ext)) {
         toast({
-          title: `"${file.name}"${t('settings.knowledgeBase.uploadFailed')}`,
+          title: `"${file.name}"${t('settings.knowledgeBase.uploadError')}`,
           description: `${t('settings.knowledgeBase.onlySupport')} ${allowedExts.join('，')}`,
           variant: 'destructive',
           duration: 3000
