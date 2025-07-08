@@ -331,18 +331,8 @@
     "reAdd": "재 포장",
     "uploadError": "업로드 실패",
     "delete": "삭제",
-<<<<<<< HEAD
-    "deleteSuccess": "성공적으로 삭제하십시오",
-    "deleteFailed": "삭제가 실패했습니다",
-    "reAddSuccess": "성공적으로 다시 업로드했습니다",
-    "reAddFailed": "다시 업로드가 실패했습니다",
-    "reason": "이유",
-    "normalized": "L2 정규화",
-    "normalizedHelper": "모델이 출력 벡터의 L2 정규화를 지원하는지 확인하십시오."
-=======
     "reason": "이유",
     "deleteSuccess": "성공적으로 삭제하십시오"
->>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "MCP 설정",

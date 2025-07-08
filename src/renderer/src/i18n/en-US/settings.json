@@ -331,18 +331,8 @@
     "reAdd": "Re-upload",
     "uploadError": "Upload failed",
     "delete": "delete",
-<<<<<<< HEAD
-    "deleteSuccess": "Delete successfully",
-    "deleteFailed": "Deletion failed",
-    "reAddSuccess": "Re-uploaded successfully",
-    "reAddFailed": "Re-upload failed",
-    "reason": "reason",
-    "normalized": "L2 Normalization",
-    "normalizedHelper": "Please confirm that the model supports L2 normalization of output vectors"
-=======
     "reason": "reason",
     "deleteSuccess": "Delete successfully"
->>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "MCP Settings",

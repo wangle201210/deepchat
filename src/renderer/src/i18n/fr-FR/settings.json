@@ -331,18 +331,8 @@
     "reAdd": "Télécharger à nouveau",
     "uploadError": "Le téléchargement a échoué",
     "delete": "supprimer",
-<<<<<<< HEAD
-    "deleteSuccess": "Supprimer avec succès",
-    "deleteFailed": "La suppression a échoué",
-    "reAddSuccess": "Re-téléchargé avec succès",
-    "reAddFailed": "REPOLORD TÉLÉPLARCHE Échec",
-    "reason": "raison",
-    "normalized": "Normalisation L2",
-    "normalizedHelper": "Veuillez confirmer que le modèle prend en charge la normalisation L2 des vecteurs de sortie"
-=======
     "reason": "raison",
     "deleteSuccess": "Supprimer avec succès"
->>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "Paramètres MCP",

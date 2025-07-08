@@ -331,18 +331,8 @@
     "reAdd": "重新上傳",
     "uploadError": "上傳失敗",
     "delete": "刪除",
-<<<<<<< HEAD
-    "deleteSuccess": "刪除成功",
-    "deleteFailed": "刪除失敗",
-    "reAddSuccess": "重新上傳成功",
-    "reAddFailed": "重新上傳失敗",
-    "reason": "原因",
-    "normalized": "L2 歸一化",
-    "normalizedHelper": "請確認模型支持對輸出向量進行 L2 歸一化"
-=======
     "reason": "原因",
     "deleteSuccess": "刪除成功"
->>>>>>> pre-merge-view-from-file-setting
   },
   "mcp": {
     "title": "MCP設定",
