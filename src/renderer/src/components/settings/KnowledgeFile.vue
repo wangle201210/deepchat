@@ -111,7 +111,7 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion'
 
-import { onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -121,7 +121,7 @@ import { Input } from '@/components/ui/input'
 import { usePresenter } from '@/composables/usePresenter'
 import KnowledgeFileItem from './KnowledgeFileItem.vue'
 import { BuiltinKnowledgeConfig, KnowledgeFileMessage } from '@shared/presenter'
-import { nextTick } from 'vue'
+import { RAG_EVENTS } from '@/events'
 
 const props = defineProps<{
   builtinKnowledgeDetail: BuiltinKnowledgeConfig
@@ -174,8 +174,16 @@ const loadList = async () => {
 // 初始化文件列表
 onMounted(() => {
   loadList()
+  // 监听知识库文件更新事件
+  window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
+    if (data.knowledgeId !== props.builtinKnowledgeDetail.id) return
+    // 重新加载文件列表
+    loadList()
+  })
 })
-
+onBeforeUnmount(() => {
+  window.electron.ipcRenderer.removeAllListeners(RAG_EVENTS.FILE_UPDATED)
+})
 // 上传文件到内置知识库
 const handleDrop = async (e: DragEvent) => {
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
