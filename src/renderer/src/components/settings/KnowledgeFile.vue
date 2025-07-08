@@ -197,7 +197,6 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        loadList()
       } catch (error) {
         console.error('文件准备失败:', error)
         return
@@ -209,6 +208,7 @@ const handleDrop = async (e: DragEvent) => {
 // 刪除文件
 const deleteFile = async (fileId: string) => {
   await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
+  loadList()
   toast({
     title: t('settings.knowledgeBase.deleteSuccess'),
     variant: 'default',
