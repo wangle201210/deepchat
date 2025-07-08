@@ -208,6 +208,7 @@ const handleDrop = async (e: DragEvent) => {
 // 刪除文件
 const deleteFile = async (fileId: string) => {
   await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
+  loadList()
   toast({
     title: t('settings.knowledgeBase.deleteSuccess'),
     variant: 'default',
