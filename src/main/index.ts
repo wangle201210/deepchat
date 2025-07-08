@@ -303,4 +303,5 @@ app.on('before-quit', () => {
   console.log('main: app before-quit event triggered.') // 保留关键日志
   // presenter.destroy() // 如果需要在 will-quit 之前清理 presenter，可以保留
   // trayPresenter.destroy() // <-- 从此处移除托盘销毁
+  presenter.knowledgePresenter.closeAll()
 })

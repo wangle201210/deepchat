@@ -311,7 +311,7 @@ export interface IPresenter {
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
   oauthPresenter: IOAuthPresenter
-  KnowledgePresenter: IKnowledgePresenter
+  knowledgePresenter: IKnowledgePresenter
   init(): void
   destroy(): void
 }
@@ -1162,12 +1162,14 @@ export type KnowledgeFileMetadata = {
   size: number
 }
 
+export type KnowledgeFileStatus = 'processing' | 'completed' | 'error'
+
 export type KnowledgeFileMessage = {
   id: string
   name: string
   path: string
   mimeType: string
-  status: 'processing' | 'completed' | 'error'
+  status: KnowledgeFileStatus
   uploadedAt: number
   metadata: KnowledgeFileMetadata
 }
@@ -1294,7 +1296,7 @@ export interface IVectorDatabasePresenter {
    * @param id 文件 id
    * @param status 新状态
    */
-  updateFileStatus(id: string, status: string): Promise<void>
+  updateFileStatus(id: string, status: KnowledgeFileStatus): Promise<void>
   /**
    * 查询文件。
    * @param id 文件 id

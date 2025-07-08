@@ -215,4 +215,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     const rag = await this.getRagPresenter(id)
     return await rag.listFiles()
   }
+
+  async closeAll(): Promise<void> {
+    this.ragPresenterCache.forEach((rag) => {
+      rag.close()
+    })
+  }
 }

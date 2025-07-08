@@ -52,19 +52,20 @@ export class RagPresenter {
     )
 
     await this.vectorP.insertVectors(
-      vectors.map((vector) => {
+      vectors.map((vector, index) => {
         return {
           vector,
           metadata: {
             from: fileInfo.name,
-            filePath: fileInfo.path
+            filePath: fileInfo.path,
+            content: chunks[index]
           },
           fileId: fileId
         }
       })
     )
 
-    this.vectorP.updateFileStatus(fileId, 'ready')
+    this.vectorP.updateFileStatus(fileId, 'completed')
   }
   async deleteFile(fileId: string) {
     await this.vectorP.deleteVectorsByFile(fileId)
@@ -87,5 +88,9 @@ export class RagPresenter {
 
   async destory() {
     this.vectorP.destroy()
+  }
+
+  async close() {
+    this.vectorP.close()
   }
 }

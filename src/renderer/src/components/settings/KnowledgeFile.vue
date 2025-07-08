@@ -131,7 +131,7 @@ const { t } = useI18n()
 const fileList = ref<KnowledgeFileMessage[]>([])
 // 允许的文件扩展名
 const allowedExts = ['txt', 'doc', 'docx']
-const knowledgePresenter = usePresenter('KnowledgePresenter')
+const knowledgePresenter = usePresenter('knowledgePresenter')
 // 弹窗状态
 const isSearchDialogOpen = ref(false)
 
@@ -197,7 +197,6 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        loadList()
       } catch (error) {
         console.error('文件准备失败:', error)
         return
@@ -214,6 +213,7 @@ const deleteFile = async (fileId: string) => {
     variant: 'default',
     duration: 3000
   })
+  loadList()
 }
 
 // 重新上传文件

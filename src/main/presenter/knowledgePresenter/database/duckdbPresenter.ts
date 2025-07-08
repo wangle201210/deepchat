@@ -1,14 +1,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { DuckDBConnection, DuckDBInstance } from '@duckdb/node-api'
+import { DuckDBConnection, DuckDBInstance, arrayValue } from '@duckdb/node-api'
 import {
   IndexOptions,
   InsertOptions,
   QueryOptions,
   QueryResult,
   IVectorDatabasePresenter,
-  KnowledgeFileMessage
+  KnowledgeFileMessage,
+  KnowledgeFileStatus
 } from '@shared/presenter'
 
 import { nanoid } from 'nanoid'
@@ -70,6 +71,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
    */
   private async safeRun(sql: string, params?: any[]): Promise<any> {
     try {
+      if (!this.connection) await this.connect()
       if (params) {
         return await this.connection.run(sql, params)
       } else {
@@ -89,7 +91,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadVSS(): Promise<void> {
-    if (!this.connection) await this.connect()
     if (fs.existsSync(extensionPath)) {
       const escapedPath = extensionPath.replace(/\\/g, '\\\\')
       await this.safeRun(`LOAD '${escapedPath}';`)
@@ -102,7 +103,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 创建定长向量表 */
   private async initVectorTable(dimensions: number): Promise<void> {
-    if (!this.connection) await this.connect()
     await this.safeRun(
       `CREATE TABLE IF NOT EXISTS ${this.vectorTable} (
          id VARCHAR PRIMARY KEY,
@@ -115,7 +115,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 创建文件元数据表 */
   private async initFileTable(): Promise<void> {
-    if (!this.connection) await this.connect()
     await this.safeRun(
       `CREATE TABLE IF NOT EXISTS ${this.fileTable} (
         id VARCHAR PRIMARY KEY,
@@ -131,7 +130,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /** 创建索引 */
   private async initIndex(opts?: IndexOptions): Promise<void> {
-    if (!this.connection) await this.connect()
     const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
     const M = opts?.M || 16
     const efConstruction = opts?.efConstruction || 200
@@ -150,34 +148,31 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   async insertVector(opts: InsertOptions): Promise<void> {
-    if (!this.connection) await this.connect()
     const id = nanoid()
-    const vec = opts.vector
+    const vec = arrayValue(Array.from(opts.vector))
     const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
     await this.safeRun(
       `INSERT INTO ${this.vectorTable} (id, embedding, metadata)
-       VALUES (?, ?, ?::JSON);`,
+       VALUES (?, ?::FLOAT[], ?::JSON);`,
       [id, vec, meta]
     )
   }
 
   async insertVectors(records: InsertOptions[]): Promise<void> {
-    if (!this.connection) await this.connect()
     if (!records.length) return
     // 构造批量插入 SQL
-    const valuesSql = records.map(() => '(?, ?, ?::JSON)').join(', ')
+    const valuesSql = records.map(() => '(?, ?::FLOAT[], ?::JSON)').join(', ')
     const sql = `INSERT INTO ${this.vectorTable} (id, embedding, metadata) VALUES ${valuesSql};`
     const params: any[] = []
     for (const r of records) {
       params.push(nanoid())
-      params.push(r.vector)
+      params.push(arrayValue(Array.from(r.vector)))
       params.push(r.metadata ? JSON.stringify(r.metadata) : null)
     }
     await this.safeRun(sql, params)
   }
 
   async similarityQuery(params: QueryOptions & { vector: number[] }): Promise<QueryResult[]> {
-    if (!this.connection) await this.connect()
     const k = params.topK
     const fn =
       params.metric === 'ip'
@@ -208,17 +203,14 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   async deleteVector(id: string): Promise<void> {
-    if (!this.connection) await this.connect()
     await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE id = ?;`, [id])
   }
 
   async deleteVectorsByFile(fileId: string): Promise<void> {
-    if (!this.connection) await this.connect()
     await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [fileId])
   }
 
   async insertFile(file: KnowledgeFileMessage): Promise<void> {
-    if (!this.connection) await this.connect()
     await this.safeRun(
       `INSERT INTO ${this.fileTable} (id, name, path, mime_type, status, uploaded_at, metadata)
        VALUES (?, ?, ?, ?, ?, ?, ?::JSON);`,
@@ -228,46 +220,48 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         file.path,
         file.mimeType,
         file.status,
-        file.uploadedAt,
+        String(file.uploadedAt),
         file.metadata ? JSON.stringify(file.metadata) : null
       ]
     )
   }
 
-  async updateFileStatus(id: string, status: string): Promise<void> {
-    if (!this.connection) await this.connect()
+  async updateFileStatus(id: string, status: KnowledgeFileStatus): Promise<void> {
     await this.safeRun(`UPDATE ${this.fileTable} SET status = ? WHERE id = ?;`, [status, id])
   }
 
   async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
-    if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
       `SELECT * FROM ${this.fileTable} WHERE id = ?;`,
       [id]
     )
-    const rows = reader.getRowObjectsJson() as KnowledgeFileMessage[]
+    const rows = reader.getRowObjectsJson()
     if (rows.length === 0) return null
     const row = rows[0]
-    return {
-      ...row,
-      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata
-    }
+    return this.toKnowledgeFileMessage(row)
   }
 
   async listFiles(): Promise<KnowledgeFileMessage[]> {
-    if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
       `SELECT * FROM ${this.fileTable} ORDER BY uploaded_at DESC;`
     )
     const rows = reader.getRowObjectsJson()
-    return rows.map((r: any) => ({
-      ...r,
-      metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata
-    }))
+    return rows.map((row) => this.toKnowledgeFileMessage(row))
+  }
+
+  private toKnowledgeFileMessage(o: any): KnowledgeFileMessage {
+    return {
+      id: o.id,
+      name: o.name,
+      path: o.path,
+      mimeType: o.mime_type,
+      status: o.status,
+      uploadedAt: Number(o.uploaded_at),
+      metadata: typeof o.metadata === 'string' ? JSON.parse(o.metadata) : o.metadata
+    }
   }
 
   async deleteFile(id: string): Promise<void> {
-    if (!this.connection) await this.connect()
     await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
   }
 
