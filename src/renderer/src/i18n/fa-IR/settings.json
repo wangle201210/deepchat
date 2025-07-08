@@ -327,16 +327,12 @@
     "noData": "هنوز اطلاعاتی وجود ندارد",
     "file": "مدرک",
     "uploadProcessing": "بارگذاری",
-    "uploadSuccess": "با موفقیت بارگذاری کنید",
     "uploadCompleted": "بارگذاری کامل",
     "reAdd": "بارگذاری مجدد",
     "uploadError": "بارگذاری ناموفق بود",
     "delete": "حذف کردن",
-    "deleteSuccess": "با موفقیت حذف کنید",
-    "deleteFailed": "حذف انجام نشد",
-    "reAddSuccess": "دوباره با موفقیت بارگذاری شد",
-    "reAddFailed": "بارگذاری مجدد انجام نشد",
-    "reason": "دلیل"
+    "reason": "دلیل",
+    "deleteSuccess": "با موفقیت حذف کنید"
   },
   "mcp": {
     "title": "تنظیمات MCP",

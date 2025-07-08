@@ -327,16 +327,12 @@
     "noData": "Нет данных пока",
     "file": "документ",
     "uploadProcessing": "Загрузка",
-    "uploadSuccess": "Загрузить успешно",
     "uploadCompleted": "Загрузка завершена",
     "reAdd": "Повторная загрузка",
     "uploadError": "Загрузка не удалась",
     "delete": "удалить",
-    "deleteSuccess": "Удалить успешно",
-    "deleteFailed": "Удаление не удалось",
-    "reAddSuccess": "Повторно загружен успешно",
-    "reAddFailed": "Повторная загрузка не удалась",
-    "reason": "причина"
+    "reason": "причина",
+    "deleteSuccess": "Удалить успешно"
   },
   "mcp": {
     "title": "Настройки MCP",

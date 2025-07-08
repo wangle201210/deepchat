@@ -327,16 +327,12 @@
     "noData": "Pas encore de données",
     "file": "document",
     "uploadProcessing": "Téléchargement",
-    "uploadSuccess": "Télécharger avec succès",
     "uploadCompleted": "Téléchargement terminé",
     "reAdd": "Télécharger à nouveau",
     "uploadError": "Le téléchargement a échoué",
     "delete": "supprimer",
-    "deleteSuccess": "Supprimer avec succès",
-    "deleteFailed": "La suppression a échoué",
-    "reAddSuccess": "Re-téléchargé avec succès",
-    "reAddFailed": "REPOLORD TÉLÉPLARCHE Échec",
-    "reason": "raison"
+    "reason": "raison",
+    "deleteSuccess": "Supprimer avec succès"
   },
   "mcp": {
     "title": "Paramètres MCP",

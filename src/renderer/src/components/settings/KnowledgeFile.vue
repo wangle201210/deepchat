@@ -196,22 +196,7 @@ const handleDrop = async (e: DragEvent) => {
       }
       try {
         const path = window.api.getPathForFile(file)
-        const result = await knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        if (result.success) {
-          toast({
-            title: `"${file.name}"${t('settings.knowledgeBase.uploadSuccess')}`,
-            variant: 'default',
-            duration: 3000
-          })
-        } else {
-          toast({
-            title: `"${file.name}"${t('settings.knowledgeBase.uploadError')}`,
-            description:`${t('settings.knowledgeBase.reason')}:${result.reason}`,
-            variant: 'destructive',
-            duration: 3000
-          })
-        }
-
+        knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
         loadList()
       } catch (error) {
         console.error('文件准备失败:', error)
@@ -223,42 +208,18 @@ const handleDrop = async (e: DragEvent) => {
 
 // 刪除文件
 const deleteFile = async (fileId: string) => {
-  const result = await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
-  if (result.success) {
-    toast({
-      title: t('settings.knowledgeBase.deleteSuccess'),
-      variant: 'default',
-      duration: 3000
-    })
-  } else {
-    toast({
-      title: t('settings.knowledgeBase.deleteFailed'),
-      description: `${t('settings.knowledgeBase.reason')}:${result.reason}`,
-      variant: 'destructive',
-      duration: 3000
-    })
-  }
+  await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
+  toast({
+    title: t('settings.knowledgeBase.deleteSuccess'),
+    variant: 'default',
+    duration: 3000
+  })
 }
 
 // 重新上传文件
 const reAddFile = async (file: KnowledgeFileMessage) => {
   file.status = 'processing' // 设置状态为加载中
   await nextTick(() => {})
-  const result = await knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
-  if (result.success) {
-    toast({
-      title: t('settings.knowledgeBase.reAddSuccess'),
-      variant: 'default',
-      duration: 3000
-    })
-  } else {
-    toast({
-      title: t('settings.knowledgeBase.reAddFailed'),
-      description: `${t('settings.knowledgeBase.reason')}:${result.reason}`,
-      variant: 'destructive',
-      duration: 3000
-    })
-  }
-  loadList()
+  knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
 }
 </script>

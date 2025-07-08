@@ -328,18 +328,15 @@
     "onlySupport": "仅支持",
     "searchKnowledge": "搜索知识库",
     "searchKnowledgePlaceholder": "请输入查询内容",
+    "noData":"暂无数据",
     "file": "文件",
     "uploadProcessing": "上传中",
-    "uploadSuccess": "上传成功",
     "uploadCompleted": "上传完成",
-    "uploadError": "上传失败",
     "reAdd": "重新上传",
+    "uploadError": "上传失败",
     "delete": "删除",
-    "deleteSuccess": "删除成功",
-    "deleteFailed": "删除失败",
-    "reAddSuccess": "重新上传成功",
-    "reAddFailed": " 重新上传失败",
-    "reason": "原因"
+    "reason": "原因",
+    "deleteSuccess": "删除成功"
   },
   "mcp": {
     "title": "MCP设置",

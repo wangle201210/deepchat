@@ -12,5 +12,10 @@
     "cpuModel": "Модель процессора",
     "totalMemory": "Общий объем памяти",
     "osVersion": "Версия системы"
+  },
+  "settings": {
+    "knowledgeBase": {
+      "deleteSuccess": "Удалить успешно"
+    }
   }
 }

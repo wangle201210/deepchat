@@ -12,5 +12,10 @@
     "cpuModel": "CPU 모델",
     "totalMemory": "총 메모리",
     "osVersion": "시스템 버전"
+  },
+  "settings": {
+    "knowledgeBase": {
+      "deleteSuccess": "성공적으로 삭제하십시오"
+    }
   }
 }

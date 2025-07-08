@@ -12,5 +12,10 @@
   },
   "disclaimerButton": "Avertissement",
   "disclaimerTitle": "Conditions d'utilisation",
-  "checkUpdateButton": "Vérifier les mises à jour"
+  "checkUpdateButton": "Vérifier les mises à jour",
+  "settings": {
+    "knowledgeBase": {
+      "deleteSuccess": "Supprimer avec succès"
+    }
+  }
 }
