@@ -91,7 +91,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private async installAndLoadVSS(): Promise<void> {
     if (!this.connection) await this.connect()
     if (fs.existsSync(extensionPath)) {
-      await this.safeRun(`LOAD ?;`, [extensionPath])
+      const escapedPath = extensionPath.replace(/\\/g, '\\\\')
+      await this.safeRun(`LOAD '${escapedPath}';`)
     } else {
       await this.safeRun(`INSTALL vss;`)
       await this.safeRun(`LOAD vss;`)
@@ -135,16 +136,16 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     const M = opts?.M || 16
     const efConstruction = opts?.efConstruction || 200
     const sql = `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_emb
-         ON ${this.vectorTable}
-         USING HNSW (embedding)
-         WITH (
-           metric=?,
-           M=?,
-           ef_construction=?
-         );`
-    await this.safeRun(sql, [metric, M, efConstruction])
+     ON ${this.vectorTable}
+     USING HNSW (embedding)
+     WITH (
+       metric='${metric}',
+       M=${M},
+       ef_construction=${efConstruction}
+     );`
+    await this.safeRun(sql)
     await this.safeRun(
-      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_file_id ON ${this.vectorTable} USING HASH (file_id);`
+      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_file_id ON ${this.vectorTable} (file_id);`
     )
   }
 
@@ -175,9 +176,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.safeRun(sql, params)
   }
 
-  async similarityQuery(
-    params: QueryOptions & { vector: number[] }
-  ): Promise<QueryResult[]> {
+  async similarityQuery(params: QueryOptions & { vector: number[] }): Promise<QueryResult[]> {
     if (!this.connection) await this.connect()
     const k = params.topK
     const fn =
@@ -255,11 +254,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     }
   }
 
-  async listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]> {
+  async listFiles(): Promise<KnowledgeFileMessage[]> {
     if (!this.connection) await this.connect()
     const reader = await this.connection.runAndReadAll(
-      `SELECT * FROM ${this.fileTable} WHERE knowledge_id = ? ORDER BY uploaded_at DESC;`,
-      [knowledgeId]
+      `SELECT * FROM ${this.fileTable} ORDER BY uploaded_at DESC;`
     )
     const rows = reader.getRowObjectsJson()
     return rows.map((r: any) => ({

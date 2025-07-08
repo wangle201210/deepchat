@@ -258,7 +258,6 @@
                         </span>
                       </div>
                       <div class="flex items-center gap-1">
-                        <ChevronDown class="h-4 w-4 opacity-50" />
                         <Button
                           size="xs"
                           variant="ghost"
@@ -353,7 +352,7 @@
                   :disabled="isEditing"
                 ></Input>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-2" v-if="!autoDetectDimensionsSwitch">
                 <div class="flex items-center gap-1 justify-between">
                   <div class="flex items-center gap-1">
                     <Label
@@ -744,6 +743,28 @@ const saveBuiltinConfig = async () => {
   if (!isEditingBuiltinConfigValid.value) return
   editingBuiltinConfig.value.fragmentsNumber = fragmentsNumber.value[0]
   submitLoading.value = true
+
+  // 自动获取dimensions
+  if (autoDetectDimensionsSwitch.value) {
+    const result = await llmP.getDimensions(
+      editingBuiltinConfig.value.embedding.providerId,
+      editingBuiltinConfig.value.embedding.modelId
+    )
+    if (result.errorMsg) {
+      toast({
+        title: t('settings.knowledgeBase.autoDetectDimensionsError'),
+        description: String(result.errorMsg),
+        variant: 'destructive',
+        duration: 3000
+      })
+      submitLoading.value = false
+      return
+    }
+    console.log('获取到向量信息:', result.data)
+    editingBuiltinConfig.value.dimensions = result.data.dimensions
+    editingBuiltinConfig.value.normalized = result.data.normalized
+  }
+
   if (isEditing.value) {
     // 更新配置
     if (editingConfigIndex.value !== -1) {
@@ -755,26 +776,6 @@ const saveBuiltinConfig = async () => {
       duration: 3000
     })
   } else {
-    if (autoDetectDimensionsSwitch.value) {
-      // 自动获取dimensions
-      const result = await llmP.getDimensions(
-        editingBuiltinConfig.value.embedding.providerId,
-        editingBuiltinConfig.value.embedding.modelId
-      )
-      if (result.errorMsg) {
-        toast({
-          title: t('settings.knowledgeBase.autoDetectDimensionsError'),
-          description: String(result.errorMsg),
-          variant: 'destructive',
-          duration: 3000
-        })
-        submitLoading.value = false
-        return
-      }
-      console.log('获取到向量信息:', result.data)
-      editingBuiltinConfig.value.dimensions = result.data.dimensions
-      editingBuiltinConfig.value.normalized = result.data.normalized
-    }
     // 添加配置
     builtinConfigs.value.push({ ...editingBuiltinConfig.value })
     toast({

@@ -47,7 +47,7 @@ export class RagPresenter {
 
     const vectors = await presenter.llmproviderPresenter.getEmbeddings(
       this.config.embedding.providerId,
-      this.config.embedding.providerId,
+      this.config.embedding.modelId,
       chunks
     )
 
@@ -80,7 +80,7 @@ export class RagPresenter {
     return await this.vectorP.queryFile(fileId)
   }
   async listFiles(): Promise<KnowledgeFileMessage[]> {
-    throw new Error('Method not implemented.')
+    return await this.vectorP.listFiles()
   }
 
   async reset() {}

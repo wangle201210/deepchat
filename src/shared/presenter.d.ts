@@ -1298,15 +1298,14 @@ export interface IVectorDatabasePresenter {
   /**
    * 查询文件。
    * @param id 文件 id
-   * @returns 文件元数据对象或 null
+   * @returns 文件数据对象或 null
    */
   queryFile(id: string): Promise<KnowledgeFileMessage | null>
   /**
    * 查询知识库下所有文件。
-   * @param knowledgeId 知识库 id
-   * @returns 文件元数据数组
+   * @returns 文件数据数组
    */
-  listFiles(knowledgeId: string): Promise<KnowledgeFileMessage[]>
+  listFiles(): Promise<KnowledgeFileMessage[]>
   /**
    * 删除文件元数据。
    * @param id 文件 id
