@@ -332,7 +332,10 @@
     "uploadError": "Le téléchargement a échoué",
     "delete": "supprimer",
     "reason": "raison",
-    "deleteSuccess": "Supprimer avec succès"
+    "deleteSuccess": "Supprimer avec succès",
+    "copy": "copie",
+    "copySuccess": "Copier avec succès",
+    "source": "source"
   },
   "mcp": {
     "title": "Paramètres MCP",

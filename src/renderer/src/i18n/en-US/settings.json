@@ -332,7 +332,10 @@
     "uploadError": "Upload failed",
     "delete": "delete",
     "reason": "reason",
-    "deleteSuccess": "Delete successfully"
+    "deleteSuccess": "Delete successfully",
+    "copy": "copy",
+    "copySuccess": "Copy successfully",
+    "source": "source"
   },
   "mcp": {
     "title": "MCP Settings",

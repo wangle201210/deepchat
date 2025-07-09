@@ -332,7 +332,10 @@
     "uploadError": "Загрузка не удалась",
     "delete": "удалить",
     "reason": "причина",
-    "deleteSuccess": "Удалить успешно"
+    "deleteSuccess": "Удалить успешно",
+    "copy": "копия",
+    "copySuccess": "Копировать успешно",
+    "source": "источник"
   },
   "mcp": {
     "title": "Настройки MCP",

@@ -330,7 +330,7 @@
     "onlySupport": "仅支持",
     "searchKnowledge": "搜索知识库",
     "searchKnowledgePlaceholder": "请输入查询内容",
-    "noData":"暂无数据",
+    "noData": "暂无数据",
     "file": "文件",
     "uploadProcessing": "上传中",
     "uploadCompleted": "上传完成",
@@ -338,7 +338,10 @@
     "uploadError": "上传失败",
     "delete": "删除",
     "reason": "原因",
-    "deleteSuccess": "删除成功"
+    "deleteSuccess": "删除成功",
+    "copy": "复制",
+    "copySuccess": "复制成功",
+    "source": "来源"
   },
   "mcp": {
     "title": "MCP设置",
