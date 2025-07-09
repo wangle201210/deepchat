@@ -177,7 +177,7 @@ onMounted(() => {
   window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
     console.log('知识库文件更新:', data)
     // TODO
-    const file = fileList.value.find((file) => file.id === data.fileId)
+    const file = fileList.value.find((file) => file.id === data.id)
     if (!file) {
       return
     }
