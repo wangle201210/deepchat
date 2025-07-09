@@ -106,7 +106,7 @@ import {
   AccordionTrigger
 } from '@/components/ui/accordion'
 
-import { onBeforeUnmount, onMounted, ref, nextTick } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -208,8 +208,7 @@ const handleDrop = async (e: DragEvent) => {
 // 刪除文件
 const deleteFile = async (fileId: string) => {
   await knowledgePresenter.deleteFile(props.builtinKnowledgeDetail.id, fileId)
-  loadList()
-  toast({
+    toast({
     title: t('settings.knowledgeBase.deleteSuccess'),
     variant: 'default',
     duration: 3000
@@ -220,7 +219,6 @@ const deleteFile = async (fileId: string) => {
 // 重新上传文件
 const reAddFile = async (file: KnowledgeFileMessage) => {
   file.status = 'processing' // 设置状态为加载中
-  await nextTick(() => {})
-  knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
+    knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
 }
 </script>
