@@ -1,7 +1,10 @@
+import fs from 'node:fs'
+
 import {
   BuiltinKnowledgeConfig,
   IVectorDatabasePresenter,
-  KnowledgeFileMessage
+  KnowledgeFileMessage,
+  QueryResult
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
@@ -18,8 +21,13 @@ export class RagPresenter {
   }
 
   async addFile(
-    filePath: string
+    filePath: string,
+    fileId?: string
   ): Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }> {
+    if (fs.existsSync(filePath) === false) {
+      throw new Error('文件不存在，请检查路径是否正确')
+    }
+
     const mimeType = await presenter.filePresenter.getMimeType(filePath)
     const fileInfo = await presenter.filePresenter.prepareFileCompletely(
       filePath,
@@ -28,7 +36,7 @@ export class RagPresenter {
     )
 
     const fileMessage = {
-      id: nanoid(),
+      id: fileId ?? nanoid(),
       name: fileInfo.name,
       path: fileInfo.path,
       mimeType,
@@ -38,7 +46,7 @@ export class RagPresenter {
         size: fileInfo.metadata.fileSize
       }
     } as KnowledgeFileMessage
-    await this.vectorP.insertFile(fileMessage)
+    fileId ? await this.vectorP.updateFile(fileMessage) : await this.vectorP.insertFile(fileMessage)
 
     const fileTask = this.fileTask(fileInfo.content, fileMessage)
 
@@ -87,7 +95,7 @@ export class RagPresenter {
     })
   }
 
-  async similarityQuery(key: string): Promise<any> {
+  async similarityQuery(key: string): Promise<QueryResult[]> {
     const embedding = await presenter.llmproviderPresenter.getEmbeddings(
       this.config.embedding.providerId,
       this.config.embedding.modelId,
@@ -100,16 +108,22 @@ export class RagPresenter {
     })
   }
 
-  async deleteFile(fileId: string) {
+  async deleteFile(fileId: string): Promise<void> {
     await this.vectorP.deleteVectorsByFile(fileId)
     await this.vectorP.deleteFile(fileId)
   }
-  async reAddFile(fileId: string) {
+
+  async reAddFile(
+    fileId: string
+  ): Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }> {
     const file = await this.queryFile(fileId)
     if (file == null) {
       throw new Error('文件不存在，请重新打开知识库后再试')
     }
+    await this.vectorP.deleteVectorsByFile(fileId)
+    return this.addFile(file.path, fileId)
   }
+
   async queryFile(fileId: string): Promise<KnowledgeFileMessage | null> {
     return await this.vectorP.queryFile(fileId)
   }
@@ -117,13 +131,11 @@ export class RagPresenter {
     return await this.vectorP.listFiles()
   }
 
-  async reset() {}
-
-  async destory() {
+  async destory(): Promise<void> {
     this.vectorP.destroy()
   }
 
-  async close() {
+  async close(): Promise<void> {
     this.vectorP.close()
   }
 }

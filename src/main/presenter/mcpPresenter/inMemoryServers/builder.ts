@@ -13,6 +13,7 @@ import { AutoPromptingServer } from './autoPromptingServer'
 import { ConversationSearchServer } from './conversationSearchServer'
 import { MeetingServer } from './meetingServer'
 import { BuiltinKnowledgeServer } from './builtinKnowledgeServer'
+import { BuiltinKnowledgeConfig } from '@shared/presenter'
 
 export function getInMemoryServer(
   serverName: string,
@@ -73,10 +74,7 @@ export function getInMemoryServer(
     case 'builtinKnowledge':
       return new BuiltinKnowledgeServer(
         env as {
-          configs: {
-            description: string
-            enabled: boolean
-          }[]
+          configs: BuiltinKnowledgeConfig[]
         }
       )
     case 'deepchat-inmemory/custom-prompts-server':

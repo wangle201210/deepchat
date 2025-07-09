@@ -5,6 +5,7 @@ import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 import { ModelType } from '@shared/model'
+import { P } from 'ollama/dist/shared/ollama.d792a03f'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -1161,6 +1162,7 @@ export interface KeyStatus {
   usage?: string
 }
 
+// built-in 知识库相关
 export type KnowledgeFileMetadata = {
   size: number
   reason?: string
@@ -1178,16 +1180,64 @@ export type KnowledgeFileMessage = {
   metadata: KnowledgeFileMetadata
 }
 
-// built-in 知识库相关
+export type KnowledgeFileResult = {
+  data?: KnowledgeFileMessage
+  error?: string
+}
+
+/**
+ * 知识库主接口，提供知识库的创建、删除、文件管理和相似度查询等功能。
+ */
 export interface IKnowledgePresenter {
+  /**
+   * 创建知识库（初始化 RAG 应用）
+   * @param config 知识库配置
+   */
   create(config: BuiltinKnowledgeConfig): Promise<void>
-  reset(id: string): Promise<void>
+
+  /**
+   * 删除知识库（移除本地存储）
+   * @param id 知识库 ID
+   */
   delete(id: string): Promise<void>
-  addFile(id: string, path: string): Promise<KnowledgeFileMessage>
+
+  /**
+   * 添加文件到知识库
+   * @param id 知识库 ID
+   * @param path 文件路径
+   * @returns 文件添加结果
+   */
+  addFile(id: string, path: string): Promise<KnowledgeFileResult>
+
+  /**
+   * 删除知识库中的文件
+   * @param id 知识库 ID
+   * @param fileId 文件 ID
+   */
   deleteFile(id: string, fileId: string): Promise<void>
-  reAddFile(id: string, fileId: string): Promise<void>
+
+  /**
+   * 重新添加（重建向量）知识库中的文件
+   * @param id 知识库 ID
+   * @param fileId 文件 ID
+   * @returns 文件添加结果
+   */
+  reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult>
+
+  /**
+   * 列出知识库下所有文件
+   * @param id 知识库 ID
+   * @returns 文件元数据数组
+   */
   listFiles(id: string): Promise<KnowledgeFileMessage[]>
-  similarityQuery(id: string, key: string)
+
+  /**
+   * 相似度检索
+   * @param id 知识库 ID
+   * @param key 查询文本
+   * @returns 相似片段结果数组
+   */
+  similarityQuery(id: string, key: string): Promise<QueryResult[]>
 }
 
 type ModelProvider = {

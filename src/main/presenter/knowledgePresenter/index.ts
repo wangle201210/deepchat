@@ -6,7 +6,9 @@ import {
   IKnowledgePresenter,
   BuiltinKnowledgeConfig,
   MCPServerConfig,
-  KnowledgeFileMessage
+  KnowledgeFileMessage,
+  QueryResult,
+  KnowledgeFileResult
 } from '@shared/presenter'
 import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS, RAG_EVENTS } from '@/events'
@@ -86,14 +88,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   create = async (config: BuiltinKnowledgeConfig): Promise<void> => {
     this.createRagPresenter(config)
-  }
-
-  /**
-   * 重置知识库内容
-   */
-  reset = async (id: string): Promise<void> => {
-    const RagPresenter = await this.getRagPresenter(id)
-    await RagPresenter.reset()
   }
 
   /**
@@ -186,19 +180,38 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     return db
   }
 
-  /**
-   * 添加文件到知识库
-   * @param id 知识库 ID
-   * @param filePath 文件路径
-   */
-  async addFile(id: string, filePath: string): Promise<KnowledgeFileMessage> {
-    const rag = await this.getRagPresenter(id)
-    const fileTask = await rag.addFile(filePath)
-    fileTask.task.then((message) => {
-      // 任务完成后，发送事件通知
-      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, message)
-    })
-    return fileTask.data
+  private async handleFileTask(
+    id: string,
+    fileHandler: (rag: RagPresenter) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
+    errorMsg: string
+  ): Promise<KnowledgeFileResult> {
+    try {
+      const rag = await this.getRagPresenter(id)
+      const fileTask = await fileHandler(rag)
+      fileTask.task
+        .then((message) => {
+          eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, message)
+        })
+        .catch((err) => {
+          // 可选：记录异步任务异常
+          console.error(`${errorMsg}异步任务失败:`, err)
+        })
+      return {
+        data: fileTask.data
+      }
+    } catch (err) {
+      return {
+        error: `${errorMsg}: ${err instanceof Error ? err.message : String(err)}`
+      }
+    }
+  }
+
+  async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
+    return this.handleFileTask(
+      id,
+      (rag) => rag.addFile(filePath),
+      '添加文件失败'
+    )
   }
 
   async deleteFile(id: string, fileId: string): Promise<void> {
@@ -206,9 +219,12 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     await rag.deleteFile(fileId)
   }
 
-  async reAddFile(id: string, fileId: string): Promise<void> {
-    const rag = await this.getRagPresenter(id)
-    await rag.reAddFile(fileId)
+  async reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult> {
+    return this.handleFileTask(
+      id,
+      (rag) => rag.reAddFile(fileId),
+      '重新添加文件失败'
+    )
   }
 
   async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {
@@ -227,7 +243,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     })
   }
 
-  async similarityQuery(id: string, key: string): Promise<any> {
+  async similarityQuery(id: string, key: string): Promise<QueryResult[]> {
     const rag = await this.getRagPresenter(id)
     return await rag.similarityQuery(key)
   }
