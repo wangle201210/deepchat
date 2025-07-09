@@ -248,7 +248,11 @@
     "localModels": "ローカルモデル",
     "azureApiVersion": "APIバージョン",
     "safety": {
-      "title": "セキュリティ設定"
+      "title": "セキュリティ設定",
+      "blockHighest": "高リスクをブロックします",
+      "blockMost": "中程度のリスクをブロックします",
+      "blockNone": "ブロックされていません",
+      "blockSome": "低リスクをブロックします"
     },
     "serverList": "サーバーリスト",
     "totalServers": "サーバー総数",
@@ -270,7 +274,8 @@
     "keyStatus": {
       "remaining": "残りの金額",
       "usage": "使用済み"
-    }
+    },
+    "refreshingModels": "更新中..."
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",

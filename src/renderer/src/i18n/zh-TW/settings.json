@@ -248,7 +248,11 @@
     "noLocalModels": "沒有本機模型",
     "azureApiVersion": "API 版本",
     "safety": {
-      "title": "安全設置"
+      "title": "安全設置",
+      "blockHighest": "屏蔽高風險",
+      "blockMost": "屏蔽中風險",
+      "blockNone": "不屏蔽",
+      "blockSome": "屏蔽低風險"
     },
     "serverList": "伺服器列表",
     "totalServers": "伺服器總數",
@@ -270,7 +274,8 @@
     "keyStatus": {
       "remaining": "剩餘額度",
       "usage": "已使用"
-    }
+    },
+    "refreshingModels": "刷新中..."
   },
   "knowledgeBase": {
     "title": "知識庫設置",
