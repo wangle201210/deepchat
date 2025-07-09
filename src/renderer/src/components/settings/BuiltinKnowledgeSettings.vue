@@ -235,7 +235,6 @@
                           {{ selectRerankModel?.name || t('settings.common.selectModel') }}
                         </span>
                       </div>
-                      <div class="flex items-center gap-1">
                         <Button
                           size="xs"
                           variant="ghost"
@@ -253,7 +252,6 @@
                         >
                           <Icon icon="lucide:chevron-down" class="w-4 h-4 text-muted-foreground" />
                         </Button>
-                      </div>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-80 p-0">
