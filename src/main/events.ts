@@ -164,3 +164,8 @@ export const TRAY_EVENTS = {
 export const MEETING_EVENTS = {
   INSTRUCTION: 'mcp:meeting-instruction', // 主进程向渲染进程发送指令
 }
+
+// 知识库事件
+export const RAG_EVENTS = {
+  FILE_UPDATED: 'rag:file-updated' // 文件状态更新
+}

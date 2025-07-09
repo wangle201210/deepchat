@@ -14,6 +14,7 @@ import {
 
 import { nanoid } from 'nanoid'
 import { app } from 'electron'
+import { th } from 'zod/dist/types/v4/locales'
 
 const runtimeBasePath = path
   .join(app.getAppPath(), 'runtime')
@@ -226,8 +227,20 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
-  async updateFileStatus(id: string, status: KnowledgeFileStatus): Promise<void> {
-    await this.safeRun(`UPDATE ${this.fileTable} SET status = ? WHERE id = ?;`, [status, id])
+  async updateFile(file: KnowledgeFileMessage): Promise<void> {
+    await this.safeRun(
+      `UPDATE ${this.fileTable} SET name = ?, path = ?, mime_type = ?, status = ?, uploaded_at = ?, metadata = ?::JSON
+       WHERE id = ?;`,
+      [
+        file.name,
+        file.path,
+        file.mimeType,
+        file.status,
+        String(file.uploadedAt),
+        file.metadata ? JSON.stringify(file.metadata) : null,
+        file.id
+      ]
+    )
   }
 
   async queryFile(id: string): Promise<KnowledgeFileMessage | null> {

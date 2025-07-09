@@ -1,4 +1,4 @@
-import { normalize } from 'path';
+import { normalize } from 'path'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
@@ -537,7 +537,10 @@ export interface ILlmProviderPresenter {
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
-  getDimensions(providerId: string, modelId: string): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }>
+  getDimensions(
+    providerId: string,
+    modelId: string
+  ): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }>
 }
 export type CONVERSATION_SETTINGS = {
   systemPrompt: string
@@ -1160,6 +1163,7 @@ export interface KeyStatus {
 
 export type KnowledgeFileMetadata = {
   size: number
+  reason?: string
 }
 
 export type KnowledgeFileStatus = 'processing' | 'completed' | 'error'
@@ -1179,7 +1183,7 @@ export interface IKnowledgePresenter {
   create(config: BuiltinKnowledgeConfig): Promise<void>
   reset(id: string): Promise<void>
   delete(id: string): Promise<void>
-  addFile(id: string, path: string): Promise<void>
+  addFile(id: string, path: string): Promise<KnowledgeFileMessage>
   deleteFile(id: string, fileId: string): Promise<void>
   reAddFile(id: string, fileId: string): Promise<void>
   listFiles(id: string): Promise<KnowledgeFileMessage[]>
@@ -1214,7 +1218,7 @@ export interface InsertOptions {
   /** 数值数组，长度等于 dimension */
   vector: number[]
   /** 可选元数据 */
-  metadata?: Record<string, any>,
+  metadata?: Record<string, any>
   /** 文件id */
   fileId: string
 }
@@ -1287,29 +1291,28 @@ export interface IVectorDatabasePresenter {
    */
   deleteVectorsByFile(id: string): Promise<void>
   /**
-   * 插入文件元数据。
+   * 插入文件
    * @param file 文件元数据对象
    */
   insertFile(file: KnowledgeFileMessage): Promise<void>
   /**
-   * 更新文件状态。
-   * @param id 文件 id
-   * @param status 新状态
+   * 更新文件
+   * @param file 文件元数据对象
    */
-  updateFileStatus(id: string, status: KnowledgeFileStatus): Promise<void>
+  updateFile(file: KnowledgeFileMessage): Promise<void>
   /**
-   * 查询文件。
+   * 查询文件
    * @param id 文件 id
    * @returns 文件数据对象或 null
    */
   queryFile(id: string): Promise<KnowledgeFileMessage | null>
   /**
-   * 查询知识库下所有文件。
+   * 查询知识库下所有文件
    * @returns 文件数据数组
    */
   listFiles(): Promise<KnowledgeFileMessage[]>
   /**
-   * 删除文件元数据。
+   * 删除文件
    * @param id 文件 id
    */
   deleteFile(id: string): Promise<void>

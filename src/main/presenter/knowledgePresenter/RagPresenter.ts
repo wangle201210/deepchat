@@ -17,7 +17,9 @@ export class RagPresenter {
     this.config = config
   }
 
-  async addFile(filePath: string): Promise<void> {
+  async addFile(
+    filePath: string
+  ): Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }> {
     const mimeType = await presenter.filePresenter.getMimeType(filePath)
     const fileInfo = await presenter.filePresenter.prepareFileCompletely(
       filePath,
@@ -25,9 +27,8 @@ export class RagPresenter {
       'origin'
     )
 
-    const fileId = nanoid()
-    await this.vectorP.insertFile({
-      id: fileId,
+    const fileMessage = {
+      id: nanoid(),
       name: fileInfo.name,
       path: fileInfo.path,
       mimeType,
@@ -36,37 +37,56 @@ export class RagPresenter {
       metadata: {
         size: fileInfo.metadata.fileSize
       }
-    })
+    } as KnowledgeFileMessage
+    await this.vectorP.insertFile(fileMessage)
 
-    // 文本切分
-    const chunker = new RecursiveCharacterTextSplitter({
-      chunkSize: this.config.chunkSize,
-      chunkOverlap: this.config.chunkOverlap
-    })
-    const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
+    const fileTask = this.fileTask(fileInfo.content, fileMessage)
 
-    const vectors = await presenter.llmproviderPresenter.getEmbeddings(
-      this.config.embedding.providerId,
-      this.config.embedding.modelId,
-      chunks
-    )
-
-    await this.vectorP.insertVectors(
-      vectors.map((vector, index) => {
-        return {
-          vector,
-          metadata: {
-            from: fileInfo.name,
-            filePath: fileInfo.path,
-            content: chunks[index]
-          },
-          fileId: fileId
-        }
-      })
-    )
-
-    this.vectorP.updateFileStatus(fileId, 'completed')
+    return { data: fileMessage, task: fileTask }
   }
+
+  private async fileTask(
+    content: string,
+    fileMessage: KnowledgeFileMessage
+  ): Promise<KnowledgeFileMessage> {
+    return new Promise(async (resolve) => {
+      try {
+        const chunker = new RecursiveCharacterTextSplitter({
+          chunkSize: this.config.chunkSize,
+          chunkOverlap: this.config.chunkOverlap
+        })
+        const chunks = await chunker.splitText(sanitizeText(content))
+
+        const vectors = await presenter.llmproviderPresenter.getEmbeddings(
+          this.config.embedding.providerId,
+          this.config.embedding.modelId,
+          chunks
+        )
+
+        await this.vectorP.insertVectors(
+          vectors.map((vector, index) => ({
+            vector,
+            metadata: {
+              from: fileMessage.name,
+              filePath: fileMessage.path,
+              content: chunks[index]
+            },
+            fileId: fileMessage.id
+          }))
+        )
+        fileMessage.status = 'completed'
+        await this.vectorP.updateFile(fileMessage)
+      } catch (err) {
+        fileMessage.status = 'error'
+        fileMessage.metadata.reason = String(err)
+        await this.vectorP.updateFile(fileMessage)
+        console.error('addFile 后台处理失败:', err)
+      } finally {
+        resolve(fileMessage)
+      }
+    })
+  }
+
   async deleteFile(fileId: string) {
     await this.vectorP.deleteVectorsByFile(fileId)
     await this.vectorP.deleteFile(fileId)

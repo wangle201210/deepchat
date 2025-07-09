@@ -9,7 +9,7 @@ import {
   KnowledgeFileMessage
 } from '@shared/presenter'
 import { eventBus } from '@/eventbus'
-import { MCP_EVENTS } from '@/events'
+import { MCP_EVENTS, RAG_EVENTS } from '@/events'
 import { DuckDBPresenter } from './database/duckdbPresenter'
 import { RagPresenter } from './RagPresenter'
 
@@ -191,9 +191,18 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * @param id 知识库 ID
    * @param filePath 文件路径
    */
-  async addFile(id: string, filePath: string): Promise<void> {
+  async addFile(id: string, filePath: string): Promise<KnowledgeFileMessage> {
     const rag = await this.getRagPresenter(id)
-    await rag.addFile(filePath)
+    const fileTask = await rag.addFile(filePath)
+    fileTask.task.finally(() => {
+      // 任务完成后，发送事件通知
+      eventBus.emit(RAG_EVENTS.FILE_UPDATED, {
+        id: id,
+        fileId: fileTask.data.id,
+        filePath: filePath
+      })
+    })
+    return fileTask.data
   }
 
   async deleteFile(id: string, fileId: string): Promise<void> {
