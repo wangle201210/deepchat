@@ -3,7 +3,8 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { z } from 'zod'
 import { zodToJsonSchema } from 'zod-to-json-schema'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
-import { MCPTextContent } from '@shared/presenter'
+import { BuiltinKnowledgeConfig, MCPTextContent, QueryResult } from '@shared/presenter'
+import { presenter } from '@/presenter'
 
 // Schema definitions
 const BuiltinKnowledgeSearchArgsSchema = z.object({
@@ -13,32 +14,23 @@ const BuiltinKnowledgeSearchArgsSchema = z.object({
 
 export class BuiltinKnowledgeServer {
   private server: Server
-  private configs: Array<{
-    description: string
-    enabled: boolean
-  }> = []
+  private configs: Array<BuiltinKnowledgeConfig> = []
 
   constructor(env?: {
-    configs: {
-      description: string
-      enabled: boolean
-    }[]
+    configs: BuiltinKnowledgeConfig[]
   }) {
     if (!env) {
       throw new Error('需要提供Builtin知识库配置')
     }
-    const envs = env.configs
-    if (!Array.isArray(envs) || envs.length === 0) {
+    const configs = env.configs
+    if (!Array.isArray(configs) || configs.length === 0) {
       throw new Error('需要提供至少一个Builtin知识库配置')
     }
-    for (const env of envs) {
-      if (!env.description) {
+    for (const config of configs) {
+      if (!config.description) {
         throw new Error('需要提供对这个知识库的描述，以方便ai决定是否检索此知识库')
       }
-      this.configs.push({
-        description: env.description,
-        enabled: env.enabled
-      })
+      this.configs.push(config)
     }
     this.server = new Server(
       {
@@ -112,15 +104,47 @@ export class BuiltinKnowledgeServer {
     parameters: Record<string, unknown> | undefined,
     configIndex: number = 0
   ): Promise<{ content: MCPTextContent[] }> {
-    console.log(parameters, configIndex)
-    // 搜索逻辑留空
-    return {
-      content: [
-        {
-          type: 'text',
-          text: '（内置知识库搜索逻辑未实现）'
-        }
-      ]
+    const { query } = parameters as { query: string; topK?: number }
+    if (!query) {
+      throw new Error('查询内容不能为空')
+    }
+    try {
+      // 获取知识库 id（用 index 作为 id）
+      const config = this.configs[configIndex]
+      const id = config.id
+      // similarityQuery(id, key)
+      const results = await presenter.knowledgePresenter.similarityQuery(id, query)
+      let resultText = `### 查询: ${query}\n\n`
+      if (!results || results.length === 0) {
+        resultText += '未找到相关结果。'
+      } else {
+        resultText += `找到 ${results.length} 条相关结果:\n\n`
+        results.forEach((result: QueryResult, index: number) => {
+          resultText += `#### ${index + 1}. (ID: ${result.id})\n`
+          resultText += `${result.metadata.content || ''}\n\n`
+          if (result.metadata.filePath) {
+            resultText += `文件: ${result.metadata.filePath}\n`
+          }
+          resultText += `相似度: ${(1 - result.distance)}\n\n`
+        })
+      }
+      return {
+        content: [
+          {
+            type: 'text',
+            text: resultText
+          }
+        ]
+      }
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `搜索失败: ${error instanceof Error ? error.message : String(error)}`
+          }
+        ]
+      }
     }
   }
 }

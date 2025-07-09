@@ -176,6 +176,7 @@ onMounted(() => {
   // 监听知识库文件更新事件
   window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
     console.log('知识库文件更新:', data)
+    // TODO
     const file = fileList.value.find((file) => file.id === data.fileId)
     if (!file) {
       return
@@ -205,7 +206,7 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         await knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        loadList()
+        // TODO
       } catch (error) {
         console.error('文件准备失败:', error)
         return
