@@ -1187,6 +1187,7 @@ export interface IKnowledgePresenter {
   deleteFile(id: string, fileId: string): Promise<void>
   reAddFile(id: string, fileId: string): Promise<void>
   listFiles(id: string): Promise<KnowledgeFileMessage[]>
+  similarityQuery(id: string, key: string)
 }
 
 type ModelProvider = {
@@ -1202,7 +1203,6 @@ export type BuiltinKnowledgeConfig = {
   normalized: boolean
   chunkSize?: number
   chunkOverlap?: number
-  documentCount?: number
   fragmentsNumber: numner
   enabled: boolean
 }
@@ -1230,11 +1230,15 @@ export interface QueryOptions {
   /** 最小距离阈值 */
   threshold?: number
   /** 查询向量的维度 */
-  metric?: 'l2sq' | 'cosine' | 'ip'
+  metric: 'l2sq' | 'cosine' | 'ip'
 }
 export interface QueryResult {
   id: string
-  metadata: any
+  metadata: {
+    from: string,
+    filePath: string,
+    content: string
+  }
   distance: number
 }
 
@@ -1272,14 +1276,14 @@ export interface IVectorDatabasePresenter {
   insertVectors(records: Array<InsertOptions>): Promise<void>
   /**
    * 查询向量最近邻（TopK 检索）。
+   * @param vector: 查询向量
    * @param options 查询参数：
-   *   - vector: 查询向量
    *   - topK: 返回最近邻数量
    *   - efSearch: 检索时 HNSW 的 ef 参数（可选）
    *   - threshold: 最小距离阈值（可选）
    * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
    */
-  similarityQuery(options: QueryOptions & { vector: number[] }): Promise<QueryResult[]>
+  similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]>
   /**
    * 根据 id 删除指定向量记录
    * @param id 记录 id

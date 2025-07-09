@@ -8,13 +8,11 @@ import {
   QueryOptions,
   QueryResult,
   IVectorDatabasePresenter,
-  KnowledgeFileMessage,
-  KnowledgeFileStatus
+  KnowledgeFileMessage
 } from '@shared/presenter'
 
 import { nanoid } from 'nanoid'
 import { app } from 'electron'
-import { th } from 'zod/dist/types/v4/locales'
 
 const runtimeBasePath = path
   .join(app.getAppPath(), 'runtime')
@@ -173,15 +171,15 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.safeRun(sql, params)
   }
 
-  async similarityQuery(params: QueryOptions & { vector: number[] }): Promise<QueryResult[]> {
-    const k = params.topK
+  async similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]> {
+    const k = options.topK
     const fn =
-      params.metric === 'ip'
+      options.metric === 'ip'
         ? 'array_negative_inner_product'
-        : params.metric === 'cosine'
+        : options.metric === 'cosine'
           ? 'array_cosine_distance'
           : 'array_distance'
-    const where = params.threshold != null ? `WHERE ${fn}(embedding, ?) <= ?` : ''
+    const where = options.threshold != null ? `WHERE ${fn}(embedding, ?) <= ?` : ''
     const sql = `
       SELECT id, metadata, ${fn}(embedding, ?) AS distance
       FROM ${this.vectorTable}
@@ -189,9 +187,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       ORDER BY distance
       LIMIT ?;
     `
-    const paramsArr: any[] = [params.vector]
-    if (params.threshold != null) {
-      paramsArr.push(params.vector, params.threshold)
+    const embParam = arrayValue(Array.from(vector))
+    const paramsArr: any[] = [embParam]
+    if (options.threshold != null) {
+      paramsArr.push(options.threshold)
     }
     paramsArr.push(k)
     const reader = await this.connection.runAndReadAll(sql, paramsArr)

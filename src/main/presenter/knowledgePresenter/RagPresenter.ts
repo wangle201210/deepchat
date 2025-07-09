@@ -87,6 +87,19 @@ export class RagPresenter {
     })
   }
 
+  async similarityQuery(key: string): Promise<any> {
+    const embedding = await presenter.llmproviderPresenter.getEmbeddings(
+      this.config.embedding.providerId,
+      this.config.embedding.modelId,
+      [sanitizeText(key)]
+    )
+
+    return await this.vectorP.similarityQuery(embedding[0], {
+      topK: this.config.fragmentsNumber,
+      metric: this.config.normalized ? 'cosine' : 'ip'
+    })
+  }
+
   async deleteFile(fileId: string) {
     await this.vectorP.deleteVectorsByFile(fileId)
     await this.vectorP.deleteFile(fileId)

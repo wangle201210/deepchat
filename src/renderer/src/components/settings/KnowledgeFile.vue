@@ -83,7 +83,7 @@
           <DialogTitle> {{ t('settings.knowledgeBase.searchKnowledge') }} </DialogTitle>
         </DialogHeader>
         <div className="flex w-full items-center gap-1">
-          <Input :placeholder="t('settings.knowledgeBase.searchKnowledgePlaceholder')" />
+          <Input v-model="searchKey" :placeholder="t('settings.knowledgeBase.searchKnowledgePlaceholder')" />
           <Button @click="handleSearch">
             <Icon icon="lucide:search" class="w-4 h-4" />
           </Button>
@@ -146,7 +146,11 @@ const onReturn = () => {
 }
 
 // 查询知识库
-const handleSearch = () => {}
+const searchKey = ref('')
+const handleSearch = async () => {
+  const search = await knowledgePresenter.similarityQuery(props.builtinKnowledgeDetail.id, searchKey.value)
+  console.log('查询结果:', search)
+}
 // 文件点击上传
 const handleChange = (event: Event) => {
   const files = (event.target as HTMLInputElement).files
@@ -171,9 +175,13 @@ onMounted(() => {
   loadList()
   // 监听知识库文件更新事件
   window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
-    if (data.knowledgeId !== props.builtinKnowledgeDetail.id) return
-    // 重新加载文件列表
-    loadList()
+    console.log('知识库文件更新:', data)
+    const file = fileList.value.find((file) => file.id === data.fileId)
+    if (!file) {
+      return
+    }
+    file.status = data.status
+    file.metadata = data.metadata
   })
 })
 onBeforeUnmount(() => {
@@ -196,7 +204,8 @@ const handleDrop = async (e: DragEvent) => {
       }
       try {
         const path = window.api.getPathForFile(file)
-        knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
+        await knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
+        loadList()
       } catch (error) {
         console.error('文件准备失败:', error)
         return

@@ -8,7 +8,7 @@ import {
   MCPServerConfig,
   KnowledgeFileMessage
 } from '@shared/presenter'
-import { eventBus } from '@/eventbus'
+import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS, RAG_EVENTS } from '@/events'
 import { DuckDBPresenter } from './database/duckdbPresenter'
 import { RagPresenter } from './RagPresenter'
@@ -194,13 +194,9 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   async addFile(id: string, filePath: string): Promise<KnowledgeFileMessage> {
     const rag = await this.getRagPresenter(id)
     const fileTask = await rag.addFile(filePath)
-    fileTask.task.finally(() => {
+    fileTask.task.then((message) => {
       // 任务完成后，发送事件通知
-      eventBus.emit(RAG_EVENTS.FILE_UPDATED, {
-        id: id,
-        fileId: fileTask.data.id,
-        filePath: filePath
-      })
+      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, message)
     })
     return fileTask.data
   }
@@ -229,5 +225,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.ragPresenterCache.forEach((rag) => {
       rag.close()
     })
+  }
+
+  async similarityQuery(id: string, key: string): Promise<any> {
+    const rag = await this.getRagPresenter(id)
+    return await rag.similarityQuery(key)
   }
 }

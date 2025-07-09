@@ -34,7 +34,7 @@
         variant="ghost"
         size="icon"
         class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-        :title="getTitle(file.status)"
+        :title="file.metadata.reason"
       >
         <Icon
           v-if="file.status === 'completed'"
@@ -111,20 +111,6 @@ const formatFileSize = (bytes: number): string => {
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB'
   if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB'
   return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB'
-}
-
-const getTitle = (status: string): string => {
-  switch (status) {
-    case 'completed':
-      return t('settings.knowledgeBase.uploadCompleted')
-    case 'processing':
-      return t('settings.knowledgeBase.uploadProcessing')
-    case 'error':
-      // TODO： 应该返回错误信息
-      return t('settings.knowledgeBase.uploadError')
-    default:
-      return ''
-  }
 }
 
 const getFileIcon = () => {
