@@ -332,7 +332,10 @@
     "uploadError": "업로드 실패",
     "delete": "삭제",
     "reason": "이유",
-    "deleteSuccess": "성공적으로 삭제하십시오"
+    "deleteSuccess": "성공적으로 삭제하십시오",
+    "copy": "복사",
+    "copySuccess": "성공적으로 복사하십시오",
+    "source": "원천"
   },
   "mcp": {
     "title": "MCP 설정",

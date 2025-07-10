@@ -332,7 +332,10 @@
     "uploadError": "بارگذاری ناموفق بود",
     "delete": "حذف کردن",
     "reason": "دلیل",
-    "deleteSuccess": "با موفقیت حذف کنید"
+    "deleteSuccess": "با موفقیت حذف کنید",
+    "copy": "کپی کردن",
+    "copySuccess": "با موفقیت کپی کنید",
+    "source": "منبع"
   },
   "mcp": {
     "title": "تنظیمات MCP",

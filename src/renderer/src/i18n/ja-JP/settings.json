@@ -332,7 +332,10 @@
     "uploadError": "アップロードに失敗しました",
     "delete": "消去",
     "reason": "理由",
-    "deleteSuccess": "正常に削除します"
+    "deleteSuccess": "正常に削除します",
+    "copy": "コピー",
+    "copySuccess": "正常にコピーします",
+    "source": "ソース"
   },
   "mcp": {
     "title": "MCP設定",

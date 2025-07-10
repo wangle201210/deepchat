@@ -103,35 +103,13 @@
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                   <div>
-                    <span class="font-medium">
-                      {{ t('settings.knowledgeBase.embeddingModel') }}:
-                    </span>
+                    <b class="font-medium"> {{ t('settings.knowledgeBase.embeddingModel') }}:</b>
                     <span> {{ config.embedding.modelId }} </span>
                   </div>
-                  <div v-if="config.rerank && config.rerank.modelId">
-                    <span class="font-medium">
-                      {{ t('settings.knowledgeBase.rerankModel') }}:
-                    </span>
+                  <span v-if="config.rerank && config.rerank.modelId">
+                    <b class="font-medium">{{ t('settings.knowledgeBase.rerankModel') }}:</b>
                     <span> {{ config.rerank.modelId }} </span>
-                  </div>
-                  <div v-if="config.dimensions">
-                    <span class="font-medium"> {{ t('settings.knowledgeBase.dimensions') }}: </span>
-                    <span>{{ config.dimensions }}</span>
-                  </div>
-                  <div v-if="config.chunkSize">
-                    <span class="font-medium"> {{ t('settings.knowledgeBase.chunkSize') }}:</span>
-                    <span>{{ config.chunkSize }}</span>
-                  </div>
-                  <div v-if="config.chunkOverlap">
-                    <span class="font-medium">{{ t('settings.knowledgeBase.chunkOverlap') }}:</span>
-                    <span>{{ config.chunkOverlap }}</span>
-                  </div>
-                  <div>
-                    <span class="font-medium">
-                      {{ t('settings.knowledgeBase.fragmentsNumber') }}:
-                    </span>
-                    <span>{{ config.fragmentsNumber }}</span>
-                  </div>
+                  </span>
                 </div>
               </div>
             </div>
@@ -257,7 +235,6 @@
                           {{ selectRerankModel?.name || t('settings.common.selectModel') }}
                         </span>
                       </div>
-                      <div class="flex items-center gap-1">
                         <Button
                           size="xs"
                           variant="ghost"
@@ -275,7 +252,6 @@
                         >
                           <Icon icon="lucide:chevron-down" class="w-4 h-4 text-muted-foreground" />
                         </Button>
-                      </div>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-80 p-0">
