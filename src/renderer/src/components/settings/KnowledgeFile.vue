@@ -118,22 +118,26 @@
                   :key="item.id"
                   class="relative px-6 py-4 mt-2 bg-card border border-border rounded-sm bg-secondary"
                 >
+                  <div class="absolute  right-10 top-1 text-xs  text-white p-1 rounded-sm bg-primary-600 ">
+                    score:{{ ((1 - item.distance)*100).toFixed(2) + '%' }}
+                  </div>
                   <Tooltip :delay-duration="200">
                     <TooltipTrigger as-child>
                       <Button
                         variant="ghost"
                         size="xs"
-                        class="absolute right-1 top-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-primary/80 hover:text-white/100 transition-colors"
+                        class="absolute right-2   top-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-primary/80 hover:text-white/100 transition-colors"
                         @click="handleCopy(item.metadata.content, item.id)"
                       >
                         <Icon v-if="copyId === item.id" icon="lucide:check" />
                         <Icon v-else icon="lucide:copy" />
                       </Button>
                     </TooltipTrigger>
-
                     <TooltipContent>
-                      <div v-if="copyId === item.id">{{ t('settings.knowledgeBase.copySuccess') }} <</div>
-                      <div v-else>{{ t('settings.knowledgeBase.copy') }} </div>
+                      <div v-if="copyId === item.id">
+                        {{ t('settings.knowledgeBase.copySuccess') }} <
+                      </div>
+                      <div v-else>{{ t('settings.knowledgeBase.copy') }}</div>
                     </TooltipContent>
                   </Tooltip>
                   <div class="text-xs">
@@ -198,6 +202,7 @@ const openSearchDialog = () => {
   searchKey.value = ''
   searchResult.value = []
   copyId.value = ''
+  loading.value = false
 }
 
 // 返回知识库页面
@@ -215,11 +220,12 @@ const handleSearch = async () => {
   if (!searchKey.value) return
   copyId.value = ''
   loading.value = true
-  searchResult.value = await knowledgePresenter.similarityQuery(
-    props.builtinKnowledgeDetail.id,
-    searchKey.value
-  )
-  loading.value = false
+  knowledgePresenter
+    .similarityQuery(props.builtinKnowledgeDetail.id, searchKey.value)
+    .then((res: any) => {
+      searchResult.value = res || []
+      loading.value = false
+    })
 }
 
 // 复制文本
