@@ -99,7 +99,7 @@
               </div>
               <div class="grid gap-2">
                 <div class="flex items-center">
-                  <span class="font-medium text-sm">{{ config.description }}</span>
+                  <span class="font-medium text-sm w-[calc(100%-120px)]">{{ config.description }}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                   <div>
