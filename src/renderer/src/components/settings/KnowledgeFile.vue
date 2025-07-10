@@ -291,7 +291,18 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         const result = await knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        fileList.value.push(result)
+        if(result.error) {
+          toast({
+            title: `${file.name} ${t('settings.knowledgeBase.uploadError')}`,
+            description: result.error,
+            variant: 'destructive',
+            duration: 3000
+          })
+          return
+        } 
+        if (result.data) {
+          fileList.value.push(result.data)
+        }
       } catch (error) {
         console.error('文件准备失败:', error)
         return
@@ -313,7 +324,15 @@ const deleteFile = async (fileId: string) => {
 
 // 重新上传文件
 const reAddFile = async (file: KnowledgeFileMessage) => {
+  const result = await knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
   file.status = 'processing' // 设置状态为加载中
-  knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
+  if(result.error) {
+    toast({
+      title: `${file.name} ${t('settings.knowledgeBase.uploadError')}`,
+      description: result.error,
+      variant: 'destructive',
+      duration: 3000
+    })
+  }
 }
 </script>

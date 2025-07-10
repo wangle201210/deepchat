@@ -48,6 +48,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       throw new Error('Database does not exist, please initialize first.')
     }
     await this.connect()
+    if (fs.existsSync(this.dbPath + '.wal')) {
+      await this.connection.run('CHECKPOINT;')
+    }
     await this.installAndLoadVSS()
   }
 
