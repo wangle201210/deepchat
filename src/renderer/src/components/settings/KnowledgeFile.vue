@@ -53,7 +53,7 @@
                 <Icon icon="lucide:clipboard" class="w-4 h-4" />
                 <span class="text-sm">
                   {{ t('settings.knowledgeBase.onlySupport') }}
-                  {{ allowedExts.join('，') }}
+                  {{ acceptExts.join('，') }}
                 </span>
               </div>
             </div>
@@ -65,7 +65,7 @@
           type="file"
           id="upload"
           @change="handleChange"
-          :accept="allowedExts.map((ext) => '.' + ext).join(',')"
+          :accept="acceptExts.map((ext) => '.' + ext).join(',')"
         />
         <div v-for="file in fileList" :key="file.id">
           <KnowledgeFileItem
@@ -118,15 +118,17 @@
                   :key="item.id"
                   class="relative px-6 py-4 mt-2 bg-card border border-border rounded-sm bg-secondary"
                 >
-                  <div class="absolute  right-10 top-1 text-xs  text-white p-1 rounded-sm bg-primary-600 ">
-                    score:{{ ((1 - item.distance)*100).toFixed(2) + '%' }}
+                  <div
+                    class="absolute right-10 top-1 text-xs text-white p-1 rounded-sm bg-primary-600"
+                  >
+                    score:{{ ((1 - item.distance) * 100).toFixed(2) + '%' }}
                   </div>
                   <Tooltip :delay-duration="200">
                     <TooltipTrigger as-child>
                       <Button
                         variant="ghost"
                         size="xs"
-                        class="absolute right-2   top-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-primary/80 hover:text-white/100 transition-colors"
+                        class="absolute right-2 top-1 h-6 w-6 flex items-center justify-center rounded-sm hover:bg-primary/80 hover:text-white/100 transition-colors"
                         @click="handleCopy(item.metadata.content, item.id)"
                       >
                         <Icon v-if="copyId === item.id" icon="lucide:check" />
@@ -191,7 +193,7 @@ const { t } = useI18n()
 // 文件列表
 const fileList = ref<KnowledgeFileMessage[]>([])
 // 允许的文件扩展名
-const allowedExts = ['txt', 'doc', 'docx']
+const acceptExts = ['txt', 'doc', 'docx', 'md', 'pdf', 'ppt', 'pptx']
 const knowledgePresenter = usePresenter('knowledgePresenter')
 // 弹窗状态
 const isSearchDialogOpen = ref(false)
@@ -279,10 +281,10 @@ const handleDrop = async (e: DragEvent) => {
     for (const file of e.dataTransfer.files) {
       // 校验类型
       const ext = file.name.split('.').pop()?.toLowerCase()
-      if (!ext || !allowedExts.includes(ext)) {
+      if (!ext || !acceptExts.includes(ext)) {
         toast({
           title: `"${file.name}"${t('settings.knowledgeBase.uploadError')}`,
-          description: `${t('settings.knowledgeBase.onlySupport')} ${allowedExts.join('，')}`,
+          description: `${t('settings.knowledgeBase.onlySupport')} ${acceptExts.join('，')}`,
           variant: 'destructive',
           duration: 3000
         })
@@ -291,7 +293,7 @@ const handleDrop = async (e: DragEvent) => {
       try {
         const path = window.api.getPathForFile(file)
         const result = await knowledgePresenter.addFile(props.builtinKnowledgeDetail.id, path)
-        if(result.error) {
+        if (result.error) {
           toast({
             title: `${file.name} ${t('settings.knowledgeBase.uploadError')}`,
             description: result.error,
@@ -299,7 +301,7 @@ const handleDrop = async (e: DragEvent) => {
             duration: 3000
           })
           return
-        } 
+        }
         if (result.data) {
           fileList.value.push(result.data)
         }
@@ -326,7 +328,7 @@ const deleteFile = async (fileId: string) => {
 const reAddFile = async (file: KnowledgeFileMessage) => {
   const result = await knowledgePresenter.reAddFile(props.builtinKnowledgeDetail.id, file.id)
   file.status = 'processing' // 设置状态为加载中
-  if(result.error) {
+  if (result.error) {
     toast({
       title: `${file.name} ${t('settings.knowledgeBase.uploadError')}`,
       description: result.error,
