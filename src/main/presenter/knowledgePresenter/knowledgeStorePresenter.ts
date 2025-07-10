@@ -11,7 +11,7 @@ import { nanoid } from 'nanoid'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import { sanitizeText } from '@/utils/strings'
 
-export class RagPresenter {
+export class KnowledgeStorePresenter {
   private readonly vectorP: IVectorDatabasePresenter
   private readonly config: BuiltinKnowledgeConfig
 

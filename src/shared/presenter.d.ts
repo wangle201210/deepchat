@@ -1371,5 +1371,3 @@ export interface IVectorDatabasePresenter {
    */
   deleteFile(id: string): Promise<void>
 }
-
-export interface IRagPresenter {}

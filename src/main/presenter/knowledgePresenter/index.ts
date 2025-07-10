@@ -13,7 +13,7 @@ import {
 import { eventBus, SendTarget } from '@/eventbus'
 import { MCP_EVENTS, RAG_EVENTS } from '@/events'
 import { DuckDBPresenter } from './database/duckdbPresenter'
-import { RagPresenter } from './RagPresenter'
+import { KnowledgeStorePresenter } from './knowledgeStorePresenter'
 
 export class KnowledgePresenter implements IKnowledgePresenter {
   /**
@@ -87,15 +87,15 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 创建知识库（初始化 RAG 应用）
    */
   create = async (config: BuiltinKnowledgeConfig): Promise<void> => {
-    this.createRagPresenter(config)
+    this.createStorePresenter(config)
   }
 
   /**
    * 删除知识库（移除本地存储）
    */
   delete = async (id: string): Promise<void> => {
-    if (this.ragPresenterCache.has(id)) {
-      const rag = this.ragPresenterCache.get(id) as RagPresenter
+    if (this.storePresenterCache.has(id)) {
+      const rag = this.storePresenterCache.get(id) as KnowledgeStorePresenter
       await rag.destory()
     } else {
       const dbPath = path.join(this.storageDir, id)
@@ -108,27 +108,27 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   /**
    * 缓存 RAG 应用实例
    */
-  private ragPresenterCache: Map<string, RagPresenter> = new Map()
+  private storePresenterCache: Map<string, KnowledgeStorePresenter> = new Map()
 
   /**
    * 创建 RAG 应用实例
    * @param params BuiltinKnowledgeConfig
-   * @returns RagPresenter
+   * @returns KnowledgeStorePresenter
    */
-  private createRagPresenter = async (config: BuiltinKnowledgeConfig): Promise<RagPresenter> => {
-    let rag: RagPresenter
+  private createStorePresenter = async (config: BuiltinKnowledgeConfig): Promise<KnowledgeStorePresenter> => {
+    let rag: KnowledgeStorePresenter
     const db = await this.getVectorDatabasePresenter(
       config.id,
       config.dimensions,
       config.normalized
     )
     try {
-      rag = new RagPresenter(db, config)
+      rag = new KnowledgeStorePresenter(db, config)
     } catch (e) {
-      throw new Error(`Failed to create RagPresenter: ${e}`)
+      throw new Error(`Failed to create storePresenter: ${e}`)
     }
 
-    this.ragPresenterCache.set(config.id, rag)
+    this.storePresenterCache.set(config.id, rag)
     return rag
   }
 
@@ -136,10 +136,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 获取 RAG 应用实例
    * @param id 知识库 ID
    */
-  private getRagPresenter = async (id: string): Promise<RagPresenter> => {
+  private getStorePresenter = async (id: string): Promise<KnowledgeStorePresenter> => {
     // 缓存命中直接返回
-    if (this.ragPresenterCache.has(id)) {
-      return this.ragPresenterCache.get(id) as RagPresenter
+    if (this.storePresenterCache.has(id)) {
+      return this.storePresenterCache.get(id) as KnowledgeStorePresenter
     }
     // 获取配置
     const configs = this.configP.getKnowledgeConfigs()
@@ -150,8 +150,8 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     // DuckDB 存储
     const db = await this.getVectorDatabasePresenter(id, config.dimensions, config.normalized)
     // 创建 RAG 应用实例
-    const rag = new RagPresenter(db, config)
-    this.ragPresenterCache.set(id, rag)
+    const rag = new KnowledgeStorePresenter(db, config)
+    this.storePresenterCache.set(id, rag)
     return rag
   }
 
@@ -182,11 +182,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private async handleFileTask(
     id: string,
-    fileHandler: (rag: RagPresenter) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
+    fileHandler: (rag: KnowledgeStorePresenter) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
     errorMsg: string
   ): Promise<KnowledgeFileResult> {
     try {
-      const rag = await this.getRagPresenter(id)
+      const rag = await this.getStorePresenter(id)
       const fileTask = await fileHandler(rag)
       fileTask.task
         .then((message) => {
@@ -215,7 +215,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async deleteFile(id: string, fileId: string): Promise<void> {
-    const rag = await this.getRagPresenter(id)
+    const rag = await this.getStorePresenter(id)
     await rag.deleteFile(fileId)
   }
 
@@ -228,23 +228,23 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {
-    const rag = await this.getRagPresenter(id)
+    const rag = await this.getStorePresenter(id)
     return await rag.queryFile(fileId)
   }
 
   async listFiles(id: string): Promise<KnowledgeFileMessage[]> {
-    const rag = await this.getRagPresenter(id)
+    const rag = await this.getStorePresenter(id)
     return await rag.listFiles()
   }
 
   async closeAll(): Promise<void> {
-    this.ragPresenterCache.forEach((rag) => {
+    this.storePresenterCache.forEach((rag) => {
       rag.close()
     })
   }
 
   async similarityQuery(id: string, key: string): Promise<QueryResult[]> {
-    const rag = await this.getRagPresenter(id)
+    const rag = await this.getStorePresenter(id)
     return await rag.similarityQuery(key)
   }
 }

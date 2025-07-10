@@ -16,7 +16,7 @@ classDiagram
     class KnowledgePresenter {
         -configPresenter: IConfigPresenter
         -storageDir: string
-        -ragPresenterCache: Map<string, RagPresenter>
+        -storePresenterCache: Map<string, KnowledgeStorePresenter>
         +create()
         +reset()
         +delete()
@@ -29,7 +29,7 @@ classDiagram
         +closeAll()
     }
 
-    class RagPresenter {
+    class KnowledgeStorePresenter {
         -vectorP: IVectorDatabasePresenter
         -config: BuiltinKnowledgeConfig
         +addFile()
@@ -58,8 +58,8 @@ classDiagram
         +destroy()
     }
 
-    KnowledgePresenter o-- RagPresenter : manages
-    RagPresenter o-- IVectorDatabasePresenter
+    KnowledgePresenter o-- KnowledgeStorePresenter : manages
+    KnowledgeStorePresenter o-- IVectorDatabasePresenter
 ```
 
 ## 数据流
@@ -84,25 +84,25 @@ sequenceDiagram
 sequenceDiagram
     participant User
     participant KnowledgePresenter
-    participant RagPresenter
+    participant KnowledgeStorePresenter
     participant IVectorDatabasePresenter
 
     User->>KnowledgePresenter: addFile(id, filePath)
-    KnowledgePresenter->>RagPresenter: addFile(filePath)
-    RagPresenter->>IVectorDatabasePresenter: insertFile/insertVectors
-    RagPresenter-->>KnowledgePresenter: 任务完成事件
+    KnowledgePresenter->>KnowledgeStorePresenter: addFile(filePath)
+    KnowledgeStorePresenter->>IVectorDatabasePresenter: insertFile/insertVectors
+    KnowledgeStorePresenter-->>KnowledgePresenter: 任务完成事件
     KnowledgePresenter-->>User: 文件入库结果
 
     User->>KnowledgePresenter: similarityQuery(id, key)
-    KnowledgePresenter->>RagPresenter: similarityQuery(key)
-    RagPresenter->>IVectorDatabasePresenter: similarityQuery
-    RagPresenter-->>KnowledgePresenter: 检索结果
+    KnowledgePresenter->>KnowledgeStorePresenter: similarityQuery(key)
+    KnowledgeStorePresenter->>IVectorDatabasePresenter: similarityQuery
+    KnowledgeStorePresenter-->>KnowledgePresenter: 检索结果
     KnowledgePresenter-->>User: 检索结果
 ```
 
 ## 关键设计
 
-1. **分层架构**：接口层（IKnowledgePresenter）、管理层（KnowledgePresenter）、业务层（RagPresenter）、存储层（IVectorDatabasePresenter）、配置层（ConfigPresenter）。
+1. **分层架构**：接口层（IKnowledgePresenter）、管理层（KnowledgePresenter）、业务层（KnowledgeStorePresenter）、存储层（IVectorDatabasePresenter）、配置层（ConfigPresenter）。
 2. **事件驱动**：通过 eventBus 监听 MCP 配置变更，自动同步知识库。
 3. **高性能本地检索**：集成 DuckDB 向量数据库和本地嵌入模型。
 4. **配置驱动与持久化**：所有知识库配置通过 ConfigPresenter 管理和持久化。
