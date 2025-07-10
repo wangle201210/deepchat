@@ -60,17 +60,34 @@ sequenceDiagram
     participant User
     participant KnowledgePresenter
     participant RagPresenter
+    participant LLMProvider
     participant IVectorDatabasePresenter
+    participant EventBus
 
+    %% 文件入库流程
     User->>KnowledgePresenter: addFile(id, filePath)
     KnowledgePresenter->>RagPresenter: addFile(filePath)
-    RagPresenter->>IVectorDatabasePresenter: insertFile/insertVectors
-    RagPresenter-->>KnowledgePresenter: 任务完成事件
-    KnowledgePresenter-->>User: 文件入库结果
+    RagPresenter->>LLMProvider: getMimeType(filePath)
+    LLMProvider-->>RagPresenter: mimeType
+    RagPresenter->>LLMProvider: prepareFileCompletely(filePath, mimeType)
+    LLMProvider-->>RagPresenter: fileInfo (name, path, content, size)
+    RagPresenter->>IVectorDatabasePresenter: insertFile(fileMessage)
+    RagPresenter->>LLMProvider: 分块+嵌入 (splitText+getEmbeddings)
+    LLMProvider-->>RagPresenter: chunks, vectors
+    RagPresenter->>IVectorDatabasePresenter: insertVectors(vectors)
+    RagPresenter->>IVectorDatabasePresenter: updateFile(status=completed)
+    RagPresenter->>EventBus: RAG_EVENTS.FILE_UPDATED (文件处理完成)
+    RagPresenter-->>KnowledgePresenter: fileTask Promise resolve
+    KnowledgePresenter-->>User: 返回文件入库结果
+    Note over RagPresenter,IVectorDatabasePresenter: 异常时更新status=error并通知EventBus
 
+    %% 文件检索流程
     User->>KnowledgePresenter: similarityQuery(id, key)
     KnowledgePresenter->>RagPresenter: similarityQuery(key)
-    RagPresenter->>IVectorDatabasePresenter: similarityQuery
+    RagPresenter->>LLMProvider: getEmbeddings(key)
+    LLMProvider-->>RagPresenter: embedding
+    RagPresenter->>IVectorDatabasePresenter: similarityQuery(embedding)
+    IVectorDatabasePresenter-->>RagPresenter: 检索结果
     RagPresenter-->>KnowledgePresenter: 检索结果
     KnowledgePresenter-->>User: 检索结果
 ```
