@@ -53,7 +53,35 @@
 
 - `getKnowledgeConfigs()`, `setKnowledgeConfigs()`, `diffKnowledgeConfigs()` 等。
 
-## 2. 文件入库与检索流程
+## 2. 文件入库流程
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant KnowledgePresenter
+    participant RagPresenter
+    participant IVectorDatabasePresenter
+    participant LLMProvider
+    participant EventBus
+
+    User->>KnowledgePresenter: addFile(id, filePath)
+    KnowledgePresenter->>RagPresenter: addFile(filePath)
+    RagPresenter->>RagPresenter: 读取文件内容
+    RagPresenter->>IVectorDatabasePresenter: insertFile(fileMessage)
+    RagPresenter->>RagPresenter: 分块 (splitText)
+    loop 对每个chunk
+        RagPresenter->>LLMProvider: getEmbeddings(chunk)
+        LLMProvider-->>RagPresenter: vector
+    end
+    RagPresenter->>IVectorDatabasePresenter: insertVectors(vectors)
+    RagPresenter->>IVectorDatabasePresenter: updateFile(status=completed)
+    RagPresenter->>EventBus: RAG_EVENTS.FILE_UPDATED (文件处理完成)
+    RagPresenter-->>KnowledgePresenter: fileTask Promise resolve
+    KnowledgePresenter-->>User: 返回文件入库结果
+    Note over RagPresenter,IVectorDatabasePresenter: 异常时更新status=error并通知EventBus
+```
+
+## 3. 检索流程
 
 ```mermaid
 sequenceDiagram
@@ -62,37 +90,18 @@ sequenceDiagram
     participant RagPresenter
     participant LLMProvider
     participant IVectorDatabasePresenter
-    participant EventBus
 
-    %% 文件入库流程
-    User->>KnowledgePresenter: addFile(id, filePath)
-    KnowledgePresenter->>RagPresenter: addFile(filePath)
-    RagPresenter->>LLMProvider: getMimeType(filePath)
-    LLMProvider-->>RagPresenter: mimeType
-    RagPresenter->>LLMProvider: prepareFileCompletely(filePath, mimeType)
-    LLMProvider-->>RagPresenter: fileInfo (name, path, content, size)
-    RagPresenter->>IVectorDatabasePresenter: insertFile(fileMessage)
-    RagPresenter->>LLMProvider: 分块+嵌入 (splitText+getEmbeddings)
-    LLMProvider-->>RagPresenter: chunks, vectors
-    RagPresenter->>IVectorDatabasePresenter: insertVectors(vectors)
-    RagPresenter->>IVectorDatabasePresenter: updateFile(status=completed)
-    RagPresenter->>EventBus: RAG_EVENTS.FILE_UPDATED (文件处理完成)
-    RagPresenter-->>KnowledgePresenter: fileTask Promise resolve
-    KnowledgePresenter-->>User: 返回文件入库结果
-    Note over RagPresenter,IVectorDatabasePresenter: 异常时更新status=error并通知EventBus
-
-    %% 文件检索流程
     User->>KnowledgePresenter: similarityQuery(id, key)
     KnowledgePresenter->>RagPresenter: similarityQuery(key)
-    RagPresenter->>LLMProvider: getEmbeddings(key)
+    RagPresenter->>LLMProvider: getEmbeddings([key])
     LLMProvider-->>RagPresenter: embedding
     RagPresenter->>IVectorDatabasePresenter: similarityQuery(embedding)
-    IVectorDatabasePresenter-->>RagPresenter: 检索结果
+    IVectorDatabasePresenter-->>RagPresenter: 检索结果（相关片段、距离、元数据）
     RagPresenter-->>KnowledgePresenter: 检索结果
     KnowledgePresenter-->>User: 检索结果
 ```
 
-## 3. 事件系统
+## 4. 事件系统
 
 BuiltinKnowledge 通过 eventBus 发出以下事件：
 
@@ -100,9 +109,8 @@ BuiltinKnowledge 通过 eventBus 发出以下事件：
 | ---------------------------------- | -------------------------------- | ----------------- | ------------------------- |
 | `MCP_EVENTS.CONFIG_CHANGED`        | 配置变更                         | eventBus          | configs                  |
 | `RAG_EVENTS.FILE_UPDATED`          | 文件处理完成/状态变更             | KnowledgePresenter | KnowledgeFileMessage      |
-| ...                                | ...                              | ...               | ...                      |
 
-## 4. 配置管理
+## 5. 配置管理
 
 知识库相关配置通过 `ConfigPresenter` 管理，持久化存储。
 
@@ -126,19 +134,19 @@ type BuiltinKnowledgeConfig = {
 }
 ```
 
-## 5. 扩展指南
+## 6. 扩展指南
 
-### 5.1 添加新向量数据库
+### 6.1 添加新向量数据库
 
 1. 实现 `IVectorDatabasePresenter` 接口。
 2. 在 `KnowledgePresenter` 中根据配置选择不同数据库实现。
 
-### 5.2 支持新嵌入模型
+### 6.2 支持新嵌入模型
 
 1. 扩展 `ModelProvider` 类型和相关调用逻辑。
 2. 在 `RagPresenter` 中适配新模型。
 
-### 5.3 自定义事件与回调
+### 6.3 自定义事件与回调
 
 1. 在 `KnowledgePresenter`/`RagPresenter` 中增加事件触发点。
 2. 在前端 UI 层监听并响应相关事件。
