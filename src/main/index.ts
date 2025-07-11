@@ -1,4 +1,4 @@
-import { app, protocol } from 'electron'
+import { app, protocol, crashReporter } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { presenter } from './presenter'
 import { ProxyMode, proxyConfig } from './presenter/proxyConfig'
@@ -8,6 +8,12 @@ import { eventBus } from './eventbus'
 import { WINDOW_EVENTS, TRAY_EVENTS } from './events'
 import { setLoggingEnabled } from '@shared/logger'
 import { is } from '@electron-toolkit/utils' // 确保导入 is
+
+crashReporter.start({
+  productName: 'DeepChat',
+  companyName: 'WeFonk',
+  uploadToServer: false
+})
 
 // 设置应用命令行参数
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required') // 允许视频自动播放
