@@ -9,12 +9,6 @@ import { WINDOW_EVENTS, TRAY_EVENTS } from './events'
 import { setLoggingEnabled } from '@shared/logger'
 import { is } from '@electron-toolkit/utils' // 确保导入 is
 
-crashReporter.start({
-  productName: 'DeepChat',
-  companyName: 'WeFonk',
-  uploadToServer: false
-})
-
 // 设置应用命令行参数
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required') // 允许视频自动播放
 app.commandLine.appendSwitch('webrtc-max-cpu-consumption-percentage', '100') // 设置 WebRTC 最大 CPU 占用率
@@ -43,6 +37,13 @@ app.whenReady().then(() => {
   // 从配置中读取日志设置并应用
   const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
   setLoggingEnabled(loggingEnabled)
+  if (loggingEnabled) {
+    crashReporter.start({
+      productName: 'DeepChat',
+      companyName: 'WeFonk',
+      uploadToServer: false
+    })
+  }
 
   // 初始化托盘图标和菜单，并存储 presenter 实例
   presenter.setupTray()
