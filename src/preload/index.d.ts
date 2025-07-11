@@ -10,5 +10,6 @@ declare global {
       getWindowId(): number | null
       getWebContentsId(): number
     }
+    floatingButtonAPI: typeof floatingButtonAPI
   }
 }

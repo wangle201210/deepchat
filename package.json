@@ -1,6 +1,6 @@
 {
   "name": "DeepChat",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "DeepChat，一个简单易用的AI客户端",
   "main": "./out/main/index.js",
   "author": "ThinkInAIXYZ",
@@ -9,7 +9,7 @@
     "node": ">=20.12.2",
     "pnpm": ">=10.11.0"
   },
-  "packageManager": "pnpm@10.12.2",
+  "packageManager": "pnpm@10.12.2+sha512.a32540185b964ee30bb4e979e405adc6af59226b438ee4cc19f9e8773667a66d302f5bfee60a39d3cac69e35e4b96e708a71dd002b7e9359c4112a1722ac323f",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "test": "vitest",
@@ -42,7 +42,7 @@
     "build:linux:arm64": "pnpm run build && electron-builder --linux --arm64",
     "afterSign": "scripts/notarize.js",
     "installRuntime": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun",
-    "installRuntime:win:x64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a x64 -p win32 && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a x64 -p win32",
+    "installRuntime:win:x64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a x64 -p win32 && npx -y tiny-runtime-injector --type node --dir ./runtime/node -a x64 -p win32",
     "installRuntime:win:arm64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a arm64 -p win32 && npx -y tiny-runtime-injector --type node --dir ./runtime/node -a arm64 -p win32",
     "installRuntime:mac:arm64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a arm64 -p darwin && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a arm64 -p darwin",
     "installRuntime:mac:x64": "npx -y tiny-runtime-injector --type uv --dir ./runtime/uv -a x64 -p darwin && npx -y tiny-runtime-injector --type bun --dir ./runtime/bun -a x64 -p darwin",
@@ -61,7 +61,7 @@
     "@google/genai": "^1.5.1",
     "@langchain/core": "^0.3.62",
     "@langchain/textsplitters": "^0.1.0",
-    "@modelcontextprotocol/sdk": "^1.12.3",
+    "@modelcontextprotocol/sdk": "^1.13.1",
     "axios": "^1.7.9",
     "better-sqlite3-multiple-ciphers": "11.10.0",
     "cheerio": "^1.0.0",
@@ -74,6 +74,7 @@
     "electron-window-state": "^5.0.3",
     "fflate": "^0.8.2",
     "file-type": "^20.5.0",
+    "glob": "^11.0.3",
     "https-proxy-agent": "^7.0.6",
     "jsonrepair": "^3.12.0",
     "mammoth": "^1.9.0",
@@ -94,7 +95,7 @@
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
-    "@electron/notarize": "^2.5.0",
+    "@electron/notarize": "^3.0.1",
     "@iconify-json/lucide": "^1.2.39",
     "@iconify-json/vscode-icons": "^1.2.20",
     "@iconify/vue": "^5.0.0",

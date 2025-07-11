@@ -200,12 +200,14 @@ export class ThreadPresenter implements IThreadPresenter {
       if (conversation.is_new === 1) {
         try {
           // 注意：第二个参数直接传入 conversationId
-          const title = await this.summaryTitles(undefined, state.conversationId)
-          if (title) {
-            // renameConversation 会更新标题和updatedAt，并广播
-            await this.renameConversation(state.conversationId, title)
-            titleUpdated = true
-          }
+          this.summaryTitles(undefined, state.conversationId).then((title) => {
+            if (title) {
+              // renameConversation 会更新标题和updatedAt，并广播
+              this.renameConversation(state.conversationId, title).then(() => {
+                titleUpdated = true
+              })
+            }
+          })
         } catch (e) {
           console.error('Failed to summarize title in main process:', e)
         }
@@ -1813,20 +1815,20 @@ export class ThreadPresenter implements IThreadPresenter {
   ): ChatMessage[] {
     const formattedMessages: ChatMessage[] = []
 
+    // 添加上下文消息
+    formattedMessages.push(
+      ...this.addContextMessages(contextMessages, vision, supportsFunctionCall)
+    )
+
     // 添加系统提示
     if (systemPrompt) {
       // formattedMessages.push(...this.addSystemPrompt(formattedMessages, systemPrompt, artifacts))
-      formattedMessages.push({
+      formattedMessages.unshift({
         role: 'system',
         content: systemPrompt
       })
       // console.log('-------------> system prompt \n', systemPrompt, artifacts, formattedMessages)
     }
-
-    // 添加上下文消息
-    formattedMessages.push(
-      ...this.addContextMessages(formattedMessages, contextMessages, vision, supportsFunctionCall)
-    )
 
     // 添加当前用户消息
     let finalContent = searchPrompt || userContent
@@ -1870,12 +1872,11 @@ export class ThreadPresenter implements IThreadPresenter {
 
   // 添加上下文消息
   private addContextMessages(
-    formattedMessages: ChatMessage[],
     contextMessages: Message[],
     vision: boolean,
     supportsFunctionCall: boolean
   ): ChatMessage[] {
-    const resultMessages = [...formattedMessages]
+    const resultMessages = [] as ChatMessage[]
 
     // 对于原生fc模型，支持正确的tool_call response history插入
     if (supportsFunctionCall) {

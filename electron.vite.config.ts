@@ -33,6 +33,14 @@ export default defineConfig({
       alias: {
         '@shared': resolve('src/shared')
       }
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          index: resolve('src/preload/index.ts'),
+          floating: resolve('src/preload/floating-preload.ts')
+        }
+      }
     }
   },
   renderer: {
@@ -77,7 +85,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           shell: resolve('src/renderer/shell/index.html'),
-          index: resolve('src/renderer/index.html')
+          index: resolve('src/renderer/index.html'),
+          floating: resolve('src/renderer/floating/index.html')
         }
       }
     }

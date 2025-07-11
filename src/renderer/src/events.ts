@@ -116,6 +116,14 @@ export const TAB_EVENTS = {
   RENDERER_TAB_ACTIVATED: 'tab:renderer-activated' // 渲染进程标签页激活
 }
 
+// 悬浮按钮相关事件
+export const FLOATING_BUTTON_EVENTS = {
+  CLICKED: 'floating-button:clicked', // 悬浮按钮被点击
+  VISIBILITY_CHANGED: 'floating-button:visibility-changed', // 悬浮按钮显示状态改变
+  POSITION_CHANGED: 'floating-button:position-changed', // 悬浮按钮位置改变
+  ENABLED_CHANGED: 'floating-button:enabled-changed' // 悬浮按钮启用状态改变
+}
+
 // 知识库事件
 export const RAG_EVENTS = {
   FILE_UPDATED: 'rag:file-updated' // 文件状态更新

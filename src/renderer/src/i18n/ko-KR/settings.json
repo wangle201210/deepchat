@@ -92,15 +92,15 @@
       "description": "AI 응답의 최대 길이 설정"
     },
     "artifacts": {
-      "description": "인공물 기능을 활성화하면 AI가 더 풍부한 콘텐츠를 생성할 수 있습니다",
-      "title": "유물 효과"
+      "description": "Artifacts 기능을 활성화하면 AI가 더 풍부한 콘텐츠를 생성할 수 있습니다",
+      "title": "Artifacts 효과"
     },
-    "addModel": "모델을 추가하십시오",
-    "configureModel": "구성 모델",
+    "addModel": "모델 추가",
+    "configureModel": "모델 구성",
     "modelList": "모델 목록",
     "provider": "서비스 제공 업체",
     "providerSetting": "서비스 제공 업체 설정",
-    "selectModel": "모델을 선택하십시오",
+    "selectModel": "모델 선택",
     "modelConfig": {
       "cancel": "취소",
       "contextLength": {
@@ -223,6 +223,17 @@
       "pullModel": {
         "title": "모델 가져오기",
         "pull": "가져오기"
+      },
+      "modelCheck": {
+        "checking": "테스트 ...",
+        "description": "연결 및 유용성 테스트 모델을 선택하십시오",
+        "failed": "모델 테스트가 실패했습니다",
+        "model": "모델을 선택하십시오",
+        "modelPlaceholder": "테스트 할 모델을 선택하십시오",
+        "noModels": "이 서비스 제공 업체에는 사용할 수있는 모델이 없습니다",
+        "success": "모델 테스트가 성공했습니다",
+        "test": "테스트를 시작하십시오",
+        "title": "모델 점검"
       }
     },
     "pullModels": "모델 가져오기",
@@ -237,7 +248,11 @@
     "urlFormat": "API 샘플 : {defaultUrl}",
     "azureApiVersion": "API 버전",
     "safety": {
-      "title": "보안 설정"
+      "title": "보안 설정",
+      "blockHighest": "높은 위험을 차단하십시오",
+      "blockMost": "중간 위험을 차단합니다",
+      "blockNone": "차단되지 않았습니다",
+      "blockSome": "낮은 위험을 차단하십시오"
     },
     "serverList": "서버 목록",
     "totalServers": "총 서버 수",
@@ -259,7 +274,8 @@
     "keyStatus": {
       "remaining": "나머지 금액",
       "usage": "사용된"
-    }
+    },
+    "refreshingModels": "상쾌한 ..."
   },
   "knowledgeBase": {
     "title": "지식 베이스 설정",
@@ -273,11 +289,11 @@
     "datasetId": "데이터셋 ID",
     "endpoint": "API 엔드포인트",
     "configAdded": "구성 추가됨",
-    "configAddedDesc": "Dify 지식 베이스 구성이 성공적으로 추가되었습니다",
+    "configAddedDesc": "{name} 구성이 성공적으로 추가되었습니다",
     "addConfig": "구성 추가",
     "moreComingSoon": "더 많은 지식 베이스 유형이 곧 제공될 예정입니다",
     "configUpdated": "구성 업데이트됨",
-    "configUpdatedDesc": "Dify 지식 베이스 구성이 성공적으로 업데이트되었습니다",
+    "configUpdatedDesc": "{name} 구성이 성공적으로 업데이트되었습니다",
     "descriptionPlaceholder": "예: 회사 제품 문서 지식 베이스",
     "ragflowTitle": "RAGFlow 지식 베이스",
     "ragflowDescription": "RAGFlow는 다양한 검색 방법과 문서 관리 기능을 지원하는 강력한 지식 베이스 관리 시스템입니다.",
@@ -339,7 +355,7 @@
   },
   "mcp": {
     "title": "MCP 설정",
-    "description": "MCP(Model Control Protocol) 서버 및 도구 관리 및 구성",
+    "description": "MCP(Model Context Protocol) 서버 및 도구 관리 및 구성",
     "enabledTitle": "MCP 활성화",
     "enabledDescription": "MCP 기능 및 도구 활성화 또는 비활성화",
     "enableToAccess": "구성 옵션에 액세스하려면 MCP를 활성화하세요",
@@ -485,7 +501,9 @@
     "text-base": "기본",
     "text-lg": "큰",
     "text-sm": "작은",
-    "text-xl": "매우 큽니다"
+    "text-xl": "매우 큽니다",
+    "floatingButton": "플로팅 버튼",
+    "floatingButtonDesc": "데스크톱에 플로팅 버튼을 표시하여 애플리케이션 창을 빠르게 활성화할 수 있습니다"
   },
   "shortcuts": {
     "title": "단축키 설정",
@@ -493,6 +511,7 @@
     "pressEnterToSave": "Enter 키를 누르면 저장되고 Esc 키를 누르면 취소됩니다",
     "noModifierOnly": "수정 키만 단축키로 사용할 수 없습니다",
     "keyConflict": "단축키 충돌이 발생했습니다. 다른 조합을 선택해주세요",
+    "clearShortcut": "단축키 지우기",
     "cleanHistory": "명확한 채팅 기록",
     "deleteConversation": "대화 삭제",
     "goSettings": "열기 설정",

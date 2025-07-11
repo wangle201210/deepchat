@@ -224,6 +224,17 @@
       "pullModel": {
         "title": "Pull Model",
         "pull": "Pull"
+      },
+      "modelCheck": {
+        "title": "Model Check",
+        "description": "Select a model to test connectivity and availability",
+        "model": "Select Model",
+        "modelPlaceholder": "Please select a model to test",
+        "test": "Start Test",
+        "checking": "Testing...",
+        "success": "Model test successful",
+        "failed": "Model test failed",
+        "noModels": "No available models for this provider"
       }
     },
     "pullModels": "Pull Models",
@@ -237,7 +248,11 @@
     "localModels": "Local Models",
     "azureApiVersion": "API Version",
     "safety": {
-      "title": "Safety settings"
+      "title": "Safety settings",
+      "blockHighest": "Block high risk",
+      "blockMost": "Block medium risks",
+      "blockNone": "Not blocked",
+      "blockSome": "Block low risk"
     },
     "serverList": "Server List",
     "totalServers": "Total Servers",
@@ -259,7 +274,8 @@
     "keyStatus": {
       "remaining": "Remaining amount",
       "usage": "Used"
-    }
+    },
+    "refreshingModels": "Refreshing..."
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",
@@ -273,11 +289,11 @@
     "datasetId": "Dataset ID",
     "endpoint": "API Endpoint",
     "configAdded": "Configuration Added",
-    "configAddedDesc": "Dify knowledge base configuration has been successfully added",
+    "configAddedDesc": "{name} configuration has been successfully added",
     "addConfig": "Add Configuration",
     "moreComingSoon": "More knowledge base types coming soon",
     "configUpdated": "Configuration Updated",
-    "configUpdatedDesc": "Dify knowledge base configuration has been successfully updated",
+    "configUpdatedDesc": "{name} configuration has been successfully updated",
     "descriptionPlaceholder": "Example: Company product documentation knowledge base",
     "ragflowTitle": "RAGFlow Knowledge Base",
     "ragflowDescription": "RAGFlow is a powerful knowledge base management system that supports multiple retrieval methods and document management features.",
@@ -339,7 +355,7 @@
   },
   "mcp": {
     "title": "MCP Settings",
-    "description": "Manage and configure MCP (Model Control Protocol) servers and tools",
+    "description": "Manage and configure MCP (Model Context Protocol) servers and tools",
     "enabledTitle": "Enable MCP",
     "enabledDescription": "Enable or disable MCP functionality and tools",
     "enableToAccess": "Please enable MCP to access configuration options",
@@ -485,7 +501,9 @@
     "text-base": "Default",
     "text-lg": "Big",
     "text-sm": "Small",
-    "text-xl": "Large"
+    "text-xl": "Large",
+    "floatingButton": "Floating Button",
+    "floatingButtonDesc": "Display a floating button on the desktop to quickly activate the application window"
   },
   "shortcuts": {
     "title": "Shortcut Key Settings",
@@ -493,6 +511,7 @@
     "pressEnterToSave": "Press Enter to save, Esc to cancel",
     "noModifierOnly": "Cannot use modifier key alone as shortcut",
     "keyConflict": "Shortcut key conflict, please choose another combination",
+    "clearShortcut": "Clear shortcut",
     "cleanHistory": "Clear chat history",
     "deleteConversation": "Delete Conversation",
     "goSettings": "Open Settings",

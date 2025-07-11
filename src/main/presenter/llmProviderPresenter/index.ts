@@ -36,7 +36,8 @@ import { LMStudioProvider } from './providers/lmstudioProvider'
 import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
 import { OpenRouterProvider } from './providers/openRouterProvider'
 import { MinimaxProvider } from './providers/minimaxProvider'
-
+import { AihubmixProvider } from './providers/aihubmixProvider'
+import { _302AIProvider } from './providers/_302AIProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -95,6 +96,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
   private createProviderInstance(provider: LLM_PROVIDER): BaseLLMProvider | undefined {
     try {
+      if (provider.id === '302ai') {
+        return new _302AIProvider(provider, this.configPresenter)
+      }
       if (provider.id === 'minimax') {
         return new MinimaxProvider(provider, this.configPresenter)
       }
@@ -113,6 +117,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       }
       if (provider.id === 'deepseek') {
         return new DeepseekProvider(provider, this.configPresenter)
+      }
+      if (provider.id === 'aihubmix') {
+        return new AihubmixProvider(provider, this.configPresenter)
       }
       switch (provider.apiType) {
         case 'minimax':
@@ -996,14 +1003,59 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return this.config.maxConcurrentStreams
   }
 
-  async check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }> {
-    const provider = this.getProviderInstance(providerId)
-    return provider.check()
+  async check(
+    providerId: string,
+    modelId?: string
+  ): Promise<{ isOk: boolean; errorMsg: string | null }> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+
+      // 如果提供了modelId，使用completions方法进行测试
+      if (modelId) {
+        try {
+          const testMessage = [{ role: 'user' as const, content: 'hi' }]
+          const response: LLMResponse | null = await Promise.race([
+            provider.completions(testMessage, modelId, 0.1, 10),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 60000))
+          ])
+          // 检查响应是否有效
+          if (
+            response &&
+            (response.content || response.content === '' || response.reasoning_content)
+          ) {
+            return { isOk: true, errorMsg: null }
+          } else {
+            return { isOk: false, errorMsg: 'Model response is invalid' }
+          }
+        } catch (error) {
+          console.error(`Model ${modelId} check failed:`, error)
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          return { isOk: false, errorMsg: `Model test failed: ${errorMessage}` }
+        }
+      } else {
+        return { isOk: false, errorMsg: 'Model ID is required' }
+      }
+    } catch (error) {
+      console.error(`Provider ${providerId} check failed:`, error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { isOk: false, errorMsg: `Provider check failed: ${errorMessage}` }
+    }
   }
 
   async getKeyStatus(providerId: string): Promise<KeyStatus | null> {
     const provider = this.getProviderInstance(providerId)
     return provider.getKeyStatus()
+  }
+
+  async refreshModels(providerId: string): Promise<void> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      await provider.refreshModels()
+    } catch (error) {
+      console.error(`Failed to refresh models for provider ${providerId}:`, error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`Model refresh failed: ${errorMessage}`)
+    }
   }
 
   async addCustomModel(

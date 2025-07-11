@@ -10,7 +10,8 @@
     "promptFilesAdded": "プロンプトファイルが追加されました",
     "promptFilesAddedDesc": "{count}個のファイルが正常に追加されました",
     "promptFilesError": "ファイル処理エラー",
-    "promptFilesErrorDesc": "{count}個のファイルの処理に失敗しました"
+    "promptFilesErrorDesc": "{count}個のファイルの処理に失敗しました",
+    "historyPlaceholder": "（タブを押して入力）"
   },
   "features": {
     "deepThinking": "深い思考",
@@ -25,14 +26,14 @@
     "title": "検索結果",
     "description": "{0}件の関連結果が見つかりました",
     "optimizing": "検索意図の抽出中...",
-    "reading": "ウェブページの検索中...",
+    "reading": "ウェブページを読み込み中...",
     "error": "検索に失敗しました"
   },
   "messages": {
-    "thinking": "考え..."
+    "thinking": "思考中..."
   },
   "notify": {
-    "generationComplete": "生成は完了しました",
-    "generationError": "生成は失敗しました"
+    "generationComplete": "生成完了",
+    "generationError": "生成失敗"
   }
 }

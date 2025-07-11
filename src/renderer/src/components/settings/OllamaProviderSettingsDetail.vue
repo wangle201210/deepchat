@@ -36,7 +36,7 @@
             variant="outline"
             size="xs"
             class="text-xs text-normal rounded-lg"
-            @click="validateApiKey"
+            @click="openModelCheckDialog"
           >
             <Icon icon="lucide:check-check" class="w-4 h-4 text-muted-foreground" />
             {{ t('settings.provider.verifyKey') }}
@@ -246,6 +246,7 @@ import {
   DialogFooter
 } from '@/components/ui/dialog'
 import { useSettingsStore } from '@/stores/settings'
+import { useModelCheckStore } from '@/stores/modelCheck'
 import type { LLM_PROVIDER } from '@shared/presenter'
 import ModelConfigItem from './ModelConfigItem.vue'
 import { useToast } from '../ui/toast'
@@ -258,6 +259,7 @@ const props = defineProps<{
 }>()
 
 const settingsStore = useSettingsStore()
+const modelCheckStore = useModelCheckStore()
 const apiHost = ref(props.provider.baseUrl || '')
 const apiKey = ref(props.provider.apiKey || '')
 const showPullModelDialog = ref(false)
@@ -533,6 +535,10 @@ const validateApiKey = async () => {
     checkResult.value = false
     showCheckModelDialog.value = true
   }
+}
+
+const openModelCheckDialog = () => {
+  modelCheckStore.openDialog(props.provider.id)
 }
 
 // 监听 provider 变化

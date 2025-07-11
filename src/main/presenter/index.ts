@@ -19,6 +19,7 @@ import { NotificationPresenter } from './notifactionPresenter'
 import { TabPresenter } from './tabPresenter'
 import { TrayPresenter } from './trayPresenter'
 import { OAuthPresenter } from './oauthPresenter'
+import { FloatingButtonPresenter } from './floatingButtonPresenter'
 import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
 import { KnowledgePresenter } from './knowledgePresenter'
 
@@ -53,6 +54,7 @@ export class Presenter implements IPresenter {
   tabPresenter: TabPresenter
   trayPresenter: TrayPresenter
   oauthPresenter: OAuthPresenter
+  floatingButtonPresenter: FloatingButtonPresenter
   knowledgePresenter: KnowledgePresenter
   // llamaCppPresenter: LlamaCppPresenter // 保留原始注释
 
@@ -81,6 +83,7 @@ export class Presenter implements IPresenter {
     this.notificationPresenter = new NotificationPresenter()
     this.oauthPresenter = new OAuthPresenter()
     this.trayPresenter = new TrayPresenter()
+    this.floatingButtonPresenter = new FloatingButtonPresenter(this.configPresenter)
     this.knowledgePresenter = new KnowledgePresenter(this.configPresenter, dbDir)
 
     // this.llamaCppPresenter = new LlamaCppPresenter() // 保留原始注释
@@ -126,6 +129,19 @@ export class Presenter implements IPresenter {
 
     // 同步所有 provider 的自定义模型
     this.syncCustomModels()
+
+    // 初始化悬浮按钮
+    this.initializeFloatingButton()
+  }
+
+  // 初始化悬浮按钮
+  private async initializeFloatingButton() {
+    try {
+      await this.floatingButtonPresenter.initialize()
+      console.log('FloatingButtonPresenter initialized successfully')
+    } catch (error) {
+      console.error('Failed to initialize FloatingButtonPresenter:', error)
+    }
   }
 
   // 从配置中同步自定义模型到 LLMProviderPresenter
@@ -150,6 +166,7 @@ export class Presenter implements IPresenter {
 
   // 在应用退出时进行清理，关闭数据库连接
   destroy() {
+    this.floatingButtonPresenter.destroy() // 销毁悬浮按钮
     this.tabPresenter.destroy()
     this.sqlitePresenter.close() // 关闭数据库连接
     this.shortcutPresenter.destroy() // 销毁快捷键监听

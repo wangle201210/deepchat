@@ -27,9 +27,9 @@ export const useUpgradeStore = defineStore('upgrade', () => {
   const isReadyToInstall = ref(false)
   const isRestarting = ref(false)
   const updateError = ref<string | null>(null)
-  const isSilent = ref(false)
+  const isSilent = ref(true) // 默认不弹出检查没有最新更新
   // 检查更新
-  const checkUpdate = async (silent = false) => {
+  const checkUpdate = async (silent = true) => {
     isSilent.value = silent
     if (isChecking.value) return
     isChecking.value = true
@@ -181,6 +181,10 @@ export const useUpgradeStore = defineStore('upgrade', () => {
 
   // 打开更新弹窗
   const openUpdateDialog = () => {
+    // 静默状态下没有更新就别弹了
+    if (isSilent.value && !hasUpdate.value) {
+      return
+    }
     showUpdateDialog.value = true
   }
 

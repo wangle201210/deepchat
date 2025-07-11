@@ -9,7 +9,7 @@ import {
   ChatMessage,
   LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
-import { BaseLLMProvider } from '../baseProvider'
+import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
 import {
   ChatCompletionAssistantMessageParam,
@@ -65,7 +65,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     this.init()
   }
 
-  private createOpenAIClient(): void {
+  protected createOpenAIClient(): void {
     // Get proxy configuration
     const proxyUrl = proxyConfig.getProxyUrl()
     const fetchOptions: { dispatcher?: ProxyAgent } = {}
@@ -1200,11 +1200,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     }
   }
   public async summaryTitles(messages: ChatMessage[], modelId: string): Promise<string> {
-    const systemPrompt = `You need to summarize the user's conversation into a title of no more than 10 words, with the title language matching the user's primary language, without using punctuation or other special symbols`
-    const fullMessage: ChatMessage[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: messages.map((m) => `${m.role}: ${m.content}`).join('\n') }
-    ]
+    const summaryText = `${SUMMARY_TITLES_PROMPT}\n\n${messages.map((m) => `${m.role}: ${m.content}`).join('\n')}`
+    const fullMessage: ChatMessage[] = [{ role: 'user', content: summaryText }]
     const response = await this.openAICompletion(fullMessage, modelId, 0.5)
     return response.content.replace(/["']/g, '').trim()
   }

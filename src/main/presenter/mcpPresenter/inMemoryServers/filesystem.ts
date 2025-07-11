@@ -8,14 +8,14 @@ import { zodToJsonSchema } from 'zod-to-json-schema'
 import { createTwoFilesPatch } from 'diff'
 import { minimatch } from 'minimatch'
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport'
+import { glob } from 'glob'
 
 // Schema definitions
-const ReadFileArgsSchema = z.object({
-  path: z.string()
-})
-
-const ReadMultipleFilesArgsSchema = z.object({
-  paths: z.array(z.string())
+const ReadFilesArgsSchema = z.object({
+  paths: z
+    .array(z.string())
+    .min(1)
+    .describe('Array of file paths to read (can be single or multiple files)')
 })
 
 const WriteFileArgsSchema = z.object({
@@ -23,14 +23,101 @@ const WriteFileArgsSchema = z.object({
   content: z.string()
 })
 
-const EditOperation = z.object({
-  oldText: z.string().describe('Text to search for - must match exactly'),
-  newText: z.string().describe('Text to replace with')
+// Enhanced text search schema for grep functionality
+const GrepSearchArgsSchema = z.object({
+  path: z.string().describe('Directory path to search in'),
+  pattern: z.string().describe('Regular expression pattern to search for'),
+  filePattern: z.string().optional().describe('File name pattern to filter files (glob pattern)'),
+  recursive: z.boolean().default(true).describe('Whether to search recursively in subdirectories'),
+  caseSensitive: z.boolean().default(false).describe('Whether the search should be case sensitive'),
+  includeLineNumbers: z
+    .boolean()
+    .default(true)
+    .describe('Whether to include line numbers in results'),
+  contextLines: z
+    .number()
+    .default(0)
+    .describe('Number of context lines to show before and after matches'),
+  maxResults: z.number().default(100).describe('Maximum number of results to return')
 })
 
-const EditFileArgsSchema = z.object({
-  path: z.string(),
-  edits: z.array(EditOperation),
+// Enhanced text replacement schema
+const TextReplaceArgsSchema = z.object({
+  path: z.string().describe('Path to the file to edit'),
+  pattern: z.string().describe('Regular expression pattern to find'),
+  replacement: z.string().describe('Text to replace matches with'),
+  global: z
+    .boolean()
+    .default(true)
+    .describe('Whether to replace all occurrences or just the first'),
+  caseSensitive: z.boolean().default(false).describe('Whether the search should be case sensitive'),
+  dryRun: z.boolean().default(false).describe('Preview changes using git-style diff format')
+})
+
+// Consolidated file search schema (combines search_files and glob_search)
+const FileSearchArgsSchema = z.object({
+  path: z
+    .string()
+    .optional()
+    .describe('Directory to search in (optional, defaults to current directory)'),
+  pattern: z
+    .string()
+    .describe('Search pattern - can be a glob pattern (e.g., "**/*.ts") or simple text match'),
+  searchType: z
+    .enum(['glob', 'name'])
+    .default('glob')
+    .describe('Type of search: "glob" for glob patterns, "name" for filename matching'),
+  excludePatterns: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .describe('Array of patterns to exclude'),
+  caseSensitive: z.boolean().default(false).describe('Whether the search should be case-sensitive'),
+  respectGitIgnore: z.boolean().default(true).describe('Whether to respect .gitignore patterns'),
+  sortByModified: z
+    .boolean()
+    .default(true)
+    .describe('Sort results by modification time (newest first)'),
+  maxResults: z.number().default(1000).describe('Maximum number of results to return')
+})
+
+// Consolidated move files schema (combines move_file and move_multiple_files)
+const MoveFilesArgsSchema = z.object({
+  sources: z.array(z.string()).min(1).describe('Array of source file/directory paths to move'),
+  destination: z.string().describe('Destination directory or file path')
+})
+
+// Consolidated text editing schema (combines edit_file and text_replace)
+const EditTextArgsSchema = z.object({
+  path: z.string().describe('Path to the file to edit'),
+  operation: z.enum(['replace_pattern', 'edit_lines']).describe('Type of edit operation'),
+  // For pattern replacement
+  pattern: z
+    .string()
+    .optional()
+    .describe('Regular expression pattern to find (for replace_pattern operation)'),
+  replacement: z
+    .string()
+    .optional()
+    .describe('Text to replace matches with (for replace_pattern operation)'),
+  global: z
+    .boolean()
+    .default(true)
+    .describe('Whether to replace all occurrences (for replace_pattern operation)'),
+  caseSensitive: z
+    .boolean()
+    .default(false)
+    .describe('Whether the search should be case sensitive (for replace_pattern operation)'),
+  // For line-based editing
+  edits: z
+    .array(
+      z.object({
+        oldText: z.string().describe('Text to search for - must match exactly'),
+        newText: z.string().describe('Text to replace with')
+      })
+    )
+    .optional()
+    .describe('Array of line-based edits (for edit_lines operation)'),
   dryRun: z.boolean().default(false).describe('Preview changes using git-style diff format')
 })
 
@@ -39,27 +126,24 @@ const CreateDirectoryArgsSchema = z.object({
 })
 
 const ListDirectoryArgsSchema = z.object({
-  path: z.string()
+  path: z.string().describe('Directory path to list'),
+  showDetails: z
+    .boolean()
+    .default(false)
+    .describe('Show detailed file information (size, modified time, permissions)'),
+  sortBy: z
+    .enum(['name', 'size', 'modified'])
+    .default('name')
+    .describe('Sort criteria for results'),
+  ignorePatterns: z
+    .array(z.string())
+    .optional()
+    .describe('Array of glob patterns to ignore (e.g., ["*.tmp", "node_modules"])'),
+  respectGitIgnore: z.boolean().default(false).describe('Whether to respect .gitignore patterns')
 })
 
 const DirectoryTreeArgsSchema = z.object({
   path: z.string()
-})
-
-const MoveFileArgsSchema = z.object({
-  source: z.string(),
-  destination: z.string()
-})
-
-const MoveFilesArgsSchema = z.object({
-  sources: z.array(z.string()),
-  destination: z.string()
-})
-
-const SearchFilesArgsSchema = z.object({
-  path: z.string(),
-  pattern: z.string(),
-  excludePatterns: z.array(z.string()).optional().default([])
 })
 
 const GetFileInfoArgsSchema = z.object({
@@ -82,6 +166,45 @@ interface TreeEntry {
   children?: TreeEntry[]
 }
 
+// New interfaces for enhanced text functionality
+interface GrepMatch {
+  file: string
+  line: number
+  content: string
+  beforeContext?: string[]
+  afterContext?: string[]
+}
+
+interface GrepResult {
+  totalMatches: number
+  files: string[]
+  matches: GrepMatch[]
+}
+
+interface TextReplaceResult {
+  success: boolean
+  replacements: number
+  diff?: string
+  error?: string
+}
+
+// Enhanced file entry interface for detailed directory listing
+interface EnhancedFileEntry {
+  name: string
+  path: string
+  isDirectory: boolean
+  size: number
+  modifiedTime: Date
+  permissions: string
+}
+
+// Glob search result interface
+interface GlobSearchResult {
+  files: string[]
+  totalCount: number
+  gitIgnoredCount?: number
+}
+
 export class FileSystemServer {
   private server: Server
   private allowedDirectories: string[]
@@ -100,7 +223,7 @@ export class FileSystemServer {
     this.server = new Server(
       {
         name: 'secure-filesystem-server',
-        version: '0.2.0'
+        version: '0.3.0'
       },
       {
         capabilities: {
@@ -284,6 +407,215 @@ export class FileSystemServer {
     return results
   }
 
+  // Enhanced text content search functionality (grep-like)
+  private async grepSearch(
+    rootPath: string,
+    pattern: string,
+    options: {
+      filePattern?: string
+      recursive?: boolean
+      caseSensitive?: boolean
+      includeLineNumbers?: boolean
+      contextLines?: number
+      maxResults?: number
+    } = {}
+  ): Promise<GrepResult> {
+    const {
+      filePattern = '*',
+      recursive = true,
+      caseSensitive = false,
+      includeLineNumbers = true,
+      contextLines = 0,
+      maxResults = 100
+    } = options
+
+    const result: GrepResult = {
+      totalMatches: 0,
+      files: [],
+      matches: []
+    }
+
+    // Create regex pattern with appropriate flags
+    const regexFlags = caseSensitive ? 'g' : 'gi'
+    let regex: RegExp
+    try {
+      regex = new RegExp(pattern, regexFlags)
+    } catch (error) {
+      throw new Error(`Invalid regular expression pattern: ${pattern}. Error: ${error}`)
+    }
+
+    // Helper function to search within a single file
+    const searchInFile = async (filePath: string): Promise<void> => {
+      try {
+        const content = await fs.readFile(filePath, 'utf-8')
+        const lines = content.split('\n')
+        const fileMatches: GrepMatch[] = []
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i]
+          const matches = Array.from(line.matchAll(regex))
+
+          if (matches.length > 0) {
+            const match: GrepMatch = {
+              file: filePath,
+              line: includeLineNumbers ? i + 1 : 0,
+              content: line
+            }
+
+            // Add context lines if requested
+            if (contextLines > 0) {
+              const startContext = Math.max(0, i - contextLines)
+              const endContext = Math.min(lines.length - 1, i + contextLines)
+
+              if (startContext < i) {
+                match.beforeContext = lines.slice(startContext, i)
+              }
+              if (endContext > i) {
+                match.afterContext = lines.slice(i + 1, endContext + 1)
+              }
+            }
+
+            fileMatches.push(match)
+            result.totalMatches += matches.length
+
+            // Stop if we've reached the maximum results
+            if (result.totalMatches >= maxResults) {
+              break
+            }
+          }
+        }
+
+        if (fileMatches.length > 0) {
+          result.files.push(filePath)
+          result.matches.push(...fileMatches)
+        }
+      } catch (error) {
+        // Skip files that can't be read (binary files, permission issues, etc.)
+        console.error(`[grepSearch] Error reading file ${filePath}:`, error)
+      }
+    }
+
+    // Recursive directory traversal
+    const searchDirectory = async (currentPath: string): Promise<void> => {
+      if (result.totalMatches >= maxResults) {
+        return
+      }
+
+      try {
+        const entries = await fs.readdir(currentPath, { withFileTypes: true })
+
+        for (const entry of entries) {
+          if (result.totalMatches >= maxResults) {
+            break
+          }
+
+          const fullPath = path.join(currentPath, entry.name)
+
+          try {
+            // Validate path is within allowed directories
+            await this.validatePath(fullPath)
+
+            if (entry.isFile()) {
+              // Check if file matches the file pattern
+              if (minimatch(entry.name, filePattern, { nocase: true })) {
+                await searchInFile(fullPath)
+              }
+            } else if (entry.isDirectory() && recursive) {
+              await searchDirectory(fullPath)
+            }
+          } catch (error) {
+            // Skip invalid paths
+            console.error(`[grepSearch] Error processing path ${fullPath}:`, error)
+            continue
+          }
+        }
+      } catch (error) {
+        console.error(`[grepSearch] Error reading directory ${currentPath}:`, error)
+      }
+    }
+
+    // Start the search
+    const validatedPath = await this.validatePath(rootPath)
+    const stats = await fs.stat(validatedPath)
+
+    if (stats.isFile()) {
+      // Search in a single file
+      if (minimatch(path.basename(validatedPath), filePattern, { nocase: true })) {
+        await searchInFile(validatedPath)
+      }
+    } else if (stats.isDirectory()) {
+      // Search in directory
+      await searchDirectory(validatedPath)
+    }
+
+    return result
+  }
+
+  // Enhanced text replacement functionality
+  private async replaceTextInFile(
+    filePath: string,
+    pattern: string,
+    replacement: string,
+    options: {
+      global?: boolean
+      caseSensitive?: boolean
+      dryRun?: boolean
+    } = {}
+  ): Promise<TextReplaceResult> {
+    const { global = true, caseSensitive = false, dryRun = false } = options
+
+    try {
+      const originalContent = await fs.readFile(filePath, 'utf-8')
+      const normalizedOriginal = this.normalizeLineEndings(originalContent)
+
+      // Create regex pattern with appropriate flags
+      const regexFlags = global ? (caseSensitive ? 'g' : 'gi') : caseSensitive ? '' : 'i'
+      let regex: RegExp
+      try {
+        regex = new RegExp(pattern, regexFlags)
+      } catch (error) {
+        return {
+          success: false,
+          replacements: 0,
+          error: `Invalid regular expression pattern: ${pattern}. Error: ${error}`
+        }
+      }
+
+      // Perform the replacement
+      const modifiedContent = normalizedOriginal.replace(regex, replacement)
+      const matches = Array.from(normalizedOriginal.matchAll(new RegExp(pattern, regexFlags + 'g')))
+      const replacements = matches.length
+
+      if (replacements === 0) {
+        return {
+          success: true,
+          replacements: 0,
+          diff: 'No matches found for the given pattern.'
+        }
+      }
+
+      // Create diff
+      const diff = this.createUnifiedDiff(normalizedOriginal, modifiedContent, filePath)
+
+      // Write file if not dry run
+      if (!dryRun) {
+        await fs.writeFile(filePath, modifiedContent, 'utf-8')
+      }
+
+      return {
+        success: true,
+        replacements,
+        diff
+      }
+    } catch (error) {
+      return {
+        success: false,
+        replacements: 0,
+        error: error instanceof Error ? error.message : String(error)
+      }
+    }
+  }
+
   // 文件编辑和差异显示功能
   private normalizeLineEndings(text: string): string {
     return text.replace(/\r\n/g, '\n')
@@ -393,23 +725,14 @@ export class FileSystemServer {
       return {
         tools: [
           {
-            name: 'read_file',
+            name: 'read_files',
             description:
-              'Read the complete contents of a file from the file system. ' +
-              'Handles various text encodings and provides detailed error messages ' +
-              'if the file cannot be read. Use this tool when you need to examine ' +
-              'the contents of a single file. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(ReadFileArgsSchema)
-          },
-          {
-            name: 'read_multiple_files',
-            description:
-              'Read the contents of multiple files simultaneously. This is more ' +
+              'Read the complete contents of multiple files simultaneously. This is more ' +
               'efficient than reading files one by one when you need to analyze ' +
               "or compare multiple files. Each file's content is returned with its " +
               "path as a reference. Failed reads for individual files won't stop " +
               'the entire operation. Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(ReadMultipleFilesArgsSchema)
+            inputSchema: zodToJsonSchema(ReadFilesArgsSchema)
           },
           {
             name: 'write_file',
@@ -420,12 +743,12 @@ export class FileSystemServer {
             inputSchema: zodToJsonSchema(WriteFileArgsSchema)
           },
           {
-            name: 'edit_file',
+            name: 'edit_text',
             description:
-              'Make line-based edits to a text file. Each edit replaces exact line sequences ' +
-              'with new content. Returns a git-style diff showing the changes made. ' +
-              'Only works within allowed directories.',
-            inputSchema: zodToJsonSchema(EditFileArgsSchema)
+              'Edit text files using two methods: 1) Pattern replacement with regex support for bulk find-and-replace operations, or 2) Line-based editing for precise text modifications. ' +
+              'Supports dry-run mode to preview changes. Returns git-style diff showing modifications. ' +
+              'Perfect for code refactoring, configuration updates, or bulk text replacements. Only works within allowed directories.',
+            inputSchema: zodToJsonSchema(EditTextArgsSchema)
           },
           {
             name: 'create_directory',
@@ -441,8 +764,10 @@ export class FileSystemServer {
             description:
               'Get a detailed listing of all files and directories in a specified path. ' +
               'Results clearly distinguish between files and directories with [FILE] and [DIR] ' +
-              'prefixes. This tool is essential for understanding directory structure and ' +
-              'finding specific files within a directory. Only works within allowed directories.',
+              'prefixes. Supports detailed information display (size, modification time, permissions), ' +
+              'custom sorting (by name, size, or modification time), ignore patterns, and git-aware filtering. ' +
+              'This tool is essential for understanding directory structure and finding specific files. ' +
+              'Only works within allowed directories.',
             inputSchema: zodToJsonSchema(ListDirectoryArgsSchema)
           },
           {
@@ -455,32 +780,13 @@ export class FileSystemServer {
             inputSchema: zodToJsonSchema(DirectoryTreeArgsSchema)
           },
           {
-            name: 'move_file',
+            name: 'move_files',
             description:
-              'Move or rename files and directories. Can move files between directories ' +
-              'and rename them in a single operation. If the destination exists, the ' +
-              'operation will fail. Works across different directories and can be used ' +
-              'for simple renaming within the same directory. Both source and destination must be within allowed directories.',
-            inputSchema: zodToJsonSchema(MoveFileArgsSchema)
-          },
-          {
-            name: 'move_multiple_files',
-            description:
-              'Move multiple files and directories. Can move multiple files between directories ' +
-              'in a single operation. If the destination exists, the ' +
-              'operation will fail. Works across different directories.' +
-              'Both sources and destination must be within allowed directories.',
+              'Move or rename one or more files and directories in a single operation. ' +
+              'Can move files between directories and rename them simultaneously. ' +
+              'If any destination exists, that specific operation will fail but others will continue. ' +
+              'Supports both single file moves and batch operations. Both sources and destination must be within allowed directories.',
             inputSchema: zodToJsonSchema(MoveFilesArgsSchema)
-          },
-          {
-            name: 'search_files',
-            description:
-              'Recursively search for files and directories matching a pattern. ' +
-              'Searches through all subdirectories from the starting path. The search ' +
-              'is case-insensitive and matches partial names. Returns full paths to all ' +
-              "matching items. Great for finding files when you don't know their exact location. " +
-              'Only searches within allowed directories.',
-            inputSchema: zodToJsonSchema(SearchFilesArgsSchema)
           },
           {
             name: 'get_file_info',
@@ -501,6 +807,34 @@ export class FileSystemServer {
               properties: {},
               required: []
             }
+          },
+          {
+            name: 'grep_search',
+            description:
+              'Search for text patterns within file contents using regular expressions. ' +
+              'Similar to the Unix grep command, this tool searches through files recursively ' +
+              'and returns matching lines with optional context. Supports file filtering, ' +
+              'case sensitivity options, and result limiting. Perfect for finding specific ' +
+              'code patterns, function definitions, or text content across multiple files. ' +
+              'Only searches within allowed directories.',
+            inputSchema: zodToJsonSchema(GrepSearchArgsSchema)
+          },
+          {
+            name: 'text_replace',
+            description:
+              'Replace text patterns in files using regular expressions. This tool provides ' +
+              'powerful find-and-replace functionality with regex support, case sensitivity ' +
+              'options, and dry-run mode for previewing changes. Shows a git-style diff ' +
+              'of the changes made. Use this for bulk text replacements, code refactoring, ' +
+              'or updating configuration files. Only works within allowed directories.',
+            inputSchema: zodToJsonSchema(TextReplaceArgsSchema)
+          },
+          {
+            name: 'file_search',
+            description:
+              'Search for files and directories matching a pattern. This tool searches through files and directories ' +
+              "recursively and returns full paths to all matching items. Great for finding files when you don't know their exact location.",
+            inputSchema: zodToJsonSchema(FileSearchArgsSchema)
           }
         ]
       }
@@ -512,22 +846,10 @@ export class FileSystemServer {
         const { name, arguments: args } = request.params
 
         switch (name) {
-          case 'read_file': {
-            const parsed = ReadFileArgsSchema.safeParse(args)
+          case 'read_files': {
+            const parsed = ReadFilesArgsSchema.safeParse(args)
             if (!parsed.success) {
-              throw new Error(`Invalid arguments for read_file: ${parsed.error}`)
-            }
-            const validPath = await this.validatePath(parsed.data.path)
-            const content = await fs.readFile(validPath, 'utf-8')
-            return {
-              content: [{ type: 'text', text: content }]
-            }
-          }
-
-          case 'read_multiple_files': {
-            const parsed = ReadMultipleFilesArgsSchema.safeParse(args)
-            if (!parsed.success) {
-              throw new Error(`Invalid arguments for read_multiple_files: ${parsed.error}`)
+              throw new Error(`Invalid arguments for read_files: ${parsed.error}`)
             }
             const results = await Promise.all(
               parsed.data.paths.map(async (filePath: string) => {
@@ -558,19 +880,49 @@ export class FileSystemServer {
             }
           }
 
-          case 'edit_file': {
-            const parsed = EditFileArgsSchema.safeParse(args)
+          case 'edit_text': {
+            const parsed = EditTextArgsSchema.safeParse(args)
             if (!parsed.success) {
-              throw new Error(`Invalid arguments for edit_file: ${parsed.error}`)
+              throw new Error(`Invalid arguments for edit_text: ${parsed.error}`)
             }
             const validPath = await this.validatePath(parsed.data.path)
-            const result = await this.applyFileEdits(
-              validPath,
-              parsed.data.edits,
-              parsed.data.dryRun
-            )
-            return {
-              content: [{ type: 'text', text: result }]
+
+            if (parsed.data.operation === 'edit_lines') {
+              // Line-based editing
+              if (!parsed.data.edits || parsed.data.edits.length === 0) {
+                throw new Error('edits array is required for edit_lines operation')
+              }
+              const result = await this.applyFileEdits(
+                validPath,
+                parsed.data.edits,
+                parsed.data.dryRun
+              )
+              return {
+                content: [{ type: 'text', text: result }]
+              }
+            } else if (parsed.data.operation === 'replace_pattern') {
+              // Pattern replacement
+              if (!parsed.data.pattern || parsed.data.replacement === undefined) {
+                throw new Error(
+                  'pattern and replacement are required for replace_pattern operation'
+                )
+              }
+              const result = await this.replaceTextInFile(
+                validPath,
+                parsed.data.pattern,
+                parsed.data.replacement,
+                {
+                  global: parsed.data.global,
+                  caseSensitive: parsed.data.caseSensitive,
+                  dryRun: parsed.data.dryRun
+                }
+              )
+              return {
+                content: [{ type: 'text', text: result.success ? result.diff : result.error }],
+                isError: !result.success
+              }
+            } else {
+              throw new Error(`Unknown operation: ${parsed.data.operation}`)
             }
           }
 
@@ -593,13 +945,41 @@ export class FileSystemServer {
             if (!parsed.success) {
               throw new Error(`Invalid arguments for list_directory: ${parsed.error}`)
             }
-            const validPath = await this.validatePath(parsed.data.path)
-            const entries = await fs.readdir(validPath, { withFileTypes: true })
+
+            const entries = await this.enhancedListDirectory(parsed.data.path, {
+              ignorePatterns: parsed.data.ignorePatterns,
+              respectGitIgnore: parsed.data.respectGitIgnore,
+              showDetails: parsed.data.showDetails,
+              sortBy: parsed.data.sortBy
+            })
+
+            if (entries.length === 0) {
+              return {
+                content: [{ type: 'text', text: 'Directory is empty or all files are ignored' }]
+              }
+            }
+
             const formatted = entries
-              .map((entry) => `${entry.isDirectory() ? '[DIR]' : '[FILE]'} ${entry.name}`)
+              .map((entry) => {
+                const prefix = entry.isDirectory ? '[DIR]' : '[FILE]'
+                let result = `${prefix} ${entry.name}`
+
+                if (parsed.data.showDetails && !entry.isDirectory) {
+                  const sizeKB = (entry.size / 1024).toFixed(1)
+                  const modifiedDate = entry.modifiedTime.toLocaleDateString()
+                  const modifiedTime = entry.modifiedTime.toLocaleTimeString()
+                  result += ` (${sizeKB}KB, ${entry.permissions}, ${modifiedDate} ${modifiedTime})`
+                } else if (parsed.data.showDetails && entry.isDirectory) {
+                  result += ` (${entry.permissions})`
+                }
+
+                return result
+              })
               .join('\n')
+
+            const summary = `Directory listing for ${parsed.data.path} (${entries.length} items):\n\n${formatted}`
             return {
-              content: [{ type: 'text', text: formatted }]
+              content: [{ type: 'text', text: summary }]
             }
           }
 
@@ -642,28 +1022,10 @@ export class FileSystemServer {
             }
           }
 
-          case 'move_file': {
-            const parsed = MoveFileArgsSchema.safeParse(args)
-            if (!parsed.success) {
-              throw new Error(`Invalid arguments for move_file: ${parsed.error}`)
-            }
-            const validSourcePath = await this.validatePath(parsed.data.source)
-            const validDestPath = await this.validatePath(parsed.data.destination)
-            await fs.rename(validSourcePath, validDestPath)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Successfully moved ${parsed.data.source} to ${parsed.data.destination}`
-                }
-              ]
-            }
-          }
-
-          case 'move_multiple_files': {
+          case 'move_files': {
             const parsed = MoveFilesArgsSchema.safeParse(args)
             if (!parsed.success) {
-              throw new Error(`Invalid arguments for move_multiple_files: ${parsed.error}`)
+              throw new Error(`Invalid arguments for move_files: ${parsed.error}`)
             }
             const results = await Promise.all(
               parsed.data.sources.map(async (source) => {
@@ -673,7 +1035,6 @@ export class FileSystemServer {
                 )
                 try {
                   await fs.rename(validSourcePath, validDestPath)
-
                   return `Successfully moved ${source} to ${parsed.data.destination}`
                 } catch (e) {
                   return `Move ${source} to ${parsed.data.destination} failed: ${JSON.stringify(e)}`
@@ -686,24 +1047,6 @@ export class FileSystemServer {
                   type: 'text',
                   text: results.join('\n')
                 }
-              ]
-            }
-          }
-
-          case 'search_files': {
-            const parsed = SearchFilesArgsSchema.safeParse(args)
-            if (!parsed.success) {
-              throw new Error(`Invalid arguments for search_files: ${parsed.error}`)
-            }
-            const validPath = await this.validatePath(parsed.data.path)
-            const results = await this.searchFiles(
-              validPath,
-              parsed.data.pattern,
-              parsed.data.excludePatterns
-            )
-            return {
-              content: [
-                { type: 'text', text: results.length > 0 ? results.join('\n') : 'No matches found' }
               ]
             }
           }
@@ -738,6 +1081,93 @@ export class FileSystemServer {
             }
           }
 
+          case 'grep_search': {
+            const parsed = GrepSearchArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`Invalid arguments for grep_search: ${parsed.error}`)
+            }
+            const validPath = await this.validatePath(parsed.data.path)
+            const result = await this.grepSearch(validPath, parsed.data.pattern, {
+              filePattern: parsed.data.filePattern,
+              recursive: parsed.data.recursive,
+              caseSensitive: parsed.data.caseSensitive,
+              includeLineNumbers: parsed.data.includeLineNumbers,
+              contextLines: parsed.data.contextLines,
+              maxResults: parsed.data.maxResults
+            })
+
+            if (result.totalMatches === 0) {
+              return {
+                content: [{ type: 'text', text: 'No matches found' }]
+              }
+            }
+
+            // Format the results
+            const formattedResults = result.matches
+              .map((match) => {
+                let output = `${match.file}:${match.line}: ${match.content}`
+
+                if (match.beforeContext && match.beforeContext.length > 0) {
+                  const beforeLines = match.beforeContext
+                    .map(
+                      (line, i) =>
+                        `${match.file}:${match.line - match.beforeContext!.length + i}: ${line}`
+                    )
+                    .join('\n')
+                  output = beforeLines + '\n' + output
+                }
+
+                if (match.afterContext && match.afterContext.length > 0) {
+                  const afterLines = match.afterContext
+                    .map((line, i) => `${match.file}:${match.line + i + 1}: ${line}`)
+                    .join('\n')
+                  output = output + '\n' + afterLines
+                }
+
+                return output
+              })
+              .join('\n--\n')
+
+            const summary = `Found ${result.totalMatches} matches in ${result.files.length} files:\n\n${formattedResults}`
+
+            return {
+              content: [{ type: 'text', text: summary }]
+            }
+          }
+
+          case 'file_search': {
+            const parsed = FileSearchArgsSchema.safeParse(args)
+            if (!parsed.success) {
+              throw new Error(`Invalid arguments for file_search: ${parsed.error}`)
+            }
+            const validPath = await this.validatePath(parsed.data.path || '.')
+
+            let results: string[]
+            if (parsed.data.searchType === 'glob') {
+              // Use glob search for glob patterns
+              const globResult = await this.globSearch(parsed.data.pattern, validPath, {
+                caseSensitive: parsed.data.caseSensitive,
+                respectGitIgnore: parsed.data.respectGitIgnore,
+                sortByModified: parsed.data.sortByModified,
+                maxResults: parsed.data.maxResults
+              })
+              results = globResult.files
+            } else {
+              // Use name search for simple text matching
+              results = await this.searchFiles(
+                validPath,
+                parsed.data.pattern,
+                parsed.data.excludePatterns
+              )
+            }
+
+            return {
+              content: [
+                { type: 'text', text: results.length > 0 ? results.join('\n') : 'No matches found' }
+              ]
+            }
+          }
+
           default:
             throw new Error(`Unknown tool: ${name}`)
         }
@@ -749,6 +1179,165 @@ export class FileSystemServer {
         }
       }
     })
+  }
+
+  // Enhanced glob search functionality inspired by Google Gemini CLI
+  private async globSearch(
+    pattern: string,
+    searchPath: string = '.',
+    options: {
+      caseSensitive?: boolean
+      respectGitIgnore?: boolean
+      sortByModified?: boolean
+      maxResults?: number
+    } = {}
+  ): Promise<GlobSearchResult> {
+    const {
+      caseSensitive = false,
+      respectGitIgnore = true,
+      sortByModified = true,
+      maxResults = 1000
+    } = options
+
+    const validatedPath = await this.validatePath(searchPath)
+
+    try {
+      // Use the glob library for proper glob pattern matching
+      const globResults = await glob(pattern, {
+        cwd: validatedPath,
+        nodir: false, // Include directories
+        dot: true, // Include hidden files
+        nocase: !caseSensitive,
+        ignore: respectGitIgnore ? ['**/node_modules/**', '**/.git/**'] : ['**/node_modules/**'],
+        absolute: true,
+        maxDepth: 20, // Reasonable depth limit
+        follow: false // Don't follow symlinks for security
+      })
+
+      // Limit results
+      const limitedResults = globResults.slice(0, maxResults)
+
+      // Validate all paths are within allowed directories
+      const validResults: string[] = []
+      for (const result of limitedResults) {
+        try {
+          await this.validatePath(result)
+          validResults.push(result)
+        } catch (error) {
+          // Skip paths outside allowed directories
+          console.error(`[globSearch] Path validation failed for ${result}:`, error)
+          continue
+        }
+      }
+
+      // Sort results if requested
+      if (sortByModified && validResults.length > 0) {
+        const fileStats = await Promise.all(
+          validResults.map(async (filePath) => {
+            try {
+              const stats = await fs.stat(filePath)
+              return { path: filePath, mtime: stats.mtime.getTime() }
+            } catch {
+              return { path: filePath, mtime: 0 }
+            }
+          })
+        )
+
+        fileStats.sort((a, b) => b.mtime - a.mtime)
+        return {
+          files: fileStats.map((f) => f.path),
+          totalCount: fileStats.length
+        }
+      }
+
+      return {
+        files: validResults,
+        totalCount: validResults.length
+      }
+    } catch (error) {
+      console.error(`[globSearch] Error during glob search:`, error)
+      throw new Error(
+        `Glob search failed: ${error instanceof Error ? error.message : String(error)}`
+      )
+    }
+  }
+
+  // Enhanced directory listing functionality
+  private async enhancedListDirectory(
+    dirPath: string,
+    options: {
+      ignorePatterns?: string[]
+      respectGitIgnore?: boolean
+      showDetails?: boolean
+      sortBy?: 'name' | 'size' | 'modified'
+    } = {}
+  ): Promise<EnhancedFileEntry[]> {
+    const {
+      ignorePatterns = [],
+      respectGitIgnore: _respectGitIgnore = false,
+      showDetails: _showDetails = false,
+      sortBy = 'name'
+    } = options
+
+    const validatedPath = await this.validatePath(dirPath)
+    const entries = await fs.readdir(validatedPath, { withFileTypes: true })
+    const results: EnhancedFileEntry[] = []
+
+    // Helper function to check if filename matches ignore patterns
+    const shouldIgnore = (filename: string): boolean => {
+      return ignorePatterns.some((pattern) => {
+        const regexPattern = pattern
+          .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+          .replace(/\*/g, '.*')
+          .replace(/\?/g, '.')
+        const regex = new RegExp(`^${regexPattern}$`)
+        return regex.test(filename)
+      })
+    }
+
+    for (const entry of entries) {
+      if (shouldIgnore(entry.name)) {
+        continue
+      }
+
+      const fullPath = path.join(validatedPath, entry.name)
+
+      try {
+        const stats = await fs.stat(fullPath)
+        const enhancedEntry: EnhancedFileEntry = {
+          name: entry.name,
+          path: fullPath,
+          isDirectory: entry.isDirectory(),
+          size: entry.isDirectory() ? 0 : stats.size,
+          modifiedTime: stats.mtime,
+          permissions: stats.mode.toString(8).slice(-3)
+        }
+
+        results.push(enhancedEntry)
+      } catch (error) {
+        console.error(`[enhancedListDirectory] Error getting stats for ${fullPath}:`, error)
+        continue
+      }
+    }
+
+    // Sort results
+    results.sort((a, b) => {
+      // Directories first
+      if (a.isDirectory && !b.isDirectory) return -1
+      if (!a.isDirectory && b.isDirectory) return 1
+
+      // Then by requested sort criteria
+      switch (sortBy) {
+        case 'size':
+          return b.size - a.size
+        case 'modified':
+          return b.modifiedTime.getTime() - a.modifiedTime.getTime()
+        default:
+          return a.name.localeCompare(b.name)
+      }
+    })
+
+    return results
   }
 }
 

@@ -165,6 +165,7 @@
     "keyPlaceholder": "请输入API Key",
     "verifyKey": "验证密钥",
     "howToGet": "如何获取",
+    "refreshingModels": "刷新中...",
     "getKeyTip": "请前往",
     "getKeyTipEnd": "获取API Key",
     "urlFormat": "API样例：{defaultUrl}",
@@ -228,6 +229,17 @@
       "pullModel": {
         "title": "拉取模型",
         "pull": "拉取"
+      },
+      "modelCheck": {
+        "title": "模型检查",
+        "description": "选择一个模型进行连接性和可用性测试",
+        "model": "选择模型",
+        "modelPlaceholder": "请选择要测试的模型",
+        "test": "开始测试",
+        "checking": "测试中...",
+        "success": "模型测试成功",
+        "failed": "模型测试失败",
+        "noModels": "该服务商没有可用的模型"
       }
     },
     "pullModels": "拉取模型",
@@ -241,7 +253,11 @@
     "localModels": "本地模型",
     "azureApiVersion": "API 版本",
     "safety": {
-      "title": "安全设置"
+      "title": "安全设置",
+      "blockNone": "不屏蔽",
+      "blockSome": "屏蔽低风险",
+      "blockMost": "屏蔽中风险",
+      "blockHighest": "屏蔽高风险"
     },
     "serverList": "服务器列表",
     "totalServers": "服务器总数",
@@ -277,11 +293,11 @@
     "datasetId": "数据集ID",
     "endpoint": "API地址",
     "configAdded": "配置已添加",
-    "configAddedDesc": "Dify知识库配置已成功添加",
+    "configAddedDesc": "{name}配置已成功添加",
     "addConfig": "添加配置",
     "moreComingSoon": "更多知识库类型即将推出",
     "configUpdated": "配置已更新",
-    "configUpdatedDesc": "Dify知识库配置已成功更新",
+    "configUpdatedDesc": "{name}配置已成功更新",
     "descriptionPlaceholder": "例如：公司产品文档知识库",
     "ragflowTitle": "RAGFlow知识库",
     "ragflowDescription": "RAGFlow是一个强大的知识库管理系统，支持多种检索方式和文档管理功能。",
@@ -491,7 +507,9 @@
     "text-base": "默认",
     "text-lg": "大",
     "text-xl": "特大",
-    "text-2xl": "超大"
+    "text-2xl": "超大",
+    "floatingButton": "悬浮按钮",
+    "floatingButtonDesc": "在桌面显示一个悬浮按钮，可以快速唤起应用窗口"
   },
   "shortcuts": {
     "title": "快捷键设置",
@@ -499,6 +517,7 @@
     "pressEnterToSave": "按Enter保存，Esc取消",
     "noModifierOnly": "不能仅使用修饰键作为快捷键",
     "keyConflict": "快捷键冲突，请选择其他组合",
+    "clearShortcut": "清除快捷键",
     "zoomIn": "放大字体",
     "zoomOut": "缩小字体",
     "zoomReset": "重置字体",
