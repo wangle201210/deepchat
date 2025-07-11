@@ -33,18 +33,26 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   async initialize(dimensions: number, opts?: IndexOptions): Promise<void> {
+    console.log(`[DuckDB] Initializing DuckDB database at ${this.dbPath}`)
     if (fs.existsSync(this.dbPath)) {
+      console.error(`[DuckDB] Database ${this.dbPath} already exists`)
       throw new Error('Database already exists, cannot initialize again.')
     }
+    console.log(`[DuckDB] connect to db`)
     await this.connect()
+    console.log(`[DuckDB] load vss extension`)
     await this.installAndLoadVSS()
+    console.log(`[DuckDB] create vector table`)
     await this.initVectorTable(dimensions)
+    console.log(`[DuckDB] create file table`)
     await this.initFileTable()
+    console.log(`[DuckDB] create index`)
     await this.initIndex(opts)
   }
 
   async open(): Promise<void> {
     if (!fs.existsSync(this.dbPath)) {
+      console.error(`[DuckDB] Database ${this.dbPath} does not exist`)
       throw new Error('Database does not exist, please initialize first.')
     }
     await this.connect()
@@ -60,9 +68,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       if (this.dbInstance) {
         this.dbInstance.closeSync()
       }
-      console.log('DuckDB connection closed')
+      console.log('[DuckDB] DuckDB connection closed')
     } catch (err) {
-      console.error('[DuckDB Close Error]', err)
+      console.error('[DuckDB] close error', err)
     }
   }
 
@@ -78,7 +86,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         return await this.connection.run(sql)
       }
     } catch (err) {
-      console.error('[DuckDB SQL Error]', sql, params, err)
+      console.error('[DuckDB] sql error', sql, params, err)
       throw err
     }
   }
@@ -86,15 +94,17 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private async connect() {
     this.dbInstance = await DuckDBInstance.create(this.dbPath)
     this.connection = await this.dbInstance.connect()
-    console.log(`Connected to DuckDB at ${this.dbPath}`)
+    console.log(`[DuckDB] Connected to DuckDB at ${this.dbPath}`)
   }
 
   /** 安装并加载 VSS 扩展 */
   private async installAndLoadVSS(): Promise<void> {
     if (fs.existsSync(extensionPath)) {
       const escapedPath = extensionPath.replace(/\\/g, '\\\\')
+      console.log(`[DuckDB] LOAD VSS extension from ${escapedPath}`)
       await this.safeRun(`LOAD '${escapedPath}';`)
     } else {
+      console.log('[DuckDB] LOAD VSS extension online')
       await this.safeRun(`INSTALL vss;`)
       await this.safeRun(`LOAD vss;`)
     }
@@ -286,7 +296,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         fs.rmSync(this.dbPath, { recursive: true })
       }
     } catch (err) {
-      console.error('[DuckDB Destroy Error]', err)
+      console.error('[DuckDB] destroy Error', err)
     }
   }
 }
