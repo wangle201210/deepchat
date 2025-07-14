@@ -199,6 +199,10 @@
     "builtinKnowledge": {
       "desc": "Service de recherche de base de connaissances intégré Deepchat, qui peut rechercher le contenu de la base de connaissances intégrée Deepchat",
       "name": "Recherche de base de connaissances intégrée"
+    },
+    "deepchat/apple-server": {
+      "desc": "Laissez le modèle d'exploitation des fonctions du système de MacOS telles que le calendrier, les contacts, les e-mails, les cartes, les mémos, les rappels et autres systèmes",
+      "name": "Assistant système macOS"
     }
   },
   "prompts": {
