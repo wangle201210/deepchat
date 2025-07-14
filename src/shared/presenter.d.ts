@@ -1,4 +1,3 @@
-import { normalize } from 'path'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
@@ -849,7 +848,7 @@ export interface IFilePresenter {
   prepareFileCompletely(
     absPath: string,
     typeInfo?: string,
-    contentType?: null | 'null' | 'origin' | 'llm-friendly'
+    contentType?: null | 'origin' | 'llm-friendly'
   ): Promise<MessageFile>
   prepareDirectory(absPath: string): Promise<MessageFile>
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
@@ -1301,7 +1300,7 @@ export type BuiltinKnowledgeConfig = {
   normalized: boolean
   chunkSize?: number
   chunkOverlap?: number
-  fragmentsNumber: numner
+  fragmentsNumber: number
   enabled: boolean
 }
 export interface IndexOptions {

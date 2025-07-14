@@ -99,7 +99,7 @@ export class FilePresenter implements IFilePresenter {
    * @param contentType 
    * @returns 
    */
-  async prepareFileCompletely(absPath: string, typeInfo?: string, contentType?: null | 'null' | 'origin' | 'llm-friendly'): Promise<MessageFile> {
+  async prepareFileCompletely(absPath: string, typeInfo?: string, contentType?: null | 'origin' | 'llm-friendly'): Promise<MessageFile> {
     const fullPath = path.join(absPath)
     try {
       const adapter = await this.createFileAdapter(fullPath, typeInfo)
