@@ -1109,4 +1109,23 @@ export class McpPresenter implements IMCPPresenter {
     })
     return openaiTools
   }
+
+  async grantPermission(
+    serverName: string,
+    permissionType: 'read' | 'write' | 'all',
+    remember: boolean = false
+  ): Promise<void> {
+    try {
+      console.log(
+        `[MCP] Granting ${permissionType} permission for server: ${serverName}, remember: ${remember}`
+      )
+      await this.toolManager.grantPermission(serverName, permissionType, remember)
+      console.log(
+        `[MCP] Successfully granted ${permissionType} permission for server: ${serverName}`
+      )
+    } catch (error) {
+      console.error(`[MCP] Failed to grant permission for server ${serverName}:`, error)
+      throw error
+    }
+  }
 }
