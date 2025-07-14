@@ -22,24 +22,16 @@
         {{ type }}
       </span>
       <Button
-        v-if="!enabled"
         variant="link"
         size="icon"
         class="w-7 h-7 text-xs text-normal rounded-lg"
-        @click="onEnabledChange(true)"
+        @click="onEnabledChange(!enabled)"
       >
-        <Icon icon="lucide:circle-minus" class="w-4 h-4 text-destructive" />
+        <Icon v-if="enabled" icon="lucide:circle-check" class="w-4 h-4 text-green-500" />
+        <Icon v-else icon="lucide:circle-minus" class="w-4 h-4 text-destructive" />
       </Button>
       <Button
-        v-if="enabled"
-        variant="link"
-        size="icon"
-        class="w-7 h-7 text-xs text-normal rounded-lg"
-        @click="onEnabledChange(false)"
-      >
-        <Icon icon="lucide:circle-check" class="w-4 h-4 text-green-500" />
-      </Button>
-      <Button
+        v-if="changeable"
         variant="link"
         size="icon"
         class="w-7 h-7 text-xs text-normal rounded-lg"
@@ -89,9 +81,11 @@ withDefaults(
     functionCall?: boolean
     reasoning?: boolean
     type?: ModelType
+    changeable?: boolean
   }>(),
   {
-    type: ModelType.Chat
+    type: ModelType.Chat,
+    changeable: true
   }
 )
 

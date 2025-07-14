@@ -289,33 +289,44 @@ export class OllamaProvider extends BaseLLMProvider {
     }
   }
 
+  private async attachModelInfo(model: OllamaModel): Promise<OllamaModel> {
+    const showResponse = await this.showModelInfo(model.name)
+    const info = showResponse.model_info
+    const family = model.details.family
+    const context_length = info[family + '.context_length']
+    const embedding_length = info[family + '.embedding_length']
+    const capabilities = showResponse.capabilities
+
+    // 合并customConfig的属性到model
+    return {
+      ...model,
+      model_info: {
+        context_length,
+        embedding_length
+      },
+      capabilities
+    }
+  }
+
   // Ollama 特有的模型管理功能
-  public async listModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>> {
+  public async listModels(): Promise<OllamaModel[]> {
     try {
       const response = await this.ollama.list()
       const models = response.models as unknown as OllamaModel[]
-      // 合并自定义属性
-      return models.map((model) => {
-        const customConfig = this.configPresenter.getModelConfig(model.name, this.provider.id)
-        // 合并costomConfig的属性到model
-        return { ...model, ...customConfig }
-      })
+      // FIXME 合并模型属性，ollama list接口完善后优化
+      return await Promise.all(models.map(async (model) => this.attachModelInfo(model)))
     } catch (error) {
       console.error('Failed to list Ollama models:', (error as Error).message)
       return []
     }
   }
 
-  public async listRunningModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>> {
+  public async listRunningModels(): Promise<OllamaModel[]> {
     try {
       const response = await this.ollama.ps()
       const runningModels = response.models as unknown as OllamaModel[]
-      // 合并自定义属性
-      return runningModels.map((model) => {
-        const customConfig = this.configPresenter.getModelConfig(model.name, this.provider.id)
-        // 合并costomConfig的属性到model
-        return { ...model, ...customConfig }
-      })
+      // FIXME 合并模型属性，ollama list接口完善后优化
+      return await Promise.all(runningModels.map(async (model) => this.attachModelInfo(model)))
     } catch (error) {
       console.error('Failed to list running Ollama models:', (error as Error).message)
       return []

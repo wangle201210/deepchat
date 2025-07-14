@@ -5,7 +5,6 @@ import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 import { ModelType } from '@shared/model'
-import { P } from 'ollama/dist/shared/ollama.d792a03f'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -536,9 +535,9 @@ export interface ILlmProviderPresenter {
     providerId: string,
     modelId: string
   ): Promise<string>
-  listOllamaModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>>
+  listOllamaModels(): Promise<OllamaModel[]>
   showOllamaModelInfo(modelName: string): Promise<ShowResponse>
-  listOllamaRunningModels(): Promise<Array<OllamaModel & Partial<ModelConfig>>>
+  listOllamaRunningModels(): Promise<OllamaModel[]>
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
@@ -872,6 +871,15 @@ export interface OllamaModel {
     parameter_size: string
     quantization_level: string
   }
+  // 合并show接口一些信息
+  model_info: {
+    context_length: number
+    embedding_length: number
+    vision?: {
+      embedding_length: number
+    }
+  }
+  capabilities: string[]
 }
 
 // 定义进度回调的接口
@@ -1289,8 +1297,8 @@ export interface QueryOptions {
 export interface QueryResult {
   id: string
   metadata: {
-    from: string,
-    filePath: string,
+    from: string
+    filePath: string
     content: string
   }
   distance: number

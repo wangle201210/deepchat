@@ -118,8 +118,13 @@
                   :model-id="model.name"
                   :provider-id="provider.id"
                   :is-custom-model="true"
-                  :type="model.type"
+                  :type="
+                    model.capabilities.indexOf('embedding') > -1
+                      ? ModelType.Embedding
+                      : ModelType.Chat
+                  "
                   :enabled="true"
+                  :changeable="false"
                   @configChanged="refreshModels"
                   @deleteModel="showDeleteModelConfirm(model.name)"
                 />
@@ -232,7 +237,7 @@
 
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -241,15 +246,16 @@ import { Icon } from '@iconify/vue'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogFooter
+  DialogTitle
 } from '@/components/ui/dialog'
 import { useSettingsStore } from '@/stores/settings'
 import { useModelCheckStore } from '@/stores/modelCheck'
 import type { LLM_PROVIDER } from '@shared/presenter'
 import ModelConfigItem from './ModelConfigItem.vue'
 import { useToast } from '../ui/toast'
+import { ModelType } from '@shared/model'
 
 const { t } = useI18n()
 const { toast } = useToast()

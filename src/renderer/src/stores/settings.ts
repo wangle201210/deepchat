@@ -5,7 +5,7 @@ import { ModelType } from '@shared/model'
 import { usePresenter } from '@/composables/usePresenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { CONFIG_EVENTS, OLLAMA_EVENTS, DEEPLINK_EVENTS } from '@/events'
-import type { ModelConfig, OllamaModel } from '@shared/presenter'
+import type { OllamaModel } from '@shared/presenter'
 import { useRouter } from 'vue-router'
 import { useMcpStore } from '@/stores/mcp'
 import { useUpgradeStore } from '@/stores/upgrade'
@@ -35,8 +35,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const notificationsEnabled = ref<boolean>(true) // 系统通知是否启用，默认启用
   const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
   // Ollama 相关状态
-  const ollamaRunningModels = ref<Array<OllamaModel & Partial<ModelConfig>>>([])
-  const ollamaLocalModels = ref<Array<OllamaModel & Partial<ModelConfig>>>([])
+  const ollamaRunningModels = ref<OllamaModel[]>([])
+  const ollamaLocalModels = ref<OllamaModel[]>([])
   const ollamaPullingModels = ref<Map<string, number>>(new Map()) // 模型名 -> 进度
 
   // 搜索助手模型相关
@@ -1015,34 +1015,29 @@ export const useSettingsStore = defineStore('settings', () => {
       allProviderModels.value.find((item) => item.providerId === 'ollama')?.models || []
 
     // 将 Ollama 本地模型转换为全局模型格式
-    const ollamaModelsAsGlobal = await Promise.all(
-      ollamaLocalModels.value.map(async (model) => {
-        // 检查是否已存在相同ID的模型，如果存在，保留其现有的配置
-        const existingModel = existingOllamaModels.find((m) => m.id === model.name)
-        const config = await configP.getModelConfig(model.name, 'ollama')
+    const ollamaModelsAsGlobal = ollamaLocalModels.value.map((model) => {
+      // 检查是否已存在相同ID的模型，如果存在，保留其现有的配置
+      const existingModel = existingOllamaModels.find((m) => m.id === model.name)
 
-        return {
-          ...{
-            contextLength: 4096,
-            maxTokens: 2048,
-            group: 'local',
-            enabled: true,
-            isCustom: false,
-            providerId: 'ollama',
-            vision: false,
-            functionCall: false,
-            reasoning: false,
-            type: ModelType.Chat
-          },
-          ...(existingModel || {}),
-          ...(config || {}),
-          provider: 'ollama',
-          id: model.name,
-          name: model.name,
-          ollamaModel: model
-        } as RENDERER_MODEL_META & { ollamaModel: OllamaModel }
-      })
-    )
+      return {
+        id: model.name,
+        name: model.name,
+        contextLength: model.model_info.context_length || 4096, // 使用现有值或默认值
+        maxTokens: existingModel?.maxTokens || 2048, // 使用现有值或默认值
+        provider: 'ollama',
+        group: existingModel?.group || 'local',
+        enabled: true,
+        isCustom: existingModel?.isCustom || false,
+        providerId: 'ollama',
+        vision: model.capabilities.indexOf('vision') > -1,
+        functionCall: model.capabilities.indexOf('tools') > -1,
+        reasoning: model.capabilities.indexOf('thinking') > -1,
+        type: model.capabilities.indexOf('embedding') > -1 ? ModelType.Embedding : ModelType.Chat,
+        // 保留现有的其他配置，但确保更新 Ollama 特有数据
+        ...(existingModel ? { ...existingModel } : {}),
+        ollamaModel: model
+      } as RENDERER_MODEL_META & { ollamaModel: OllamaModel }
+    })
 
     // 更新全局模型列表
     const existingIndex = allProviderModels.value.findIndex((item) => item.providerId === 'ollama')
