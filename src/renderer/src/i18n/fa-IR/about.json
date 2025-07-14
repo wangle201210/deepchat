@@ -12,10 +12,5 @@
   },
   "disclaimerButton": "رد مسئولیت",
   "disclaimerTitle": "بیانیه شرایط استفاده",
-  "checkUpdateButton": "بررسی به‌روزرسانی",
-  "settings": {
-    "knowledgeBase": {
-      "deleteSuccess": "با موفقیت حذف کنید"
-    }
-  }
+  "checkUpdateButton": "بررسی به‌روزرسانی"
 }

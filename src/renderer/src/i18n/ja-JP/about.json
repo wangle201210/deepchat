@@ -12,10 +12,5 @@
     "cpuModel": "CPUモデル",
     "totalMemory": "総メモリ",
     "osVersion": "システムバージョン"
-  },
-  "settings": {
-    "knowledgeBase": {
-      "deleteSuccess": "正常に削除します"
-    }
   }
 }
