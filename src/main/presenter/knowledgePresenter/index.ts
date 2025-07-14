@@ -243,6 +243,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     })
   }
 
+  async destroy(): Promise<void> {
+    this.closeAll()
+  }
+
   async similarityQuery(id: string, key: string): Promise<QueryResult[]> {
     const rag = await this.getStorePresenter(id)
     return await rag.similarityQuery(key)

@@ -1285,6 +1285,10 @@ export interface IKnowledgePresenter {
    * @returns 相似片段结果数组
    */
   similarityQuery(id: string, key: string): Promise<QueryResult[]>
+  /**
+   * 销毁实例，释放资源
+   */
+  destroy(): Promise<void>
 }
 
 type ModelProvider = {

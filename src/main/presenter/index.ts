@@ -172,6 +172,7 @@ export class Presenter implements IPresenter {
     this.shortcutPresenter.destroy() // 销毁快捷键监听
     this.syncPresenter.destroy() // 销毁同步相关资源
     this.notificationPresenter.clearAllNotifications() // 清除所有通知
+    this.knowledgePresenter.destroy() // 释放所有数据库连接
     // 注意: trayPresenter.destroy() 在 main/index.ts 的 will-quit 事件中处理
     // 此处不销毁 trayPresenter，其生命周期由 main/index.ts 管理
   }

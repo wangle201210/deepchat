@@ -308,9 +308,4 @@ app.on('before-quit', () => {
   } catch (error) {
     console.error('main: Error destroying floating button during before-quit:', error)
   }
-  try{
-    presenter.knowledgePresenter.closeAll()
-  } catch (error) {
-    console.error('main: Error closing duckdb during before-quit', error)
-  }
 })
