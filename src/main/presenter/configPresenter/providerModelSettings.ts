@@ -257,7 +257,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         match: ['qwen3:0.6b'],
         vision: false,
         functionCall: true,
-        reasoning: true,
+        reasoning: true
       },
       {
         id: 'qwen3:1.7b',

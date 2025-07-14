@@ -406,6 +406,11 @@ const displayLocalModels = computed(() => {
           parameter_size: '',
           quantization_level: ''
         },
+        model_info: {
+          context_length: NaN,
+          embedding_length: NaN
+        },
+        capabilities: [],
         pulling: true,
         progress
       })
