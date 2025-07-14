@@ -1,4 +1,4 @@
-import { app, protocol, crashReporter } from 'electron'
+import { app, protocol } from 'electron'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { presenter } from './presenter'
 import { ProxyMode, proxyConfig } from './presenter/proxyConfig'
@@ -38,13 +38,6 @@ app.whenReady().then(async () => {
   // 从配置中读取日志设置并应用
   const loggingEnabled = presenter.configPresenter.getLoggingEnabled()
   setLoggingEnabled(loggingEnabled)
-  if (loggingEnabled) {
-    crashReporter.start({
-      productName: 'DeepChat',
-      companyName: 'com.wefonk',
-      uploadToServer: false
-    })
-  }
 
   // 初始化托盘图标和菜单，并存储 presenter 实例
   presenter.setupTray()
