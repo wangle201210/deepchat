@@ -11,7 +11,10 @@ function calcNorm(vector: number[]): number {
  * @returns true 表示已 normalized
  */
 export function isNormalized(vector: number[], tolerance = 1e-3): boolean {
-  if (!vector.length) return false
+  if (!vector || !Array.isArray(vector) || vector.length === 0) return false
+  if (tolerance < 0) throw new Error('Tolerance must be non-negative')
+  if (vector.some((v) => typeof v !== 'number' || !isFinite(v))) return false
+
   const norm = calcNorm(vector)
   return Math.abs(norm - 1) <= tolerance
 }
@@ -21,7 +24,13 @@ export function isNormalized(vector: number[], tolerance = 1e-3): boolean {
  * @returns normalized 向量
  */
 export function normalized(vector: number[]): number[] {
+  if (!vector || !Array.isArray(vector) || vector.length === 0) {
+    throw new Error('Vector cannot be empty')
+  }
   const norm = calcNorm(vector)
+  if (norm === 0) {
+    throw new Error('Cannot normalize zero vector')
+  }
   return vector.map((v) => v / norm)
 }
 /**
@@ -31,7 +40,14 @@ export function normalized(vector: number[]): number[] {
  * @returns normalized 向量
  */
 export function ensureNormalized(vector: number[], tolerance = 1e-3): number[] {
+  if (!vector || !Array.isArray(vector) || vector.length === 0) {
+    throw new Error('Vector cannot be empty')
+  }
+  if (tolerance < 0) throw new Error('Tolerance must be non-negative')
   const norm = calcNorm(vector)
+  if (norm === 0) {
+    throw new Error('Cannot normalize zero vector')
+  }
   if (Math.abs(norm - 1) <= tolerance) {
     return vector
   }
