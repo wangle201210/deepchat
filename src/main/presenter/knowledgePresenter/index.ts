@@ -96,7 +96,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   delete = async (id: string): Promise<void> => {
     if (this.storePresenterCache.has(id)) {
       const rag = this.storePresenterCache.get(id) as KnowledgeStorePresenter
-      await rag.destory()
+      await rag.destroy()
     } else {
       const dbPath = path.join(this.storageDir, id)
       if (fs.existsSync(dbPath)) {

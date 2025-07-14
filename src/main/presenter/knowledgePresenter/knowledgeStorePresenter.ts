@@ -135,7 +135,7 @@ export class KnowledgeStorePresenter {
     return await this.vectorP.listFiles()
   }
 
-  async destory(): Promise<void> {
+  async destroy(): Promise<void> {
     this.vectorP.destroy()
   }
 
