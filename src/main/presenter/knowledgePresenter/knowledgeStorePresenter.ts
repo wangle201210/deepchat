@@ -57,42 +57,46 @@ export class KnowledgeStorePresenter {
     content: string,
     fileMessage: KnowledgeFileMessage
   ): Promise<KnowledgeFileMessage> {
-    return new Promise(async (resolve) => {
-      try {
-        const chunker = new RecursiveCharacterTextSplitter({
-          chunkSize: this.config.chunkSize,
-          chunkOverlap: this.config.chunkOverlap
-        })
-        const chunks = await chunker.splitText(sanitizeText(content))
+    try {
+      // 1. 分片
+      const chunker = new RecursiveCharacterTextSplitter({
+        chunkSize: this.config.chunkSize,
+        chunkOverlap: this.config.chunkOverlap
+      })
+      const chunks = await chunker.splitText(sanitizeText(content))
 
-        const vectors = await presenter.llmproviderPresenter.getEmbeddings(
-          this.config.embedding.providerId,
-          this.config.embedding.modelId,
-          chunks
-        )
+      // 2. 生成向量
+      const vectors = await presenter.llmproviderPresenter.getEmbeddings(
+        this.config.embedding.providerId,
+        this.config.embedding.modelId,
+        chunks
+      )
 
-        await this.vectorP.insertVectors(
-          vectors.map((vector, index) => ({
-            vector,
-            metadata: {
-              from: fileMessage.name,
-              filePath: fileMessage.path,
-              content: chunks[index]
-            },
-            fileId: fileMessage.id
-          }))
-        )
-        fileMessage.status = 'completed'
-        await this.vectorP.updateFile(fileMessage)
-      } catch (err) {
-        fileMessage.status = 'error'
-        fileMessage.metadata.reason = String(err)
-        await this.vectorP.updateFile(fileMessage)
-        console.error('addFile 后台处理失败:', err)
-      } finally {
-        resolve(fileMessage)
-      }
-    })
+      // 3. 插入向量
+      await this.vectorP.insertVectors(
+        vectors.map((vector, index) => ({
+          vector,
+          metadata: {
+            from: fileMessage.name,
+            filePath: fileMessage.path,
+            content: chunks[index]
+          },
+          fileId: fileMessage.id
+        }))
+      )
+
+      // 4. 更新状态为完成
+      fileMessage.status = 'completed'
+      await this.vectorP.updateFile(fileMessage)
+    } catch (err) {
+      // 出错时更新状态并记录原因
+      fileMessage.status = 'error'
+      fileMessage.metadata.reason = String(err)
+      await this.vectorP.updateFile(fileMessage)
+      console.error('addFile 后台处理失败:', err)
+    }
+
+    return fileMessage
   }
 
   async similarityQuery(key: string): Promise<QueryResult[]> {
