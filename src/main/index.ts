@@ -41,7 +41,7 @@ app.whenReady().then(async () => {
   if (loggingEnabled) {
     crashReporter.start({
       productName: 'DeepChat',
-      companyName: 'WeFonk',
+      companyName: 'com.wefonk',
       uploadToServer: false
     })
   }
