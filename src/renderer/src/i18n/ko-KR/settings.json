@@ -275,7 +275,11 @@
       "remaining": "나머지 금액",
       "usage": "사용된"
     },
-    "refreshingModels": "상쾌한 ..."
+    "refreshingModels": "상쾌한 ...",
+    "toast": {
+      "modelRunning": "모델이 실행 중입니다",
+      "modelRunningDesc": "먼저 모델 {model}을 중지 한 다음 삭제하십시오."
+    }
   },
   "knowledgeBase": {
     "title": "지식 베이스 설정",
@@ -351,7 +355,9 @@
     "deleteSuccess": "성공적으로 삭제하십시오",
     "copy": "복사",
     "copySuccess": "성공적으로 복사하십시오",
-    "source": "원천"
+    "source": "원천",
+    "normalized": "L2 정규화",
+    "normalizedHelper": "모델이 출력 벡터의 L2 정규화를 지원하는지 확인하십시오."
   },
   "mcp": {
     "title": "MCP 설정",

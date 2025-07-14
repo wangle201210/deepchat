@@ -275,7 +275,11 @@
       "remaining": "مقدار باقی مانده",
       "usage": "مورد استفاده"
     },
-    "refreshingModels": "طراوت ..."
+    "refreshingModels": "طراوت ...",
+    "toast": {
+      "modelRunning": "مدل در حال اجرا است",
+      "modelRunningDesc": "لطفاً ابتدا مدل {مدل را متوقف کرده و سپس آن را حذف کنید."
+    }
   },
   "knowledgeBase": {
     "title": "تنظیمات پایگاه دانش",
@@ -351,7 +355,9 @@
     "deleteSuccess": "با موفقیت حذف کنید",
     "copy": "کپی کردن",
     "copySuccess": "با موفقیت کپی کنید",
-    "source": "منبع"
+    "source": "منبع",
+    "normalized": "عادی سازی L2",
+    "normalizedHelper": "لطفاً تأیید کنید که این مدل از نرمال سازی L2 بردارهای خروجی پشتیبانی می کند"
   },
   "mcp": {
     "title": "تنظیمات MCP",

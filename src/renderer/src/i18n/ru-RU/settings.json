@@ -275,7 +275,11 @@
       "remaining": "Оставшаяся сумма",
       "usage": "Использовал"
     },
-    "refreshingModels": "Освежает ..."
+    "refreshingModels": "Освежает ...",
+    "toast": {
+      "modelRunning": "Модель работает",
+      "modelRunningDesc": "Пожалуйста, остановите модель {model} сначала, а затем удалите ее."
+    }
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",
@@ -351,7 +355,9 @@
     "deleteSuccess": "Удалить успешно",
     "copy": "копия",
     "copySuccess": "Копировать успешно",
-    "source": "источник"
+    "source": "источник",
+    "normalized": "L2 Нормализация",
+    "normalizedHelper": "Убедитесь, что модель поддерживает нормализацию выходных векторов L2"
   },
   "mcp": {
     "title": "Настройки MCP",

@@ -275,7 +275,11 @@
       "remaining": "残りの金額",
       "usage": "使用済み"
     },
-    "refreshingModels": "更新中..."
+    "refreshingModels": "更新中...",
+    "toast": {
+      "modelRunning": "モデルが実行されています",
+      "modelRunningDesc": "最初にモデル{model}を停止してから削除してください。"
+    }
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
@@ -351,7 +355,9 @@
     "deleteSuccess": "正常に削除します",
     "copy": "コピー",
     "copySuccess": "正常にコピーします",
-    "source": "ソース"
+    "source": "ソース",
+    "normalized": "L2正規化",
+    "normalizedHelper": "モデルが出力ベクトルのL2正規化をサポートしていることを確認してください"
   },
   "mcp": {
     "title": "MCP設定",

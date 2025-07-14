@@ -275,7 +275,11 @@
       "remaining": "Montant restant",
       "usage": "Utilisé"
     },
-    "refreshingModels": "Rafraîchissant..."
+    "refreshingModels": "Rafraîchissant...",
+    "toast": {
+      "modelRunning": "Le modèle est en cours d'exécution",
+      "modelRunningDesc": "Veuillez d'abord arrêter le modèle {model}, puis le supprimer."
+    }
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
@@ -351,7 +355,9 @@
     "deleteSuccess": "Supprimer avec succès",
     "copy": "copie",
     "copySuccess": "Copier avec succès",
-    "source": "source"
+    "source": "source",
+    "normalized": "Normalisation L2",
+    "normalizedHelper": "Veuillez confirmer que le modèle prend en charge la normalisation L2 des vecteurs de sortie"
   },
   "mcp": {
     "title": "Paramètres MCP",
