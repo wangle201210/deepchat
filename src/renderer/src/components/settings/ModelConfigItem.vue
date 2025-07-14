@@ -22,16 +22,24 @@
         {{ type }}
       </span>
       <Button
+        v-if="!enabled"
         variant="link"
         size="icon"
         class="w-7 h-7 text-xs text-normal rounded-lg"
-        @click="onEnabledChange(!enabled)"
+        @click="onEnabledChange(true)"
       >
-        <Icon v-if="enabled" icon="lucide:circle-check" class="w-4 h-4 text-green-500" />
-        <Icon v-else icon="lucide:circle-minus" class="w-4 h-4 text-destructive" />
+        <Icon icon="lucide:circle-minus" class="w-4 h-4 text-destructive" />
       </Button>
       <Button
-        v-if="changeable"
+        v-if="enabled"
+        variant="link"
+        size="icon"
+        class="w-7 h-7 text-xs text-normal rounded-lg"
+        @click="onEnabledChange(false)"
+      >
+        <Icon icon="lucide:circle-check" class="w-4 h-4 text-green-500" />
+      </Button>
+      <Button
         variant="link"
         size="icon"
         class="w-7 h-7 text-xs text-normal rounded-lg"
