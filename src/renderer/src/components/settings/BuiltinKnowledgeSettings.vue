@@ -99,7 +99,9 @@
               </div>
               <div class="grid gap-2">
                 <div class="flex items-center">
-                  <span class="font-medium text-sm w-[calc(100%-120px)]">{{ config.description }}</span>
+                  <span class="font-medium text-sm w-[calc(100%-120px)]">{{
+                    config.description
+                  }}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                   <div>
@@ -212,7 +214,7 @@
                   </PopoverContent>
                 </Popover>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-2" v-if="false">
                 <div class="flex items-center gap-1">
                   <Label class="text-xs text-muted-foreground" for="edit-builtin-config-model">
                     {{ t('settings.knowledgeBase.selectRerankModel') }}
@@ -235,23 +237,23 @@
                           {{ selectRerankModel?.name || t('settings.common.selectModel') }}
                         </span>
                       </div>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          v-if="selectRerankModel"
-                          class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-zinc-200"
-                          @click.stop="clearRerankModel"
-                        >
-                          <Icon icon="lucide:x" class="w-4 h-4 text-muted-foreground" />
-                        </Button>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          v-else
-                          class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center"
-                        >
-                          <Icon icon="lucide:chevron-down" class="w-4 h-4 text-muted-foreground" />
-                        </Button>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        v-if="selectRerankModel"
+                        class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-zinc-200"
+                        @click.stop="clearRerankModel"
+                      >
+                        <Icon icon="lucide:x" class="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        v-else
+                        class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center"
+                      >
+                        <Icon icon="lucide:chevron-down" class="w-4 h-4 text-muted-foreground" />
+                      </Button>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent class="w-80 p-0">
