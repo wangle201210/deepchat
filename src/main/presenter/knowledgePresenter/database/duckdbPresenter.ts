@@ -272,6 +272,27 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     return rows.map((row) => this.toKnowledgeFileMessage(row))
   }
 
+  async queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]> {
+    const camelToSnake = (key: string) => key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+
+    const entries = Object.entries(where).filter(([, value]) => value !== undefined)
+
+    let sql = `SELECT * FROM ${this.fileTable}`
+    const params: any[] = []
+
+    if (entries.length > 0) {
+      const conditions = entries.map(([key]) => `${camelToSnake(key)} = ?`).join(' AND ')
+      sql += ` WHERE ${conditions}`
+      params.push(...entries.map(([, value]) => value))
+    }
+
+    sql += ` ORDER BY uploaded_at DESC;`
+
+    const reader = await this.connection.runAndReadAll(sql, params)
+    const rows = reader.getRowObjectsJson()
+    return rows.map((row) => this.toKnowledgeFileMessage(row))
+  }
+
   private toKnowledgeFileMessage(o: any): KnowledgeFileMessage {
     return {
       id: o.id,

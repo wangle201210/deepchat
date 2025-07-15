@@ -1416,6 +1416,14 @@ export interface IVectorDatabasePresenter {
    * @returns 文件数据数组
    */
   listFiles(): Promise<KnowledgeFileMessage[]>
+
+  /**
+   * 根据条件查询文件
+   * @param where 查询条件
+   * @returns 文件数据数组
+   */
+  queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]>
+
   /**
    * 删除文件
    * @param id 文件 id

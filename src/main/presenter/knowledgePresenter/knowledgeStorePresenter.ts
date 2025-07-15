@@ -135,6 +135,15 @@ export class KnowledgeStorePresenter {
     return await this.vectorP.listFiles()
   }
 
+  async recoverProcessingFiles(): Promise<void> {
+    const processingFiles = await this.vectorP.queryFiles({ status: 'processing' })
+    for (const file of processingFiles) {
+      file.status = 'error'
+      file.metadata.reason = '用户取消任务'
+      await this.vectorP.updateFile(file)
+    }
+  }
+
   async destroy(): Promise<void> {
     this.vectorP.destroy()
   }

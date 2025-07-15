@@ -29,6 +29,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.storageDir = path.join(dbDir, 'KnowledgeBase')
 
     this.initStorageDir()
+    this.recoverUnfinishedTasks()
     this.setupEventBus()
   }
 
@@ -250,5 +251,18 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   async similarityQuery(id: string, key: string): Promise<QueryResult[]> {
     const rag = await this.getStorePresenter(id)
     return await rag.similarityQuery(key)
+  }
+
+  private async recoverUnfinishedTasks(): Promise<void> {
+    console.log('[RAG] Recovering unfinished tasks...')
+    const configs = this.configP.getKnowledgeConfigs()
+    for (const config of configs) {
+      try {
+        const storePresenter = await this.getStorePresenter(config.id)
+        await storePresenter.recoverProcessingFiles()
+      } catch (err) {
+        console.error(`[RAG] Error recovering tasks for knowledge base ${config.id}:`, err)
+      }
+    }
   }
 }
