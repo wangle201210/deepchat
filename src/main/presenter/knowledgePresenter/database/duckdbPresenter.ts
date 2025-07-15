@@ -204,13 +204,18 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       paramsArr.push(options.threshold)
     }
     paramsArr.push(k)
-    const reader = await this.connection.runAndReadAll(sql, paramsArr)
-    const rows = reader.getRowObjectsJson()
-    return rows.map((r: any) => ({
-      id: r.id,
-      metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata,
-      distance: r.distance
-    }))
+    try {
+      const reader = await this.connection.runAndReadAll(sql, paramsArr)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((r: any) => ({
+        id: r.id,
+        metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata,
+        distance: r.distance
+      }))
+    } catch (err) {
+      console.error('[DuckDB] similarityQuery error', sql, paramsArr, err)
+      throw err
+    }
   }
 
   async deleteVector(id: string): Promise<void> {
@@ -254,26 +259,34 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
-    const reader = await this.connection.runAndReadAll(
-      `SELECT * FROM ${this.fileTable} WHERE id = ?;`,
-      [id]
-    )
-    const rows = reader.getRowObjectsJson()
-    if (rows.length === 0) return null
-    const row = rows[0]
-    return this.toKnowledgeFileMessage(row)
+    const sql = `SELECT * FROM ${this.fileTable} WHERE id = ?;`
+    try {
+      const reader = await this.connection.runAndReadAll(sql, [id])
+      const rows = reader.getRowObjectsJson()
+      if (rows.length === 0) return null
+      const row = rows[0]
+      return this.toKnowledgeFileMessage(row)
+    } catch (err) {
+      console.error('[DuckDB] queryFile error', sql, id, err)
+      throw err
+    }
   }
 
   async listFiles(): Promise<KnowledgeFileMessage[]> {
-    const reader = await this.connection.runAndReadAll(
-      `SELECT * FROM ${this.fileTable} ORDER BY uploaded_at DESC;`
-    )
-    const rows = reader.getRowObjectsJson()
-    return rows.map((row) => this.toKnowledgeFileMessage(row))
+    const sql = `SELECT * FROM ${this.fileTable} ORDER BY uploaded_at DESC;`
+    try {
+      const reader = await this.connection.runAndReadAll(sql)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((row) => this.toKnowledgeFileMessage(row))
+    } catch (err) {
+      console.error('[DuckDB] listFiles error', sql, err)
+      throw err
+    }
   }
 
   async queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]> {
-    const camelToSnake = (key: string) => key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+    const camelToSnake = (key: string) =>
+      key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
 
     const entries = Object.entries(where).filter(([, value]) => value !== undefined)
 
@@ -288,12 +301,23 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
     sql += ` ORDER BY uploaded_at DESC;`
 
-    const reader = await this.connection.runAndReadAll(sql, params)
-    const rows = reader.getRowObjectsJson()
-    return rows.map((row) => this.toKnowledgeFileMessage(row))
+    try {
+      const reader = await this.connection.runAndReadAll(sql, params)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((row) => this.toKnowledgeFileMessage(row))
+    } catch (err) {
+      console.error('[DuckDB] queryFiles error', sql, params, err)
+      throw err
+    }
   }
 
   private toKnowledgeFileMessage(o: any): KnowledgeFileMessage {
+    let metadata = {}
+    try {
+      metadata = typeof o.metadata === 'string' ? JSON.parse(o.metadata) : o.metadata
+    } catch (err) {
+      console.error(`[DuckDB] Failed to parse metadata for file ${o.id}:`, err)
+    }
     return {
       id: o.id,
       name: o.name,
@@ -315,9 +339,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     try {
       if (fs.existsSync(this.dbPath)) {
         fs.rmSync(this.dbPath, { recursive: true })
+        console.log(`[DuckDB] Database at ${this.dbPath} destroyed.`)
       }
     } catch (err) {
-      console.error('[DuckDB] destroy Error', err)
+      console.error(`[DuckDB] Error destroying database at ${this.dbPath}:`, err)
     }
   }
 }

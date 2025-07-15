@@ -100,21 +100,37 @@ export class KnowledgeStorePresenter {
   }
 
   async similarityQuery(key: string): Promise<QueryResult[]> {
-    const embedding = await presenter.llmproviderPresenter.getEmbeddings(
-      this.config.embedding.providerId,
-      this.config.embedding.modelId,
-      [sanitizeText(key)]
-    )
+    try {
+      const embedding = await presenter.llmproviderPresenter.getEmbeddings(
+        this.config.embedding.providerId,
+        this.config.embedding.modelId,
+        [sanitizeText(key)]
+      )
 
-    return await this.vectorP.similarityQuery(embedding[0], {
-      topK: this.config.fragmentsNumber,
-      metric: this.config.normalized ? 'cosine' : 'ip'
-    })
+      return await this.vectorP.similarityQuery(embedding[0], {
+        topK: this.config.fragmentsNumber,
+        metric: this.config.normalized ? 'cosine' : 'ip'
+      })
+    } catch (err) {
+      console.error(
+        `[RAG] Similarity query failed in knowledge base ${this.config.id} for key "${key}":`,
+        err
+      )
+      throw err
+    }
   }
 
   async deleteFile(fileId: string): Promise<void> {
-    await this.vectorP.deleteVectorsByFile(fileId)
-    await this.vectorP.deleteFile(fileId)
+    try {
+      await this.vectorP.deleteVectorsByFile(fileId)
+      await this.vectorP.deleteFile(fileId)
+    } catch (err) {
+      console.error(
+        `[RAG] Failed to delete file ${fileId} in knowledge base ${this.config.id}:`,
+        err
+      )
+      throw err
+    }
   }
 
   async reAddFile(
@@ -129,26 +145,54 @@ export class KnowledgeStorePresenter {
   }
 
   async queryFile(fileId: string): Promise<KnowledgeFileMessage | null> {
-    return await this.vectorP.queryFile(fileId)
+    try {
+      return await this.vectorP.queryFile(fileId)
+    } catch (err) {
+      console.error(
+        `[RAG] Failed to query file ${fileId} in knowledge base ${this.config.id}:`,
+        err
+      )
+      throw err
+    }
   }
   async listFiles(): Promise<KnowledgeFileMessage[]> {
-    return await this.vectorP.listFiles()
+    try {
+      return await this.vectorP.listFiles()
+    } catch (err) {
+      console.error(`[RAG] Failed to list files in knowledge base ${this.config.id}:`, err)
+      throw err
+    }
   }
 
   async recoverProcessingFiles(): Promise<void> {
     const processingFiles = await this.vectorP.queryFiles({ status: 'processing' })
     for (const file of processingFiles) {
-      file.status = 'error'
-      file.metadata.reason = '用户取消任务'
-      await this.vectorP.updateFile(file)
+      try {
+        file.status = 'error'
+        file.metadata.reason = '用户取消任务'
+        await this.vectorP.updateFile(file)
+      } catch (err) {
+        console.error(
+          `[RAG] Failed to recover processing file ${file.id} in knowledge base ${this.config.id}:`,
+          err
+        )
+      }
     }
   }
 
   async destroy(): Promise<void> {
-    this.vectorP.destroy()
+    try {
+      this.vectorP.destroy()
+    } catch (err) {
+      console.error(`[RAG] Error destroying knowledge base ${this.config.id}:`, err)
+    }
   }
 
   async close(): Promise<void> {
-    this.vectorP.close()
+    try {
+      this.vectorP.close()
+    } catch (err) {
+      console.error(`[RAG] Error closing knowledge base ${this.config.id}:`, err)
+    }
   }
 }

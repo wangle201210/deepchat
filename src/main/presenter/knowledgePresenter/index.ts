@@ -57,7 +57,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
         }
         const mcpServers = payload.mcpServers
         const builtinConfig = mcpServers['builtinKnowledge'] as MCPServerConfig
-        if (builtinConfig && builtinConfig.env && Array.isArray(builtinConfig.env.configs)) {
+        if (builtinConfig?.env && Array.isArray(builtinConfig.env.configs)) {
           const configs = builtinConfig.env.configs as BuiltinKnowledgeConfig[]
           console.log('[RAG] Received builtinKnowledge config update:', configs)
           const diffs = this.configP.diffKnowledgeConfigs(configs)
