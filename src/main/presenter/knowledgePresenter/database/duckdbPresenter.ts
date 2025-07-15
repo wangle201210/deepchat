@@ -161,23 +161,25 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     const id = nanoid()
     const vec = arrayValue(Array.from(opts.vector))
     const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
+    const fileId = opts.fileId
     await this.safeRun(
-      `INSERT INTO ${this.vectorTable} (id, embedding, metadata)
-       VALUES (?, ?::FLOAT[], ?::JSON);`,
-      [id, vec, meta]
+      `INSERT INTO ${this.vectorTable} (id, embedding, metadata, file_id) 
+       VALUES (?, ?::FLOAT[], ?::JSON, ?);`,
+      [id, vec, meta, fileId]
     )
   }
 
   async insertVectors(records: InsertOptions[]): Promise<void> {
     if (!records.length) return
     // 构造批量插入 SQL
-    const valuesSql = records.map(() => '(?, ?::FLOAT[], ?::JSON)').join(', ')
-    const sql = `INSERT INTO ${this.vectorTable} (id, embedding, metadata) VALUES ${valuesSql};`
+    const valuesSql = records.map(() => '(?, ?::FLOAT[], ?::JSON, ?)').join(', ')
+    const sql = `INSERT INTO ${this.vectorTable} (id, embedding, metadata, file_id) VALUES ${valuesSql};`
     const params: any[] = []
     for (const r of records) {
       params.push(nanoid())
       params.push(arrayValue(Array.from(r.vector)))
       params.push(r.metadata ? JSON.stringify(r.metadata) : null)
+      params.push(r.fileId)
     }
     await this.safeRun(sql, params)
   }
