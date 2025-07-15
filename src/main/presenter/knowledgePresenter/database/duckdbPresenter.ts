@@ -312,12 +312,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   private toKnowledgeFileMessage(o: any): KnowledgeFileMessage {
-    let metadata = {}
-    try {
-      metadata = typeof o.metadata === 'string' ? JSON.parse(o.metadata) : o.metadata
-    } catch (err) {
-      console.error(`[DuckDB] Failed to parse metadata for file ${o.id}:`, err)
-    }
     return {
       id: o.id,
       name: o.name,
