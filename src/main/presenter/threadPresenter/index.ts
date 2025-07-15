@@ -1789,7 +1789,7 @@ export class ThreadPresenter implements IThreadPresenter {
     finalContent: ChatMessage[]
     promptTokens: number
   }> {
-    const { systemPrompt, contextLength, artifacts } = conversation.settings
+    const { systemPrompt, contextLength, artifacts, enabledMcpTools } = conversation.settings
 
     const searchPrompt = searchResults ? generateSearchPrompt(userContent, searchResults) : ''
     const enrichedUserMessage =
@@ -1801,7 +1801,7 @@ export class ThreadPresenter implements IThreadPresenter {
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
     const systemPromptTokens = systemPrompt ? approximateTokenSize(systemPrompt ?? '') : 0
     const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
-    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+    const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions(enabledMcpTools)
     const mcpToolsTokens = mcpTools.reduce(
       (acc, tool) => acc + approximateTokenSize(JSON.stringify(tool)),
       0

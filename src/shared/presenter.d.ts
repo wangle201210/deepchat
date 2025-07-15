@@ -534,6 +534,7 @@ export type CONVERSATION_SETTINGS = {
   providerId: string
   modelId: string
   artifacts: 0 | 1
+  enabledMcpTools?: string[]
 }
 
 export type CONVERSATION = {
