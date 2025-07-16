@@ -224,6 +224,17 @@
       "pullModel": {
         "title": "Récupérer le modèle",
         "pull": "Récupérer"
+      },
+      "modelCheck": {
+        "checking": "Essai...",
+        "description": "Sélectionnez un modèle pour les tests de connectivité et d'utilisation",
+        "failed": "Échec du test du modèle",
+        "model": "Sélectionnez un modèle",
+        "modelPlaceholder": "Veuillez sélectionner le modèle à tester",
+        "noModels": "Il n'y a aucun modèle disponible pour ce fournisseur de services",
+        "success": "Le test du modèle a réussi",
+        "test": "Commencer le test",
+        "title": "Chèque de modèle"
       }
     },
     "pullModels": "Récupérer les modèles",
@@ -237,7 +248,11 @@
     "localModels": "Modèles locaux",
     "azureApiVersion": "Version API",
     "safety": {
-      "title": "Paramètres de sécurité"
+      "title": "Paramètres de sécurité",
+      "blockHighest": "Bloquer un risque élevé",
+      "blockMost": "Bloquer les risques moyens",
+      "blockNone": "Non bloqué",
+      "blockSome": "Bloquer un faible risque"
     },
     "serverList": "Liste des serveurs",
     "totalServers": "Total des serveurs",
@@ -259,7 +274,8 @@
     "keyStatus": {
       "remaining": "Montant restant",
       "usage": "Utilisé"
-    }
+    },
+    "refreshingModels": "Rafraîchissant..."
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
@@ -273,11 +289,11 @@
     "datasetId": "ID du jeu de données",
     "endpoint": "Point de terminaison API",
     "configAdded": "Configuration ajoutée",
-    "configAddedDesc": "La configuration de la base de connaissances Dify a été ajoutée avec succès",
+    "configAddedDesc": "{name} La configuration a été ajoutée avec succès",
     "addConfig": "Ajouter une configuration",
     "moreComingSoon": "Plus de types de bases de connaissances à venir",
     "configUpdated": "Configuration mise à jour",
-    "configUpdatedDesc": "La configuration de la base de connaissances Dify a été mise à jour avec succès",
+    "configUpdatedDesc": "{name} La configuration a été mise à jour avec succès",
     "descriptionPlaceholder": "Exemple : Base de connaissances des documents produits de l'entreprise",
     "ragflowTitle": "Base de connaissances RAGFlow",
     "ragflowDescription": "RAGFlow est un système puissant de gestion de base de connaissances qui prend en charge plusieurs méthodes de recherche et fonctionnalités de gestion de documents.",
@@ -448,6 +464,7 @@
     "pressEnterToSave": "Appuyez sur Entrée pour enregistrer, Échap pour annuler",
     "noModifierOnly": "Impossible d'utiliser uniquement une touche de modification comme raccourci",
     "keyConflict": "Conflit de raccourci clavier, veuillez choisir une autre combinaison",
+    "clearShortcut": "Effacer le raccourci",
     "cleanHistory": "Historique de chat clair",
     "deleteConversation": "Supprimer la conversation",
     "goSettings": "Paramètres ouvrir",

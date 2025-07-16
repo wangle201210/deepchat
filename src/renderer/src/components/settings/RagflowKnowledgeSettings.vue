@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, toRaw } from 'vue'
+import { ref, computed, onMounted, watch, toRaw, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -312,14 +312,18 @@ const saveRagflowConfig = async () => {
     }
     toast({
       title: t('settings.knowledgeBase.configUpdated'),
-      description: t('settings.knowledgeBase.configUpdatedDesc')
+      description: t('settings.knowledgeBase.configUpdatedDesc', {
+        name: t('settings.knowledgeBase.ragflowTitle')
+      })
     })
   } else {
     // 添加配置
     ragflowConfigs.value.push(config)
     toast({
       title: t('settings.knowledgeBase.configAdded'),
-      description: t('settings.knowledgeBase.configAddedDesc')
+      description: t('settings.knowledgeBase.configAddedDesc', {
+        name: t('settings.knowledgeBase.ragflowTitle')
+      })
     })
   }
 
@@ -427,7 +431,24 @@ watch(
 )
 
 // 组件挂载时加载配置
+let unwatch: () => void // only use here, so declare it here
 onMounted(async () => {
-  await loadRagflowConfigFromMcp()
+  unwatch = watch(
+    () => mcpStore.config.ready,
+    async (ready) => {
+      if (ready) {
+        unwatch() // only run once to avoid multiple calls
+        await loadRagflowConfigFromMcp()
+      }
+    },
+    { immediate: true }
+  )
+})
+
+// cancel the watch to avoid memory leaks
+onUnmounted(() => {
+  if (unwatch) {
+    unwatch()
+  }
 })
 </script>

@@ -18,7 +18,7 @@
     "customProxyUrl": "カスタムプロキシURL",
     "customProxyUrlPlaceholder": "例: http://127.0.0.1:7890",
     "invalidProxyUrl": "無効なプロキシURL、有効なhttp/https URLを入力してください",
-    "contentProtection": "画面保護",
+    "contentProtection": "画面キャプチャ保護",
     "contentProtectionDialogTitle": "画面保護の切り替え確認",
     "contentProtectionEnableDesc": "画面保護を有効にすると、画面共有ソフトウェアがDeepChatウィンドウをキャプチャするのを防ぎ、コンテンツのプライバシーを保護します。この機能はすべてのインターフェイスを完全に隠すわけではありません。責任を持って規制に準拠して使用してください。また、画面共有ソフトウェアがこの機能をサポートしない場合があります。また、一部の環境では黒いウィンドウが残る可能性があります。",
     "contentProtectionDisableDesc": "画面保護を無効にすると、画面共有ソフトウェアがDeepChatウィンドウをキャプチャできるようになります。",
@@ -44,10 +44,10 @@
     "testSearchEngineNote": "検索ページにログインやその他の操作が必要な場合は、テストウィンドウで実行できます。テスト完了後はテストウィンドウを閉じてください。",
     "theme": "テーマ",
     "themeSelect": "テーマを選択",
-    "closeToQuit": "閉じるボタンをクリックするとアプリケーションを終了します",
+    "closeToQuit": "閉じるボタンでアプリを終了",
     "openLogFolder": "ログフォルダを開く",
     "shortcut": {
-      "newChat": "新しいチャットを作成します",
+      "newChat": "新しいチャットを作成",
       "title": "ショートカットキー設定"
     },
     "notifications": "システム通知",
@@ -224,6 +224,17 @@
       "pullModel": {
         "title": "モデルを取得",
         "pull": "取得"
+      },
+      "modelCheck": {
+        "checking": "テスト...",
+        "description": "接続性とユーザビリティテストのモデルを選択します",
+        "failed": "モデルテストに失敗しました",
+        "model": "モデルを選択します",
+        "modelPlaceholder": "テストするモデルを選択してください",
+        "noModels": "このサービスプロバイダーが利用できるモデルはありません",
+        "success": "モデルテストが成功しました",
+        "test": "テストを開始します",
+        "title": "モデルチェック"
       }
     },
     "pullModels": "モデルを取得",
@@ -237,7 +248,11 @@
     "localModels": "ローカルモデル",
     "azureApiVersion": "APIバージョン",
     "safety": {
-      "title": "セキュリティ設定"
+      "title": "セキュリティ設定",
+      "blockHighest": "高リスクをブロックします",
+      "blockMost": "中程度のリスクをブロックします",
+      "blockNone": "ブロックされていません",
+      "blockSome": "低リスクをブロックします"
     },
     "serverList": "サーバーリスト",
     "totalServers": "サーバー総数",
@@ -259,7 +274,8 @@
     "keyStatus": {
       "remaining": "残りの金額",
       "usage": "使用済み"
-    }
+    },
+    "refreshingModels": "更新中..."
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
@@ -273,11 +289,11 @@
     "datasetId": "データセットID",
     "endpoint": "APIエンドポイント",
     "configAdded": "設定が追加されました",
-    "configAddedDesc": "Difyナレッジベースの設定が正常に追加されました",
+    "configAddedDesc": "{name}構成が正常に追加されました",
     "addConfig": "設定を追加",
     "moreComingSoon": "より多くのナレッジベースタイプが近日公開予定",
     "configUpdated": "設定が更新されました",
-    "configUpdatedDesc": "Difyナレッジベースの設定が正常に更新されました",
+    "configUpdatedDesc": "{name}構成は正常に更新されました",
     "descriptionPlaceholder": "例：会社の製品ドキュメントナレッジベース",
     "ragflowTitle": "RAGFlowナレッジベース",
     "ragflowDescription": "RAGFlowは、複数の検索方法とドキュメント管理機能をサポートする強力なナレッジベース管理システムです。",
@@ -448,6 +464,7 @@
     "pressEnterToSave": "Enterキーで保存、Escでキャンセル",
     "noModifierOnly": "修飾キーのみをショートカットキーとして使用することはできません",
     "keyConflict": "ショートカットキーが競合しています。別の組み合わせを選択してください",
+    "clearShortcut": "ショートカットをクリア",
     "cleanHistory": "明確なチャット履歴",
     "deleteConversation": "会話を削除",
     "goSettings": "設定を開く",

@@ -35,6 +35,7 @@ import { OpenAIResponsesProvider } from './providers/openAIResponsesProvider'
 import { OpenRouterProvider } from './providers/openRouterProvider'
 import { MinimaxProvider } from './providers/minimaxProvider'
 import { AihubmixProvider } from './providers/aihubmixProvider'
+import { _302AIProvider } from './providers/_302AIProvider'
 // 流的状态
 interface StreamState {
   isGenerating: boolean
@@ -93,6 +94,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
   private createProviderInstance(provider: LLM_PROVIDER): BaseLLMProvider | undefined {
     try {
+      if (provider.id === '302ai') {
+        return new _302AIProvider(provider, this.configPresenter)
+      }
       if (provider.id === 'minimax') {
         return new MinimaxProvider(provider, this.configPresenter)
       }
@@ -295,7 +299,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     temperature: number = 0.6,
     maxTokens: number = 4096
   ): AsyncGenerator<LLMAgentEvent, void, unknown> {
-    console.log('Starting agent loop for event:', eventId, 'with model:', modelId)
+    console.log(`[Agent Loop] Starting agent loop for event: ${eventId} with model: ${modelId}`)
     if (!this.canStartNewStream()) {
       // Instead of throwing, yield an error event
       yield { type: 'error', data: { eventId, error: '已达到最大并发流数量限制' } }
@@ -366,7 +370,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         const currentToolChunks: Record<string, { name: string; arguments_chunk: string }> = {}
 
         try {
-          console.log(`Loop iteration ${toolCallCount + 1} for event ${eventId}`)
+          console.log(`[Agent Loop] Iteration ${toolCallCount + 1} for event: ${eventId}`)
           const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
           // Call the provider's core stream method, expecting LLMCoreStreamEvent
           const stream = provider.coreStream(
@@ -645,6 +649,37 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
                 if (abortController.signal.aborted) break // Check after tool call returns
 
+                // Check if permission is required
+                if (toolResponse.rawData.requiresPermission) {
+                  console.log(
+                    `[Agent Loop] Permission required for tool ${toolCall.name}, creating permission request`
+                  )
+
+                  // Yield permission request event
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      tool_call: 'permission-required',
+                      tool_call_id: toolCall.id,
+                      tool_call_name: toolCall.name,
+                      tool_call_params: toolCall.arguments,
+                      tool_call_server_name: toolResponse.rawData.permissionRequest?.serverName,
+                      tool_call_server_icons: toolDef.server.icons,
+                      tool_call_server_description: toolDef.server.description,
+                      tool_call_response: toolResponse.content,
+                      permission_request: toolResponse.rawData.permissionRequest
+                    }
+                  }
+
+                  // End the agent loop here - permission handling will trigger a new agent loop
+                  console.log(
+                    `[Agent Loop] Ending agent loop for permission request, event: ${eventId}`
+                  )
+                  needContinueConversation = false
+                  break
+                }
+
                 // Add tool call and response to conversation history for the next LLM iteration
                 const supportsFunctionCall = modelConfig?.functionCall || false
 
@@ -896,6 +931,10 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           needContinueConversation = false // Stop loop on inner error
         }
       } // --- End of Agent Loop (while) ---
+
+      console.log(
+        `[Agent Loop] Agent loop completed for event: ${eventId}, iterations: ${toolCallCount}`
+      )
     } catch (error) {
       // Catch errors from the generator setup phase (before the loop)
       if (abortController.signal.aborted) {
@@ -997,14 +1036,59 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     return this.config.maxConcurrentStreams
   }
 
-  async check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }> {
-    const provider = this.getProviderInstance(providerId)
-    return provider.check()
+  async check(
+    providerId: string,
+    modelId?: string
+  ): Promise<{ isOk: boolean; errorMsg: string | null }> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+
+      // 如果提供了modelId，使用completions方法进行测试
+      if (modelId) {
+        try {
+          const testMessage = [{ role: 'user' as const, content: 'hi' }]
+          const response: LLMResponse | null = await Promise.race([
+            provider.completions(testMessage, modelId, 0.1, 10),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 60000))
+          ])
+          // 检查响应是否有效
+          if (
+            response &&
+            (response.content || response.content === '' || response.reasoning_content)
+          ) {
+            return { isOk: true, errorMsg: null }
+          } else {
+            return { isOk: false, errorMsg: 'Model response is invalid' }
+          }
+        } catch (error) {
+          console.error(`Model ${modelId} check failed:`, error)
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          return { isOk: false, errorMsg: `Model test failed: ${errorMessage}` }
+        }
+      } else {
+        return { isOk: false, errorMsg: 'Model ID is required' }
+      }
+    } catch (error) {
+      console.error(`Provider ${providerId} check failed:`, error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { isOk: false, errorMsg: `Provider check failed: ${errorMessage}` }
+    }
   }
 
   async getKeyStatus(providerId: string): Promise<KeyStatus | null> {
     const provider = this.getProviderInstance(providerId)
     return provider.getKeyStatus()
+  }
+
+  async refreshModels(providerId: string): Promise<void> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      await provider.refreshModels()
+    } catch (error) {
+      console.error(`Failed to refresh models for provider ${providerId}:`, error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`Model refresh failed: ${errorMessage}`)
+    }
   }
 
   async addCustomModel(

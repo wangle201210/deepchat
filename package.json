@@ -1,6 +1,6 @@
 {
   "name": "DeepChat",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "DeepChat，一个简单易用的AI客户端",
   "main": "./out/main/index.js",
   "author": "ThinkInAIXYZ",
@@ -9,7 +9,7 @@
     "node": ">=20.12.2",
     "pnpm": ">=10.11.0"
   },
-  "packageManager": "pnpm@10.12.2+sha512.a32540185b964ee30bb4e979e405adc6af59226b438ee4cc19f9e8773667a66d302f5bfee60a39d3cac69e35e4b96e708a71dd002b7e9359c4112a1722ac323f",
+  "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "test": "vitest",
@@ -58,6 +58,7 @@
     "@electron-toolkit/preload": "^3.0.1",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.5.1",
+    "@jxa/run": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.13.1",
     "axios": "^1.7.9",
     "better-sqlite3-multiple-ciphers": "11.10.0",
@@ -80,6 +81,7 @@
     "openai": "^5.3.0",
     "pdf-parse-new": "^1.3.9",
     "pyodide": "^0.27.5",
+    "run-applescript": "^7.0.0",
     "sharp": "^0.33.5",
     "together-ai": "^0.16.0",
     "tokenx": "^0.4.1",
@@ -91,7 +93,7 @@
   },
   "devDependencies": {
     "@electron-toolkit/tsconfig": "^1.0.1",
-    "@electron/notarize": "^2.5.0",
+    "@electron/notarize": "^3.0.1",
     "@iconify-json/lucide": "^1.2.39",
     "@iconify-json/vscode-icons": "^1.2.20",
     "@iconify/vue": "^5.0.0",
@@ -124,7 +126,7 @@
     "dompurify": "^3.2.4",
     "electron": "^35.5.1",
     "electron-builder": "26.0.12",
-    "electron-vite": "^3.1.0",
+    "electron-vite": "^4.0.0",
     "jsdom": "^26.1.0",
     "lucide-vue-next": "^0.511.0",
     "mermaid": "^11.6.0",
@@ -139,7 +141,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tippy.js": "^6.3.7",
     "typescript": "^5.8.3",
-    "vite": "^6.3.4",
+    "vite": "npm:rolldown-vite@latest",
     "vite-plugin-monaco-editor-esm": "^2.0.2",
     "vite-plugin-vue-devtools": "^7.7.6",
     "vite-svg-loader": "^5.1.0",
@@ -156,6 +158,9 @@
     "zod-to-json-schema": "^3.24.5"
   },
   "pnpm": {
+    "overrides": {
+      "vite": "npm:rolldown-vite@latest"
+    },
     "onlyBuiltDependencies": [
       "@tailwindcss/oxide",
       "electron",

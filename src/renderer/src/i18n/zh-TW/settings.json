@@ -224,6 +224,17 @@
       "pullModel": {
         "title": "下載模型",
         "pull": "下載"
+      },
+      "modelCheck": {
+        "checking": "測試中...",
+        "description": "選擇一個模型進行連接性和可用性測試",
+        "failed": "模型測試失敗",
+        "model": "選擇模型",
+        "modelPlaceholder": "請選擇要測試的模型",
+        "noModels": "該服務商沒有可用的模型",
+        "success": "模型測試成功",
+        "test": "開始測試",
+        "title": "模型檢查"
       }
     },
     "pullModels": "下載模型",
@@ -237,7 +248,11 @@
     "noLocalModels": "沒有本機模型",
     "azureApiVersion": "API 版本",
     "safety": {
-      "title": "安全設置"
+      "title": "安全設置",
+      "blockHighest": "屏蔽高風險",
+      "blockMost": "屏蔽中風險",
+      "blockNone": "不屏蔽",
+      "blockSome": "屏蔽低風險"
     },
     "serverList": "伺服器列表",
     "totalServers": "伺服器總數",
@@ -259,7 +274,8 @@
     "keyStatus": {
       "remaining": "剩餘額度",
       "usage": "已使用"
-    }
+    },
+    "refreshingModels": "刷新中..."
   },
   "knowledgeBase": {
     "title": "知識庫設置",
@@ -273,11 +289,11 @@
     "datasetId": "數據集ID",
     "endpoint": "API地址",
     "configAdded": "配置已添加",
-    "configAddedDesc": "Dify知識庫配置已成功添加",
+    "configAddedDesc": "{name}配置已成功添加",
     "addConfig": "添加配置",
     "moreComingSoon": "更多知識庫類型即將推出",
     "configUpdated": "配置已更新",
-    "configUpdatedDesc": "Dify知識庫配置已成功更新",
+    "configUpdatedDesc": "{name}配置已成功更新",
     "descriptionPlaceholder": "例如：公司產品文檔知識庫",
     "ragflowTitle": "RAGFlow 知識庫",
     "ragflowDescription": "RAGFlow 是一個強大的知識庫管理系統，支援多種檢索方式和文件管理功能。",
@@ -448,6 +464,7 @@
     "pressEnterToSave": "按Enter保存，Esc取消",
     "noModifierOnly": "不能僅使用修飾鍵作為快捷鍵",
     "keyConflict": "快捷鍵衝突，請選擇其他組合",
+    "clearShortcut": "清除快捷鍵",
     "cleanHistory": "清除聊天歷史",
     "deleteConversation": "刪除會話",
     "goSettings": "打開設置",

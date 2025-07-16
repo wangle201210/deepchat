@@ -2,6 +2,7 @@ import { BrowserWindow, screen } from 'electron'
 import path from 'path'
 import { FloatingButtonConfig, FloatingButtonState } from './types'
 import logger from '../../../shared/logger'
+import { platform } from '@electron-toolkit/utils'
 
 export class FloatingButtonWindow {
   private window: BrowserWindow | null = null
@@ -34,9 +35,6 @@ export class FloatingButtonWindow {
 
       // 根据环境选择正确的预加载脚本路径
       const isDev = process.env.NODE_ENV === 'development'
-      const preloadPath = isDev
-        ? path.join(process.cwd(), 'out/preload/floating.mjs')
-        : path.join(__dirname, '../../preload/floating.mjs')
 
       this.window = new BrowserWindow({
         width: this.config.size.width,
@@ -44,7 +42,7 @@ export class FloatingButtonWindow {
         x: position.x,
         y: position.y,
         frame: false,
-        transparent: true,
+        transparent: platform.isMacOS,
         alwaysOnTop: this.config.alwaysOnTop,
         skipTaskbar: true,
         resizable: false,
@@ -52,17 +50,21 @@ export class FloatingButtonWindow {
         maximizable: false,
         closable: false,
         show: false,
-        movable: true, // 允许拖拽
+        movable: true, // 允许拖拽,
+        autoHideMenuBar: true,
+        vibrancy: 'under-window',
+        visualEffectState: 'followWindow',
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          preload: preloadPath,
+          preload: path.join(__dirname, '../preload/floating.mjs'),
           webSecurity: false, // 开发模式下允许跨域
-          devTools: true, // 开发模式下启用开发者工具
+          devTools: isDev, // 开发模式下启用开发者工具
           sandbox: false // 禁用沙盒模式，确保预加载脚本能正常工作
         }
       })
-
+      this.window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+      this.window.setAlwaysOnTop(true, 'floating')
       // 设置窗口透明度
       this.window.setOpacity(this.config.opacity)
 
@@ -72,7 +74,7 @@ export class FloatingButtonWindow {
         // 开发模式下可选择性打开开发者工具（暂时禁用，避免影响拖拽）
         this.window.webContents.openDevTools({ mode: 'detach' })
       } else {
-        await this.window.loadFile(path.join(__dirname, '../../../renderer/floating/index.html'))
+        await this.window.loadFile(path.join(__dirname, '../renderer/floating/index.html'))
       }
 
       // 监听窗口事件
@@ -149,7 +151,7 @@ export class FloatingButtonWindow {
       }
 
       if (config.alwaysOnTop !== undefined) {
-        this.window.setAlwaysOnTop(this.config.alwaysOnTop)
+        this.window.setAlwaysOnTop(this.config.alwaysOnTop, 'floating')
       }
     }
   }

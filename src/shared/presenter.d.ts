@@ -512,8 +512,9 @@ export interface ILlmProviderPresenter {
     maxTokens?: number
   ): Promise<string>
   stopStream(eventId: string): Promise<void>
-  check(providerId: string): Promise<{ isOk: boolean; errorMsg: string | null }>
+  check(providerId: string, modelId?: string): Promise<{ isOk: boolean; errorMsg: string | null }>
   getKeyStatus(providerId: string): Promise<KeyStatus | null>
+  refreshModels(providerId: string): Promise<void>
   summaryTitles(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
     providerId: string,
@@ -625,6 +626,15 @@ export interface IThreadPresenter {
   continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
   toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
   findTabForConversation(conversationId: string): Promise<number | null>
+
+  // Permission handling
+  handlePermissionResponse(
+    messageId: string,
+    toolCallId: string,
+    granted: boolean,
+    permissionType: 'read' | 'write' | 'all',
+    remember?: boolean
+  ): Promise<void>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'
@@ -874,6 +884,7 @@ export interface MCPConfig {
   mcpServers: Record<string, MCPServerConfig>
   defaultServers: string[]
   mcpEnabled: boolean
+  ready: boolean
 }
 
 export interface MCPToolDefinition {
@@ -926,6 +937,17 @@ export interface MCPToolResponse {
 
   /** 当使用兼容模式时，可能直接返回工具结果 */
   toolResult?: unknown
+
+  /** 是否需要权限 */
+  requiresPermission?: boolean
+
+  /** 权限请求信息 */
+  permissionRequest?: {
+    toolName: string
+    serverName: string
+    permissionType: 'read' | 'write' | 'all'
+    description: string
+  }
 }
 
 /** 内容项类型 */
@@ -986,6 +1008,13 @@ export interface IMCPPresenter {
   setMcpEnabled(enabled: boolean): Promise<void>
   getMcpEnabled(): Promise<boolean>
   resetToDefaultServers(): Promise<void>
+
+  // Permission management
+  grantPermission(
+    serverName: string,
+    permissionType: 'read' | 'write' | 'all',
+    remember?: boolean
+  ): Promise<void>
 }
 
 export interface IDeeplinkPresenter {
@@ -1100,7 +1129,16 @@ export interface LLMAgentEventData {
   tool_call_server_description?: string
 
   tool_call_response_raw?: any
-  tool_call?: 'start' | 'running' | 'end' | 'error' | 'update'
+  tool_call?: 'start' | 'running' | 'end' | 'error' | 'update' | 'permission-required'
+
+  // Permission request related fields
+  permission_request?: {
+    toolName: string
+    serverName: string
+    permissionType: 'read' | 'write' | 'all'
+    description: string
+  }
+
   totalUsage?: {
     prompt_tokens: number
     completion_tokens: number

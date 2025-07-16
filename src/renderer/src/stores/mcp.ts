@@ -38,7 +38,8 @@ export const useMcpStore = defineStore('mcp', () => {
   const config = ref<MCPConfig>({
     mcpServers: {},
     defaultServers: [],
-    mcpEnabled: false // 添加MCP启用状态
+    mcpEnabled: false, // 添加MCP启用状态
+    ready: false // if init finished, the ready will be true
   })
 
   // MCP全局启用状态
@@ -108,11 +109,11 @@ export const useMcpStore = defineStore('mcp', () => {
         mcpPresenter.getMcpDefaultServers(),
         mcpPresenter.getMcpEnabled()
       ])
-
       config.value = {
         mcpServers: servers,
         defaultServers: defaultServers,
-        mcpEnabled: enabled
+        mcpEnabled: enabled,
+        ready: true // config is loaded
       }
 
       // 获取服务器运行状态
