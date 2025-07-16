@@ -13,6 +13,7 @@ import {
 
 import { nanoid } from 'nanoid'
 import { app } from 'electron'
+import { c } from 'vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf'
 
 const runtimeBasePath = path
   .join(app.getAppPath(), 'runtime')
@@ -33,21 +34,26 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   async initialize(dimensions: number, opts?: IndexOptions): Promise<void> {
-    console.log(`[DuckDB] Initializing DuckDB database at ${this.dbPath}`)
-    if (fs.existsSync(this.dbPath)) {
-      console.error(`[DuckDB] Database ${this.dbPath} already exists`)
-      throw new Error('Database already exists, cannot initialize again.')
+    try {
+      console.log(`[DuckDB] Initializing DuckDB database at ${this.dbPath}`)
+      if (fs.existsSync(this.dbPath)) {
+        console.error(`[DuckDB] Database ${this.dbPath} already exists`)
+        throw new Error('Database already exists, cannot initialize again.')
+      }
+      console.log(`[DuckDB] connect to db`)
+      await this.connect()
+      console.log(`[DuckDB] load vss extension`)
+      await this.installAndLoadVSS()
+      console.log(`[DuckDB] create vector table`)
+      await this.initVectorTable(dimensions)
+      console.log(`[DuckDB] create file table`)
+      await this.initFileTable()
+      console.log(`[DuckDB] create index`)
+      await this.initIndex(opts)
+    } catch (error) {
+      console.error('[DuckDB] initialization failed:', error)
+      this.close()
     }
-    console.log(`[DuckDB] connect to db`)
-    await this.connect()
-    console.log(`[DuckDB] load vss extension`)
-    await this.installAndLoadVSS()
-    console.log(`[DuckDB] create vector table`)
-    await this.initVectorTable(dimensions)
-    console.log(`[DuckDB] create file table`)
-    await this.initFileTable()
-    console.log(`[DuckDB] create index`)
-    await this.initIndex(opts)
   }
 
   async open(): Promise<void> {

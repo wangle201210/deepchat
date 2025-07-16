@@ -3,7 +3,15 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+function isMacOS() {
+  return process.platform === 'darwin';
+}
+
 async function installVssExtension() {
+  if (isMacOS()) {
+    console.log('Skipping DuckDB extension installation on macOS')
+    return
+  }
   const __filename = fileURLToPath(import.meta.url)
   const __dirname = path.dirname(__filename)
 
