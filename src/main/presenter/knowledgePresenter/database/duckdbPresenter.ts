@@ -13,7 +13,6 @@ import {
 
 import { nanoid } from 'nanoid'
 import { app } from 'electron'
-import { c } from 'vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf'
 
 const runtimeBasePath = path
   .join(app.getAppPath(), 'runtime')
