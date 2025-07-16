@@ -1,0 +1,344 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
+import { DuckDBConnection, DuckDBInstance, arrayValue } from '@duckdb/node-api'
+import {
+  IndexOptions,
+  InsertOptions,
+  QueryOptions,
+  QueryResult,
+  IVectorDatabasePresenter,
+  KnowledgeFileMessage
+} from '@shared/presenter'
+
+import { nanoid } from 'nanoid'
+import { app } from 'electron'
+
+const runtimeBasePath = path
+  .join(app.getAppPath(), 'runtime')
+  .replace('app.asar', 'app.asar.unpacked')
+const extensionPath = path.join(runtimeBasePath, 'duckdb', 'extensions', 'vss.duckdb_extension')
+
+export class DuckDBPresenter implements IVectorDatabasePresenter {
+  private dbInstance!: DuckDBInstance
+  private connection!: DuckDBConnection
+
+  private readonly dbPath: string
+
+  private readonly vectorTable = 'vector'
+  private readonly fileTable = 'file'
+
+  constructor(dbPath: string) {
+    this.dbPath = dbPath
+  }
+
+  async initialize(dimensions: number, opts?: IndexOptions): Promise<void> {
+    console.log(`[DuckDB] Initializing DuckDB database at ${this.dbPath}`)
+    if (fs.existsSync(this.dbPath)) {
+      console.error(`[DuckDB] Database ${this.dbPath} already exists`)
+      throw new Error('Database already exists, cannot initialize again.')
+    }
+    console.log(`[DuckDB] connect to db`)
+    await this.connect()
+    console.log(`[DuckDB] load vss extension`)
+    await this.installAndLoadVSS()
+    console.log(`[DuckDB] create vector table`)
+    await this.initVectorTable(dimensions)
+    console.log(`[DuckDB] create file table`)
+    await this.initFileTable()
+    console.log(`[DuckDB] create index`)
+    await this.initIndex(opts)
+  }
+
+  async open(): Promise<void> {
+    if (!fs.existsSync(this.dbPath)) {
+      console.error(`[DuckDB] Database ${this.dbPath} does not exist`)
+      throw new Error('Database does not exist, please initialize first.')
+    }
+    await this.connect()
+    await this.connection.run('CHECKPOINT;')
+    await this.installAndLoadVSS()
+  }
+
+  async close(): Promise<void> {
+    try {
+      if (this.connection) {
+        this.connection.closeSync()
+      }
+      if (this.dbInstance) {
+        this.dbInstance.closeSync()
+      }
+      console.log('[DuckDB] DuckDB connection closed')
+    } catch (err) {
+      console.error('[DuckDB] close error', err)
+    }
+  }
+
+  /**
+   * 统一安全 SQL 执行，自动捕获异常并输出日志
+   */
+  private async safeRun(sql: string, params?: any[]): Promise<any> {
+    try {
+      if (!this.connection) await this.connect()
+      if (params) {
+        return await this.connection.run(sql, params)
+      } else {
+        return await this.connection.run(sql)
+      }
+    } catch (err) {
+      console.error('[DuckDB] sql error', sql, params, err)
+      throw err
+    }
+  }
+
+  private async connect() {
+    this.dbInstance = await DuckDBInstance.create(this.dbPath)
+    this.connection = await this.dbInstance.connect()
+    console.log(`[DuckDB] Connected to DuckDB at ${this.dbPath}`)
+  }
+
+  /** 安装并加载 VSS 扩展 */
+  private async installAndLoadVSS(): Promise<void> {
+    if (fs.existsSync(extensionPath)) {
+      const escapedPath = extensionPath.replace(/\\/g, '\\\\')
+      console.log(`[DuckDB] LOAD VSS extension from ${escapedPath}`)
+      await this.safeRun(`LOAD '${escapedPath}';`)
+    } else {
+      console.log('[DuckDB] LOAD VSS extension online')
+      await this.safeRun(`INSTALL vss;`)
+      await this.safeRun(`LOAD vss;`)
+    }
+    await this.safeRun(`SET hnsw_enable_experimental_persistence = true;`)
+  }
+
+  /** 创建定长向量表 */
+  private async initVectorTable(dimensions: number): Promise<void> {
+    await this.safeRun(
+      `CREATE TABLE IF NOT EXISTS ${this.vectorTable} (
+         id VARCHAR PRIMARY KEY,
+         embedding FLOAT[${dimensions}],
+         metadata JSON,
+         file_id VARCHAR
+       );`
+    )
+  }
+
+  /** 创建文件元数据表 */
+  private async initFileTable(): Promise<void> {
+    await this.safeRun(
+      `CREATE TABLE IF NOT EXISTS ${this.fileTable} (
+        id VARCHAR PRIMARY KEY,
+        name VARCHAR,
+        path VARCHAR,
+        mime_type VARCHAR,
+        status VARCHAR,
+        uploaded_at BIGINT,
+        metadata JSON
+      );`
+    )
+  }
+
+  /** 创建索引 */
+  private async initIndex(opts?: IndexOptions): Promise<void> {
+    const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
+    const M = opts?.M || 16
+    const efConstruction = opts?.efConstruction || 200
+    const sql = `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_emb
+     ON ${this.vectorTable}
+     USING HNSW (embedding)
+     WITH (
+       metric='${metric}',
+       M=${M},
+       ef_construction=${efConstruction}
+     );`
+    await this.safeRun(sql)
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.vectorTable}_file_id ON ${this.vectorTable} (file_id);`
+    )
+  }
+
+  async insertVector(opts: InsertOptions): Promise<void> {
+    const id = nanoid()
+    const vec = arrayValue(Array.from(opts.vector))
+    const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
+    const fileId = opts.fileId
+    await this.safeRun(
+      `INSERT INTO ${this.vectorTable} (id, embedding, metadata, file_id) 
+       VALUES (?, ?::FLOAT[], ?::JSON, ?);`,
+      [id, vec, meta, fileId]
+    )
+  }
+
+  async insertVectors(records: InsertOptions[]): Promise<void> {
+    if (!records.length) return
+    // 构造批量插入 SQL
+    const valuesSql = records.map(() => '(?, ?::FLOAT[], ?::JSON, ?)').join(', ')
+    const sql = `INSERT INTO ${this.vectorTable} (id, embedding, metadata, file_id) VALUES ${valuesSql};`
+    const params: any[] = []
+    for (const r of records) {
+      params.push(nanoid())
+      params.push(arrayValue(Array.from(r.vector)))
+      params.push(r.metadata ? JSON.stringify(r.metadata) : null)
+      params.push(r.fileId)
+    }
+    await this.safeRun(sql, params)
+  }
+
+  async similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]> {
+    const k = options.topK
+    const fn =
+      options.metric === 'ip'
+        ? 'array_negative_inner_product'
+        : options.metric === 'cosine'
+          ? 'array_cosine_distance'
+          : 'array_distance'
+    const where = options.threshold != null ? `WHERE ${fn}(embedding, ?) <= ?` : ''
+    const sql = `
+      SELECT id, metadata, ${fn}(embedding, ?) AS distance
+      FROM ${this.vectorTable}
+      ${where}
+      ORDER BY distance
+      LIMIT ?;
+    `
+    const embParam = arrayValue(Array.from(vector))
+    const paramsArr: any[] = [embParam]
+    if (options.threshold != null) {
+      paramsArr.push(options.threshold)
+    }
+    paramsArr.push(k)
+    try {
+      const reader = await this.connection.runAndReadAll(sql, paramsArr)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((r: any) => ({
+        id: r.id,
+        metadata: typeof r.metadata === 'string' ? JSON.parse(r.metadata) : r.metadata,
+        distance: r.distance
+      }))
+    } catch (err) {
+      console.error('[DuckDB] similarityQuery error', sql, paramsArr, err)
+      throw err
+    }
+  }
+
+  async deleteVector(id: string): Promise<void> {
+    await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE id = ?;`, [id])
+  }
+
+  async deleteVectorsByFile(fileId: string): Promise<void> {
+    await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [fileId])
+  }
+
+  async insertFile(file: KnowledgeFileMessage): Promise<void> {
+    await this.safeRun(
+      `INSERT INTO ${this.fileTable} (id, name, path, mime_type, status, uploaded_at, metadata)
+       VALUES (?, ?, ?, ?, ?, ?, ?::JSON);`,
+      [
+        file.id,
+        file.name,
+        file.path,
+        file.mimeType,
+        file.status,
+        String(file.uploadedAt),
+        file.metadata ? JSON.stringify(file.metadata) : null
+      ]
+    )
+  }
+
+  async updateFile(file: KnowledgeFileMessage): Promise<void> {
+    await this.safeRun(
+      `UPDATE ${this.fileTable} SET name = ?, path = ?, mime_type = ?, status = ?, uploaded_at = ?, metadata = ?::JSON
+       WHERE id = ?;`,
+      [
+        file.name,
+        file.path,
+        file.mimeType,
+        file.status,
+        String(file.uploadedAt),
+        file.metadata ? JSON.stringify(file.metadata) : null,
+        file.id
+      ]
+    )
+  }
+
+  async queryFile(id: string): Promise<KnowledgeFileMessage | null> {
+    const sql = `SELECT * FROM ${this.fileTable} WHERE id = ?;`
+    try {
+      const reader = await this.connection.runAndReadAll(sql, [id])
+      const rows = reader.getRowObjectsJson()
+      if (rows.length === 0) return null
+      const row = rows[0]
+      return this.toKnowledgeFileMessage(row)
+    } catch (err) {
+      console.error('[DuckDB] queryFile error', sql, id, err)
+      throw err
+    }
+  }
+
+  async listFiles(): Promise<KnowledgeFileMessage[]> {
+    const sql = `SELECT * FROM ${this.fileTable} ORDER BY uploaded_at DESC;`
+    try {
+      const reader = await this.connection.runAndReadAll(sql)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((row) => this.toKnowledgeFileMessage(row))
+    } catch (err) {
+      console.error('[DuckDB] listFiles error', sql, err)
+      throw err
+    }
+  }
+
+  async queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]> {
+    const camelToSnake = (key: string) =>
+      key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+
+    const entries = Object.entries(where).filter(([, value]) => value !== undefined)
+
+    let sql = `SELECT * FROM ${this.fileTable}`
+    const params: any[] = []
+
+    if (entries.length > 0) {
+      const conditions = entries.map(([key]) => `${camelToSnake(key)} = ?`).join(' AND ')
+      sql += ` WHERE ${conditions}`
+      params.push(...entries.map(([, value]) => value))
+    }
+
+    sql += ` ORDER BY uploaded_at DESC;`
+
+    try {
+      const reader = await this.connection.runAndReadAll(sql, params)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((row) => this.toKnowledgeFileMessage(row))
+    } catch (err) {
+      console.error('[DuckDB] queryFiles error', sql, params, err)
+      throw err
+    }
+  }
+
+  private toKnowledgeFileMessage(o: any): KnowledgeFileMessage {
+    return {
+      id: o.id,
+      name: o.name,
+      path: o.path,
+      mimeType: o.mime_type,
+      status: o.status,
+      uploadedAt: Number(o.uploaded_at),
+      metadata: typeof o.metadata === 'string' ? JSON.parse(o.metadata) : o.metadata
+    }
+  }
+
+  async deleteFile(id: string): Promise<void> {
+    await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
+  }
+
+  async destroy(): Promise<void> {
+    await this.close()
+    // 删除数据库文件
+    try {
+      if (fs.existsSync(this.dbPath)) {
+        fs.rmSync(this.dbPath, { recursive: true })
+        console.log(`[DuckDB] Database at ${this.dbPath} destroyed.`)
+      }
+    } catch (err) {
+      console.error(`[DuckDB] Error destroying database at ${this.dbPath}:`, err)
+    }
+  }
+}

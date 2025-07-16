@@ -1,3 +1,4 @@
+import { EMBEDDING_TEST_KEY, isNormalized } from '@/utils/vector'
 import {
   LLM_PROVIDER,
   LLMResponse,
@@ -5,7 +6,8 @@ import {
   MCPToolDefinition,
   LLMCoreStreamEvent,
   ModelConfig,
-  ChatMessage
+  ChatMessage,
+  LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
 import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
 import OpenAI, { AzureOpenAI } from 'openai'
@@ -1279,21 +1281,38 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     }
   }
 
-  /**
-   * 获取文本的 embedding 表示
-   * @param texts 待编码的文本数组
-   * @param modelId 使用的模型ID
-   * @returns embedding 数组
-   */
   async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
     // OpenAI embeddings API
     const response = await this.openai.embeddings.create({
       model: modelId,
-      input: texts
+      input: texts,
+      encoding_format: 'float'
     })
     // 兼容 OpenAI 返回格式
     return response.data.map((item) => item.embedding)
+  }
+
+  async getDimensions(modelId: string): Promise<LLM_EMBEDDING_ATTRS> {
+    switch (modelId) {
+      case 'text-embedding-3-small':
+      case 'text-embedding-ada-002':
+        return {
+          dimensions: 1536,
+          normalized: true
+        }
+      case 'text-embedding-3-large':
+        return {
+          dimensions: 3072,
+          normalized: true
+        }
+      default:
+        const embeddings = await this.getEmbeddings([EMBEDDING_TEST_KEY], modelId)
+        return {
+          dimensions: embeddings[0].length,
+          normalized: isNormalized(embeddings[0])
+        }
+    }
   }
 }

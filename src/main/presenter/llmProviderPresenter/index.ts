@@ -7,7 +7,8 @@ import {
   OllamaModel,
   ChatMessage,
   LLMAgentEvent,
-  KeyStatus
+  KeyStatus,
+  LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -1205,15 +1206,42 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   /**
    * 获取文本的 embedding 表示
    * @param providerId 提供商ID
-   * @param texts 文本数组
    * @param modelId 模型ID
+   * @param texts 文本数组
    * @returns embedding 数组
    */
-  async getEmbeddings(providerId: string, texts: string[], modelId: string): Promise<number[][]> {
-    const provider = this.getProviderInstance(providerId)
-    if (!provider.getEmbeddings) {
+  async getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      return await provider.getEmbeddings(texts, modelId)
+    } catch (error) {
+      console.error(`${modelId} embedding 失败:`, error)
       throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
-    return provider.getEmbeddings(texts, modelId)
+  }
+
+  /**
+   * 获取指定模型的 embedding 维度
+   * @param providerId 提供商ID
+   * @param modelId 模型ID
+   * @returns 模型的 embedding 维度
+   */
+  async getDimensions(
+    providerId: string,
+    modelId: string
+  ): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      return { data: await provider.getDimensions(modelId) }
+    } catch (error) {
+      console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
+      return {
+        data: {
+          dimensions: 0,
+          normalized: false
+        },
+        errorMsg: error instanceof Error ? error.message : String(error)
+      }
+    }
   }
 }

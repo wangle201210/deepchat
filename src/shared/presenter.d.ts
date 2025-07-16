@@ -310,6 +310,7 @@ export interface IPresenter {
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
   oauthPresenter: IOAuthPresenter
+  knowledgePresenter: IKnowledgePresenter
   init(): void
   destroy(): void
 }
@@ -424,6 +425,14 @@ export interface IConfigPresenter {
   getShortcutKey(): ShortcutKeySetting
   setShortcutKey(customShortcutKey: ShortcutKeySetting): void
   resetShortcutKeys(): void
+  // 知识库设置
+  getKnowledgeConfigs(): BuiltinKnowledgeConfig[]
+  setKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): void
+  diffKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): {
+    added: BuiltinKnowledgeConfig[]
+    deleted: BuiltinKnowledgeConfig[]
+    updated: BuiltinKnowledgeConfig[]
+  }
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -479,6 +488,11 @@ export type LLM_PROVIDER_BASE = {
   }
 } & LLM_PROVIDER
 
+export type LLM_EMBEDDING_ATTRS = {
+  dimensions: number
+  normalized: boolean
+}
+
 export interface ILlmProviderPresenter {
   setProviders(provider: LLM_PROVIDER[]): void
   getProviders(): LLM_PROVIDER[]
@@ -525,6 +539,11 @@ export interface ILlmProviderPresenter {
   listOllamaRunningModels(): Promise<OllamaModel[]>
   pullOllamaModels(modelName: string): Promise<boolean>
   deleteOllamaModel(modelName: string): Promise<boolean>
+  getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
+  getDimensions(
+    providerId: string,
+    modelId: string
+  ): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }>
 }
 export type CONVERSATION_SETTINGS = {
   systemPrompt: string
@@ -826,6 +845,11 @@ export interface IFilePresenter {
   deleteFile(relativePath: string): Promise<void>
   createFileAdapter(filePath: string, typeInfo?: string): Promise<any> // Return type might need refinement
   prepareFile(absPath: string, typeInfo?: string): Promise<MessageFile>
+  prepareFileCompletely(
+    absPath: string,
+    typeInfo?: string,
+    contentType?: null | 'origin' | 'llm-friendly'
+  ): Promise<MessageFile>
   prepareDirectory(absPath: string): Promise<MessageFile>
   writeTemp(file: { name: string; content: string | Buffer | ArrayBuffer }): Promise<string>
   isDirectory(absPath: string): Promise<boolean>
@@ -855,6 +879,15 @@ export interface OllamaModel {
     parameter_size: string
     quantization_level: string
   }
+  // 合并show接口一些信息
+  model_info: {
+    context_length: number
+    embedding_length: number
+    vision?: {
+      embedding_length: number
+    }
+  }
+  capabilities: string[]
 }
 
 // 定义进度回调的接口
@@ -1175,4 +1208,226 @@ export interface KeyStatus {
   limit_remaining?: string
   /** 已使用额度 */
   usage?: string
+}
+
+// built-in 知识库相关
+export type KnowledgeFileMetadata = {
+  size: number
+  reason?: string
+}
+
+export type KnowledgeFileStatus = 'processing' | 'completed' | 'error'
+
+export type KnowledgeFileMessage = {
+  id: string
+  name: string
+  path: string
+  mimeType: string
+  status: KnowledgeFileStatus
+  uploadedAt: number
+  metadata: KnowledgeFileMetadata
+}
+
+export type KnowledgeFileResult = {
+  data?: KnowledgeFileMessage
+  error?: string
+}
+
+/**
+ * 知识库主接口，提供知识库的创建、删除、文件管理和相似度查询等功能。
+ */
+export interface IKnowledgePresenter {
+  /**
+   * 创建知识库（初始化 RAG 应用）
+   * @param config 知识库配置
+   */
+  create(config: BuiltinKnowledgeConfig): Promise<void>
+
+  /**
+   * 删除知识库（移除本地存储）
+   * @param id 知识库 ID
+   */
+  delete(id: string): Promise<void>
+
+  /**
+   * 添加文件到知识库
+   * @param id 知识库 ID
+   * @param path 文件路径
+   * @returns 文件添加结果
+   */
+  addFile(id: string, path: string): Promise<KnowledgeFileResult>
+
+  /**
+   * 删除知识库中的文件
+   * @param id 知识库 ID
+   * @param fileId 文件 ID
+   */
+  deleteFile(id: string, fileId: string): Promise<void>
+
+  /**
+   * 重新添加（重建向量）知识库中的文件
+   * @param id 知识库 ID
+   * @param fileId 文件 ID
+   * @returns 文件添加结果
+   */
+  reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult>
+
+  /**
+   * 列出知识库下所有文件
+   * @param id 知识库 ID
+   * @returns 文件元数据数组
+   */
+  listFiles(id: string): Promise<KnowledgeFileMessage[]>
+
+  /**
+   * 相似度检索
+   * @param id 知识库 ID
+   * @param key 查询文本
+   * @returns 相似片段结果数组
+   */
+  similarityQuery(id: string, key: string): Promise<QueryResult[]>
+  /**
+   * 销毁实例，释放资源
+   */
+  destroy(): Promise<void>
+}
+
+type ModelProvider = {
+  modelId: string
+  providerId: string
+}
+export type BuiltinKnowledgeConfig = {
+  id: string
+  description: string
+  embedding: ModelProvider
+  rerank?: ModelProvider
+  dimensions: number
+  normalized: boolean
+  chunkSize?: number
+  chunkOverlap?: number
+  fragmentsNumber: number
+  enabled: boolean
+}
+export interface IndexOptions {
+  /** 距离度量：'l2' | 'cosine' | 'ip' */
+  metric?: 'l2' | 'cosine' | 'ip'
+  /** HNSW 参数 M */
+  M?: number
+  /** HNSW 构建时 ef */
+  efConstruction?: number
+}
+export interface InsertOptions {
+  /** 数值数组，长度等于 dimension */
+  vector: number[]
+  /** 可选元数据 */
+  metadata?: Record<string, any>
+  /** 文件id */
+  fileId: string
+}
+export interface QueryOptions {
+  /** 查询顶点数 */
+  topK: number
+  /** 搜索时 ef */
+  efSearch?: number
+  /** 最小距离阈值 */
+  threshold?: number
+  /** 查询向量的维度 */
+  metric: 'l2sq' | 'cosine' | 'ip'
+}
+export interface QueryResult {
+  id: string
+  metadata: {
+    from: string
+    filePath: string
+    content: string
+  }
+  distance: number
+}
+
+/**
+ * DuckDB 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
+ */
+export interface IVectorDatabasePresenter {
+  /**
+   * 首次初始化向量数据库
+   * @param dimensions 向量维度
+   * @param opts
+   */
+  initialize(dimensions: number, opts?: IndexOptions): Promise<void>
+  /**
+   * 打开数据库
+   */
+  open(): Promise<void>
+  /**
+   * 关闭数据库
+   */
+  close(): Promise<void>
+  /**
+   * 销毁数据库实例，释放所有资源。
+   */
+  destroy(): Promise<void>
+  /**
+   * 插入单条向量记录，id未提供时自动生成
+   * @param opts 插入参数，包含向量数据和可选元数据
+   */
+  insertVector(opts: InsertOptions): Promise<void>
+  /**
+   * 批量插入多条向量记录。
+   * @param records 插入参数数组，每项id未提供时自动生成
+   */
+  insertVectors(records: Array<InsertOptions>): Promise<void>
+  /**
+   * 查询向量最近邻（TopK 检索）。
+   * @param vector: 查询向量
+   * @param options 查询参数：
+   *   - topK: 返回最近邻数量
+   *   - efSearch: 检索时 HNSW 的 ef 参数（可选）
+   *   - threshold: 最小距离阈值（可选）
+   * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
+   */
+  similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]>
+  /**
+   * 根据 id 删除指定向量记录
+   * @param id 记录 id
+   */
+  deleteVector(id: string): Promise<void>
+  /**
+   * 根据 file_id 删除指定向量记录
+   * @param id 文件 id
+   */
+  deleteVectorsByFile(id: string): Promise<void>
+  /**
+   * 插入文件
+   * @param file 文件元数据对象
+   */
+  insertFile(file: KnowledgeFileMessage): Promise<void>
+  /**
+   * 更新文件
+   * @param file 文件元数据对象
+   */
+  updateFile(file: KnowledgeFileMessage): Promise<void>
+  /**
+   * 查询文件
+   * @param id 文件 id
+   * @returns 文件数据对象或 null
+   */
+  queryFile(id: string): Promise<KnowledgeFileMessage | null>
+  /**
+   * 查询知识库下所有文件
+   * @returns 文件数据数组
+   */
+  listFiles(): Promise<KnowledgeFileMessage[]>
+
+  /**
+   * 根据条件查询文件
+   * @param where 查询条件
+   * @returns 文件数据数组
+   */
+  queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]>
+
+  /**
+   * 删除文件
+   * @param id 文件 id
+   */
+  deleteFile(id: string): Promise<void>
 }

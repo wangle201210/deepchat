@@ -7,7 +7,8 @@ import {
   RENDERER_MODEL_META,
   MCPServerConfig,
   Prompt,
-  IModelConfig
+  IModelConfig,
+  BuiltinKnowledgeConfig
 } from '@shared/presenter'
 import { SearchEngineTemplate } from '@shared/chat'
 import { ModelType } from '@shared/model'
@@ -22,6 +23,7 @@ import { presenter } from '@/presenter'
 import { compare } from 'compare-versions'
 import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { ModelConfigHelper } from './modelConfig'
+import { KnowledgeConfHelper } from './knowledgeConfHelper'
 
 // 定义应用设置的接口
 interface IAppSettings {
@@ -79,6 +81,7 @@ export class ConfigPresenter implements IConfigPresenter {
   private currentAppVersion: string
   private mcpConfHelper: McpConfHelper // 使用MCP配置助手
   private modelConfigHelper: ModelConfigHelper // 模型配置助手
+  private knowledgeConfHelper: KnowledgeConfHelper // 知识配置助手
 
   constructor() {
     this.userDataPath = app.getPath('userData')
@@ -123,6 +126,9 @@ export class ConfigPresenter implements IConfigPresenter {
 
     // 初始化模型配置助手
     this.modelConfigHelper = new ModelConfigHelper()
+
+    // 初始化知识配置助手
+    this.knowledgeConfHelper = new KnowledgeConfHelper()
 
     // 初始化provider models目录
     this.initProviderModelsDir()
@@ -1045,6 +1051,24 @@ export class ConfigPresenter implements IConfigPresenter {
   // 重置快捷键
   resetShortcutKeys() {
     this.setSetting('shortcutKey', { ...defaultShortcutKey })
+  }
+
+  // 获取知识库配置
+  getKnowledgeConfigs(): BuiltinKnowledgeConfig[] {
+    return this.knowledgeConfHelper.getKnowledgeConfigs()
+  }
+
+  // 设置知识库配置
+  setKnowledgeConfigs(configs: BuiltinKnowledgeConfig[]): void {
+    this.knowledgeConfHelper.setKnowledgeConfigs(configs)
+  }
+
+  // 对比知识库配置差异
+  diffKnowledgeConfigs(newConfigs: BuiltinKnowledgeConfig[]) {
+    return KnowledgeConfHelper.diffKnowledgeConfigs(
+      this.knowledgeConfHelper.getKnowledgeConfigs(),
+      newConfigs
+    )
   }
 }
 
