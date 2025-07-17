@@ -121,7 +121,7 @@
                   <div
                     class="absolute right-10 top-1 text-xs text-white p-1 rounded-sm bg-primary-600"
                   >
-                    score:{{ ((1 - item.distance) * 100).toFixed(2) + '%' }}
+                    score:{{ (item.distance * 100).toFixed(2) + '%' }}
                   </div>
                   <Tooltip :delay-duration="200">
                     <TooltipTrigger as-child>

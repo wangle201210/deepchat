@@ -53,3 +53,33 @@ export function ensureNormalized(vector: number[], tolerance = 1e-3): number[] {
   }
   return vector.map((v) => v / norm)
 }
+
+/**
+ * 将 similarityQuery 返回的 distance 归一化为 [0,1] confidence
+ * @param distance 原始 distance
+ * @param metric 'cosine' | 'ip'
+ * @returns 0~1 置信度值
+ */
+export function normalizeDistance(distance: number, metric: 'cosine' | 'ip'): number {
+  if (metric === 'cosine') {
+    // cosine distance ∈ [0,1]，0 越相似，1 越不相似
+    // confidence = 1 - distance
+    const clipped = Math.min(Math.max(distance, 0), 1)
+    return 1 - clipped
+  } else if (metric === 'ip') {
+    // ip distance = -inner_product，可能为负数
+    // distance < 0 → 向量夹角 < 90°，相似度高
+    // distance = 0 → 向量正交，无相似性
+    // distance > 0 → 向量夹角 > 90°，方向相反
+    //
+    // 使用 sigmoid 将其映射到 (0,1)
+    // 这里使用 distance * k 来调整 sigmoid 的陡峭程度，需要根据经验和需求微调系数k
+    // k = 0.1 sigmoid 更平滑
+    // k = 0.5 sigmoid 更陡峭
+    const k = 0.03
+    const sigmoid = 1 / (1 + Math.exp(Math.sign(distance) * Math.pow(distance, 2) * k))
+    return sigmoid
+  } else {
+    throw new Error(`Unsupported metric: ${metric}`)
+  }
+}

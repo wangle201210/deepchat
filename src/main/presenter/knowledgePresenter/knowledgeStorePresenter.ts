@@ -10,6 +10,7 @@ import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
 import { RecursiveCharacterTextSplitter } from '@/lib/textsplitters'
 import { sanitizeText } from '@/utils/strings'
+import { normalizeDistance } from '@/utils/vector'
 
 export class KnowledgeStorePresenter {
   private readonly vectorP: IVectorDatabasePresenter
@@ -107,10 +108,14 @@ export class KnowledgeStorePresenter {
         [sanitizeText(key)]
       )
 
-      return await this.vectorP.similarityQuery(embedding[0], {
+      const queryResults = await this.vectorP.similarityQuery(embedding[0], {
         topK: this.config.fragmentsNumber,
         metric: this.config.normalized ? 'cosine' : 'ip'
       })
+      queryResults.forEach((res) => {
+        res.distance = normalizeDistance(res.distance, this.config.normalized ? 'cosine' : 'ip')
+      })
+      return queryResults
     } catch (err) {
       console.error(
         `[RAG] Similarity query failed in knowledge base ${this.config.id} for key "${key}":`,
