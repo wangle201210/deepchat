@@ -8,7 +8,7 @@ import {
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
-import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
+import { RecursiveCharacterTextSplitter } from '@/lib/textsplitters'
 import { sanitizeText } from '@/utils/strings'
 
 export class KnowledgeStorePresenter {
