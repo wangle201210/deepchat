@@ -1458,11 +1458,6 @@ export interface IVectorDatabasePresenter {
    */
   insertVector(opts: InsertOptions): Promise<void>
   /**
-   * 批量插入多条向量记录。
-   * @param records 插入参数数组，每项id未提供时自动生成
-   */
-  insertVectors(records: Array<InsertOptions>): Promise<void>
-  /**
    * 查询向量最近邻（TopK 检索）。
    * @param vector: 查询向量
    * @param options 查询参数：
@@ -1472,11 +1467,6 @@ export interface IVectorDatabasePresenter {
    * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
    */
   similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]>
-  /**
-   * 根据 id 删除指定向量记录
-   * @param id 记录 id
-   */
-  deleteVector(id: string): Promise<void>
   /**
    * 根据 file_id 删除指定向量记录
    * @param id 文件 id
@@ -1503,33 +1493,22 @@ export interface IVectorDatabasePresenter {
    * @returns 文件数据数组
    */
   listFiles(): Promise<KnowledgeFileMessage[]>
-
   /**
    * 根据条件查询文件
    * @param where 查询条件
    * @returns 文件数据数组
    */
   queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]>
-
   /**
    * 删除文件
    * @param id 文件 id
    */
   deleteFile(id: string): Promise<void>
-
-  // Chunk 相关操作
-  /**
-   * 插入单个 chunk
-   * @param chunk chunk 数据对象
-   */
-  insertChunk(chunk: KnowledgeChunkMessage): Promise<void>
-
   /**
    * 批量插入 chunks
    * @param chunks chunk 数据数组
    */
   insertChunks(chunks: KnowledgeChunkMessage[]): Promise<void>
-
   /**
    * 更新 chunk 状态，完成的chunk会被自动删除
    * @param chunkId chunk id
@@ -1542,23 +1521,15 @@ export interface IVectorDatabasePresenter {
    * @param chunkId chunk id
    */
   deleteChunk(chunkId: string): Promise<void>
-
   /**
    * 查询文件的所有 chunks
    * @param fileId 文件 id
    * @param status 可选状态过滤
    */
   queryChunksByFile(fileId: string, status?: KnowledgeChunkStatus): Promise<KnowledgeChunkMessage[]>
-
   /**
    * 删除文件的所有 chunks
    * @param fileId 文件 id
    */
   deleteChunksByFile(fileId: string): Promise<void>
-
-  /**
-   * 获取单个 chunk
-   * @param chunkId chunk id
-   */
-  getChunk(chunkId: string): Promise<KnowledgeChunkMessage | null>
 }

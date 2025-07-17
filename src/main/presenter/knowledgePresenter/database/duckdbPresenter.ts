@@ -68,6 +68,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.connect()
     await this.connection.run('CHECKPOINT;')
     await this.installAndLoadVSS()
+    await this.clearDirtyData()
   }
 
   async close(): Promise<void> {
@@ -198,7 +199,27 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
+  /** 清理异常任务引入的脏数据 */
+  private async clearDirtyData(): Promise<void> {
+    // 清理向量表中没有对应文件的向量
+    await this.safeRun(`
+      DELETE FROM ${this.vectorTable}
+      WHERE file_id NOT IN (SELECT id FROM ${this.fileTable});
+    `)
+
+    // 清理chunks表中没有对应文件的分块
+    await this.safeRun(`
+      DELETE FROM ${this.chunkTable}
+      WHERE file_id NOT IN (SELECT id FROM ${this.fileTable});
+    `)
+  }
+
   async insertVector(opts: InsertOptions): Promise<void> {
+    // 查询文件是否存在
+    const file = this.queryFile(opts.fileId)
+    if (!file) {
+      throw new Error(`File with ID ${opts.fileId} does not exist`)
+    }
     const id = nanoid()
     const vec = arrayValue(Array.from(opts.vector))
     const meta = opts.metadata ? JSON.stringify(opts.metadata) : null
@@ -208,21 +229,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
        VALUES (?, ?::FLOAT[], ?::JSON, ?);`,
       [id, vec, meta, fileId]
     )
-  }
-
-  async insertVectors(records: InsertOptions[]): Promise<void> {
-    if (!records.length) return
-    // 构造批量插入 SQL
-    const valuesSql = records.map(() => '(?, ?::FLOAT[], ?::JSON, ?)').join(', ')
-    const sql = `INSERT INTO ${this.vectorTable} (id, embedding, metadata, file_id) VALUES ${valuesSql};`
-    const params: any[] = []
-    for (const r of records) {
-      params.push(nanoid())
-      params.push(arrayValue(Array.from(r.vector)))
-      params.push(r.metadata ? JSON.stringify(r.metadata) : null)
-      params.push(r.fileId)
-    }
-    await this.safeRun(sql, params)
   }
 
   async similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]> {
@@ -259,10 +265,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       console.error('[DuckDB] similarityQuery error', sql, paramsArr, err)
       throw err
     }
-  }
-
-  async deleteVector(id: string): Promise<void> {
-    await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE id = ?;`, [id])
   }
 
   async deleteVectorsByFile(fileId: string): Promise<void> {
@@ -370,27 +372,18 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
   }
 
-  // Chunk 相关操作
-  async insertChunk(chunk: KnowledgeChunkMessage): Promise<void> {
-    await this.safeRun(
-      `INSERT INTO ${this.chunkTable} (id, file_id, chunk_index, content, status)
-       VALUES (?, ?, ?, ?, ?);`,
-      [chunk.id, chunk.fileId, chunk.chunkIndex, chunk.content, chunk.status]
-    )
-  }
-
   async insertChunks(chunks: KnowledgeChunkMessage[]): Promise<void> {
     if (!chunks.length) return
-    
+
     // 构造批量插入 SQL
     const valuesSql = chunks.map(() => '(?, ?, ?, ?, ?)').join(', ')
     const sql = `INSERT INTO ${this.chunkTable} (id, file_id, chunk_index, content, status) VALUES ${valuesSql};`
-    
+
     const params: any[] = []
     for (const chunk of chunks) {
       params.push(chunk.id, chunk.fileId, chunk.chunkIndex, chunk.content, chunk.status)
     }
-    
+
     await this.safeRun(sql, params)
   }
 
@@ -400,10 +393,10 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       await this.deleteChunk(chunkId)
     } else {
       // 只有error状态才需要更新记录
-      await this.safeRun(
-        `UPDATE ${this.chunkTable} SET status = ? WHERE id = ?;`,
-        [status, chunkId]
-      )
+      await this.safeRun(`UPDATE ${this.chunkTable} SET status = ? WHERE id = ?;`, [
+        status,
+        chunkId
+      ])
     }
   }
 
@@ -411,17 +404,20 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE id = ?;`, [chunkId])
   }
 
-  async queryChunksByFile(fileId: string, status?: KnowledgeChunkStatus): Promise<KnowledgeChunkMessage[]> {
+  async queryChunksByFile(
+    fileId: string,
+    status?: KnowledgeChunkStatus
+  ): Promise<KnowledgeChunkMessage[]> {
     let sql = `SELECT * FROM ${this.chunkTable} WHERE file_id = ?`
     const params: any[] = [fileId]
-    
+
     if (status) {
       sql += ` AND status = ?`
       params.push(status)
     }
-    
+
     sql += ` ORDER BY chunk_index;`
-    
+
     try {
       const reader = await this.connection.runAndReadAll(sql, params)
       const rows = reader.getRowObjectsJson()
@@ -434,19 +430,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   async deleteChunksByFile(fileId: string): Promise<void> {
     await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [fileId])
-  }
-
-  async getChunk(chunkId: string): Promise<KnowledgeChunkMessage | null> {
-    const sql = `SELECT * FROM ${this.chunkTable} WHERE id = ?;`
-    try {
-      const reader = await this.connection.runAndReadAll(sql, [chunkId])
-      const rows = reader.getRowObjectsJson()
-      if (rows.length === 0) return null
-      return this.toKnowledgeChunkMessage(rows[0])
-    } catch (err) {
-      console.error('[DuckDB] getChunk error', sql, chunkId, err)
-      throw err
-    }
   }
 
   private toKnowledgeChunkMessage(o: any): KnowledgeChunkMessage {
