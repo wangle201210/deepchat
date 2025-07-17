@@ -551,7 +551,7 @@ export interface IThreadPresenter {
   // 基本对话操作
   createConversation(
     title: string,
-    settings?: Partial<CONVERSATION_SETTINGS>,
+    settings: Partial<CONVERSATION_SETTINGS>,
     tabId: number,
     options?: { forceNewAndActivate?: boolean } // 新增 options 参数, 支持强制新建会话，避免空会话的单例检测
   ): Promise<string>
