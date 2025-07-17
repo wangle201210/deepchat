@@ -14,18 +14,14 @@ export type TextSplitterChunkHeaderOptions = {
 }
 
 export abstract class TextSplitter extends BaseDocumentTransformer implements TextSplitterParams {
-  lc_namespace = ['langchain', 'document_transformers', 'text_splitters']
-
   chunkSize = 1000
-
   chunkOverlap = 200
-
   keepSeparator = false
 
   lengthFunction: ((text: string) => number) | ((text: string) => Promise<number>)
 
   constructor(fields?: Partial<TextSplitterParams>) {
-    super(fields)
+    super()
     this.chunkSize = fields?.chunkSize ?? this.chunkSize
     this.chunkOverlap = fields?.chunkOverlap ?? this.chunkOverlap
     this.keepSeparator = fields?.keepSeparator ?? this.keepSeparator

@@ -32,10 +32,6 @@ export class Document<Metadata extends Record<string, any> = Record<string, any>
  * Stubbing - methods should be overridden in subclasses.
  */
 export abstract class BaseDocumentTransformer {
-  protected constructor(fields?: any) {
-    // stub: initialization if needed
-  }
-
   /**
    * Transform an array of documents.
    * Must be implemented by subclasses.
