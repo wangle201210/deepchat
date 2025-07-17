@@ -14,10 +14,14 @@ import { normalizeDistance } from '@/utils/vector'
 
 export class KnowledgeStorePresenter {
   private readonly vectorP: IVectorDatabasePresenter
-  private readonly config: BuiltinKnowledgeConfig
+  private config: BuiltinKnowledgeConfig
 
   constructor(vectorP: IVectorDatabasePresenter, config: BuiltinKnowledgeConfig) {
     this.vectorP = vectorP
+    this.config = config
+  }
+
+  async updateConfig(config: BuiltinKnowledgeConfig): Promise<void> {
     this.config = config
   }
 

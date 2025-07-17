@@ -73,6 +73,10 @@ export class KnowledgePresenter implements IKnowledgePresenter {
             })
           }
           if (diffs.updated.length > 0) {
+            diffs.updated.forEach((config) => {
+              console.log(`[RAG] Knowledge config updated: ${config.id}`)
+              this.update(config)
+            })
           }
           console.log('[RAG] Updated knowledge configs:', configs)
         } else {
@@ -89,6 +93,17 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   create = async (config: BuiltinKnowledgeConfig): Promise<void> => {
     this.createStorePresenter(config)
+  }
+
+  /**
+   * 更新知识库配置
+   */
+  update = async (config: BuiltinKnowledgeConfig): Promise<void> => {
+    // 存在更新，不存在忽略，创建时默认使用新配置
+    if (this.storePresenterCache.has(config.id)) {
+      const rag = this.storePresenterCache.get(config.id) as KnowledgeStorePresenter
+      rag.updateConfig(config)
+    }
   }
 
   /**
@@ -116,7 +131,9 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * @param params BuiltinKnowledgeConfig
    * @returns KnowledgeStorePresenter
    */
-  private createStorePresenter = async (config: BuiltinKnowledgeConfig): Promise<KnowledgeStorePresenter> => {
+  private createStorePresenter = async (
+    config: BuiltinKnowledgeConfig
+  ): Promise<KnowledgeStorePresenter> => {
     let rag: KnowledgeStorePresenter
     const db = await this.getVectorDatabasePresenter(
       config.id,
@@ -183,7 +200,9 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private async handleFileTask(
     id: string,
-    fileHandler: (rag: KnowledgeStorePresenter) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
+    fileHandler: (
+      rag: KnowledgeStorePresenter
+    ) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
     errorMsg: string
   ): Promise<KnowledgeFileResult> {
     try {
@@ -208,11 +227,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
-    return this.handleFileTask(
-      id,
-      (rag) => rag.addFile(filePath),
-      '添加文件失败'
-    )
+    return this.handleFileTask(id, (rag) => rag.addFile(filePath), '添加文件失败')
   }
 
   async deleteFile(id: string, fileId: string): Promise<void> {
@@ -221,11 +236,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult> {
-    return this.handleFileTask(
-      id,
-      (rag) => rag.reAddFile(fileId),
-      '重新添加文件失败'
-    )
+    return this.handleFileTask(id, (rag) => rag.reAddFile(fileId), '重新添加文件失败')
   }
 
   async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {

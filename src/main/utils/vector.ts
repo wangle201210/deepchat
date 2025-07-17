@@ -1,5 +1,10 @@
 export const EMBEDDING_TEST_KEY = 'sample'
 
+/**
+ * 计算向量的 L2 范数（欧几里得范数）
+ * @param vector 输入向量
+ * @returns
+ */
 function calcNorm(vector: number[]): number {
   return Math.sqrt(vector.reduce((sum, v) => sum + v * v, 0))
 }
@@ -38,6 +43,7 @@ export function normalized(vector: number[]): number[] {
  * @param vector 输入向量
  * @param tolerance 浮点误差容忍范围，默认 1e-3
  * @returns normalized 向量
+ * @description 由于向量长度在多模态应用（或部分RAG应用）中有含义，因此未强制对embedding结果进行向量化，如有需要请自行调用
  */
 export function ensureNormalized(vector: number[], tolerance = 1e-3): number[] {
   if (!vector || !Array.isArray(vector) || vector.length === 0) {
