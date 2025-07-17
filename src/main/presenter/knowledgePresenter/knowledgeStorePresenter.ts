@@ -4,21 +4,37 @@ import {
   BuiltinKnowledgeConfig,
   IVectorDatabasePresenter,
   KnowledgeFileMessage,
-  QueryResult
+  QueryResult,
+  ChunkProcessor,
+  ChunkTask,
+  IKnowledgeTaskPresenter,
+  ChunkProcessingTask,
+  KnowledgeFileResult
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
 import { RecursiveCharacterTextSplitter } from '@/lib/textsplitters'
 import { sanitizeText } from '@/utils/strings'
 import { normalizeDistance } from '@/utils/vector'
+import { eventBus, SendTarget } from '@/eventbus'
+import { RAG_EVENTS } from '@/events'
 
-export class KnowledgeStorePresenter {
+export class KnowledgeStorePresenter implements ChunkProcessor {
   private readonly vectorP: IVectorDatabasePresenter
   private config: BuiltinKnowledgeConfig
+  private taskP: IKnowledgeTaskPresenter
 
-  constructor(vectorP: IVectorDatabasePresenter, config: BuiltinKnowledgeConfig) {
+  constructor(vectorP: IVectorDatabasePresenter, config: BuiltinKnowledgeConfig, taskScheduler: IKnowledgeTaskPresenter) {
     this.vectorP = vectorP
     this.config = config
+    this.taskP = taskScheduler
+  }
+
+  /**
+   * 获取vector数据库presenter
+   */
+  getVectorPresenter(): IVectorDatabasePresenter {
+    return this.vectorP
   }
 
   async updateConfig(config: BuiltinKnowledgeConfig): Promise<void> {
@@ -28,7 +44,7 @@ export class KnowledgeStorePresenter {
   async addFile(
     filePath: string,
     fileId?: string
-  ): Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }> {
+  ): Promise<KnowledgeFileResult> {
     if (fs.existsSync(filePath) === false) {
       throw new Error('文件不存在，请检查路径是否正确')
     }
@@ -51,57 +67,164 @@ export class KnowledgeStorePresenter {
         size: fileInfo.metadata.fileSize
       }
     } as KnowledgeFileMessage
+
+    // 先插入文件记录
     fileId ? await this.vectorP.updateFile(fileMessage) : await this.vectorP.insertFile(fileMessage)
 
-    const fileTask = this.fileTask(fileInfo.content, fileMessage)
+    // 1. 分片
+    const chunker = new RecursiveCharacterTextSplitter({
+      chunkSize: this.config.chunkSize,
+      chunkOverlap: this.config.chunkOverlap
+    })
+    const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
 
-    return { data: fileMessage, task: fileTask }
+    // 更新文件metadata
+    fileMessage.metadata.totalChunks = chunks.length
+    fileMessage.metadata.completedChunks = 0
+    await this.vectorP.updateFile(fileMessage)
+
+    // 创建chunk记录
+    const chunkMessages = chunks.map((content, index) => ({
+      id: nanoid(),
+      fileId: fileMessage.id,
+      chunkIndex: index,
+      content,
+      status: 'pending' as const
+    }))
+
+    // 批量插入chunks到数据库
+    await this.vectorP.insertChunks(chunkMessages)
+
+    // 2. 调度分块任务到TaskManager
+    for (const [index, chunk] of chunks.entries()) {
+      const task: ChunkProcessingTask = {
+        id: chunkMessages[index].id,
+        knowledgeBaseId: this.config.id,
+        fileId: fileMessage.id,
+        chunkContent: chunk,
+        chunkIndex: index,
+        processorCallback: this
+      }
+      
+      await this.taskP.scheduleChunkTask(task)
+    }
+
+    // 发送事件通知
+    eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+
+    return { data: fileMessage }
   }
 
-  private async fileTask(
-    content: string,
-    fileMessage: KnowledgeFileMessage
-  ): Promise<KnowledgeFileMessage> {
-    try {
-      // 1. 分片
-      const chunker = new RecursiveCharacterTextSplitter({
-        chunkSize: this.config.chunkSize,
-        chunkOverlap: this.config.chunkOverlap
-      })
-      const chunks = await chunker.splitText(sanitizeText(content))
+  /**
+   * 实现 ChunkProcessor 接口 - 处理单个分块
+   */
+  async processChunk(chunk: ChunkTask): Promise<void> {
+    console.log(`[KnowledgeStorePresenter] Processing chunk ${chunk.chunkIndex} for file ${chunk.fileId}`)
 
-      // 2. 生成向量
+    try {
+      // 生成嵌入向量
       const vectors = await presenter.llmproviderPresenter.getEmbeddings(
         this.config.embedding.providerId,
         this.config.embedding.modelId,
-        chunks
+        [chunk.content]
       )
 
-      // 3. 插入向量
-      await this.vectorP.insertVectors(
-        vectors.map((vector, index) => ({
-          vector,
-          metadata: {
-            from: fileMessage.name,
-            filePath: fileMessage.path,
-            content: chunks[index]
-          },
-          fileId: fileMessage.id
-        }))
-      )
+      if (!vectors || vectors.length === 0) {
+        throw new Error('Failed to generate embeddings')
+      }
 
-      // 4. 更新状态为完成
-      fileMessage.status = 'completed'
-      await this.vectorP.updateFile(fileMessage)
-    } catch (err) {
-      // 出错时更新状态并记录原因
-      fileMessage.status = 'error'
-      fileMessage.metadata.reason = String(err)
-      await this.vectorP.updateFile(fileMessage)
-      console.error('addFile 后台处理失败:', err)
+      // 插入向量到向量表
+      await this.vectorP.insertVector({
+        vector: vectors[0],
+        metadata: {
+          chunkId: chunk.id,
+          chunkIndex: chunk.chunkIndex,
+          content: chunk.content
+        },
+        fileId: chunk.fileId
+      })
+      
+      // 删除chunk记录（按设计，完成后删除）
+      await this.vectorP.deleteChunk(chunk.id)
+      
+      console.log(`[KnowledgeStorePresenter] Chunk ${chunk.chunkIndex} processed successfully`)
+    } catch (error) {
+      console.error(`[KnowledgeStorePresenter] Failed to process chunk ${chunk.id}:`, error)
+      
+      // 更新chunk状态为error
+      await this.vectorP.updateChunkStatus(chunk.id, 'error')
+      throw error
     }
+  }
 
-    return fileMessage
+  /**
+   * 实现 ChunkProcessor 接口 - 处理文件完成
+   */
+  async handleFileCompletion(fileId: string): Promise<void> {
+    console.log(`[KnowledgeStorePresenter] File processing completed: ${fileId}`)
+
+    try {
+      // 查询文件和所有chunks状态
+      const fileMessage = await this.vectorP.queryFile(fileId)
+      if (!fileMessage) return
+
+      const allChunks = await this.vectorP.queryChunksByFile(fileId)
+      const completedChunks = allChunks.filter(chunk => chunk.status !== 'pending' && chunk.status !== 'processing')
+      const errorChunks = allChunks.filter(chunk => chunk.status === 'error')
+
+      // 更新文件状态
+      fileMessage.metadata.completedChunks = completedChunks.length
+      
+      if (errorChunks.length === 0) {
+        fileMessage.status = 'completed'
+      } else {
+        fileMessage.status = 'error'
+        fileMessage.metadata.errorReason = `${errorChunks.length} chunks failed to process`
+      }
+
+      await this.vectorP.updateFile(fileMessage)
+
+      // 清理已完成的chunks (根据设计，完成后删除chunk记录)
+      for (const chunk of completedChunks) {
+        if (chunk.status !== 'error') {
+          await this.vectorP.deleteChunk(chunk.id)
+        }
+      }
+
+      // 发送完成事件
+      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+      
+    } catch (error) {
+      console.error(`[KnowledgeStorePresenter] Error handling file completion:`, error)
+    }
+  }
+
+  /**
+   * 实现 ChunkProcessor 接口 - 处理分块错误
+   */
+  async handleChunkError(chunkId: string, error: Error): Promise<void> {
+    console.error(`[KnowledgeStorePresenter] Chunk error ${chunkId}:`, error)
+    
+    try {
+      // 更新chunk状态为error
+      await this.vectorP.updateChunkStatus(chunkId, 'error')
+      
+      // 可以在这里添加更多的错误处理逻辑，比如重试机制
+    } catch (updateError) {
+      console.error(`[KnowledgeStorePresenter] Failed to update chunk error status:`, updateError)
+    }
+  }
+
+  async deleteFile(fileId: string): Promise<void> {
+    try {
+      await this.taskP.clearFileTasks(fileId)
+      await this.vectorP.deleteVectorsByFile(fileId)
+      await this.vectorP.deleteFile(fileId)
+      await this.vectorP.deleteChunksByFile(fileId)
+    } catch (err) {
+      console.error(`[RAG] Failed to delete file ${fileId} in knowledge base ${this.config.id}:`, err)
+      throw err
+    }
   }
 
   async similarityQuery(key: string): Promise<QueryResult[]> {
@@ -129,22 +252,9 @@ export class KnowledgeStorePresenter {
     }
   }
 
-  async deleteFile(fileId: string): Promise<void> {
-    try {
-      await this.vectorP.deleteVectorsByFile(fileId)
-      await this.vectorP.deleteFile(fileId)
-    } catch (err) {
-      console.error(
-        `[RAG] Failed to delete file ${fileId} in knowledge base ${this.config.id}:`,
-        err
-      )
-      throw err
-    }
-  }
-
   async reAddFile(
     fileId: string
-  ): Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }> {
+  ): Promise<KnowledgeFileResult> {
     const file = await this.queryFile(fileId)
     if (file == null) {
       throw new Error('文件不存在，请重新打开知识库后再试')
@@ -170,22 +280,6 @@ export class KnowledgeStorePresenter {
     } catch (err) {
       console.error(`[RAG] Failed to list files in knowledge base ${this.config.id}:`, err)
       throw err
-    }
-  }
-
-  async recoverProcessingFiles(): Promise<void> {
-    const processingFiles = await this.vectorP.queryFiles({ status: 'processing' })
-    for (const file of processingFiles) {
-      try {
-        file.status = 'error'
-        file.metadata.reason = '用户取消任务'
-        await this.vectorP.updateFile(file)
-      } catch (err) {
-        console.error(
-          `[RAG] Failed to recover processing file ${file.id} in knowledge base ${this.config.id}:`,
-          err
-        )
-      }
     }
   }
 

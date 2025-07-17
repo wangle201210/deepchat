@@ -1213,10 +1213,12 @@ export interface KeyStatus {
 // built-in 知识库相关
 export type KnowledgeFileMetadata = {
   size: number
-  reason?: string
+  totalChunks?: number
+  completedChunks?: number
+  errorReason?: string
 }
 
-export type KnowledgeFileStatus = 'processing' | 'completed' | 'error'
+export type KnowledgeFileStatus = 'processing' | 'completed' | 'paused' | 'error'
 
 export type KnowledgeFileMessage = {
   id: string
@@ -1226,6 +1228,77 @@ export type KnowledgeFileMessage = {
   status: KnowledgeFileStatus
   uploadedAt: number
   metadata: KnowledgeFileMetadata
+}
+
+export type KnowledgeChunkStatus = 'pending' | 'processing' | 'error'
+
+export type KnowledgeChunkMessage = {
+  id: string
+  fileId: string
+  chunkIndex: number
+  content: string
+  status: KnowledgeChunkStatus
+}
+
+// 任务调度和处理接口
+export interface ChunkTask {
+  id: string
+  knowledgeBaseId: string
+  fileId: string
+  chunkIndex: number
+  content: string
+  metadata: Record<string, any>
+  status: 'pending' | 'processing' | 'error'
+  createdAt: number
+  startedAt?: number
+  completedAt?: number
+  error?: string
+}
+
+export interface ChunkProcessingTask {
+  id: string
+  knowledgeBaseId: string
+  fileId: string
+  chunkContent: string
+  chunkIndex: number
+  processorCallback: ChunkProcessor
+}
+
+export interface QueueStatus {
+  queueLength: number
+  runningTasks: number
+  fileContexts: number
+  isPaused: boolean
+}
+
+export interface GlobalTaskStatus {
+  totalTasks: number
+  runningTasks: number
+  queuedTasks: number
+  knowledgeBaseStatuses: Map<string, QueueStatus>
+}
+
+/**
+ * 任务调度器接口 - TaskManager 实现
+ */
+export interface IKnowledgeTaskPresenter {
+  scheduleChunkTask(task: ChunkProcessingTask): Promise<void>
+  getQueueStatus(knowledgeBaseId: string): QueueStatus
+  getGlobalStatus(): GlobalTaskStatus
+  pauseKnowledgeBase(knowledgeBaseId: string): void
+  resumeKnowledgeBase(knowledgeBaseId: string): void
+  pauseAllTasks(): void
+  resumeAllTasks(): void
+  clearFileTasks(fileId: string): void
+}
+
+/**
+ * 分块处理器接口 - KnowledgeStorePresenter 实现
+ */
+export interface ChunkProcessor {
+  processChunk(chunk: ChunkTask): Promise<void>
+  handleFileCompletion(fileId: string): Promise<void>
+  handleChunkError(chunkId: string, error: Error): Promise<void>
 }
 
 export type KnowledgeFileResult = {
@@ -1286,6 +1359,19 @@ export interface IKnowledgePresenter {
    * @returns 相似片段结果数组
    */
   similarityQuery(id: string, key: string): Promise<QueryResult[]>
+
+  /**
+   * 获取任务队列状态
+   * @param id 知识库 ID
+   * @returns 队列状态信息
+   */
+  getTaskQueueStatus(id: string): Promise<{
+    queueLength: number
+    runningTasks: number
+    fileContexts: number
+    isPaused: boolean
+  }>
+
   /**
    * 销毁实例，释放资源
    */
@@ -1430,4 +1516,49 @@ export interface IVectorDatabasePresenter {
    * @param id 文件 id
    */
   deleteFile(id: string): Promise<void>
+
+  // Chunk 相关操作
+  /**
+   * 插入单个 chunk
+   * @param chunk chunk 数据对象
+   */
+  insertChunk(chunk: KnowledgeChunkMessage): Promise<void>
+
+  /**
+   * 批量插入 chunks
+   * @param chunks chunk 数据数组
+   */
+  insertChunks(chunks: KnowledgeChunkMessage[]): Promise<void>
+
+  /**
+   * 更新 chunk 状态，完成的chunk会被自动删除
+   * @param chunkId chunk id
+   * @param status 新状态，非error状态会删除记录
+   */
+  updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus): Promise<void>
+
+  /**
+   * 删除单个 chunk
+   * @param chunkId chunk id
+   */
+  deleteChunk(chunkId: string): Promise<void>
+
+  /**
+   * 查询文件的所有 chunks
+   * @param fileId 文件 id
+   * @param status 可选状态过滤
+   */
+  queryChunksByFile(fileId: string, status?: KnowledgeChunkStatus): Promise<KnowledgeChunkMessage[]>
+
+  /**
+   * 删除文件的所有 chunks
+   * @param fileId 文件 id
+   */
+  deleteChunksByFile(fileId: string): Promise<void>
+
+  /**
+   * 获取单个 chunk
+   * @param chunkId chunk id
+   */
+  getChunk(chunkId: string): Promise<KnowledgeChunkMessage | null>
 }

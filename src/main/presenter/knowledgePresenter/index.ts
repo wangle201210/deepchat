@@ -10,10 +10,11 @@ import {
   QueryResult,
   KnowledgeFileResult
 } from '@shared/presenter'
-import { eventBus, SendTarget } from '@/eventbus'
-import { MCP_EVENTS, RAG_EVENTS } from '@/events'
+import { eventBus } from '@/eventbus'
+import { MCP_EVENTS } from '@/events'
 import { DuckDBPresenter } from './database/duckdbPresenter'
 import { KnowledgeStorePresenter } from './knowledgeStorePresenter'
+import { KnowledgeTaskPresenter } from './knowledgeTaskPresenter'
 
 export class KnowledgePresenter implements IKnowledgePresenter {
   /**
@@ -23,10 +24,22 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private readonly configP: IConfigPresenter
 
+  /**
+   * 全局任务调度器
+   */
+  private readonly taskP: KnowledgeTaskPresenter
+
+  /**
+   * 缓存 RAG 应用实例
+   */
+  private readonly storePresenterCache: Map<string, KnowledgeStorePresenter>
+
   constructor(configP: IConfigPresenter, dbDir: string) {
     console.log('[RAG] Initializing Built-in Knowledge Presenter')
     this.configP = configP
     this.storageDir = path.join(dbDir, 'KnowledgeBase')
+    this.taskP = new KnowledgeTaskPresenter()
+    this.storePresenterCache = new Map()
 
     this.initStorageDir()
     this.recoverUnfinishedTasks()
@@ -92,7 +105,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 创建知识库（初始化 RAG 应用）
    */
   create = async (config: BuiltinKnowledgeConfig): Promise<void> => {
-    this.createStorePresenter(config)
+    await this.createStorePresenter(config)
   }
 
   /**
@@ -110,9 +123,13 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 删除知识库（移除本地存储）
    */
   delete = async (id: string): Promise<void> => {
+    // 从TaskScheduler中清理知识库任务
+    this.taskP.clearKnowledgeBaseTasks(id)
+
     if (this.storePresenterCache.has(id)) {
       const rag = this.storePresenterCache.get(id) as KnowledgeStorePresenter
       await rag.destroy()
+      this.storePresenterCache.delete(id)
     } else {
       const dbPath = path.join(this.storageDir, id)
       if (fs.existsSync(dbPath)) {
@@ -120,11 +137,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
       }
     }
   }
-
-  /**
-   * 缓存 RAG 应用实例
-   */
-  private storePresenterCache: Map<string, KnowledgeStorePresenter> = new Map()
 
   /**
    * 创建 RAG 应用实例
@@ -141,7 +153,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
       config.normalized
     )
     try {
-      rag = new KnowledgeStorePresenter(db, config)
+      rag = new KnowledgeStorePresenter(db, config, this.taskP)
     } catch (e) {
       throw new Error(`Failed to create storePresenter: ${e}`)
     }
@@ -168,7 +180,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     // DuckDB 存储
     const db = await this.getVectorDatabasePresenter(id, config.dimensions, config.normalized)
     // 创建 RAG 应用实例
-    const rag = new KnowledgeStorePresenter(db, config)
+    const rag = new KnowledgeStorePresenter(db, config, this.taskP)
     this.storePresenterCache.set(id, rag)
     return rag
   }
@@ -183,7 +195,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     id: string,
     dimensions: number,
     normalized: boolean
-  ) => {
+  ): Promise<DuckDBPresenter> => {
     const dbPath = path.join(this.storageDir, id)
     if (fs.existsSync(dbPath)) {
       const db = new DuckDBPresenter(dbPath)
@@ -200,25 +212,13 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private async handleFileTask(
     id: string,
-    fileHandler: (
-      rag: KnowledgeStorePresenter
-    ) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
+    fileHandler: (rag: KnowledgeStorePresenter) => Promise<KnowledgeFileResult>,
     errorMsg: string
   ): Promise<KnowledgeFileResult> {
     try {
       const rag = await this.getStorePresenter(id)
-      const fileTask = await fileHandler(rag)
-      fileTask.task
-        .then((message) => {
-          eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, message)
-        })
-        .catch((err) => {
-          // 可选：记录异步任务异常
-          console.error(`${errorMsg}异步任务失败:`, err)
-        })
-      return {
-        data: fileTask.data
-      }
+      const result = await fileHandler(rag)
+      return result
     } catch (err) {
       return {
         error: `${errorMsg}: ${err instanceof Error ? err.message : String(err)}`
@@ -253,6 +253,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.storePresenterCache.forEach((rag) => {
       rag.close()
     })
+    this.storePresenterCache.clear()
   }
 
   async destroy(): Promise<void> {
@@ -264,15 +265,149 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     return await rag.similarityQuery(key)
   }
 
+  /**
+   * 获取知识库任务队列状态
+   */
+  async getTaskQueueStatus(id: string) {
+    return this.taskP.getQueueStatus(id)
+  }
+
   private async recoverUnfinishedTasks(): Promise<void> {
     console.log('[RAG] Recovering unfinished tasks...')
     const configs = this.configP.getKnowledgeConfigs()
+
+    // 收集所有有未完成任务的知识库
+    const unfinishedKnowledgeBases: {
+      config: BuiltinKnowledgeConfig
+      files: KnowledgeFileMessage[]
+    }[] = []
+
     for (const config of configs) {
       try {
-        const storePresenter = await this.getStorePresenter(config.id)
-        await storePresenter.recoverProcessingFiles()
+        const db = await this.getVectorDatabasePresenter(config.id, config.dimensions, config.normalized)
+
+        // 检查是否有processing或paused状态的文件
+        const unfinishedFiles = await db.queryFiles({
+          status: 'processing'
+        })
+        const pausedFiles = await db.queryFiles({
+          status: 'paused'
+        })
+
+        const allUnfinishedFiles = [...unfinishedFiles, ...pausedFiles]
+        if (allUnfinishedFiles.length > 0) {
+          unfinishedKnowledgeBases.push({ config, files: allUnfinishedFiles })
+        }
+        db.close()
       } catch (err) {
-        console.error(`[RAG] Error recovering tasks for knowledge base ${config.id}:`, err)
+        console.error(`[RAG] Error checking unfinished tasks for knowledge base ${config.id}:`, err)
+      }
+    }
+
+    if (unfinishedKnowledgeBases.length > 0) {
+      // 有未完成的任务，显示用户选择弹窗
+      await this.showRecoveryDialog(unfinishedKnowledgeBases)
+    }
+  }
+
+  /**
+   * 显示恢复任务的对话框
+   */
+  private async showRecoveryDialog(
+    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
+  ): Promise<void> {
+    const { dialog } = require('electron')
+    const totalFiles = unfinishedKnowledgeBases.reduce((sum, kb) => sum + kb.files.length, 0)
+
+    const result = await dialog.showMessageBox({
+      type: 'question',
+      title: '知识库任务恢复',
+      message: `检测到 ${unfinishedKnowledgeBases.length} 个知识库中有 ${totalFiles} 个文件的处理任务被中断。`,
+      detail: '您希望如何处理这些未完成的任务？',
+      buttons: ['立即继续', '稍后处理', '取消任务'],
+      defaultId: 0,
+      cancelId: 2
+    })
+
+    switch (result.response) {
+      case 0: // 立即继续
+        await this.continueAllTasks(unfinishedKnowledgeBases)
+        break
+      case 1: // 稍后处理
+        await this.pauseAllTasks(unfinishedKnowledgeBases)
+        break
+      case 2: // 取消任务
+        await this.cancelAllTasks(unfinishedKnowledgeBases)
+        break
+    }
+  }
+
+  /**
+   * 继续所有未完成的任务
+   */
+  private async continueAllTasks(
+    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
+  ): Promise<void> {
+    for (const { config } of unfinishedKnowledgeBases) {
+      try {
+        await this.getStorePresenter(config.id)
+        console.log(`[RAG] Knowledge base ${config.id} ready for task recovery`)
+      } catch (err) {
+        console.error(`[RAG] Error preparing knowledge base ${config.id}:`, err)
+      }
+    }
+  }
+
+  /**
+   * 暂停所有未完成的任务
+   */
+  private async pauseAllTasks(
+    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
+  ): Promise<void> {
+    for (const { config, files } of unfinishedKnowledgeBases) {
+      try {
+        const dbPath = path.join(this.storageDir, `${config.id}.duckdb`)
+        const db = new DuckDBPresenter(dbPath)
+        await db.open()
+
+        for (const file of files) {
+          if (file.status === 'processing') {
+            file.status = 'paused'
+            await db.updateFile(file)
+          }
+        }
+
+        await db.close()
+      } catch (err) {
+        console.error(`[RAG] Error pausing tasks for knowledge base ${config.id}:`, err)
+      }
+    }
+  }
+
+  /**
+   * 取消所有未完成的任务
+   */
+  private async cancelAllTasks(
+    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
+  ): Promise<void> {
+    for (const { config, files } of unfinishedKnowledgeBases) {
+      try {
+        const dbPath = path.join(this.storageDir, `${config.id}.duckdb`)
+        const db = new DuckDBPresenter(dbPath)
+        await db.open()
+
+        for (const file of files) {
+          file.status = 'error'
+          file.metadata.errorReason = '用户取消任务'
+          await db.updateFile(file)
+
+          // 清理相关的chunk数据
+          await db.deleteChunksByFile(file.id)
+        }
+
+        await db.close()
+      } catch (err) {
+        console.error(`[RAG] Error canceling tasks for knowledge base ${config.id}:`, err)
       }
     }
   }

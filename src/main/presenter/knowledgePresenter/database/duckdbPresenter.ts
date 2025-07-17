@@ -8,7 +8,9 @@ import {
   QueryOptions,
   QueryResult,
   IVectorDatabasePresenter,
-  KnowledgeFileMessage
+  KnowledgeFileMessage,
+  KnowledgeChunkMessage,
+  KnowledgeChunkStatus
 } from '@shared/presenter'
 
 import { nanoid } from 'nanoid'
@@ -27,6 +29,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   private readonly vectorTable = 'vector'
   private readonly fileTable = 'file'
+  private readonly chunkTable = 'chunk'
 
   constructor(dbPath: string) {
     this.dbPath = dbPath
@@ -43,12 +46,14 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       await this.connect()
       console.log(`[DuckDB] load vss extension`)
       await this.installAndLoadVSS()
-      console.log(`[DuckDB] create vector table`)
-      await this.initVectorTable(dimensions)
       console.log(`[DuckDB] create file table`)
       await this.initFileTable()
-      console.log(`[DuckDB] create index`)
-      await this.initIndex(opts)
+      console.log(`[DuckDB] create chunk table`)
+      await this.initChunkTable()
+      console.log(`[DuckDB] create vector table`)
+      await this.initVectorTable(dimensions)
+      console.log(`[DuckDB] create vector index`)
+      await this.initTableIndex(opts)
     } catch (error) {
       console.error('[DuckDB] initialization failed:', error)
       this.close()
@@ -143,8 +148,39 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
+  /** 创建chunks表 */
+  private async initChunkTable(): Promise<void> {
+    await this.safeRun(
+      `CREATE TABLE IF NOT EXISTS ${this.chunkTable} (
+        id VARCHAR PRIMARY KEY,
+        file_id VARCHAR,
+        chunk_index INTEGER,
+        content TEXT,
+        status VARCHAR
+      );`
+    )
+  }
+
   /** 创建索引 */
-  private async initIndex(opts?: IndexOptions): Promise<void> {
+  private async initTableIndex(opts?: IndexOptions): Promise<void> {
+    // file
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_id ON ${this.fileTable} (id);`
+    )
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_status ON ${this.fileTable} (status);`
+    )
+    // chunk
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_chunk_id ON ${this.chunkTable} (id);`
+    )
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_file_id ON ${this.chunkTable} (file_id);`
+    )
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.chunkTable}_status ON ${this.chunkTable} (status);`
+    )
+    // vector
     const metric = opts?.metric || 'cosine' // 支持 'l2sq' | 'cosine' | 'ip'
     const M = opts?.M || 16
     const efConstruction = opts?.efConstruction || 200
@@ -332,6 +368,95 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   async deleteFile(id: string): Promise<void> {
     await this.safeRun(`DELETE FROM ${this.fileTable} WHERE id = ?;`, [id])
+  }
+
+  // Chunk 相关操作
+  async insertChunk(chunk: KnowledgeChunkMessage): Promise<void> {
+    await this.safeRun(
+      `INSERT INTO ${this.chunkTable} (id, file_id, chunk_index, content, status)
+       VALUES (?, ?, ?, ?, ?);`,
+      [chunk.id, chunk.fileId, chunk.chunkIndex, chunk.content, chunk.status]
+    )
+  }
+
+  async insertChunks(chunks: KnowledgeChunkMessage[]): Promise<void> {
+    if (!chunks.length) return
+    
+    // 构造批量插入 SQL
+    const valuesSql = chunks.map(() => '(?, ?, ?, ?, ?)').join(', ')
+    const sql = `INSERT INTO ${this.chunkTable} (id, file_id, chunk_index, content, status) VALUES ${valuesSql};`
+    
+    const params: any[] = []
+    for (const chunk of chunks) {
+      params.push(chunk.id, chunk.fileId, chunk.chunkIndex, chunk.content, chunk.status)
+    }
+    
+    await this.safeRun(sql, params)
+  }
+
+  async updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus): Promise<void> {
+    // 如果状态不是error，说明chunk已完成，直接删除记录
+    if (status !== 'error') {
+      await this.deleteChunk(chunkId)
+    } else {
+      // 只有error状态才需要更新记录
+      await this.safeRun(
+        `UPDATE ${this.chunkTable} SET status = ? WHERE id = ?;`,
+        [status, chunkId]
+      )
+    }
+  }
+
+  async deleteChunk(chunkId: string): Promise<void> {
+    await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE id = ?;`, [chunkId])
+  }
+
+  async queryChunksByFile(fileId: string, status?: KnowledgeChunkStatus): Promise<KnowledgeChunkMessage[]> {
+    let sql = `SELECT * FROM ${this.chunkTable} WHERE file_id = ?`
+    const params: any[] = [fileId]
+    
+    if (status) {
+      sql += ` AND status = ?`
+      params.push(status)
+    }
+    
+    sql += ` ORDER BY chunk_index;`
+    
+    try {
+      const reader = await this.connection.runAndReadAll(sql, params)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((row) => this.toKnowledgeChunkMessage(row))
+    } catch (err) {
+      console.error('[DuckDB] queryChunksByFile error', sql, params, err)
+      throw err
+    }
+  }
+
+  async deleteChunksByFile(fileId: string): Promise<void> {
+    await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [fileId])
+  }
+
+  async getChunk(chunkId: string): Promise<KnowledgeChunkMessage | null> {
+    const sql = `SELECT * FROM ${this.chunkTable} WHERE id = ?;`
+    try {
+      const reader = await this.connection.runAndReadAll(sql, [chunkId])
+      const rows = reader.getRowObjectsJson()
+      if (rows.length === 0) return null
+      return this.toKnowledgeChunkMessage(rows[0])
+    } catch (err) {
+      console.error('[DuckDB] getChunk error', sql, chunkId, err)
+      throw err
+    }
+  }
+
+  private toKnowledgeChunkMessage(o: any): KnowledgeChunkMessage {
+    return {
+      id: o.id,
+      fileId: o.file_id,
+      chunkIndex: o.chunk_index,
+      content: o.content,
+      status: o.status
+    }
   }
 
   async destroy(): Promise<void> {
