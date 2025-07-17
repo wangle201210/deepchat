@@ -73,10 +73,10 @@ export function normalizeDistance(distance: number, metric: 'cosine' | 'ip'): nu
     // distance > 0 → 向量夹角 > 90°，方向相反
     //
     // 使用 sigmoid 将其映射到 (0,1)
-    // 这里使用 distance * k 来调整 sigmoid 的陡峭程度，需要根据经验和需求微调系数k
+    // 这里使用 distance * k 来调整 sigmoid 的陡峭程度，需要根据经验和需求微调缩放因子k
     // k = 0.1 sigmoid 更平滑
     // k = 0.5 sigmoid 更陡峭
-    const k = 0.03
+    const k = 0.04
     const sigmoid = 1 / (1 + Math.exp(Math.sign(distance) * Math.pow(distance, 2) * k))
     return sigmoid
   } else {
