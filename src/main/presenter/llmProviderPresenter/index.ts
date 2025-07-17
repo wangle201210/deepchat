@@ -28,6 +28,7 @@ import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS } from '@/events'
 import { TogetherProvider } from './providers/togetherProvider'
 import { GrokProvider } from './providers/grokProvider'
+import { GroqProvider } from './providers/groqProvider'
 import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
@@ -153,6 +154,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new LMStudioProvider(provider, this.configPresenter)
         case 'together':
           return new TogetherProvider(provider, this.configPresenter)
+        case 'groq':
+          return new GroqProvider(provider, this.configPresenter)
         default:
           console.warn(`Unknown provider type: ${provider.apiType}`)
           return undefined
