@@ -7,7 +7,6 @@ import {
   QueryResult,
   IKnowledgeTaskPresenter,
   KnowledgeFileResult,
-  KnowledgeChunkStatus,
   KnowledgeChunkMessage,
   InsertOptions
 } from '@shared/presenter'
@@ -119,7 +118,7 @@ export class KnowledgeStorePresenter {
         onSuccess: (vector: InsertOptions) =>
           this.handleChunkSuccess(chunkMessage.id, fileMessage.id, vector),
         onError: (error: Error) => this.handleChunkError(chunkMessage.id, fileMessage.id, error),
-        onTerminate: () => this.handleChunkTerminate(chunkMessage.id, fileMessage.id)
+        onTerminate: () => this.handleChunkTerminate(chunkMessage.id)
       }
       this.taskP.addTask(task)
     }
@@ -166,22 +165,35 @@ export class KnowledgeStorePresenter {
     fileId: string,
     vector: InsertOptions
   ): Promise<void> {
-    // 更新chunk状态
-    await this.vectorP.updateChunkStatus(chunkId, 'completed')
-    // 插入向量
-    await this.vectorP.insertVector(vector)
-    // 检查文件状态
-    await this.checkFile(fileId)
+    try {
+      // 更新chunk状态
+      await this.vectorP.updateChunkStatus(chunkId, 'completed')
+      // 插入向量
+      await this.vectorP.insertVector(vector)
+      // 检查文件状态
+      await this.checkFile(fileId)
+    } catch (error) {
+      console.error(`[RAG] Error in handleChunkSuccess for chunk ${chunkId}:`, error)
+      // Even if success handling fails, we should treat the chunk as errored.
+      await this.handleChunkError(chunkId, fileId, error as Error)
+    }
   }
 
   private async handleChunkError(chunkId: string, fileId: string, error: Error): Promise<void> {
-    // 更新chunk状态
-    await this.vectorP.updateChunkStatus(chunkId, 'error', error.message)
-    // 检查文件状态
-    await this.checkFile(fileId)
+    try {
+      // 更新chunk状态
+      await this.vectorP.updateChunkStatus(chunkId, 'error', error.message)
+      // 检查文件状态
+      await this.checkFile(fileId)
+    } catch (e) {
+      console.error(`[RAG] CRITICAL: Failed to handle chunk error for chunk ${chunkId}:`, e)
+      // If error handling also fails, we still need to check the file status
+      // to prevent the file from being stuck in a processing state.
+      await this.checkFile(fileId)
+    }
   }
 
-  private async handleChunkTerminate(chunkId: string, fileId: string): Promise<void> {
+  private async handleChunkTerminate(chunkId: string): Promise<void> {
     // 触发terminal，则不会触发success和error
     console.log(`[RAG] Chunk ${chunkId} was terminated.`)
   }

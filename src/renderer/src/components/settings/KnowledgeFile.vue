@@ -307,7 +307,7 @@ const handleDrop = async (e: DragEvent) => {
           const incoming = result.data
           const existingFile = fileList.value.find((f) => f.id === incoming.id)
           if (existingFile == null) {
-            fileList.value.push(result.data)
+            fileList.value.unshift(incoming)
           }
         }
       } catch (error) {
