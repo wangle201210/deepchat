@@ -15,6 +15,7 @@ import { MCP_EVENTS } from '@/events'
 import { DuckDBPresenter } from './database/duckdbPresenter'
 import { KnowledgeStorePresenter } from './knowledgeStorePresenter'
 import { KnowledgeTaskPresenter } from './knowledgeTaskPresenter'
+import { getMetric } from '@/utils/vector'
 
 export class KnowledgePresenter implements IKnowledgePresenter {
   /**
@@ -201,7 +202,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     // 如果数据库不存在，则初始化
     const db = new DuckDBPresenter(dbPath)
     await db.initialize(dimensions, {
-      metric: normalized ? 'cosine' : 'ip'
+      metric: getMetric(normalized)
     })
     return db
   }
@@ -264,46 +265,5 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   async getTaskQueueStatus() {
     return this.taskP.getStatus()
-  }
-
-  private async recoverUnfinishedTasks(): Promise<void> {
-    console.log('[RAG] Checking unfinished tasks...')
-    const configs = this.configP.getKnowledgeConfigs()
-
-    // 收集所有有未完成任务的知识库
-    const unfinishedKnowledgeBases: {
-      config: BuiltinKnowledgeConfig
-      files: KnowledgeFileMessage[]
-    }[] = []
-
-    for (const config of configs) {
-      try {
-        const db = await this.getVectorDatabasePresenter(
-          config.id,
-          config.dimensions,
-          config.normalized
-        )
-
-        // 检查是否有processing或paused状态的文件
-        const processingFiles = await db.queryFiles({
-          status: 'processing'
-        })
-        const pausedFiles = await db.queryFiles({
-          status: 'paused'
-        })
-
-        const allUnfinishedFiles = [...processingFiles, ...pausedFiles]
-        if (allUnfinishedFiles.length > 0) {
-          unfinishedKnowledgeBases.push({ config, files: allUnfinishedFiles })
-        }
-        await db.close()
-      } catch (err) {
-        console.error(`[RAG] Error checking unfinished tasks for knowledge base ${config.id}:`, err)
-      }
-    }
-
-    if (unfinishedKnowledgeBases.length > 0) {
-      // TODO 有未完成的任务
-    }
   }
 }

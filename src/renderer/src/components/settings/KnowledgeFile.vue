@@ -303,7 +303,12 @@ const handleDrop = async (e: DragEvent) => {
           return
         }
         if (result.data) {
-          fileList.value.push(result.data)
+          // 判断是否存在相同id的文件，存在则跳过
+          const incoming = result.data
+          const existingFile = fileList.value.find((f) => f.id === incoming.id)
+          if (existingFile == null) {
+            fileList.value.push(result.data)
+          }
         }
       } catch (error) {
         console.error('文件准备失败:', error)

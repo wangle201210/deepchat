@@ -161,7 +161,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         file_id VARCHAR,
         chunk_index INTEGER,
         content TEXT,
-        status VARCHAR
+        status VARCHAR,
+        error VARCHAR
       );`
     )
   }
@@ -174,6 +175,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
     await this.safeRun(
       `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_status ON ${this.fileTable} (status);`
+    )
+    await this.safeRun(
+      `CREATE INDEX IF NOT EXISTS idx_${this.fileTable}_file_path ON ${this.fileTable} (path);`
     )
     // chunk
     await this.safeRun(
@@ -409,19 +413,34 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     if (!chunks.length) return
 
     // 构造批量插入 SQL
-    const valuesSql = chunks.map(() => '(?, ?, ?, ?, ?)').join(', ')
-    const sql = `INSERT INTO ${this.chunkTable} (id, file_id, chunk_index, content, status) VALUES ${valuesSql};`
+    const valuesSql = chunks.map(() => '(?, ?, ?, ?, ?, ?)').join(', ')
+    const sql = `INSERT INTO ${this.chunkTable} (id, file_id, chunk_index, content, status, error) VALUES ${valuesSql};`
 
     const params: any[] = []
     for (const chunk of chunks) {
-      params.push(chunk.id, chunk.fileId, chunk.chunkIndex, chunk.content, chunk.status)
+      params.push(
+        chunk.id,
+        chunk.fileId,
+        chunk.chunkIndex,
+        chunk.content,
+        chunk.status,
+        chunk.error ?? ''
+      )
     }
 
     await this.safeRun(sql, params)
   }
 
-  async updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus): Promise<void> {
-    await this.safeRun(`UPDATE ${this.chunkTable} SET status = ? WHERE id = ?;`, [status, chunkId])
+  async updateChunkStatus(
+    chunkId: string,
+    status: KnowledgeChunkStatus,
+    error?: string
+  ): Promise<void> {
+    await this.safeRun(`UPDATE ${this.chunkTable} SET status = ?, error = ? WHERE id = ?;`, [
+      status,
+      error ?? '',
+      chunkId
+    ])
   }
 
   async deleteChunk(chunkId: string): Promise<void> {
@@ -462,7 +481,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       fileId: o.file_id,
       chunkIndex: o.chunk_index,
       content: o.content,
-      status: o.status
+      status: o.status,
+      error: o.error
     }
   }
 

@@ -1218,7 +1218,7 @@ export type KnowledgeFileMetadata = {
   errorReason?: string
 }
 
-export type KnowledgeFileStatus = 'processing' | 'completed' | 'paused' | 'error'
+export type KnowledgeFileStatus = 'processing' | 'completed' | 'error'
 
 export type KnowledgeFileMessage = {
   id: string
@@ -1230,7 +1230,7 @@ export type KnowledgeFileMessage = {
   metadata: KnowledgeFileMetadata
 }
 
-export type KnowledgeChunkStatus = 'pending' | 'processing' | 'completed' | 'error' | 'paused'
+export type KnowledgeChunkStatus = 'processing' | 'completed' | 'error'
 
 export type KnowledgeChunkMessage = {
   id: string
@@ -1249,8 +1249,8 @@ export interface KnowledgeChunkTask {
     fileId: string
     [key: string]: any // 其他业务数据
   }
-  run: (context: { signal: AbortSignal }) => Promise<void> // 任务执行体，支持终止信号
-  onSuccess?: () => void
+  run: (context: { signal: AbortSignal }) => Promise<InsertOptions> // 任务执行体，支持终止信号
+  onSuccess?: (vector: InsertOptions) => void
   onError?: (error: Error) => void
   onTerminate?: () => void // 任务被强制终止时的回调
 }
@@ -1385,9 +1385,11 @@ export type BuiltinKnowledgeConfig = {
   fragmentsNumber: number
   enabled: boolean
 }
+export type MetricType = 'l2' | 'cosine' | 'ip'
+
 export interface IndexOptions {
   /** 距离度量：'l2' | 'cosine' | 'ip' */
-  metric?: 'l2' | 'cosine' | 'ip'
+  metric?: MetricType
   /** HNSW 参数 M */
   M?: number
   /** HNSW 构建时 ef */
@@ -1409,7 +1411,7 @@ export interface QueryOptions {
   /** 最小距离阈值 */
   threshold?: number
   /** 查询向量的维度 */
-  metric: 'l2sq' | 'cosine' | 'ip'
+  metric: MetricType
 }
 export interface QueryResult {
   id: string
@@ -1508,7 +1510,7 @@ export interface IVectorDatabasePresenter {
   /**
    * 更新 chunk 状态，完成的chunk会被自动删除
    * @param chunkId chunk id
-   * @param status 新状态，非error状态会删除记录
+   * @param status 新状态
    * @param error 错误信息
    */
   updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus, error?: string): Promise<void>

@@ -1,7 +1,7 @@
 import { IKnowledgeTaskPresenter, KnowledgeChunkTask, TaskQueueStatus } from '@shared/presenter'
 
 /**
- * TaskManager - 专注于全局任务调度和并发控制
+ * KnowledgeTaskManager - 专注于全局任务调度和并发控制
  */
 export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
   private readonly maxConcurrency: number
@@ -14,7 +14,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
   }
 
   addTask(task: KnowledgeChunkTask): void {
-    console.log(`[TaskManager] Adding task: ${task.id}`)
+    console.log(`[RAG TASK] Adding task: ${task.id}`)
     this.queue.push(task)
     this.controllers.set(task.id, new AbortController())
     this.processQueue()
@@ -24,7 +24,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     // 移除队列中的任务
     this.queue = this.queue.filter((task) => {
       if (filter(task)) {
-        console.log(`[TaskManager] Removing queued task: ${task.id}`)
+        console.log(`[RAG TASK] Removing queued task: ${task.id}`)
         this.terminateTask(task.id)
         return false // 移除
       }
@@ -34,7 +34,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     // 终止正在运行的任务
     for (const task of this.runningTasks.values()) {
       if (filter(task)) {
-        console.log(`[TaskManager] Terminating running task: ${task.id}`)
+        console.log(`[RAG TASK] Terminating running task: ${task.id}`)
         this.terminateTask(task.id)
       }
     }
@@ -49,7 +49,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
   }
 
   destroy(): void {
-    console.log('[TaskManager] Destroying TaskManager, all tasks will be terminated.')
+    console.log('[RAG TASK] Destroying TaskManager, all tasks will be terminated.')
     this.removeTasks(() => true) // 移除所有任务
     this.queue = []
     this.runningTasks.clear()
@@ -60,6 +60,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     const controller = this.controllers.get(taskId)
     if (controller) {
       controller.abort()
+      this.controllers.delete(taskId)
     }
   }
 
@@ -81,35 +82,35 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
 
     // 检查任务在执行前是否已被终止
     if (controller.signal.aborted) {
-      console.log(`[TaskManager] Task ${task.id} was aborted before execution.`)
+      console.log(`[RAG TASK] Task ${task.id} was aborted before execution.`)
       task.onTerminate?.()
       this.controllers.delete(task.id)
       return
     }
 
     this.runningTasks.set(task.id, task)
-    console.log(`[TaskManager] Executing task: ${task.id}. Running: ${this.runningTasks.size}`)
+    console.log(`[RAG TASK] Executing task: ${task.id}. Running: ${this.runningTasks.size}`)
 
     try {
-      await task.run({ signal: controller.signal })
+      const result = await (task.run({ signal: controller.signal }))
       // 再次检查，因为任务可能在 run() 内部被终止但没有抛出异常
       if (controller.signal.aborted) {
         task.onTerminate?.()
       } else {
-        task.onSuccess?.()
+        task.onSuccess?.(result)
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
-        console.log(`[TaskManager] Task ${task.id} aborted during execution.`)
+        console.log(`[RAG TASK] Task ${task.id} aborted during execution.`)
         task.onTerminate?.()
       } else {
-        console.error(`[TaskManager] Task ${task.id} failed with error:`, error)
+        console.error(`[RAG TASK] Task ${task.id} failed with error:`, error)
         task.onError?.(error as Error)
       }
     } finally {
       this.runningTasks.delete(task.id)
       this.controllers.delete(task.id)
-      console.log(`[TaskManager] Task ${task.id} finished. Running: ${this.runningTasks.size}`)
+      console.log(`[RAG TASK] Task ${task.id} finished. Running: ${this.runningTasks.size}`)
       this.processQueue()
     }
   }

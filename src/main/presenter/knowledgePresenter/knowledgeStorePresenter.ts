@@ -8,14 +8,14 @@ import {
   IKnowledgeTaskPresenter,
   KnowledgeFileResult,
   KnowledgeChunkStatus,
-  KnowledgeChunkTask,
-  KnowledgeChunkMessage
+  KnowledgeChunkMessage,
+  InsertOptions
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
 import { RecursiveCharacterTextSplitter } from '@/lib/textsplitters'
 import { sanitizeText } from '@/utils/strings'
-import { normalizeDistance } from '@/utils/vector'
+import { getMetric, normalizeDistance } from '@/utils/vector'
 import { eventBus, SendTarget } from '@/eventbus'
 import { RAG_EVENTS } from '@/events'
 
@@ -48,6 +48,14 @@ export class KnowledgeStorePresenter {
   async addFile(filePath: string, fileId?: string): Promise<KnowledgeFileResult> {
     if (fs.existsSync(filePath) === false) {
       throw new Error('文件不存在，请检查路径是否正确')
+    }
+    // 如果文件id为空，但filePath在数据库中已存在，说明是重复添加，跳过
+    const file = await this.vectorP.queryFiles({
+      path: filePath
+    })
+    if (!fileId && file[0]) {
+      // 直接返回文件信息，前端需要过滤
+      return { data: file[0] }
     }
 
     const mimeType = await presenter.filePresenter.getMimeType(filePath)
@@ -89,7 +97,7 @@ export class KnowledgeStorePresenter {
           fileId: fileMessage.id,
           chunkIndex: index,
           content,
-          status: 'pending'
+          status: 'processing'
         }) as KnowledgeChunkMessage
     )
 
@@ -99,7 +107,7 @@ export class KnowledgeStorePresenter {
     // 2. 调度分块任务到TaskManager
     for (const [index, chunk] of chunks.entries()) {
       const chunkMessage = chunkMessages[index]
-      const task: KnowledgeChunkTask = {
+      const task = {
         id: chunkMessage.id,
         payload: {
           knowledgeBaseId: this.config.id,
@@ -108,9 +116,10 @@ export class KnowledgeStorePresenter {
           content: chunk
         },
         run: async ({ signal }) => this.processChunk(chunkMessage.id, signal),
-        onSuccess: () => this.handleChunkCompletion(chunkMessage.id, 'completed'),
-        onError: (error) => this.handleChunkCompletion(chunkMessage.id, 'error', error),
-        onTerminate: () => this.handleChunkCompletion(chunkMessage.id, 'paused')
+        onSuccess: (vector: InsertOptions) =>
+          this.handleChunkSuccess(chunkMessage.id, fileMessage.id, vector),
+        onError: (error: Error) => this.handleChunkError(chunkMessage.id, fileMessage.id, error),
+        onTerminate: () => this.handleChunkTerminate(chunkMessage.id, fileMessage.id)
       }
       this.taskP.addTask(task)
     }
@@ -121,19 +130,17 @@ export class KnowledgeStorePresenter {
     return { data: fileMessage }
   }
 
-  private async processChunk(chunkId: string, signal: AbortSignal): Promise<void> {
-    const chunk = await this.vectorP.queryChunk(chunkId)
-    if (!chunk) {
-      console.warn(`[KSP] Chunk ${chunkId} not found, skipping processing.`)
-      return
-    }
-
+  private async processChunk(chunkId: string, signal: AbortSignal): Promise<InsertOptions> {
     if (signal.aborted) {
       throw new DOMException('Aborted', 'AbortError')
     }
+    const chunk = await this.vectorP.queryChunk(chunkId)
+    if (!chunk) {
+      // chunk不存在，说明任务已被清除
+      throw new DOMException('Aborted', 'AbortError')
+    }
 
-    console.log(`[KSP] Processing chunk ${chunk.chunkIndex} for file ${chunk.fileId}`)
-
+    console.log(`[RAG] Processing chunk ${chunk.chunkIndex} for file ${chunk.fileId}`)
     // 生成嵌入向量
     const vectors = await presenter.llmproviderPresenter.getEmbeddings(
       this.config.embedding.providerId,
@@ -141,63 +148,66 @@ export class KnowledgeStorePresenter {
       [chunk.content]
     )
 
-    if (signal.aborted) {
-      throw new DOMException('Aborted', 'AbortError')
-    }
-
     if (!vectors || vectors.length === 0) {
       throw new Error('Failed to generate embeddings')
     }
 
-    // 插入向量到向量表
-    await this.vectorP.insertVector({
+    return {
       vector: vectors[0],
       metadata: {
-        chunkId: chunk.id,
-        chunkIndex: chunk.chunkIndex,
         content: chunk.content
       },
       fileId: chunk.fileId
-    })
+    }
   }
 
-  private async handleChunkCompletion(
+  private async handleChunkSuccess(
     chunkId: string,
-    status: KnowledgeChunkStatus,
-    error?: Error
+    fileId: string,
+    vector: InsertOptions
   ): Promise<void> {
-    console.log(`[KSP] Handling chunk completion for ${chunkId} with status: ${status}`)
-    await this.vectorP.updateChunkStatus(chunkId, status, error?.message)
+    // 更新chunk状态
+    await this.vectorP.updateChunkStatus(chunkId, 'completed')
+    // 插入向量
+    await this.vectorP.insertVector(vector)
+    // 检查文件状态
+    await this.checkFile(fileId)
+  }
 
-    const chunk = await this.vectorP.queryChunk(chunkId)
-    if (!chunk) return
+  private async handleChunkError(chunkId: string, fileId: string, error: Error): Promise<void> {
+    // 更新chunk状态
+    await this.vectorP.updateChunkStatus(chunkId, 'error', error.message)
+    // 检查文件状态
+    await this.checkFile(fileId)
+  }
 
+  private async handleChunkTerminate(chunkId: string, fileId: string): Promise<void> {
+    // 触发terminal，则不会触发success和error
+    console.log(`[RAG] Chunk ${chunkId} was terminated.`)
+  }
+
+  private async checkFile(fileId: string): Promise<void> {
     // 检查文件是否所有分块都已完成
-    const fileId = chunk.fileId
     const fileChunks = await this.vectorP.queryChunksByFile(fileId)
-    const completedCount = fileChunks.filter((c) => c.status !== 'processing').length
+    const finishedCount = fileChunks.filter((c) => c.status !== 'processing').length
 
+    // 更新文件状态
     const fileMessage = await this.vectorP.queryFile(fileId)
     if (!fileMessage) return
+    fileMessage.metadata.completedChunks = finishedCount
 
-    fileMessage.metadata.completedChunks = completedCount
-
-    if (completedCount === fileMessage.metadata.totalChunks) {
+    if (finishedCount === fileMessage.metadata.totalChunks) {
       const errorChunks = fileChunks.filter((c) => c.status === 'error').length
       if (errorChunks > 0) {
         fileMessage.status = 'error'
         fileMessage.metadata.errorReason = `${errorChunks} chunks failed to process`
       } else {
-        const pausedChunks = fileChunks.filter((c) => c.status === 'paused').length
-        if (pausedChunks > 0) {
-          fileMessage.status = 'paused'
-        } else {
-          fileMessage.status = 'completed'
-        }
+        fileMessage.status = 'completed'
+        // 清理分块数据
+        await this.vectorP.deleteChunksByFile(fileId)
       }
-      console.log(`[KSP] File ${fileId} processing finished with status: ${fileMessage.status}`)
+      console.log(`[RAG] File ${fileId} processing finished with status: ${fileMessage.status}`)
     }
-
     await this.vectorP.updateFile(fileMessage)
     eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
   }
@@ -227,10 +237,10 @@ export class KnowledgeStorePresenter {
 
       const queryResults = await this.vectorP.similarityQuery(embedding[0], {
         topK: this.config.fragmentsNumber,
-        metric: this.config.normalized ? 'cosine' : 'ip'
+        metric: getMetric(this.config.normalized)
       })
       queryResults.forEach((res) => {
-        res.distance = normalizeDistance(res.distance, this.config.normalized ? 'cosine' : 'ip')
+        res.distance = normalizeDistance(res.distance, getMetric(this.config.normalized))
       })
       return queryResults
     } catch (err) {
@@ -273,6 +283,7 @@ export class KnowledgeStorePresenter {
 
   async destroy(): Promise<void> {
     try {
+      // 停止所有任务
       this.taskP.removeTasks((task) => task.payload.knowledgeBaseId === this.config.id)
       this.vectorP.destroy()
     } catch (err) {
@@ -282,6 +293,8 @@ export class KnowledgeStorePresenter {
 
   async close(): Promise<void> {
     try {
+      // 停止所有任务
+      this.taskP.removeTasks((task) => task.payload.knowledgeBaseId === this.config.id)
       this.vectorP.close()
     } catch (err) {
       console.error(`[RAG] Error closing knowledge base ${this.config.id}:`, err)
