@@ -43,18 +43,14 @@ export class ToolManager {
   public async getRunningClients(): Promise<McpClient[]> {
     return this.serverManager.getRunningClients()
   }
-
   // 获取所有工具定义
-  public async getAllToolDefinitions(
-    enabledTools?: string[]
-  ): Promise<MCPToolDefinition[]> {
+  public async getAllToolDefinitions(enabledTools?: string[]): Promise<MCPToolDefinition[]> {
     if (this.cachedToolDefinitions !== null && this.cachedToolDefinitions.length > 0) {
-      if (enabledTools && enabledTools.length > 0) {
+      if (enabledTools) {
         const enabledSet = new Set(enabledTools)
         return this.cachedToolDefinitions.filter((toolDef) => {
           const finalName = toolDef.function.name
-          const originalName =
-            this.toolNameToTargetMap?.get(finalName)?.originalName || finalName
+          const originalName = this.toolNameToTargetMap?.get(finalName)?.originalName || finalName
           return enabledSet.has(finalName) || enabledSet.has(originalName)
         })
       }
@@ -216,8 +212,7 @@ export class ToolManager {
       const enabledSet = new Set(enabledTools)
       return this.cachedToolDefinitions.filter((toolDef) => {
         const finalName = toolDef.function.name
-        const originalName =
-          this.toolNameToTargetMap?.get(finalName)?.originalName || finalName
+        const originalName = this.toolNameToTargetMap?.get(finalName)?.originalName || finalName
         return enabledSet.has(finalName) || enabledSet.has(originalName)
       })
     }

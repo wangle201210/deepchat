@@ -502,7 +502,8 @@ export interface ILlmProviderPresenter {
     modelId: string,
     eventId: string,
     temperature?: number,
-    maxTokens?: number
+    maxTokens?: number,
+    enabledMcpTools?: string[]
   ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
