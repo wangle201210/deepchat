@@ -1230,7 +1230,7 @@ export type KnowledgeFileMessage = {
   metadata: KnowledgeFileMetadata
 }
 
-export type KnowledgeChunkStatus = 'completed' | 'processing' | 'error'
+export type KnowledgeChunkStatus = 'pending' | 'processing' | 'completed' | 'error' | 'paused'
 
 export type KnowledgeChunkMessage = {
   id: string
@@ -1238,58 +1238,55 @@ export type KnowledgeChunkMessage = {
   chunkIndex: number
   content: string
   status: KnowledgeChunkStatus
+  error?: string // 错误信息
 }
 
 // 任务调度和处理接口
-export interface ChunkTask {
-  id: string
-  knowledgeBaseId: string
-  fileId: string
-  chunkIndex: number
-  content: string
-  metadata: Record<string, any>
-  status: 'completed' | 'processing' | 'error'
-  createdAt: number
-  startedAt?: number
-  completedAt?: number
-  error?: string
+export interface Task {
+  id: string // chunkId
+  payload: {
+    knowledgeBaseId: string
+    fileId: string
+    [key: string]: any // 其他业务数据
+  }
+  run: (context: { signal: AbortSignal }) => Promise<void> // 任务执行体，支持终止信号
+  onSuccess?: () => void
+  onError?: (error: Error) => void
+  onTerminate?: () => void // 任务被强制终止时的回调
 }
 
-export interface ChunkProcessingTask {
-  id: string
-  knowledgeBaseId: string
-  fileId: string
-  chunkContent: string
-  chunkIndex: number
-  processorCallback: ChunkProcessor
-}
-
-export interface QueueStatus {
-  queueLength: number
-  runningTasks: number
-  fileContexts: number
-  isPaused: boolean
-}
-
-export interface GlobalTaskStatus {
+export interface TaskQueueStatus {
   totalTasks: number
   runningTasks: number
   queuedTasks: number
-  knowledgeBaseStatuses: Map<string, QueueStatus>
 }
 
 /**
- * 任务调度器接口 - TaskManager 实现
+ * 任务调度器接口 - TaskPresenter 实现
  */
 export interface IKnowledgeTaskPresenter {
-  scheduleChunkTask(task: ChunkProcessingTask): Promise<void>
-  getQueueStatus(knowledgeBaseId: string): QueueStatus
-  getGlobalStatus(): GlobalTaskStatus
-  pauseKnowledgeBase(knowledgeBaseId: string): void
-  resumeKnowledgeBase(knowledgeBaseId: string): void
-  pauseAllTasks(): void
-  resumeAllTasks(): void
-  clearFileTasks(fileId: string): void
+  /**
+   * 添加任务到队列
+   * @param task 任务对象
+   */
+  addTask(task: Task): void
+
+  /**
+   * 根据条件移除/终止任务
+   * @param filter 过滤器函数，作用于整个 Task 对象
+   */
+  removeTasks(filter: (task: Task) => boolean): void
+
+  /**
+   * 获取当前任务队列状态
+   * @returns 队列状态信息
+   */
+  getStatus(): TaskQueueStatus
+
+  /**
+   * 销毁实例，清理所有任务和资源
+   */
+  destroy(): void
 }
 
 /**
@@ -1518,8 +1515,9 @@ export interface IVectorDatabasePresenter {
    * 更新 chunk 状态，完成的chunk会被自动删除
    * @param chunkId chunk id
    * @param status 新状态，非error状态会删除记录
+   * @param error 错误信息
    */
-  updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus): Promise<void>
+  updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus, error?: string): Promise<void>
   /**
    * 查询单个 chunk
    * @param chunkId chunk id
