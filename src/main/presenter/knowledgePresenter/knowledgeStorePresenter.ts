@@ -8,7 +8,8 @@ import {
   IKnowledgeTaskPresenter,
   KnowledgeFileResult,
   KnowledgeChunkStatus,
-  Task
+  KnowledgeChunkTask,
+  KnowledgeChunkMessage
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
@@ -56,6 +57,13 @@ export class KnowledgeStorePresenter {
       'origin'
     )
 
+    // 1. 分片
+    const chunker = new RecursiveCharacterTextSplitter({
+      chunkSize: this.config.chunkSize,
+      chunkOverlap: this.config.chunkOverlap
+    })
+    const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
+
     const fileMessage = {
       id: fileId ?? nanoid(),
       name: fileInfo.name,
@@ -65,7 +73,7 @@ export class KnowledgeStorePresenter {
       uploadedAt: new Date().getTime(),
       metadata: {
         size: fileInfo.metadata.fileSize,
-        totalChunks: 0,
+        totalChunks: chunks.length,
         completedChunks: 0
       }
     } as KnowledgeFileMessage
@@ -73,25 +81,17 @@ export class KnowledgeStorePresenter {
     // 先插入文件记录
     fileId ? await this.vectorP.updateFile(fileMessage) : await this.vectorP.insertFile(fileMessage)
 
-    // 1. 分片
-    const chunker = new RecursiveCharacterTextSplitter({
-      chunkSize: this.config.chunkSize,
-      chunkOverlap: this.config.chunkOverlap
-    })
-    const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
-
-    // 更新文件metadata
-    fileMessage.metadata.totalChunks = chunks.length
-    await this.vectorP.updateFile(fileMessage)
-
     // 创建chunk记录
-    const chunkMessages = chunks.map((content, index) => ({
-      id: nanoid(),
-      fileId: fileMessage.id,
-      chunkIndex: index,
-      content,
-      status: 'pending' as KnowledgeChunkStatus
-    }))
+    const chunkMessages = chunks.map(
+      (content, index) =>
+        ({
+          id: nanoid(),
+          fileId: fileMessage.id,
+          chunkIndex: index,
+          content,
+          status: 'pending'
+        }) as KnowledgeChunkMessage
+    )
 
     // 批量插入chunks到数据库
     await this.vectorP.insertChunks(chunkMessages)
@@ -99,7 +99,7 @@ export class KnowledgeStorePresenter {
     // 2. 调度分块任务到TaskManager
     for (const [index, chunk] of chunks.entries()) {
       const chunkMessage = chunkMessages[index]
-      const task: Task = {
+      const task: KnowledgeChunkTask = {
         id: chunkMessage.id,
         payload: {
           knowledgeBaseId: this.config.id,

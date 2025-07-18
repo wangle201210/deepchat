@@ -1242,7 +1242,7 @@ export type KnowledgeChunkMessage = {
 }
 
 // 任务调度和处理接口
-export interface Task {
+export interface KnowledgeChunkTask {
   id: string // chunkId
   payload: {
     knowledgeBaseId: string
@@ -1269,13 +1269,13 @@ export interface IKnowledgeTaskPresenter {
    * 添加任务到队列
    * @param task 任务对象
    */
-  addTask(task: Task): void
+  addTask(task: KnowledgeChunkTask): void
 
   /**
    * 根据条件移除/终止任务
    * @param filter 过滤器函数，作用于整个 Task 对象
    */
-  removeTasks(filter: (task: Task) => boolean): void
+  removeTasks(filter: (task: KnowledgeChunkTask) => boolean): void
 
   /**
    * 获取当前任务队列状态
@@ -1359,15 +1359,9 @@ export interface IKnowledgePresenter {
 
   /**
    * 获取任务队列状态
-   * @param id 知识库 ID
    * @returns 队列状态信息
    */
-  getTaskQueueStatus(id: string): Promise<{
-    queueLength: number
-    runningTasks: number
-    fileContexts: number
-    isPaused: boolean
-  }>
+  getTaskQueueStatus(): Promise<TaskQueueStatus>
 
   /**
    * 销毁实例，释放资源

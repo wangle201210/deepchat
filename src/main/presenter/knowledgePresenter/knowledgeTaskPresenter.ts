@@ -1,26 +1,26 @@
-import { IKnowledgeTaskPresenter, Task, TaskQueueStatus } from '@shared/presenter'
+import { IKnowledgeTaskPresenter, KnowledgeChunkTask, TaskQueueStatus } from '@shared/presenter'
 
 /**
  * TaskManager - 专注于全局任务调度和并发控制
  */
 export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
   private readonly maxConcurrency: number
-  private queue: Task[] = []
-  private runningTasks: Map<string, Task> = new Map()
+  private queue: KnowledgeChunkTask[] = []
+  private runningTasks: Map<string, KnowledgeChunkTask> = new Map()
   private controllers: Map<string, AbortController> = new Map()
 
   constructor(maxConcurrency = 3) {
     this.maxConcurrency = maxConcurrency
   }
 
-  addTask(task: Task): void {
+  addTask(task: KnowledgeChunkTask): void {
     console.log(`[TaskManager] Adding task: ${task.id}`)
     this.queue.push(task)
     this.controllers.set(task.id, new AbortController())
     this.processQueue()
   }
 
-  removeTasks(filter: (task: Task) => boolean): void {
+  removeTasks(filter: (task: KnowledgeChunkTask) => boolean): void {
     // 移除队列中的任务
     this.queue = this.queue.filter((task) => {
       if (filter(task)) {
@@ -72,7 +72,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     }
   }
 
-  private async executeTask(task: Task): Promise<void> {
+  private async executeTask(task: KnowledgeChunkTask): Promise<void> {
     const controller = this.controllers.get(task.id)
     if (!controller) {
       // 可能已经被移除了

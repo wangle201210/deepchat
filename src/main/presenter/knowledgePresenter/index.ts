@@ -122,9 +122,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 删除知识库（移除本地存储）
    */
   delete = async (id: string): Promise<void> => {
-    // 从TaskScheduler中清理知识库任务
-    this.taskP.clearKnowledgeBaseTasks(id)
-
     if (this.storePresenterCache.has(id)) {
       const rag = this.storePresenterCache.get(id) as KnowledgeStorePresenter
       await rag.destroy()
@@ -209,24 +206,15 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     return db
   }
 
-  private async handleFileTask(
-    id: string,
-    fileHandler: (rag: KnowledgeStorePresenter) => Promise<KnowledgeFileResult>,
-    errorMsg: string
-  ): Promise<KnowledgeFileResult> {
+  async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
     try {
       const rag = await this.getStorePresenter(id)
-      const result = await fileHandler(rag)
-      return result
+      return await rag.addFile(filePath)
     } catch (err) {
       return {
-        error: `${errorMsg}: ${err instanceof Error ? err.message : String(err)}`
+        error: `添加文件失败: ${err instanceof Error ? err.message : String(err)}`
       }
     }
-  }
-
-  async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
-    return this.handleFileTask(id, (rag) => rag.addFile(filePath), '添加文件失败')
   }
 
   async deleteFile(id: string, fileId: string): Promise<void> {
@@ -235,7 +223,14 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult> {
-    return this.handleFileTask(id, (rag) => rag.reAddFile(fileId), '重新添加文件失败')
+    try {
+      const rag = await this.getStorePresenter(id)
+      return await rag.reAddFile(fileId)
+    } catch (err) {
+      return {
+        error: `重新添加文件失败: ${err instanceof Error ? err.message : String(err)}`
+      }
+    }
   }
 
   async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {
@@ -267,11 +262,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   /**
    * 获取知识库任务队列状态
    */
-  async getTaskQueueStatus(id: string) {
-    return this.taskP.getQueueStatus(id)
+  async getTaskQueueStatus() {
+    return this.taskP.getStatus()
   }
 
-  private async checkUnfinishedTasks(): Promise<void> {
+  private async recoverUnfinishedTasks(): Promise<void> {
     console.log('[RAG] Checking unfinished tasks...')
     const configs = this.configP.getKnowledgeConfigs()
 
@@ -290,131 +285,25 @@ export class KnowledgePresenter implements IKnowledgePresenter {
         )
 
         // 检查是否有processing或paused状态的文件
-        const unfinishedFiles = await db.queryFiles({
+        const processingFiles = await db.queryFiles({
           status: 'processing'
         })
         const pausedFiles = await db.queryFiles({
           status: 'paused'
         })
 
-        const allUnfinishedFiles = [...unfinishedFiles, ...pausedFiles]
+        const allUnfinishedFiles = [...processingFiles, ...pausedFiles]
         if (allUnfinishedFiles.length > 0) {
           unfinishedKnowledgeBases.push({ config, files: allUnfinishedFiles })
         }
+        await db.close()
       } catch (err) {
         console.error(`[RAG] Error checking unfinished tasks for knowledge base ${config.id}:`, err)
       }
     }
 
     if (unfinishedKnowledgeBases.length > 0) {
-      // 有未完成的任务，显示用户选择弹窗
-      await this.showRecoveryDialog(unfinishedKnowledgeBases)
-    }
-  }
-
-  /**
-   * 显示恢复任务的对话框
-   */
-  private async showRecoveryDialog(
-    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
-  ): Promise<void> {
-    const { dialog } = require('electron')
-    const totalFiles = unfinishedKnowledgeBases.reduce((sum, kb) => sum + kb.files.length, 0)
-
-    const result = await dialog.showMessageBox({
-      type: 'question',
-      title: '知识库任务恢复',
-      message: `检测到 ${unfinishedKnowledgeBases.length} 个知识库中有 ${totalFiles} 个文件的处理任务被中断。`,
-      detail: '您希望如何处理这些未完成的任务？',
-      buttons: ['立即继续', '稍后处理', '取消任务'],
-      defaultId: 0,
-      cancelId: 2
-    })
-
-    switch (result.response) {
-      case 0: // 立即继续
-        await this.continueAllTasks(unfinishedKnowledgeBases)
-        break
-      case 1: // 稍后处理
-        await this.pauseAllTasks(unfinishedKnowledgeBases)
-        break
-      case 2: // 取消任务
-        await this.cancelAllTasks(unfinishedKnowledgeBases)
-        break
-    }
-  }
-
-  /**
-   * 继续所有未完成的任务
-   */
-  private async continueAllTasks(
-    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
-  ): Promise<void> {
-    for (const { config } of unfinishedKnowledgeBases) {
-      try {
-        await this.getStorePresenter(config.id)
-        console.log(`[RAG] Knowledge base ${config.id} ready for task recovery`)
-      } catch (err) {
-        console.error(`[RAG] Error preparing knowledge base ${config.id}:`, err)
-      }
-    }
-  }
-
-  /**
-   * 暂停所有未完成的任务
-   */
-  private async pauseAllTasks(
-    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
-  ): Promise<void> {
-    for (const { config, files } of unfinishedKnowledgeBases) {
-      try {
-        const db = await this.getVectorDatabasePresenter(
-          config.id,
-          config.dimensions,
-          config.normalized
-        )
-
-        for (const file of files) {
-          if (file.status === 'processing') {
-            file.status = 'paused'
-            await db.updateFile(file)
-          }
-        }
-
-        await db.close()
-      } catch (err) {
-        console.error(`[RAG] Error pausing tasks for knowledge base ${config.id}:`, err)
-      }
-    }
-  }
-
-  /**
-   * 取消所有未完成的任务
-   */
-  private async cancelAllTasks(
-    unfinishedKnowledgeBases: { config: BuiltinKnowledgeConfig; files: KnowledgeFileMessage[] }[]
-  ): Promise<void> {
-    for (const { config, files } of unfinishedKnowledgeBases) {
-      try {
-        const db = await this.getVectorDatabasePresenter(
-          config.id,
-          config.dimensions,
-          config.normalized
-        )
-
-        for (const file of files) {
-          file.status = 'error'
-          file.metadata.errorReason = '用户取消任务'
-          await db.updateFile(file)
-
-          // 清理相关的chunk数据
-          await db.deleteChunksByFile(file.id)
-        }
-
-        await db.close()
-      } catch (err) {
-        console.error(`[RAG] Error canceling tasks for knowledge base ${config.id}:`, err)
-      }
+      // TODO 有未完成的任务
     }
   }
 }
