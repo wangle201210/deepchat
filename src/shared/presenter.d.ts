@@ -1230,7 +1230,7 @@ export type KnowledgeFileMessage = {
   metadata: KnowledgeFileMetadata
 }
 
-export type KnowledgeChunkStatus = 'pending' | 'processing' | 'error'
+export type KnowledgeChunkStatus = 'completed' | 'processing' | 'error'
 
 export type KnowledgeChunkMessage = {
   id: string
@@ -1248,7 +1248,7 @@ export interface ChunkTask {
   chunkIndex: number
   content: string
   metadata: Record<string, any>
-  status: 'pending' | 'processing' | 'error'
+  status: 'completed' | 'processing' | 'error'
   createdAt: number
   startedAt?: number
   completedAt?: number
@@ -1458,9 +1458,14 @@ export interface IVectorDatabasePresenter {
    */
   insertVector(opts: InsertOptions): Promise<void>
   /**
+   * 批量插入多条向量记录。
+   * @param records 插入参数数组，每项id未提供时自动生成
+   */
+  insertVectors(records: Array<InsertOptions>): Promise<void>
+  /**
    * 查询向量最近邻（TopK 检索）。
-   * @param vector: 查询向量
-   * @param options 查询参数：
+   * @param vector 查询向量
+   * @param options 查询参数
    *   - topK: 返回最近邻数量
    *   - efSearch: 检索时 HNSW 的 ef 参数（可选）
    *   - threshold: 最小距离阈值（可选）
@@ -1515,7 +1520,11 @@ export interface IVectorDatabasePresenter {
    * @param status 新状态，非error状态会删除记录
    */
   updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus): Promise<void>
-
+  /**
+   * 查询单个 chunk
+   * @param chunkId chunk id
+   */
+  queryChunk(chunkId: string): Promise<KnowledgeChunkMessage | null>
   /**
    * 删除单个 chunk
    * @param chunkId chunk id

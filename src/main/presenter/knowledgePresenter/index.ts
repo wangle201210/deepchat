@@ -42,7 +42,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.storePresenterCache = new Map()
 
     this.initStorageDir()
-    this.recoverUnfinishedTasks()
     this.setupEventBus()
   }
 
@@ -272,8 +271,8 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     return this.taskP.getQueueStatus(id)
   }
 
-  private async recoverUnfinishedTasks(): Promise<void> {
-    console.log('[RAG] Recovering unfinished tasks...')
+  private async checkUnfinishedTasks(): Promise<void> {
+    console.log('[RAG] Checking unfinished tasks...')
     const configs = this.configP.getKnowledgeConfigs()
 
     // 收集所有有未完成任务的知识库
@@ -284,7 +283,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
     for (const config of configs) {
       try {
-        const db = await this.getVectorDatabasePresenter(config.id, config.dimensions, config.normalized)
+        const db = await this.getVectorDatabasePresenter(
+          config.id,
+          config.dimensions,
+          config.normalized
+        )
 
         // 检查是否有processing或paused状态的文件
         const unfinishedFiles = await db.queryFiles({
@@ -298,7 +301,6 @@ export class KnowledgePresenter implements IKnowledgePresenter {
         if (allUnfinishedFiles.length > 0) {
           unfinishedKnowledgeBases.push({ config, files: allUnfinishedFiles })
         }
-        db.close()
       } catch (err) {
         console.error(`[RAG] Error checking unfinished tasks for knowledge base ${config.id}:`, err)
       }
@@ -366,9 +368,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   ): Promise<void> {
     for (const { config, files } of unfinishedKnowledgeBases) {
       try {
-        const dbPath = path.join(this.storageDir, `${config.id}.duckdb`)
-        const db = new DuckDBPresenter(dbPath)
-        await db.open()
+        const db = await this.getVectorDatabasePresenter(
+          config.id,
+          config.dimensions,
+          config.normalized
+        )
 
         for (const file of files) {
           if (file.status === 'processing') {
@@ -392,9 +396,11 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   ): Promise<void> {
     for (const { config, files } of unfinishedKnowledgeBases) {
       try {
-        const dbPath = path.join(this.storageDir, `${config.id}.duckdb`)
-        const db = new DuckDBPresenter(dbPath)
-        await db.open()
+        const db = await this.getVectorDatabasePresenter(
+          config.id,
+          config.dimensions,
+          config.normalized
+        )
 
         for (const file of files) {
           file.status = 'error'

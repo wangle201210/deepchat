@@ -200,7 +200,7 @@ export class KnowledgeTaskPresenter extends EventEmitter implements IKnowledgeTa
       // 调用处理器处理分块
       await task.processorCallback.processChunk(chunkTask)
 
-      chunkTask.status = 'pending' // 标记为完成
+      chunkTask.status = 'completed' // 标记为完成
       chunkTask.completedAt = Date.now()
 
       // 检查文件是否完成

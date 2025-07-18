@@ -9,7 +9,8 @@ import {
   ChunkTask,
   IKnowledgeTaskPresenter,
   ChunkProcessingTask,
-  KnowledgeFileResult
+  KnowledgeFileResult,
+  KnowledgeChunkStatus
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
@@ -24,7 +25,11 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
   private config: BuiltinKnowledgeConfig
   private taskP: IKnowledgeTaskPresenter
 
-  constructor(vectorP: IVectorDatabasePresenter, config: BuiltinKnowledgeConfig, taskScheduler: IKnowledgeTaskPresenter) {
+  constructor(
+    vectorP: IVectorDatabasePresenter,
+    config: BuiltinKnowledgeConfig,
+    taskScheduler: IKnowledgeTaskPresenter
+  ) {
     this.vectorP = vectorP
     this.config = config
     this.taskP = taskScheduler
@@ -41,10 +46,7 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
     this.config = config
   }
 
-  async addFile(
-    filePath: string,
-    fileId?: string
-  ): Promise<KnowledgeFileResult> {
+  async addFile(filePath: string, fileId?: string): Promise<KnowledgeFileResult> {
     if (fs.existsSync(filePath) === false) {
       throw new Error('文件不存在，请检查路径是否正确')
     }
@@ -89,7 +91,7 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
       fileId: fileMessage.id,
       chunkIndex: index,
       content,
-      status: 'pending' as const
+      status: 'processing' as KnowledgeChunkStatus
     }))
 
     // 批量插入chunks到数据库
@@ -105,7 +107,7 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
         chunkIndex: index,
         processorCallback: this
       }
-      
+
       await this.taskP.scheduleChunkTask(task)
     }
 
@@ -119,7 +121,9 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
    * 实现 ChunkProcessor 接口 - 处理单个分块
    */
   async processChunk(chunk: ChunkTask): Promise<void> {
-    console.log(`[KnowledgeStorePresenter] Processing chunk ${chunk.chunkIndex} for file ${chunk.fileId}`)
+    console.log(
+      `[KnowledgeStorePresenter] Processing chunk ${chunk.chunkIndex} for file ${chunk.fileId}`
+    )
 
     try {
       // 生成嵌入向量
@@ -132,6 +136,13 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
       if (!vectors || vectors.length === 0) {
         throw new Error('Failed to generate embeddings')
       }
+      // 查询chunk是否已存在
+      const existingChunk = await this.vectorP.queryChunk(chunk.id)
+      // 如果不存在，说明任务已经丢弃
+      if (!existingChunk) {
+        console.warn(`[KnowledgeStorePresenter] Chunk ${chunk.id} not found, skipping processing`)
+        return
+      }
 
       // 插入向量到向量表
       await this.vectorP.insertVector({
@@ -143,14 +154,14 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
         },
         fileId: chunk.fileId
       })
-      
-      // 删除chunk记录（按设计，完成后删除）
-      await this.vectorP.deleteChunk(chunk.id)
-      
+
+      // 删除chunk记录
+      await this.vectorP.updateChunkStatus(chunk.id, 'completed')
+
       console.log(`[KnowledgeStorePresenter] Chunk ${chunk.chunkIndex} processed successfully`)
     } catch (error) {
       console.error(`[KnowledgeStorePresenter] Failed to process chunk ${chunk.id}:`, error)
-      
+
       // 更新chunk状态为error
       await this.vectorP.updateChunkStatus(chunk.id, 'error')
       throw error
@@ -169,7 +180,7 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
       if (!fileMessage) return
 
       const allChunks = await this.vectorP.queryChunksByFile(fileId)
-      const completedChunks = allChunks.filter(chunk => chunk.status !== 'pending' && chunk.status !== 'processing')
+      const completedChunks = allChunks.filter(chunk => chunk.status !== 'processing')
       const errorChunks = allChunks.filter(chunk => chunk.status === 'error')
 
       // 更新文件状态
@@ -193,7 +204,6 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
 
       // 发送完成事件
       eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
-      
     } catch (error) {
       console.error(`[KnowledgeStorePresenter] Error handling file completion:`, error)
     }
@@ -204,11 +214,11 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
    */
   async handleChunkError(chunkId: string, error: Error): Promise<void> {
     console.error(`[KnowledgeStorePresenter] Chunk error ${chunkId}:`, error)
-    
+
     try {
       // 更新chunk状态为error
       await this.vectorP.updateChunkStatus(chunkId, 'error')
-      
+
       // 可以在这里添加更多的错误处理逻辑，比如重试机制
     } catch (updateError) {
       console.error(`[KnowledgeStorePresenter] Failed to update chunk error status:`, updateError)
@@ -222,7 +232,10 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
       await this.vectorP.deleteFile(fileId)
       await this.vectorP.deleteChunksByFile(fileId)
     } catch (err) {
-      console.error(`[RAG] Failed to delete file ${fileId} in knowledge base ${this.config.id}:`, err)
+      console.error(
+        `[RAG] Failed to delete file ${fileId} in knowledge base ${this.config.id}:`,
+        err
+      )
       throw err
     }
   }
@@ -252,9 +265,7 @@ export class KnowledgeStorePresenter implements ChunkProcessor {
     }
   }
 
-  async reAddFile(
-    fileId: string
-  ): Promise<KnowledgeFileResult> {
+  async reAddFile(fileId: string): Promise<KnowledgeFileResult> {
     const file = await this.queryFile(fileId)
     if (file == null) {
       throw new Error('文件不存在，请重新打开知识库后再试')
