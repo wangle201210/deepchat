@@ -193,7 +193,7 @@ const { t } = useI18n()
 // 文件列表
 const fileList = ref<KnowledgeFileMessage[]>([])
 // 允许的文件扩展名
-const acceptExts = ['txt', 'doc', 'docx', 'md', 'pdf', 'ppt', 'pptx']
+const acceptExts = ['txt', 'docx', 'md', 'pdf', 'ppt', 'pptx']
 const knowledgePresenter = usePresenter('knowledgePresenter')
 // 弹窗状态
 const isSearchDialogOpen = ref(false)

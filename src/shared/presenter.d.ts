@@ -1213,8 +1213,8 @@ export interface KeyStatus {
 // built-in 知识库相关
 export type KnowledgeFileMetadata = {
   size: number
-  totalChunks?: number
-  completedChunks?: number
+  totalChunks: number
+  completedChunks: number
   errorReason?: string
 }
 

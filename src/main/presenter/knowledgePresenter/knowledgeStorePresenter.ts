@@ -45,181 +45,196 @@ export class KnowledgeStorePresenter {
   }
 
   async addFile(filePath: string, fileId?: string): Promise<KnowledgeFileResult> {
-    if (fs.existsSync(filePath) === false) {
-      throw new Error('文件不存在，请检查路径是否正确')
-    }
-    // 如果文件id为空，但filePath在数据库中已存在，说明是重复添加，跳过
-    const file = await this.vectorP.queryFiles({
-      path: filePath
-    })
-    if (!fileId && file[0]) {
-      // 直接返回文件信息，前端需要过滤
-      return { data: file[0] }
-    }
-
-    const mimeType = await presenter.filePresenter.getMimeType(filePath)
-    const fileInfo = await presenter.filePresenter.prepareFileCompletely(
-      filePath,
-      mimeType,
-      'origin'
-    )
-
-    // 1. 分片
-    const chunker = new RecursiveCharacterTextSplitter({
-      chunkSize: this.config.chunkSize,
-      chunkOverlap: this.config.chunkOverlap
-    })
-    const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
-
-    const fileMessage = {
-      id: fileId ?? nanoid(),
-      name: fileInfo.name,
-      path: fileInfo.path,
-      mimeType,
-      status: 'processing',
-      uploadedAt: new Date().getTime(),
-      metadata: {
-        size: fileInfo.metadata.fileSize,
-        totalChunks: chunks.length,
-        completedChunks: 0
+    try {
+      if (fs.existsSync(filePath) === false) {
+        throw new Error('文件不存在，请检查路径是否正确')
       }
-    } as KnowledgeFileMessage
+      // 如果文件id为空，但filePath在数据库中已存在，说明是重复添加，跳过
+      const existingFile = await this.vectorP.queryFiles({
+        path: filePath
+      })
+      if (!fileId && existingFile[0]) {
+        // 直接返回文件信息，前端需要过滤
+        return { data: existingFile[0] }
+      }
 
-    // 先插入文件记录
-    fileId ? await this.vectorP.updateFile(fileMessage) : await this.vectorP.insertFile(fileMessage)
+      const mimeType = await presenter.filePresenter.getMimeType(filePath)
+      const fileInfo = await presenter.filePresenter.prepareFileCompletely(
+        filePath,
+        mimeType,
+        'origin'
+      )
 
-    // 创建chunk记录
-    const chunkMessages = chunks.map(
-      (content, index) =>
-        ({
-          id: nanoid(),
-          fileId: fileMessage.id,
-          chunkIndex: index,
-          content,
-          status: 'processing'
-        }) as KnowledgeChunkMessage
-    )
+      // file content为空
+      if (fileInfo.content === undefined || fileInfo.content.length === 0) {
+        throw new Error('无法读取文件或文件内容为空，请检查文件是否损坏或格式是否受支持')
+      }
 
-    // 批量插入chunks到数据库
-    await this.vectorP.insertChunks(chunkMessages)
+      // 分片
+      const chunker = new RecursiveCharacterTextSplitter({
+        chunkSize: this.config.chunkSize,
+        chunkOverlap: this.config.chunkOverlap
+      })
+      const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
 
-    // 2. 调度分块任务到TaskManager
-    for (const [index, chunk] of chunks.entries()) {
-      const chunkMessage = chunkMessages[index]
-      const task = {
-        id: chunkMessage.id,
+      const fileMessage = {
+        id: fileId ?? nanoid(),
+        name: fileInfo.name,
+        path: fileInfo.path,
+        mimeType,
+        status: 'processing',
+        uploadedAt: new Date().getTime(),
+        metadata: {
+          size: fileInfo.metadata.fileSize,
+          totalChunks: chunks.length,
+          completedChunks: 0
+        }
+      } as KnowledgeFileMessage
+
+      // 创建一个单一的任务来处理整个文件
+      const fileProcessingTask = {
+        id: fileMessage.id, // 使用文件ID作为任务ID
         payload: {
           knowledgeBaseId: this.config.id,
-          fileId: fileMessage.id,
-          chunkIndex: chunkMessage.chunkIndex,
-          content: chunk
+          fileId: fileMessage.id
         },
-        run: async ({ signal }) => this.processChunk(chunkMessage.id, signal),
-        onSuccess: (vector: InsertOptions) =>
-          this.handleChunkSuccess(chunkMessage.id, fileMessage.id, vector),
-        onError: (error: Error) => this.handleChunkError(chunkMessage.id, fileMessage.id, error),
-        onTerminate: () => this.handleChunkTerminate(chunkMessage.id)
+        run: async ({ signal }) => {
+          await this.processFileTask(fileMessage, chunks, signal, fileId !== undefined)
+          // 为了满足 KnowledgeChunkTask 的返回类型，返回一个虚拟值
+          // 这个返回值在新的逻辑中不会被使用
+          return {} as InsertOptions
+        },
+        // 成功、失败、终止的逻辑现在都在 processFileTask 内部处理
+        onSuccess: () => {
+          console.log(`[RAG] File processing task for ${fileMessage.id} completed successfully.`)
+        },
+        onError: (error: Error) => {
+          console.error(`[RAG] File processing task for ${fileMessage.id} failed:`, error.message)
+        },
+        onTerminate: () => {
+          console.log(`[RAG] File processing task for ${fileMessage.id} was terminated.`)
+        }
       }
-      this.taskP.addTask(task)
-    }
 
-    // 发送事件通知
-    eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
-
-    return { data: fileMessage }
-  }
-
-  private async processChunk(chunkId: string, signal: AbortSignal): Promise<InsertOptions> {
-    if (signal.aborted) {
-      throw new DOMException('Aborted', 'AbortError')
-    }
-    const chunk = await this.vectorP.queryChunk(chunkId)
-    if (!chunk) {
-      // chunk不存在，说明任务已被清除
-      throw new DOMException('Aborted', 'AbortError')
-    }
-
-    console.log(`[RAG] Processing chunk ${chunk.chunkIndex} for file ${chunk.fileId}`)
-    // 生成嵌入向量
-    const vectors = await presenter.llmproviderPresenter.getEmbeddings(
-      this.config.embedding.providerId,
-      this.config.embedding.modelId,
-      [chunk.content]
-    )
-
-    if (!vectors || vectors.length === 0) {
-      throw new Error('Failed to generate embeddings')
-    }
-
-    return {
-      vector: vectors[0],
-      metadata: {
-        content: chunk.content
-      },
-      fileId: chunk.fileId
+      this.taskP.addTask(fileProcessingTask)
+      return { data: fileMessage }
+    } catch (error) {
+      console.error(`[RAG] Error adding file ${filePath}:`, error)
+      // 向上抛出错误，以便调用者可以处理
+      throw error
     }
   }
 
-  private async handleChunkSuccess(
-    chunkId: string,
-    fileId: string,
-    vector: InsertOptions
+  private async processFileTask(
+    fileMessage: KnowledgeFileMessage,
+    chunks: string[],
+    signal: AbortSignal,
+    isReAdd: boolean
   ): Promise<void> {
     try {
-      // 更新chunk状态
-      await this.vectorP.updateChunkStatus(chunkId, 'completed')
-      // 插入向量
-      await this.vectorP.insertVector(vector)
-      // 检查文件状态
-      await this.checkFile(fileId)
+      // 1. 插入文件和分块元数据
+      isReAdd
+        ? await this.vectorP.updateFile(fileMessage)
+        : await this.vectorP.insertFile(fileMessage)
+
+      const chunkMessages = chunks.map(
+        (content, index) =>
+          ({
+            id: nanoid(),
+            fileId: fileMessage.id,
+            chunkIndex: index,
+            content,
+            status: 'processing'
+          }) as KnowledgeChunkMessage
+      )
+      await this.vectorP.insertChunks(chunkMessages)
+
+      // 2. 逐个处理分块
+      for (const chunkMsg of chunkMessages) {
+        if (signal.aborted) {
+          throw new DOMException('Aborted', 'AbortError')
+        }
+
+        try {
+          // a. 生成向量
+          const vectors = await presenter.llmproviderPresenter.getEmbeddings(
+            this.config.embedding.providerId,
+            this.config.embedding.modelId,
+            [chunkMsg.content]
+          )
+          if (!vectors || vectors.length === 0) {
+            throw new Error('Failed to generate embeddings')
+          }
+
+          // b. 插入向量
+          await this.vectorP.insertVector({
+            vector: vectors[0],
+            metadata: { content: chunkMsg.content },
+            fileId: chunkMsg.fileId
+          })
+
+          // c. 更新分块状态
+          await this.vectorP.updateChunkStatus(chunkMsg.id, 'completed')
+
+          // d. 更新文件进度并发送事件
+          if (fileMessage.metadata) {
+            fileMessage.metadata.completedChunks++
+          }
+        } catch (error) {
+          // 如果单个分块失败，记录错误并继续
+          console.error(
+            `[RAG] Error processing chunk ${chunkMsg.chunkIndex} for file ${fileMessage.id}:`,
+            error
+          )
+          await this.vectorP.updateChunkStatus(chunkMsg.id, 'error', (error as Error).message)
+        } finally {
+          // 每次分块处理后（无论成功失败）都发送更新
+          eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, {
+            ...fileMessage
+          })
+        }
+      }
+
+      // 3. 所有分块处理完毕，最终确定文件状态
+      await this.finalizeFileStatus(fileMessage.id)
     } catch (error) {
-      console.error(`[RAG] Error in handleChunkSuccess for chunk ${chunkId}:`, error)
-      // Even if success handling fails, we should treat the chunk as errored.
-      await this.handleChunkError(chunkId, fileId, error as Error)
+      console.error(`[RAG] Critical error in processFileTask for ${fileMessage.id}:`, error)
+      // 如果是中止错误，则认为是正常终止
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        fileMessage.status = 'error'
+        fileMessage.metadata.errorReason = 'Task was cancelled by user.'
+      } else {
+        // 对于其他严重错误（如数据库连接失败），将文件标记为错误
+        fileMessage.status = 'error'
+        fileMessage.metadata.errorReason = (error as Error).message
+      }
+      await this.vectorP.updateFile(fileMessage)
+      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+      // 向上抛出，以便任务队列知道任务失败
+      throw error
     }
   }
 
-  private async handleChunkError(chunkId: string, fileId: string, error: Error): Promise<void> {
-    try {
-      // 更新chunk状态
-      await this.vectorP.updateChunkStatus(chunkId, 'error', error.message)
-      // 检查文件状态
-      await this.checkFile(fileId)
-    } catch (e) {
-      console.error(`[RAG] CRITICAL: Failed to handle chunk error for chunk ${chunkId}:`, e)
-      // If error handling also fails, we still need to check the file status
-      // to prevent the file from being stuck in a processing state.
-      await this.checkFile(fileId)
-    }
-  }
-
-  private async handleChunkTerminate(chunkId: string): Promise<void> {
-    // 触发terminal，则不会触发success和error
-    console.log(`[RAG] Chunk ${chunkId} was terminated.`)
-  }
-
-  private async checkFile(fileId: string): Promise<void> {
-    // 检查文件是否所有分块都已完成
-    const fileChunks = await this.vectorP.queryChunksByFile(fileId)
-    const finishedCount = fileChunks.filter((c) => c.status !== 'processing').length
-
-    // 更新文件状态
+  private async finalizeFileStatus(fileId: string): Promise<void> {
     const fileMessage = await this.vectorP.queryFile(fileId)
     if (!fileMessage) return
-    fileMessage.metadata.completedChunks = finishedCount
 
-    if (finishedCount === fileMessage.metadata.totalChunks) {
-      const errorChunks = fileChunks.filter((c) => c.status === 'error').length
-      if (errorChunks > 0) {
-        fileMessage.status = 'error'
-        fileMessage.metadata.errorReason = `${errorChunks} chunks failed to process`
-      } else {
-        fileMessage.status = 'completed'
-        // 清理分块数据
-        await this.vectorP.deleteChunksByFile(fileId)
+    const fileChunks = await this.vectorP.queryChunksByFile(fileId)
+    const errorChunksCount = fileChunks.filter((c) => c.status === 'error').length
+
+    if (errorChunksCount > 0) {
+      fileMessage.status = 'error'
+      fileMessage.metadata.errorReason = `${errorChunksCount} chunks failed to process.`
+    } else {
+      fileMessage.status = 'completed'
+      if (fileMessage.metadata) {
+        fileMessage.metadata.errorReason = undefined
       }
-      console.log(`[RAG] File ${fileId} processing finished with status: ${fileMessage.status}`)
+      // 成功后清理分块元数据
+      await this.vectorP.deleteChunksByFile(fileId)
     }
+
+    console.log(`[RAG] File ${fileId} processing finished with status: ${fileMessage.status}`)
     await this.vectorP.updateFile(fileMessage)
     eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
   }
@@ -255,15 +270,11 @@ export class KnowledgeStorePresenter {
         res.distance = normalizeDistance(res.distance, getMetric(this.config.normalized))
       })
       return queryResults
-    } catch (err) {
-      console.error(
-        `[RAG] Similarity query failed in knowledge base ${this.config.id} for key "${key}":`,
-        err
-      )
-      throw err
+    } catch (error) {
+      console.error(`[RAG] Error during similarity query:`, error)
+      throw error
     }
   }
-
   async reAddFile(fileId: string): Promise<KnowledgeFileResult> {
     const file = await this.queryFile(fileId)
     if (file == null) {
