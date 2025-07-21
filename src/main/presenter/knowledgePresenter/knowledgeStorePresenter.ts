@@ -8,7 +8,7 @@ import {
   IKnowledgeTaskPresenter,
   KnowledgeFileResult,
   KnowledgeChunkMessage,
-  InsertOptions
+  VectorInsertOptions
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
@@ -22,6 +22,8 @@ export class KnowledgeStorePresenter {
   private readonly vectorP: IVectorDatabasePresenter
   private config: BuiltinKnowledgeConfig
   private taskP: IKnowledgeTaskPresenter
+  // 文件处理进度跟踪器
+  private fileProgressMap = new Map<string, { completed: number; error: number; total: number }>()
 
   constructor(
     vectorP: IVectorDatabasePresenter,
@@ -58,65 +60,30 @@ export class KnowledgeStorePresenter {
         return { data: existingFile[0] }
       }
 
-      const mimeType = await presenter.filePresenter.getMimeType(filePath)
-      const fileInfo = await presenter.filePresenter.prepareFileCompletely(
-        filePath,
-        mimeType,
-        'origin'
-      )
-
-      // file content为空
-      if (fileInfo.content === undefined || fileInfo.content.length === 0) {
-        throw new Error('无法读取文件或文件内容为空，请检查文件是否损坏或格式是否受支持')
-      }
-
-      // 分片
-      const chunker = new RecursiveCharacterTextSplitter({
-        chunkSize: this.config.chunkSize,
-        chunkOverlap: this.config.chunkOverlap
-      })
-      const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
-
+      // 1. 先将文件基本信息插入数据库
       const fileMessage = {
         id: fileId ?? nanoid(),
-        name: fileInfo.name,
-        path: fileInfo.path,
-        mimeType,
+        name: '',
+        path: filePath,
+        mimeType: '',
         status: 'processing',
         uploadedAt: new Date().getTime(),
         metadata: {
-          size: fileInfo.metadata.fileSize,
-          totalChunks: chunks.length,
-          completedChunks: 0
+          size: -1, // 初始大小未知
+          totalChunks: 0
         }
       } as KnowledgeFileMessage
 
-      // 创建一个单一的任务来处理整个文件
-      const fileProcessingTask = {
-        id: fileMessage.id, // 使用文件ID作为任务ID
-        payload: {
-          knowledgeBaseId: this.config.id,
-          fileId: fileMessage.id
-        },
-        run: async ({ signal }) => {
-          await this.processFileTask(fileMessage, chunks, signal, fileId !== undefined)
-          // 为了满足 KnowledgeChunkTask 的返回类型，返回一个虚拟值
-          // 这个返回值在新的逻辑中不会被使用
-          return {} as InsertOptions
-        },
-        // 成功、失败、终止的逻辑现在都在 processFileTask 内部处理
-        onSuccess: () => {
-          console.log(`[RAG] File processing task for ${fileMessage.id} completed successfully.`)
-        },
-        onError: (error: Error) => {
-          console.error(`[RAG] File processing task for ${fileMessage.id} failed:`, error.message)
-        },
-        onTerminate: () => {
-          console.log(`[RAG] File processing task for ${fileMessage.id} was terminated.`)
-        }
-      }
+      fileId
+        ? await this.vectorP.updateFile(fileMessage)
+        : await this.vectorP.insertFile(fileMessage)
 
-      this.taskP.addTask(fileProcessingTask)
+      // 2. 立即发送文件添加事件
+      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+
+      // 3. 异步处理文件读取和分片（不参与taskPresenter队列）
+      await this.processFileAsync(fileMessage)
+
       return { data: fileMessage }
     } catch (error) {
       console.error(`[RAG] Error adding file ${filePath}:`, error)
@@ -125,126 +92,233 @@ export class KnowledgeStorePresenter {
     }
   }
 
-  private async processFileTask(
-    fileMessage: KnowledgeFileMessage,
-    chunks: string[],
-    signal: AbortSignal,
-    isReAdd: boolean
-  ): Promise<void> {
+  // 异步处理文件读取和分片（不参与taskPresenter队列）
+  private async processFileAsync(fileMessage: KnowledgeFileMessage): Promise<void> {
     try {
-      // 1. 插入文件和分块元数据
-      isReAdd
-        ? await this.vectorP.updateFile(fileMessage)
-        : await this.vectorP.insertFile(fileMessage)
-
-      const chunkMessages = chunks.map(
-        (content, index) =>
-          ({
-            id: nanoid(),
-            fileId: fileMessage.id,
-            chunkIndex: index,
-            content,
-            status: 'processing'
-          }) as KnowledgeChunkMessage
+      // 1. 读取文件和获取基本信息
+      const mimeType = await presenter.filePresenter.getMimeType(fileMessage.path)
+      const fileInfo = await presenter.filePresenter.prepareFileCompletely(
+        fileMessage.path,
+        mimeType,
+        'origin'
       )
+
+      // 检查文件内容
+      if (fileInfo.content === undefined || fileInfo.content.length === 0) {
+        throw new Error('无法读取文件或文件内容为空，请检查文件是否损坏或格式是否受支持')
+      }
+
+      // 2. 更新文件基本信息
+      fileMessage.name = fileInfo.name
+      fileMessage.mimeType = mimeType
+      fileMessage.metadata = {
+        size: fileInfo.metadata.fileSize,
+        totalChunks: 0
+      }
+
+      // 3. 分片
+      const chunker = new RecursiveCharacterTextSplitter({
+        chunkSize: this.config.chunkSize,
+        chunkOverlap: this.config.chunkOverlap
+      })
+      const chunks = await chunker.splitText(sanitizeText(fileInfo.content))
+
+      // 4. 更新文件信息中的分片数量
+      fileMessage.metadata.totalChunks = chunks.length
+      await this.vectorP.updateFile(fileMessage)
+
+      // 5. 发送文件更新事件
+      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+
+      // 6. 创建chunk记录
+      const chunkMessages = chunks.map((content, index) => ({
+        id: nanoid(),
+        fileId: fileMessage.id,
+        chunkIndex: index,
+        content,
+        status: 'processing'
+      })) as KnowledgeChunkMessage[]
+
       await this.vectorP.insertChunks(chunkMessages)
 
-      // 2. 逐个处理分块
+      // 7. 初始化文件进度跟踪
+      this.fileProgressMap.set(fileMessage.id, { completed: 0, error: 0, total: chunks.length })
+
+      // 8. 为每个chunk创建独立的处理任务，加入taskPresenter队列
       for (const chunkMsg of chunkMessages) {
-        if (signal.aborted) {
-          throw new DOMException('Aborted', 'AbortError')
+        const chunkTask = {
+          id: `chunk_${chunkMsg.id}`,
+          payload: {
+            knowledgeBaseId: this.config.id,
+            fileId: fileMessage.id,
+            chunkId: chunkMsg.id,
+            taskType: 'chunk_processing',
+            metadata: {
+              content: chunkMsg.content,
+              chunkIndex: chunkMsg.chunkIndex,
+              totalChunks: chunks.length
+            }
+          },
+          run: async ({ signal: chunkSignal }) => {
+            await this.processChunkTask(chunkMsg, chunkSignal)
+            return {} as VectorInsertOptions
+          },
+          onSuccess: (_result: VectorInsertOptions) => {
+            this.handleChunkCompletion(chunkMsg.id, fileMessage.id)
+          },
+          onError: (error: Error) => {
+            this.handleChunkError(chunkMsg.id, fileMessage.id, error.message)
+          },
+          onTerminate: () => {
+            console.log(`[RAG] Chunk processing terminated for ${chunkMsg.id}`)
+          }
         }
 
-        try {
-          // a. 生成向量
-          const vectors = await presenter.llmproviderPresenter.getEmbeddings(
-            this.config.embedding.providerId,
-            this.config.embedding.modelId,
-            [chunkMsg.content]
-          )
-          if (!vectors || vectors.length === 0) {
-            throw new Error('Failed to generate embeddings')
-          }
-
-          // b. 插入向量
-          await this.vectorP.insertVector({
-            vector: vectors[0],
-            metadata: { content: chunkMsg.content },
-            fileId: chunkMsg.fileId
-          })
-
-          // c. 更新分块状态
-          await this.vectorP.updateChunkStatus(chunkMsg.id, 'completed')
-
-          // d. 更新文件进度并发送事件
-          if (fileMessage.metadata) {
-            fileMessage.metadata.completedChunks++
-          }
-        } catch (error) {
-          // 如果单个分块失败，记录错误并继续
-          console.error(
-            `[RAG] Error processing chunk ${chunkMsg.chunkIndex} for file ${fileMessage.id}:`,
-            error
-          )
-          await this.vectorP.updateChunkStatus(chunkMsg.id, 'error', (error as Error).message)
-        } finally {
-          // 每次分块处理后（无论成功失败）都发送更新
-          eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, {
-            ...fileMessage
-          })
-        }
+        this.taskP.addTask(chunkTask)
       }
-
-      // 3. 所有分块处理完毕，最终确定文件状态
-      await this.finalizeFileStatus(fileMessage.id)
     } catch (error) {
-      console.error(`[RAG] Critical error in processFileTask for ${fileMessage.id}:`, error)
-      // 如果是中止错误，则认为是正常终止
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        fileMessage.status = 'error'
-        fileMessage.metadata.errorReason = 'Task was cancelled by user.'
-      } else {
-        // 对于其他严重错误（如数据库连接失败），将文件标记为错误
-        fileMessage.status = 'error'
-        fileMessage.metadata.errorReason = (error as Error).message
+      console.error(`[RAG] Error in processFileAsync:`, error)
+      await this.handleFileProcessingError(fileMessage.id, (error as Error).message)
+    }
+  }
+
+  // 新增：处理单个chunk任务
+  private async processChunkTask(
+    chunkMsg: KnowledgeChunkMessage,
+    signal: AbortSignal
+  ): Promise<void> {
+    try {
+      // 生成向量
+      const vectors = await presenter.llmproviderPresenter.getEmbeddings(
+        this.config.embedding.providerId,
+        this.config.embedding.modelId,
+        [chunkMsg.content]
+      )
+
+      if (!vectors || vectors.length === 0) {
+        throw new Error('Failed to generate embeddings')
       }
-      await this.vectorP.updateFile(fileMessage)
-      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
-      // 向上抛出，以便任务队列知道任务失败
+
+      if (signal.aborted) {
+        throw new DOMException('Aborted', 'AbortError')
+      }
+
+      // 事务化更新chunk和向量
+      await this.vectorP.updateChunkStatus(chunkMsg.id, 'completed')
+      await this.vectorP.insertVector({
+        vector: vectors[0],
+        fileId: chunkMsg.fileId,
+        chunkId: chunkMsg.id
+      })
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        throw error
+      }
+      console.error(`[RAG] Error processing chunk ${chunkMsg.id}:`, error)
       throw error
     }
   }
 
-  private async finalizeFileStatus(fileId: string): Promise<void> {
-    const fileMessage = await this.vectorP.queryFile(fileId)
-    if (!fileMessage) return
-
-    const fileChunks = await this.vectorP.queryChunksByFile(fileId)
-    const errorChunksCount = fileChunks.filter((c) => c.status === 'error').length
-
-    if (errorChunksCount > 0) {
-      fileMessage.status = 'error'
-      fileMessage.metadata.errorReason = `${errorChunksCount} chunks failed to process.`
-    } else {
-      fileMessage.status = 'completed'
-      if (fileMessage.metadata) {
-        fileMessage.metadata.errorReason = undefined
-      }
-      // 成功后清理分块元数据
-      await this.vectorP.deleteChunksByFile(fileId)
+  // 处理chunk完成事件（线程安全的进度管理）
+  private async handleChunkCompletion(chunkId: string, fileId: string): Promise<void> {
+    const progress = this.fileProgressMap.get(fileId)
+    if (!progress) {
+      console.warn(`[RAG] No progress tracker found for file ${fileId}`)
+      return
     }
 
-    console.log(`[RAG] File ${fileId} processing finished with status: ${fileMessage.status}`)
-    await this.vectorP.updateFile(fileMessage)
-    eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+    await this.vectorP.updateChunkStatus(chunkId, 'completed')
+    progress.completed++
+
+    // 更新文件进度
+    eventBus.sendToRenderer(RAG_EVENTS.FILE_PROGRESS, SendTarget.ALL_WINDOWS, {
+      fileId,
+      completed: progress.completed,
+      error: progress.error,
+      total: progress.total
+    })
+
+    // 检查是否所有分片都完成了
+    if (progress.completed + progress.error === progress.total) {
+      await this.onFileFinish(fileId)
+      // 清理进度跟踪器
+      this.fileProgressMap.delete(fileId)
+    }
+  }
+
+  private async handleChunkError(
+    chunkId: string,
+    fileId: string,
+    errorMessage: string
+  ): Promise<void> {
+    const progress = this.fileProgressMap.get(fileId)
+    if (!progress) {
+      console.warn(`[RAG] No progress tracker found for file ${fileId}`)
+      return
+    }
+
+    await this.vectorP.updateChunkStatus(chunkId, 'error', errorMessage)
+    progress.error++
+
+    // 更新文件进度
+    eventBus.sendToRenderer(RAG_EVENTS.FILE_PROGRESS, SendTarget.ALL_WINDOWS, {
+      fileId,
+      completed: progress.completed,
+      error: progress.error,
+      total: progress.total
+    })
+
+    // 检查是否所有分片都完成了
+    if (progress.completed + progress.error === progress.total) {
+      await this.onFileFinish(fileId)
+      // 清理进度跟踪器
+      this.fileProgressMap.delete(fileId)
+    }
+  }
+
+  // 文件处理完成回调
+  private async onFileFinish(fileId: string): Promise<void> {
+    try {
+      // TODO 分片错误数量
+      const fileMessage = await this.vectorP.queryFile(fileId)
+      if (fileMessage) {
+        fileMessage.status = 'completed'
+        await this.vectorP.updateFile(fileMessage)
+        eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+        console.log(`[RAG] File processing completed for ${fileId}`)
+      }
+    } catch (error) {
+      console.error(`[RAG] Error in onFileFinish for ${fileId}:`, error)
+    }
+  }
+
+  // 处理文件处理错误
+  private async handleFileProcessingError(fileId: string, errorMessage: string): Promise<void> {
+    try {
+      const fileMessage = await this.vectorP.queryFile(fileId)
+      if (fileMessage) {
+        fileMessage.status = 'error'
+        if (fileMessage.metadata) {
+          fileMessage.metadata.errorReason = errorMessage
+        }
+        await this.vectorP.updateFile(fileMessage)
+        eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+      }
+    } catch (error) {
+      console.error(`[RAG] Error handling file processing error for ${fileId}:`, error)
+    }
   }
 
   async deleteFile(fileId: string): Promise<void> {
     try {
-      this.taskP.removeTasks((task) => task.payload.fileId === fileId)
-      await this.vectorP.deleteVectorsByFile(fileId)
+      // 1. 取消文件相关的所有待处理任务（使用便捷方法）
+      this.taskP.cancelTasksByFile(fileId)
+
+      // 2. 清理进度跟踪器
+      this.fileProgressMap.delete(fileId)
+
+      // 3. 删除文件
       await this.vectorP.deleteFile(fileId)
-      await this.vectorP.deleteChunksByFile(fileId)
     } catch (err) {
       console.error(
         `[RAG] Failed to delete file ${fileId} in knowledge base ${this.config.id}:`,
@@ -306,8 +380,10 @@ export class KnowledgeStorePresenter {
 
   async destroy(): Promise<void> {
     try {
-      // 停止所有任务
-      this.taskP.removeTasks((task) => task.payload.knowledgeBaseId === this.config.id)
+      // 停止所有任务（使用便捷方法）
+      this.taskP.cancelTasksByKnowledgeBase(this.config.id)
+      // 清理所有进度跟踪器
+      this.fileProgressMap.clear()
       this.vectorP.destroy()
     } catch (err) {
       console.error(`[RAG] Error destroying knowledge base ${this.config.id}:`, err)
@@ -316,8 +392,10 @@ export class KnowledgeStorePresenter {
 
   async close(): Promise<void> {
     try {
-      // 停止所有任务
-      this.taskP.removeTasks((task) => task.payload.knowledgeBaseId === this.config.id)
+      // 停止所有任务（使用便捷方法）
+      this.taskP.cancelTasksByKnowledgeBase(this.config.id)
+      // 清理所有进度跟踪器
+      this.fileProgressMap.clear()
       this.vectorP.close()
     } catch (err) {
       console.error(`[RAG] Error closing knowledge base ${this.config.id}:`, err)

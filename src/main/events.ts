@@ -176,4 +176,5 @@ export const FLOATING_BUTTON_EVENTS = {
 // 知识库事件
 export const RAG_EVENTS = {
   FILE_UPDATED: 'rag:file-updated', // 文件状态更新
+  FILE_PROGRESS: 'rag:file-progress', // 文件处理进度更新
 }
