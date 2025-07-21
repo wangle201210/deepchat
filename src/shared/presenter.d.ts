@@ -1214,7 +1214,6 @@ export interface KeyStatus {
 export type KnowledgeFileMetadata = {
   size: number
   totalChunks: number
-  completedChunks: number
   errorReason?: string
 }
 
@@ -1249,10 +1248,17 @@ export interface KnowledgeChunkTask {
     fileId: string
     [key: string]: any // 其他业务数据
   }
-  run: (context: { signal: AbortSignal }) => Promise<InsertOptions> // 任务执行体，支持终止信号
-  onSuccess?: (vector: InsertOptions) => void
+  run: (context: { signal: AbortSignal }) => Promise<VectorInsertOptions> // 任务执行体，支持终止信号
+  onSuccess?: (vector: VectorInsertOptions) => void
   onError?: (error: Error) => void
   onTerminate?: () => void // 任务被强制终止时的回调
+}
+
+// 任务状态统计
+export interface TaskStatusSummary {
+  pending: number
+  processing: number
+  byKnowledgeBase: Map<string, { pending: number; processing: number }>
 }
 
 export interface TaskQueueStatus {
@@ -1287,17 +1293,52 @@ export interface IKnowledgeTaskPresenter {
    * 销毁实例，清理所有任务和资源
    */
   destroy(): void
-}
 
-/**
- * 分块处理器接口 - KnowledgeStorePresenter 实现
- */
-export interface ChunkProcessor {
-  processChunk(chunk: ChunkTask): Promise<void>
-  handleFileCompletion(fileId: string): Promise<void>
-  handleChunkError(chunkId: string, error: Error): Promise<void>
-}
+  // 新增便捷方法（内部通过removeTasks + filter实现）
+  /**
+   * 按知识库ID取消任务
+   * @param knowledgeBaseId 知识库ID
+   */
+  cancelTasksByKnowledgeBase(knowledgeBaseId: string): void
 
+  /**
+   * 按文件ID取消任务
+   * @param fileId 文件ID
+   */
+  cancelTasksByFile(fileId: string): void
+
+  /**
+   * 按chunkId取消任务
+   * @param chunkId chunk ID
+   */
+  cancelTasksByChunk(chunkId: string): void
+
+  /**
+   * 获取详细的任务状态统计
+   * @returns 任务状态统计信息
+   */
+  getTaskStatus(): TaskStatusSummary
+
+  /**
+   * 检查是否有进行中的任务
+   * @returns 是否有活跃任务
+   */
+  hasActiveTasks(): boolean
+
+  /**
+   * 检查指定知识库是否有活跃任务
+   * @param knowledgeBaseId 知识库ID
+   * @returns 是否有活跃任务
+   */
+  hasActiveTasksForKnowledgeBase(knowledgeBaseId: string): boolean
+
+  /**
+   * 检查指定文件是否有活跃任务
+   * @param fileId 文件ID
+   * @returns 是否有活跃任务
+   */
+  hasActiveTasksForFile(fileId: string): boolean
+}
 export type KnowledgeFileResult = {
   data?: KnowledgeFileMessage
   error?: string
@@ -1373,6 +1414,7 @@ type ModelProvider = {
   modelId: string
   providerId: string
 }
+
 export type BuiltinKnowledgeConfig = {
   id: string
   description: string
@@ -1395,20 +1437,20 @@ export interface IndexOptions {
   /** HNSW 构建时 ef */
   efConstruction?: number
 }
-export interface InsertOptions {
+export interface VectorInsertOptions {
   /** 数值数组，长度等于 dimension */
   vector: number[]
-  /** 可选元数据 */
-  metadata?: Record<string, any>
   /** 文件id */
   fileId: string
+  /** chunk id */
+  chunkId: string
 }
 export interface QueryOptions {
   /** 查询顶点数 */
   topK: number
   /** 搜索时 ef */
   efSearch?: number
-  /** 最小距离阈值 */
+  /** 最小距离阈值，由于metric不同，距离计算结果差异很大，此选项在数据库检索时无法生效，应考虑在应用层进行过滤 */
   threshold?: number
   /** 查询向量的维度 */
   metric: MetricType
@@ -1424,7 +1466,7 @@ export interface QueryResult {
 }
 
 /**
- * DuckDB 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
+ * 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
  */
 export interface IVectorDatabasePresenter {
   /**
@@ -1449,12 +1491,12 @@ export interface IVectorDatabasePresenter {
    * 插入单条向量记录，id未提供时自动生成
    * @param opts 插入参数，包含向量数据和可选元数据
    */
-  insertVector(opts: InsertOptions): Promise<void>
+  insertVector(opts: VectorInsertOptions): Promise<void>
   /**
    * 批量插入多条向量记录。
    * @param records 插入参数数组，每项id未提供时自动生成
    */
-  insertVectors(records: Array<InsertOptions>): Promise<void>
+  insertVectors(records: Array<VectorInsertOptions>): Promise<void>
   /**
    * 查询向量最近邻（TopK 检索）。
    * @param vector 查询向量
@@ -1487,16 +1529,16 @@ export interface IVectorDatabasePresenter {
    */
   queryFile(id: string): Promise<KnowledgeFileMessage | null>
   /**
-   * 查询知识库下所有文件
-   * @returns 文件数据数组
-   */
-  listFiles(): Promise<KnowledgeFileMessage[]>
-  /**
    * 根据条件查询文件
    * @param where 查询条件
    * @returns 文件数据数组
    */
   queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]>
+  /**
+   * 查询知识库下所有文件
+   * @returns 文件数据数组
+   */
+  listFiles(): Promise<KnowledgeFileMessage[]>
   /**
    * 删除文件
    * @param id 文件 id
@@ -1519,11 +1561,6 @@ export interface IVectorDatabasePresenter {
    * @param chunkId chunk id
    */
   queryChunk(chunkId: string): Promise<KnowledgeChunkMessage | null>
-  /**
-   * 删除单个 chunk
-   * @param chunkId chunk id
-   */
-  deleteChunk(chunkId: string): Promise<void>
   /**
    * 查询文件的所有 chunks
    * @param fileId 文件 id

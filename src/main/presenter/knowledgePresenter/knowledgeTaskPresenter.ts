@@ -54,6 +54,71 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     }
   }
 
+  // 新增便捷方法：按知识库ID取消任务（通过filter实现）
+  cancelTasksByKnowledgeBase(knowledgeBaseId: string): void {
+    this.removeTasks((task) => task.payload.knowledgeBaseId === knowledgeBaseId)
+  }
+
+  // 新增便捷方法：按文件ID取消任务（通过filter实现）  
+  cancelTasksByFile(fileId: string): void {
+    this.removeTasks((task) => task.payload.fileId === fileId)
+  }
+
+  // 新增便捷方法：按chunkId取消任务（通过filter实现）
+  cancelTasksByChunk(chunkId: string): void {
+    this.removeTasks((task) => task.payload.chunkId === chunkId)
+  }
+
+  // 新增：获取任务执行情况（通过遍历实现，无需维护索引）
+  getTaskStatus(): {
+    pending: number
+    processing: number
+    byKnowledgeBase: Map<string, { pending: number, processing: number }>
+  } {
+    const status = {
+      pending: this.queue.length,
+      processing: this.currentTask ? 1 : 0,
+      byKnowledgeBase: new Map<string, { pending: number, processing: number }>()
+    }
+
+    // 统计队列中的任务（按知识库分组）
+    for (const task of this.queue) {
+      const kbId = task.payload.knowledgeBaseId
+      if (!status.byKnowledgeBase.has(kbId)) {
+        status.byKnowledgeBase.set(kbId, { pending: 0, processing: 0 })
+      }
+      status.byKnowledgeBase.get(kbId)!.pending++
+    }
+
+    // 统计正在处理的任务
+    if (this.currentTask) {
+      const kbId = this.currentTask.payload.knowledgeBaseId
+      if (!status.byKnowledgeBase.has(kbId)) {
+        status.byKnowledgeBase.set(kbId, { pending: 0, processing: 0 })
+      }
+      status.byKnowledgeBase.get(kbId)!.processing++
+    }
+
+    return status
+  }
+
+  // 新增：检查是否有进行中的任务
+  hasActiveTasks(): boolean {
+    return this.queue.length > 0 || this.currentTask !== null
+  }
+
+  // 新增：检查指定知识库是否有活跃任务
+  hasActiveTasksForKnowledgeBase(knowledgeBaseId: string): boolean {
+    return this.queue.some(task => task.payload.knowledgeBaseId === knowledgeBaseId) ||
+           (this.currentTask?.payload.knowledgeBaseId === knowledgeBaseId)
+  }
+
+  // 新增：检查指定文件是否有活跃任务
+  hasActiveTasksForFile(fileId: string): boolean {
+    return this.queue.some(task => task.payload.fileId === fileId) ||
+           (this.currentTask?.payload.fileId === fileId)
+  }
+
   getStatus(): TaskQueueStatus {
     const runningCount = this.currentTask ? 1 : 0
     return {
@@ -75,7 +140,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     const controller = this.controllers.get(taskId)
     if (controller) {
       controller.abort()
-      // Don't delete here, let the processing loop handle it
+      this.controllers.delete(taskId)
     }
   }
 
