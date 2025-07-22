@@ -1,6 +1,6 @@
 import { usePresenter } from '@/composables/usePresenter'
 import { DIALOG_EVENTS } from '@/events'
-import { DialogRequest } from '@shared/presenter'
+import { DialogRequest, DialogResponse } from '@shared/presenter'
 import { defineStore } from 'pinia'
 import { onMounted, ref } from 'vue'
 
@@ -11,7 +11,7 @@ export const useDialogStore = defineStore('dialog', () => {
   const timeoutMilliseconds = ref(0)
   let timer: NodeJS.Timeout | null = null
 
-  // 清理定时器
+  // Clear the timer
   const clearTimer = () => {
     if (timer) {
       clearInterval(timer)
@@ -19,8 +19,8 @@ export const useDialogStore = defineStore('dialog', () => {
     }
   }
 
-  // 启动倒计时
-  const startCountdown = (timeout: number, defaultButton: string) => {
+  // Start countdown
+  const startCountdown = (timeout: number, defaultResponse: DialogResponse) => {
     timeoutMilliseconds.value = timeout
     clearTimer()
     timer = setInterval(() => {
@@ -28,44 +28,73 @@ export const useDialogStore = defineStore('dialog', () => {
         timeoutMilliseconds.value -= 100
       } else {
         clearTimer()
-        handleResponse(defaultButton)
+        handleResponse(defaultResponse)
       }
     }, 100)
   }
 
-  // 监听对话框请求事件
+  // Listen for dialog request events
   const setupUpdateListener = () => {
     window.electron.ipcRenderer.on(DIALOG_EVENTS.REQUEST, async (_, event: DialogRequest) => {
-      if(dialogRequest.value) {
-        // 如果已有对话框请求，清理之前的定时器
-        clearTimer()
-        await handleResponse(null)
-      }
-      dialogRequest.value = event
-      showDialog.value = true
-      const { timeout, defaultId, buttons } = event
-      if (timeout > 0 && buttons[defaultId]) {
-        startCountdown(timeout, buttons[defaultId])
-      } else {
-        console.warn('default params is missing or invalid:', event)
-        clearTimer()
+      try {
+        if (!event || !event.id || !event.title) {
+          console.error('[DialogStore] Invalid dialog request:', event)
+          return
+        }
+
+        if (dialogRequest.value) {
+          // If a dialog request already exists, clear the previous timer
+          clearTimer()
+          await handleError(event.id)
+        }
+
+        dialogRequest.value = event
+        showDialog.value = true
+        const { timeout, defaultId, buttons } = event
+
+        if (timeout > 0 && buttons && buttons[defaultId]) {
+          startCountdown(timeout, {
+            id: event.id,
+            button: buttons[defaultId]
+          })
+        } else {
+          // Use proper logging infrastructure
+          clearTimer()
+        }
+      } catch (error) {
+        console.error('[DialogStore] Error processing dialog request:', error)
       }
     })
   }
 
-  // 响应对话框
-  const handleResponse = async (response: string | null) => {
-    clearTimer()
-    if (!dialogRequest.value) {
-      console.warn('No dialog request to respond')
-      return
+  // Respond to dialog
+  const handleResponse = async (response: DialogResponse) => {
+    try {
+      clearTimer()
+      if (!dialogRequest.value) {
+        console.warn('No dialog request to respond')
+        return
+      }
+
+      await dialogP.handleDialogResponse(response)
+
+      dialogRequest.value = null
+      showDialog.value = false
+    } catch (error) {
+      console.error('[DialogStore] Error handling dialog response:', error)
+      // Reset state even on error to prevent stuck dialogs
+      dialogRequest.value = null
+      showDialog.value = false
     }
-    await dialogP.handleDialogResponse({
-      id: dialogRequest.value.id,
-      button: response
-    })
-    dialogRequest.value = null
-    showDialog.value = false
+  }
+
+  // Handle dialog error
+  const handleError = async (id: string) => {
+    try {
+      await dialogP.handleDialogError(id)
+    } catch (error) {
+      console.error('[DialogStore] Error handling dialog error:', error)
+    }
   }
 
   onMounted(setupUpdateListener)

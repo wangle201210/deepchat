@@ -1210,14 +1210,20 @@ export interface DialogResponse {
 
 export interface IDialogPresenter {
   /**
-   * 显示对话框
-   * @param request DialogRequest 对象，包含对话框的配置
-   * @returns 返回一个 Promise，解析为用户选择的按钮文本或 null（如果用户关闭了对话框）
+   * Show dialog
+   * @param request DialogRequest object containing the dialog configuration
+   * @returns Returns a Promise that resolves to the text of the button selected by the user
+   * @throws Returns null if the dialog is cancelled
    */
-  showDialog(request: DialogRequestParams): Promise<string | null>
+  showDialog(request: DialogRequestParams): Promise<string>
   /**
-   * 处理对话框响应
-   * @param response 对话框响应的按钮文本或 null
+   * Handle dialog response
+   * @param response DialogResponse object containing the dialog response information
    */
   handleDialogResponse(response: DialogResponse): Promise<void>
+  /**
+   * Handle dialog error
+   * @param response Dialog id
+   */
+  handleDialogError(response: string): Promise<void>
 }

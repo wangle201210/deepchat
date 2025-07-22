@@ -37,20 +37,20 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import {
   AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogAction,
-  AlertDialogCancel
+  AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import { Icon } from '@iconify/vue'
 import { useDialogStore } from '@/stores/dialog'
+import { Icon } from '@iconify/vue'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 const dialog = useDialogStore()
@@ -62,14 +62,22 @@ const timeoutSeconds = computed(() => {
   }
   return null
 })
+
 const handleClick = (button: string) => {
-  dialog.handleResponse(button)
+  if (!dialogRequest.value) return
+  dialog.handleResponse({
+    id: dialogRequest.value.id,
+    button: button
+  })
 }
+
 /**
- * 将时间转换为合适的单位，最小为1秒，最大单位为周
+ * convert milliseconds to human-readable format
  * @param ms milliseconds
+ * @return string in the format of "1 s", "2 m", "3 h", etc. max is weeks
  */
 const perfectTime = (ms: number) => {
+  if (ms < 0 || !Number.isFinite(ms)) return '0 s'
   if (ms < 1000) return '1 s'
   const seconds = Math.floor(ms / 1000)
   if (seconds < 60) return `${seconds} s`
@@ -78,7 +86,7 @@ const perfectTime = (ms: number) => {
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours} h`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} d`
+  if (days < 7) return `${days} d`
   const weeks = Math.floor(days / 7)
   return `${weeks} w`
 }
@@ -91,7 +99,7 @@ const getIconProps = (type: 'info' | 'warn' | 'error' | 'confirm') => {
     case 'error':
       return { icon: 'lucide:circle-x', class: "text-usage-high" }
     case 'confirm':
-      return { icon: 'lucide:circle-question-mark', class: 'text-usage-low font-size' }
+      return { icon: 'lucide:circle-question-mark', class: 'text-usage-low' }
     case 'info':
       return { icon: 'lucide:info', class: 'text-primary' }
   }

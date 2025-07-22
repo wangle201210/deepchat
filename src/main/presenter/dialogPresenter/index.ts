@@ -1,7 +1,8 @@
+import { resolve } from 'path'
 /**
- * 通过渲染进程实现的消息弹窗
- * 弹窗显示在当前活动的标签页上，如果标签页在后台，会自动切换到前台
- * 单个活动窗口内只能有一个消息弹窗，重复调用会将之前的弹窗以null触发回调
+ * Message dialog implemented via the renderer process
+ * The dialog is displayed on the currently active tab. If the tab is in the background, it will automatically switch to the foreground.
+ * Only one message dialog can exist within a single active window. Repeated calls will trigger the callback of the previous dialog with null.
  * @see {@link SendTarget.DEFAULT_TAB}
  */
 import {
@@ -15,20 +16,27 @@ import { DIALOG_EVENTS } from '@/events'
 import { nanoid } from 'nanoid'
 
 export class DialogPresenter implements IDialogPresenter {
-  private pendingDialogs = new Map<string, (response: string | null) => void>()
-
-  constructor() {}
+  private pendingDialogs = new Map<
+    string,
+    {
+      resolve: (response: string) => void
+      reject: (error: Error) => void
+    }
+  >()
 
   /**
-   * 显示Dialog - 通过渲染进程实现
-   * @param request Dialog请求参数
-   * @returns Promise<DialogResponse> Dialog结果
+   * show dialog in default active tab
+   * @param request Dialog Parameters
+   * @returns Promise<DialogResponse> click result
    */
-  async showDialog(request: DialogRequestParams): Promise<string | null> {
+  async showDialog(request: DialogRequestParams): Promise<string> {
+    if (!request.title) {
+      throw new Error('Dialog title is required')
+    }
     return new Promise((resolve, reject) => {
       try {
         const finalRequest: DialogRequest = {
-          id: nanoid(8), // 最好是使用当前DEFAULT_TAB的id，便于控制单窗口内最多一个弹窗，但目前似乎缺少获取途径
+          id: nanoid(8), // Better to use current DEFAULT_TAB id to control max one dialog per window, but currently lacks access method
           title: request.title,
           description: request.description,
           i18n: request.i18n ?? false,
@@ -37,28 +45,30 @@ export class DialogPresenter implements IDialogPresenter {
           defaultId: request.defaultId ?? 0,
           timeout: request.timeout ?? 0
         }
-
-        this.pendingDialogs.set(finalRequest.id, resolve)
-
-        console.log('[Dialog] request sent:', finalRequest.id)
-        // 向渲染进程发送dialog请求
+        this.pendingDialogs.set(finalRequest.id, { resolve, reject })
+        // send dialog request to renderer
         eventBus.sendToRenderer(DIALOG_EVENTS.REQUEST, SendTarget.DEFAULT_TAB, finalRequest)
       } catch (err) {
+        console.error('[Dialog] Error in showDialog:', err)
         reject(err)
       }
     })
   }
 
   /**
-   * 处理对话框响应
-   * @param response 对话框响应
+   * handle dialog response
+   * @param response DialogResponse object containing the response from the dialog
    */
   async handleDialogResponse(response: DialogResponse): Promise<void> {
     if (this.pendingDialogs.has(response.id)) {
-      console.log('[Dialog]  response received:', response)
-      const resolve = this.pendingDialogs.get(response.id)
+      console.log('[Dialog] response received:', response)
+      const pendingDialog = this.pendingDialogs.get(response.id)
       this.pendingDialogs.delete(response.id)
-      resolve?.(response.button)
+      if (response.button) {
+        pendingDialog?.resolve(response.button)
+      } else {
+        pendingDialog?.reject(new Error('Dialog closed without response'))
+      }
     }
   }
 }
