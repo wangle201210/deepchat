@@ -42,7 +42,7 @@ export class KnowledgeStorePresenter {
     return this.vectorP
   }
 
-  async updateConfig(config: BuiltinKnowledgeConfig): Promise<void> {
+  updateConfig(config: BuiltinKnowledgeConfig): void {
     this.config = config
   }
 

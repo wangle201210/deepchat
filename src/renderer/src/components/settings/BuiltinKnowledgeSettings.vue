@@ -802,7 +802,7 @@ const handleRerankModelSelect = (model: RENDERER_MODEL_META, providerId: string)
 // 切换配置启用状态
 const toggleConfigEnabled = async (index: number, enabled: boolean) => {
   builtinConfigs.value[index].enabled = enabled
-  await updateBuiltinConfigToMcp
+  await updateBuiltinConfigToMcp()
 }
 
 const isBuiltinMcpEnabled = computed(() => {

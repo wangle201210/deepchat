@@ -112,10 +112,18 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 更新知识库配置
    */
   update = async (config: BuiltinKnowledgeConfig): Promise<void> => {
-    // 存在更新，不存在忽略，创建时默认使用新配置
-    if (this.storePresenterCache.has(config.id)) {
-      const rag = this.storePresenterCache.get(config.id) as KnowledgeStorePresenter
-      rag.updateConfig(config)
+    if (config.enabled) {
+      // 如果启用且缓存中存在，则更新配置
+      const rag = this.getStorePresenter(config.id)
+      if (rag) {
+        rag.updateConfig(config)
+      } else {
+        // 如果缓存中没有，则创建新的 RAG 实例
+        await this.createStorePresenter(config)
+      }
+    } else {
+      // 如果禁用且缓存中存在，关闭实例
+      this.closeStorePresenterIfExists(config.id)
     }
   }
 
@@ -124,8 +132,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   delete = async (id: string): Promise<void> => {
     if (this.storePresenterCache.has(id)) {
-      const rag = this.storePresenterCache.get(id) as KnowledgeStorePresenter
-      await rag.destroy()
+      await this.getStorePresenter(id)?.destroy()
       this.storePresenterCache.delete(id)
     } else {
       const dbPath = path.join(this.storageDir, id)
@@ -163,10 +170,22 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   /**
+   * 获取知识库实例
+   * @param id 知识库 ID
+   * @returns 知识库实例
+   */
+  private getStorePresenter = (id: string): KnowledgeStorePresenter | null => {
+    if (this.storePresenterCache.has(id)) {
+      return this.storePresenterCache.get(id) as KnowledgeStorePresenter
+    }
+    return null
+  }
+
+  /**
    * 获取 RAG 应用实例
    * @param id 知识库 ID
    */
-  private getStorePresenter = async (id: string): Promise<KnowledgeStorePresenter> => {
+  private getOrCreateStorePresenter = async (id: string): Promise<KnowledgeStorePresenter> => {
     // 缓存命中直接返回
     if (this.storePresenterCache.has(id)) {
       return this.storePresenterCache.get(id) as KnowledgeStorePresenter
@@ -183,6 +202,19 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     const rag = new KnowledgeStorePresenter(db, config, this.taskP)
     this.storePresenterCache.set(id, rag)
     return rag
+  }
+
+  /**
+   * 关闭 RAG 应用实例
+   * @param id 知识库 ID
+   * @returns void
+   */
+  private closeStorePresenterIfExists = async (id: string): Promise<void> => {
+    const rag = this.getStorePresenter(id)
+    if (rag) {
+      await rag.close()
+      this.storePresenterCache.delete(id)
+    }
   }
 
   /**
@@ -212,7 +244,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
     try {
-      const rag = await this.getStorePresenter(id)
+      const rag = await this.getOrCreateStorePresenter(id)
       return await rag.addFile(filePath)
     } catch (err) {
       return {
@@ -222,13 +254,13 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async deleteFile(id: string, fileId: string): Promise<void> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     await rag.deleteFile(fileId)
   }
 
   async reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult> {
     try {
-      const rag = await this.getStorePresenter(id)
+      const rag = await this.getOrCreateStorePresenter(id)
       return await rag.reAddFile(fileId)
     } catch (err) {
       return {
@@ -238,12 +270,12 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     return await rag.queryFile(fileId)
   }
 
   async listFiles(id: string): Promise<KnowledgeFileMessage[]> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     return await rag.listFiles()
   }
 
@@ -259,7 +291,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async similarityQuery(id: string, key: string): Promise<QueryResult[]> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     return await rag.similarityQuery(key)
   }
 
