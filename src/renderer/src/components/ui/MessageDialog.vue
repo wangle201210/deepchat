@@ -1,6 +1,6 @@
 <template>
-  <Dialog :open="dialog.showDialog">
-    <DialogContent>
+  <Dialog :open="showDialog" :@update:open="dialog.closeDialog">
+    <DialogContent :class="{ '[&>button]:hidden': !dialogRequest?.closeable }">
       <DialogHeader>
         <DialogTitle>{{
           dialogRequest?.i18n ? t(dialogRequest?.title) : dialogRequest?.title
@@ -15,7 +15,7 @@
         <Button
           v-for="(button, index) in dialogRequest?.buttons"
           :key="index"
-          variant="outline"
+          :variant="index === dialogRequest?.defaultId ? 'default' : 'outline'"
           @click="handleClick(index)"
         >
           {{ dialogRequest?.i18n ? t(button) : button }}
@@ -42,6 +42,7 @@ import { computed } from 'vue'
 const { t } = useI18n()
 const dialog = useDialogStore()
 const dialogRequest = computed(() => dialog.dialogRequest)
+const showDialog = computed(() => dialog.showDialog)
 const handleClick = (index) => {
   dialog.handleResponse(index)
 }
