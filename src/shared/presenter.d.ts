@@ -1181,16 +1181,31 @@ export interface KeyStatus {
 /**
  * Dialog 类型定义
  */
-export interface DialogRequest {
-  type: 'info' | 'warning' | 'error' | 'question'
-  i18n: boolean
+
+export interface DialogRequestParams {
   title: string
   description: string
+  i18n?: boolean
+  type?: 'info' | 'warning' | 'error' | 'question'
   buttons?: string[]
   defaultId?: number
-  cancelId?: number
-  closeable?: boolean
-  timeout?: number // 超时时间（毫秒），默认按钮显示倒计时
+  timeout?: number
+}
+
+export interface DialogRequest {
+  id: string,
+  title: string
+  description: string
+  i18n: boolean
+  type?: 'info' | 'warning' | 'error' | 'question'
+  buttons: string[]
+  defaultId: number
+  timeout: number
+}
+
+export interface DialogResponse {
+  id: string,
+  button: string | null
 }
 
 export interface IDialogPresenter {
@@ -1199,10 +1214,10 @@ export interface IDialogPresenter {
    * @param request DialogRequest 对象，包含对话框的配置
    * @returns 返回一个 Promise，解析为用户选择的按钮文本或 null（如果用户关闭了对话框）
    */
-  showDialog(request: DialogRequest): Promise<string | null>
+  showDialog(request: DialogRequestParams): Promise<string | null>
   /**
    * 处理对话框响应
    * @param response 对话框响应的按钮文本或 null
    */
-  handleDialogResponse(response: string | null): Promise<void>
+  handleDialogResponse(response: DialogResponse): Promise<void>
 }
