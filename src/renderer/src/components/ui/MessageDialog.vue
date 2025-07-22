@@ -3,31 +3,31 @@
     <AlertDialogContent>
       <AlertDialogHeader>
         <AlertDialogTitle>
-        <component v-if="dialogRequest?.type" :is="getIconComponent(dialogRequest?.type)"/>
-        {{
-          dialogRequest?.i18n ? t(dialogRequest?.title) : dialogRequest?.title
-        }}</AlertDialogTitle>
+          <div class="flex items-center space-x-2">
+            <template v-if="dialogRequest?.type">
+              <Icon v-bind="getIconProps(dialogRequest?.type)" class="h-6 w-6" />
+            </template>
+            <span>{{ dialogRequest?.i18n ? t(dialogRequest?.title) : dialogRequest?.title }}</span>
+          </div>
+        </AlertDialogTitle>
         <AlertDialogDescription v-if="dialogRequest?.description">
-          <div class="space-y-2">
+          <div class="space-y-2 text-secondary">
             {{ dialogRequest?.description }}
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
         <template v-for="(button, index) in dialogRequest?.buttons">
-          <AlertDialogAction
-            v-if="index === dialogRequest?.defaultId"
-            @click="handleClick(button)"
-          >
+          <AlertDialogAction v-if="index === dialogRequest?.defaultId" @click="handleClick(button)">
             {{ dialogRequest?.i18n ? t(button) : button }}
-            <span v-if="timeoutSeconds && index === dialogRequest?.defaultId" class="inline-block min-w-8 text-right">
+            <span
+              v-if="timeoutSeconds && index === dialogRequest?.defaultId"
+              class="inline-block min-w-8 text-right"
+            >
               [{{ timeoutSeconds }}]
             </span>
           </AlertDialogAction>
-          <AlertDialogCancel
-            v-else
-            @click="handleClick(button)"
-          >
+          <AlertDialogCancel v-else @click="handleClick(button)">
             {{ dialogRequest?.i18n ? t(button) : button }}
           </AlertDialogCancel>
         </template>
@@ -83,41 +83,17 @@ const perfectTime = (ms) => {
   return `${weeks} w`
 }
 
-const getIconComponent = (type: 'info' | 'warning' | 'error' | 'question') => {
+const getIconProps = (type: 'info' | 'warn' | 'error' | 'confirm') => {
+  console.log('[Dialog] getIconProps called with type:', type)
   switch (type) {
-    case 'warning':
-      return {
-        component: Icon,
-        props: {
-          icon: 'lucide:circle-alert',
-          color: 'var(--destructive)'
-        }
-      }
+    case 'warn':
+      return { icon: 'lucide:circle-alert', class: "text-usage-mid" }
     case 'error':
-      return {
-        component: Icon,
-        props: {
-          icon: 'lucide:triangle-alert',
-          color: 'var(--destructive)'
-        }
-      }
-    case 'question':
-      return {
-        component: Icon,
-        props: {
-          icon: 'lucide:circle-question-mark',
-          color: 'var(--primary)'
-        }
-      }
+      return { icon: 'lucide:circle-x', class: "text-usage-high" }
+    case 'confirm':
+      return { icon: 'lucide:circle-question-mark', class: 'text-usage-low font-size' }
     case 'info':
-    default:
-      return {
-        component: Icon,
-        props: {
-          icon: 'lucide:info',
-          color: 'var(--primary)'
-        }
-      }
+      return { icon: 'lucide:info', class: 'text-primary' }
   }
 }
 </script>

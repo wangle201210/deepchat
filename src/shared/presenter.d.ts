@@ -1186,25 +1186,25 @@ export interface DialogRequestParams {
   title: string
   description: string
   i18n?: boolean
-  type?: 'info' | 'warning' | 'error' | 'question'
+  type?: 'info' | 'warn' | 'error' | 'confirm'
   buttons?: string[]
   defaultId?: number
   timeout?: number
 }
 
 export interface DialogRequest {
-  id: string,
+  id: string
   title: string
   description: string
   i18n: boolean
-  type?: 'info' | 'warning' | 'error' | 'question'
+  type?: 'info' | 'warn' | 'error' | 'confirm'
   buttons: string[]
   defaultId: number
   timeout: number
 }
 
 export interface DialogResponse {
-  id: string,
+  id: string
   button: string | null
 }
 
