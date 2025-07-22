@@ -1,3 +1,6 @@
+/**
+ * DuckDB 数据库 Presenter
+ */
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -22,8 +25,6 @@ const runtimeBasePath = path
 const extensionPath = path.join(runtimeBasePath, 'duckdb', 'extensions', 'vss.duckdb_extension')
 
 export class DuckDBPresenter implements IVectorDatabasePresenter {
-  private transactionLevel = 0
-
   private dbInstance!: DuckDBInstance
   private connection!: DuckDBConnection
 
@@ -45,7 +46,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         throw new Error('Database already exists, cannot initialize again.')
       }
       console.log(`[DuckDB] connect to db`)
-      await this.connect()
+      await this.create()
       console.log(`[DuckDB] load vss extension`)
       await this.installAndLoadVSS()
       console.log(`[DuckDB] create file table`)
@@ -67,10 +68,24 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       console.error(`[DuckDB] Database ${this.dbPath} does not exist`)
       throw new Error('Database does not exist, please initialize first.')
     }
+
+    if (await this.hasWal()) {
+      try {
+        await this.repairIndex()
+      } catch (error) {
+        // TODO 数据库已无法修复，提示用户重建
+        console.error('[DuckDB] Error opening database:', error)
+        throw new Error('Failed to open database, please check the logs for details.')
+      }
+    }
+
+    // 清理任何残留的事务队列
+    if (this.transactionQueue.length > 0) {
+      this.transactionQueue = []
+    }
+
     console.log(`[DuckDB] connect to db`)
     await this.connect()
-    console.log(`[DuckDB] checkpoint`)
-    await this.connection.run('CHECKPOINT;')
     console.log(`[DuckDB] load vss extension`)
     await this.installAndLoadVSS()
     console.log(`[DuckDB] clear dirty data`)
@@ -79,6 +94,28 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   async close(): Promise<void> {
     try {
+      // 等待当前事务处理完成
+      if (this.isProcessingTransaction && this.currentTransactionPromise) {
+        try {
+          await this.currentTransactionPromise
+        } catch (error) {
+          console.warn('[DuckDB] Error waiting for transaction to complete during close:', error)
+        }
+      }
+
+      // 清理任何剩余的事务队列
+      if (this.transactionQueue.length > 0) {
+        const remainingOperations = [...this.transactionQueue]
+        this.transactionQueue = []
+        const error = new Error('Database is closing, operations cancelled')
+        for (const { reject } of remainingOperations) {
+          reject(error)
+        }
+      }
+
+      // CLOSE 时不需要显式执行 CHECKPOINT，因为 DuckDB 会自动处理 WAL 文件
+      // await this.safeRun('CHECKPOINT;')
+
       if (this.connection) {
         this.connection.closeSync()
       }
@@ -97,8 +134,11 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     try {
       if (fs.existsSync(this.dbPath)) {
         fs.rmSync(this.dbPath, { recursive: true })
-        console.log(`[DuckDB] Database at ${this.dbPath} destroyed.`)
       }
+      if (fs.existsSync(this.dbPath + '.wal')) {
+        fs.rmSync(this.dbPath + '.wal', { recursive: true })
+      }
+      console.log(`[DuckDB] Database at ${this.dbPath} destroyed.`)
     } catch (err) {
       console.error(`[DuckDB] Error destroying database at ${this.dbPath}:`, err)
     }
@@ -387,43 +427,148 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   // ==================== 事务管理 ====================
+  private transactionQueue: Array<{
+    operation: () => Promise<any>
+    resolve: (value: any) => void
+    reject: (error: any) => void
+    timestamp: number // 添加时间戳用于超时检测
+  }> = []
 
-  private async beginTransaction(): Promise<void> {
-    if (this.transactionLevel === 0) {
-      await this.safeRun('BEGIN TRANSACTION;')
-    }
-    this.transactionLevel++
-  }
+  private isProcessingTransaction = false
+  private currentTransactionPromise: Promise<void> | null = null
+  private readonly TRANSACTION_TIMEOUT = 30000 // 30秒超时
 
-  private async commitTransaction(): Promise<void> {
-    this.transactionLevel--
-    if (this.transactionLevel === 0) {
-      await this.safeRun('COMMIT;')
-    }
-  }
-
-  private async rollbackTransaction(): Promise<void> {
-    if (this.transactionLevel > 0) {
-      await this.safeRun('ROLLBACK;')
-      this.transactionLevel = 0
-    }
-  }
-
+  /**
+   * 将操作添加到事务队列中，确保所有数据库操作串行执行
+   */
   private async executeInTransaction<T>(operation: () => Promise<T>): Promise<T> {
-    await this.beginTransaction()
-    try {
-      const result = await operation()
-      await this.commitTransaction()
-      return result
-    } catch (error) {
-      await this.rollbackTransaction()
-      throw error
+    return new Promise((resolve, reject) => {
+      this.transactionQueue.push({
+        operation,
+        resolve,
+        reject,
+        timestamp: Date.now()
+      })
+
+      // 如果当前没有正在处理事务，则开始处理队列
+      if (!this.isProcessingTransaction) {
+        this.processTransactionQueue()
+      }
+    })
+  }
+
+  /**
+   * 处理事务队列，确保所有操作串行执行
+   */
+  private async processTransactionQueue(): Promise<void> {
+    if (this.isProcessingTransaction || this.transactionQueue.length === 0) {
+      return
     }
+
+    this.isProcessingTransaction = true
+
+    // 创建当前事务 Promise，供 close 方法等待
+    this.currentTransactionPromise = (async () => {
+      try {
+        // 开始事务
+        await this.safeRun('BEGIN TRANSACTION;')
+
+        // 处理队列中的所有操作
+        const operations = [...this.transactionQueue]
+        this.transactionQueue = []
+
+        // 检查是否有超时的操作
+        const now = Date.now()
+        const timeoutOps = operations.filter((op) => now - op.timestamp > this.TRANSACTION_TIMEOUT)
+
+        if (timeoutOps.length > 0) {
+          console.warn(`[DuckDB] Found ${timeoutOps.length} timeout operations, rejecting them`)
+          const timeoutError = new Error('Transaction operation timeout')
+          for (const { reject } of timeoutOps) {
+            reject(timeoutError)
+          }
+        }
+
+        // 只处理未超时的操作
+        const validOperations = operations.filter(
+          (op) => now - op.timestamp <= this.TRANSACTION_TIMEOUT
+        )
+
+        if (validOperations.length === 0) {
+          return // 没有有效操作需要处理
+        }
+
+        const results: any[] = []
+        let hasError = false
+        let errorToThrow: any = null
+
+        for (const { operation, resolve, reject } of validOperations) {
+          try {
+            const result = await operation()
+            results.push({ success: true, result, resolve, reject })
+          } catch (error) {
+            results.push({ success: false, error, resolve, reject })
+            hasError = true
+            if (!errorToThrow) {
+              errorToThrow = error
+            }
+          }
+        }
+
+        if (hasError) {
+          // 如果有错误，回滚事务
+          await this.safeRun('ROLLBACK;')
+
+          // 拒绝所有操作
+          for (const { success, error, reject } of results) {
+            if (success) {
+              reject(errorToThrow) // 即使成功的操作也要因为事务回滚而失败
+            } else {
+              reject(error)
+            }
+          }
+        } else {
+          // 如果没有错误，提交事务
+          await this.safeRun('COMMIT;')
+
+          // 解析所有操作
+          for (const { result, resolve } of results) {
+            resolve(result)
+          }
+        }
+      } catch (error) {
+        // 处理事务操作本身的错误
+        console.error('[DuckDB] Transaction processing error:', error)
+
+        try {
+          await this.safeRun('ROLLBACK;')
+        } catch (rollbackError) {
+          console.error('[DuckDB] Rollback error:', rollbackError)
+        }
+
+        // 拒绝所有队列中的操作
+        for (const { reject } of this.transactionQueue) {
+          reject(error)
+        }
+        this.transactionQueue = []
+      } finally {
+        this.isProcessingTransaction = false
+        this.currentTransactionPromise = null
+
+        // 如果队列中还有新的操作，继续处理
+        if (this.transactionQueue.length > 0) {
+          // 使用 setImmediate 避免递归调用栈过深
+          setImmediate(() => this.processTransactionQueue())
+        }
+      }
+    })()
+
+    await this.currentTransactionPromise
   }
 
   private async safeRun(sql: string, params?: any[]): Promise<any> {
     try {
-      if (!this.connection) await this.connect()
+      if (!this.connection) await this.create()
       if (params) {
         return await this.connection.run(sql, params)
       } else {
@@ -437,10 +582,48 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   // ==================== 初始化相关 ====================
 
+  private async create() {
+    this.dbInstance = await DuckDBInstance.create(this.dbPath)
+    this.connection = await this.dbInstance.connect()
+    console.log(`[DuckDB] Connected to DuckDB at ${this.dbPath}`)
+  }
+
   private async connect() {
     this.dbInstance = await DuckDBInstance.create(this.dbPath)
     this.connection = await this.dbInstance.connect()
     console.log(`[DuckDB] Connected to DuckDB at ${this.dbPath}`)
+  }
+
+  /**
+   * 通过 memory 附加 DuckDB 数据库并修复索引问题
+   * 
+   * - 正常关闭链接时会自动checkpoint，但异常关闭软件（崩溃， kill）无法触发
+   * - 连接时如果存在wal文件会自动checkpoint，但由于使用了vss插件，自动checkpoint会失败导致无法连接
+   * - 必须先通过内存安装并加载vss插件，附加到本地数据库，再执行checkpoint
+   */
+  private async repairIndex(): Promise<void> {
+    const ins = await DuckDBInstance.create(':memory:')
+    const conn = await ins.connect()
+
+    // load vss
+    if (fs.existsSync(extensionPath)) {
+      const escapedPath = extensionPath.replace(/\\/g, '\\\\')
+      console.log(`[DuckDB] LOAD VSS extension from ${escapedPath}`)
+      await conn.run(`LOAD '${escapedPath}';`)
+    } else {
+      console.log('[DuckDB] LOAD VSS extension online')
+      await conn.run(`INSTALL vss;`)
+      await conn.run(`LOAD vss;`)
+    }
+    await conn.run(`SET hnsw_enable_experimental_persistence = true;`)
+
+    // attach to the existing database
+    await conn.run(`ATTACH DATABASE '${this.dbPath}' AS db;`)
+    // await conn.run(`CHECKPOINT;`)
+
+    // close
+    conn.closeSync()
+    ins.closeSync()
   }
 
   /** 安装并加载 VSS 扩展 */
@@ -554,5 +737,14 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       DELETE FROM ${this.chunkTable}
       WHERE file_id NOT IN (SELECT id FROM ${this.fileTable});
     `)
+  }
+
+  /**
+   * 检查是否存在 WAL 文件
+   * @returns 是否存在 WAL 文件
+   */
+  private async hasWal(): Promise<boolean> {
+    const walPath = this.dbPath + '.wal'
+    return fs.existsSync(walPath)
   }
 }

@@ -132,6 +132,9 @@ export class KnowledgePresenter implements IKnowledgePresenter {
       if (fs.existsSync(dbPath)) {
         fs.rmSync(dbPath, { recursive: true })
       }
+      if (fs.existsSync(dbPath + '.wal')) {
+        fs.rmSync(dbPath + '.wal', { recursive: true })
+      }
     }
   }
 
