@@ -44,8 +44,8 @@ export const useDialogStore = defineStore('dialog', () => {
       dialogRequest.value = event
       showDialog.value = true
       const { timeout, defaultId, buttons } = event
-      if (timeout && timeout > 0 && buttons && buttons[Number(defaultId)]) {
-        startCountdown(timeout, buttons[Number(defaultId)])
+      if (timeout > 0 && buttons[defaultId]) {
+        startCountdown(timeout, buttons[defaultId])
       } else {
         console.warn('default params is missing or invalid:', event)
         clearTimer()

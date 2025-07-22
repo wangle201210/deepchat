@@ -11,8 +11,8 @@
           </div>
         </AlertDialogTitle>
         <AlertDialogDescription v-if="dialogRequest?.description">
-          <div class="space-y-2 text-secondary">
-            {{ dialogRequest?.description }}
+          <div class="space-y-2">
+            {{ dialogRequest.i18n ? t(dialogRequest.description) : dialogRequest.description }}
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -69,7 +69,7 @@ const handleClick = (button: string) => {
  * 将时间转换为合适的单位，最小为1秒，最大单位为周
  * @param ms milliseconds
  */
-const perfectTime = (ms) => {
+const perfectTime = (ms: number) => {
   if (ms < 1000) return '1 s'
   const seconds = Math.floor(ms / 1000)
   if (seconds < 60) return `${seconds} s`
