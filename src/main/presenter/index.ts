@@ -1,3 +1,4 @@
+import { DialogPresenter } from './dialogPresenter/index';
 import { ipcMain, IpcMainInvokeEvent, app } from 'electron'
 // import { LlamaCppPresenter } from './llamaCppPresenter' // 保留原始注释
 import { WindowPresenter } from './windowPresenter'
@@ -55,6 +56,7 @@ export class Presenter implements IPresenter {
   oauthPresenter: OAuthPresenter
   floatingButtonPresenter: FloatingButtonPresenter
   // llamaCppPresenter: LlamaCppPresenter // 保留原始注释
+  dialogPresenter: DialogPresenter
 
   constructor() {
     // 初始化各个 Presenter 实例及其依赖
@@ -82,6 +84,7 @@ export class Presenter implements IPresenter {
     this.oauthPresenter = new OAuthPresenter()
     this.trayPresenter = new TrayPresenter()
     this.floatingButtonPresenter = new FloatingButtonPresenter(this.configPresenter)
+    this.dialogPresenter = new DialogPresenter()
 
     // this.llamaCppPresenter = new LlamaCppPresenter() // 保留原始注释
     this.setupEventBus() // 设置事件总线监听

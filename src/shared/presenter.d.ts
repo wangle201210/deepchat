@@ -310,6 +310,7 @@ export interface IPresenter {
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
   oauthPresenter: IOAuthPresenter
+  dialogPresenter: IDialogPresenter
   init(): void
   destroy(): void
 }
@@ -1175,4 +1176,22 @@ export interface KeyStatus {
   limit_remaining?: string
   /** 已使用额度 */
   usage?: string
+}
+
+/**
+ * Dialog 类型定义
+ */
+export interface DialogRequest {
+  type: 'info' | 'warning' | 'error' | 'question'
+  i18n: boolean
+  title: string
+  description: string
+  buttons?: string[]
+  defaultId?: number
+  cancelId?: number
+  timeout?: number // 超时时间（毫秒），默认按钮显示倒计时
+}
+
+export interface IDialogPresenter {
+  showDialog(request: Omit<DialogRequest, 'id'>): Promise<DialogResponse>
 }
