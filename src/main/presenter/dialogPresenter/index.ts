@@ -1,4 +1,3 @@
-import { resolve } from 'path'
 /**
  * Message dialog implemented via the renderer process
  * The dialog is displayed on the currently active tab. If the tab is in the background, it will automatically switch to the foreground.
@@ -64,11 +63,20 @@ export class DialogPresenter implements IDialogPresenter {
       console.log('[Dialog] response received:', response)
       const pendingDialog = this.pendingDialogs.get(response.id)
       this.pendingDialogs.delete(response.id)
-      if (response.button) {
-        pendingDialog?.resolve(response.button)
-      } else {
-        pendingDialog?.reject(new Error('Dialog closed without response'))
-      }
+      pendingDialog?.resolve(response.button)
+    }
+  }
+
+  /**
+   * handle dialog error
+   * @param id Dialog id
+   */
+  async handleDialogError(id: string): Promise<void> {
+    if (this.pendingDialogs.has(id)) {
+      console.warn(`[Dialog] Error handling dialog with id: ${id}`)
+      const pendingDialog = this.pendingDialogs.get(id)
+      this.pendingDialogs.delete(id)
+      pendingDialog?.reject(new Error(`Dialog with id ${id} was cancelled`))
     }
   }
 }

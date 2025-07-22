@@ -1205,7 +1205,7 @@ export interface DialogRequest {
 
 export interface DialogResponse {
   id: string
-  button: string | null
+  button: string
 }
 
 export interface IDialogPresenter {
