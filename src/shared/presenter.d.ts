@@ -1212,12 +1212,12 @@ export interface KeyStatus {
 }
 
 export interface DialogButton {
-  key: string,
-  label: string,
-  default?: boolean,
+  key: string
+  label: string
+  default?: boolean
 }
 export interface DialogIcon {
-  icon: string,
+  icon: string
   class: string
 }
 
@@ -1272,26 +1272,24 @@ export type KnowledgeFileMetadata = {
   errorReason?: string
 }
 
-export type KnowledgeFileStatus = 'processing' | 'completed' | 'error'
+export type KnowledgeTaskStatus = 'processing' | 'completed' | 'error' | 'paused'
 
 export type KnowledgeFileMessage = {
   id: string
   name: string
   path: string
   mimeType: string
-  status: KnowledgeFileStatus
+  status: KnowledgeTaskStatus
   uploadedAt: number
   metadata: KnowledgeFileMetadata
 }
-
-export type KnowledgeChunkStatus = 'processing' | 'completed' | 'error'
 
 export type KnowledgeChunkMessage = {
   id: string
   fileId: string
   chunkIndex: number
   content: string
-  status: KnowledgeChunkStatus
+  status: KnowledgeTaskStatus
   error?: string
 }
 
@@ -1303,8 +1301,8 @@ export interface KnowledgeChunkTask {
     fileId: string
     [key: string]: any
   }
-  run: (context: { signal: AbortSignal }) => Promise<VectorInsertOptions> // 任务执行体，支持终止信号
-  onSuccess?: (vector: VectorInsertOptions) => void
+  run: (context: { signal: AbortSignal }) => Promise<void> // 任务执行体，支持终止信号
+  onSuccess?: () => void
   onError?: (error: Error) => void
   onTerminate?: () => void // task termination callback
 }
@@ -1456,6 +1454,14 @@ export interface IKnowledgePresenter {
    * @returns Task queue status information
    */
   getTaskQueueStatus(): Promise<TaskQueueStatus>
+  /**
+   * Pause all running tasks
+   */
+  pauseAllRunningTasks(id: string): Promise<void>
+  /**
+   * Resume all paused tasks
+   */
+  resumeAllPausedTasks(id: string): Promise<void>
 
   /**
    * Ask user before destroy
@@ -1614,21 +1620,24 @@ export interface IVectorDatabasePresenter {
    * @param status New status
    * @param error Error message
    */
-  updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus, error?: string): Promise<void>
+  updateChunkStatus(chunkId: string, status: KnowledgeTaskStatus, error?: string): Promise<void>
   /**
-   * Query a single chunk
-   * @param chunkId Chunk ID
+   * Query chunks by condition
+   * @param where Query condition
+   * @returns Array of chunk data
    */
-  queryChunk(chunkId: string): Promise<KnowledgeChunkMessage | null>
+  queryChunks(where: Partial<KnowledgeChunkMessage>): Promise<KnowledgeChunkMessage[]>
   /**
-   * Query all chunks of a file
-   * @param fileId File ID
-   * @param status Optional status filter
-   */
-  queryChunksByFile(fileId: string, status?: KnowledgeChunkStatus): Promise<KnowledgeChunkMessage[]>
-  /**
-   * Delete all chunks of a file
+   * Delete all chunks associated with file id
    * @param fileId File ID
    */
   deleteChunksByFile(fileId: string): Promise<void>
+  /**
+   * Pause all running tasks
+   */
+  pauseAllRunningTasks(): Promise<void>
+  /**
+   * Resume all paused tasks
+   */
+  resumeAllPausedTasks(): Promise<void>
 }

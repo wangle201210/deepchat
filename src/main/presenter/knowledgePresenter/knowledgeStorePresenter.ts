@@ -7,8 +7,7 @@ import {
   QueryResult,
   IKnowledgeTaskPresenter,
   KnowledgeFileResult,
-  KnowledgeChunkMessage,
-  VectorInsertOptions
+  KnowledgeChunkMessage
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { nanoid } from 'nanoid'
@@ -155,23 +154,14 @@ export class KnowledgeStorePresenter {
             taskType: 'chunk_processing',
             metadata: {
               content: chunkMsg.content,
-              chunkIndex: chunkMsg.chunkIndex,
-              totalChunks: chunks.length
+              chunkIndex: chunkMsg.chunkIndex
             }
           },
-          run: async ({ signal: chunkSignal }) => {
-            await this.processChunkTask(chunkMsg, chunkSignal)
-            return {} as VectorInsertOptions
-          },
-          onSuccess: (_result: VectorInsertOptions) => {
-            this.handleChunkCompletion(chunkMsg.id, fileMessage.id)
-          },
-          onError: (error: Error) => {
-            this.handleChunkError(chunkMsg.id, fileMessage.id, error.message)
-          },
-          onTerminate: () => {
-            console.log(`[RAG] Chunk processing terminated for ${chunkMsg.id}`)
-          }
+          run: async ({ signal }) => this.processChunkTask(chunkMsg, signal),
+          onSuccess: () => this.handleChunkCompletion(chunkMsg.id, fileMessage.id),
+          onError: (error: Error) =>
+            this.handleChunkError(chunkMsg.id, fileMessage.id, error.message),
+          onTerminate: () => console.log(`[RAG] Chunk processing terminated for ${chunkMsg.id}`)
         }
 
         this.taskP.addTask(chunkTask)
@@ -354,6 +344,7 @@ export class KnowledgeStorePresenter {
     if (file == null) {
       throw new Error('文件不存在，请重新打开知识库后再试')
     }
+    await this.vectorP.deleteChunksByFile(fileId)
     await this.vectorP.deleteVectorsByFile(fileId)
     return this.addFile(file.path, fileId)
   }
@@ -378,6 +369,53 @@ export class KnowledgeStorePresenter {
     }
   }
 
+  async pauseAllRunningTasks(): Promise<void> {
+    this.taskP.cancelTasksByKnowledgeBase(this.config.id)
+    this.fileProgressMap.clear()
+    await this.vectorP.pauseAllRunningTasks()
+  }
+  async resumeAllPausedTasks(): Promise<void> {
+    // query all paused chunks
+    const pausedChunkMessages = await this.vectorP.queryChunks({ status: 'paused' })
+    // count by file id
+    const fileIdCountMap = new Map<string, number>()
+    pausedChunkMessages.forEach((chunk) => {
+      const count = fileIdCountMap.get(chunk.fileId) || 0
+      fileIdCountMap.set(chunk.fileId, count + 1)
+    })
+    // resume file progress cache
+    fileIdCountMap.forEach((count, fileId) => {
+      this.fileProgressMap.set(fileId, {
+        completed: 0,
+        error: 0,
+        total: count
+      })
+    })
+    await this.vectorP.resumeAllPausedTasks()
+    for (const chunkMessage of pausedChunkMessages) {
+      // re-add each paused chunk to the task queue
+      const chunkTask = {
+        id: `chunk_${chunkMessage.id}`,
+        payload: {
+          knowledgeBaseId: this.config.id,
+          fileId: chunkMessage.fileId,
+          chunkId: chunkMessage.id,
+          taskType: 'chunk_processing',
+          metadata: {
+            content: chunkMessage.content,
+            chunkIndex: chunkMessage.chunkIndex
+          }
+        },
+        run: async ({ signal }) => this.processChunkTask(chunkMessage, signal),
+        onSuccess: () => this.handleChunkCompletion(chunkMessage.id, chunkMessage.fileId),
+        onError: (error: Error) =>
+          this.handleChunkError(chunkMessage.id, chunkMessage.fileId, error.message),
+        onTerminate: () => console.log(`[RAG] Chunk processing terminated for ${chunkMessage.id}`)
+      }
+      this.taskP.addTask(chunkTask)
+    }
+  }
+
   async destroy(): Promise<void> {
     try {
       // 停止所有任务（使用便捷方法）
@@ -396,6 +434,7 @@ export class KnowledgeStorePresenter {
       this.taskP.cancelTasksByKnowledgeBase(this.config.id)
       // 清理所有进度跟踪器
       this.fileProgressMap.clear()
+      await this.pauseAllRunningTasks()
       this.vectorP.close()
     } catch (err) {
       console.error(`[RAG] Error closing knowledge base ${this.config.id}:`, err)

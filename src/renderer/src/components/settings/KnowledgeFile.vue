@@ -16,6 +16,17 @@
       </div>
       <!-- 操作按钮 -->
       <div class="flex flex-row gap-2 flex-shrink-0">
+        <Button v-if="ctrlBtn === 'paused'" variant="outline" size="sm" @click="toggleStatus(true)">
+          <Icon icon="lucide:play" class="w-4 h-4 text-green-500" />
+        </Button>
+        <Button
+          v-if="ctrlBtn === 'processing'"
+          variant="outline"
+          size="sm"
+          @click="toggleStatus(false)"
+        >
+          <Icon icon="lucide:pause" class="w-4 h-4 text-yellow-500" />
+        </Button>
         <Button variant="outline" size="sm" @click="openSearchDialog">
           <Icon icon="lucide:search" class="w-4 h-4" />
         </Button>
@@ -167,7 +178,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { Button } from '@/components/ui/button'
@@ -188,6 +199,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'hideKnowledgeFile'): void
 }>()
+
+const ctrlBtn = ref<'paused' | 'processing' | null>(null)
 
 const { t } = useI18n()
 // 文件列表
@@ -259,22 +272,15 @@ const loadList = async () => {
   fileList.value = (await knowledgePresenter.listFiles(props.builtinKnowledgeDetail.id)) || []
 }
 
-// 初始化文件列表
-onMounted(() => {
+const toggleStatus = async (run: boolean) => {
+  if (run) {
+    await knowledgePresenter.resumeAllPausedTasks(props.builtinKnowledgeDetail.id)
+  } else {
+    await knowledgePresenter.pauseAllRunningTasks(props.builtinKnowledgeDetail.id)
+  }
   loadList()
-  // 监听知识库文件更新事件
-  window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
-    const file = fileList.value.find((file) => file.id === data.id)
-    if (!file) {
-      return
-    }
-    file.status = data.status
-    file.metadata = data.metadata
-  })
-})
-onBeforeUnmount(() => {
-  window.electron.ipcRenderer.removeAllListeners(RAG_EVENTS.FILE_UPDATED)
-})
+}
+
 // 上传文件到内置知识库
 const handleDrop = async (e: DragEvent) => {
   if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
@@ -342,4 +348,39 @@ const reAddFile = async (file: KnowledgeFileMessage) => {
     })
   }
 }
+
+watch(
+  () => fileList.value,
+  () => {
+    if (fileList.value.length > 0) {
+      const hasProcessing = fileList.value.find((file) => file.status === 'processing')
+      if (hasProcessing) {
+        ctrlBtn.value = 'processing'
+        return
+      }
+      const hasPaused = fileList.value.find((file) => file.status === 'paused')
+      if (hasPaused) {
+        ctrlBtn.value = 'paused'
+        return
+      }
+    }
+    ctrlBtn.value = null
+  }
+)
+// 初始化文件列表
+onMounted(() => {
+  loadList()
+  // 监听知识库文件更新事件
+  window.electron.ipcRenderer.on(RAG_EVENTS.FILE_UPDATED, (_, data) => {
+    const file = fileList.value.find((file) => file.id === data.id)
+    if (!file) {
+      return
+    }
+    file.status = data.status
+    file.metadata = data.metadata
+  })
+})
+onBeforeUnmount(() => {
+  window.electron.ipcRenderer.removeAllListeners(RAG_EVENTS.FILE_UPDATED)
+})
 </script>

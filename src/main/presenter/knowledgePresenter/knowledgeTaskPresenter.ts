@@ -161,11 +161,11 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
       console.log(`[RAG TASK] Executing task: ${task.id}. Queue size: ${this.queue.length}`)
 
       try {
-        const result = await task.run({ signal: controller.signal })
+        await task.run({ signal: controller.signal })
         if (controller.signal.aborted) {
           task.onTerminate?.()
         } else {
-          task.onSuccess?.(result)
+          task.onSuccess?.()
         }
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {

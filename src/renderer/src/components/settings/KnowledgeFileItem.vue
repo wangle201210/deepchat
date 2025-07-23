@@ -49,6 +49,11 @@
         <Icon
           v-else-if="file.status === 'error'"
           icon="lucide:circle-alert"
+          class="text-base text-red-500"
+        />
+        <Icon
+          v-else-if="file.status === 'paused'"
+          icon="lucide:circle-pause"
           class="text-base text-yellow-500"
         />
       </Button>

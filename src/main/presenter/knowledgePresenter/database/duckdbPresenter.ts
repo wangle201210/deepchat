@@ -13,7 +13,7 @@ import {
   IVectorDatabasePresenter,
   KnowledgeFileMessage,
   KnowledgeChunkMessage,
-  KnowledgeChunkStatus
+  KnowledgeTaskStatus
 } from '@shared/presenter'
 
 import { nanoid } from 'nanoid'
@@ -90,6 +90,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     await this.installAndLoadVSS()
     console.log(`[DuckDB] clear dirty data`)
     await this.clearDirtyData()
+    console.log(`[DuckDB] paused all running tasks`)
+    await this.pauseAllRunningTasks()
   }
 
   async close(): Promise<void> {
@@ -266,7 +268,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   async updateChunkStatus(
     chunkId: string,
-    status: KnowledgeChunkStatus,
+    status: KnowledgeTaskStatus,
     error?: string
   ): Promise<void> {
     await this.executeInTransaction(async () => {
@@ -275,6 +277,37 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         error ?? '',
         chunkId
       ])
+    })
+  }
+
+  async queryChunks(where: Partial<KnowledgeChunkMessage>): Promise<KnowledgeChunkMessage[]> {
+    const camelToSnake = (key: string) =>
+      key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+
+    const entries = Object.entries(where).filter(([, value]) => value !== undefined)
+
+    let sql = `SELECT * FROM ${this.chunkTable}`
+    const params: any[] = []
+
+    if (entries.length > 0) {
+      const conditions = entries.map(([key]) => `${camelToSnake(key)} = ?`).join(' AND ')
+      sql += ` WHERE ${conditions}`
+      params.push(...entries.map(([, value]) => value))
+    }
+
+    try {
+      const reader = await this.connection.runAndReadAll(sql, params)
+      const rows = reader.getRowObjectsJson()
+      return rows.map((row) => this.toKnowledgeChunkMessage(row))
+    } catch (err) {
+      console.error('[DuckDB] queryChunks error', sql, params, err)
+      throw err
+    }
+  }
+
+  async deleteChunksByFile(fileId: string): Promise<void> {
+    await this.executeInTransaction(async () => {
+      await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [fileId])
     })
   }
 
@@ -354,50 +387,6 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   async deleteVectorsByFile(fileId: string): Promise<void> {
     await this.executeInTransaction(async () => {
       await this.safeRun(`DELETE FROM ${this.vectorTable} WHERE file_id = ?;`, [fileId])
-    })
-  }
-
-  async queryChunk(chunkId: string): Promise<KnowledgeChunkMessage | null> {
-    const sql = `SELECT * FROM ${this.chunkTable} WHERE id = ?;`
-    try {
-      const reader = await this.connection.runAndReadAll(sql, [chunkId])
-      const rows = reader.getRowObjectsJson()
-      if (rows.length === 0) return null
-      const row = rows[0]
-      return this.toKnowledgeChunkMessage(row)
-    } catch (err) {
-      console.error('[DuckDB] queryChunk error', sql, chunkId, err)
-      throw err
-    }
-  }
-
-  async queryChunksByFile(
-    fileId: string,
-    status?: KnowledgeChunkStatus
-  ): Promise<KnowledgeChunkMessage[]> {
-    let sql = `SELECT * FROM ${this.chunkTable} WHERE file_id = ?`
-    const params: any[] = [fileId]
-
-    if (status) {
-      sql += ` AND status = ?`
-      params.push(status)
-    }
-
-    sql += ` ORDER BY chunk_index;`
-
-    try {
-      const reader = await this.connection.runAndReadAll(sql, params)
-      const rows = reader.getRowObjectsJson()
-      return rows.map((row) => this.toKnowledgeChunkMessage(row))
-    } catch (err) {
-      console.error('[DuckDB] queryChunksByFile error', sql, params, err)
-      throw err
-    }
-  }
-
-  async deleteChunksByFile(fileId: string): Promise<void> {
-    await this.executeInTransaction(async () => {
-      await this.safeRun(`DELETE FROM ${this.chunkTable} WHERE file_id = ?;`, [fileId])
     })
   }
 
@@ -580,6 +569,36 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     }
   }
 
+  async pauseAllRunningTasks(): Promise<void> {
+    // paused chunk
+    await this.executeInTransaction(async () => {
+      await this.safeRun(
+        `UPDATE ${this.chunkTable} SET status = 'paused' WHERE status = 'processing';`
+      )
+    })
+    // paused file
+    await this.executeInTransaction(async () => {
+      await this.safeRun(
+        `UPDATE ${this.fileTable} SET status = 'paused' WHERE status = 'processing';`
+      )
+    })
+  }
+
+  async resumeAllPausedTasks(): Promise<void> {
+    // resumed chunk
+    await this.executeInTransaction(async () => {
+      await this.safeRun(
+        `UPDATE ${this.chunkTable} SET status = 'processing' WHERE status = 'paused';`
+      )
+    })
+    // resumed file
+    await this.executeInTransaction(async () => {
+      await this.safeRun(
+        `UPDATE ${this.fileTable} SET status = 'processing' WHERE status = 'paused';`
+      )
+    })
+  }
+
   // ==================== 初始化相关 ====================
 
   private async create() {
@@ -596,7 +615,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
 
   /**
    * 通过 memory 附加 DuckDB 数据库并修复索引问题
-   * 
+   *
    * - 正常关闭链接时会自动checkpoint，但异常关闭软件（崩溃， kill）无法触发
    * - 连接时如果存在wal文件会自动checkpoint，但由于使用了vss插件，自动checkpoint会失败导致无法连接
    * - 必须先通过内存安装并加载vss插件，附加到本地数据库，再执行checkpoint
@@ -724,7 +743,9 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     )
   }
 
-  /** 清理异常任务引入的脏数据 */
+  /**
+   * 清理异常任务引入的脏数据
+   */
   private async clearDirtyData(): Promise<void> {
     // 清理向量表中没有对应文件的向量
     await this.safeRun(`

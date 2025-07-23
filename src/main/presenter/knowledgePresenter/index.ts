@@ -325,4 +325,14 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   async getTaskQueueStatus() {
     return this.taskP.getStatus()
   }
+
+  async pauseAllRunningTasks(id: string): Promise<void> {
+    const rag = await this.getOrCreateStorePresenter(id)
+    await rag.pauseAllRunningTasks()
+  }
+
+  async resumeAllPausedTasks(id: string): Promise<void> {
+    const rag = await this.getOrCreateStorePresenter(id)
+    await rag.resumeAllPausedTasks()
+  }
 }
