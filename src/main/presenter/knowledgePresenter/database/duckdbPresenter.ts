@@ -882,8 +882,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       try {
         await this.executeInTransaction(async () => {
           await migration.up(this)
-          await this.setDatabaseVersion(migration.version)
         })
+        await this.setDatabaseVersion(migration.version)
 
         console.log(`[DuckDB] Migration v${migration.version} completed successfully`)
       } catch (error) {
