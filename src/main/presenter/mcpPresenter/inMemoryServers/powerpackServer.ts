@@ -261,7 +261,9 @@ export class PowerpackServer {
 
     let sandbox: Sandbox | null = null
     try {
-      sandbox = await Sandbox.create()
+      sandbox = await Sandbox.create({
+        apiKey: this.e2bApiKey
+      })
       const result = await sandbox.runCode(code)
 
       // 格式化结果
