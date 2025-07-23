@@ -16,6 +16,8 @@ import { DuckDBPresenter } from './database/duckdbPresenter'
 import { KnowledgeStorePresenter } from './knowledgeStorePresenter'
 import { KnowledgeTaskPresenter } from './knowledgeTaskPresenter'
 import { getMetric } from '@/utils/vector'
+import { presenter } from '..'
+import { DIALOG_WARN } from '@shared/dialog'
 
 export class KnowledgePresenter implements IKnowledgePresenter {
   /**
@@ -286,8 +288,30 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.storePresenterCache.clear()
   }
 
+  async beforeDestroy(): Promise<boolean> {
+    const status = this.taskP.getStatus()
+    if (status.totalTasks === 0) {
+      return true
+    }
+    const choice = await presenter.dialogPresenter.showDialog({
+      title: 'settings.knowledgeBase.dialog.beforequit.title',
+      description: 'settings.knowledgeBase.dialog.beforequit.description',
+      icon: DIALOG_WARN,
+      buttons: [
+        { key: 'cancel', label: 'settings.knowledgeBase.dialog.beforequit.cancel' },
+        { key: 'confirm', label: 'settings.knowledgeBase.dialog.beforequit.confirm', default: true }
+      ],
+      timeout: 10000,
+      i18n: true
+    })
+    return choice === 'confirm'
+  }
+
+  /**
+   * @returns return true if user confirmed to destroy knowledge, otherwise false
+   */
   async destroy(): Promise<void> {
-    this.closeAll()
+    await this.closeAll()
   }
 
   async similarityQuery(id: string, key: string): Promise<QueryResult[]> {

@@ -357,7 +357,15 @@
     "copySuccess": "Copy successfully",
     "source": "source",
     "normalized": "L2 Normalization",
-    "normalizedHelper": "Please confirm that the model supports L2 normalization of output vectors"
+    "normalizedHelper": "Please confirm that the model supports L2 normalization of output vectors",
+    "dialog": {
+      "beforequit": {
+        "cancel": "Cancel",
+        "confirm": "confirm",
+        "title": "Exit confirmation",
+        "description": "There is a running knowledge base task. Are you sure to exit the software? \nAborted tasks can be restored after restarting the software."
+      }
+    }
   },
   "mcp": {
     "title": "MCP Settings",

@@ -357,7 +357,15 @@
     "copySuccess": "성공적으로 복사하십시오",
     "source": "원천",
     "normalized": "L2 정규화",
-    "normalizedHelper": "모델이 출력 벡터의 L2 정규화를 지원하는지 확인하십시오."
+    "normalizedHelper": "모델이 출력 벡터의 L2 정규화를 지원하는지 확인하십시오.",
+    "dialog": {
+      "beforequit": {
+        "cancel": "취소",
+        "confirm": "확인하다",
+        "title": "확인 확인",
+        "description": "실행중인 지식 기반 작업이 있습니다. 소프트웨어를 종료 하시겠습니까? 소프트웨어를 다시 시작한 후 낙태 된 작업을 복원 할 수 있습니다."
+      }
+    }
   },
   "mcp": {
     "title": "MCP 설정",

@@ -42,25 +42,23 @@ export const useDialogStore = defineStore('dialog', () => {
           return
         }
 
+        // Clear previous dialog request if exists
         if (dialogRequest.value) {
-          // If a dialog request already exists, clear the previous timer
-          clearTimer()
-          await handleError(event.id)
+          await handleError(dialogRequest.value.id)
+        }
+
+        // Start countdown if timeout is set and has default button
+        const { timeout, buttons } = event
+        const defaultButton = buttons.find((btn) => btn.default)
+        if (timeout > 0 && buttons && defaultButton) {
+          startCountdown(timeout, {
+            id: event.id,
+            button: defaultButton.key
+          })
         }
 
         dialogRequest.value = event
         showDialog.value = true
-        const { timeout, defaultId, buttons } = event
-
-        if (timeout > 0 && buttons && buttons[defaultId]) {
-          startCountdown(timeout, {
-            id: event.id,
-            button: buttons[defaultId]
-          })
-        } else {
-          // Use proper logging infrastructure
-          clearTimer()
-        }
       } catch (error) {
         console.error('[DialogStore] Error processing dialog request:', error)
       }
@@ -75,14 +73,10 @@ export const useDialogStore = defineStore('dialog', () => {
         console.warn('No dialog request to respond')
         return
       }
-
       await dialogP.handleDialogResponse(response)
-
-      dialogRequest.value = null
-      showDialog.value = false
     } catch (error) {
       console.error('[DialogStore] Error handling dialog response:', error)
-      // Reset state even on error to prevent stuck dialogs
+    } finally {
       dialogRequest.value = null
       showDialog.value = false
     }
@@ -91,9 +85,13 @@ export const useDialogStore = defineStore('dialog', () => {
   // Handle dialog error
   const handleError = async (id: string) => {
     try {
+      clearTimer()
       await dialogP.handleDialogError(id)
     } catch (error) {
       console.error('[DialogStore] Error handling dialog error:', error)
+    } finally {
+      dialogRequest.value = null
+      showDialog.value = false
     }
   }
 

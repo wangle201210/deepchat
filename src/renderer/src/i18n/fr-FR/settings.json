@@ -357,7 +357,15 @@
     "copySuccess": "Copier avec succès",
     "source": "source",
     "normalized": "Normalisation L2",
-    "normalizedHelper": "Veuillez confirmer que le modèle prend en charge la normalisation L2 des vecteurs de sortie"
+    "normalizedHelper": "Veuillez confirmer que le modèle prend en charge la normalisation L2 des vecteurs de sortie",
+    "dialog": {
+      "beforequit": {
+        "cancel": "Annuler",
+        "confirm": "confirmer",
+        "title": "Confirmation de sortie",
+        "description": "Il y a une tâche de base de connaissances en cours. Êtes-vous sûr de quitter le logiciel? Les tâches abandonnées peuvent être restaurées après le redémarrage du logiciel."
+      }
+    }
   },
   "mcp": {
     "title": "Paramètres MCP",

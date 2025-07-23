@@ -4,8 +4,8 @@
       <AlertDialogHeader>
         <AlertDialogTitle>
           <div class="flex items-center space-x-2">
-            <template v-if="dialogRequest?.type">
-              <Icon v-bind="getIconProps(dialogRequest?.type)" class="h-6 w-6" />
+            <template v-if="dialogRequest?.icon">
+              <Icon v-bind="getIconProps(dialogRequest?.icon)" class="h-6 w-6" />
             </template>
             <span>{{ dialogRequest?.i18n ? t(dialogRequest?.title) : dialogRequest?.title }}</span>
           </div>
@@ -17,18 +17,18 @@
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <template v-for="(button, index) in dialogRequest?.buttons">
-          <AlertDialogAction v-if="index === dialogRequest?.defaultId" @click="handleClick(button)">
-            {{ dialogRequest?.i18n ? t(button) : button }}
+        <template v-for="(button) in dialogRequest?.buttons" :key="button.key">
+          <AlertDialogAction v-if="button.default" @click="handleClick(button.key)">
+            {{ dialogRequest?.i18n ? t(button.label) : button.label }}
             <span
-              v-if="timeoutSeconds && index === dialogRequest?.defaultId"
+              v-if="timeoutSeconds && button.default"
               class="inline-block min-w-8 text-right"
             >
               [{{ timeoutSeconds }}]
             </span>
           </AlertDialogAction>
-          <AlertDialogCancel v-else @click="handleClick(button)">
-            {{ dialogRequest?.i18n ? t(button) : button }}
+          <AlertDialogCancel v-else @click="handleClick(button.key)">
+            {{ dialogRequest?.i18n ? t(button.label) : button.label }}
           </AlertDialogCancel>
         </template>
       </AlertDialogFooter>
@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useDialogStore } from '@/stores/dialog'
 import { Icon } from '@iconify/vue'
+import { DialogIcon } from '@shared/presenter'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -91,17 +92,9 @@ const perfectTime = (ms: number) => {
   return `${weeks} w`
 }
 
-const getIconProps = (type: 'info' | 'warn' | 'error' | 'confirm') => {
-  console.log('[Dialog] getIconProps called with type:', type)
-  switch (type) {
-    case 'warn':
-      return { icon: 'lucide:circle-alert', class: "text-usage-mid" }
-    case 'error':
-      return { icon: 'lucide:circle-x', class: "text-usage-high" }
-    case 'confirm':
-      return { icon: 'lucide:circle-question-mark', class: 'text-usage-low' }
-    case 'info':
-      return { icon: 'lucide:info', class: 'text-primary' }
-  }
+const getIconProps = (icon: DialogIcon) => {
+  console.log('[Dialog] getIconProps called with icon:', icon)
+  return { ...icon }
 }
+
 </script>

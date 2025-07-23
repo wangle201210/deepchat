@@ -14,6 +14,7 @@ import { eventBus, SendTarget } from '@/eventbus'
 import { DIALOG_EVENTS } from '@/events'
 import { nanoid } from 'nanoid'
 
+
 export class DialogPresenter implements IDialogPresenter {
   private pendingDialogs = new Map<
     string,
@@ -32,16 +33,18 @@ export class DialogPresenter implements IDialogPresenter {
     if (!request.title) {
       throw new Error('Dialog title is required')
     }
+    if (Array.isArray(request.buttons) && request.buttons.filter((btn) => btn.default).length > 1) {
+      throw new Error('Dialog buttons cannot have more than one default button')
+    }
     return new Promise((resolve, reject) => {
       try {
         const finalRequest: DialogRequest = {
           id: nanoid(8), // Better to use current DEFAULT_TAB id to control max one dialog per window, but currently lacks access method
           title: request.title,
           description: request.description,
-          i18n: request.i18n ?? false,
-          type: request.type,
-          buttons: request.buttons ?? ['OK'],
-          defaultId: request.defaultId ?? 0,
+          i18n: !!request.i18n,
+          icon: request.icon,
+          buttons: request.buttons ?? [{ key: 'ok', label: 'OK' }],
           timeout: request.timeout ?? 0
         }
         this.pendingDialogs.set(finalRequest.id, { resolve, reject })

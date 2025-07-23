@@ -357,7 +357,15 @@
     "deleteSuccess": "删除成功",
     "copy": "复制",
     "copySuccess": "复制成功",
-    "source": "来源"
+    "source": "来源",
+    "dialog": {
+      "beforequit": {
+        "title": "退出确认",
+        "description": "有正在运行的知识库任务，是否确认退出软件？\n被中止的任务可在重启软件后恢复。",
+        "cancel": "取消",
+        "confirm": "确认"
+      }
+    }
   },
   "mcp": {
     "title": "MCP设置",

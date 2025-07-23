@@ -357,7 +357,15 @@
     "copySuccess": "複製成功",
     "source": "來源",
     "normalized": "L2 歸一化",
-    "normalizedHelper": "請確認模型支持對輸出向量進行 L2 歸一化"
+    "normalizedHelper": "請確認模型支持對輸出向量進行 L2 歸一化",
+    "dialog": {
+      "beforequit": {
+        "cancel": "取消",
+        "confirm": "確認",
+        "title": "退出確認",
+        "description": "有正在運行的知識庫任務，是否確認退出軟件？\n被中止的任務可在重啟軟件後恢復。"
+      }
+    }
   },
   "mcp": {
     "title": "MCP設置",

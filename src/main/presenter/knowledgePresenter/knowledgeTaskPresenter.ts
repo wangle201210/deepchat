@@ -1,28 +1,14 @@
-import { IKnowledgeTaskPresenter, KnowledgeChunkTask, TaskQueueStatus } from '@shared/presenter'
-
 /**
- * KnowledgeTaskPresenter - 专注于全局任务调度和顺序执行
- *
- * ## 设计思路
- *
- * 1.  **单一处理循环**:
- *     - 使用 `isProcessing` 标志位和一个 `while` 循环来创建一个常驻的后台处理循环 (`processQueue` 方法)。
- *     - 这种模式确保了在任何时候只有一个任务在执行，从根本上避免了并发问题。
- *
- * 2.  **顺序执行**:
- *     - 任务被添加到 `queue` 中，然后由 `processQueue` 循环按顺序取出并执行。
- *     - `await task.run(...)` 会等待当前任务完全结束后，循环才会进入下一次迭代，处理下一个任务。这保证了任务的严格顺序执行。
- *
- * 3.  **终止和清理**:
- *     - `removeTasks` 方法现在可以精确地终止正在运行的任务或从队列中移除待处理的任务。
- *     - `destroy` 方法会清空队列并终止正在处理的循环，确保资源被正确释放。
- *
- * 4.  **健壮性**:
- *     - `try...catch...finally` 结构确保了即使任务执行失败，`isProcessing` 标志也会被重置，从而允许队列继续处理（或在修复问题后重新启动）。
- *     - 对 `AbortController` 的管理确保了可以取消正在运行的异步任务。
- *
- * 这种设计将任务调度从“并发”模型转变为“顺序”模型，更适合于需要严格顺序访问资源的场景（如 DuckDB 的写操作），从而提高了稳定性和可预测性。
+ * KnowledgeTaskPresenter - Focused on global task scheduling and sequential execution
+ * This class manages a queue of knowledge-related tasks, allowing for efficient processing and management of these tasks.
  */
+import {
+  IKnowledgeTaskPresenter,
+  KnowledgeChunkTask,
+  TaskQueueStatus,
+  TaskStatusSummary
+} from '@shared/presenter'
+
 export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
   private queue: KnowledgeChunkTask[] = []
   private controllers: Map<string, AbortController> = new Map()
@@ -37,51 +23,47 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
   }
 
   removeTasks(filter: (task: KnowledgeChunkTask) => boolean): void {
-    // 移除队列中的任务
+    // Remove tasks from the queue
     this.queue = this.queue.filter((task) => {
       if (filter(task)) {
         console.log(`[RAG TASK] Removing queued task: ${task.id}`)
         this.terminateTask(task.id)
-        return false // 移除
+        return false
       }
-      return true // 保留
+      return true
     })
 
-    // 终止正在运行的任务
+    // Terminate the currently running task if it matches
     if (this.currentTask && filter(this.currentTask)) {
       console.log(`[RAG TASK] Terminating running task: ${this.currentTask.id}`)
       this.terminateTask(this.currentTask.id)
     }
   }
 
-  // 新增便捷方法：按知识库ID取消任务（通过filter实现）
+  // Convenience method: cancel tasks by knowledge base ID (implemented via filter)
   cancelTasksByKnowledgeBase(knowledgeBaseId: string): void {
     this.removeTasks((task) => task.payload.knowledgeBaseId === knowledgeBaseId)
   }
 
-  // 新增便捷方法：按文件ID取消任务（通过filter实现）  
+  // Convenience method: cancel tasks by file ID (implemented via filter)
   cancelTasksByFile(fileId: string): void {
     this.removeTasks((task) => task.payload.fileId === fileId)
   }
 
-  // 新增便捷方法：按chunkId取消任务（通过filter实现）
+  // Convenience method: cancel tasks by chunk ID (implemented via filter)
   cancelTasksByChunk(chunkId: string): void {
     this.removeTasks((task) => task.payload.chunkId === chunkId)
   }
 
-  // 新增：获取任务执行情况（通过遍历实现，无需维护索引）
-  getTaskStatus(): {
-    pending: number
-    processing: number
-    byKnowledgeBase: Map<string, { pending: number, processing: number }>
-  } {
+  // Get task execution status (implemented by traversal, no need to maintain index)
+  getTaskStatus(): TaskStatusSummary {
     const status = {
       pending: this.queue.length,
       processing: this.currentTask ? 1 : 0,
-      byKnowledgeBase: new Map<string, { pending: number, processing: number }>()
+      byKnowledgeBase: new Map<string, { pending: number; processing: number }>()
     }
 
-    // 统计队列中的任务（按知识库分组）
+    // Count tasks in the queue (grouped by knowledge base)
     for (const task of this.queue) {
       const kbId = task.payload.knowledgeBaseId
       if (!status.byKnowledgeBase.has(kbId)) {
@@ -90,7 +72,7 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
       status.byKnowledgeBase.get(kbId)!.pending++
     }
 
-    // 统计正在处理的任务
+    // Count the currently processing task
     if (this.currentTask) {
       const kbId = this.currentTask.payload.knowledgeBaseId
       if (!status.byKnowledgeBase.has(kbId)) {
@@ -102,21 +84,25 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     return status
   }
 
-  // 新增：检查是否有进行中的任务
+  // Check if there are any active tasks
   hasActiveTasks(): boolean {
     return this.queue.length > 0 || this.currentTask !== null
   }
 
-  // 新增：检查指定知识库是否有活跃任务
+  // Check if there are active tasks for the specified knowledge base
   hasActiveTasksForKnowledgeBase(knowledgeBaseId: string): boolean {
-    return this.queue.some(task => task.payload.knowledgeBaseId === knowledgeBaseId) ||
-           (this.currentTask?.payload.knowledgeBaseId === knowledgeBaseId)
+    return (
+      this.queue.some((task) => task.payload.knowledgeBaseId === knowledgeBaseId) ||
+      this.currentTask?.payload.knowledgeBaseId === knowledgeBaseId
+    )
   }
 
-  // 新增：检查指定文件是否有活跃任务
+  // Check if there are active tasks for the specified file
   hasActiveTasksForFile(fileId: string): boolean {
-    return this.queue.some(task => task.payload.fileId === fileId) ||
-           (this.currentTask?.payload.fileId === fileId)
+    return (
+      this.queue.some((task) => task.payload.fileId === fileId) ||
+      this.currentTask?.payload.fileId === fileId
+    )
   }
 
   getStatus(): TaskQueueStatus {
@@ -130,9 +116,14 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
 
   destroy(): void {
     console.log('[RAG TASK] Destroying TaskManager, all tasks will be terminated.')
-    this.removeTasks(() => true) // 移除所有任务
+    // Clear queue and reset state
     this.queue = []
+    this.removeTasks(() => true)
     this.currentTask = null
+    // Stop processing loop
+    this.isProcessing = false
+    // Clear all controllers
+    this.controllers.forEach((controller) => controller.abort())
     this.controllers.clear()
   }
 

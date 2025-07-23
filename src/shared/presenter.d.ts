@@ -1211,28 +1211,32 @@ export interface KeyStatus {
   usage?: string
 }
 
-/**
- * Dialog 类型定义
- */
+export interface DialogButton {
+  key: string,
+  label: string,
+  default?: boolean,
+}
+export interface DialogIcon {
+  icon: string,
+  class: string
+}
 
 export interface DialogRequestParams {
   title: string
-  description: string
+  description?: string
   i18n?: boolean
-  type?: 'info' | 'warn' | 'error' | 'confirm'
-  buttons?: string[]
-  defaultId?: number
+  icon?: DialogIcon
+  buttons?: DialogButton[]
   timeout?: number
 }
 
 export interface DialogRequest {
   id: string
   title: string
-  description: string
+  description?: string
   i18n: boolean
-  type?: 'info' | 'warn' | 'error' | 'confirm'
-  buttons: string[]
-  defaultId: number
+  icon?: DialogIcon
+  buttons: DialogButton[]
   timeout: number
 }
 
@@ -1261,7 +1265,7 @@ export interface IDialogPresenter {
   handleDialogError(response: string): Promise<void>
 }
 
-// built-in 知识库相关
+// built-in knowledgebase
 export type KnowledgeFileMetadata = {
   size: number
   totalChunks: number
@@ -1288,105 +1292,103 @@ export type KnowledgeChunkMessage = {
   chunkIndex: number
   content: string
   status: KnowledgeChunkStatus
-  error?: string // 错误信息
+  error?: string
 }
 
-// 任务调度和处理接口
+// task management
 export interface KnowledgeChunkTask {
   id: string // chunkId
   payload: {
     knowledgeBaseId: string
     fileId: string
-    [key: string]: any // 其他业务数据
+    [key: string]: any
   }
   run: (context: { signal: AbortSignal }) => Promise<VectorInsertOptions> // 任务执行体，支持终止信号
   onSuccess?: (vector: VectorInsertOptions) => void
   onError?: (error: Error) => void
-  onTerminate?: () => void // 任务被强制终止时的回调
+  onTerminate?: () => void // task termination callback
 }
 
-// 任务状态统计
+// task status summary
 export interface TaskStatusSummary {
   pending: number
   processing: number
   byKnowledgeBase: Map<string, { pending: number; processing: number }>
 }
 
+// task general status
 export interface TaskQueueStatus {
   totalTasks: number
   runningTasks: number
   queuedTasks: number
 }
 
-/**
- * 任务调度器接口 - TaskPresenter 实现
- */
 export interface IKnowledgeTaskPresenter {
   /**
-   * 添加任务到队列
-   * @param task 任务对象
+   * Add a task to the queue
+   * @param task Task object
    */
   addTask(task: KnowledgeChunkTask): void
 
   /**
-   * 根据条件移除/终止任务
-   * @param filter 过滤器函数，作用于整个 Task 对象
+   * Remove/terminate tasks based on a filter
+   * @param filter Filter function, operates on the entire Task object
    */
   removeTasks(filter: (task: KnowledgeChunkTask) => boolean): void
 
   /**
-   * 获取当前任务队列状态
-   * @returns 队列状态信息
+   * Get the current status of the task queue
+   * @returns Queue status information
    */
   getStatus(): TaskQueueStatus
 
   /**
-   * 销毁实例，清理所有任务和资源
+   * Destroy the instance, clean up all tasks and resources
    */
   destroy(): void
 
-  // 新增便捷方法（内部通过removeTasks + filter实现）
+  // New convenience methods (implemented internally via removeTasks + filter)
   /**
-   * 按知识库ID取消任务
-   * @param knowledgeBaseId 知识库ID
+   * Cancel tasks by knowledge base ID
+   * @param knowledgeBaseId Knowledge base ID
    */
   cancelTasksByKnowledgeBase(knowledgeBaseId: string): void
 
   /**
-   * 按文件ID取消任务
-   * @param fileId 文件ID
+   * Cancel tasks by file ID
+   * @param fileId File ID
    */
   cancelTasksByFile(fileId: string): void
 
   /**
-   * 按chunkId取消任务
-   * @param chunkId chunk ID
+   * Cancel tasks by chunk ID
+   * @param chunkId Chunk ID
    */
   cancelTasksByChunk(chunkId: string): void
 
   /**
-   * 获取详细的任务状态统计
-   * @returns 任务状态统计信息
+   * Get detailed task status statistics
+   * @returns Task status summary information
    */
   getTaskStatus(): TaskStatusSummary
 
   /**
-   * 检查是否有进行中的任务
-   * @returns 是否有活跃任务
+   * Check if there are any active tasks
+   * @returns Whether there are active tasks
    */
   hasActiveTasks(): boolean
 
   /**
-   * 检查指定知识库是否有活跃任务
-   * @param knowledgeBaseId 知识库ID
-   * @returns 是否有活跃任务
+   * Check if the specified knowledge base has active tasks
+   * @param knowledgeBaseId Knowledge base ID
+   * @returns Whether there are active tasks
    */
   hasActiveTasksForKnowledgeBase(knowledgeBaseId: string): boolean
 
   /**
-   * 检查指定文件是否有活跃任务
-   * @param fileId 文件ID
-   * @returns 是否有活跃任务
+   * Check if the specified file has active tasks
+   * @param fileId File ID
+   * @returns Whether there are active tasks
    */
   hasActiveTasksForFile(fileId: string): boolean
 }
@@ -1396,67 +1398,73 @@ export type KnowledgeFileResult = {
 }
 
 /**
- * 知识库主接口，提供知识库的创建、删除、文件管理和相似度查询等功能。
+ * Knowledge base interface, provides functions for creating, deleting, file management, and similarity search.
  */
 export interface IKnowledgePresenter {
   /**
-   * 创建知识库（初始化 RAG 应用）
-   * @param config 知识库配置
+   * Create a knowledge base (initialize RAG application)
+   * @param config Knowledge base configuration
    */
   create(config: BuiltinKnowledgeConfig): Promise<void>
 
   /**
-   * 删除知识库（移除本地存储）
-   * @param id 知识库 ID
+   * Delete a knowledge base (remove local storage)
+   * @param id Knowledge base ID
    */
   delete(id: string): Promise<void>
 
   /**
-   * 添加文件到知识库
-   * @param id 知识库 ID
-   * @param path 文件路径
-   * @returns 文件添加结果
+   * Add a file to the knowledge base
+   * @param id Knowledge base ID
+   * @param path File path
+   * @returns File addition result
    */
   addFile(id: string, path: string): Promise<KnowledgeFileResult>
 
   /**
-   * 删除知识库中的文件
-   * @param id 知识库 ID
-   * @param fileId 文件 ID
+   * Delete a file from the knowledge base
+   * @param id Knowledge base ID
+   * @param fileId File ID
    */
   deleteFile(id: string, fileId: string): Promise<void>
 
   /**
-   * 重新添加（重建向量）知识库中的文件
-   * @param id 知识库 ID
-   * @param fileId 文件 ID
-   * @returns 文件添加结果
+   * Re-add (rebuild vector) a file in the knowledge base
+   * @param id Knowledge base ID
+   * @param fileId File ID
+   * @returns File addition result
    */
   reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult>
 
   /**
-   * 列出知识库下所有文件
-   * @param id 知识库 ID
-   * @returns 文件元数据数组
+   * List all files in the knowledge base
+   * @param id Knowledge base ID
+   * @returns Array of file metadata
    */
   listFiles(id: string): Promise<KnowledgeFileMessage[]>
 
   /**
-   * 相似度检索
-   * @param id 知识库 ID
-   * @param key 查询文本
-   * @returns 相似片段结果数组
+   * Similarity search
+   * @param id Knowledge base ID
+   * @param key Query text
+   * @returns Array of similar fragment results
    */
   similarityQuery(id: string, key: string): Promise<QueryResult[]>
 
   /**
-   * 获取任务队列状态
-   * @returns 队列状态信息
+   * Get the status of the task queue
+   * @returns Task queue status information
    */
   getTaskQueueStatus(): Promise<TaskQueueStatus>
 
   /**
-   * 销毁实例，释放资源
+   * Ask user before destroy
+   * @return return true to confirm destroy, false to cancel
+   */
+  beforeDestroy(): Promise<boolean>
+
+  /**
+   * Destroy the instance and release resources
    */
   destroy(): Promise<void>
 }
@@ -1481,29 +1489,29 @@ export type BuiltinKnowledgeConfig = {
 export type MetricType = 'l2' | 'cosine' | 'ip'
 
 export interface IndexOptions {
-  /** 距离度量：'l2' | 'cosine' | 'ip' */
+  /** Distance metric: 'l2' | 'cosine' | 'ip' */
   metric?: MetricType
-  /** HNSW 参数 M */
+  /** HNSW parameter M */
   M?: number
-  /** HNSW 构建时 ef */
+  /** HNSW ef parameter during construction */
   efConstruction?: number
 }
 export interface VectorInsertOptions {
-  /** 数值数组，长度等于 dimension */
+  /** Numeric array, length equals dimension */
   vector: number[]
-  /** 文件id */
+  /** File ID */
   fileId: string
-  /** chunk id */
+  /** Chunk ID */
   chunkId: string
 }
 export interface QueryOptions {
-  /** 查询顶点数 */
+  /** Number of nearest neighbors to query */
   topK: number
-  /** 搜索时 ef */
+  /** ef parameter during search */
   efSearch?: number
-  /** 最小距离阈值，由于metric不同，距离计算结果差异很大，此选项在数据库检索时无法生效，应考虑在应用层进行过滤 */
+  /** Minimum distance threshold. Due to different metrics, distance calculation results vary greatly. This option does not take effect in database queries and should be considered at the application layer. */
   threshold?: number
-  /** 查询向量的维度 */
+  /** Metric for the query vector's dimension */
   metric: MetricType
 }
 export interface QueryResult {
@@ -1517,110 +1525,110 @@ export interface QueryResult {
 }
 
 /**
- * 向量数据库操作接口，支持自动建表、索引、插入、批量插入、向量检索、删除和关闭。
+ * Vector database operation interface, supports automatic table creation, indexing, insertion, batch insertion, vector search, deletion, and closing.
  */
 export interface IVectorDatabasePresenter {
   /**
-   * 首次初始化向量数据库
-   * @param dimensions 向量维度
+   * Initialize the vector database for the first time
+   * @param dimensions Vector dimensions
    * @param opts
    */
   initialize(dimensions: number, opts?: IndexOptions): Promise<void>
   /**
-   * 打开数据库
+   * Open the database
    */
   open(): Promise<void>
   /**
-   * 关闭数据库
+   * Close the database
    */
   close(): Promise<void>
   /**
-   * 销毁数据库实例，释放所有资源。
+   * Destroy the database instance and release all resources.
    */
   destroy(): Promise<void>
   /**
-   * 插入单条向量记录，id未提供时自动生成
-   * @param opts 插入参数，包含向量数据和可选元数据
+   * Insert a single vector record. If id is not provided, it will be generated automatically.
+   * @param opts Insert parameters, including vector data and optional metadata
    */
   insertVector(opts: VectorInsertOptions): Promise<void>
   /**
-   * 批量插入多条向量记录。
-   * @param records 插入参数数组，每项id未提供时自动生成
+   * Batch insert multiple vector records. If id is not provided for an item, it will be generated automatically.
+   * @param records Array of insert parameters
    */
   insertVectors(records: Array<VectorInsertOptions>): Promise<void>
   /**
-   * 查询向量最近邻（TopK 检索）。
-   * @param vector 查询向量
-   * @param options 查询参数
-   *   - topK: 返回最近邻数量
-   *   - efSearch: 检索时 HNSW 的 ef 参数（可选）
-   *   - threshold: 最小距离阈值（可选）
-   * @returns Promise<QueryResult[]> 检索结果数组，包含 id、metadata、distance
+   * Query the nearest neighbors of a vector (TopK search).
+   * @param vector Query vector
+   * @param options Query parameters
+   *   - topK: Number of nearest neighbors to return
+   *   - efSearch: HNSW ef parameter during search (optional)
+   *   - threshold: Minimum distance threshold (optional)
+   * @returns Promise<QueryResult[]> Array of search results, including id, metadata, and distance
    */
   similarityQuery(vector: number[], options: QueryOptions): Promise<QueryResult[]>
   /**
-   * 根据 file_id 删除指定向量记录
-   * @param id 文件 id
+   * Delete vector records by file_id
+   * @param id File ID
    */
   deleteVectorsByFile(id: string): Promise<void>
   /**
-   * 插入文件
-   * @param file 文件元数据对象
+   * Insert a file
+   * @param file File metadata object
    */
   insertFile(file: KnowledgeFileMessage): Promise<void>
   /**
-   * 更新文件
-   * @param file 文件元数据对象
+   * Update a file
+   * @param file File metadata object
    */
   updateFile(file: KnowledgeFileMessage): Promise<void>
   /**
-   * 查询文件
-   * @param id 文件 id
-   * @returns 文件数据对象或 null
+   * Query a file
+   * @param id File ID
+   * @returns File data object or null
    */
   queryFile(id: string): Promise<KnowledgeFileMessage | null>
   /**
-   * 根据条件查询文件
-   * @param where 查询条件
-   * @returns 文件数据数组
+   * Query files by condition
+   * @param where Query condition
+   * @returns Array of file data
    */
   queryFiles(where: Partial<KnowledgeFileMessage>): Promise<KnowledgeFileMessage[]>
   /**
-   * 查询知识库下所有文件
-   * @returns 文件数据数组
+   * List all files in the knowledge base
+   * @returns Array of file data
    */
   listFiles(): Promise<KnowledgeFileMessage[]>
   /**
-   * 删除文件
-   * @param id 文件 id
+   * Delete a file
+   * @param id File ID
    */
   deleteFile(id: string): Promise<void>
   /**
-   * 批量插入 chunks
-   * @param chunks chunk 数据数组
+   * Batch insert chunks
+   * @param chunks Array of chunk data
    */
   insertChunks(chunks: KnowledgeChunkMessage[]): Promise<void>
   /**
-   * 更新 chunk 状态，完成的chunk会被自动删除
-   * @param chunkId chunk id
-   * @param status 新状态
-   * @param error 错误信息
+   * Update chunk status. Completed chunks will be automatically deleted.
+   * @param chunkId Chunk ID
+   * @param status New status
+   * @param error Error message
    */
   updateChunkStatus(chunkId: string, status: KnowledgeChunkStatus, error?: string): Promise<void>
   /**
-   * 查询单个 chunk
-   * @param chunkId chunk id
+   * Query a single chunk
+   * @param chunkId Chunk ID
    */
   queryChunk(chunkId: string): Promise<KnowledgeChunkMessage | null>
   /**
-   * 查询文件的所有 chunks
-   * @param fileId 文件 id
-   * @param status 可选状态过滤
+   * Query all chunks of a file
+   * @param fileId File ID
+   * @param status Optional status filter
    */
   queryChunksByFile(fileId: string, status?: KnowledgeChunkStatus): Promise<KnowledgeChunkMessage[]>
   /**
-   * 删除文件的所有 chunks
-   * @param fileId 文件 id
+   * Delete all chunks of a file
+   * @param fileId File ID
    */
   deleteChunksByFile(fileId: string): Promise<void>
 }
