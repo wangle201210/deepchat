@@ -122,11 +122,14 @@
               ? t('settings.knowledgeBase.editRagflowConfig')
               : t('settings.knowledgeBase.addRagflowConfig')
           }}</DialogTitle>
+          <DialogDescription>
+            {{ t('settings.knowledgeBase.ragflowDescription') }}
+          </DialogDescription>
         </DialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
             <Label class="text-xs text-muted-foreground" for="edit-ragflow-description">
-              {{ t('settings.knowledgeBase.ragflowDescription') }}
+              {{ t('settings.knowledgeBase.descriptionDesc') }}
             </Label>
             <Input
               id="edit-ragflow-description"
@@ -195,7 +198,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from '@/components/ui/dialog'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { useMcpStore } from '@/stores/mcp'

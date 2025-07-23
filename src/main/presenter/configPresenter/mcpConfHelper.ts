@@ -196,6 +196,18 @@ const DEFAULT_INMEMORY_SERVERS: Record<string, MCPServerConfig> = {
     },
     disable: false
   },
+  builtinKnowledge: {
+    args: [],
+    descriptions: 'DeepChat内置知识库检索服务',
+    icons: '📚',
+    autoApprove: ['all'],
+    type: 'inmemory' as MCPServerType,
+    command: 'builtinKnowledge',
+    env: {
+      configs: []
+    },
+    disable: false
+  },
   'deepchat-inmemory/deep-research-server': {
     args: [],
     descriptions:
