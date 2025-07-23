@@ -176,10 +176,11 @@ export const FLOATING_BUTTON_EVENTS = {
 // Dialog相关事件
 export const DIALOG_EVENTS = {
   REQUEST: 'dialog:request',   // 主进程 -> 渲染进程，请求显示dialog
-  RESPONSE: 'dialog:response', // 渲染进程 -> 主进程，dialog结果回传
+  RESPONSE: 'dialog:response' // 渲染进程 -> 主进程，dialog结果回传
 }
 
 // 知识库事件
 export const RAG_EVENTS = {
-  FILE_UPDATED: 'rag:file-updated' // 文件状态更新
+  FILE_UPDATED: 'rag:file-updated', // 文件状态更新
+  FILE_PROGRESS: 'rag:file-progress' // 文件处理进度更新
 }

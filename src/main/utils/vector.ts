@@ -1,3 +1,5 @@
+import { MetricType } from "@shared/presenter"
+
 export const EMBEDDING_TEST_KEY = 'sample'
 
 /**
@@ -66,7 +68,7 @@ export function ensureNormalized(vector: number[], tolerance = 1e-3): number[] {
  * @param metric 'cosine' | 'ip'
  * @returns 0~1 置信度值
  */
-export function normalizeDistance(distance: number, metric: 'cosine' | 'ip'): number {
+export function normalizeDistance(distance: number, metric: MetricType): number {
   if (metric === 'cosine') {
     // cosine distance ∈ [0,1]，0 越相似，1 越不相似
     // confidence = 1 - distance
@@ -88,4 +90,13 @@ export function normalizeDistance(distance: number, metric: 'cosine' | 'ip'): nu
   } else {
     throw new Error(`Unsupported metric: ${metric}`)
   }
+}
+
+/**
+ * 获取相似度度量方式
+ * @param normalized 是否已 normalized
+ * @returns 相似度度量方式
+ */
+export function getMetric(normalized: boolean): MetricType {
+  return normalized ? 'cosine' : 'ip'
 }

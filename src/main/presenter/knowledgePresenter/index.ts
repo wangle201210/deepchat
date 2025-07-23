@@ -10,10 +10,12 @@ import {
   QueryResult,
   KnowledgeFileResult
 } from '@shared/presenter'
-import { eventBus, SendTarget } from '@/eventbus'
-import { MCP_EVENTS, RAG_EVENTS } from '@/events'
+import { eventBus } from '@/eventbus'
+import { MCP_EVENTS } from '@/events'
 import { DuckDBPresenter } from './database/duckdbPresenter'
 import { KnowledgeStorePresenter } from './knowledgeStorePresenter'
+import { KnowledgeTaskPresenter } from './knowledgeTaskPresenter'
+import { getMetric } from '@/utils/vector'
 
 export class KnowledgePresenter implements IKnowledgePresenter {
   /**
@@ -23,13 +25,24 @@ export class KnowledgePresenter implements IKnowledgePresenter {
 
   private readonly configP: IConfigPresenter
 
+  /**
+   * 全局任务调度器
+   */
+  private readonly taskP: KnowledgeTaskPresenter
+
+  /**
+   * 缓存 RAG 应用实例
+   */
+  private readonly storePresenterCache: Map<string, KnowledgeStorePresenter>
+
   constructor(configP: IConfigPresenter, dbDir: string) {
     console.log('[RAG] Initializing Built-in Knowledge Presenter')
     this.configP = configP
     this.storageDir = path.join(dbDir, 'KnowledgeBase')
+    this.taskP = new KnowledgeTaskPresenter()
+    this.storePresenterCache = new Map()
 
     this.initStorageDir()
-    this.recoverUnfinishedTasks()
     this.setupEventBus()
   }
 
@@ -92,17 +105,25 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    * 创建知识库（初始化 RAG 应用）
    */
   create = async (config: BuiltinKnowledgeConfig): Promise<void> => {
-    this.createStorePresenter(config)
+    await this.createStorePresenter(config)
   }
 
   /**
    * 更新知识库配置
    */
   update = async (config: BuiltinKnowledgeConfig): Promise<void> => {
-    // 存在更新，不存在忽略，创建时默认使用新配置
-    if (this.storePresenterCache.has(config.id)) {
-      const rag = this.storePresenterCache.get(config.id) as KnowledgeStorePresenter
-      rag.updateConfig(config)
+    if (config.enabled) {
+      // 如果启用且缓存中存在，则更新配置
+      const rag = this.getStorePresenter(config.id)
+      if (rag) {
+        rag.updateConfig(config)
+      } else {
+        // 如果缓存中没有，则创建新的 RAG 实例
+        await this.createStorePresenter(config)
+      }
+    } else {
+      // 如果禁用且缓存中存在，关闭实例
+      this.closeStorePresenterIfExists(config.id)
     }
   }
 
@@ -111,20 +132,18 @@ export class KnowledgePresenter implements IKnowledgePresenter {
    */
   delete = async (id: string): Promise<void> => {
     if (this.storePresenterCache.has(id)) {
-      const rag = this.storePresenterCache.get(id) as KnowledgeStorePresenter
-      await rag.destroy()
+      await this.getStorePresenter(id)?.destroy()
+      this.storePresenterCache.delete(id)
     } else {
       const dbPath = path.join(this.storageDir, id)
       if (fs.existsSync(dbPath)) {
         fs.rmSync(dbPath, { recursive: true })
       }
+      if (fs.existsSync(dbPath + '.wal')) {
+        fs.rmSync(dbPath + '.wal', { recursive: true })
+      }
     }
   }
-
-  /**
-   * 缓存 RAG 应用实例
-   */
-  private storePresenterCache: Map<string, KnowledgeStorePresenter> = new Map()
 
   /**
    * 创建 RAG 应用实例
@@ -141,7 +160,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
       config.normalized
     )
     try {
-      rag = new KnowledgeStorePresenter(db, config)
+      rag = new KnowledgeStorePresenter(db, config, this.taskP)
     } catch (e) {
       throw new Error(`Failed to create storePresenter: ${e}`)
     }
@@ -151,10 +170,22 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   /**
+   * 获取知识库实例
+   * @param id 知识库 ID
+   * @returns 知识库实例
+   */
+  private getStorePresenter = (id: string): KnowledgeStorePresenter | null => {
+    if (this.storePresenterCache.has(id)) {
+      return this.storePresenterCache.get(id) as KnowledgeStorePresenter
+    }
+    return null
+  }
+
+  /**
    * 获取 RAG 应用实例
    * @param id 知识库 ID
    */
-  private getStorePresenter = async (id: string): Promise<KnowledgeStorePresenter> => {
+  private getOrCreateStorePresenter = async (id: string): Promise<KnowledgeStorePresenter> => {
     // 缓存命中直接返回
     if (this.storePresenterCache.has(id)) {
       return this.storePresenterCache.get(id) as KnowledgeStorePresenter
@@ -168,9 +199,22 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     // DuckDB 存储
     const db = await this.getVectorDatabasePresenter(id, config.dimensions, config.normalized)
     // 创建 RAG 应用实例
-    const rag = new KnowledgeStorePresenter(db, config)
+    const rag = new KnowledgeStorePresenter(db, config, this.taskP)
     this.storePresenterCache.set(id, rag)
     return rag
+  }
+
+  /**
+   * 关闭 RAG 应用实例
+   * @param id 知识库 ID
+   * @returns void
+   */
+  private closeStorePresenterIfExists = async (id: string): Promise<void> => {
+    const rag = this.getStorePresenter(id)
+    if (rag) {
+      await rag.close()
+      this.storePresenterCache.delete(id)
+    }
   }
 
   /**
@@ -183,7 +227,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     id: string,
     dimensions: number,
     normalized: boolean
-  ) => {
+  ): Promise<DuckDBPresenter> => {
     const dbPath = path.join(this.storageDir, id)
     if (fs.existsSync(dbPath)) {
       const db = new DuckDBPresenter(dbPath)
@@ -193,59 +237,45 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     // 如果数据库不存在，则初始化
     const db = new DuckDBPresenter(dbPath)
     await db.initialize(dimensions, {
-      metric: normalized ? 'cosine' : 'ip'
+      metric: getMetric(normalized)
     })
     return db
   }
 
-  private async handleFileTask(
-    id: string,
-    fileHandler: (
-      rag: KnowledgeStorePresenter
-    ) => Promise<{ data: KnowledgeFileMessage; task: Promise<KnowledgeFileMessage> }>,
-    errorMsg: string
-  ): Promise<KnowledgeFileResult> {
+  async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
     try {
-      const rag = await this.getStorePresenter(id)
-      const fileTask = await fileHandler(rag)
-      fileTask.task
-        .then((message) => {
-          eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, message)
-        })
-        .catch((err) => {
-          // 可选：记录异步任务异常
-          console.error(`${errorMsg}异步任务失败:`, err)
-        })
-      return {
-        data: fileTask.data
-      }
+      const rag = await this.getOrCreateStorePresenter(id)
+      return await rag.addFile(filePath)
     } catch (err) {
       return {
-        error: `${errorMsg}: ${err instanceof Error ? err.message : String(err)}`
+        error: `添加文件失败: ${err instanceof Error ? err.message : String(err)}`
       }
     }
   }
 
-  async addFile(id: string, filePath: string): Promise<KnowledgeFileResult> {
-    return this.handleFileTask(id, (rag) => rag.addFile(filePath), '添加文件失败')
-  }
-
   async deleteFile(id: string, fileId: string): Promise<void> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     await rag.deleteFile(fileId)
   }
 
   async reAddFile(id: string, fileId: string): Promise<KnowledgeFileResult> {
-    return this.handleFileTask(id, (rag) => rag.reAddFile(fileId), '重新添加文件失败')
+    try {
+      const rag = await this.getOrCreateStorePresenter(id)
+      return await rag.reAddFile(fileId)
+    } catch (err) {
+      return {
+        error: `重新添加文件失败: ${err instanceof Error ? err.message : String(err)}`
+      }
+    }
   }
 
   async queryFile(id: string, fileId: string): Promise<KnowledgeFileMessage | null> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     return await rag.queryFile(fileId)
   }
 
   async listFiles(id: string): Promise<KnowledgeFileMessage[]> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     return await rag.listFiles()
   }
 
@@ -253,6 +283,7 @@ export class KnowledgePresenter implements IKnowledgePresenter {
     this.storePresenterCache.forEach((rag) => {
       rag.close()
     })
+    this.storePresenterCache.clear()
   }
 
   async destroy(): Promise<void> {
@@ -260,20 +291,14 @@ export class KnowledgePresenter implements IKnowledgePresenter {
   }
 
   async similarityQuery(id: string, key: string): Promise<QueryResult[]> {
-    const rag = await this.getStorePresenter(id)
+    const rag = await this.getOrCreateStorePresenter(id)
     return await rag.similarityQuery(key)
   }
 
-  private async recoverUnfinishedTasks(): Promise<void> {
-    console.log('[RAG] Recovering unfinished tasks...')
-    const configs = this.configP.getKnowledgeConfigs()
-    for (const config of configs) {
-      try {
-        const storePresenter = await this.getStorePresenter(config.id)
-        await storePresenter.recoverProcessingFiles()
-      } catch (err) {
-        console.error(`[RAG] Error recovering tasks for knowledge base ${config.id}:`, err)
-      }
-    }
+  /**
+   * 获取知识库任务队列状态
+   */
+  async getTaskQueueStatus() {
+    return this.taskP.getStatus()
   }
 }

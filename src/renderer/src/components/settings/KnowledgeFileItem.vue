@@ -34,7 +34,7 @@
         variant="ghost"
         size="icon"
         class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-blue-100 transition-colors"
-        :title="file.metadata.reason"
+        :title="file.metadata.errorReason"
       >
         <Icon
           v-if="file.status === 'completed'"

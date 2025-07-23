@@ -193,7 +193,7 @@ const { t } = useI18n()
 // 文件列表
 const fileList = ref<KnowledgeFileMessage[]>([])
 // 允许的文件扩展名
-const acceptExts = ['txt', 'doc', 'docx', 'md', 'pdf', 'ppt', 'pptx']
+const acceptExts = ['txt', 'docx', 'md', 'pdf', 'ppt', 'pptx']
 const knowledgePresenter = usePresenter('knowledgePresenter')
 // 弹窗状态
 const isSearchDialogOpen = ref(false)
@@ -303,7 +303,12 @@ const handleDrop = async (e: DragEvent) => {
           return
         }
         if (result.data) {
-          fileList.value.push(result.data)
+          // 判断是否存在相同id的文件，存在则跳过
+          const incoming = result.data
+          const existingFile = fileList.value.find((f) => f.id === incoming.id)
+          if (existingFile == null) {
+            fileList.value.unshift(incoming)
+          }
         }
       } catch (error) {
         console.error('文件准备失败:', error)
