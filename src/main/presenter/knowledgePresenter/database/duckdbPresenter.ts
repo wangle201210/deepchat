@@ -22,7 +22,46 @@ import { app } from 'electron'
 const runtimeBasePath = path
   .join(app.getAppPath(), 'runtime')
   .replace('app.asar', 'app.asar.unpacked')
-const extensionPath = path.join(runtimeBasePath, 'duckdb', 'extensions', 'vss.duckdb_extension')
+const extensionDir = path.join(runtimeBasePath, 'duckdb', 'extensions')
+const extensionSuffix = '.duckdb_extension'
+
+// 数据库版本常量
+const CURRENT_DB_VERSION = 1
+const DB_VERSION_KEY = 'db_version'
+
+// 迁移接口定义
+interface DatabaseMigration {
+  version: number
+  description: string
+  up: (presenter: DuckDBPresenter) => Promise<void>
+  down?: (presenter: DuckDBPresenter) => Promise<void>
+}
+
+// 数据库迁移定义
+const MIGRATIONS: DatabaseMigration[] = [
+  {
+    version: 1,
+    description: 'Initial database schema',
+    up: async (_presenter: DuckDBPresenter) => {
+      // 初始版本的迁移在 initialize 方法中已经处理
+      console.log('[DuckDB Migration] Applied initial schema (v1)')
+    }
+  }
+  // 未来的迁移示例：
+  // {
+  //   version: 2,
+  //   description: 'Add file size and hash columns',
+  //   up: async (presenter: DuckDBPresenter) => {
+  //     await presenter.safeRun('ALTER TABLE file ADD COLUMN file_size BIGINT;')
+  //     await presenter.safeRun('ALTER TABLE file ADD COLUMN file_hash VARCHAR;')
+  //     await presenter.safeRun('CREATE INDEX IF NOT EXISTS idx_file_hash ON file (file_hash);')
+  //   },
+  //   down: async (presenter: DuckDBPresenter) => {
+  //     await presenter.safeRun('ALTER TABLE file DROP COLUMN file_size;')
+  //     await presenter.safeRun('ALTER TABLE file DROP COLUMN file_hash;')
+  //   }
+  // }
+]
 
 export class DuckDBPresenter implements IVectorDatabasePresenter {
   private dbInstance!: DuckDBInstance
@@ -33,6 +72,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private readonly vectorTable = 'vector'
   private readonly fileTable = 'file'
   private readonly chunkTable = 'chunk'
+  private readonly metadataTable = 'metadata'
 
   constructor(dbPath: string) {
     this.dbPath = dbPath
@@ -48,7 +88,11 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       console.log(`[DuckDB] connect to db`)
       await this.create()
       console.log(`[DuckDB] load vss extension`)
-      await this.installAndLoadVSS()
+      await this.installAndLoadExtension('vss', async () => {
+        await this.safeRun(`SET hnsw_enable_experimental_persistence = true;`)
+      })
+      console.log(`[DuckDB] create metadata table`)
+      await this.initMetadataTable()
       console.log(`[DuckDB] create file table`)
       await this.initFileTable()
       console.log(`[DuckDB] create chunk table`)
@@ -57,6 +101,8 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       await this.initVectorTable(dimensions)
       console.log(`[DuckDB] create vector index`)
       await this.initTableIndex(opts)
+      console.log(`[DuckDB] set initial database version`)
+      await this.setDatabaseVersion(CURRENT_DB_VERSION)
     } catch (error) {
       console.error('[DuckDB] initialization failed:', error)
       this.close()
@@ -87,7 +133,11 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     console.log(`[DuckDB] connect to db`)
     await this.connect()
     console.log(`[DuckDB] load vss extension`)
-    await this.installAndLoadVSS()
+    await this.installAndLoadExtension('vss', async () => {
+      await this.safeRun(`SET hnsw_enable_experimental_persistence = true;`)
+    })
+    console.log(`[DuckDB] check and run database migrations`)
+    await this.runMigrations()
     console.log(`[DuckDB] clear dirty data`)
     await this.clearDirtyData()
     console.log(`[DuckDB] paused all running tasks`)
@@ -625,6 +675,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
     const conn = await ins.connect()
 
     // load vss
+    const extensionPath = path.join(extensionDir, `vss${extensionSuffix}`)
     if (fs.existsSync(extensionPath)) {
       const escapedPath = extensionPath.replace(/\\/g, '\\\\')
       console.log(`[DuckDB] LOAD VSS extension from ${escapedPath}`)
@@ -646,17 +697,21 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   }
 
   /** 安装并加载 VSS 扩展 */
-  private async installAndLoadVSS(): Promise<void> {
+  private async installAndLoadExtension(
+    name: string,
+    afterRun?: () => Promise<void>
+  ): Promise<void> {
+    const extensionPath = path.join(extensionDir, `${name}${extensionSuffix}`)
     if (fs.existsSync(extensionPath)) {
       const escapedPath = extensionPath.replace(/\\/g, '\\\\')
-      console.log(`[DuckDB] LOAD VSS extension from ${escapedPath}`)
+      console.log(`[DuckDB] LOAD ${name} extension from ${escapedPath}`)
       await this.safeRun(`LOAD '${escapedPath}';`)
     } else {
-      console.log('[DuckDB] LOAD VSS extension online')
-      await this.safeRun(`INSTALL vss;`)
-      await this.safeRun(`LOAD vss;`)
+      console.log('[DuckDB] LOAD ${name} extension online')
+      await this.safeRun(`INSTALL ${name};`)
+      await this.safeRun(`LOAD ${name};`)
     }
-    await this.safeRun(`SET hnsw_enable_experimental_persistence = true;`)
+    if (afterRun instanceof Function) await afterRun()
   }
 
   /** 创建文件元数据表 */
@@ -767,5 +822,133 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
   private async hasWal(): Promise<boolean> {
     const walPath = this.dbPath + '.wal'
     return fs.existsSync(walPath)
+  }
+
+  // ==================== 数据库版本控制和迁移 ====================
+
+  /**
+   * 初始化元数据表
+   */
+  private async initMetadataTable(): Promise<void> {
+    await this.safeRun(
+      `CREATE TABLE IF NOT EXISTS ${this.metadataTable} (
+        key VARCHAR PRIMARY KEY,
+        value VARCHAR
+      );`
+    )
+  }
+
+  /**
+   * 运行数据库迁移
+   */
+  private async runMigrations(): Promise<void> {
+    // 确保元数据表存在
+    await this.initMetadataTable()
+
+    const currentVersion = await this.getDatabaseVersion()
+    console.log(`[DuckDB] Current database version: ${currentVersion}`)
+    console.log(`[DuckDB] Target database version: ${CURRENT_DB_VERSION}`)
+
+    if (currentVersion === CURRENT_DB_VERSION) {
+      console.log('[DuckDB] Database is up to date, no migrations needed')
+      return
+    }
+
+    if (currentVersion > CURRENT_DB_VERSION) {
+      console.warn(
+        `[DuckDB] Database version (${currentVersion}) is newer than supported version (${CURRENT_DB_VERSION})`
+      )
+      return
+    }
+
+    // 执行从当前版本到目标版本的所有迁移
+    const migrationsToRun = MIGRATIONS.filter(
+      (m) => m.version > currentVersion && m.version <= CURRENT_DB_VERSION
+    )
+
+    if (migrationsToRun.length === 0) {
+      console.log('[DuckDB] No migrations found to run')
+      return
+    }
+
+    console.log(`[DuckDB] Running ${migrationsToRun.length} migrations...`)
+
+    // 按版本号排序执行迁移
+    migrationsToRun.sort((a, b) => a.version - b.version)
+
+    for (const migration of migrationsToRun) {
+      console.log(`[DuckDB] Running migration v${migration.version}: ${migration.description}`)
+
+      try {
+        await this.executeInTransaction(async () => {
+          await migration.up(this)
+          await this.setDatabaseVersion(migration.version)
+        })
+
+        console.log(`[DuckDB] Migration v${migration.version} completed successfully`)
+      } catch (error) {
+        console.error(`[DuckDB] Migration v${migration.version} failed:`, error)
+        throw new Error(`Database migration v${migration.version} failed: ${error}`)
+      }
+    }
+
+    console.log(
+      `[DuckDB] All migrations completed successfully. Database updated to version ${CURRENT_DB_VERSION}`
+    )
+  }
+
+  /**
+   * 获取数据库元数据信息
+   */
+  async getDatabaseMetadata(): Promise<Record<string, any>> {
+    try {
+      const sql = `SELECT key, value FROM ${this.metadataTable};`
+      const reader = await this.connection.runAndReadAll(sql)
+      const rows = reader.getRowObjectsJson()
+
+      const metadata: Record<string, any> = {}
+      for (const row of rows) {
+        const key = typeof row.key === 'string' ? row.key : String(row.key)
+        metadata[key] = row.value
+      }
+      return metadata
+    } catch (error) {
+      console.error('[DuckDB] Error getting database metadata:', error)
+      return {}
+    }
+  }
+
+  /**
+   * 设置数据库元数据
+   */
+  async setDatabaseMetadata(key: string, value: string): Promise<void> {
+    const sql = `
+      INSERT OR REPLACE INTO ${this.metadataTable} (key, value)
+      VALUES (?, ?);
+    `
+    await this.executeInTransaction(async () => {
+      await this.safeRun(sql, [key, value])
+    })
+  }
+  /**
+   * 获取数据库版本
+   */
+  private async getDatabaseVersion(): Promise<number> {
+    try {
+      const metadata = await this.getDatabaseMetadata()
+      const version = metadata[DB_VERSION_KEY]
+      return version ? parseInt(typeof version === 'string' ? version : String(version), 10) : 0
+    } catch (error) {
+      // 如果元数据表不存在，说明是旧版本数据库
+      console.warn('[DuckDB] Cannot get database version, assuming version 0:', error)
+      return 0
+    }
+  }
+
+  /**
+   * 设置数据库版本
+   */
+  private async setDatabaseVersion(version: number): Promise<void> {
+    await this.setDatabaseMetadata(DB_VERSION_KEY, String(version))
   }
 }
