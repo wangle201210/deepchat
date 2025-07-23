@@ -310,6 +310,7 @@ export interface IPresenter {
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
   oauthPresenter: IOAuthPresenter
+  dialogPresenter: IDialogPresenter
   knowledgePresenter: IKnowledgePresenter
   init(): void
   destroy(): void
@@ -1208,6 +1209,56 @@ export interface KeyStatus {
   limit_remaining?: string
   /** 已使用额度 */
   usage?: string
+}
+
+/**
+ * Dialog 类型定义
+ */
+
+export interface DialogRequestParams {
+  title: string
+  description: string
+  i18n?: boolean
+  type?: 'info' | 'warn' | 'error' | 'confirm'
+  buttons?: string[]
+  defaultId?: number
+  timeout?: number
+}
+
+export interface DialogRequest {
+  id: string
+  title: string
+  description: string
+  i18n: boolean
+  type?: 'info' | 'warn' | 'error' | 'confirm'
+  buttons: string[]
+  defaultId: number
+  timeout: number
+}
+
+export interface DialogResponse {
+  id: string
+  button: string
+}
+
+export interface IDialogPresenter {
+  /**
+   * Show dialog
+   * @param request DialogRequest object containing the dialog configuration
+   * @returns Returns a Promise that resolves to the text of the button selected by the user
+   * @throws Returns null if the dialog is cancelled
+   */
+  showDialog(request: DialogRequestParams): Promise<string>
+  /**
+   * Handle dialog response
+   * @param response DialogResponse object containing the dialog response information
+   */
+  handleDialogResponse(response: DialogResponse): Promise<void>
+  /**
+   * Handle dialog error
+   * @param response Dialog id
+   */
+  handleDialogError(response: string): Promise<void>
 }
 
 // built-in 知识库相关
