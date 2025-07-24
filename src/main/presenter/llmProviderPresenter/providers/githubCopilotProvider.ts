@@ -112,7 +112,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${this.provider.apiKey}`,
       Accept: 'application/json',
-      'User-Agent': 'GithubCopilot/1.155.0'
+      'User-Agent': 'DeepChat/1.0.0'
     }
 
     console.log('📋 [GitHub Copilot] Request headers:')
@@ -296,18 +296,6 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         reasoning: false
       },
       {
-        id: 'gemini-2.0-flash-001',
-        name: 'Gemini 2.0 Flash',
-        group: 'GitHub Copilot',
-        providerId: this.provider.id,
-        isCustom: false,
-        contextLength: 200000,
-        maxTokens: 8192,
-        vision: true,
-        functionCall: true,
-        reasoning: false
-      },
-      {
         id: 'o3-mini',
         name: 'O3 Mini',
         group: 'GitHub Copilot',
@@ -353,6 +341,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     maxTokens: number,
     tools: MCPToolDefinition[]
   ): AsyncGenerator<LLMCoreStreamEvent, void, unknown> {
+    if (!modelId) throw new Error('Model ID is required')
     try {
       const token = await this.getCopilotToken()
       const formattedMessages = this.formatMessages(messages)
@@ -375,7 +364,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
-        'User-Agent': 'GithubCopilot/1.155.0',
+        'User-Agent': 'DeepChat/1.0.0',
         'editor-version': 'vscode/1.97.2',
         'editor-plugin-version': 'copilot.vim/1.16.0'
       }
@@ -508,6 +497,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     temperature?: number,
     maxTokens?: number
   ): Promise<LLMResponse> {
+    if (!modelId) throw new Error('Model ID is required')
     try {
       const token = await this.getCopilotToken()
       const formattedMessages = this.formatMessages(messages)
@@ -525,7 +515,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'User-Agent': 'GithubCopilot/1.155.0',
+        'User-Agent': 'DeepChat/1.0.0',
         'editor-version': 'vscode/1.97.2',
         'editor-plugin-version': 'copilot.vim/1.16.0'
       }
@@ -603,6 +593,7 @@ export class GithubCopilotProvider extends BaseLLMProvider {
     temperature?: number,
     maxTokens?: number
   ): Promise<LLMResponse> {
+    if (!modelId) throw new Error('Model ID is required')
     return this.completions(
       [
         {
