@@ -173,14 +173,14 @@ export const FLOATING_BUTTON_EVENTS = {
   ENABLED_CHANGED: 'floating-button:enabled-changed' // 悬浮按钮启用状态改变
 }
 
-// Dialog相关事件
+// Dialog related events
 export const DIALOG_EVENTS = {
-  REQUEST: 'dialog:request',   // 主进程 -> 渲染进程，请求显示dialog
-  RESPONSE: 'dialog:response' // 渲染进程 -> 主进程，dialog结果回传
+  REQUEST: 'dialog:request',   // Main -> Renderer: Request to show dialog
+  RESPONSE: 'dialog:response' // Renderer -> Main: Dialog result response
 }
 
-// 知识库事件
+// Knowledge base events
 export const RAG_EVENTS = {
-  FILE_UPDATED: 'rag:file-updated', // 文件状态更新
-  FILE_PROGRESS: 'rag:file-progress' // 文件处理进度更新
+  FILE_UPDATED: 'rag:file-updated', // File status update
+  FILE_PROGRESS: 'rag:file-progress' // File processing progress update
 }
