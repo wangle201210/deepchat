@@ -27,5 +27,9 @@
     "toolbar": {
       "save": "save"
     }
+  },
+  "export": {
+    "failed": "Export failed",
+    "failedDesc": "An error occurred during the export process, please try again"
   }
 }

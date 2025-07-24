@@ -8,6 +8,10 @@
     "export": "导出",
     "exportText": "纯文本"
   },
+  "export": {
+    "failed": "导出失败",
+    "failedDesc": "导出过程中发生错误，请重试"
+  },
   "message": {
     "toolbar": {
       "save": "保存"

@@ -27,5 +27,9 @@
     "toolbar": {
       "save": "sauvegarder"
     }
+  },
+  "export": {
+    "failed": "Échec de l'exportation",
+    "failedDesc": "Une erreur s'est produite pendant le processus d'exportation, veuillez réessayer"
   }
 }

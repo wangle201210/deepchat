@@ -27,5 +27,9 @@
     "toolbar": {
       "save": "保存"
     }
+  },
+  "export": {
+    "failed": "導出失敗",
+    "failedDesc": "導出過程中發生錯誤，請重試"
   }
 }

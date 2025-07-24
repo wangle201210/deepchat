@@ -108,10 +108,12 @@ import {
   DropdownMenuSubContent
 } from '@/components/ui/dropdown-menu'
 import { useLanguageStore } from '@/stores/language'
+import { useToast } from '@/components/ui/toast/use-toast'
 
 const langStore = useLanguageStore()
 
 const chatStore = useChatStore()
+const { toast } = useToast()
 
 defineProps<{
   thread: CONVERSATION
@@ -136,8 +138,13 @@ const handleExport = async (thread: CONVERSATION, format: 'markdown' | 'html' | 
   try {
     await chatStore.exportThread(thread.id, format)
   } catch (error) {
-    console.error('导出失败:', error)
-    // 这里可以添加用户友好的错误提示
+    console.error('Export failed:', error)
+    // Show error toast
+    toast({
+      title: t('thread.export.failed'),
+      description: t('thread.export.failedDesc'),
+      variant: 'destructive'
+    })
   }
 }
 

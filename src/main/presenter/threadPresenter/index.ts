@@ -2810,7 +2810,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       return { filename, content }
     } catch (error) {
-      console.error('导出会话失败:', error)
+      console.error('Failed to export conversation:', error)
       throw error
     }
   }
@@ -2824,14 +2824,14 @@ export class ThreadPresenter implements IThreadPresenter {
     // 标题和元信息
     lines.push(`# ${conversation.title}`)
     lines.push('')
-    lines.push(`**导出时间:** ${new Date().toLocaleString()}`)
-    lines.push(`**会话ID:** ${conversation.id}`)
-    lines.push(`**消息数量:** ${messages.length}`)
+    lines.push(`**Export Time:** ${new Date().toLocaleString()}`)
+    lines.push(`**Conversation ID:** ${conversation.id}`)
+    lines.push(`**Message Count:** ${messages.length}`)
     if (conversation.settings.modelId) {
-      lines.push(`**模型:** ${conversation.settings.modelId}`)
+      lines.push(`**Model:** ${conversation.settings.modelId}`)
     }
     if (conversation.settings.providerId) {
-      lines.push(`**提供商:** ${conversation.settings.providerId}`)
+      lines.push(`**Provider:** ${conversation.settings.providerId}`)
     }
     lines.push('')
     lines.push('---')
