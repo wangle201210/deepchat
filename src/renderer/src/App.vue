@@ -15,6 +15,7 @@ import { useLanguageStore } from '@/stores/language'
 import TranslatePopup from '@/components/popup/TranslatePopup.vue'
 import ModelCheckDialog from '@/components/settings/ModelCheckDialog.vue'
 import { useModelCheckStore } from '@/stores/modelCheck'
+import MessageDialog from './components/ui/MessageDialog.vue'
 
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
@@ -297,6 +298,8 @@ onBeforeUnmount(() => {
     </div>
     <!-- 全局更新弹窗 -->
     <UpdateDialog />
+    <!-- 全局消息弹窗 -->
+    <MessageDialog />
     <!-- 全局Toast提示 -->
     <Toaster />
     <SelectedTextContextMenu />
