@@ -2726,30 +2726,47 @@ export class ThreadPresenter implements IThreadPresenter {
     // 1. 获取所有会话 (假设9999足够大)
     const result = await this.sqlitePresenter.getConversationList(1, this.fetchThreadLength)
 
-    // 2. 对列表进行排序 (置顶优先, 然后按更新时间)
-    result.list.sort((a, b) => {
-      const aIsPinned = a.is_pinned === 1
-      const bIsPinned = b.is_pinned === 1
-      if (aIsPinned && !bIsPinned) return -1
-      if (!aIsPinned && bIsPinned) return 1
-      return b.updatedAt - a.updatedAt
+    // 2. 分离置顶和非置顶会话
+    const pinnedConversations: CONVERSATION[] = []
+    const normalConversations: CONVERSATION[] = []
+
+    result.list.forEach((conv) => {
+      if (conv.is_pinned === 1) {
+        pinnedConversations.push(conv)
+      } else {
+        normalConversations.push(conv)
+      }
     })
 
-    // 3. 按日期分组
+    // 3. 对置顶会话按更新时间排序
+    pinnedConversations.sort((a, b) => b.updatedAt - a.updatedAt)
+
+    // 4. 对普通会话按更新时间排序
+    normalConversations.sort((a, b) => b.updatedAt - a.updatedAt)
+
+    // 5. 按日期分组
     const groupedThreads: Map<string, CONVERSATION[]> = new Map()
-    result.list.forEach((conv) => {
+
+    // 先添加置顶分组（如果有置顶会话）
+    if (pinnedConversations.length > 0) {
+      groupedThreads.set('Pinned', pinnedConversations)
+    }
+
+    // 再添加普通会话的日期分组
+    normalConversations.forEach((conv) => {
       const date = new Date(conv.updatedAt).toISOString().split('T')[0]
       if (!groupedThreads.has(date)) {
         groupedThreads.set(date, [])
       }
       groupedThreads.get(date)!.push(conv)
     })
+
     const finalGroupedList = Array.from(groupedThreads.entries()).map(([dt, dtThreads]) => ({
       dt,
       dtThreads
     }))
 
-    // 4. 广播这个格式化好的完整列表
+    // 6. 广播这个格式化好的完整列表
     eventBus.sendToRenderer(
       CONVERSATION_EVENTS.LIST_UPDATED,
       SendTarget.ALL_WINDOWS,
