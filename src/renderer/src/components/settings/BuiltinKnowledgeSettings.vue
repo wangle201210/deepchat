@@ -264,18 +264,14 @@
                   </PopoverContent>
                 </Popover>
               </div>
-              <div class="space-y-2">
+              <div class="space-y-2" v-if="!isEditing">
                 <div class="flex items-center gap-1 justify-between">
                   <div class="flex items-center gap-1">
                     <Label
                       class="text-xs text-muted-foreground"
                       for="edit-builtin-config-dimensions"
                     >
-                      {{
-                        isEditing
-                          ? t('settings.knowledgeBase.redetectDimensions')
-                          : t('settings.knowledgeBase.autoDetectDimensions')
-                      }}
+                      {{ t('settings.knowledgeBase.autoDetectDimensions') }}
                     </Label>
                     <TooltipProvider>
                       <Tooltip :delay-duration="200">
@@ -356,6 +352,7 @@
                   <Switch
                     id="edit-builtin-config-auto-detect-switch"
                     v-model:checked="editingBuiltinConfig.normalized"
+                    :disabled="isEditing"
                   ></Switch>
                 </div>
               </div>
