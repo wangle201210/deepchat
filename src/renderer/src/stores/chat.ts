@@ -1090,23 +1090,8 @@ export const useChatStore = defineStore('chat', () => {
    */
   const exportThread = async (threadId: string, format: 'markdown' | 'html' | 'txt' = 'markdown') => {
     try {
-      // 暂时禁用 Worker，直接使用主线程导出避免加载问题
-      // TODO: 修复 Worker 模块加载问题后重新启用
-      const supportsWorker = false // typeof Worker !== 'undefined' && typeof window !== 'undefined' && window.Worker
-      
-      if (supportsWorker) {
-        // 尝试使用 Worker 进行导出
-        try {
-          return await exportWithWorker(threadId, format)
-        } catch (workerError) {
-          console.warn('Worker 导出失败，回退到主线程:', workerError)
-          // Worker 失败时回退到主线程
-          return await exportWithMainThread(threadId, format)
-        }
-      } else {
-        // 直接使用主线程导出
-        return await exportWithMainThread(threadId, format)
-      }
+      // 直接使用主线程导出
+      return await exportWithMainThread(threadId, format)
     } catch (error) {
       console.error('导出会话失败:', error)
       throw error
@@ -1114,15 +1099,7 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 使用 Worker 导出 (暂时禁用)
-   */
-  const exportWithWorker = async (_threadId: string, _format: string) => {
-    // TODO: 修复 Vite Worker 模块加载问题
-    throw new Error('Worker 导出暂时不可用')
-  }
-
-  /**
-   * 主线程导出（回退方案）
+   * 主线程导出
    */
   const exportWithMainThread = async (threadId: string, format: string) => {
     const result = await threadP.exportConversation(threadId, format)

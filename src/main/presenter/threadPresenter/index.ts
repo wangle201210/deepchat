@@ -2780,10 +2780,10 @@ export class ThreadPresenter implements IThreadPresenter {
       // 过滤掉未发送成功的消息
       const validMessages = messages.filter(msg => msg.status === 'sent')
 
-      // 生成文件名
-      const sanitizedTitle = conversation.title.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_')
+      // 生成文件名 - 使用简化的时间戳格式
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').substring(0, 19)
       const extension = format === 'markdown' ? 'md' : format
-      const filename = `${sanitizedTitle}.${extension}`
+      const filename = `export_deepchat_${timestamp}.${extension}`
 
       // 生成内容（在主进程中直接处理，避免Worker的复杂性）
       let content: string
