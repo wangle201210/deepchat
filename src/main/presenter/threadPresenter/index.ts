@@ -2782,7 +2782,8 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 生成文件名
       const sanitizedTitle = conversation.title.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_')
-      const filename = `${sanitizedTitle}.${format}`
+      const extension = format === 'markdown' ? 'md' : format
+      const filename = `${sanitizedTitle}.${extension}`
 
       // 生成内容（在主进程中直接处理，避免Worker的复杂性）
       let content: string
@@ -2950,20 +2951,6 @@ export class ThreadPresenter implements IThreadPresenter {
           }
         }
         
-        // 添加使用情况信息
-        if (message.usage) {
-          lines.push('**使用情况:**')
-          lines.push(`- 输入 Token: ${message.usage.input_tokens}`)
-          lines.push(`- 输出 Token: ${message.usage.output_tokens}`)
-          lines.push(`- 总计 Token: ${message.usage.total_tokens}`)
-          if (message.usage.generation_time) {
-            lines.push(`- 生成时间: ${(message.usage.generation_time / 1000).toFixed(2)}秒`)
-          }
-          if (message.usage.tokens_per_second) {
-            lines.push(`- 生成速度: ${message.usage.tokens_per_second.toFixed(2)} tokens/秒`)
-          }
-          lines.push('')
-        }
       }
       
       lines.push('---')
@@ -2987,20 +2974,38 @@ export class ThreadPresenter implements IThreadPresenter {
     lines.push('  <meta name="viewport" content="width=device-width, initial-scale=1.0">')
     lines.push(`  <title>${this.escapeHtml(conversation.title)}</title>`)
     lines.push('  <style>')
-    lines.push('    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }')
-    lines.push('    .header { border-bottom: 2px solid #e1e5e9; padding-bottom: 20px; margin-bottom: 30px; }')
-    lines.push('    .message { margin-bottom: 30px; border-left: 4px solid #ddd; padding-left: 20px; }')
-    lines.push('    .user-message { border-left-color: #007bff; }')
-    lines.push('    .assistant-message { border-left-color: #28a745; }')
-    lines.push('    .message-header { font-weight: bold; margin-bottom: 10px; color: #495057; }')
-    lines.push('    .message-time { font-size: 0.9em; color: #6c757d; }')
-    lines.push('    .tool-call { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin: 10px 0; }')
-    lines.push('    .search-block { background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin: 10px 0; }')
-    lines.push('    .error-block { background: #ffebee; border: 1px solid #ffcdd2; border-radius: 8px; padding: 15px; margin: 10px 0; color: #c62828; }')
-    lines.push('    .reasoning-block { background: #f3e5f5; border: 1px solid #e1bee7; border-radius: 8px; padding: 15px; margin: 10px 0; }')
-    lines.push('    .code { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 10px; font-family: "Monaco", "Consolas", monospace; white-space: pre-wrap; overflow-x: auto; }')
-    lines.push('    .usage-info { background: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 8px; padding: 15px; margin: 10px 0; font-size: 0.9em; }')
-    lines.push('    .attachments { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0; }')
+    lines.push('    @media (prefers-color-scheme: dark) {')
+    lines.push('      body { background: #0f0f23; color: #e4e4e7; }')
+    lines.push('      .header { border-bottom-color: #27272a; }')
+    lines.push('      .message { border-left-color: #3f3f46; }')
+    lines.push('      .user-message { border-left-color: #3b82f6; background: #1e293b; }')
+    lines.push('      .assistant-message { border-left-color: #10b981; background: #064e3b; }')
+    lines.push('      .tool-call { background: #1f2937; border-color: #374151; }')
+    lines.push('      .search-block { background: #1e3a8a; border-color: #1d4ed8; }')
+    lines.push('      .error-block { background: #7f1d1d; border-color: #dc2626; }')
+    lines.push('      .reasoning-block { background: #581c87; border-color: #7c3aed; }')
+    lines.push('      .code { background: #1f2937; border-color: #374151; color: #f3f4f6; }')
+    lines.push('      .attachments { background: #78350f; border-color: #d97706; }')
+    lines.push('    }')
+    lines.push('    body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.7; max-width: 900px; margin: 0 auto; padding: 32px 24px; background: #ffffff; color: #1f2937; }')
+    lines.push('    .header { border-bottom: 1px solid #e5e7eb; padding-bottom: 24px; margin-bottom: 32px; }')
+    lines.push('    .header h1 { margin: 0 0 16px 0; font-size: 2rem; font-weight: 700; color: #111827; }')
+    lines.push('    .header p { margin: 4px 0; font-size: 0.875rem; color: #6b7280; }')
+    lines.push('    .message { margin-bottom: 32px; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }')
+    lines.push('    .user-message { background: #f8fafc; border-left: 4px solid #3b82f6; }')
+    lines.push('    .assistant-message { background: #f0fdf4; border-left: 4px solid #10b981; }')
+    lines.push('    .message-header { font-weight: 600; margin-bottom: 12px; color: #374151; font-size: 1rem; }')
+    lines.push('    .message-time { font-size: 0.75rem; color: #9ca3af; font-weight: 400; }')
+    lines.push('    .tool-call { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; }')
+    lines.push('    .search-block { background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 16px; margin: 12px 0; }')
+    lines.push('    .error-block { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; margin: 12px 0; color: #dc2626; }')
+    lines.push('    .reasoning-block { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px; padding: 16px; margin: 12px 0; }')
+    lines.push('    .code { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px; font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace; font-size: 0.875rem; white-space: pre-wrap; overflow-x: auto; color: #1e293b; }')
+    lines.push('    .attachments { background: #fffbeb; border: 1px solid #fed7aa; border-radius: 8px; padding: 16px; margin: 12px 0; }')
+    lines.push('    .attachments ul { margin: 8px 0 0 0; padding-left: 20px; }')
+    lines.push('    .attachments li { margin: 4px 0; }')
+    lines.push('    a { color: #2563eb; text-decoration: none; }')
+    lines.push('    a:hover { text-decoration: underline; }')
     lines.push('  </style>')
     lines.push('</head>')
     lines.push('<body>')
@@ -3135,23 +3140,6 @@ export class ThreadPresenter implements IThreadPresenter {
           }
         }
         
-        // 添加使用情况信息
-        if (message.usage) {
-          lines.push('    <div class="usage-info">')
-          lines.push('      <strong>使用情况:</strong>')
-          lines.push('      <ul>')
-          lines.push(`        <li>输入 Token: ${message.usage.input_tokens}</li>`)
-          lines.push(`        <li>输出 Token: ${message.usage.output_tokens}</li>`)
-          lines.push(`        <li>总计 Token: ${message.usage.total_tokens}</li>`)
-          if (message.usage.generation_time) {
-            lines.push(`        <li>生成时间: ${(message.usage.generation_time / 1000).toFixed(2)}秒</li>`)
-          }
-          if (message.usage.tokens_per_second) {
-            lines.push(`        <li>生成速度: ${message.usage.tokens_per_second.toFixed(2)} tokens/秒</li>`)
-          }
-          lines.push('      </ul>')
-          lines.push('    </div>')
-        }
         
         lines.push('  </div>')
       }
@@ -3288,20 +3276,6 @@ export class ThreadPresenter implements IThreadPresenter {
           }
         }
         
-        // 添加使用情况信息
-        if (message.usage) {
-          lines.push('[使用情况]')
-          lines.push(`输入 Token: ${message.usage.input_tokens}`)
-          lines.push(`输出 Token: ${message.usage.output_tokens}`)
-          lines.push(`总计 Token: ${message.usage.total_tokens}`)
-          if (message.usage.generation_time) {
-            lines.push(`生成时间: ${(message.usage.generation_time / 1000).toFixed(2)}秒`)
-          }
-          if (message.usage.tokens_per_second) {
-            lines.push(`生成速度: ${message.usage.tokens_per_second.toFixed(2)} tokens/秒`)
-          }
-          lines.push('')
-        }
       }
       
       lines.push(''.padEnd(80, '-'))
