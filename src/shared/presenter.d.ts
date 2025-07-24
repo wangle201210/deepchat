@@ -635,6 +635,10 @@ export interface IThreadPresenter {
     permissionType: 'read' | 'write' | 'all',
     remember?: boolean
   ): Promise<void>
+  exportConversation(
+    conversationId: string,
+    format: 'markdown' | 'html' | 'txt'
+  ): Promise<{ filename: string; content: string }>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'

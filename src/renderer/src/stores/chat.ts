@@ -1104,7 +1104,7 @@ export const useChatStore = defineStore('chat', () => {
   /**
    * 主线程导出
    */
-  const exportWithMainThread = async (threadId: string, format: string) => {
+  const exportWithMainThread = async (threadId: string, format: 'markdown' | 'html' | 'txt') => {
     const result = await threadP.exportConversation(threadId, format)
 
     // 触发下载
