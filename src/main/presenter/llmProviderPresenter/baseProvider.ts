@@ -606,12 +606,12 @@ ${this.convertToolsToXml(tools)}
 
   /**
    * 获取文本的 embedding 表示
-   * @param _texts 待编码的文本数组
    * @param _modelId 使用的模型ID
+   * @param _texts 待编码的文本数组
    * @returns embedding 数组，每个元素为 number[]
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async getEmbeddings(_texts: string[], _modelId: string): Promise<number[][]> {
+  public async getEmbeddings(_modelId: string, _texts: string[]): Promise<number[][]> {
     throw new Error('embedding is not supported by this provider')
   }
 

@@ -1213,7 +1213,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   async getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]> {
     try {
       const provider = this.getProviderInstance(providerId)
-      return await provider.getEmbeddings(texts, modelId)
+      return await provider.getEmbeddings(modelId, texts)
     } catch (error) {
       console.error(`${modelId} embedding 失败:`, error)
       throw new Error('当前 LLM 提供商未实现 embedding 能力')

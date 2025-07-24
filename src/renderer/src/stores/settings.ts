@@ -1022,7 +1022,7 @@ export const useSettingsStore = defineStore('settings', () => {
       return {
         id: model.name,
         name: model.name,
-        contextLength: model.model_info.context_length || 4096, // 使用现有值或默认值
+        contextLength: model.model_info.context_length || 4096, // 使用模型定义值或默认值
         maxTokens: existingModel?.maxTokens || 2048, // 使用现有值或默认值
         provider: 'ollama',
         group: existingModel?.group || 'local',

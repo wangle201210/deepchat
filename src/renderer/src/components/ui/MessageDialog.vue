@@ -93,7 +93,6 @@ const perfectTime = (ms: number) => {
 }
 
 const getIconProps = (icon: DialogIcon) => {
-  console.log('[Dialog] getIconProps called with icon:', icon)
   return { ...icon }
 }
 

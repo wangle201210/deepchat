@@ -1281,7 +1281,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     }
   }
 
-  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+  async getEmbeddings(modelId: string, texts: string[]): Promise<number[][]> {
     if (!this.isInitialized) throw new Error('Provider not initialized')
     if (!modelId) throw new Error('Model ID is required')
     // OpenAI embeddings API
@@ -1308,7 +1308,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           normalized: true
         }
       default:
-        const embeddings = await this.getEmbeddings([EMBEDDING_TEST_KEY], modelId)
+        const embeddings = await this.getEmbeddings(modelId, [EMBEDDING_TEST_KEY])
         return {
           dimensions: embeddings[0].length,
           normalized: isNormalized(embeddings[0])

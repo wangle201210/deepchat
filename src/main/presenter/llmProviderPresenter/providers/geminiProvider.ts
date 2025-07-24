@@ -1171,7 +1171,7 @@ export class GeminiProvider extends BaseLLMProvider {
     }
   }
 
-  async getEmbeddings(texts: string[], modelId: string): Promise<number[][]> {
+  async getEmbeddings(modelId: string, texts: string[]): Promise<number[][]> {
     if (!this.genAI) throw new Error('Google Generative AI client is not initialized')
     // Gemini embedContent 支持批量输入
     const resp = await this.genAI.models.embedContent({
