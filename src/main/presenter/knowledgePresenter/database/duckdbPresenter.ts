@@ -210,7 +210,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         file.path,
         file.mimeType,
         file.status,
-        file.uploadedAt,
+        String(file.uploadedAt),
         JSON.stringify(file.metadata)
       ])
     })
@@ -228,7 +228,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
         file.path,
         file.mimeType,
         file.status,
-        file.uploadedAt,
+        String(file.uploadedAt),
         JSON.stringify(file.metadata),
         file.id
       ])
