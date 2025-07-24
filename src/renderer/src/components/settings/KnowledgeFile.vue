@@ -206,7 +206,7 @@ const { t } = useI18n()
 // 文件列表
 const fileList = ref<KnowledgeFileMessage[]>([])
 // 允许的文件扩展名
-const acceptExts = ['txt', 'docx', 'md', 'pdf', 'ppt', 'pptx']
+const acceptExts = ['txt', 'md', 'markdown', 'docx', 'pptx', 'pdf']
 const knowledgePresenter = usePresenter('knowledgePresenter')
 // 弹窗状态
 const isSearchDialogOpen = ref(false)
@@ -376,8 +376,8 @@ onMounted(() => {
     if (!file) {
       return
     }
-    file.status = data.status
-    file.metadata = data.metadata
+    // 合并所有属性
+    Object.assign(file, data)
   })
 })
 onBeforeUnmount(() => {

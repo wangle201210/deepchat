@@ -59,7 +59,7 @@ export class KnowledgeStorePresenter {
         return { data: existingFile[0] }
       }
 
-      // 1. 先将文件基本信息插入数据库
+      // 先将文件基本信息插入数据库
       const fileMessage = {
         id: fileId ?? nanoid(),
         name: '',
@@ -77,11 +77,7 @@ export class KnowledgeStorePresenter {
         ? await this.vectorP.updateFile(fileMessage)
         : await this.vectorP.insertFile(fileMessage)
 
-      // 2. 立即发送文件添加事件
-      eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
-
-      // 3. 异步处理文件读取和分片（不参与taskPresenter队列）
-      await this.processFileAsync(fileMessage)
+      this.processFileAsync(fileMessage)
 
       return { data: fileMessage }
     } catch (error) {
@@ -102,17 +98,22 @@ export class KnowledgeStorePresenter {
         'origin'
       )
 
-      // 检查文件内容
-      if (fileInfo.content === undefined || fileInfo.content.length === 0) {
-        throw new Error('无法读取文件或文件内容为空，请检查文件是否损坏或格式是否受支持')
-      }
-
       // 2. 更新文件基本信息
       fileMessage.name = fileInfo.name
       fileMessage.mimeType = mimeType
       fileMessage.metadata = {
         size: fileInfo.metadata.fileSize,
         totalChunks: 0
+      }
+
+      // 检查文件内容
+      if (fileInfo.content === undefined || fileInfo.content.length === 0) {
+        fileMessage.status = 'error'
+        fileMessage.metadata.errorReason =
+          '无法读取文件或文件内容为空，请检查文件是否损坏或格式是否受支持'
+        await this.vectorP.updateFile(fileMessage)
+        eventBus.sendToRenderer(RAG_EVENTS.FILE_UPDATED, SendTarget.ALL_WINDOWS, fileMessage)
+        return
       }
 
       // 3. 分片
