@@ -1088,7 +1088,10 @@ export const useChatStore = defineStore('chat', () => {
    * @param threadId 会话ID
    * @param format 导出格式
    */
-  const exportThread = async (threadId: string, format: 'markdown' | 'html' | 'txt' = 'markdown') => {
+  const exportThread = async (
+    threadId: string,
+    format: 'markdown' | 'html' | 'txt' = 'markdown'
+  ) => {
     try {
       // 直接使用主线程导出
       return await exportWithMainThread(threadId, format)
@@ -1103,10 +1106,10 @@ export const useChatStore = defineStore('chat', () => {
    */
   const exportWithMainThread = async (threadId: string, format: string) => {
     const result = await threadP.exportConversation(threadId, format)
-    
+
     // 触发下载
-    const blob = new Blob([result.content], { 
-      type: getContentType(format) 
+    const blob = new Blob([result.content], {
+      type: getContentType(format)
     })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -1116,7 +1119,7 @@ export const useChatStore = defineStore('chat', () => {
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
-    
+
     return result
   }
 
