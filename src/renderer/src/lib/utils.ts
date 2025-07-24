@@ -11,9 +11,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * 根据 MIME 类型获取文件图标
- * @param mimeType
- * @returns
+ * Get file icon based on MIME type
+ * @param mimeType The MIME type string to match
+ * @returns The corresponding vscode-icons identifier
  */
 export function getMimeTypeIcon(mimeType: string) {
   if (
