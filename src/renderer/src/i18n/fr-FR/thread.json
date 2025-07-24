@@ -4,7 +4,9 @@
     "delete": "Supprimer",
     "cleanMessages": "Nettoyer les messages",
     "pin": "Épingler",
-    "unpin": "Détacher"
+    "unpin": "Détacher",
+    "export": "Exporter",
+    "exportText": "Texte brut"
   },
   "toolbar": {
     "save": "sauvegarder",

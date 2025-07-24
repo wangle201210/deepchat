@@ -61,7 +61,7 @@
         <DropdownMenuSub>
           <DropdownMenuSubTrigger class="flex items-center justify-between">
             <div class="flex items-center">
-              <Icon icon="lucide:download" class="mr-2 h-4 w-4" />
+              <Icon icon="lucide:download" class="mr-4 h-4 w-4" />
               <span>{{ t('thread.actions.export') }}</span>
             </div>
           </DropdownMenuSubTrigger>
