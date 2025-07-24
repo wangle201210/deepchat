@@ -1,8 +1,8 @@
 /**
- * 文本切分器模块
+ * Text Splitter Module
  * 
- * 核心代码摘自langchain/textsplitters库，出于体积考虑，该库的代码已被精简
- * 仅保留以下分割器：
+ * Core code extracted from langchain/textsplitters library, streamlined for size considerations
+ * Only the following splitters are retained:
  *
  * TextSplitter
  * CharacterTextSplitter
