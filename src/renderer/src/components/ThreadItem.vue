@@ -59,9 +59,11 @@
         <DropdownMenuSeparator />
 
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Icon icon="lucide:download" class="mr-2 h-4 w-4" />
-            <span>{{ t('thread.actions.export') }}</span>
+          <DropdownMenuSubTrigger class="flex items-center justify-between">
+            <div class="flex items-center">
+              <Icon icon="lucide:download" class="mr-2 h-4 w-4" />
+              <span>{{ t('thread.actions.export') }}</span>
+            </div>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
             <DropdownMenuItem @select="handleExport(thread, 'markdown')">

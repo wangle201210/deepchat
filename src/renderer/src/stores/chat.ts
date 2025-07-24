@@ -1090,14 +1090,21 @@ export const useChatStore = defineStore('chat', () => {
    */
   const exportThread = async (threadId: string, format: 'markdown' | 'html' | 'txt' = 'markdown') => {
     try {
-      // 检测是否支持 Worker
-      const supportsWorker = typeof Worker !== 'undefined'
+      // 暂时禁用 Worker，直接使用主线程导出避免加载问题
+      // TODO: 修复 Worker 模块加载问题后重新启用
+      const supportsWorker = false // typeof Worker !== 'undefined' && typeof window !== 'undefined' && window.Worker
       
       if (supportsWorker) {
-        // 使用 Worker 进行导出
-        return await exportWithWorker(threadId, format)
+        // 尝试使用 Worker 进行导出
+        try {
+          return await exportWithWorker(threadId, format)
+        } catch (workerError) {
+          console.warn('Worker 导出失败，回退到主线程:', workerError)
+          // Worker 失败时回退到主线程
+          return await exportWithMainThread(threadId, format)
+        }
       } else {
-        // 回退到主线程导出
+        // 直接使用主线程导出
         return await exportWithMainThread(threadId, format)
       }
     } catch (error) {
@@ -1107,59 +1114,11 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   /**
-   * 使用 Worker 导出
+   * 使用 Worker 导出 (暂时禁用)
    */
-  const exportWithWorker = async (threadId: string, format: string) => {
-    // 获取会话和消息数据
-    const conversation = await threadP.getConversation(threadId)
-    const { list: messages } = await threadP.getMessages(threadId, 1, 10000)
-    const validMessages = messages.filter(msg => msg.status === 'sent')
-
-    return new Promise((resolve, reject) => {
-      // 创建 Worker
-      const worker = new Worker(new URL('../workers/exportWorker.ts', import.meta.url), {
-        type: 'module'
-      })
-
-        worker.onmessage = (e) => {
-          const result = e.data
-          
-          if (result.type === 'complete') {
-            // 触发下载
-            const blob = new Blob([result.content], { 
-              type: getContentType(format) 
-            })
-            const url = URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = url
-            link.download = result.filename
-            document.body.appendChild(link)
-            link.click()
-            document.body.removeChild(link)
-            URL.revokeObjectURL(url)
-            
-            worker.terminate()
-            resolve(result)
-          } else if (result.type === 'error') {
-            worker.terminate()
-            reject(new Error(result.error))
-          }
-          // progress 事件可以在这里处理进度显示
-        }
-
-        worker.onerror = (error) => {
-          worker.terminate()
-          reject(error)
-        }
-
-        // 发送数据到 Worker
-        worker.postMessage({
-          conversation,
-          messages: validMessages,
-          format
-        })
-
-      })
+  const exportWithWorker = async (_threadId: string, _format: string) => {
+    // TODO: 修复 Vite Worker 模块加载问题
+    throw new Error('Worker 导出暂时不可用')
   }
 
   /**
