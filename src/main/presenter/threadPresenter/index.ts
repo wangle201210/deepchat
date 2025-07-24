@@ -2757,6 +2757,572 @@ export class ThreadPresenter implements IThreadPresenter {
     )
   }
 
+  /**
+   * 导出会话内容
+   * @param conversationId 会话ID
+   * @param format 导出格式 ('markdown' | 'html' | 'txt')
+   * @returns 包含文件名和内容的对象
+   */
+  async exportConversation(conversationId: string, format: 'markdown' | 'html' | 'txt' = 'markdown'): Promise<{
+    filename: string
+    content: string
+  }> {
+    try {
+      // 获取会话信息
+      const conversation = await this.getConversation(conversationId)
+      if (!conversation) {
+        throw new Error('会话不存在')
+      }
+
+      // 获取所有消息
+      const { list: messages } = await this.getMessages(conversationId, 1, 10000)
+      
+      // 过滤掉未发送成功的消息
+      const validMessages = messages.filter(msg => msg.status === 'sent')
+
+      // 生成文件名
+      const sanitizedTitle = conversation.title.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '_')
+      const filename = `${sanitizedTitle}.${format}`
+
+      // 生成内容（在主进程中直接处理，避免Worker的复杂性）
+      let content: string
+      switch (format) {
+        case 'markdown':
+          content = this.exportToMarkdown(conversation, validMessages)
+          break
+        case 'html':
+          content = this.exportToHtml(conversation, validMessages)
+          break
+        case 'txt':
+          content = this.exportToText(conversation, validMessages)
+          break
+        default:
+          throw new Error(`不支持的导出格式: ${format}`)
+      }
+
+      return { filename, content }
+    } catch (error) {
+      console.error('导出会话失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 导出为 Markdown 格式
+   */
+  private exportToMarkdown(conversation: CONVERSATION, messages: Message[]): string {
+    const lines: string[] = []
+    
+    // 标题和元信息
+    lines.push(`# ${conversation.title}`)
+    lines.push('')
+    lines.push(`**导出时间:** ${new Date().toLocaleString()}`)
+    lines.push(`**会话ID:** ${conversation.id}`)
+    lines.push(`**消息数量:** ${messages.length}`)
+    if (conversation.settings.modelId) {
+      lines.push(`**模型:** ${conversation.settings.modelId}`)
+    }
+    if (conversation.settings.providerId) {
+      lines.push(`**提供商:** ${conversation.settings.providerId}`)
+    }
+    lines.push('')
+    lines.push('---')
+    lines.push('')
+
+    // 处理每条消息
+    for (const message of messages) {
+      const messageTime = new Date(message.timestamp).toLocaleString()
+      
+      if (message.role === 'user') {
+        lines.push(`## 👤 用户 (${messageTime})`)
+        lines.push('')
+        
+        const userContent = message.content as UserMessageContent
+        const messageText = userContent.content 
+          ? this.formatUserMessageContent(userContent.content)
+          : userContent.text
+        
+        lines.push(messageText)
+        
+        // 处理文件附件
+        if (userContent.files && userContent.files.length > 0) {
+          lines.push('')
+          lines.push('**附件:**')
+          for (const file of userContent.files) {
+            lines.push(`- ${file.name} (${file.mimeType})`)
+          }
+        }
+        
+        // 处理链接
+        if (userContent.links && userContent.links.length > 0) {
+          lines.push('')
+          lines.push('**链接:**')
+          for (const link of userContent.links) {
+            lines.push(`- ${link}`)
+          }
+        }
+        
+      } else if (message.role === 'assistant') {
+        lines.push(`## 🤖 助手 (${messageTime})`)
+        lines.push('')
+        
+        const assistantBlocks = message.content as AssistantMessageBlock[]
+        
+        for (const block of assistantBlocks) {
+          switch (block.type) {
+            case 'content':
+              if (block.content) {
+                lines.push(block.content)
+                lines.push('')
+              }
+              break
+              
+            case 'reasoning_content':
+              if (block.content) {
+                lines.push('### 🤔 思考过程')
+                lines.push('')
+                lines.push('```')
+                lines.push(block.content)
+                lines.push('```')
+                lines.push('')
+              }
+              break
+              
+            case 'tool_call':
+              if (block.tool_call) {
+                lines.push(`### 🔧 工具调用: ${block.tool_call.name}`)
+                lines.push('')
+                if (block.tool_call.params) {
+                  lines.push('**参数:**')
+                  lines.push('```json')
+                  try {
+                    const params = JSON.parse(block.tool_call.params)
+                    lines.push(JSON.stringify(params, null, 2))
+                  } catch {
+                    lines.push(block.tool_call.params)
+                  }
+                  lines.push('```')
+                  lines.push('')
+                }
+                if (block.tool_call.response) {
+                  lines.push('**响应:**')
+                  lines.push('```')
+                  lines.push(block.tool_call.response)
+                  lines.push('```')
+                  lines.push('')
+                }
+              }
+              break
+              
+            case 'search':
+              lines.push('### 🔍 网络搜索')
+              if (block.extra?.total) {
+                lines.push(`找到 ${block.extra.total} 个搜索结果`)
+              }
+              lines.push('')
+              break
+              
+            case 'image':
+              lines.push('### 🖼️ 图片')
+              lines.push('*[图片内容]*')
+              lines.push('')
+              break
+              
+            case 'error':
+              if (block.content) {
+                lines.push(`### ❌ 错误`)
+                lines.push('')
+                lines.push(`\`${block.content}\``)
+                lines.push('')
+              }
+              break
+
+            case 'artifact-thinking':
+              if (block.content) {
+                lines.push('### 💭 创作思考')
+                lines.push('')
+                lines.push('```')
+                lines.push(block.content)
+                lines.push('```')
+                lines.push('')
+              }
+              break
+          }
+        }
+        
+        // 添加使用情况信息
+        if (message.usage) {
+          lines.push('**使用情况:**')
+          lines.push(`- 输入 Token: ${message.usage.input_tokens}`)
+          lines.push(`- 输出 Token: ${message.usage.output_tokens}`)
+          lines.push(`- 总计 Token: ${message.usage.total_tokens}`)
+          if (message.usage.generation_time) {
+            lines.push(`- 生成时间: ${(message.usage.generation_time / 1000).toFixed(2)}秒`)
+          }
+          if (message.usage.tokens_per_second) {
+            lines.push(`- 生成速度: ${message.usage.tokens_per_second.toFixed(2)} tokens/秒`)
+          }
+          lines.push('')
+        }
+      }
+      
+      lines.push('---')
+      lines.push('')
+    }
+
+    return lines.join('\n')
+  }
+
+  /**
+   * 导出为 HTML 格式
+   */
+  private exportToHtml(conversation: CONVERSATION, messages: Message[]): string {
+    const lines: string[] = []
+    
+    // HTML 头部
+    lines.push('<!DOCTYPE html>')
+    lines.push('<html lang="zh-CN">')
+    lines.push('<head>')
+    lines.push('  <meta charset="UTF-8">')
+    lines.push('  <meta name="viewport" content="width=device-width, initial-scale=1.0">')
+    lines.push(`  <title>${this.escapeHtml(conversation.title)}</title>`)
+    lines.push('  <style>')
+    lines.push('    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; }')
+    lines.push('    .header { border-bottom: 2px solid #e1e5e9; padding-bottom: 20px; margin-bottom: 30px; }')
+    lines.push('    .message { margin-bottom: 30px; border-left: 4px solid #ddd; padding-left: 20px; }')
+    lines.push('    .user-message { border-left-color: #007bff; }')
+    lines.push('    .assistant-message { border-left-color: #28a745; }')
+    lines.push('    .message-header { font-weight: bold; margin-bottom: 10px; color: #495057; }')
+    lines.push('    .message-time { font-size: 0.9em; color: #6c757d; }')
+    lines.push('    .tool-call { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; margin: 10px 0; }')
+    lines.push('    .search-block { background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin: 10px 0; }')
+    lines.push('    .error-block { background: #ffebee; border: 1px solid #ffcdd2; border-radius: 8px; padding: 15px; margin: 10px 0; color: #c62828; }')
+    lines.push('    .reasoning-block { background: #f3e5f5; border: 1px solid #e1bee7; border-radius: 8px; padding: 15px; margin: 10px 0; }')
+    lines.push('    .code { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; padding: 10px; font-family: "Monaco", "Consolas", monospace; white-space: pre-wrap; overflow-x: auto; }')
+    lines.push('    .usage-info { background: #e8f5e8; border: 1px solid #c3e6c3; border-radius: 8px; padding: 15px; margin: 10px 0; font-size: 0.9em; }')
+    lines.push('    .attachments { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 10px 0; }')
+    lines.push('  </style>')
+    lines.push('</head>')
+    lines.push('<body>')
+    
+    // 标题和元信息
+    lines.push('  <div class="header">')
+    lines.push(`    <h1>${this.escapeHtml(conversation.title)}</h1>`)
+    lines.push(`    <p><strong>导出时间:</strong> ${new Date().toLocaleString()}</p>`)
+    lines.push(`    <p><strong>会话ID:</strong> ${conversation.id}</p>`)
+    lines.push(`    <p><strong>消息数量:</strong> ${messages.length}</p>`)
+    if (conversation.settings.modelId) {
+      lines.push(`    <p><strong>模型:</strong> ${this.escapeHtml(conversation.settings.modelId)}</p>`)
+    }
+    if (conversation.settings.providerId) {
+      lines.push(`    <p><strong>提供商:</strong> ${this.escapeHtml(conversation.settings.providerId)}</p>`)
+    }
+    lines.push('  </div>')
+    
+    // 处理每条消息
+    for (const message of messages) {
+      const messageTime = new Date(message.timestamp).toLocaleString()
+      
+      if (message.role === 'user') {
+        lines.push(`  <div class="message user-message">`)
+        lines.push(`    <div class="message-header">👤 用户 <span class="message-time">(${messageTime})</span></div>`)
+        
+        const userContent = message.content as UserMessageContent
+        const messageText = userContent.content 
+          ? this.formatUserMessageContent(userContent.content)
+          : userContent.text
+        
+        lines.push(`    <div>${this.escapeHtml(messageText).replace(/\n/g, '<br>')}</div>`)
+        
+        // 处理文件附件
+        if (userContent.files && userContent.files.length > 0) {
+          lines.push('    <div class="attachments">')
+          lines.push('      <strong>附件:</strong>')
+          lines.push('      <ul>')
+          for (const file of userContent.files) {
+            lines.push(`        <li>${this.escapeHtml(file.name)} (${this.escapeHtml(file.mimeType)})</li>`)
+          }
+          lines.push('      </ul>')
+          lines.push('    </div>')
+        }
+        
+        // 处理链接
+        if (userContent.links && userContent.links.length > 0) {
+          lines.push('    <div class="attachments">')
+          lines.push('      <strong>链接:</strong>')
+          lines.push('      <ul>')
+          for (const link of userContent.links) {
+            lines.push(`        <li><a href="${this.escapeHtml(link)}" target="_blank">${this.escapeHtml(link)}</a></li>`)
+          }
+          lines.push('      </ul>')
+          lines.push('    </div>')
+        }
+        
+        lines.push('  </div>')
+        
+      } else if (message.role === 'assistant') {
+        lines.push(`  <div class="message assistant-message">`)
+        lines.push(`    <div class="message-header">🤖 助手 <span class="message-time">(${messageTime})</span></div>`)
+        
+        const assistantBlocks = message.content as AssistantMessageBlock[]
+        
+        for (const block of assistantBlocks) {
+          switch (block.type) {
+            case 'content':
+              if (block.content) {
+                lines.push(`    <div>${this.escapeHtml(block.content).replace(/\n/g, '<br>')}</div>`)
+              }
+              break
+              
+            case 'reasoning_content':
+              if (block.content) {
+                lines.push('    <div class="reasoning-block">')
+                lines.push('      <strong>🤔 思考过程:</strong>')
+                lines.push(`      <div class="code">${this.escapeHtml(block.content)}</div>`)
+                lines.push('    </div>')
+              }
+              break
+              
+            case 'tool_call':
+              if (block.tool_call) {
+                lines.push('    <div class="tool-call">')
+                lines.push(`      <strong>🔧 工具调用: ${this.escapeHtml(block.tool_call.name || '')}</strong>`)
+                if (block.tool_call.params) {
+                  lines.push('      <div><strong>参数:</strong></div>')
+                  lines.push(`      <div class="code">${this.escapeHtml(block.tool_call.params)}</div>`)
+                }
+                if (block.tool_call.response) {
+                  lines.push('      <div><strong>响应:</strong></div>')
+                  lines.push(`      <div class="code">${this.escapeHtml(block.tool_call.response)}</div>`)
+                }
+                lines.push('    </div>')
+              }
+              break
+              
+            case 'search':
+              lines.push('    <div class="search-block">')
+              lines.push('      <strong>🔍 网络搜索</strong>')
+              if (block.extra?.total) {
+                lines.push(`      <p>找到 ${block.extra.total} 个搜索结果</p>`)
+              }
+              lines.push('    </div>')
+              break
+              
+            case 'image':
+              lines.push('    <div class="tool-call">')
+              lines.push('      <strong>🖼️ 图片</strong>')
+              lines.push('      <p><em>[图片内容]</em></p>')
+              lines.push('    </div>')
+              break
+              
+            case 'error':
+              if (block.content) {
+                lines.push('    <div class="error-block">')
+                lines.push('      <strong>❌ 错误</strong>')
+                lines.push(`      <p><code>${this.escapeHtml(block.content)}</code></p>`)
+                lines.push('    </div>')
+              }
+              break
+
+            case 'artifact-thinking':
+              if (block.content) {
+                lines.push('    <div class="reasoning-block">')
+                lines.push('      <strong>💭 创作思考:</strong>')
+                lines.push(`      <div class="code">${this.escapeHtml(block.content)}</div>`)
+                lines.push('    </div>')
+              }
+              break
+          }
+        }
+        
+        // 添加使用情况信息
+        if (message.usage) {
+          lines.push('    <div class="usage-info">')
+          lines.push('      <strong>使用情况:</strong>')
+          lines.push('      <ul>')
+          lines.push(`        <li>输入 Token: ${message.usage.input_tokens}</li>`)
+          lines.push(`        <li>输出 Token: ${message.usage.output_tokens}</li>`)
+          lines.push(`        <li>总计 Token: ${message.usage.total_tokens}</li>`)
+          if (message.usage.generation_time) {
+            lines.push(`        <li>生成时间: ${(message.usage.generation_time / 1000).toFixed(2)}秒</li>`)
+          }
+          if (message.usage.tokens_per_second) {
+            lines.push(`        <li>生成速度: ${message.usage.tokens_per_second.toFixed(2)} tokens/秒</li>`)
+          }
+          lines.push('      </ul>')
+          lines.push('    </div>')
+        }
+        
+        lines.push('  </div>')
+      }
+    }
+
+    // HTML 尾部
+    lines.push('</body>')
+    lines.push('</html>')
+
+    return lines.join('\n')
+  }
+
+  /**
+   * 导出为纯文本格式
+   */
+  private exportToText(conversation: CONVERSATION, messages: Message[]): string {
+    const lines: string[] = []
+    
+    // 标题和元信息
+    lines.push(`${conversation.title}`)
+    lines.push(''.padEnd(conversation.title.length, '='))
+    lines.push('')
+    lines.push(`导出时间: ${new Date().toLocaleString()}`)
+    lines.push(`会话ID: ${conversation.id}`)
+    lines.push(`消息数量: ${messages.length}`)
+    if (conversation.settings.modelId) {
+      lines.push(`模型: ${conversation.settings.modelId}`)
+    }
+    if (conversation.settings.providerId) {
+      lines.push(`提供商: ${conversation.settings.providerId}`)
+    }
+    lines.push('')
+    lines.push(''.padEnd(80, '-'))
+    lines.push('')
+
+    // 处理每条消息
+    for (const message of messages) {
+      const messageTime = new Date(message.timestamp).toLocaleString()
+      
+      if (message.role === 'user') {
+        lines.push(`[用户] ${messageTime}`)
+        lines.push('')
+        
+        const userContent = message.content as UserMessageContent
+        const messageText = userContent.content 
+          ? this.formatUserMessageContent(userContent.content)
+          : userContent.text
+        
+        lines.push(messageText)
+        
+        // 处理文件附件
+        if (userContent.files && userContent.files.length > 0) {
+          lines.push('')
+          lines.push('附件:')
+          for (const file of userContent.files) {
+            lines.push(`- ${file.name} (${file.mimeType})`)
+          }
+        }
+        
+        // 处理链接
+        if (userContent.links && userContent.links.length > 0) {
+          lines.push('')
+          lines.push('链接:')
+          for (const link of userContent.links) {
+            lines.push(`- ${link}`)
+          }
+        }
+        
+      } else if (message.role === 'assistant') {
+        lines.push(`[助手] ${messageTime}`)
+        lines.push('')
+        
+        const assistantBlocks = message.content as AssistantMessageBlock[]
+        
+        for (const block of assistantBlocks) {
+          switch (block.type) {
+            case 'content':
+              if (block.content) {
+                lines.push(block.content)
+                lines.push('')
+              }
+              break
+              
+            case 'reasoning_content':
+              if (block.content) {
+                lines.push('[思考过程]')
+                lines.push(block.content)
+                lines.push('')
+              }
+              break
+              
+            case 'tool_call':
+              if (block.tool_call) {
+                lines.push(`[工具调用] ${block.tool_call.name}`)
+                if (block.tool_call.params) {
+                  lines.push('参数:')
+                  lines.push(block.tool_call.params)
+                }
+                if (block.tool_call.response) {
+                  lines.push('响应:')
+                  lines.push(block.tool_call.response)
+                }
+                lines.push('')
+              }
+              break
+              
+            case 'search':
+              lines.push('[网络搜索]')
+              if (block.extra?.total) {
+                lines.push(`找到 ${block.extra.total} 个搜索结果`)
+              }
+              lines.push('')
+              break
+              
+            case 'image':
+              lines.push('[图片内容]')
+              lines.push('')
+              break
+              
+            case 'error':
+              if (block.content) {
+                lines.push(`[错误] ${block.content}`)
+                lines.push('')
+              }
+              break
+
+            case 'artifact-thinking':
+              if (block.content) {
+                lines.push('[创作思考]')
+                lines.push(block.content)
+                lines.push('')
+              }
+              break
+          }
+        }
+        
+        // 添加使用情况信息
+        if (message.usage) {
+          lines.push('[使用情况]')
+          lines.push(`输入 Token: ${message.usage.input_tokens}`)
+          lines.push(`输出 Token: ${message.usage.output_tokens}`)
+          lines.push(`总计 Token: ${message.usage.total_tokens}`)
+          if (message.usage.generation_time) {
+            lines.push(`生成时间: ${(message.usage.generation_time / 1000).toFixed(2)}秒`)
+          }
+          if (message.usage.tokens_per_second) {
+            lines.push(`生成速度: ${message.usage.tokens_per_second.toFixed(2)} tokens/秒`)
+          }
+          lines.push('')
+        }
+      }
+      
+      lines.push(''.padEnd(80, '-'))
+      lines.push('')
+    }
+
+    return lines.join('\n')
+  }
+
+  /**
+   * HTML 转义辅助函数
+   */
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+  }
+
   // 权限响应处理方法 - 重新设计为基于消息数据的流程
   async handlePermissionResponse(
     messageId: string,
