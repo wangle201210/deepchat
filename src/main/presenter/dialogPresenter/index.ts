@@ -14,7 +14,6 @@ import { eventBus, SendTarget } from '@/eventbus'
 import { DIALOG_EVENTS } from '@/events'
 import { nanoid } from 'nanoid'
 
-
 export class DialogPresenter implements IDialogPresenter {
   private pendingDialogs = new Map<
     string,
@@ -48,8 +47,14 @@ export class DialogPresenter implements IDialogPresenter {
           timeout: request.timeout ?? 0
         }
         this.pendingDialogs.set(finalRequest.id, { resolve, reject })
-        // send dialog request to renderer
-        eventBus.sendToRenderer(DIALOG_EVENTS.REQUEST, SendTarget.DEFAULT_TAB, finalRequest)
+        try {
+          // send dialog request to renderer
+          eventBus.sendToRenderer(DIALOG_EVENTS.REQUEST, SendTarget.DEFAULT_TAB, finalRequest)
+        } catch (error) {
+          // Clean up the pending dialog entry
+          this.pendingDialogs.delete(finalRequest.id)
+          reject(error)
+        }
       } catch (err) {
         console.error('[Dialog] Error in showDialog:', err)
         reject(err)

@@ -2,7 +2,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { DIALOG_EVENTS } from '@/events'
 import { DialogRequest, DialogResponse } from '@shared/presenter'
 import { defineStore } from 'pinia'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 export const useDialogStore = defineStore('dialog', () => {
   const dialogP = usePresenter('dialogPresenter')
@@ -44,7 +44,11 @@ export const useDialogStore = defineStore('dialog', () => {
 
         // Clear previous dialog request if exists
         if (dialogRequest.value) {
-          await handleError(dialogRequest.value.id)
+          try {
+            await handleError(dialogRequest.value.id)
+          } catch (error) {
+            console.error('[DialogStore] Failed to clear previous dialog:', error)
+          }
         }
 
         // Start countdown if timeout is set and has default button
@@ -63,6 +67,12 @@ export const useDialogStore = defineStore('dialog', () => {
         console.error('[DialogStore] Error processing dialog request:', error)
       }
     })
+  }
+
+  // Remove dialog request listener
+  const removeUpdateListener = () => {
+    clearTimer()
+    window.electron.ipcRenderer.removeAllListeners(DIALOG_EVENTS.REQUEST)
   }
 
   // Respond to dialog
@@ -96,6 +106,7 @@ export const useDialogStore = defineStore('dialog', () => {
   }
 
   onMounted(setupUpdateListener)
+  onUnmounted(removeUpdateListener)
 
   return {
     timeoutMilliseconds,

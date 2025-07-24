@@ -235,12 +235,23 @@ const handleSearch = async () => {
   if (!searchKey.value) return
   copyId.value = ''
   loading.value = true
-  knowledgePresenter
-    .similarityQuery(props.builtinKnowledgeDetail.id, searchKey.value)
-    .then((res: any) => {
-      searchResult.value = res || []
-      loading.value = false
+  try {
+    const res = await knowledgePresenter.similarityQuery(
+      props.builtinKnowledgeDetail.id,
+      searchKey.value
+    )
+    searchResult.value = res || []
+  } catch (error) {
+    console.error('[KnowledgeFile] Search failed:', error)
+    toast({
+      title: t('settings.knowledgeBase.searchError'),
+      variant: 'destructive',
+      duration: 3000
     })
+    searchResult.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
 // 复制文本
@@ -306,7 +317,7 @@ const handleDrop = async (e: DragEvent) => {
             variant: 'destructive',
             duration: 3000
           })
-          return
+          continue
         }
         if (result.data) {
           // 判断是否存在相同id的文件，存在则跳过

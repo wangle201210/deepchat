@@ -364,7 +364,8 @@
         "title": "Exit confirmation",
         "description": "There is a running knowledge base task. Are you sure to exit the software? \nAborted tasks can be restored after restarting the software."
       }
-    }
+    },
+    "searchError": "Query failed"
   },
   "mcp": {
     "title": "MCP Settings",

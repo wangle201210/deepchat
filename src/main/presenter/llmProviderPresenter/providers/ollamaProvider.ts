@@ -293,11 +293,11 @@ export class OllamaProvider extends BaseLLMProvider {
     const showResponse = await this.showModelInfo(model.name)
     const info = showResponse.model_info
     const family = model.details.family
-    const context_length = info[family + '.context_length']
-    const embedding_length = info[family + '.embedding_length']
-    const capabilities = showResponse.capabilities
+    const context_length = info?.[family + '.context_length'] ?? 4096
+    const embedding_length = info?.[family + '.embedding_length'] ?? 512
+    const capabilities = showResponse.capabilities ?? ['chat']
 
-    // 合并customConfig的属性到model
+    // Merge customConfig properties to model
     return {
       ...model,
       model_info: {
@@ -313,7 +313,7 @@ export class OllamaProvider extends BaseLLMProvider {
     try {
       const response = await this.ollama.list()
       const models = response.models as unknown as OllamaModel[]
-      // FIXME 合并模型属性，ollama list接口完善后优化
+      // FIXME: Merge model properties, optimize after ollama list API is improved
       return await Promise.all(models.map(async (model) => this.attachModelInfo(model)))
     } catch (error) {
       console.error('Failed to list Ollama models:', (error as Error).message)
@@ -325,7 +325,7 @@ export class OllamaProvider extends BaseLLMProvider {
     try {
       const response = await this.ollama.ps()
       const runningModels = response.models as unknown as OllamaModel[]
-      // FIXME 合并模型属性，ollama list接口完善后优化
+      // FIXME: Merge model properties, optimize after ollama list API is improved
       return await Promise.all(runningModels.map(async (model) => this.attachModelInfo(model)))
     } catch (error) {
       console.error('Failed to list running Ollama models:', (error as Error).message)

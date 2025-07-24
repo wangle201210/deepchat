@@ -60,7 +60,7 @@ export function getMimeTypeIcon(mimeType: string) {
   } else if (mimeType.startsWith('directory')) {
     return 'vscode-icons:default-folder-opened'
   } else {
-    // 默认文件图标
+    // Default file icon
     return 'vscode-icons:default-file'
   }
 }

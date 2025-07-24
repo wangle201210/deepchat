@@ -50,11 +50,6 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
     this.removeTasks((task) => task.payload.fileId === fileId)
   }
 
-  // Convenience method: cancel tasks by chunk ID (implemented via filter)
-  cancelTasksByChunk(chunkId: string): void {
-    this.removeTasks((task) => task.payload.chunkId === chunkId)
-  }
-
   // Get task execution status (implemented by traversal, no need to maintain index)
   getTaskStatus(): TaskStatusSummary {
     const status = {
@@ -116,10 +111,11 @@ export class KnowledgeTaskPresenter implements IKnowledgeTaskPresenter {
 
   destroy(): void {
     console.log('[RAG TASK] Destroying TaskManager, all tasks will be terminated.')
+    // Remove all tasks (including current task)
+    this.removeTasks(() => true)
     // Clear queue and reset state
     this.queue = []
-    this.removeTasks(() => true)
-    this.currentTask = null
+ 
     // Stop processing loop
     this.isProcessing = false
     // Clear all controllers

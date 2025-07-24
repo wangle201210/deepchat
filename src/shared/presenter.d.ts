@@ -1359,12 +1359,6 @@ export interface IKnowledgeTaskPresenter {
   cancelTasksByFile(fileId: string): void
 
   /**
-   * Cancel tasks by chunk ID
-   * @param chunkId Chunk ID
-   */
-  cancelTasksByChunk(chunkId: string): void
-
-  /**
    * Get detailed task status statistics
    * @returns Task status summary information
    */

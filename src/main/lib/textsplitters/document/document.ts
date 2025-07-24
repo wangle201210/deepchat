@@ -22,7 +22,7 @@ export class Document<Metadata extends Record<string, any> = Record<string, any>
 
   constructor(fields: DocumentInput<Metadata>) {
     this.pageContent = fields.pageContent
-    this.metadata = (fields.metadata ?? {}) as Metadata
+    this.metadata = fields.metadata ?? ({} as Metadata)
     this.id = fields.id
   }
 }

@@ -407,8 +407,8 @@ const displayLocalModels = computed(() => {
           quantization_level: ''
         },
         model_info: {
-          context_length: NaN,
-          embedding_length: NaN
+          context_length: 0,
+          embedding_length: 0
         },
         capabilities: [],
         pulling: true,

@@ -364,7 +364,8 @@
         "cancel": "取消",
         "confirm": "确认"
       }
-    }
+    },
+    "searchError": "查询失败"
   },
   "mcp": {
     "title": "MCP设置",

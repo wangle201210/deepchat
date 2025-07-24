@@ -1308,10 +1308,23 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           normalized: true
         }
       default:
-        const embeddings = await this.getEmbeddings(modelId, [EMBEDDING_TEST_KEY])
-        return {
-          dimensions: embeddings[0].length,
-          normalized: isNormalized(embeddings[0])
+        try {
+          const embeddings = await this.getEmbeddings(modelId, [EMBEDDING_TEST_KEY])
+          return {
+            dimensions: embeddings[0].length,
+            normalized: isNormalized(embeddings[0])
+          }
+        } catch (error) {
+          console.error(
+            `[OpenAICompatibleProvider] Failed to get dimensions for model ${modelId}:`,
+            error
+          )
+          // Return sensible defaults or rethrow
+          throw new Error(
+            `Unable to determine embedding dimensions for model ${modelId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          )
         }
     }
   }

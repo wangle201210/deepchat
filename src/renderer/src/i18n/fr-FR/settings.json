@@ -364,7 +364,8 @@
         "title": "Confirmation de sortie",
         "description": "Il y a une tâche de base de connaissances en cours. Êtes-vous sûr de quitter le logiciel? Les tâches abandonnées peuvent être restaurées après le redémarrage du logiciel."
       }
-    }
+    },
+    "searchError": "La requête a échoué"
   },
   "mcp": {
     "title": "Paramètres MCP",

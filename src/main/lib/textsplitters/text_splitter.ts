@@ -162,8 +162,7 @@ export abstract class TextSplitter extends BaseDocumentTransformer implements Te
       if (total + _len + currentDoc.length * separator.length > this.chunkSize) {
         if (total > this.chunkSize) {
           console.warn(
-            `Created a chunk of size ${total}, +
-which is longer than the specified ${this.chunkSize}`
+            `Created a chunk of size ${total}, which is longer than the specified ${this.chunkSize}`
           )
         }
         if (currentDoc.length > 0) {

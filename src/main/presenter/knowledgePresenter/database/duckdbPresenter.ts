@@ -707,7 +707,7 @@ export class DuckDBPresenter implements IVectorDatabasePresenter {
       console.log(`[DuckDB] LOAD ${name} extension from ${escapedPath}`)
       await this.safeRun(`LOAD '${escapedPath}';`)
     } else {
-      console.log('[DuckDB] LOAD ${name} extension online')
+      console.log(`[DuckDB] LOAD ${name} extension online`)
       await this.safeRun(`INSTALL ${name};`)
       await this.safeRun(`LOAD ${name};`)
     }
