@@ -270,7 +270,69 @@ export class GithubCopilotProvider extends BaseLLMProvider {
         vision: true,
         functionCall: true,
         reasoning: false
+      },
+      {
+        id: 'claude-sonnet-4',
+        name: 'Claude Sonnet 4',
+        group: 'GitHub Copilot',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 200000,
+        maxTokens: 8192,
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-2.5-pro',
+        name: 'Gemini 2.5 Pro',
+        group: 'GitHub Copilot',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 200000,
+        maxTokens: 8192,
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'gemini-2.0-flash-001',
+        name: 'Gemini 2.0 Flash',
+        group: 'GitHub Copilot',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 200000,
+        maxTokens: 8192,
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'o3-mini',
+        name: 'O3 Mini',
+        group: 'GitHub Copilot',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 128000,
+        maxTokens: 4096,
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'o3',
+        name: 'O3',
+        group: 'GitHub Copilot',
+        providerId: this.provider.id,
+        isCustom: false,
+        contextLength: 128000,
+        maxTokens: 4096,
+        vision: true,
+        functionCall: true,
+        reasoning: true
       }
+      
+
     ]
 
     return models
