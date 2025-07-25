@@ -32,15 +32,15 @@ const getTools = (serverName: string) => {
   return mcpStore.tools.filter((tool) => tool.server.name === serverName)
 }
 
-// 获取每个mcp服务的工具数量
-const getLength = (serverName: string) => {
+// 获取每个mcp服务的可用工具数量
+const getEnabledToolCountByServer = (serverName: string) => {
   const enabledTools = chatStore.chatConfig.enabledMcpTools ?? []
   const serverTools = mcpStore.tools.filter((tool) => tool.server.name === serverName)
   return serverTools.filter((tool) => enabledTools.includes(tool.function.name)).length
 }
 
-// 获取当前对话的工具总数
-const getCount = () => {
+// 获取可用工具总数
+const getTotalEnabledToolCount = () => {
   const enabledMcpTools = chatStore.chatConfig.enabledMcpTools || []
   const filterList = mcpStore.tools.filter((item) => enabledMcpTools.includes(item.function.name))
   return filterList.length
@@ -107,7 +107,7 @@ onMounted(async () => {
                 v-if="hasTools && !isLoading && !isError"
                 :class="{ 'text-muted-foreground': !mcpEnabled, 'text-white': mcpEnabled }"
                 class="text-sm"
-                >{{ getCount() }}</span
+                >{{ getTotalEnabledToolCount() }}</span
               >
             </Button>
           </TooltipTrigger>
@@ -115,7 +115,9 @@ onMounted(async () => {
             <p v-if="!mcpEnabled">{{ t('mcp.tools.disabled') }}</p>
             <p v-else-if="isLoading">{{ t('mcp.tools.loading') }}</p>
             <p v-else-if="isError">{{ t('mcp.tools.error') }}</p>
-            <p v-else-if="hasTools">{{ t('mcp.tools.available', { count: getCount() }) }}</p>
+            <p v-else-if="hasTools">
+              {{ t('mcp.tools.available', { count: getTotalEnabledToolCount() }) }}
+            </p>
             <p v-else>{{ t('mcp.tools.none') }}</p>
           </TooltipContent>
         </Tooltip>
@@ -175,7 +177,7 @@ onMounted(async () => {
                       variant="outline"
                       class="flex items-center gap-1 mr-2 text-xs"
                     >
-                      {{ getLength(server.name) }}
+                      {{ getEnabledToolCountByServer(server.name) }}
                     </Badge>
                   </PopoverTrigger>
                   <PopoverContent align="start" class="p-2 max-h-[300px] overflow-y-auto">
