@@ -194,6 +194,12 @@ onMounted(async () => {
                         "
                       />
                     </div>
+                    <div
+                      v-if="getTools(server.name).length === 0"
+                      class="p-2 text-sm text-muted-foreground text-center"
+                    >
+                      {{ t('mcp.tools.empty') }}
+                    </div>
                   </PopoverContent>
                 </Popover>
 
