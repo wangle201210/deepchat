@@ -1022,17 +1022,17 @@ export const useSettingsStore = defineStore('settings', () => {
       return {
         id: model.name,
         name: model.name,
-        contextLength: existingModel?.contextLength || 4096, // 使用现有值或默认值
+        contextLength: model.model_info.context_length || 4096, // 使用模型定义值或默认值
         maxTokens: existingModel?.maxTokens || 2048, // 使用现有值或默认值
         provider: 'ollama',
         group: existingModel?.group || 'local',
         enabled: true,
         isCustom: existingModel?.isCustom || false,
         providerId: 'ollama',
-        vision: existingModel?.vision || false,
-        functionCall: existingModel?.functionCall || false,
-        reasoning: existingModel?.reasoning || false,
-        type: existingModel?.type || ModelType.Chat,
+        vision: model.capabilities.indexOf('vision') > -1,
+        functionCall: model.capabilities.indexOf('tools') > -1,
+        reasoning: model.capabilities.indexOf('thinking') > -1,
+        type: model.capabilities.indexOf('embedding') > -1 ? ModelType.Embedding : ModelType.Chat,
         // 保留现有的其他配置，但确保更新 Ollama 特有数据
         ...(existingModel ? { ...existingModel } : {}),
         ollamaModel: model

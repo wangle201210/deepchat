@@ -7,7 +7,8 @@ import {
   OllamaModel,
   ChatMessage,
   LLMAgentEvent,
-  KeyStatus
+  KeyStatus,
+  LLM_EMBEDDING_ATTRS
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -28,6 +29,7 @@ import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS } from '@/events'
 import { TogetherProvider } from './providers/togetherProvider'
 import { GrokProvider } from './providers/grokProvider'
+import { GroqProvider } from './providers/groqProvider'
 import { presenter } from '@/presenter'
 import { ZhipuProvider } from './providers/zhipuProvider'
 import { LMStudioProvider } from './providers/lmstudioProvider'
@@ -153,6 +155,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new LMStudioProvider(provider, this.configPresenter)
         case 'together':
           return new TogetherProvider(provider, this.configPresenter)
+        case 'groq':
+          return new GroqProvider(provider, this.configPresenter)
         default:
           console.warn(`Unknown provider type: ${provider.apiType}`)
           return undefined
@@ -240,21 +244,26 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     let models = await provider.fetchModels()
     models = models.map((model) => {
       const config = this.configPresenter.getModelConfig(model.id, providerId)
-      if (config) {
-        model.maxTokens = config.maxTokens
-        model.contextLength = config.contextLength
-        // 如果模型中已经有这些属性则保留，否则使用配置中的值或默认为false
-        model.vision = model.vision !== undefined ? model.vision : config.vision || false
-        model.functionCall =
-          model.functionCall !== undefined ? model.functionCall : config.functionCall || false
-        model.reasoning =
-          model.reasoning !== undefined ? model.reasoning : config.reasoning || false
+
+      // Always use config values for maxTokens, contextLength, and temperature
+      model.maxTokens = config.maxTokens
+      model.contextLength = config.contextLength
+
+      if (config.isUserDefined) {
+        // User has explicitly configured this model, use all config values
+        model.vision = config.vision
+        model.functionCall = config.functionCall
+        model.reasoning = config.reasoning
+        model.type = config.type
       } else {
-        // 确保模型具有这些属性，如果没有配置，默认为false
-        model.vision = model.vision || false
-        model.functionCall = model.functionCall || false
-        model.reasoning = model.reasoning || false
+        // Default config, prioritize model's own capabilities if they exist
+        model.vision = model.vision !== undefined ? model.vision : config.vision
+        model.functionCall =
+          model.functionCall !== undefined ? model.functionCall : config.functionCall
+        model.reasoning = model.reasoning !== undefined ? model.reasoning : config.reasoning
+        model.type = model.type || config.type
       }
+
       return model
     })
     return models
@@ -297,7 +306,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     modelId: string,
     eventId: string,
     temperature: number = 0.6,
-    maxTokens: number = 4096
+    maxTokens: number = 4096,
+    enabledMcpTools?: string[]
   ): AsyncGenerator<LLMAgentEvent, void, unknown> {
     console.log(`[Agent Loop] Starting agent loop for event: ${eventId} with model: ${modelId}`)
     if (!this.canStartNewStream()) {
@@ -371,7 +381,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
         try {
           console.log(`[Agent Loop] Iteration ${toolCallCount + 1} for event: ${eventId}`)
-          const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions()
+          const mcpTools = await presenter.mcpPresenter.getAllToolDefinitions(enabledMcpTools)
           // Call the provider's core stream method, expecting LLMCoreStreamEvent
           const stream = provider.coreStream(
             conversationMessages,
@@ -591,9 +601,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
               toolCallCount++
 
               // Find the tool definition to get server info
-              const toolDef = (await presenter.mcpPresenter.getAllToolDefinitions()).find(
-                (t) => t.function.name === toolCall.name
-              )
+              const toolDef = (
+                await presenter.mcpPresenter.getAllToolDefinitions(enabledMcpTools)
+              ).find((t) => t.function.name === toolCall.name)
 
               if (!toolDef) {
                 console.error(`Tool definition not found for ${toolCall.name}. Skipping execution.`)
@@ -1066,7 +1076,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return { isOk: false, errorMsg: `Model test failed: ${errorMessage}` }
         }
       } else {
-        return { isOk: false, errorMsg: 'Model ID is required' }
+        // 如果没有提供modelId，使用provider的check方法进行基础验证
+        return await provider.check()
       }
     } catch (error) {
       console.error(`Provider ${providerId} check failed:`, error)
@@ -1205,15 +1216,42 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   /**
    * 获取文本的 embedding 表示
    * @param providerId 提供商ID
-   * @param texts 文本数组
    * @param modelId 模型ID
+   * @param texts 文本数组
    * @returns embedding 数组
    */
-  async getEmbeddings(providerId: string, texts: string[], modelId: string): Promise<number[][]> {
-    const provider = this.getProviderInstance(providerId)
-    if (!provider.getEmbeddings) {
+  async getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      return await provider.getEmbeddings(modelId, texts)
+    } catch (error) {
+      console.error(`${modelId} embedding 失败:`, error)
       throw new Error('当前 LLM 提供商未实现 embedding 能力')
     }
-    return provider.getEmbeddings(texts, modelId)
+  }
+
+  /**
+   * 获取指定模型的 embedding 维度
+   * @param providerId 提供商ID
+   * @param modelId 模型ID
+   * @returns 模型的 embedding 维度
+   */
+  async getDimensions(
+    providerId: string,
+    modelId: string
+  ): Promise<{ data: LLM_EMBEDDING_ATTRS; errorMsg?: string }> {
+    try {
+      const provider = this.getProviderInstance(providerId)
+      return { data: await provider.getDimensions(modelId) }
+    } catch (error) {
+      console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
+      return {
+        data: {
+          dimensions: 0,
+          normalized: false
+        },
+        errorMsg: error instanceof Error ? error.message : String(error)
+      }
+    }
   }
 }
