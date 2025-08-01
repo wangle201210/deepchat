@@ -1021,6 +1021,7 @@ function onKeydown(e: KeyboardEvent) {
 defineExpose({
   setText: (text: string) => {
     inputText.value = text
+    editor.chain().setContent(text).focus('end').run()
   }
 })
 </script>
