@@ -70,7 +70,20 @@
     "importing": "Importing...",
     "confirmImport": "Confirm Import",
     "importSuccessTitle": "Import Successful",
-    "importErrorTitle": "Import Failed"
+    "importErrorTitle": "Import Failed",
+    "resetData": "Reset Data",
+    "resetConfirmTitle": "Confirm Data Reset",
+    "resetConfirmDescription": "Please select the type of data to reset. This operation cannot be undone and the application will restart automatically after reset.",
+    "resetChatData": "Reset Chat Data",
+    "resetChatDataDesc": "Delete all chat history and conversation records",
+    "resetConfig": "Reset Configuration",
+    "resetConfigDesc": "Delete all app settings, model configurations and custom prompts",
+    "resetAll": "Complete Reset",
+    "resetAllDesc": "Delete all data including chat history, configurations and cache files",
+    "resetting": "Resetting...",
+    "confirmReset": "Confirm Reset",
+    "resetCompleteDevTitle": "Data Reset Complete",
+    "resetCompleteDevMessage": "Please manually restart the application in development mode. Stop the current process and run pnpm run dev again"
   },
   "model": {
     "title": "Model Settings",
@@ -154,6 +167,8 @@
       },
       "resetToDefault": "Reset to default",
       "saveConfig": "Save configuration",
+      "useModelDefault": "Use model default configuration",
+      "currentUsingModelDefault": "Currently using model default configuration",
       "temperature": {
         "description": "Control the randomness of the output. Most models are 0-1, and some support between 0-2. The higher the higher the randomness.",
         "label": "temperature"
@@ -188,6 +203,8 @@
   },
   "provider": {
     "enable": "Enable Service",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
     "urlPlaceholder": "Please enter API URL",
     "keyPlaceholder": "Please enter API Key",
     "verifyKey": "Verify Key",
@@ -306,7 +323,31 @@
     "toast": {
       "modelRunning": "The model is running",
       "modelRunningDesc": "Please stop the model {model} first and then delete it."
-    }
+    },
+    "anthropicApiKeyTip": "Please go to Anthropic Console to get your API Key",
+    "anthropicConnected": "Anthropic connected",
+    "anthropicNotConnected": "Anthropic Not connected",
+    "anthropicOAuthTip": "Click Authorize DeepChat to access your Anthropic account",
+    "oauthLogin": "OAuth Login",
+    "authMethod": "Certification method",
+    "authMethodPlaceholder": "Select authentication method",
+    "apiKeyLabel": "API Key",
+    "apiUrlLabel": "API URL",
+    "anthropicOAuthFlowTip": "The system will automatically open the authorization window. Please come back and enter the authorization code after authorization.",
+    "anthropicBrowserOpened": "External browser is open",
+    "anthropicCodeInstruction": "Please complete the authorization in an external browser and paste the obtained authorization code into the input box below",
+    "browserOpenedSuccess": "The external browser is open, please complete the authorization",
+    "codeRequired": "Please enter the authorization code",
+    "inputOAuthCode": "Enter the authorization code",
+    "codeExchangeFailed": "Authorization code exchange failed",
+    "invalidCode": "Invalid authorization code",
+    "oauthCodeHint": "Please paste the authorization code here after completing the authorization in an external browser",
+    "oauthCodePlaceholder": "Please enter the authorization code...",
+    "verifyConnection": "Verify Connection",
+    "manageModels": "Manage Models",
+    "anthropicOAuthActiveTip": "OAuth authentication is enabled, you can use Anthropic services directly",
+    "oauthVerifySuccess": "OAuth connection verified successfully",
+    "oauthVerifyFailed": "OAuth connection verification failed"
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",

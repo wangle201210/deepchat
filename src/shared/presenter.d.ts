@@ -188,6 +188,7 @@ export interface ITabPresenter {
   getActiveTabId(windowId: number): Promise<number | undefined>
   getTabIdByWebContentsId(webContentsId: number): number | undefined
   getWindowIdByWebContentsId(webContentsId: number): number | undefined
+  reorderTabs(windowId: number, tabIds: number[]): Promise<boolean>
   moveTabToNewWindow(tabId: number, screenX?: number, screenY?: number): Promise<boolean>
   captureTabArea(
     tabId: number,
@@ -287,6 +288,12 @@ export interface IOAuthPresenter {
   startOAuthLogin(providerId: string, config: OAuthConfig): Promise<boolean>
   startGitHubCopilotLogin(providerId: string): Promise<boolean>
   startGitHubCopilotDeviceFlowLogin(providerId: string): Promise<boolean>
+  startAnthropicOAuthFlow(): Promise<string>
+  completeAnthropicOAuthWithCode(code: string): Promise<boolean>
+  cancelAnthropicOAuthFlow(): Promise<void>
+  hasAnthropicCredentials(): Promise<boolean>
+  getAnthropicAccessToken(): Promise<string | null>
+  clearAnthropicCredentials(): Promise<void>
 }
 
 export interface OAuthConfig {
@@ -475,6 +482,8 @@ export type LLM_PROVIDER = {
   baseUrl: string
   enable: boolean
   custom?: boolean
+  authMode?: 'apikey' | 'oauth' // 认证模式
+  oauthToken?: string // OAuth token
   websites?: {
     official: string
     apiKey: string
@@ -522,7 +531,8 @@ export interface ILlmProviderPresenter {
     eventId: string,
     temperature?: number,
     maxTokens?: number,
-    enabledMcpTools?: string[]
+    enabledMcpTools?: string[],
+    thinkingBudget?: number
   ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
@@ -560,6 +570,7 @@ export type CONVERSATION_SETTINGS = {
   modelId: string
   artifacts: 0 | 1
   enabledMcpTools?: string[]
+  thinkingBudget?: number
 }
 
 export type CONVERSATION = {
@@ -726,6 +737,7 @@ export interface IDevicePresenter {
   getMemoryUsage(): Promise<MemoryInfo>
   getDiskSpace(): Promise<DiskInfo>
   resetData(): Promise<void>
+  resetDataByType(resetType: 'chat' | 'config' | 'all'): Promise<void>
 
   // 目录选择和应用重启
   selectDirectory(): Promise<{ canceled: boolean; filePaths: string[] }>
@@ -1211,6 +1223,7 @@ export interface DefaultModelSetting {
   functionCall: boolean
   reasoning?: boolean
   type?: ModelType
+  thinkingBudget?: number
 }
 
 export interface KeyStatus {
@@ -1404,16 +1417,9 @@ export type KnowledgeFileResult = {
  */
 export interface IKnowledgePresenter {
   /**
-   * Create a knowledge base (initialize RAG application)
-   * @param config Knowledge base configuration
+   * Check if the knowledge presenter is supported in current environment
    */
-  create(config: BuiltinKnowledgeConfig): Promise<void>
-
-  /**
-   * Delete a knowledge base (remove local storage)
-   * @param id Knowledge base ID
-   */
-  delete(id: string): Promise<void>
+  isSupported(): Promise<boolean>
 
   /**
    * Add a file to the knowledge base

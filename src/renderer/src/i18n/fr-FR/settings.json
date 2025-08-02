@@ -70,7 +70,20 @@
     "importing": "Importation en cours...",
     "confirmImport": "Confirmer l'importation",
     "importSuccessTitle": "Importation réussie",
-    "importErrorTitle": "Échec de l'importation"
+    "importErrorTitle": "Échec de l'importation",
+    "resetData": "Réinitialiser les données",
+    "resetConfirmTitle": "Confirmer la réinitialisation des données",
+    "resetConfirmDescription": "Veuillez sélectionner le type de données à réinitialiser. Cette opération est irréversible et l'application redémarrera automatiquement après la réinitialisation.",
+    "resetChatData": "Réinitialiser les données de chat",
+    "resetChatDataDesc": "Supprimer tout l'historique des conversations et les enregistrements de dialogue",
+    "resetConfig": "Réinitialiser la configuration",
+    "resetConfigDesc": "Supprimer tous les paramètres de l'application, les configurations de modèles et les prompts personnalisés",
+    "resetAll": "Réinitialisation complète",
+    "resetAllDesc": "Supprimer toutes les données, y compris l'historique des conversations, les configurations et les fichiers de cache",
+    "resetting": "Réinitialisation en cours...",
+    "confirmReset": "Confirmer la réinitialisation",
+    "resetCompleteDevTitle": "Réinitialisation des données terminée",
+    "resetCompleteDevMessage": "En environnement de développement, veuillez redémarrer l'application manuellement. Arrêtez le processus actuel et exécutez à nouveau pnpm run dev"
   },
   "model": {
     "title": "Paramètres du modèle",
@@ -154,6 +167,8 @@
       },
       "resetToDefault": "Réinitialiser à la valeur par défaut",
       "saveConfig": "Enregistrer la configuration",
+      "useModelDefault": "Utiliser la configuration par défaut du modèle",
+      "currentUsingModelDefault": "Utilise actuellement la configuration par défaut du modèle",
       "temperature": {
         "description": "Contrôlez le caractère aléatoire de la sortie. La plupart des modèles sont de 0-1 et certains soutiennent entre 0-2. Plus l'aléatoire est élevé.",
         "label": "température"
@@ -188,6 +203,8 @@
   },
   "provider": {
     "enable": "Activer le service",
+    "enabled": "Activé",
+    "disabled": "Désactivé",
     "urlPlaceholder": "Veuillez entrer l'URL de l'API",
     "keyPlaceholder": "Veuillez entrer la clé API",
     "verifyKey": "Vérifier la clé",
@@ -306,7 +323,31 @@
     "toast": {
       "modelRunning": "Le modèle est en cours d'exécution",
       "modelRunningDesc": "Veuillez d'abord arrêter le modèle {model}, puis le supprimer."
-    }
+    },
+    "anthropicApiKeyTip": "Veuillez aller à la console anthropique pour obtenir votre clé API",
+    "anthropicConnected": "Connecté anthropique",
+    "anthropicNotConnected": "Anthropique non connecté",
+    "anthropicOAuthTip": "Cliquez sur Autoriser Deepchat pour accéder à votre compte anthropique",
+    "oauthLogin": "Connexion OAuth",
+    "authMethod": "Méthode de certification",
+    "authMethodPlaceholder": "Sélectionner la méthode d'authentification",
+    "apiKeyLabel": "Clé API",
+    "apiUrlLabel": "URL API",
+    "anthropicOAuthFlowTip": "Le système ouvrira automatiquement la fenêtre d'autorisation. Veuillez revenir et saisir le code d'autorisation après l'autorisation.",
+    "anthropicBrowserOpened": "Le navigateur externe est ouvert",
+    "anthropicCodeInstruction": "Veuillez compléter l'autorisation dans un navigateur externe et coller le code d'autorisation obtenu dans la zone d'entrée ci-dessous",
+    "browserOpenedSuccess": "Le navigateur externe est ouvert, veuillez compléter l'autorisation",
+    "codeRequired": "Veuillez saisir le code d'autorisation",
+    "inputOAuthCode": "Entrez le code d'autorisation",
+    "codeExchangeFailed": "Échange de code d'autorisation Échec",
+    "invalidCode": "Code d'autorisation non valide",
+    "oauthCodeHint": "Veuillez coller le code d'autorisation ici après avoir terminé l'autorisation dans un navigateur externe",
+    "oauthCodePlaceholder": "Veuillez saisir le code d'autorisation ...",
+    "verifyConnection": "Vérifier la connexion",
+    "manageModels": "Gérer les modèles",
+    "anthropicOAuthActiveTip": "L'authentification OAuth est activée, vous pouvez utiliser les services Anthropic directement",
+    "oauthVerifySuccess": "Connexion OAuth vérifiée avec succès",
+    "oauthVerifyFailed": "Échec de la vérification de la connexion OAuth"
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",

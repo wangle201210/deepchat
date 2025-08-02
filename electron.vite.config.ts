@@ -13,7 +13,7 @@ export default defineConfig({
     plugins: [
       externalizeDepsPlugin({
         exclude: ['mermaid', 'dompurify']
-      })
+      }),
     ],
     resolve: {
       alias: {
@@ -60,6 +60,7 @@ export default defineConfig({
     },
     css: {
       postcss: {
+        // @ts-ignore
         plugins: [tailwind(), autoprefixer()]
       }
     },

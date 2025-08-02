@@ -70,7 +70,20 @@
     "importing": "導入中...",
     "confirmImport": "確認導入",
     "importSuccessTitle": "導入成功",
-    "importErrorTitle": "導入失敗"
+    "importErrorTitle": "導入失敗",
+    "resetData": "重置數據",
+    "resetConfirmTitle": "確認重置數據",
+    "resetConfirmDescription": "請選擇要重置的數據類型。此操作不可撤銷，重置後應用程式將自動重新啟動。",
+    "resetChatData": "重置聊天數據",
+    "resetChatDataDesc": "刪除所有聊天記錄和對話歷史",
+    "resetConfig": "重置配置",
+    "resetConfigDesc": "刪除所有應用程式設置、模型配置和自定義提示詞",
+    "resetAll": "完全重置",
+    "resetAllDesc": "刪除所有數據，包括聊天記錄、配置和快取檔案",
+    "resetting": "重置中...",
+    "confirmReset": "確認重置",
+    "resetCompleteDevTitle": "數據重置完成",
+    "resetCompleteDevMessage": "開發環境下請手動重新啟動應用程式。請停止當前進程並重新執行 pnpm run dev"
   },
   "model": {
     "title": "模型設置",
@@ -154,6 +167,8 @@
       },
       "resetToDefault": "重置為默認",
       "saveConfig": "保存配置",
+      "useModelDefault": "使用模型預設配置",
+      "currentUsingModelDefault": "目前使用模型預設配置",
       "temperature": {
         "description": "控制輸出的隨機性，大部分模型0-1，部分支持0-2之間，越高越隨機",
         "label": "溫度"
@@ -188,6 +203,8 @@
   },
   "provider": {
     "enable": "開啟服務",
+    "enabled": "已啟用",
+    "disabled": "已禁用",
     "urlPlaceholder": "請輸入API URL",
     "keyPlaceholder": "請輸入API Key",
     "verifyKey": "驗證密鑰",
@@ -306,7 +323,31 @@
     "toast": {
       "modelRunning": "模型正在運行",
       "modelRunningDesc": "請先停止模型 {model}，然後再刪除。"
-    }
+    },
+    "anthropicApiKeyTip": "請前往 Anthropic Console 獲取您的 API Key",
+    "anthropicConnected": "Anthropic 已連接",
+    "anthropicNotConnected": "Anthropic 未連接",
+    "anthropicOAuthTip": "點擊授權 DeepChat 訪問您的 Anthropic 賬戶",
+    "oauthLogin": "OAuth 登錄",
+    "authMethod": "認證方式",
+    "authMethodPlaceholder": "選擇認證方式",
+    "apiKeyLabel": "API Key",
+    "apiUrlLabel": "API URL",
+    "anthropicOAuthFlowTip": "系統將自動打開授權窗口，授權後請回來輸入授權碼",
+    "anthropicBrowserOpened": "外部瀏覽器已打開",
+    "anthropicCodeInstruction": "請在外部瀏覽器中完成授權，然後將獲得的授權碼粘貼到下方輸入框中",
+    "browserOpenedSuccess": "外部瀏覽器已打開，請完成授權",
+    "codeRequired": "請輸入授權碼",
+    "inputOAuthCode": "輸入授權碼",
+    "codeExchangeFailed": "授權碼交換失敗",
+    "invalidCode": "授權碼無效",
+    "oauthCodeHint": "請在外部瀏覽器中完成授權後，將獲得的授權碼粘貼到此處",
+    "oauthCodePlaceholder": "請輸入授權碼...",
+    "verifyConnection": "驗證連接",
+    "manageModels": "管理模型",
+    "anthropicOAuthActiveTip": "OAuth 認證已啟用，您可以直接使用 Anthropic 服務",
+    "oauthVerifySuccess": "OAuth 連接驗證成功",
+    "oauthVerifyFailed": "OAuth 連接驗證失敗"
   },
   "knowledgeBase": {
     "fastgptTitle": "FastGPT知識庫",

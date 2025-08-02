@@ -70,7 +70,20 @@
     "importing": "导入中...",
     "confirmImport": "确认导入",
     "importSuccessTitle": "导入成功",
-    "importErrorTitle": "导入失败"
+    "importErrorTitle": "导入失败",
+    "resetData": "重置数据",
+    "resetConfirmTitle": "确认重置数据",
+    "resetConfirmDescription": "请选择要重置的数据类型。此操作不可撤销，重置后应用将自动重启。",
+    "resetChatData": "重置聊天数据",
+    "resetChatDataDesc": "删除所有聊天记录和对话历史",
+    "resetConfig": "重置配置",
+    "resetConfigDesc": "删除所有应用设置、模型配置和自定义提示词",
+    "resetAll": "完全重置",
+    "resetAllDesc": "删除所有数据，包括聊天记录、配置和缓存文件",
+    "resetting": "重置中...",
+    "confirmReset": "确认重置",
+    "resetCompleteDevTitle": "数据重置完成",
+    "resetCompleteDevMessage": "开发环境下请手动重启应用以查看效果。请停止当前进程并重新运行 pnpm run dev"
   },
   "model": {
     "title": "模型设置",
@@ -168,6 +181,8 @@
       "resetToDefault": "重置为默认",
       "saveConfig": "保存配置",
       "cancel": "取消",
+      "useModelDefault": "使用模型默认配置",
+      "currentUsingModelDefault": "当前使用模型默认配置",
       "resetConfirm": {
         "title": "确认重置",
         "message": "确定要重置此模型的配置为默认值吗？此操作不可撤销。",
@@ -188,6 +203,8 @@
   },
   "provider": {
     "enable": "开启服务",
+    "enabled": "已启用",
+    "disabled": "已禁用",
     "urlPlaceholder": "请输入API URL",
     "keyPlaceholder": "请输入API Key",
     "verifyKey": "验证密钥",
@@ -306,7 +323,31 @@
     "keyStatus": {
       "usage": "已使用",
       "remaining": "剩余额度"
-    }
+    },
+    "authMethod": "认证方式",
+    "authMethodPlaceholder": "选择认证方式",
+    "apiKeyLabel": "API Key",
+    "apiUrlLabel": "API URL",
+    "anthropicConnected": "Anthropic 已连接",
+    "anthropicNotConnected": "Anthropic 未连接",
+    "anthropicOAuthTip": "点击授权 DeepChat 访问您的 Anthropic 账户",
+    "oauthLogin": "OAuth 登录",
+    "anthropicApiKeyTip": "请前往 Anthropic Console 获取您的 API Key",
+    "anthropicOAuthFlowTip": "系统将自动打开授权窗口，授权后请回来输入授权码",
+    "browserOpenedSuccess": "外部浏览器已打开，请完成授权",
+    "anthropicBrowserOpened": "外部浏览器已打开",
+    "anthropicCodeInstruction": "请在外部浏览器中完成授权，然后将获得的授权码粘贴到下方输入框中",
+    "inputOAuthCode": "输入授权码",
+    "oauthCodeHint": "请在外部浏览器中完成授权后，将获得的授权码粘贴到此处",
+    "oauthCodePlaceholder": "请输入授权码...",
+    "codeRequired": "请输入授权码",
+    "invalidCode": "授权码无效",
+    "codeExchangeFailed": "授权码交换失败",
+    "verifyConnection": "验证连接",
+    "manageModels": "管理模型",
+    "anthropicOAuthActiveTip": "OAuth 认证已启用，您可以直接使用 Anthropic 服务",
+    "oauthVerifySuccess": "OAuth 连接验证成功",
+    "oauthVerifyFailed": "OAuth 连接验证失败"
   },
   "knowledgeBase": {
     "title": "知识库设置",

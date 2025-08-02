@@ -70,7 +70,20 @@
     "importing": "インポート中...",
     "confirmImport": "インポートを確認",
     "importSuccessTitle": "インポート成功",
-    "importErrorTitle": "インポート失敗"
+    "importErrorTitle": "インポート失敗",
+    "resetData": "データをリセット",
+    "resetConfirmTitle": "データリセットの確認",
+    "resetConfirmDescription": "リセットするデータの種類を選択してください。この操作は元に戻せません。リセット後、アプリケーションは自動的に再起動されます。",
+    "resetChatData": "チャットデータをリセット",
+    "resetChatDataDesc": "すべてのチャット履歴と会話記録を削除",
+    "resetConfig": "設定をリセット",
+    "resetConfigDesc": "すべてのアプリ設定、モデル設定、カスタムプロンプトを削除",
+    "resetAll": "完全リセット",
+    "resetAllDesc": "チャット履歴、設定、キャッシュファイルを含むすべてのデータを削除",
+    "resetting": "リセット中...",
+    "confirmReset": "リセットを確認",
+    "resetCompleteDevTitle": "データリセット完了",
+    "resetCompleteDevMessage": "開発環境では手動でアプリケーションを再起動してください。現在のプロセスを停止して pnpm run dev を再実行してください"
   },
   "model": {
     "title": "モデル設定",
@@ -154,6 +167,8 @@
       },
       "resetToDefault": "デフォルトにリセットします",
       "saveConfig": "構成を保存します",
+      "useModelDefault": "モデルのデフォルト設定を使用",
+      "currentUsingModelDefault": "現在モデルのデフォルト設定を使用中",
       "temperature": {
         "description": "出力のランダム性を制御します。ほとんどのモデルは0-1で、0〜2の間のサポートがあります。ランダム性が高くなるほど。",
         "label": "温度"
@@ -188,6 +203,8 @@
   },
   "provider": {
     "enable": "サービスを有効にする",
+    "enabled": "有効",
+    "disabled": "無効",
     "urlPlaceholder": "API URLを入力してください",
     "keyPlaceholder": "API Keyを入力してください",
     "verifyKey": "キーを検証",
@@ -306,7 +323,31 @@
     "toast": {
       "modelRunning": "モデルが実行されています",
       "modelRunningDesc": "最初にモデル{model}を停止してから削除してください。"
-    }
+    },
+    "anthropicApiKeyTip": "APIキーを取得するには、人類コンソールにアクセスしてください",
+    "anthropicConnected": "人類接続",
+    "anthropicNotConnected": "人類は接続されていません",
+    "anthropicOAuthTip": "[deepchatの承認]をクリックして、人類アカウントにアクセスします",
+    "oauthLogin": "oauthログイン",
+    "authMethod": "認証方法",
+    "authMethodPlaceholder": "認証方法を選択",
+    "apiKeyLabel": "API Key",
+    "apiUrlLabel": "API URL",
+    "anthropicOAuthFlowTip": "システムは自動的に承認ウィンドウを開きます。承認後、戻って承認コードを入力してください。",
+    "anthropicBrowserOpened": "外部ブラウザが開いています",
+    "anthropicCodeInstruction": "外部ブラウザで承認を完了し、取得した認証コードを下の入力ボックスに貼り付けてください",
+    "browserOpenedSuccess": "外部ブラウザが開いています。承認を完了してください",
+    "codeRequired": "承認コードを入力してください",
+    "inputOAuthCode": "承認コードを入力します",
+    "codeExchangeFailed": "認証コード交換は失敗しました",
+    "invalidCode": "無効な承認コード",
+    "oauthCodeHint": "外部ブラウザで承認を完了した後、ここに承認コードを貼り付けてください",
+    "oauthCodePlaceholder": "承認コードを入力してください...",
+    "verifyConnection": "接続を確認",
+    "manageModels": "モデル管理",
+    "anthropicOAuthActiveTip": "OAuth認証が有効になっており、Anthropicサービスを直接使用できます",
+    "oauthVerifySuccess": "OAuth接続の確認が成功しました",
+    "oauthVerifyFailed": "OAuth接続の確認に失敗しました"
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
