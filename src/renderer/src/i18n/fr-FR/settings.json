@@ -613,5 +613,26 @@
     "nextTab": "Passez à l'onglet suivant",
     "previousTab": "Passez à l'onglet précédent",
     "specificTab": "Passez à la page d'onglet spécifiée (1-8)"
+  },
+  "rateLimit": {
+    "title": "Limitation de débit",
+    "description": "Contrôler l'intervalle de temps des requêtes, éviter de dépasser les limites API",
+    "intervalLimit": "Intervalle de requête",
+    "intervalUnit": "secondes",
+    "intervalHelper": "Intervalle minimum entre deux requêtes, désactivez la limitation si pas nécessaire",
+    "lastRequestTime": "Dernière requête",
+    "queueLength": "Longueur de la file",
+    "nextAllowedTime": "Prochaine requête autorisée",
+    "never": "Jamais",
+    "justNow": "À l'instant",
+    "secondsAgo": "secondes passées",
+    "minutesAgo": "minutes passées",
+    "immediately": "Immédiatement",
+    "secondsLater": "secondes plus tard",
+    "confirmDisableTitle": "Confirmer la désactivation de la limitation de débit",
+    "confirmDisableMessage": "La valeur ne peut pas être inférieure ou égale à 0. Désactiver la limitation de débit ?",
+    "confirmDisable": "Désactiver la limitation",
+    "disabled": "Limitation de débit désactivée",
+    "disabledDescription": "La limitation de débit a été désactivée"
   }
 }

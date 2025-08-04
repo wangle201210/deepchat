@@ -613,5 +613,26 @@
     "previousTab": "이전 탭으로 전환하십시오",
     "specificTab": "지정된 탭 페이지 (1-8)로 전환",
     "nextTab": "다음 탭으로 전환하십시오"
+  },
+  "rateLimit": {
+    "title": "속도 제한",
+    "description": "요청 시간 간격을 제어하여 API 제한 초과 방지",
+    "intervalLimit": "요청 간격",
+    "intervalUnit": "초",
+    "intervalHelper": "두 요청 간의 최소 간격, 필요하지 않으면 속도 제한을 비활성화하세요",
+    "lastRequestTime": "마지막 요청",
+    "queueLength": "대기열 길이",
+    "nextAllowedTime": "다음 허용된 요청",
+    "never": "없음",
+    "justNow": "방금 전",
+    "secondsAgo": "초 전",
+    "minutesAgo": "분 전",
+    "immediately": "즉시",
+    "secondsLater": "초 후",
+    "confirmDisableTitle": "속도 제한 비활성화 확인",
+    "confirmDisableMessage": "값은 0 이하일 수 없습니다. 속도 제한 기능을 비활성화하시겠습니까?",
+    "confirmDisable": "제한 비활성화",
+    "disabled": "속도 제한이 비활성화됨",
+    "disabledDescription": "속도 제한 기능이 비활성화되었습니다"
   }
 }
