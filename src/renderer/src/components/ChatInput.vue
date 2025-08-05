@@ -388,10 +388,12 @@ const props = withDefaults(
     contextLength?: number
     maxRows?: number
     rows?: number
+    disabled?: boolean
   }>(),
   {
     maxRows: 10,
-    rows: 1
+    rows: 1,
+    disabled: false
   }
 )
 
@@ -686,7 +688,7 @@ const emitSend = async () => {
 
     emit('send', messageContent)
     inputText.value = ''
-    editor.chain().clearContent().blur().run()
+    editor.chain().clearContent().run()
 
     // 清除历史记录placeholder
     clearHistoryPlaceholder()
@@ -700,6 +702,9 @@ const emitSend = async () => {
         fileInput.value.value = ''
       }
     }
+    nextTick(() => {
+      editor.commands.focus()
+    })
   }
 }
 
@@ -982,6 +987,14 @@ onMounted(() => {
     editor.commands.focus()
   })
 
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      setTimeout(() => {
+        restoreFocus()
+      }, 100)
+    }
+  })
+
   window.electron.ipcRenderer.on('rate-limit:config-updated', handleRateLimitEvent)
   window.electron.ipcRenderer.on('rate-limit:request-executed', handleRateLimitEvent)
   window.electron.ipcRenderer.on('rate-limit:request-queued', handleRateLimitEvent)
@@ -1090,6 +1103,17 @@ watch(dynamicPlaceholder, () => {
   updatePlaceholder()
 })
 
+watch(
+  () => props.disabled,
+  (newDisabled, oldDisabled) => {
+    if (oldDisabled && !newDisabled) {
+      setTimeout(() => {
+        restoreFocus()
+      }, 100)
+    }
+  }
+)
+
 // 处理历史记录placeholder
 const setHistoryPlaceholder = (text: string) => {
   currentHistoryPlaceholder.value = text
@@ -1155,6 +1179,21 @@ function onKeydown(e: KeyboardEvent) {
     // 如果有历史记录placeholder且用户开始输入，清除placeholder
     clearHistoryPlaceholder()
   }
+}
+
+const restoreFocus = () => {
+  nextTick(() => {
+    if (editor && !editor.isDestroyed && !props.disabled) {
+      try {
+        const editorElement = editor.view.dom
+        if (editorElement && editorElement.offsetParent !== null) {
+          editor.commands.focus()
+        }
+      } catch (error) {
+        console.warn('恢复焦点时出错:', error)
+      }
+    }
+  })
 }
 
 // 通过名称查找mention数据
@@ -1261,7 +1300,8 @@ defineExpose({
       console.error('Failed to append mention:', error)
       return false
     }
-  }
+  },
+  restoreFocus
 })
 </script>
 
