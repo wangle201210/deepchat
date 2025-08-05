@@ -1,4 +1,4 @@
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { usePresenter } from '@/composables/usePresenter'
 import { MCP_EVENTS } from '@/events'
@@ -521,9 +521,23 @@ export const useMcpStore = defineStore('mcp', () => {
     }
   }
 
+  // 监听活动线程变化，处理新会话的默认工具状态
+  const handleActiveThreadChange = () => {
+    watch(
+      () => chatStore.getActiveThreadId(),
+      (newThreadId, oldThreadId) => {
+        // 从有活动线程切换到无活动线程（新会话页面）
+        if (oldThreadId && !newThreadId && config.value.mcpEnabled && tools.value.length > 0) {
+          chatStore.chatConfig.enabledMcpTools = undefined
+        }
+      }
+    )
+  }
+
   // 立即初始化
   onMounted(async () => {
     await init()
+    handleActiveThreadChange()
   })
 
   return {
