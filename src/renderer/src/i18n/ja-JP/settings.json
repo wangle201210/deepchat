@@ -435,7 +435,20 @@
         "description": "実行中のナレッジベースタスクがあります。ソフトウェアを終了しますか？ソフトウェアを再起動した後、中止されたタスクを復元できます。"
       }
     },
-    "searchError": "クエリに失敗しました"
+    "searchError": "クエリに失敗しました",
+    "processing": "アップロード",
+    "paused": "一時停止をアップロードします",
+    "unknown": "不明なステータス",
+    "reAddFile": {
+      "title": "再アップロード確認",
+      "content": "ファイル「{fileName}」を再アップロードしてもよろしいですか？"
+    },
+    "deleteFile": {
+      "title": "ファイル削除の確認",
+      "content": "ファイル「{fileName}」を削除してもよろしいですか？この操作は元に戻せません。"
+    },
+    "resumeAllPausedTasks": "ワンクリックリカバリ",
+    "pauseAllRunningTasks": "ワンクリックの一時停止"
   },
   "mcp": {
     "title": "MCP設定",

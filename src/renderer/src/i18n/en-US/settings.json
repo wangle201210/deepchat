@@ -435,7 +435,20 @@
         "description": "There is a running knowledge base task. Are you sure to exit the software? \nAborted tasks can be restored after restarting the software."
       }
     },
-    "searchError": "Query failed"
+    "searchError": "Query failed",
+    "processing": "Uploading",
+    "paused": "Upload pause",
+    "unknown": "Unknown status",
+    "reAddFile": {
+      "title": "Re-upload confirmation",
+      "content": "Are you sure to re-upload the file \"{fileName}\"?"
+    },
+    "deleteFile": {
+      "title": "Delete file confirmation",
+      "content": "Are you sure to delete the file \"{fileName}\"? \nThis operation is not restored."
+    },
+    "resumeAllPausedTasks": "One-click recovery",
+    "pauseAllRunningTasks": "One-click pause"
   },
   "mcp": {
     "title": "MCP Settings",

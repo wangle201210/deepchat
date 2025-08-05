@@ -435,7 +435,20 @@
         "description": "有正在運行的知識庫任務，是否確認退出軟件？\n被中止的任務可在重啟軟件後恢復。"
       }
     },
-    "searchError": "查詢失敗"
+    "searchError": "查詢失敗",
+    "processing": "正在上傳",
+    "paused": "上傳暫停",
+    "unknown": "未知狀態",
+    "reAddFile": {
+      "title": "重新上傳確認",
+      "content": "是否確認重新上傳文件 \"{fileName}\"？"
+    },
+    "deleteFile": {
+      "title": "刪除文件確認",
+      "content": "是否確認刪除文件 \"{fileName}\"？\n此操作不可恢復。"
+    },
+    "resumeAllPausedTasks": "一鍵恢復",
+    "pauseAllRunningTasks": "一鍵暫停"
   },
   "mcp": {
     "title": "MCP設定",

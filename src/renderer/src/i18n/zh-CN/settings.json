@@ -421,12 +421,25 @@
     "uploadCompleted": "上传完成",
     "reAdd": "重新上传",
     "uploadError": "上传失败",
+    "processing": "正在上传",
+    "paused": "已暂停",
+    "unknown": "未知状态",
     "delete": "删除",
     "reason": "原因",
     "deleteSuccess": "删除成功",
     "copy": "复制",
     "copySuccess": "复制成功",
     "source": "来源",
+    "resumeAllPausedTasks": "一键恢复",
+    "pauseAllRunningTasks": "一键暂停",
+    "reAddFile": {
+      "title": "重新上传确认",
+      "content": "是否确认重新上传文件 \"{fileName}\"？"
+    },
+    "deleteFile": {
+      "title": "删除文件确认",
+      "content": "是否确认删除文件 \"{fileName}\"？此操作不可恢复。"
+    },
     "dialog": {
       "beforequit": {
         "title": "退出确认",
