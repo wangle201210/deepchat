@@ -170,7 +170,8 @@ export const useMcpStore = defineStore('mcp', () => {
       }
       // 根据服务器的状态，关闭或者开启该服务器的所有工具
       const isRunning = serverStatuses.value[serverName] || false
-      const currentTools = chatStore.chatConfig.enabledMcpTools || []
+      const currentTools =
+        chatStore.chatConfig.enabledMcpTools || [...tools.value].map((tool) => tool.function.name)
       if (isRunning) {
         const serverTools = tools.value
           .filter((tool) => tool.server.name === serverName)
