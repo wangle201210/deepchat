@@ -529,7 +529,7 @@ export const useMcpStore = defineStore('mcp', () => {
       (newThreadId, oldThreadId) => {
         // 从有活动线程切换到无活动线程（新会话页面）
         if (oldThreadId && !newThreadId && config.value.mcpEnabled && tools.value.length > 0) {
-          chatStore.chatConfig.enabledMcpTools = undefined
+          chatStore.chatConfig.enabledMcpTools = tools.value.map((item) => item.function.name)
         }
       }
     )
