@@ -26,6 +26,8 @@ export class WindowPresenter implements IWindowPresenter {
   private isQuitting: boolean = false
   // 当前获得焦点的窗口 ID (内部记录)
   private focusedWindowId: number | null = null
+  // 主窗口 id
+  private mainWindowId: number | null = null
   // 窗口聚焦状态管理
   private windowFocusStates = new Map<
     number,
@@ -722,18 +724,11 @@ export class WindowPresenter implements IWindowPresenter {
       // 如果应用不是正在退出过程中...
       if (!this.isQuitting) {
         // 实现隐藏到托盘逻辑：
-        // 在非 macOS 平台，或在 macOS 上且未配置关闭时退出 (或还有其他窗口)，阻止默认关闭行为，仅隐藏窗口。
-        const isLastWindow = this.windows.size === 1
-        // 检查 macOS 配置：关闭时是否退出应用
-        const shouldQuitOnClose =
-          process.platform === 'darwin' ? this.configPresenter.getCloseToQuit() : false
-
-        // 是否应该阻止默认关闭并隐藏：
-        // - 非 macOS 平台总是阻止 (实现隐藏到托盘)。
-        // - macOS 平台：如果不是最后一个窗口，或虽然是最后一个窗口但配置为不退出时，阻止。
-        const shouldPreventDefault =
-          process.platform !== 'darwin' ||
-          (process.platform === 'darwin' && (!isLastWindow || !shouldQuitOnClose))
+        // 1. 如果是其他窗口，直接关闭
+        // 2. 如果是主窗口，判断配置是否允许关闭
+        // shouldPreventDefault: true隐藏, false关闭
+        const shouldQuitOnClose = this.configPresenter.getCloseToQuit()
+        const shouldPreventDefault = windowId === this.mainWindowId && !shouldQuitOnClose
 
         if (shouldPreventDefault) {
           console.log(`Window ${windowId}: Preventing default close behavior, hiding instead.`)
@@ -760,7 +755,6 @@ export class WindowPresenter implements IWindowPresenter {
             shellWindow.hide()
           }
         } else {
-          // 如果是 macOS，且是最后一个窗口，且配置为关闭时退出，或者 isQuitting 为 true
           // 允许默认关闭行为。这将触发 'closed' 事件。
           console.log(
             `Window ${windowId}: Allowing default close behavior (app is quitting or macOS last window configured to quit).`
@@ -880,6 +874,10 @@ export class WindowPresenter implements IWindowPresenter {
     }
 
     console.log(`Shell window ${windowId} created successfully.`)
+
+    if (this.mainWindowId == null) {
+      this.mainWindowId = windowId // 如果这是第一个窗口，设置为主窗口 ID
+    }
     return windowId // 返回新创建窗口的 ID
   }
 
