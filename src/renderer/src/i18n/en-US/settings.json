@@ -167,6 +167,27 @@
         "message": "Are you sure you want to reset the configuration of this model to the default? \nThis operation is irrevocable.",
         "title": "Confirm reset"
       },
+      "reasoningEffort": {
+        "label": "Reasoning Effort",
+        "description": "Controls the depth of model reasoning; higher effort produces better results but slower responses",
+        "placeholder": "Select reasoning effort",
+        "options": {
+          "minimal": "Minimal - Fastest response",
+          "low": "Low - Low effort",
+          "medium": "Medium - Moderate effort",
+          "high": "High - High effort"
+        }
+      },
+      "verbosity": {
+        "label": "Verbosity",
+        "description": "Controls the detail level and length of model responses",
+        "placeholder": "Select verbosity level",
+        "options": {
+          "low": "Low - Concise answers",
+          "medium": "Medium - Balanced detail",
+          "high": "High - Detailed answers"
+        }
+      },
       "resetToDefault": "Reset to default",
       "saveConfig": "Save configuration",
       "useModelDefault": "Use model default configuration",
@@ -237,12 +258,15 @@
         "confirm": "Disable All"
       },
       "configModels": {
-        "title": "Configure Model List"
+        "title": "Configure Model List",
+        "description": "Select models to enable or disable"
       },
       "verify": {
         "missingFields": "Please enter API Key and API URL",
         "failed": "Verification failed",
-        "success": "Verification successful"
+        "success": "Verification successful",
+        "failedDesc": "API key or configuration verification failed, please check your configuration",
+        "successDesc": "API key and configuration verified successfully, ready to use"
       },
       "addCustomProvider": {
         "title": "Add Custom Provider",
@@ -269,6 +293,7 @@
       },
       "pullModel": {
         "title": "Pull Model",
+        "description": "Select models to download locally",
         "pull": "Pull"
       },
       "modelCheck": {

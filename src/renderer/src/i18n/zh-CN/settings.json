@@ -190,6 +190,27 @@
         "message": "确定要重置此模型的配置为默认值吗？此操作不可撤销。",
         "confirm": "确定重置"
       },
+      "reasoningEffort": {
+        "label": "推理努力程度",
+        "description": "控制模型的推理深度，更高的努力程度会产生更好的结果但响应更慢",
+        "placeholder": "选择推理努力程度",
+        "options": {
+          "minimal": "Minimal - 最快响应",
+          "low": "Low - 低努力",
+          "medium": "Medium - 中等努力",
+          "high": "High - 高努力"
+        }
+      },
+      "verbosity": {
+        "label": "详细程度",
+        "description": "控制模型回答的详细程度和长度",
+        "placeholder": "选择详细程度",
+        "options": {
+          "low": "Low - 简洁回答",
+          "medium": "Medium - 平衡详细",
+          "high": "High - 详细回答"
+        }
+      },
       "validation": {
         "maxTokensRequired": "最大输出长度不能为空",
         "maxTokensMin": "最大输出长度必须大于0",
@@ -242,12 +263,15 @@
         "confirm": "全部禁用"
       },
       "configModels": {
-        "title": "配置模型列表"
+        "title": "配置模型列表",
+        "description": "选择要启用或禁用的模型"
       },
       "verify": {
         "missingFields": "请输入 API Key 和 API URL",
         "failed": "验证失败",
-        "success": "验证成功"
+        "success": "验证成功",
+        "failedDesc": "API 密钥或配置验证失败，请检查配置信息",
+        "successDesc": "API 密钥和配置验证成功，可以正常使用"
       },
       "addCustomProvider": {
         "title": "添加自定义服务商",
@@ -274,6 +298,7 @@
       },
       "pullModel": {
         "title": "拉取模型",
+        "description": "选择要下载的模型到本地",
         "pull": "拉取"
       },
       "modelCheck": {
