@@ -988,6 +988,8 @@ export interface MCPServerConfig {
   customHeaders?: Record<string, string>
   customNpmRegistry?: string
   type: 'sse' | 'stdio' | 'inmemory' | 'http'
+  source?: string // 来源标识: "mcprouter" | "modelscope" | undefined(for manual)
+  sourceId?: string // 来源ID: mcprouter的uuid 或 modelscope的mcpServer.id
 }
 
 export interface MCPConfig {
@@ -1137,6 +1139,31 @@ export interface IMCPPresenter {
   setCustomNpmRegistry?(registry: string | undefined): Promise<void>
   setAutoDetectNpmRegistry?(enabled: boolean): Promise<void>
   clearNpmRegistryCache?(): Promise<void>
+
+  // McpRouter marketplace
+  listMcpRouterServers?(
+    page: number,
+    limit: number
+  ): Promise<{
+    servers: Array<{
+      uuid: string
+      created_at: string
+      updated_at: string
+      name: string
+      author_name: string
+      title: string
+      description: string
+      content?: string
+      server_key: string
+      config_name?: string
+      server_url?: string
+    }>
+  }>
+  installMcpRouterServer?(serverKey: string): Promise<boolean>
+  getMcpRouterApiKey?(): Promise<string | ''>
+  setMcpRouterApiKey?(key: string): Promise<void>
+  isServerInstalled?(source: string, sourceId: string): Promise<boolean>
+  updateMcpRouterServersAuth?(apiKey: string): Promise<void>
 }
 
 export interface IDeeplinkPresenter {
