@@ -1030,9 +1030,7 @@ export class FileSystemServer {
             const results = await Promise.all(
               parsed.data.sources.map(async (source) => {
                 const validSourcePath = await this.validatePath(source)
-                const validDestPath = await this.validatePath(
-                  path.join(parsed.data.destination, path.basename(source))
-                )
+                const validDestPath = await this.validatePath(parsed.data.destination)
                 try {
                   await fs.rename(validSourcePath, validDestPath)
                   return `Successfully moved ${source} to ${parsed.data.destination}`
