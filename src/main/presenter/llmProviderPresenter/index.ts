@@ -26,6 +26,7 @@ import { GithubProvider } from './providers/githubProvider'
 import { GithubCopilotProvider } from './providers/githubCopilotProvider'
 import { OllamaProvider } from './providers/ollamaProvider'
 import { AnthropicProvider } from './providers/anthropicProvider'
+import { AwsBedrockProvider } from './providers/awsBedrockProvider'
 import { DoubaoProvider } from './providers/doubaoProvider'
 import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS, RATE_LIMIT_EVENTS } from '@/events'
@@ -212,6 +213,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new GroqProvider(provider, this.configPresenter)
         case 'vercel-ai-gateway':
           return new VercelAIGatewayProvider(provider, this.configPresenter)
+        case 'aws-bedrock':
+          return new AwsBedrockProvider(provider, this.configPresenter)
         default:
           console.warn(`Unknown provider type: ${provider.apiType}`)
           return undefined
