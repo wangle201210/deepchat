@@ -26,6 +26,7 @@ import { GithubProvider } from './providers/githubProvider'
 import { GithubCopilotProvider } from './providers/githubCopilotProvider'
 import { OllamaProvider } from './providers/ollamaProvider'
 import { AnthropicProvider } from './providers/anthropicProvider'
+import { AwsBedrockProvider } from './providers/awsBedrockProvider'
 import { DoubaoProvider } from './providers/doubaoProvider'
 import { ShowResponse } from 'ollama'
 import { CONFIG_EVENTS, RATE_LIMIT_EVENTS } from '@/events'
@@ -41,6 +42,7 @@ import { MinimaxProvider } from './providers/minimaxProvider'
 import { AihubmixProvider } from './providers/aihubmixProvider'
 import { _302AIProvider } from './providers/_302AIProvider'
 import { ModelscopeProvider } from './providers/modelscopeProvider'
+import { VercelAIGatewayProvider } from './providers/vercelAIGatewayProvider'
 
 // 速率限制配置接口
 interface RateLimitConfig {
@@ -209,6 +211,10 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new TogetherProvider(provider, this.configPresenter)
         case 'groq':
           return new GroqProvider(provider, this.configPresenter)
+        case 'vercel-ai-gateway':
+          return new VercelAIGatewayProvider(provider, this.configPresenter)
+        case 'aws-bedrock':
+          return new AwsBedrockProvider(provider, this.configPresenter)
         default:
           console.warn(`Unknown provider type: ${provider.apiType}`)
           return undefined
@@ -440,7 +446,9 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     temperature: number = 0.6,
     maxTokens: number = 4096,
     enabledMcpTools?: string[],
-    thinkingBudget?: number
+    thinkingBudget?: number,
+    reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high',
+    verbosity?: 'low' | 'medium' | 'high'
   ): AsyncGenerator<LLMAgentEvent, void, unknown> {
     console.log(`[Agent Loop] Starting agent loop for event: ${eventId} with model: ${modelId}`)
     if (!this.canStartNewStream()) {
@@ -456,6 +464,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
     if (thinkingBudget !== undefined) {
       modelConfig.thinkingBudget = thinkingBudget
+    }
+    if (reasoningEffort !== undefined) {
+      modelConfig.reasoningEffort = reasoningEffort
+    }
+    if (verbosity !== undefined) {
+      modelConfig.verbosity = verbosity
     }
 
     this.activeStreams.set(eventId, {

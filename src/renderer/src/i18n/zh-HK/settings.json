@@ -225,6 +225,7 @@
     }
   },
   "provider": {
+    "search": "搜尋服務商平台…",
     "enable": "開啟服務",
     "enabled": "已啟用",
     "disabled": "已禁用",
@@ -439,7 +440,8 @@
     },
     "operationFailed": "操作失敗",
     "operationSuccess": "操作成功",
-    "settingsApplied": "設置已應用"
+    "settingsApplied": "設置已應用",
+    "bedrockLimitTip": "* 僅支持 Anthropic Claude（包括 Opus，Sonnet，Haiku 模型）"
   },
   "knowledgeBase": {
     "fastgptTitle": "FastGPT知識庫",

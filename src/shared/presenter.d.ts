@@ -541,6 +541,16 @@ export interface ModelScopeMcpSyncResult {
   errors: string[]
 }
 
+export type AWS_BEDROCK_PROVIDER = LLM_PROVIDER & {
+  credential?: AwsBedrockCredential
+}
+
+export interface AwsBedrockCredential {
+  accessKeyId: string
+  secretAccessKey: string
+  region?: string
+}
+
 export interface ILlmProviderPresenter {
   setProviders(provider: LLM_PROVIDER[]): void
   getProviders(): LLM_PROVIDER[]
@@ -566,7 +576,9 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number,
     enabledMcpTools?: string[],
-    thinkingBudget?: number
+    thinkingBudget?: number,
+    reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high',
+    verbosity?: 'low' | 'medium' | 'high'
   ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
@@ -625,6 +637,8 @@ export type CONVERSATION_SETTINGS = {
   artifacts: 0 | 1
   enabledMcpTools?: string[]
   thinkingBudget?: number
+  reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
+  verbosity?: 'low' | 'medium' | 'high'
 }
 
 export type CONVERSATION = {
@@ -799,6 +813,9 @@ export interface IDevicePresenter {
 
   // 图片缓存
   cacheImage(imageData: string): Promise<string>
+
+  // SVG内容安全净化
+  sanitizeSvgContent(svgContent: string): Promise<string | null>
 }
 
 export type DeviceInfo = {
