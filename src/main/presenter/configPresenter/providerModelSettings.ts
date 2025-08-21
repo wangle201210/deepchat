@@ -292,7 +292,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         contextLength: 65536,
         match: ['deepseek-reasoner'],
         vision: false,
-        functionCall: true,
+        functionCall: false, // 必须关闭，否则会自动调用3.1的非思考模式
         reasoning: true
       }
     ]
