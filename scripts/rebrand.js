@@ -373,6 +373,7 @@ function copyBrandAssets() {
     { src: 'icon.png', dest: 'resources/icon.png' },
     { src: 'icon.ico', dest: 'resources/icon.ico' },
     { src: 'icon.png', dest: 'build/icon.png' },
+    { src: 'icon.icns', dest: 'build/icon.icns' }, // macOS 图标
 
     // Logo 文件
     { src: 'logo.png', dest: 'src/renderer/src/assets/logo.png' },
@@ -492,8 +493,12 @@ function main() {
   log('')
   log('📋 接下来的步骤:')
   log('1. 检查修改的文件是否符合预期')
-  log('2. 提交代码到您的仓库')
-  log('3. 构建应用: pnpm run build:mac:arm64 (或其他平台)')
+  log('2. ⚠️  手动修改自动更新服务器配置：')
+  log('   - 编辑 src/renderer/src/stores/upgrade.ts')
+  log('   - 如果使用自定义更新服务器，请相应修改其中的更新逻辑')
+  log('   - 确保更新服务器地址与您的配置一致')
+  log('3. 提交代码到您的仓库')
+  log('4. 构建应用: pnpm run build:mac:arm64 (或其他平台)')
   log('')
   log('💡 提示: 如果需要恢复原始配置，请使用 git checkout 命令')
 }

@@ -24,6 +24,7 @@ Place the following files in the `scripts/brand-assets/` directory:
 
 - `icon.png` - Application icon (512x512 PNG)
 - `icon.ico` - Windows icon file
+- `icon.icns` - macOS icon file
 - `logo.png` - Light theme logo (recommended 256x256)
 - `logo-dark.png` - Dark theme logo (recommended 256x256)
 
@@ -101,7 +102,13 @@ This script will automatically replace brand information in the following files:
 
 And copy brand asset files to their respective locations.
 
-### 4. Verify Results
+### 4. Manual Configuration Updates
+
+**Important**: The script cannot automatically update all configuration files. You need to manually review and update:
+
+- **Update Server Configuration**: Edit `src/renderer/src/stores/upgrade.ts` if you're using a custom update server. The script updates the main configuration files, but the frontend update store may contain hardcoded URLs or logic that needs manual adjustment.
+
+### 5. Verify Results
 
 Check if modifications are correct:
 
@@ -116,7 +123,7 @@ git diff
 pnpm run dev
 ```
 
-### 5. Build Application
+### 6. Build Application
 
 ```bash
 # Build for required platforms
@@ -195,6 +202,7 @@ Here's an example configuration for "Demo Company":
 1. **Backup Important Configurations**: Recommend committing current code or creating backups before replacement
 2. **Check App ID Format**: Must use reverse domain format, e.g., `com.company.app`
 3. **Prepare High-Quality Assets**: Icons and logos should comply with platform design guidelines
+   - For macOS: Provide `icon.icns` file in addition to `icon.png`
 4. **Test Thoroughly**: Perform complete functional testing after replacement
 5. **Update Server**: If using custom update server, ensure server is operational
 6. **Optional Assets**: Brand assets (icons, logos) are completely optional - script works with text-only customization
@@ -273,6 +281,7 @@ Perfect for one-time brand customization needs after forking the codebase.
 
 - `icon.png` - 应用图标 (512x512 PNG)
 - `icon.ico` - Windows 图标文件
+- `icon.icns` - macOS 图标文件
 - `logo.png` - 亮色主题 Logo (建议 256x256)
 - `logo-dark.png` - 暗色主题 Logo (建议 256x256)
 
@@ -350,7 +359,13 @@ node scripts/rebrand.js
 
 以及复制品牌资源文件到相应位置。
 
-### 4. 验证结果
+### 4. 手动配置更新
+
+**重要提醒**：脚本无法自动更新所有配置文件，您需要手动检查和更新：
+
+- **更新服务器配置**：如果您使用自定义更新服务器，请编辑 `src/renderer/src/stores/upgrade.ts`。脚本会更新主要配置文件，但前端更新存储可能包含硬编码的 URL 或逻辑，需要手动调整。
+
+### 5. 验证结果
 
 检查修改是否正确：
 
@@ -365,7 +380,7 @@ git diff
 pnpm run dev
 ```
 
-### 5. 构建应用
+### 6. 构建应用
 
 ```bash
 # 构建所需平台
@@ -444,6 +459,7 @@ pnpm run build:linux:x64    # Linux x64
 1. **备份重要配置**：执行替换前建议提交当前代码或创建备份
 2. **检查 App ID 格式**：必须使用 reverse domain 格式，如 `com.company.app`
 3. **准备高质量资源**：图标和 Logo 应该符合各平台设计规范
+   - 对于 macOS：除了 `icon.png` 还需提供 `icon.icns` 文件
 4. **测试完整性**：替换后进行完整的功能测试
 5. **更新服务器**：如果使用自定义更新服务器，需要确保服务器正常运行
 6. **可选资源**：品牌资源（图标、Logo）完全可选 - 脚本支持仅文本定制
