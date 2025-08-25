@@ -1,3 +1,258 @@
+# DeepChat Rebranding Guide
+
+**Language:** [English](#english) | [中文](#chinese)
+
+## English
+
+# DeepChat Rebranding Guide
+
+This is a simple rebranding solution for customizing the DeepChat application with your own brand.
+
+## Use Cases
+
+1. **Fork this repository** to your GitHub account
+2. **Prepare brand assets** (icons, logos, etc.)
+3. **Configure brand information**
+4. **Execute one-time replacement**
+5. **Build your customized version**
+
+## Step-by-Step Instructions
+
+### 1. Prepare Brand Assets
+
+Place the following files in the `scripts/brand-assets/` directory:
+
+- `icon.png` - Application icon (512x512 PNG)
+- `icon.ico` - Windows icon file
+- `logo.png` - Light theme logo (recommended 256x256)
+- `logo-dark.png` - Dark theme logo (recommended 256x256)
+
+**Note:** Brand assets are optional. If you don't provide these files, only text content will be replaced.
+
+### 2. Configure Brand Information
+
+Edit the `brand-config.template.json` file in the root directory:
+
+```json
+{
+  "app": {
+    "name": "MyAI",                           // Package name
+    "productName": "My AI Assistant",         // Product display name
+    "appId": "com.mycompany.ai-assistant",    // App ID (reverse domain format)
+    "description": "My AI Assistant, your intelligent work partner", // App description
+    "author": "My Company",                   // Author/Company name
+    "website": "https://mycompany.com",       // Official website
+    "copyright": "© 2025 My Company",         // Copyright info
+    "executableName": "MyAI"                  // Executable name
+  },
+  "update": {
+    "baseUrl": "https://updates.mycompany.com/" // Update server URL
+  },
+  "i18n": {
+    "appTitle": {
+      "en-US": "My AI Assistant",
+      "zh-CN": "我的AI助手"
+      // ... other languages
+    },
+    "appDescription": {
+      "en-US": "My AI Assistant is your intelligent work partner",
+      "zh-CN": "我的AI助手是您的智能工作伙伴"
+      // ... other languages
+    },
+    "welcomeTitle": {
+      "en-US": "Welcome to My AI Assistant",
+      "zh-CN": "欢迎使用我的AI助手"
+      // ... other languages
+    },
+    "welcomeSetupDescription": {
+      "en-US": "Let's start setting up My AI Assistant",
+      "zh-CN": "让我们开始设置我的AI助手"
+      // ... other languages
+    }
+  }
+}
+```
+
+### 3. Execute Brand Replacement
+
+Run the replacement script:
+
+```bash
+node scripts/rebrand.js
+```
+
+This script will automatically replace brand information in the following files:
+
+- `package.json` - Package configuration
+- `electron-builder.yml` - Build configuration
+- `electron-builder-macx64.yml` - macOS x64 build configuration
+- `src/main/index.ts` - Main process configuration
+- `src/main/presenter/upgradePresenter/index.ts` - Update service configuration
+- `src/renderer/src/i18n/*/about.json` - Internationalization files
+- `src/renderer/src/i18n/*/welcome.json` - Welcome page i18n files
+- `src/renderer/src/i18n/*/mcp.json` - MCP service i18n files
+- `src/renderer/src/i18n/*/settings.json` - Settings i18n files
+- `src/renderer/src/i18n/*/update.json` - Update i18n files
+- `src/renderer/src/i18n/*/index.ts` - i18n index files
+- `src/renderer/index.html` - Main renderer HTML title
+- `src/renderer/shell/index.html` - Shell window HTML title
+- `src/renderer/floating/index.html` - Floating button HTML title
+- `src/main/presenter/configPresenter/mcpConfHelper.ts` - MCP service descriptions
+
+And copy brand asset files to their respective locations.
+
+### 4. Verify Results
+
+Check if modifications are correct:
+
+```bash
+# View modified files
+git status
+
+# View specific changes
+git diff
+
+# Test run
+pnpm run dev
+```
+
+### 5. Build Application
+
+```bash
+# Build for required platforms
+pnpm run build:mac:arm64    # macOS ARM64
+pnpm run build:win:x64      # Windows x64
+pnpm run build:linux:x64    # Linux x64
+```
+
+## Configuration Details
+
+### Required Configuration
+
+- `app.name` - Package name for package.json
+- `app.productName` - Product display name
+- `app.appId` - Application ID in reverse domain format (e.g., com.company.app)
+- `app.description` - Application description
+- `app.author` - Author or company name
+
+### Optional Configuration
+
+- `app.website` - Official website URL
+- `app.copyright` - Copyright information
+- `app.executableName` - Executable file name (Windows)
+- `update.baseUrl` - Custom update server
+- `i18n.*` - Multilingual text content
+- `github.repository` - GitHub repository address
+- `mcp.serverDescriptionSuffix` - MCP service description suffix
+
+### Enhanced I18n Support
+
+The rebranding system now supports comprehensive internationalization customization:
+
+- **Welcome Page**: Customize welcome titles and setup descriptions
+- **All I18n Files**: Automatic replacement of "DeepChat" references in all i18n JSON files
+- **HTML Titles**: Updates window titles across all renderer process HTML files
+- **Multi-language Support**: Supports all 9 languages: en-US, zh-CN, zh-TW, zh-HK, ja-JP, ko-KR, ru-RU, fr-FR, fa-IR
+
+## Example: Demo Company
+
+Here's an example configuration for "Demo Company":
+
+```json
+{
+  "app": {
+    "name": "BananaAI",
+    "productName": "Demo AI Assistant",
+    "appId": "com.banana.ai-assistant",
+    "description": "Demo AI Assistant, your intelligent work partner",
+    "author": "Demo Technology Ltd.",
+    "website": "https://banana.com",
+    "copyright": "© 2025 Demo Technology Ltd.",
+    "executableName": "BananaAI"
+  },
+  "update": {
+    "baseUrl": "https://updates.banana.com/"
+  },
+  "i18n": {
+    "appTitle": {
+      "en-US": "Banana AI Assistant",
+      "zh-CN": "Demo AI助手"
+    },
+    "appDescription": {
+      "en-US": "Banana AI Assistant is your intelligent work partner",
+      "zh-CN": "Demo AI助手是您的智能工作伙伴"
+    }
+  },
+  "mcp": {
+    "serverDescriptionSuffix": "Banana built-in",
+    "serverDescriptionSuffixEn": "Banana built-in"
+  }
+}
+```
+
+## Important Notes
+
+1. **Backup Important Configurations**: Recommend committing current code or creating backups before replacement
+2. **Check App ID Format**: Must use reverse domain format, e.g., `com.company.app`
+3. **Prepare High-Quality Assets**: Icons and logos should comply with platform design guidelines
+4. **Test Thoroughly**: Perform complete functional testing after replacement
+5. **Update Server**: If using custom update server, ensure server is operational
+6. **Optional Assets**: Brand assets (icons, logos) are completely optional - script works with text-only customization
+
+## Restore Original Configuration
+
+To restore original DeepChat configuration:
+
+```bash
+# Restore all modified files
+git checkout .
+
+# Or restore specific files
+git checkout package.json electron-builder.yml
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Configuration File Format Error**
+   - Check if JSON syntax is correct
+   - Ensure all strings are wrapped in double quotes
+
+2. **Asset Files Not Found**
+   - Check if files are in correct location
+   - Confirm filenames and extensions are correct
+   - Remember: assets are optional, script will continue without them
+
+3. **Build Failure**
+   - Check if App ID format is correct
+   - Verify all required fields are filled
+
+### Getting Help
+
+If you encounter issues:
+
+1. Check console output for error messages
+2. Confirm configuration file format is correct
+3. Verify asset files exist (if provided)
+
+## Summary
+
+This simplified rebranding solution allows you to:
+
+- ✅ **Quick Customization**: Complete brand replacement in minutes
+- ✅ **One-time Operation**: Execute once to complete all replacements
+- ✅ **Complete Customization**: Full customization of app name, icons, descriptions, etc.
+- ✅ **Easy to Use**: No complex brand management, direct code modification
+- ✅ **Comprehensive I18n**: Supports all languages and file types
+- ✅ **Optional Assets**: Works with or without brand assets
+
+Perfect for one-time brand customization needs after forking the codebase.
+
+---
+
+## Chinese
+
 # DeepChat 品牌定制指南
 
 这是一个简单的品牌定制解决方案，用于将 DeepChat 应用定制为您自己的品牌。
@@ -20,6 +275,8 @@
 - `icon.ico` - Windows 图标文件
 - `logo.png` - 亮色主题 Logo (建议 256x256)
 - `logo-dark.png` - 暗色主题 Logo (建议 256x256)
+
+**注意：** 品牌资源是可选的。如果您不提供这些文件，脚本将只替换文本内容。
 
 ### 2. 配置品牌信息
 
@@ -50,6 +307,16 @@
       "en-US": "My AI Assistant is your intelligent work partner",
       "zh-CN": "我的AI助手是您的智能工作伙伴"
       // ... 其他语言
+    },
+    "welcomeTitle": {
+      "en-US": "Welcome to My AI Assistant",
+      "zh-CN": "欢迎使用我的AI助手"
+      // ... 其他语言
+    },
+    "welcomeSetupDescription": {
+      "en-US": "Let's start setting up My AI Assistant",
+      "zh-CN": "让我们开始设置我的AI助手"
+      // ... 其他语言
     }
   }
 }
@@ -71,6 +338,14 @@ node scripts/rebrand.js
 - `src/main/index.ts` - 主进程配置
 - `src/main/presenter/upgradePresenter/index.ts` - 更新服务配置
 - `src/renderer/src/i18n/*/about.json` - 国际化文件
+- `src/renderer/src/i18n/*/welcome.json` - 欢迎页面国际化文件
+- `src/renderer/src/i18n/*/mcp.json` - MCP 服务国际化文件
+- `src/renderer/src/i18n/*/settings.json` - 设置国际化文件
+- `src/renderer/src/i18n/*/update.json` - 更新国际化文件
+- `src/renderer/src/i18n/*/index.ts` - 国际化索引文件
+- `src/renderer/index.html` - 主渲染器 HTML 标题
+- `src/renderer/shell/index.html` - Shell 窗口 HTML 标题
+- `src/renderer/floating/index.html` - 悬浮按钮 HTML 标题
 - `src/main/presenter/configPresenter/mcpConfHelper.ts` - MCP 服务描述
 
 以及复制品牌资源文件到相应位置。
@@ -115,9 +390,18 @@ pnpm run build:linux:x64    # Linux x64
 - `app.copyright` - 版权信息
 - `app.executableName` - 可执行文件名（Windows）
 - `update.baseUrl` - 自定义更新服务器
-- `i18n.*` - 多语言文本
+- `i18n.*` - 多语言文本内容
 - `github.repository` - GitHub 仓库地址
 - `mcp.serverDescriptionSuffix` - MCP 服务描述后缀
+
+### 增强的国际化支持
+
+品牌化系统现在支持全面的国际化定制：
+
+- **欢迎页面**：自定义欢迎标题和设置描述
+- **所有国际化文件**：自动替换所有国际化 JSON 文件中的 "DeepChat" 引用
+- **HTML 标题**：更新所有渲染进程 HTML 文件的窗口标题
+- **多语言支持**：支持全部 9 种语言：en-US, zh-CN, zh-TW, zh-HK, ja-JP, ko-KR, ru-RU, fr-FR, fa-IR
 
 ## 示例：Demo公司
 
@@ -162,6 +446,7 @@ pnpm run build:linux:x64    # Linux x64
 3. **准备高质量资源**：图标和 Logo 应该符合各平台设计规范
 4. **测试完整性**：替换后进行完整的功能测试
 5. **更新服务器**：如果使用自定义更新服务器，需要确保服务器正常运行
+6. **可选资源**：品牌资源（图标、Logo）完全可选 - 脚本支持仅文本定制
 
 ## 恢复原始配置
 
@@ -186,6 +471,7 @@ git checkout package.json electron-builder.yml
 2. **资源文件未找到**
    - 检查文件是否放在正确的位置
    - 确认文件名和扩展名正确
+   - 记住：资源是可选的，脚本会在没有资源的情况下继续运行
 
 3. **构建失败**
    - 检查 App ID 格式是否正确
@@ -197,7 +483,7 @@ git checkout package.json electron-builder.yml
 
 1. 检查控制台输出的错误信息
 2. 确认配置文件格式正确
-3. 验证资源文件是否存在
+3. 验证资源文件是否存在（如果提供了）
 
 ## 总结
 
@@ -207,5 +493,7 @@ git checkout package.json electron-builder.yml
 - ✅ **一次性操作**：执行一次就完成所有替换
 - ✅ **完全定制**：应用名称、图标、描述等全面定制
 - ✅ **易于使用**：无需复杂的品牌管理，直接修改代码
+- ✅ **全面国际化**：支持所有语言和文件类型
+- ✅ **可选资源**：支持有无品牌资源的情况
 
 非常适合 fork 代码库后的一次性品牌定制需求。
