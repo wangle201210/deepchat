@@ -6,34 +6,64 @@
           <Label :for="`${provider.id}-accessKeyId`" class="flex-1 cursor-pointer"
             >AWS Access Key Id</Label
           >
-          <Input
-            :id="`${provider.id}-accessKeyId`"
-            :model-value="accessKeyId"
-            :placeholder="t('settings.provider.urlPlaceholder')"
-            @blur="handleAccessKeyIdChange(String($event.target.value))"
-            @keyup.enter="handleAccessKeyIdChange(accessKeyId)"
-            @update:model-value="accessKeyId = String($event)"
-          />
+          <div class="relative w-full">
+            <Input
+              :id="`${provider.id}-accessKeyId`"
+              :model-value="accessKeyId"
+              :type="showAccessKeyId ? 'text' : 'password'"
+              :placeholder="t('settings.provider.accessKeyIdPlaceholder')"
+              style="padding-right: 2.5rem !important"
+              @blur="handleAccessKeyIdChange(String($event.target.value))"
+              @keyup.enter="handleAccessKeyIdChange(accessKeyId)"
+              @update:model-value="accessKeyId = String($event)"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              class="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-transparent"
+              @click="showAccessKeyId = !showAccessKeyId"
+            >
+              <Icon
+                :icon="showAccessKeyId ? 'lucide:eye-off' : 'lucide:eye'"
+                class="w-4 h-4 text-muted-foreground hover:text-foreground"
+              />
+            </Button>
+          </div>
         </div>
         <div class="flex flex-col items-start gap-2">
           <Label :for="`${provider.id}-secretAccessKey`" class="flex-1 cursor-pointer"
             >AWS Secret Access Key</Label
           >
-          <Input
-            :id="`${provider.id}-secretAccessKey`"
-            :model-value="secretAccessKey"
-            :placeholder="t('settings.provider.urlPlaceholder')"
-            @blur="handleSecretAccessKeyChange(String($event.target.value))"
-            @keyup.enter="handleSecretAccessKeyChange(secretAccessKey)"
-            @update:model-value="secretAccessKey = String($event)"
-          />
+          <div class="relative w-full">
+            <Input
+              :id="`${provider.id}-secretAccessKey`"
+              :model-value="secretAccessKey"
+              :type="showSecretAccessKey ? 'text' : 'password'"
+              :placeholder="t('settings.provider.secretAccessKeyPlaceholder')"
+              style="padding-right: 2.5rem !important"
+              @blur="handleSecretAccessKeyChange(String($event.target.value))"
+              @keyup.enter="handleSecretAccessKeyChange(secretAccessKey)"
+              @update:model-value="secretAccessKey = String($event)"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              class="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 hover:bg-transparent"
+              @click="showSecretAccessKey = !showSecretAccessKey"
+            >
+              <Icon
+                :icon="showSecretAccessKey ? 'lucide:eye-off' : 'lucide:eye'"
+                class="w-4 h-4 text-muted-foreground hover:text-foreground"
+              />
+            </Button>
+          </div>
         </div>
         <div class="flex flex-col items-start gap-2">
           <Label :for="`${provider.id}-region`" class="flex-1 cursor-pointer">AWS Region</Label>
           <Input
             :id="`${provider.id}-region`"
             :model-value="region"
-            :placeholder="t('settings.provider.urlPlaceholder')"
+            :placeholder="t('settings.provider.regionPlaceholder')"
             @blur="handleRegionChange(String($event.target.value))"
             @keyup.enter="handleRegionChange(region)"
             @update:model-value="region = String($event)"
@@ -52,6 +82,16 @@
               t('settings.provider.verifyKey')
             }}
           </Button>
+          <TooltipProvider :delayDuration="200">
+            <Tooltip>
+              <TooltipTrigger>
+                <Icon icon="lucide:help-circle" class="w-4 h-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{{ t('settings.provider.bedrockVerifyTip') }}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
 
         <div class="hint">{{ t('settings.provider.bedrockLimitTip') }}</div>
@@ -98,6 +138,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Icon } from '@iconify/vue'
 import ProviderModelManager from './ProviderModelManager.vue'
 import ProviderDialogContainer from './ProviderDialogContainer.vue'
@@ -117,6 +158,8 @@ const settingsStore = useSettingsStore()
 const accessKeyId = ref(props.provider.credential?.accessKeyId || '')
 const secretAccessKey = ref(props.provider.credential?.secretAccessKey || '')
 const region = ref(props.provider.credential?.region || '')
+const showAccessKeyId = ref(false)
+const showSecretAccessKey = ref(false)
 const providerModels = ref<RENDERER_MODEL_META[]>([])
 const checkResult = ref<boolean>(false)
 const modelToDisable = ref<RENDERER_MODEL_META | null>(null)
@@ -204,27 +247,23 @@ const validateCredential = async () => {
     const resp = await settingsStore.checkProvider(props.provider.id)
     if (resp.isOk) {
       console.log('验证成功')
-      // checkResult.value = true
+      checkResult.value = true
       showCheckModelDialog.value = true
       // 验证成功后刷新当前provider的模型列表
       await settingsStore.refreshProviderModels(props.provider.id)
     } else {
       console.log('验证失败', resp.errorMsg)
-      // checkResult.value = false
+      checkResult.value = false
       showCheckModelDialog.value = true
     }
   } catch (error) {
     console.error('Failed to validate credential:', error)
-    // checkResult.value = false
+    checkResult.value = false
     showCheckModelDialog.value = true
   }
 }
 
 const handleVerifyCredential = async (updates: Partial<AWS_BEDROCK_PROVIDER>) => {
-  // const inputElement = document.getElementById(`${props.provider.id}-apikey`)
-  // if (inputElement) {
-  //   inputElement.blur()
-  // }
   await settingsStore.updateAwsBedrockProviderConfig(props.provider.id, updates)
   await validateCredential()
 }

@@ -231,6 +231,9 @@
     "disabled": "Отключен",
     "urlPlaceholder": "Введите API URL",
     "keyPlaceholder": "Введите API Key",
+    "accessKeyIdPlaceholder": "Введите AWS Access Key ID",
+    "secretAccessKeyPlaceholder": "Введите AWS Secret Access Key",
+    "regionPlaceholder": "Введите регион AWS",
     "verifyKey": "Проверить ключ",
     "howToGet": "Как получить",
     "getKeyTip": "Перейдите по следующему адресу",
@@ -441,7 +444,8 @@
     "operationFailed": "Операция не удалась",
     "operationSuccess": "Операция успешна",
     "settingsApplied": "Применяются настройки",
-    "bedrockLimitTip": "* Поддерживает только Anthropic Claude (включая модели Opus, Sonnet, Haiku)"
+    "bedrockLimitTip": "* Поддерживает только Anthropic Claude (включая модели Opus, Sonnet, Haiku)",
+    "bedrockVerifyTip": "DeepChat использует модель Claude 3.5 Sonnet для верификации. Если у вас нет разрешения на её использование, верификация не пройдёт. Это не повлияет на использование других моделей."
   },
   "knowledgeBase": {
     "title": "Настройки базы знаний",
@@ -502,7 +506,7 @@
     "embeddingModel": "Встроенная модель",
     "return": "возвращаться",
     "uploadHelper": "Нажмите, чтобы загрузить или перетащить файл здесь",
-    "onlySupport": "Поддерживается только",
+    "fileSupport": "Поддержка {accept} и {count} других форматов",
     "searchKnowledge": "Поиск базы знаний",
     "searchKnowledgePlaceholder": "Пожалуйста, введите содержание запроса",
     "noData": "Нет данных пока",
@@ -540,7 +544,12 @@
       "content": "Вы обязательно удалите файл \"{filename}\"? Эта операция не восстановлена."
     },
     "resumeAllPausedTasks": "Восстановление одного клика",
-    "pauseAllRunningTasks": "Пауза с одним щелчком"
+    "pauseAllRunningTasks": "Пауза с одним щелчком",
+    "separators": "Сепаратор блока",
+    "separatorsHelper": "Разделитель сегментации документа, одиночный разделитель заключается в двойные кавычки (\"\"), а разделители разделяются запятыми (,)",
+    "invalidSeparators": "Неверный сепаратор",
+    "selectLanguage": "Выберите предустановку",
+    "separatorsPreset": "Загрузка пресетов"
   },
   "mcp": {
     "title": "Настройки MCP",
@@ -728,11 +737,11 @@
   },
   "display": {
     "fontSize": "Размер текста",
-    "text-2xl": "Чрезвычайно большой",
-    "text-base": "Маленький",
-    "text-lg": "по умолчанию",
-    "text-sm": "Чрезвычайно маленький",
-    "text-xl": "большой",
+    "text-sm": "Малый",
+    "text-base": "Средний",
+    "text-lg": "Большой",
+    "text-xl": "XL",
+    "text-2xl": "XXL",
     "floatingButton": "Плавающая кнопка",
     "floatingButtonDesc": "Отображать плавающую кнопку на рабочем столе для быстрого активации окна приложения"
   },

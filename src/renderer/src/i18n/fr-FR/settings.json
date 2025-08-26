@@ -231,6 +231,9 @@
     "disabled": "Désactivé",
     "urlPlaceholder": "Veuillez entrer l'URL de l'API",
     "keyPlaceholder": "Veuillez entrer la clé API",
+    "accessKeyIdPlaceholder": "Veuillez entrer l'AWS Access Key ID",
+    "secretAccessKeyPlaceholder": "Veuillez entrer l'AWS Secret Access Key",
+    "regionPlaceholder": "Veuillez entrer la région AWS",
     "verifyKey": "Vérifier la clé",
     "howToGet": "Comment obtenir",
     "getKeyTip": "Veuillez visiter",
@@ -441,7 +444,8 @@
     "operationFailed": "L'opération a échoué",
     "operationSuccess": "L'opération est réussie",
     "settingsApplied": "Paramètres appliqués",
-    "bedrockLimitTip": "* Prend uniquement en charge Anthropic Claude (y compris les modèles Opus, Sonnet, Haiku)"
+    "bedrockLimitTip": "* Prend uniquement en charge Anthropic Claude (y compris les modèles Opus, Sonnet, Haiku)",
+    "bedrockVerifyTip": "DeepChat utilise Claude 3.5 Sonnet pour la vérification. Si vous n'avez pas l'autorisation de l'invoquer, la vérification échouera. Cela n'affectera pas l'utilisation des autres modèles."
   },
   "knowledgeBase": {
     "title": "Paramètres de la base de connaissances",
@@ -502,7 +506,7 @@
     "embeddingModel": "Modèle d'intégration",
     "return": "retour",
     "uploadHelper": "Cliquez pour télécharger ou faire glisser le fichier ici",
-    "onlySupport": "Soutenu uniquement",
+    "fileSupport": "Prend en charge {accept} et {count} autres formats",
     "searchKnowledge": "Rechercher la base de connaissances",
     "searchKnowledgePlaceholder": "Veuillez saisir le contenu de la requête",
     "noData": "Pas encore de données",
@@ -540,7 +544,12 @@
       "content": "Êtes-vous sûr de vouloir supprimer le fichier \"{fileName}\" ? Cette action est irréversible."
     },
     "resumeAllPausedTasks": "Récupération en un clic",
-    "pauseAllRunningTasks": "Pause en un clic"
+    "pauseAllRunningTasks": "Pause en un clic",
+    "separators": "Séparateur de blocage",
+    "separatorsHelper": "Document Séliquant séparateur, le séparateur unique est enveloppé dans des citations doubles à demi-largeur (\"\"), et le séparateur est divisé par une virgule à demi-largeur (,)",
+    "invalidSeparators": "Séparateur non valide",
+    "selectLanguage": "Sélectionnez un préréglage",
+    "separatorsPreset": "Chargement des préréglages"
   },
   "mcp": {
     "title": "Paramètres MCP",
@@ -728,11 +737,11 @@
   },
   "display": {
     "fontSize": "Taille de texte",
-    "text-2xl": "Extrêmement grand",
-    "text-base": "défaut",
-    "text-lg": "grand",
     "text-sm": "Petit",
-    "text-xl": "Extrêmement grand",
+    "text-base": "Moyen",
+    "text-lg": "Grand",
+    "text-xl": "XL",
+    "text-2xl": "XXL",
     "floatingButton": "Bouton flottant",
     "floatingButtonDesc": "Afficher un bouton flottant sur le bureau pour activer rapidement la fenêtre de l'application"
   },

@@ -231,6 +231,9 @@
     "disabled": "Disabled",
     "urlPlaceholder": "Please enter API URL",
     "keyPlaceholder": "Please enter API Key",
+    "accessKeyIdPlaceholder": "Please enter AWS Access Key ID",
+    "secretAccessKeyPlaceholder": "Please enter AWS Secret Access Key",
+    "regionPlaceholder": "Please enter AWS region",
     "verifyKey": "Verify Key",
     "howToGet": "How to get",
     "getKeyTip": "Please visit",
@@ -441,7 +444,8 @@
     "operationFailed": "Operation failed",
     "operationSuccess": "Operation is successful",
     "settingsApplied": "Settings applied",
-    "bedrockLimitTip": "* Only Anthropic Claude supported (including Opus, Sonnet, Haiku models)"
+    "bedrockLimitTip": "* Only Anthropic Claude supported (including Opus, Sonnet, Haiku models)",
+    "bedrockVerifyTip": "DeepChat uses Claude 3.5 Sonnet for verification. If you do not have permission to invoke, the verification will fail. This will not affect the use of other models."
   },
   "knowledgeBase": {
     "title": "Knowledge Base Settings",
@@ -502,7 +506,7 @@
     "embeddingModel": "Embed Model",
     "return": "return",
     "uploadHelper": "Click to upload or drag the file here",
-    "onlySupport": "Supported only",
+    "fileSupport": "Support {accept} and {count} other formats",
     "searchKnowledge": "Search the Knowledge Base",
     "searchKnowledgePlaceholder": "Please enter the query content",
     "noData": "No data yet",
@@ -540,7 +544,12 @@
       "content": "Are you sure to delete the file \"{fileName}\"? \nThis operation is not restored."
     },
     "resumeAllPausedTasks": "One-click recovery",
-    "pauseAllRunningTasks": "One-click pause"
+    "pauseAllRunningTasks": "One-click pause",
+    "separators": "Block separator",
+    "separatorsHelper": "Document segmentation delimiter, a single delimiter is enclosed in double quotes (\"\"), and delimiters are separated by commas (,)",
+    "invalidSeparators": "Invalid separator",
+    "selectLanguage": "Select a preset",
+    "separatorsPreset": "Loading presets"
   },
   "mcp": {
     "title": "MCP Settings",
@@ -728,11 +737,11 @@
   },
   "display": {
     "fontSize": "Text size",
-    "text-2xl": "Extremely large",
-    "text-base": "Default",
-    "text-lg": "Big",
     "text-sm": "Small",
-    "text-xl": "Large",
+    "text-base": "Medium",
+    "text-lg": "Large",
+    "text-xl": "X-Large",
+    "text-2xl": "XX-Large",
     "floatingButton": "Floating Button",
     "floatingButtonDesc": "Display a floating button on the desktop to quickly activate the application window"
   },

@@ -428,8 +428,9 @@ export interface IConfigPresenter {
   getNotificationsEnabled(): boolean
   // 主题设置
   initTheme(): void
-  toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
+  setTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean>
   getTheme(): Promise<string>
+  getCurrentThemeIsDark(): Promise<boolean>
   getSystemTheme(): Promise<'dark' | 'light'>
   getCustomPrompts(): Promise<Prompt[]>
   setCustomPrompts(prompts: Prompt[]): Promise<void>
@@ -949,6 +950,8 @@ export interface IFilePresenter {
   isDirectory(absPath: string): Promise<boolean>
   getMimeType(filePath: string): Promise<string>
   writeImageBase64(file: { name: string; content: string }): Promise<string>
+  validateFileForKnowledgeBase(filePath: string): Promise<FileValidationResult>
+  getSupportedExtensions(): string[]
 }
 
 export interface FileMetaData {
@@ -1541,6 +1544,14 @@ export type KnowledgeFileResult = {
   error?: string
 }
 
+export interface FileValidationResult {
+  isSupported: boolean
+  mimeType?: string
+  adapterType?: string
+  error?: string
+  suggestedExtensions?: string[]
+}
+
 /**
  * Knowledge base interface, provides functions for creating, deleting, file management, and similarity search.
  */
@@ -1612,6 +1623,28 @@ export interface IKnowledgePresenter {
    * Destroy the instance and release resources
    */
   destroy(): Promise<void>
+  /**
+   * Get the list of supported programming languages
+   */
+  getSupportedLanguages(): Promise<string[]>
+  /**
+   * Get the list of separators for a specific programming language
+   * @param language The programming language to get separators for
+   */
+  getSeparatorsForLanguage(language: string): Promise<string[]>
+
+  /**
+   * Validates if a file is supported for knowledge base processing
+   * @param filePath Path to the file to validate
+   * @returns FileValidationResult with validation details
+   */
+  validateFile(filePath: string): Promise<FileValidationResult>
+
+  /**
+   * Gets all supported file extensions for knowledge base processing
+   * @returns Array of supported file extensions (without dots)
+   */
+  getSupportedFileExtensions(): Promise<string[]>
 }
 
 type ModelProvider = {
@@ -1629,6 +1662,7 @@ export type BuiltinKnowledgeConfig = {
   chunkSize?: number
   chunkOverlap?: number
   fragmentsNumber: number
+  separators?: string[]
   enabled: boolean
 }
 export type MetricType = 'l2' | 'cosine' | 'ip'

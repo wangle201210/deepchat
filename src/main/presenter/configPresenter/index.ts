@@ -276,6 +276,11 @@ export class ConfigPresenter implements IConfigPresenter {
       this.store.set(key, value)
       // 触发设置变更事件（仅主进程内部使用）
       eventBus.sendToMain(CONFIG_EVENTS.SETTING_CHANGED, key, value)
+
+      // 特殊处理：字体大小设置需要通知所有标签页
+      if (key === 'fontSizeLevel') {
+        eventBus.sendToRenderer(CONFIG_EVENTS.FONT_SIZE_CHANGED, SendTarget.ALL_WINDOWS, value)
+      }
     } catch (error) {
       console.error(`[Config] Failed to set setting ${key}:`, error)
     }
@@ -378,13 +383,11 @@ export class ConfigPresenter implements IConfigPresenter {
     this.modelStatusCache.set(statusKey, enabled)
 
     // 触发模型状态变更事件（需要通知所有标签页）
-    eventBus.sendToRenderer(
-      CONFIG_EVENTS.MODEL_STATUS_CHANGED,
-      SendTarget.ALL_WINDOWS,
+    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_STATUS_CHANGED, SendTarget.ALL_WINDOWS, {
       providerId,
       modelId,
       enabled
-    )
+    })
   }
 
   // 启用模型
@@ -999,25 +1002,31 @@ export class ConfigPresenter implements IConfigPresenter {
   async initTheme() {
     const theme = this.getSetting<string>('appTheme')
     if (theme) {
-      nativeTheme.themeSource = theme as 'dark' | 'light'
+      nativeTheme.themeSource = theme as 'dark' | 'light' | 'system'
     }
     // 监听系统主题变化
     nativeTheme.on('updated', () => {
-      // 只有当主题设置为 system 时，才需要通知渲染进程
+      // 只有当主题设置为 system 时，才需要通知渲染进程系统主题变化
       if (nativeTheme.themeSource === 'system') {
         eventBus.sendToMain(SYSTEM_EVENTS.SYSTEM_THEME_UPDATED, nativeTheme.shouldUseDarkColors)
       }
     })
   }
 
-  async toggleTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
+  async setTheme(theme: 'dark' | 'light' | 'system'): Promise<boolean> {
     nativeTheme.themeSource = theme
     this.setSetting('appTheme', theme)
+    // 通知所有窗口主题已更改
+    eventBus.sendToRenderer(CONFIG_EVENTS.THEME_CHANGED, SendTarget.ALL_WINDOWS, theme)
     return nativeTheme.shouldUseDarkColors
   }
 
   async getTheme(): Promise<string> {
     return this.getSetting<string>('appTheme') || 'system'
+  }
+
+  async getCurrentThemeIsDark(): Promise<boolean> {
+    return nativeTheme.shouldUseDarkColors
   }
 
   async getSystemTheme(): Promise<'dark' | 'light'> {

@@ -49,8 +49,6 @@ const isGenerating = computed(() => {
 const handleSend = async (msg: UserMessageContent) => {
   scrollToBottom()
   await chatStore.sendMessage(msg)
-  scrollToBottom()
-
   setTimeout(() => {
     chatInput.value?.restoreFocus()
   }, 100)
@@ -111,5 +109,9 @@ onUnmounted(async () => {
   window.electron.ipcRenderer.removeAllListeners(STREAM_EVENTS.RESPONSE)
   window.electron.ipcRenderer.removeAllListeners(STREAM_EVENTS.END)
   window.electron.ipcRenderer.removeAllListeners(STREAM_EVENTS.ERROR)
+})
+
+defineExpose({
+  messageList
 })
 </script>

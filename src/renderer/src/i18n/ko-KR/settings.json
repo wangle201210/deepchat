@@ -231,6 +231,9 @@
     "disabled": "비활성화됨",
     "urlPlaceholder": "API URL을 입력하세요",
     "keyPlaceholder": "API 키를 입력하세요",
+    "accessKeyIdPlaceholder": "AWS Access Key ID를 입력하세요",
+    "secretAccessKeyPlaceholder": "AWS Secret Access Key를 입력하세요",
+    "regionPlaceholder": "AWS 리전을 입력하세요",
     "verifyKey": "키 확인",
     "howToGet": "얻는 방법",
     "getKeyTip": "다음으로 이동하세요",
@@ -441,7 +444,8 @@
     "operationFailed": "작동 실패",
     "operationSuccess": "운영이 성공적입니다",
     "settingsApplied": "설정이 적용됩니다",
-    "bedrockLimitTip": "* Anthropic Claude(Opus, Sonnet, Haiku 모델 포함)만 지원합니다."
+    "bedrockLimitTip": "* Anthropic Claude(Opus, Sonnet, Haiku 모델 포함)만 지원합니다.",
+    "bedrockVerifyTip": "DeepChat은 검증을 위해 Claude 3.5 Sonnet을 사용합니다. 호출 권한이 없으면 검증이 실패합니다. 이는 다른 모델 사용에는 영향을 미치지 않습니다."
   },
   "knowledgeBase": {
     "title": "지식 베이스 설정",
@@ -502,7 +506,7 @@
     "embeddingModel": "임베드 모델",
     "return": "반품",
     "uploadHelper": "여기에서 파일을 업로드하거나 드래그하려면 클릭하십시오",
-    "onlySupport": "지원됩니다",
+    "fileSupport": "{accept} 및 {count}개의 다른 형식을 지원합니다",
     "searchKnowledge": "지식 기반을 검색하십시오",
     "searchKnowledgePlaceholder": "쿼리 내용을 입력하십시오",
     "noData": "아직 데이터가 없습니다",
@@ -540,7 +544,12 @@
       "content": "\"{filename}\"파일을 삭제해야합니까? 이 작업은 복원되지 않습니다."
     },
     "resumeAllPausedTasks": "원 클릭 복구",
-    "pauseAllRunningTasks": "한 번의 클릭 일시 중지"
+    "pauseAllRunningTasks": "한 번의 클릭 일시 중지",
+    "separators": "블록 분리기",
+    "separatorsHelper": "문서 분할 구분 기호, 단일 구분 기호는 큰따옴표(\"\")로 묶고, 구분 기호는 쉼표(,)로 구분합니다",
+    "invalidSeparators": "잘못된 분리기",
+    "selectLanguage": "사전 설정을 선택하십시오",
+    "separatorsPreset": "사전 설정을로드합니다"
   },
   "mcp": {
     "title": "MCP 설정",
@@ -728,11 +737,11 @@
   },
   "display": {
     "fontSize": "텍스트 크기",
-    "text-2xl": "매우 큽니다",
-    "text-base": "기본",
-    "text-lg": "큰",
-    "text-sm": "작은",
-    "text-xl": "매우 큽니다",
+    "text-sm": "작음",
+    "text-base": "보통",
+    "text-lg": "큼",
+    "text-xl": "XL",
+    "text-2xl": "XXL",
     "floatingButton": "플로팅 버튼",
     "floatingButtonDesc": "데스크톱에 플로팅 버튼을 표시하여 애플리케이션 창을 빠르게 활성화할 수 있습니다"
   },

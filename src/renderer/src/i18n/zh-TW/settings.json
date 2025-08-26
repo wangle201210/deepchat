@@ -231,6 +231,9 @@
     "disabled": "已停用",
     "urlPlaceholder": "請輸入 API URL",
     "keyPlaceholder": "請輸入 API 金鑰",
+    "accessKeyIdPlaceholder": "請輸入 AWS Access Key ID",
+    "secretAccessKeyPlaceholder": "請輸入 AWS Secret Access Key",
+    "regionPlaceholder": "請輸入 AWS 區域",
     "verifyKey": "驗證金鑰",
     "howToGet": "如何取得",
     "getKeyTip": "請前往",
@@ -441,7 +444,8 @@
     "operationFailed": "操作失敗",
     "operationSuccess": "操作成功",
     "settingsApplied": "設置已應用",
-    "bedrockLimitTip": "* 僅支援 Anthropic Claude（包括 Opus，Sonnet，Haiku 模型）"
+    "bedrockLimitTip": "* 僅支援 Anthropic Claude（包括 Opus，Sonnet，Haiku 模型）",
+    "bedrockVerifyTip": "DeepChat 使用 Claude 3.5 Sonnet 模型驗證，若您無此模型的呼叫許可權驗證將失敗。這不會影響其他模型的使用。"
   },
   "knowledgeBase": {
     "title": "知識庫設置",
@@ -502,7 +506,7 @@
     "embeddingModel": "嵌入模型",
     "return": "返回",
     "uploadHelper": "點擊上傳或拖拽文件到此處",
-    "onlySupport": "僅支持",
+    "fileSupport": "支持 {accept} 等 {count} 種格式",
     "searchKnowledge": "搜索知識庫",
     "searchKnowledgePlaceholder": "請輸入查詢內容",
     "noData": "暫無數據",
@@ -540,7 +544,12 @@
       "content": "是否確認刪除文件 \"{fileName}\"？\n此操作不可恢復。"
     },
     "resumeAllPausedTasks": "一鍵恢復",
-    "pauseAllRunningTasks": "一鍵暫停"
+    "pauseAllRunningTasks": "一鍵暫停",
+    "separators": "塊分隔符",
+    "separatorsHelper": "文檔切分分隔符，單個分隔符用半角符號雙引號(\"\")包裹，分隔符之間用半角符號逗號(,)分割",
+    "invalidSeparators": "無效的分隔符",
+    "selectLanguage": "選擇預設",
+    "separatorsPreset": "加載預設"
   },
   "mcp": {
     "title": "MCP設定",
@@ -728,11 +737,11 @@
   },
   "display": {
     "fontSize": "文字大小",
-    "text-2xl": "超大",
-    "text-base": "預設",
-    "text-lg": "大",
     "text-sm": "小",
+    "text-base": "標準",
+    "text-lg": "大",
     "text-xl": "特大",
+    "text-2xl": "超大",
     "floatingButton": "懸浮按鈕",
     "floatingButtonDesc": "在桌面顯示一個懸浮按鈕，可以快速喚起應用程式視窗"
   },

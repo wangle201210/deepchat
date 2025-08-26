@@ -231,6 +231,9 @@
     "disabled": "無効",
     "urlPlaceholder": "API URLを入力してください",
     "keyPlaceholder": "API Keyを入力してください",
+    "accessKeyIdPlaceholder": "AWS Access Key IDを入力してください",
+    "secretAccessKeyPlaceholder": "AWS Secret Access Keyを入力してください",
+    "regionPlaceholder": "AWSリージョンを入力してください",
     "verifyKey": "キーを検証",
     "howToGet": "取得方法",
     "getKeyTip": "以下へアクセスしてください",
@@ -441,7 +444,8 @@
     "operationFailed": "操作に失敗しました",
     "operationSuccess": "操作は成功しました",
     "settingsApplied": "適用された設定",
-    "bedrockLimitTip": "* Anthropic Claude（Opus、Sonnet、Haikuモデルを含む）のみをサポート"
+    "bedrockLimitTip": "* Anthropic Claude（Opus、Sonnet、Haikuモデルを含む）のみをサポート",
+    "bedrockVerifyTip": "DeepChatは検証にClaude 3.5 Sonnetを使用しています。起動権限がない場合、検証は失敗します。ただし、他のモデルの使用には影響しません。"
   },
   "knowledgeBase": {
     "title": "ナレッジベース設定",
@@ -502,7 +506,7 @@
     "embeddingModel": "埋め込みモデル",
     "return": "戻る",
     "uploadHelper": "クリックしてここでファイルをアップロードまたはドラッグします",
-    "onlySupport": "サポートのみ",
+    "fileSupport": "{accept} およびその他の {count} 形式をサポートします",
     "searchKnowledge": "ナレッジベースを検索します",
     "searchKnowledgePlaceholder": "クエリコンテンツを入力してください",
     "noData": "まだデータはありません",
@@ -540,7 +544,12 @@
       "content": "ファイル「{fileName}」を削除してもよろしいですか？この操作は元に戻せません。"
     },
     "resumeAllPausedTasks": "ワンクリックリカバリ",
-    "pauseAllRunningTasks": "ワンクリックの一時停止"
+    "pauseAllRunningTasks": "ワンクリックの一時停止",
+    "separators": "ブロックセパレーター",
+    "separatorsHelper": "ドキュメントのセグメンテーション区切り文字。単一の区切り文字は二重引用符 (\"\") で囲まれ、区切り文字はコンマ (,) で区切られます",
+    "invalidSeparators": "無効な分離器",
+    "selectLanguage": "プリセットを選択します",
+    "separatorsPreset": "プリセットの読み込み"
   },
   "mcp": {
     "title": "MCP設定",
@@ -728,11 +737,11 @@
   },
   "display": {
     "fontSize": "テキストサイズ",
-    "text-2xl": "非常に大きい",
-    "text-base": "デフォルト",
-    "text-lg": "大きい",
-    "text-sm": "小さい",
-    "text-xl": "非常に大きい",
+    "text-sm": "小",
+    "text-base": "中",
+    "text-lg": "大",
+    "text-xl": "XL",
+    "text-2xl": "XXL",
     "floatingButton": "フローティングボタン",
     "floatingButtonDesc": "デスクトップにフローティングボタンを表示し、アプリケーションウィンドウを素早く起動できます"
   },
