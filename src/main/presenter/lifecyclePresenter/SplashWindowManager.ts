@@ -49,7 +49,9 @@ export class SplashWindowManager implements ISplashWindowManager {
 
       // Show the window
       this.splashWindow.on('ready-to-show', () => {
-        this.splashWindow?.show()
+        setTimeout(() => {
+          this.splashWindow?.show()
+        }, 800)
       })
 
       // Load the splash HTML template
