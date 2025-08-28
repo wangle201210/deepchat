@@ -10,7 +10,8 @@ import {
   KeyStatus,
   LLM_EMBEDDING_ATTRS,
   ModelScopeMcpSyncOptions,
-  ModelScopeMcpSyncResult
+  ModelScopeMcpSyncResult,
+  IConfigPresenter
 } from '@shared/presenter'
 import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
@@ -21,7 +22,6 @@ import { OpenAICompatibleProvider } from './providers/openAICompatibleProvider'
 import { PPIOProvider } from './providers/ppioProvider'
 import { TokenFluxProvider } from './providers/tokenfluxProvider'
 import { OLLAMA_EVENTS } from '@/events'
-import { ConfigPresenter } from '../configPresenter'
 import { GeminiProvider } from './providers/geminiProvider'
 import { GithubProvider } from './providers/githubProvider'
 import { GithubCopilotProvider } from './providers/githubCopilotProvider'
@@ -91,7 +91,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   private config: ProviderConfig = {
     maxConcurrentStreams: 10
   }
-  private configPresenter: ConfigPresenter
+  private configPresenter: IConfigPresenter
 
   // 速率限制相关属性
   private providerRateLimitStates: Map<string, ProviderRateLimitState> = new Map()
@@ -100,7 +100,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     enabled: false
   }
 
-  constructor(configPresenter: ConfigPresenter) {
+  constructor(configPresenter: IConfigPresenter) {
     this.configPresenter = configPresenter
     this.initializeProviderRateLimitConfigs()
     this.init()
