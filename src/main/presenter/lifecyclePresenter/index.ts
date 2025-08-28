@@ -175,8 +175,8 @@ export class LifecycleManager implements ILifecycleManager {
     // Update the single context instance with current phase
     this.lifecycleContext.phase = phase
 
-    let successfulHooks = 0
-    let failedHooks = 0
+    let _successfulHooks = 0
+    let _failedHooks = 0
 
     // Execute hooks in priority order
     for (let i = 0; i < phaseHooks.length; i++) {
@@ -190,9 +190,9 @@ export class LifecycleManager implements ILifecycleManager {
 
       try {
         await this.executeHook(hook, this.lifecycleContext)
-        successfulHooks++
+        _successfulHooks++
       } catch (hookError) {
-        failedHooks++
+        _failedHooks++
         // For critical hooks, the error is already handled in executeHook
         // For startup phases (init, before-ready, ready), the app will exit
         if (hook.critical) {
@@ -235,15 +235,16 @@ export class LifecycleManager implements ILifecycleManager {
     // Update the single context instance with current phase
     this.lifecycleContext.phase = phase
 
-    // Execute hooks and check for shutdown prevention
-    for (const { hook } of phaseHooks) {
+    // Execute all hooks in parallel for maximum performance
+    const hookPromises = phaseHooks.map(async ({ hook }) => {
       try {
         const result = await this.executeHook(hook, this.lifecycleContext)
 
         // If any before-quit hook returns false, prevent shutdown
         if (phase === LifecyclePhase.BEFORE_QUIT && result === false) {
-          return false
+          return { hook, result: false, success: true }
         }
+        return { hook, result, success: true }
       } catch (hookError) {
         // For critical hooks in shutdown, we still continue but log the error
         // Shutdown should not be prevented by hook failures
@@ -259,7 +260,19 @@ export class LifecycleManager implements ILifecycleManager {
             errorMessage
           )
         }
+        return { hook, result: undefined, success: false }
       }
+    })
+
+    const hookResults = await Promise.all(hookPromises)
+
+    // Check if any hook prevented shutdown
+    const shutdownPrevented = hookResults.some(
+      (result) => result.success && result.result === false && phase === LifecyclePhase.BEFORE_QUIT
+    )
+
+    if (shutdownPrevented) {
+      return false
     }
 
     this.state.completedPhases.add(phase)
