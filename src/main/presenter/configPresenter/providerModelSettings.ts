@@ -81,7 +81,131 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
 
   // 火山引擎(Doubao)提供商特定模型配置
   doubao: {
-    models: []
+    models: [
+      // DeepSeek 模型
+      {
+        id: 'deepseek-v3-1-250821',
+        name: 'DeepSeek V3.1',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 128000,
+        match: ['deepseek-v3-1-250821', 'deepseek-v3.1'],
+        vision: false,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'deepseek-r1-250120',
+        name: 'DeepSeek R1',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 64000,
+        match: ['deepseek-r1-250120', 'deepseek-r1'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek-r1-distill-qwen-32b-250120',
+        name: 'DeepSeek R1 Distill Qwen 32B',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 32000,
+        match: ['deepseek-r1-distill-qwen-32b-250120', 'deepseek-r1-distill-qwen-32b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek-r1-distill-qwen-7b-250120',
+        name: 'DeepSeek R1 Distill Qwen 7B',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 32000,
+        match: ['deepseek-r1-distill-qwen-7b-250120', 'deepseek-r1-distill-qwen-7b'],
+        vision: false,
+        functionCall: false,
+        reasoning: true
+      },
+      {
+        id: 'deepseek-v3-250324',
+        name: 'DeepSeek V3',
+        temperature: 0.7,
+        maxTokens: 4096,
+        contextLength: 64000,
+        match: ['deepseek-v3-250324', 'deepseek-v3'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
+      },
+      // 豆包原生模型
+      {
+        id: 'doubao-seed-1-6-vision-250815',
+        name: 'Doubao Seed 1.6 Vision',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 256000,
+        match: ['doubao-seed-1-6-vision-250815', 'doubao-seed-1.6-vision'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'doubao-seed-1-6-250615',
+        name: 'Doubao Seed 1.6',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 256000,
+        match: ['doubao-seed-1-6-250615', 'doubao-seed-1.6'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'doubao-seed-1-6-flash-250715',
+        name: 'Doubao Seed 1.6 Flash',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 256000,
+        match: ['doubao-seed-1-6-flash-250715', 'doubao-seed-1.6-flash'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'doubao-seed-1-6-flash-250615',
+        name: 'Doubao Seed 1.6 Flash (250615)',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 256000,
+        match: ['doubao-seed-1-6-flash-250615'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'doubao-seed-1-6-thinking-250715',
+        name: 'Doubao Seed 1.6 Thinking',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 256000,
+        match: ['doubao-seed-1-6-thinking-250715', 'doubao-seed-1.6-thinking'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'doubao-seed-1-6-thinking-250615',
+        name: 'Doubao Seed 1.6 Thinking (250615)',
+        temperature: 0.7,
+        maxTokens: 32000,
+        contextLength: 256000,
+        match: ['doubao-seed-1-6-thinking-250615'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      }
+    ]
   },
 
   // Anthropic提供商特定模型配置
@@ -174,9 +298,43 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'gemini-2.5-pro',
         name: 'Gemini 2.5 Pro',
         temperature: 0.7,
-        maxTokens: 65536,
+        maxTokens: 65535,
         contextLength: 1048576,
         match: ['gemini-2.5-pro'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'google/gemini-2.5-flash-image-preview',
+        name: 'Gemini 2.5 Flash Image Preview',
+        temperature: 0.7,
+        maxTokens: 32768,
+        contextLength: 32768,
+        match: ['google/gemini-2.5-flash-image-preview', 'gemini-2.5-flash-image-preview'],
+        vision: true,
+        functionCall: false,
+        reasoning: false,
+        type: ModelType.ImageGeneration
+      },
+      {
+        id: 'models/gemini-2.5-flash-lite-preview-06-17',
+        name: 'Gemini 2.5 Flash-Lite Preview',
+        temperature: 0.7,
+        maxTokens: 65535,
+        contextLength: 1048576,
+        match: ['models/gemini-2.5-flash-lite-preview-06-17', 'gemini-2.5-flash-lite-preview'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
+      },
+      {
+        id: 'models/gemini-2.5-flash-lite',
+        name: 'Gemini 2.5 Flash Lite',
+        temperature: 0.7,
+        maxTokens: 65535,
+        contextLength: 1048576,
+        match: ['models/gemini-2.5-flash-lite', 'gemini-2.5-flash-lite'],
         vision: true,
         functionCall: true,
         reasoning: true
@@ -185,45 +343,12 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'models/gemini-2.5-flash',
         name: 'Gemini 2.5 Flash',
         temperature: 0.7,
-        maxTokens: 65536,
+        maxTokens: 65535,
         contextLength: 1048576,
         match: ['models/gemini-2.5-flash', 'gemini-2.5-flash'],
         vision: true,
         functionCall: true,
         reasoning: true
-      },
-      {
-        id: 'models/gemini-2.5-flash-lite-preview-06-17',
-        name: 'Gemini 2.5 Flash-Lite Preview',
-        temperature: 0.7,
-        maxTokens: 64000,
-        contextLength: 1000000,
-        match: ['models/gemini-2.5-flash-lite-preview-06-17', 'gemini-2.5-flash-lite-preview'],
-        vision: true,
-        functionCall: true,
-        reasoning: true
-      },
-      {
-        id: 'models/gemini-2.0-flash',
-        name: 'Gemini 2.0 Flash',
-        temperature: 0.7,
-        maxTokens: 8192,
-        contextLength: 1048576,
-        match: ['models/gemini-2.0-flash', 'gemini-2.0-flash'],
-        vision: true,
-        functionCall: true,
-        reasoning: true
-      },
-      {
-        id: 'models/gemini-2.0-flash-lite',
-        name: 'Gemini 2.0 Flash Lite',
-        temperature: 0.7,
-        maxTokens: 8192,
-        contextLength: 1048576,
-        match: ['models/gemini-2.0-flash-lite', 'gemini-2.0-flash-lite'],
-        vision: true,
-        functionCall: true,
-        reasoning: false
       },
       {
         id: 'models/gemini-2.0-flash-preview-image-generation',
@@ -236,15 +361,37 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
           'gemini-2.0-flash-preview-image-generation'
         ],
         vision: true,
-        functionCall: true,
+        functionCall: false,
         reasoning: false,
         type: ModelType.ImageGeneration
+      },
+      {
+        id: 'models/gemini-2.0-flash-lite',
+        name: 'Gemini 2.0 Flash Lite',
+        temperature: 0.7,
+        maxTokens: 8191,
+        contextLength: 1048576,
+        match: ['models/gemini-2.0-flash-lite', 'gemini-2.0-flash-lite'],
+        vision: true,
+        functionCall: true,
+        reasoning: false
+      },
+      {
+        id: 'models/gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        temperature: 0.7,
+        maxTokens: 8191,
+        contextLength: 1048576,
+        match: ['models/gemini-2.0-flash', 'gemini-2.0-flash'],
+        vision: true,
+        functionCall: true,
+        reasoning: true
       },
       {
         id: 'models/gemini-1.5-flash',
         name: 'Gemini 1.5 Flash',
         temperature: 0.7,
-        maxTokens: 8192,
+        maxTokens: 8191,
         contextLength: 1048576,
         match: ['models/gemini-1.5-flash', 'gemini-1.5-flash'],
         vision: true,
@@ -255,7 +402,7 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         id: 'models/gemini-1.5-pro',
         name: 'Gemini 1.5 Pro',
         temperature: 0.7,
-        maxTokens: 8192,
+        maxTokens: 8191,
         contextLength: 2097152,
         match: ['models/gemini-1.5-pro', 'gemini-1.5-pro'],
         vision: true,
@@ -2314,6 +2461,18 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
   // OpenRouter提供商特定模型配置
   openrouter: {
     models: [
+      {
+        id: 'google/gemini-2.5-flash-image-preview',
+        name: 'Gemini 2.5 Flash Image Preview',
+        temperature: 0.7,
+        maxTokens: 32768,
+        contextLength: 32768,
+        match: ['google/gemini-2.5-flash-image-preview', 'gemini-2.5-flash-image-preview'],
+        vision: true,
+        functionCall: false,
+        reasoning: false,
+        type: ModelType.ImageGeneration
+      },
       {
         id: 'deepseek-r1-0528:free',
         name: 'DeepSeek R1-0528:free',

@@ -10,6 +10,11 @@ import {
   IModelConfig,
   BuiltinKnowledgeConfig
 } from '@shared/presenter'
+import {
+  ProviderChange,
+  ProviderBatchUpdate,
+  checkRequiresRebuild
+} from '@shared/provider-operations'
 import { SearchEngineTemplate } from '@shared/chat'
 import { ModelType } from '@shared/model'
 import ElectronStore from 'electron-store'
@@ -24,6 +29,12 @@ import { compare } from 'compare-versions'
 import { defaultShortcutKey, ShortcutKeySetting } from './shortcutKeySettings'
 import { ModelConfigHelper } from './modelConfig'
 import { KnowledgeConfHelper } from './knowledgeConfHelper'
+
+// 默认系统提示词常量
+const DEFAULT_SYSTEM_PROMPT = `You are DeepChat, a highly capable AI assistant. Your goal is to fully complete the user’s requested task before handing the conversation back to them. Keep working autonomously until the task is fully resolved.
+Be thorough in gathering information. Before replying, make sure you have all the details necessary to provide a complete solution. Use additional tools or ask clarifying questions when needed, but if you can find the answer on your own, avoid asking the user for help.
+When using tools, briefly describe your intended steps first—for example, which tool you’ll use and for what purpose.
+Adhere to this in all languages.Always respond in the same language as the user's query.`
 
 // 定义应用设置的接口
 interface IAppSettings {
@@ -142,7 +153,7 @@ export class ConfigPresenter implements IConfigPresenter {
       const oldVersion = this.store.get('appVersion')
       this.store.set('appVersion', this.currentAppVersion)
       // 迁移数据
-      this.migrateModelData(oldVersion)
+      this.migrateConfigData(oldVersion)
       this.mcpConfHelper.onUpgrade(oldVersion)
     }
 
@@ -179,7 +190,7 @@ export class ConfigPresenter implements IConfigPresenter {
     return this.providersModelStores.get(providerId)!
   }
 
-  private migrateModelData(oldVersion: string | undefined): void {
+  private migrateConfigData(oldVersion: string | undefined): void {
     // 0.2.4 版本之前，minimax 的 baseUrl 是错误的，需要修正
     if (oldVersion && compare(oldVersion, '0.2.4', '<')) {
       const providers = this.getProviders()
@@ -262,6 +273,14 @@ export class ConfigPresenter implements IConfigPresenter {
         this.setProviders(filteredProviders)
       }
     }
+
+    // 0.3.4 版本之前，如果默认系统提示词为空，则设置为内置的默认提示词
+    if (oldVersion && compare(oldVersion, '0.3.4', '<')) {
+      const currentPrompt = this.getSetting<string>('default_system_prompt')
+      if (!currentPrompt || currentPrompt.trim() === '') {
+        this.setSetting('default_system_prompt', DEFAULT_SYSTEM_PROMPT)
+      }
+    }
   }
 
   getSetting<T>(key: string): T | undefined {
@@ -318,6 +337,102 @@ export class ConfigPresenter implements IConfigPresenter {
     } else {
       console.error(`[Config] Provider ${id} not found`)
     }
+  }
+
+  /**
+   * 原子操作：更新单个 provider 配置
+   * @param id Provider ID
+   * @param updates 更新的字段
+   * @returns 是否需要重建实例
+   */
+  updateProviderAtomic(id: string, updates: Partial<LLM_PROVIDER>): boolean {
+    const providers = this.getProviders()
+    const index = providers.findIndex((p) => p.id === id)
+
+    if (index === -1) {
+      console.error(`[Config] Provider ${id} not found`)
+      return false
+    }
+
+    // 检查是否需要重建实例
+    const requiresRebuild = checkRequiresRebuild(updates)
+
+    // 更新配置
+    providers[index] = { ...providers[index], ...updates }
+    this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, providers)
+
+    // 触发精确的变更事件
+    const change: ProviderChange = {
+      operation: 'update',
+      providerId: id,
+      requiresRebuild,
+      updates
+    }
+    eventBus.send(CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE, SendTarget.ALL_WINDOWS, change)
+
+    return requiresRebuild
+  }
+
+  /**
+   * 原子操作：批量更新 providers
+   * @param batchUpdate 批量更新请求
+   */
+  updateProvidersBatch(batchUpdate: ProviderBatchUpdate): void {
+    // 更新完整的 provider 列表（用于顺序变更）
+    this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, batchUpdate.providers)
+
+    // 触发批量变更事件
+    eventBus.send(CONFIG_EVENTS.PROVIDER_BATCH_UPDATE, SendTarget.ALL_WINDOWS, batchUpdate)
+  }
+
+  /**
+   * 原子操作：添加 provider
+   * @param provider 新的 provider
+   */
+  addProviderAtomic(provider: LLM_PROVIDER): void {
+    const providers = this.getProviders()
+    providers.push(provider)
+    this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, providers)
+
+    const change: ProviderChange = {
+      operation: 'add',
+      providerId: provider.id,
+      requiresRebuild: true, // 新增 provider 总是需要创建实例
+      provider
+    }
+    eventBus.send(CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE, SendTarget.ALL_WINDOWS, change)
+  }
+
+  /**
+   * 原子操作：删除 provider
+   * @param providerId Provider ID
+   */
+  removeProviderAtomic(providerId: string): void {
+    const providers = this.getProviders()
+    const filteredProviders = providers.filter((p) => p.id !== providerId)
+    this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, filteredProviders)
+
+    const change: ProviderChange = {
+      operation: 'remove',
+      providerId,
+      requiresRebuild: true // 删除 provider 需要清理实例
+    }
+    eventBus.send(CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE, SendTarget.ALL_WINDOWS, change)
+  }
+
+  /**
+   * 原子操作：重新排序 providers
+   * @param providers 新的 provider 排序
+   */
+  reorderProvidersAtomic(providers: LLM_PROVIDER[]): void {
+    this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, providers)
+
+    const change: ProviderChange = {
+      operation: 'reorder',
+      providerId: '', // 重排序影响所有 provider
+      requiresRebuild: false // 仅重排序不需要重建实例
+    }
+    eventBus.send(CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE, SendTarget.ALL_WINDOWS, change)
   }
 
   // 构造模型状态的存储键
@@ -1087,6 +1202,16 @@ export class ConfigPresenter implements IConfigPresenter {
   // 设置默认系统提示词
   async setDefaultSystemPrompt(prompt: string): Promise<void> {
     this.setSetting('default_system_prompt', prompt)
+  }
+
+  // 重置为默认系统提示词
+  async resetToDefaultPrompt(): Promise<void> {
+    this.setSetting('default_system_prompt', DEFAULT_SYSTEM_PROMPT)
+  }
+
+  // 清空系统提示词
+  async clearSystemPrompt(): Promise<void> {
+    this.setSetting('default_system_prompt', '')
   }
 
   // 获取默认快捷键

@@ -15,6 +15,7 @@ import {
 import { ModelType } from '@shared/model'
 import {
   ChatMessage,
+  IConfigPresenter,
   LLM_PROVIDER,
   LLMCoreStreamEvent,
   LLMResponse,
@@ -22,7 +23,6 @@ import {
   MODEL_META,
   ModelConfig
 } from '@shared/presenter'
-import { ConfigPresenter } from '../../configPresenter'
 import { BaseLLMProvider, SUMMARY_TITLES_PROMPT } from '../baseProvider'
 import { eventBus, SendTarget } from '@/eventbus'
 import { CONFIG_EVENTS } from '@/events'
@@ -58,7 +58,31 @@ export class GeminiProvider extends BaseLLMProvider {
       providerId: 'gemini',
       isCustom: false,
       contextLength: 1048576,
-      maxTokens: 65536,
+      maxTokens: 65535,
+      vision: true,
+      functionCall: true,
+      reasoning: true
+    },
+    {
+      id: 'models/gemini-2.5-flash-lite-preview-06-17',
+      name: 'Gemini 2.5 Flash-Lite Preview',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 65535,
+      vision: true,
+      functionCall: true,
+      reasoning: true
+    },
+    {
+      id: 'models/gemini-2.5-flash-lite',
+      name: 'Gemini 2.5 Flash-Lite',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 65535,
       vision: true,
       functionCall: true,
       reasoning: true
@@ -70,46 +94,10 @@ export class GeminiProvider extends BaseLLMProvider {
       providerId: 'gemini',
       isCustom: false,
       contextLength: 1048576,
-      maxTokens: 65536,
+      maxTokens: 65535,
       vision: true,
       functionCall: true,
       reasoning: true
-    },
-    {
-      id: 'models/gemini-2.5-flash-lite-preview-06-17',
-      name: 'Gemini 2.5 Flash-Lite Preview',
-      group: 'default',
-      providerId: 'gemini',
-      isCustom: false,
-      contextLength: 1_000_000,
-      maxTokens: 64_000,
-      vision: true,
-      functionCall: true,
-      reasoning: true
-    },
-    {
-      id: 'models/gemini-2.0-flash',
-      name: 'Gemini 2.0 Flash',
-      group: 'default',
-      providerId: 'gemini',
-      isCustom: false,
-      contextLength: 1_048_576,
-      maxTokens: 8192,
-      vision: true,
-      functionCall: true,
-      reasoning: true
-    },
-    {
-      id: 'models/gemini-2.0-flash-lite',
-      name: 'Gemini 2.0 Flash Lite',
-      group: 'default',
-      providerId: 'gemini',
-      isCustom: false,
-      contextLength: 1_048_576,
-      maxTokens: 8192,
-      vision: true,
-      functionCall: true,
-      reasoning: false
     },
     {
       id: 'models/gemini-2.0-flash-preview-image-generation',
@@ -120,9 +108,33 @@ export class GeminiProvider extends BaseLLMProvider {
       contextLength: 32000,
       maxTokens: 8192,
       vision: true,
-      functionCall: true,
+      functionCall: false,
       reasoning: false,
       type: ModelType.ImageGeneration
+    },
+    {
+      id: 'models/gemini-2.0-flash-lite',
+      name: 'Gemini 2.0 Flash Lite',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8191,
+      vision: true,
+      functionCall: true,
+      reasoning: false
+    },
+    {
+      id: 'models/gemini-2.0-flash',
+      name: 'Gemini 2.0 Flash',
+      group: 'default',
+      providerId: 'gemini',
+      isCustom: false,
+      contextLength: 1048576,
+      maxTokens: 8191,
+      vision: true,
+      functionCall: true,
+      reasoning: true
     },
     {
       id: 'models/gemini-1.5-flash',
@@ -130,15 +142,15 @@ export class GeminiProvider extends BaseLLMProvider {
       group: 'default',
       providerId: 'gemini',
       isCustom: false,
-      contextLength: 1_048_576,
-      maxTokens: 8192,
+      contextLength: 1048576,
+      maxTokens: 8191,
       vision: true,
       functionCall: true,
       reasoning: false
     }
   ]
 
-  constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
+  constructor(provider: LLM_PROVIDER, configPresenter: IConfigPresenter) {
     super(provider, configPresenter)
     this.genAI = new GoogleGenAI({
       apiKey: this.provider.apiKey,
@@ -191,12 +203,13 @@ export class GeminiProvider extends BaseLLMProvider {
           const isVisionModel =
             displayName.toLowerCase().includes('vision') || modelName.includes('gemini-') // Gemini 系列一般都支持视觉
 
-          const isFunctionCallSupported = !modelName.includes('gemma-3') // Gemma 模型不支持函数调用
+          const isFunctionCallSupported =
+            !modelName.includes('gemma-3') && !modelName.includes('flash-image-preview') // Gemma 模型和 flash-image-preview 不支持函数调用
 
           // 判断是否支持推理（thinking）
           const isReasoningSupported =
             modelName.includes('thinking') ||
-            modelName.includes('2.5') ||
+            (modelName.includes('2.5') && !modelName.includes('flash-image-preview')) ||
             modelName.includes('2.0-flash') ||
             modelName.includes('exp-1206')
 
@@ -865,7 +878,7 @@ export class GeminiProvider extends BaseLLMProvider {
     console.log('modelConfig', modelConfig, modelId)
 
     // 检查是否是图片生成模型
-    const isImageGenerationModel = modelId === 'models/gemini-2.0-flash-preview-image-generation'
+    const isImageGenerationModel = modelConfig?.type === ModelType.ImageGeneration
 
     // 如果是图片生成模型，使用特殊处理
     if (isImageGenerationModel) {
@@ -934,6 +947,7 @@ export class GeminiProvider extends BaseLLMProvider {
     let isInThinkTag = false
     let toolUseDetected = false
     let usageMetadata: GenerateContentResponseUsageMetadata | undefined
+    let isNewThoughtFormatDetected = modelConfig.reasoning === true
 
     // 流处理循环
     for await (const chunk of result) {
@@ -987,6 +1001,7 @@ export class GeminiProvider extends BaseLLMProvider {
         for (const part of chunk.candidates[0].content.parts) {
           // 检查是否是思考内容 (新格式)
           if ((part as any).thought === true && part.text) {
+            isNewThoughtFormatDetected = true
             thoughtContent += part.text
           } else if (part.text) {
             content += part.text
@@ -1012,71 +1027,48 @@ export class GeminiProvider extends BaseLLMProvider {
           type: 'reasoning',
           reasoning_content: thoughtContent
         }
-        thoughtContent = '' // 清空已发送的思考内容
       }
 
       if (!content) continue
 
-      buffer += content
+      if (isNewThoughtFormatDetected) {
+        yield {
+          type: 'text',
+          content: content
+        }
+      } else {
+        buffer += content
 
-      // 处理思考标签
-      if (buffer.includes('<think>') && !isInThinkTag) {
-        const thinkStart = buffer.indexOf('<think>')
-
-        // 发送<think>标签前的文本
-        if (thinkStart > 0) {
-          yield {
-            type: 'text',
-            content: buffer.substring(0, thinkStart)
+        if (buffer.includes('<think>') && !isInThinkTag) {
+          const thinkStart = buffer.indexOf('<think>')
+          if (thinkStart > 0) {
+            yield { type: 'text', content: buffer.substring(0, thinkStart) }
           }
+          buffer = buffer.substring(thinkStart + 7)
+          isInThinkTag = true
         }
 
-        buffer = buffer.substring(thinkStart + 7)
-        isInThinkTag = true
-        continue
-      }
-
-      // 处理思考标签结束
-      if (isInThinkTag && buffer.includes('</think>')) {
-        const thinkEnd = buffer.indexOf('</think>')
-        const reasoningContent = buffer.substring(0, thinkEnd)
-
-        // 发送推理内容
-        if (reasoningContent) {
-          yield {
-            type: 'reasoning',
-            reasoning_content: reasoningContent
+        if (isInThinkTag && buffer.includes('</think>')) {
+          const thinkEnd = buffer.indexOf('</think>')
+          const reasoningContent = buffer.substring(0, thinkEnd)
+          if (reasoningContent) {
+            yield {
+              type: 'reasoning',
+              reasoning_content: reasoningContent
+            }
           }
+          buffer = buffer.substring(thinkEnd + 8)
+          isInThinkTag = false
         }
 
-        buffer = buffer.substring(thinkEnd + 8)
-        isInThinkTag = false
-
-        // 如果还有剩余内容，继续处理
-        if (buffer) {
+        if (!isInThinkTag && buffer) {
           yield {
             type: 'text',
             content: buffer
           }
           buffer = ''
         }
-
-        continue
       }
-
-      // 如果在思考标签内，不输出内容
-      if (isInThinkTag) {
-        continue
-      }
-
-      // 正常输出文本内容
-      yield {
-        type: 'text',
-        content: content
-      }
-
-      // 内容已经发送，清空buffer避免重复
-      buffer = ''
     }
 
     if (usageMetadata) {
@@ -1091,7 +1083,7 @@ export class GeminiProvider extends BaseLLMProvider {
     }
 
     // 处理剩余缓冲区内容
-    if (buffer) {
+    if (!isNewThoughtFormatDetected && buffer) {
       if (isInThinkTag) {
         yield {
           type: 'reasoning',

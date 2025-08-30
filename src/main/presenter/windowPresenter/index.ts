@@ -1,12 +1,11 @@
 // src\main\presenter\windowPresenter\index.ts
-import { BrowserWindow, shell, app, nativeImage, ipcMain } from 'electron'
+import { BrowserWindow, shell, nativeImage, ipcMain, screen } from 'electron'
 import { join } from 'path'
 import icon from '../../../../resources/icon.png?asset' // 应用图标 (macOS/Linux)
 import iconWin from '../../../../resources/icon.ico?asset' // 应用图标 (Windows)
 import { is } from '@electron-toolkit/utils' // Electron 工具库
-import { IWindowPresenter } from '@shared/presenter' // 窗口 Presenter 接口
+import { IConfigPresenter, IWindowPresenter } from '@shared/presenter' // 窗口 Presenter 接口
 import { eventBus } from '@/eventbus' // 事件总线
-import { ConfigPresenter } from '../configPresenter' // 配置 Presenter
 import { CONFIG_EVENTS, SYSTEM_EVENTS, WINDOW_EVENTS } from '@/events' // 系统/窗口/配置 事件常量
 import { presenter } from '../' // 全局 presenter 注册中心
 import windowStateManager from 'electron-window-state' // 窗口状态管理器
@@ -22,8 +21,8 @@ import { FloatingChatWindow } from './FloatingChatWindow' // 悬浮对话窗口
 export class WindowPresenter implements IWindowPresenter {
   // 管理所有 BrowserWindow 实例的 Map，key 为窗口 ID
   windows: Map<number, BrowserWindow>
-  private configPresenter: ConfigPresenter
-  // 退出标志，表示应用是否正在关闭过程中 (由 'before-quit' 设置)
+  private configPresenter: IConfigPresenter
+  // 退出标志，表示应用是否正在关闭过程中 (由 'before-quit' hook 设置)
   private isQuitting: boolean = false
   // 当前获得焦点的窗口 ID (内部记录)
   private focusedWindowId: number | null = null
@@ -41,7 +40,7 @@ export class WindowPresenter implements IWindowPresenter {
   >()
   private floatingChatWindow: FloatingChatWindow | null = null
 
-  constructor(configPresenter: ConfigPresenter) {
+  constructor(configPresenter: IConfigPresenter) {
     this.windows = new Map()
     this.configPresenter = configPresenter
 
@@ -64,13 +63,6 @@ export class WindowPresenter implements IWindowPresenter {
       ) {
         this.hideFloatingChatWindow()
       }
-    })
-
-    // 监听应用即将退出的事件，设置退出标志，避免窗口关闭时触发隐藏逻辑
-    app.on('before-quit', () => {
-      console.log('App is quitting, setting isQuitting flag.')
-      this.isQuitting = true
-      this.destroyFloatingChatWindow()
     })
 
     // 监听快捷键事件：创建新窗口
@@ -142,13 +134,6 @@ export class WindowPresenter implements IWindowPresenter {
           console.warn(`Skipping theme update for destroyed window ${window.id}.`)
         }
       })
-    })
-
-    // 监听强制退出应用事件 (例如：从菜单触发)，设置退出标志并调用 app.quit()
-    eventBus.on(WINDOW_EVENTS.FORCE_QUIT_APP, () => {
-      console.log('Force quitting application.')
-      this.isQuitting = true // 设置退出标志
-      app.quit() // 显式退出应用
     })
 
     // 监听内容保护设置变更事件，更新所有窗口并重启应用
@@ -590,10 +575,25 @@ export class WindowPresenter implements IWindowPresenter {
       defaultHeight: 620
     })
 
-    // 计算初始位置，确保 Y 坐标不为负数
-    const initialX = options?.x !== undefined ? options.x : shellWindowState.x
-    let initialY = options?.y !== undefined ? options?.y : shellWindowState.y
-    initialY = Math.max(0, initialY || 0)
+    // 计算初始位置，确保窗口完全在屏幕范围内
+    const initialX =
+      options?.x !== undefined
+        ? options.x
+        : this.validateWindowPosition(
+            shellWindowState.x,
+            shellWindowState.width,
+            shellWindowState.y,
+            shellWindowState.height
+          ).x
+    let initialY =
+      options?.y !== undefined
+        ? options?.y
+        : this.validateWindowPosition(
+            shellWindowState.x,
+            shellWindowState.width,
+            shellWindowState.y,
+            shellWindowState.height
+          ).y
 
     const shellWindow = new BrowserWindow({
       width: shellWindowState.width,
@@ -794,6 +794,7 @@ export class WindowPresenter implements IWindowPresenter {
           console.log(
             `Window ${windowId}: Allowing default close behavior (app is quitting or macOS last window configured to quit).`
           )
+          presenter.tabPresenter.closeTabs(windowId)
         }
       } else {
         // 如果 isQuitting 为 true，表示应用正在主动退出，允许窗口正常关闭
@@ -1188,5 +1189,31 @@ export class WindowPresenter implements IWindowPresenter {
 
   public isApplicationQuitting(): boolean {
     return this.isQuitting
+  }
+
+  public setApplicationQuitting(isQuitting: boolean): void {
+    this.isQuitting = isQuitting
+  }
+
+  private validateWindowPosition(
+    x: number,
+    width: number,
+    y: number,
+    height: number
+  ): { x: number; y: number } {
+    const primaryDisplay = screen.getPrimaryDisplay()
+    const { workArea } = primaryDisplay
+    const isXValid = x >= workArea.x && x + width <= workArea.x + workArea.width
+    const isYValid = y >= workArea.y && y + height <= workArea.y + workArea.height
+    if (!isXValid || !isYValid) {
+      console.log(
+        `Window position out of bounds (x: ${x}, y: ${y}, width: ${width}, height: ${height}), centering window`
+      )
+      return {
+        x: workArea.x + Math.max(0, (workArea.width - width) / 2),
+        y: workArea.y + Math.max(0, (workArea.height - height) / 2)
+      }
+    }
+    return { x, y }
   }
 }

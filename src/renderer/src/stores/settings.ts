@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, onMounted, toRaw, computed } from 'vue'
 import { type LLM_PROVIDER, type RENDERER_MODEL_META } from '@shared/presenter'
+import type { ProviderChange, ProviderBatchUpdate } from '@shared/provider-operations'
 import { ModelType } from '@shared/model'
 import { usePresenter } from '@/composables/usePresenter'
 import { SearchEngineTemplate } from '@shared/chat'
@@ -659,6 +660,54 @@ export const useSettingsStore = defineStore('settings', () => {
       await loadSavedOrder()
       await refreshAllModels()
     })
+    // 监听原子provider更新事件
+    window.electron.ipcRenderer.on(
+      CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE,
+      async (_event, change: ProviderChange) => {
+        console.log(
+          `Provider atomic update - operation: ${change.operation}, providerId: ${change.providerId}`
+        )
+        providers.value = await configP.getProviders()
+        await loadSavedOrder()
+        if (change.operation === 'reorder') {
+          // 重排序不需要刷新模型，只需要更新顺序
+          return
+        } else if (change.operation === 'remove') {
+          // 删除provider时，清理相关模型数据
+          enabledModels.value = enabledModels.value.filter(
+            (p) => p.providerId !== change.providerId
+          )
+          allProviderModels.value = allProviderModels.value.filter(
+            (p) => p.providerId !== change.providerId
+          )
+        } else {
+          // add 或 update 操作，刷新该provider的模型
+          await refreshProviderModels(change.providerId)
+        }
+      }
+    )
+    // 监听批量provider更新事件
+    window.electron.ipcRenderer.on(
+      CONFIG_EVENTS.PROVIDER_BATCH_UPDATE,
+      async (_event, batchUpdate: ProviderBatchUpdate) => {
+        console.log('Provider batch update - changes:', batchUpdate.changes)
+        providers.value = await configP.getProviders()
+        await loadSavedOrder()
+        // 处理批量变更
+        for (const change of batchUpdate.changes) {
+          if (change.operation === 'remove') {
+            enabledModels.value = enabledModels.value.filter(
+              (p) => p.providerId !== change.providerId
+            )
+            allProviderModels.value = allProviderModels.value.filter(
+              (p) => p.providerId !== change.providerId
+            )
+          } else if (change.operation !== 'reorder') {
+            await refreshProviderModels(change.providerId)
+          }
+        }
+      }
+    )
 
     // 监听模型列表更新事件
     window.electron.ipcRenderer.on(
@@ -836,7 +885,8 @@ export const useSettingsStore = defineStore('settings', () => {
     }
     delete updatedProvider.websites
 
-    await configP.setProviderById(providerId, updatedProvider)
+    // 使用新的原子操作接口
+    const requiresRebuild = await configP.updateProviderAtomic(providerId, updates)
 
     // 只在特定字段变化时刷新providers
     const needRefreshProviders = ['name', 'enable'].some((key) => key in updates)
@@ -850,8 +900,9 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     }
 
-    // 只在特定条件下刷新模型列表
-    const needRefreshModels = ['enable', 'apiKey', 'baseUrl'].some((key) => key in updates)
+    // 只在需要重建实例且模型可能受影响时刷新模型列表
+    const needRefreshModels =
+      requiresRebuild && ['enable', 'apiKey', 'baseUrl'].some((key) => key in updates)
     if (needRefreshModels && updatedProvider.enable) {
       await refreshAllModels()
     }
@@ -1014,23 +1065,22 @@ export const useSettingsStore = defineStore('settings', () => {
   // 添加自定义Provider
   const addCustomProvider = async (provider: LLM_PROVIDER): Promise<void> => {
     try {
-      const currentProviders = await configP.getProviders()
-      const newProivider = {
+      const newProvider = {
         ...toRaw(provider),
         custom: true
       }
-      const newProviders = [...currentProviders, newProivider].map((p) => {
-        delete p.websites
-        return p
-      })
-      await configP.setProviders(newProviders)
-      providers.value = newProviders
+      delete newProvider.websites
+
+      // 使用新的原子操作接口
+      await configP.addProviderAtomic(newProvider)
+
+      // 更新本地状态
+      providers.value = await configP.getProviders()
 
       // 如果新provider启用了，刷新模型列表
       if (provider.enable) {
         await refreshAllModels()
       }
-      providers.value = await configP.getProviders()
     } catch (error) {
       console.error('Failed to add custom provider:', error)
       throw error
@@ -1040,15 +1090,11 @@ export const useSettingsStore = defineStore('settings', () => {
   // 删除Provider
   const removeProvider = async (providerId: string): Promise<void> => {
     try {
-      const currentProviders = await configP.getProviders()
-      const filteredProviders = currentProviders
-        .filter((p) => p.id !== providerId)
-        .map((p) => {
-          delete p.websites
-          return p
-        })
-      await configP.setProviders(filteredProviders)
-      providers.value = filteredProviders
+      // 使用新的原子操作接口
+      await configP.removeProviderAtomic(providerId)
+
+      // 更新本地状态
+      providers.value = await configP.getProviders()
 
       // 从保存的顺序中移除此 provider
       providerOrder.value = providerOrder.value.filter((id) => id !== providerId)
@@ -1328,6 +1374,10 @@ export const useSettingsStore = defineStore('settings', () => {
     removeOllamaEventListeners()
     // 清理搜索引擎事件监听器
     window.electron?.ipcRenderer?.removeAllListeners(CONFIG_EVENTS.SEARCH_ENGINES_UPDATED)
+    // 清理provider相关事件监听器
+    window.electron?.ipcRenderer?.removeAllListeners(CONFIG_EVENTS.PROVIDER_CHANGED)
+    window.electron?.ipcRenderer?.removeAllListeners(CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE)
+    window.electron?.ipcRenderer?.removeAllListeners(CONFIG_EVENTS.PROVIDER_BATCH_UPDATE)
   }
 
   // 添加设置notificationsEnabled的方法
@@ -1525,9 +1575,11 @@ export const useSettingsStore = defineStore('settings', () => {
       // 保存新的顺序到配置中
       await configP.setSetting('providerOrder', finalOrder)
 
+      // 使用新的原子操作接口 - 重新排序不需要重建实例
+      await configP.reorderProvidersAtomic(newProviders)
+
       // 强制更新 providers 以触发视图更新
-      providers.value = [...providers.value]
-      await configP.setProviders(providers.value)
+      providers.value = [...newProviders]
     } catch (error) {
       console.error('Failed to update provider order:', error)
     }
@@ -1575,6 +1627,16 @@ export const useSettingsStore = defineStore('settings', () => {
 
   const setDefaultSystemPrompt = async (prompt: string): Promise<void> => {
     await configP.setDefaultSystemPrompt(prompt)
+  }
+
+  // 重置为默认系统提示词
+  const resetToDefaultPrompt = async (): Promise<void> => {
+    await configP.resetToDefaultPrompt()
+  }
+
+  // 清空系统提示词
+  const clearSystemPrompt = async (): Promise<void> => {
+    await configP.clearSystemPrompt()
   }
 
   // 模型配置相关方法
@@ -1678,6 +1740,8 @@ export const useSettingsStore = defineStore('settings', () => {
     getAwsBedrockCredential,
     getDefaultSystemPrompt,
     setDefaultSystemPrompt,
+    resetToDefaultPrompt,
+    clearSystemPrompt,
     setupProviderListener,
     getModelConfig,
     setModelConfig,

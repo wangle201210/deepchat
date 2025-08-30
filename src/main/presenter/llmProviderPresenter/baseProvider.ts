@@ -7,9 +7,9 @@ import {
   ModelConfig,
   ChatMessage,
   KeyStatus,
-  LLM_EMBEDDING_ATTRS
+  LLM_EMBEDDING_ATTRS,
+  IConfigPresenter
 } from '@shared/presenter'
-import { ConfigPresenter } from '../configPresenter'
 import { DevicePresenter } from '../devicePresenter'
 import { jsonrepair } from 'jsonrepair'
 import { eventBus, SendTarget } from '@/eventbus'
@@ -36,14 +36,14 @@ export abstract class BaseLLMProvider {
   protected models: MODEL_META[] = []
   protected customModels: MODEL_META[] = []
   protected isInitialized: boolean = false
-  protected configPresenter: ConfigPresenter
+  protected configPresenter: IConfigPresenter
 
   protected defaultHeaders: Record<string, string> = {
     'HTTP-Referer': 'https://deepchatai.cn',
     'X-Title': 'DeepChat'
   }
 
-  constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
+  constructor(provider: LLM_PROVIDER, configPresenter: IConfigPresenter) {
     this.provider = provider
     this.configPresenter = configPresenter
     this.defaultHeaders = DevicePresenter.getDefaultHeaders()
@@ -107,10 +107,14 @@ export abstract class BaseLLMProvider {
     if (this.provider.enable) {
       try {
         this.isInitialized = true
-        await this.fetchModels()
+        this.fetchModels()
+          .then(() => {
+            return this.autoEnableModelsIfNeeded()
+          })
+          .then(() => {
+            console.info('Provider initialized successfully:', this.provider.name)
+          })
         // 检查是否需要自动启用所有模型
-        await this.autoEnableModelsIfNeeded()
-        console.info('Provider initialized successfully:', this.provider.name)
       } catch (error) {
         console.warn('Provider initialization failed:', this.provider.name, error)
       }

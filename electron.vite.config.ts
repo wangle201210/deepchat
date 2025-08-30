@@ -91,7 +91,8 @@ export default defineConfig({
         input: {
           shell: resolve('src/renderer/shell/index.html'),
           index: resolve('src/renderer/index.html'),
-          floating: resolve('src/renderer/floating/index.html')
+          floating: resolve('src/renderer/floating/index.html'),
+          splash: resolve('src/renderer/splash/index.html')
         }
       }
     }

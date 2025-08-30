@@ -1,10 +1,15 @@
-import { LLM_PROVIDER, LLMResponse, MODEL_META, ChatMessage } from '@shared/presenter'
+import {
+  LLM_PROVIDER,
+  LLMResponse,
+  MODEL_META,
+  ChatMessage,
+  IConfigPresenter
+} from '@shared/presenter'
 import { OpenAICompatibleProvider } from './openAICompatibleProvider'
-import { ConfigPresenter } from '../../configPresenter'
 
 export class MinimaxProvider extends OpenAICompatibleProvider {
-  constructor(provider: LLM_PROVIDER, configPresenter: ConfigPresenter) {
-    // 初始化minimax AI模型配置
+  constructor(provider: LLM_PROVIDER, configPresenter: IConfigPresenter) {
+    // 初始化智谱AI模型配置
     super(provider, configPresenter)
   }
 
