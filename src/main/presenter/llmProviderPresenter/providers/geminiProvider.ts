@@ -1111,26 +1111,54 @@ export class GeminiProvider extends BaseLLMProvider {
     maxTokens?: number
   ): AsyncGenerator<LLMCoreStreamEvent> {
     try {
-      // 提取用户提示词
+      // 提取用户消息并构建parts数组
       const userMessage = messages.findLast((msg) => msg.role === 'user')
       if (!userMessage) {
         throw new Error('No user message found for image generation')
       }
 
-      const prompt =
-        typeof userMessage.content === 'string'
-          ? userMessage.content
-          : userMessage.content && Array.isArray(userMessage.content)
-            ? userMessage.content
-                .filter((c) => c.type === 'text')
-                .map((c) => c.text)
-                .join('\n')
-            : ''
+      // 构建包含文本和图片的parts数组，参考formatGeminiMessages的逻辑
+      const parts: Part[] = []
+
+      if (typeof userMessage.content === 'string') {
+        // 处理纯文本消息
+        if (userMessage.content.trim() !== '') {
+          parts.push({ text: userMessage.content })
+        }
+      } else if (Array.isArray(userMessage.content)) {
+        // 处理多模态消息（带图片等）
+        for (const part of userMessage.content) {
+          if (part.type === 'text') {
+            // 只添加非空文本
+            if (part.text && part.text.trim() !== '') {
+              parts.push({ text: part.text })
+            }
+          } else if (part.type === 'image_url' && part.image_url) {
+            // 处理图片（假设是 base64 格式）
+            const matches = part.image_url.url.match(/^data:([^;]+);base64,(.+)$/)
+            if (matches && matches.length === 3) {
+              const mimeType = matches[1]
+              const base64Data = matches[2]
+              parts.push({
+                inlineData: {
+                  data: base64Data,
+                  mimeType: mimeType
+                }
+              })
+            }
+          }
+        }
+      }
+
+      // 如果没有有效的parts，抛出错误
+      if (parts.length === 0) {
+        throw new Error('No valid content found for image generation')
+      }
 
       // 发送生成请求
       const result = await this.genAI.models.generateContentStream({
         model: modelId,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts }],
         config: this.getGenerationConfig(temperature, maxTokens, modelId, false) // 图像生成不需要reasoning
       })
 
