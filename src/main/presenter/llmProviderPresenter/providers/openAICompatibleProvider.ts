@@ -91,30 +91,123 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       fetchOptions.dispatcher = proxyAgent
     }
 
-    if (this.provider.id === 'azure-openai') {
+    // Check if this is official OpenAI or Azure OpenAI
+    const isOfficialOpenAI = this.isOfficialOpenAIService()
+    const isAzureOpenAI = this.provider.id === 'azure-openai'
+
+    // Only use custom fetch for third-party services to avoid triggering 403
+    // Keep original behavior for official OpenAI and Azure OpenAI for best compatibility
+    const shouldUseCleanFetch = !isOfficialOpenAI && !isAzureOpenAI
+    const customFetch = shouldUseCleanFetch ? this.createCleanFetch() : undefined
+
+    if (isAzureOpenAI) {
       try {
         const apiVersion = this.configPresenter.getSetting<string>('azureApiVersion')
-        this.openai = new AzureOpenAI({
+        const azureConfig: any = {
           apiKey: this.provider.apiKey,
           baseURL: this.provider.baseUrl,
           apiVersion: apiVersion || '2024-02-01',
           defaultHeaders: {
             ...this.defaultHeaders
-          },
-          fetchOptions
-        })
+          }
+        }
+
+        // Use fetchOptions for proxy (original behavior for Azure)
+        if (fetchOptions.dispatcher) {
+          azureConfig.fetchOptions = fetchOptions
+        }
+
+        this.openai = new AzureOpenAI(azureConfig)
       } catch (e) {
         console.warn('create azure openai failed', e)
       }
     } else {
-      this.openai = new OpenAI({
+      const openaiConfig: any = {
         apiKey: this.provider.apiKey,
         baseURL: this.provider.baseUrl,
         defaultHeaders: {
           ...this.defaultHeaders
-        },
-        fetchOptions
-      })
+        }
+      }
+
+      if (customFetch) {
+        // Third-party service: use custom fetch to avoid 403
+        openaiConfig.fetch = customFetch
+        // Also apply proxy via fetchOptions for third-party services
+        if (fetchOptions.dispatcher) {
+          openaiConfig.fetchOptions = fetchOptions
+        }
+        console.log(
+          `[OpenAI Compatible Provider] Using custom fetch for third-party service: ${this.provider.baseUrl}`
+        )
+      } else {
+        // Official OpenAI: use original behavior with fetchOptions
+        if (fetchOptions.dispatcher) {
+          openaiConfig.fetchOptions = fetchOptions
+        }
+        console.log(`[OpenAI Compatible Provider] Using original fetch for official OpenAI`)
+      }
+
+      this.openai = new OpenAI(openaiConfig)
+    }
+  }
+
+  /**
+   * Check if this is the official OpenAI service by provider ID
+   */
+  private isOfficialOpenAIService(): boolean {
+    return this.provider.id === 'openai'
+  }
+
+  /**
+   * Creates a custom fetch function that removes OpenAI SDK headers that may trigger 403
+   * This ensures all OpenAI SDK requests (including streaming) use clean headers
+   */
+  private createCleanFetch() {
+    return async (url: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+      // Create a copy of init to avoid modifying the original
+      const cleanInit = { ...init }
+
+      if (cleanInit.headers) {
+        // Convert headers to a plain object for easier manipulation
+        const headers = new Headers(cleanInit.headers)
+        const cleanHeaders: Record<string, string> = {}
+
+        // Only keep essential headers, remove SDK-specific ones that trigger 403
+        const allowedHeaders = [
+          'authorization',
+          'content-type',
+          'accept',
+          'http-referer',
+          'x-title'
+        ]
+
+        headers.forEach((value, key) => {
+          const lowerKey = key.toLowerCase()
+          // Keep only allowed headers and avoid X-Stainless-* headers
+          if (
+            allowedHeaders.includes(lowerKey) ||
+            (!lowerKey.startsWith('x-stainless-') &&
+              !lowerKey.includes('user-agent') &&
+              !lowerKey.includes('openai-'))
+          ) {
+            cleanHeaders[key] = value
+          }
+        })
+
+        // Ensure we have Authorization header
+        if (!cleanHeaders['Authorization'] && !cleanHeaders['authorization']) {
+          cleanHeaders['Authorization'] = `Bearer ${this.provider.apiKey}`
+        }
+
+        // Add our default headers
+        Object.assign(cleanHeaders, this.defaultHeaders)
+
+        cleanInit.headers = cleanHeaders
+      }
+
+      // Use regular fetch - proxy is already handled by OpenAI SDK's fetchOptions
+      return fetch(url, cleanInit)
     }
   }
 
@@ -133,6 +226,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
   }
 
   protected async fetchOpenAIModels(options?: { timeout: number }): Promise<MODEL_META[]> {
+    // Now using the clean fetch function via OpenAI SDK
     const response = await this.openai.models.list(options)
     return response.data.map((model) => ({
       id: model.id,
