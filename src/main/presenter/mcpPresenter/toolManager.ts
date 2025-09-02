@@ -154,7 +154,7 @@ export class ToolManager {
           const namePattern = /^[a-zA-Z0-9_-]+$/
           if (!namePattern.test(finalName)) {
             console.error(
-              `Generated tool name '${finalName}' is invalid. Skipping tool '${originalName}' from server '${client.serverName}'.`
+              `Generated tool name '${finalName}' is invalid. Skipping tool '${originalName}' from server '${client.serverName}'. Please ensure the tool name matches the allowed pattern: /^[a-zA-Z0-9_-]+$/`
             )
             continue // Skip adding this tool
           }
