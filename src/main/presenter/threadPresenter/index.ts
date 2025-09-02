@@ -2114,10 +2114,26 @@ export class ThreadPresenter implements IThreadPresenter {
         ? '\n\n' + ContentEnricher.enrichUserMessageWithUrlContent(userContent, urlResults)
         : ''
 
-    // 计算token数量
+    // 处理系统提示词，添加当前时间信息
+    let finalSystemPrompt = systemPrompt
+    if (!isImageGeneration && systemPrompt && systemPrompt.trim()) {
+      const currentDateTime = new Date().toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+        hour12: false
+      })
+      finalSystemPrompt = `${systemPrompt}\nToday's date and time is ${currentDateTime}`
+    }
+
+    // 计算token数量（使用处理后的系统提示词）
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
     const systemPromptTokens =
-      !isImageGeneration && systemPrompt ? approximateTokenSize(systemPrompt ?? '') : 0
+      !isImageGeneration && finalSystemPrompt ? approximateTokenSize(finalSystemPrompt ?? '') : 0
     const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
     // 图片生成模型不使用MCP工具
     const mcpTools = !isImageGeneration
@@ -2142,7 +2158,7 @@ export class ThreadPresenter implements IThreadPresenter {
     // 格式化消息
     const formattedMessages = this.formatMessagesForCompletion(
       selectedContextMessages,
-      isImageGeneration ? '' : systemPrompt, // 图片生成模型不使用系统提示词
+      isImageGeneration ? '' : finalSystemPrompt, // 图片生成模型不使用系统提示词
       artifacts,
       searchPrompt,
       userContent,
@@ -4155,11 +4171,25 @@ export class ThreadPresenter implements IThreadPresenter {
     const { systemPrompt } = conversation.settings
     const formattedMessages: ChatMessage[] = []
 
-    // 1. 添加系统提示
+    // 1. 添加系统提示（包含当前时间信息）
     if (systemPrompt) {
+      let finalSystemPrompt = systemPrompt
+      if (systemPrompt.trim()) {
+        const currentDateTime = new Date().toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          timeZoneName: 'short',
+          hour12: false
+        })
+        finalSystemPrompt = `${systemPrompt}\nToday's date and time is ${currentDateTime}`
+      }
       formattedMessages.push({
         role: 'system',
-        content: systemPrompt
+        content: finalSystemPrompt
       })
     }
 
