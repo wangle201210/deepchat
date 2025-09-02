@@ -2115,20 +2115,7 @@ export class ThreadPresenter implements IThreadPresenter {
         : ''
 
     // 处理系统提示词，添加当前时间信息
-    let finalSystemPrompt = systemPrompt
-    if (!isImageGeneration && systemPrompt && systemPrompt.trim()) {
-      const currentDateTime = new Date().toLocaleString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZoneName: 'short',
-        hour12: false
-      })
-      finalSystemPrompt = `${systemPrompt}\nToday's date and time is ${currentDateTime}`
-    }
+    const finalSystemPrompt = this.enhanceSystemPromptWithDateTime(systemPrompt, isImageGeneration)
 
     // 计算token数量（使用处理后的系统提示词）
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
@@ -4173,20 +4160,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
     // 1. 添加系统提示（包含当前时间信息）
     if (systemPrompt) {
-      let finalSystemPrompt = systemPrompt
-      if (systemPrompt.trim()) {
-        const currentDateTime = new Date().toLocaleString('en-US', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-          timeZoneName: 'short',
-          hour12: false
-        })
-        finalSystemPrompt = `${systemPrompt}\nToday's date and time is ${currentDateTime}`
-      }
+      const finalSystemPrompt = this.enhanceSystemPromptWithDateTime(systemPrompt)
       formattedMessages.push({
         role: 'system',
         content: finalSystemPrompt
@@ -4250,6 +4224,36 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     return formattedMessages
+  }
+
+  /**
+   * 为系统提示词添加当前时间信息
+   * @param systemPrompt 原始系统提示词
+   * @param isImageGeneration 是否为图片生成模型
+   * @returns 处理后的系统提示词
+   */
+  private enhanceSystemPromptWithDateTime(
+    systemPrompt: string,
+    isImageGeneration: boolean = false
+  ): string {
+    // 如果是图片生成模型或者系统提示词为空，则直接返回原值
+    if (isImageGeneration || !systemPrompt || !systemPrompt.trim()) {
+      return systemPrompt
+    }
+
+    // 生成当前时间字符串，包含完整的时区信息
+    const currentDateTime = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short',
+      hour12: false
+    })
+
+    return `${systemPrompt}\nToday's date and time is ${currentDateTime}`
   }
 
   /**
