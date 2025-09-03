@@ -59,6 +59,7 @@ interface IAppSettings {
   floatingButtonEnabled?: boolean // 悬浮按钮是否启用
   default_system_prompt?: string // 默认系统提示词
   webContentLengthLimit?: number // 网页内容截断长度限制，默认3000字符
+  updateChannel?: string // 更新渠道：'stable' | 'canary'
   [key: string]: unknown // 允许任意键，使用unknown类型替代any
 }
 
@@ -122,6 +123,7 @@ export class ConfigPresenter implements IConfigPresenter {
         floatingButtonEnabled: false,
         default_system_prompt: '',
         webContentLengthLimit: 3000,
+        updateChannel: 'stable', // 默认使用正式版
         appVersion: this.currentAppVersion
       }
     })
@@ -1190,6 +1192,16 @@ export class ConfigPresenter implements IConfigPresenter {
   // 清空系统提示词
   async clearSystemPrompt(): Promise<void> {
     this.setSetting('default_system_prompt', '')
+  }
+
+  // 获取更新渠道
+  getUpdateChannel(): string {
+    return this.getSetting<string>('updateChannel') || 'stable'
+  }
+
+  // 设置更新渠道
+  setUpdateChannel(channel: string): void {
+    this.setSetting('updateChannel', channel)
   }
 
   // 获取默认快捷键
