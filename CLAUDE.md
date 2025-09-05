@@ -10,7 +10,7 @@ DeepChat is a feature-rich open-source AI chat platform built with Electron + Vu
 
 ### Package Management
 
-Use `pnpm` as the package manager (required Node.js >= 20.12.2, pnpm >= 10.11.0):
+Use `pnpm` as the package manager (required Node.js >= 20.19.0, pnpm >= 10.11.0):
 
 ```bash
 # Install dependencies
@@ -18,6 +18,9 @@ pnpm install
 
 # Install runtime dependencies for MCP and Python execution
 pnpm run installRuntime
+
+# Note: If you encounter "No module named 'distutils'" error on Windows:
+pip install setuptools
 ```
 
 ### Development
@@ -179,11 +182,12 @@ The LLM system follows a two-layer architecture:
 
 ### Code Standards
 
-- **Language**: Use English for logs and comments
+- **Language**: Use English for logs and comments (Chinese text exists in legacy code)
 - **TypeScript**: Strict type checking enabled
 - **Vue 3**: Use Composition API for all components
 - **State Management**: Pinia for frontend state
 - **Styling**: Tailwind CSS with scoped styles
+- **Internationalization**: All user-facing strings must use i18n keys via vue-i18n
 
 ### IPC Communication
 
@@ -332,6 +336,8 @@ This ensures UI changes are clearly communicated and approved before implementat
 - AppImage and deb package support
 - Sandbox considerations for development
 
-## Git Commit
+## Git Commit Guidelines
 
-- Do not include author information other than human authors in the Commit, such as Co-Authored-By related information
+- Do not include AI co-authoring information (e.g., "Co-Authored-By: Claude") in commits
+- Follow conventional commit format where applicable
+- Keep commit messages concise and descriptive
