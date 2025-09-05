@@ -129,6 +129,9 @@ export interface ModelConfig {
   // Whether this config is user-defined (true) or default config (false)
   isUserDefined?: boolean
   thinkingBudget?: number
+  enableSearch?: boolean
+  forcedSearch?: boolean
+  searchStrategy?: 'turbo' | 'max'
   // GPT-5 系列新参数
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
   verbosity?: 'low' | 'medium' | 'high'
@@ -1301,6 +1304,9 @@ export interface DefaultModelSetting {
   reasoning?: boolean
   type?: ModelType
   thinkingBudget?: number
+  enableSearch?: boolean
+  forcedSearch?: boolean
+  searchStrategy?: 'turbo' | 'max'
   // GPT-5 系列新参数
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
   verbosity?: 'low' | 'medium' | 'high'
