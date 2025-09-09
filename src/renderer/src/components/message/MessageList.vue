@@ -427,7 +427,38 @@ defineExpose({
   isolation: isolate;
 }
 
+/* 定义发光呼吸动画 */
+@keyframes glow-breathe {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
 .scroll-to-bottom-loading-container::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #9b59b6, #84cdfa, #5ad1cd);
+  animation: glow-breathe 2s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+  filter: blur(6px);
+}
+
+.scroll-to-bottom-loading-container::after {
   content: '';
   position: absolute;
   top: -3px;
@@ -436,28 +467,14 @@ defineExpose({
   bottom: -3px;
   border-radius: 0.5rem;
   background: linear-gradient(135deg, #9b59b6, #84cdfa, #5ad1cd);
-  animation: rotate-glow 1.2s linear infinite;
-  pointer-events: none;
-  z-index: 1;
-  filter: blur(8px);
-}
-
-.scroll-to-bottom-loading-container::after {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: -5px;
-  right: -5px;
-  bottom: -5px;
-  border-radius: 0.5rem;
-  background: linear-gradient(135deg, #9b59b6, #84cdfa, #5ad1cd);
-  animation: rotate-glow 1.2s linear infinite;
+  animation: glow-breathe 2s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
-  filter: blur(20px);
-  opacity: 0.6;
+  filter: blur(10px);
+  /* opacity: 0.6;  已被 animation 覆盖 */
 }
 
+/* 原始 rotate-glow 动画，不需要可删除 */
 @keyframes rotate-glow {
   from {
     transform: rotate(0deg);

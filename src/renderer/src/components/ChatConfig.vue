@@ -26,6 +26,9 @@ const props = defineProps<{
   maxTokens: number
   artifacts: number
   thinkingBudget?: number
+  enableSearch?: boolean
+  forcedSearch?: boolean
+  searchStrategy?: 'turbo' | 'max'
   modelId?: string
   providerId?: string
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
@@ -55,6 +58,9 @@ const emit = defineEmits<{
   'update:contextLength': [value: number]
   'update:maxTokens': [value: number]
   'update:thinkingBudget': [value: number | undefined]
+  'update:enableSearch': [value: boolean | undefined]
+  'update:forcedSearch': [value: boolean | undefined]
+  'update:searchStrategy': [value: 'turbo' | 'max' | undefined]
   'update:reasoningEffort': [value: 'minimal' | 'low' | 'medium' | 'high']
   'update:verbosity': [value: 'low' | 'medium' | 'high']
   // 'update:artifacts': [value: 0 | 1]
@@ -93,11 +99,42 @@ const formatSize = (size: number): string => {
   return `${size}`
 }
 
-// 是否显示思考预算配置 - 只对 Gemini 2.5 系列显示
+// 是否显示思考预算配置 - 支持 Gemini 2.5 系列和 Qwen3 系列
 const showThinkingBudget = computed(() => {
+  // Gemini 2.5 系列
   const isGemini = props.providerId === 'gemini'
   const isGemini25 = props.modelId?.includes('gemini-2.5')
-  return isGemini && isGemini25
+
+  // Qwen3 系列
+  const isDashscope = props.providerId === 'dashscope'
+  const isQwen3 = props.modelId?.includes('qwen3')
+
+  return (isGemini && isGemini25) || (isDashscope && isQwen3)
+})
+
+// 是否显示搜索配置 - 支持 Dashscope 的特定模型
+const showSearchConfig = computed(() => {
+  const isDashscope = props.providerId === 'dashscope'
+
+  if (!isDashscope || !props.modelId) return false
+
+  // 支持搜索的模型列表
+  const enableSearchModels = [
+    'qwen-max',
+    'qwen-plus',
+    'qwen-plus-latest',
+    'qwen-plus-2025-07-14',
+    'qwen-flash',
+    'qwen-flash-2025-07-28',
+    'qwen-turbo',
+    'qwen-turbo-latest',
+    'qwen-turbo-2025-07-15',
+    'qwq-plus'
+  ]
+
+  return enableSearchModels.some((modelName) =>
+    props.modelId?.toLowerCase().includes(modelName.toLowerCase())
+  )
 })
 
 const isGPT5Model = computed(() => {
@@ -134,6 +171,136 @@ const handleDynamicThinkingToggle = (enabled: boolean) => {
     emit('update:thinkingBudget', 1024)
   }
 }
+
+// 获取 Qwen3 模型的最大思考预算
+const getQwen3MaxBudget = (): number => {
+  const modelId = props.modelId?.toLowerCase() || ''
+
+  // 根据不同的 Qwen3 模型返回不同的最大值
+  if (modelId.includes('qwen3-235b-a22b') || modelId.includes('qwen3-30b-a3b')) {
+    return 81920
+  } else if (
+    modelId.includes('qwen3-32b') ||
+    modelId.includes('qwen3-14b') ||
+    modelId.includes('qwen3-8b') ||
+    modelId.includes('qwen3-4b')
+  ) {
+    return 38912
+  } else if (modelId.includes('qwen3-1.7b') || modelId.includes('qwen3-0.6b')) {
+    return 20000
+  }
+
+  // 默认值
+  return 81920
+}
+
+// 获取 Gemini 模型的思考预算配置范围
+const getGeminiThinkingBudgetRange = () => {
+  const modelId = props.modelId?.toLowerCase() || ''
+
+  if (modelId.includes('gemini-2.5-pro')) {
+    return {
+      min: 128,
+      max: 32768,
+      defaultValue: -1,
+      canDisable: false
+    }
+  } else if (modelId.includes('gemini-2.5-flash-lite')) {
+    return {
+      min: 0,
+      max: 24576,
+      defaultValue: 0,
+      canDisable: true
+    }
+  } else if (modelId.includes('gemini-2.5-flash')) {
+    return {
+      min: 0,
+      max: 24576,
+      defaultValue: -1,
+      canDisable: true
+    }
+  }
+
+  // 默认配置
+  return {
+    min: 128,
+    max: 32768,
+    defaultValue: -1,
+    canDisable: false
+  }
+}
+
+// Gemini 思考预算验证错误
+const geminiThinkingBudgetError = computed(() => {
+  if (props.providerId !== 'gemini' || !props.modelId?.includes('gemini-2.5')) return ''
+
+  const value = props.thinkingBudget
+  const range = getGeminiThinkingBudgetRange()
+
+  if (value === undefined || value === null) return ''
+
+  // -1 是有效值（动态思维）
+  if (value === -1) return ''
+
+  // 检查是否可以禁用（设置为 0）
+  if (value === 0 && !range.canDisable) {
+    if (props.modelId?.includes('pro')) {
+      return t('settings.model.modelConfig.thinkingBudget.gemini.warnings.proCannotDisable')
+    } else {
+      return t('settings.model.modelConfig.thinkingBudget.gemini.warnings.modelCannotDisable')
+    }
+  }
+
+  if (value < range.min && value !== 0) {
+    // 对于 Flash-Lite，0 是有效值（停用思考），但其他值不能小于 512
+    if (props.modelId?.includes('flash-lite') && value > 0 && value < 512) {
+      return t('settings.model.modelConfig.thinkingBudget.gemini.warnings.flashLiteMinValue')
+    }
+
+    let hint = ''
+    if (range.canDisable && range.min === 0) {
+      hint = t('settings.model.modelConfig.thinkingBudget.gemini.hints.withZeroAndDynamic')
+    } else if (range.canDisable) {
+      hint = t('settings.model.modelConfig.thinkingBudget.gemini.hints.withDynamic')
+    } else {
+      hint = t('settings.model.modelConfig.thinkingBudget.gemini.hints.withDynamic')
+    }
+    return t('settings.model.modelConfig.thinkingBudget.gemini.warnings.belowMin', {
+      min: range.min,
+      hint
+    })
+  }
+
+  if (value > range.max) {
+    return t('settings.model.modelConfig.thinkingBudget.gemini.warnings.aboveMax', {
+      max: range.max
+    })
+  }
+
+  return ''
+})
+
+// Qwen3 思考预算验证错误
+const qwen3ThinkingBudgetError = computed(() => {
+  if (props.providerId !== 'dashscope' || !props.modelId?.includes('qwen3')) return ''
+
+  const value = props.thinkingBudget
+  const maxBudget = getQwen3MaxBudget()
+
+  if (value === undefined || value === null) {
+    return ''
+  }
+  if (value < 1) {
+    return t('settings.model.modelConfig.thinkingBudget.qwen3.validation.minValue')
+  }
+  if (value > maxBudget) {
+    return t('settings.model.modelConfig.thinkingBudget.qwen3.validation.maxValue', {
+      max: maxBudget
+    })
+  }
+
+  return ''
+})
 </script>
 
 <template>
@@ -263,7 +430,7 @@ const handleDynamicThinkingToggle = (enabled: boolean) => {
         />
       </div>
 
-      <!-- Thinking Budget (仅对支持的 Gemini 模型显示) -->
+      <!-- Thinking Budget (支持 Gemini 2.5 系列和 Qwen3 系列) -->
       <div v-if="showThinkingBudget" class="space-y-4 px-2">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
@@ -277,19 +444,24 @@ const handleDynamicThinkingToggle = (enabled: boolean) => {
                   <Icon icon="lucide:help-circle" class="w-4 h-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{{ t('settings.model.modelConfig.thinkingBudget.description') }}</p>
+                  <p v-if="props.providerId === 'gemini'">
+                    {{ t('settings.model.modelConfig.thinkingBudget.gemini.description') }}
+                  </p>
+                  <p v-else-if="props.providerId === 'dashscope'">
+                    {{ t('settings.model.modelConfig.thinkingBudget.qwen3.description') }}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
         </div>
 
-        <!-- 思考预算详细配置 -->
-        <div class="space-y-3 pl-4 border-l-2 border-muted">
+        <!-- Gemini 思考预算详细配置 -->
+        <div v-if="props.providerId === 'gemini'" class="space-y-3 pl-4 border-l-2 border-muted">
           <div class="flex items-center justify-between">
             <div class="space-y-0.5">
               <Label class="text-sm">{{
-                t('settings.model.modelConfig.thinkingBudget.dynamic')
+                t('settings.model.modelConfig.thinkingBudget.gemini.dynamic')
               }}</Label>
             </div>
             <Switch
@@ -301,7 +473,7 @@ const handleDynamicThinkingToggle = (enabled: boolean) => {
           <!-- 数值输入 -->
           <div class="space-y-2">
             <Label class="text-sm">{{
-              t('settings.model.modelConfig.thinkingBudget.valueLabel')
+              t('settings.model.modelConfig.thinkingBudget.gemini.valueLabel')
             }}</Label>
             <Input
               v-model.number="displayThinkingBudget"
@@ -309,21 +481,135 @@ const handleDynamicThinkingToggle = (enabled: boolean) => {
               :min="-1"
               :max="32768"
               :step="128"
-              :placeholder="
-                displayThinkingBudget === undefined
-                  ? t('settings.model.modelConfig.useModelDefault')
-                  : t('settings.model.modelConfig.thinkingBudget.placeholder')
-              "
+              :placeholder="t('settings.model.modelConfig.thinkingBudget.gemini.placeholder')"
               :disabled="(props.thinkingBudget ?? -1) === -1"
+              :class="{ 'border-destructive': geminiThinkingBudgetError }"
             />
             <p class="text-xs text-muted-foreground">
-              {{
-                displayThinkingBudget === undefined
-                  ? t('settings.model.modelConfig.currentUsingModelDefault')
-                  : t('settings.model.modelConfig.thinkingBudget.dynamicPrefix') +
-                    '，' +
-                    t('settings.model.modelConfig.thinkingBudget.range', { min: -1, max: 32768 })
-              }}
+              <span v-if="geminiThinkingBudgetError" class="text-red-600 font-medium">
+                {{ geminiThinkingBudgetError }}
+              </span>
+              <span v-else>
+                {{
+                  displayThinkingBudget === undefined
+                    ? t('settings.model.modelConfig.currentUsingModelDefault')
+                    : t('settings.model.modelConfig.thinkingBudget.gemini.dynamicPrefix') +
+                      '，' +
+                      t('settings.model.modelConfig.thinkingBudget.range', { min: -1, max: 32768 })
+                }}
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Qwen3 思考预算配置 -->
+        <div
+          v-else-if="props.providerId === 'dashscope'"
+          class="space-y-3 pl-4 border-l-2 border-muted"
+        >
+          <div class="space-y-2">
+            <Label class="text-sm">{{
+              t('settings.model.modelConfig.thinkingBudget.qwen3.valueLabel')
+            }}</Label>
+            <Input
+              v-model.number="displayThinkingBudget"
+              type="number"
+              :min="1"
+              :max="getQwen3MaxBudget()"
+              :step="128"
+              :placeholder="t('settings.model.modelConfig.thinkingBudget.qwen3.placeholder')"
+              :class="{ 'border-destructive': qwen3ThinkingBudgetError }"
+            />
+            <p class="text-xs text-muted-foreground">
+              <span v-if="qwen3ThinkingBudgetError" class="text-red-600 font-medium">
+                {{ qwen3ThinkingBudgetError }}
+              </span>
+              <span v-else>
+                {{
+                  displayThinkingBudget === undefined
+                    ? t('settings.model.modelConfig.currentUsingModelDefault')
+                    : t('settings.model.modelConfig.thinkingBudget.range', {
+                        min: 1,
+                        max: getQwen3MaxBudget()
+                      })
+                }}
+              </span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search Configuration (联网搜索配置) -->
+      <div v-if="showSearchConfig" class="space-y-4 px-2">
+        <div class="flex items-center space-x-2">
+          <Icon icon="lucide:search" class="w-4 h-4 text-muted-foreground" />
+          <Label class="text-xs font-medium">{{
+            t('settings.model.modelConfig.enableSearch.label')
+          }}</Label>
+          <TooltipProvider :delayDuration="200">
+            <Tooltip>
+              <TooltipTrigger>
+                <Icon icon="lucide:help-circle" class="w-4 h-4 text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{{ t('settings.model.modelConfig.enableSearch.description') }}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div class="space-y-3 pl-4 border-l-2 border-muted">
+          <!-- 启用搜索开关 -->
+          <div class="flex items-center justify-between">
+            <div class="space-y-0.5">
+              <Label class="text-sm">{{
+                t('settings.model.modelConfig.enableSearch.label')
+              }}</Label>
+            </div>
+            <Switch
+              :checked="props.enableSearch ?? false"
+              @update:checked="(value) => emit('update:enableSearch', value)"
+            />
+          </div>
+
+          <!-- 强制搜索开关 -->
+          <div v-if="props.enableSearch" class="flex items-center justify-between">
+            <div class="space-y-0.5">
+              <Label class="text-sm">{{
+                t('settings.model.modelConfig.forcedSearch.label')
+              }}</Label>
+            </div>
+            <Switch
+              :checked="props.forcedSearch ?? false"
+              @update:checked="(value) => emit('update:forcedSearch', value)"
+            />
+          </div>
+
+          <!-- 搜索策略选择 -->
+          <div v-if="props.enableSearch" class="space-y-2">
+            <Label class="text-sm">{{
+              t('settings.model.modelConfig.searchStrategy.label')
+            }}</Label>
+            <Select
+              :model-value="props.searchStrategy ?? 'turbo'"
+              @update:model-value="
+                (value) => emit('update:searchStrategy', value as 'turbo' | 'max')
+              "
+            >
+              <SelectTrigger class="text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="turbo">{{
+                  t('settings.model.modelConfig.searchStrategy.options.turbo')
+                }}</SelectItem>
+                <SelectItem value="max">{{
+                  t('settings.model.modelConfig.searchStrategy.options.max')
+                }}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p class="text-xs text-muted-foreground">
+              {{ t('settings.model.modelConfig.searchStrategy.description') }}
             </p>
           </div>
         </div>
@@ -360,18 +646,30 @@ const handleDynamicThinkingToggle = (enabled: boolean) => {
             />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="minimal">{{
-              t('settings.model.modelConfig.reasoningEffort.options.minimal')
-            }}</SelectItem>
-            <SelectItem value="low">{{
-              t('settings.model.modelConfig.reasoningEffort.options.low')
-            }}</SelectItem>
-            <SelectItem value="medium">{{
-              t('settings.model.modelConfig.reasoningEffort.options.medium')
-            }}</SelectItem>
-            <SelectItem value="high">{{
-              t('settings.model.modelConfig.reasoningEffort.options.high')
-            }}</SelectItem>
+            <!-- Grok models only support low and high -->
+            <template v-if="props.providerId === 'grok'">
+              <SelectItem value="low">{{
+                t('settings.model.modelConfig.reasoningEffort.options.low')
+              }}</SelectItem>
+              <SelectItem value="high">{{
+                t('settings.model.modelConfig.reasoningEffort.options.high')
+              }}</SelectItem>
+            </template>
+            <!-- Other models support all four options -->
+            <template v-else>
+              <SelectItem value="minimal">{{
+                t('settings.model.modelConfig.reasoningEffort.options.minimal')
+              }}</SelectItem>
+              <SelectItem value="low">{{
+                t('settings.model.modelConfig.reasoningEffort.options.low')
+              }}</SelectItem>
+              <SelectItem value="medium">{{
+                t('settings.model.modelConfig.reasoningEffort.options.medium')
+              }}</SelectItem>
+              <SelectItem value="high">{{
+                t('settings.model.modelConfig.reasoningEffort.options.high')
+              }}</SelectItem>
+            </template>
           </SelectContent>
         </Select>
       </div>

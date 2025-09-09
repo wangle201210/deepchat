@@ -172,7 +172,10 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 检查是否有未处理的权限请求
       const hasPendingPermissions = state.message.content.some(
-        (block) => block.type === 'tool_call_permission' && block.status === 'pending'
+        (block) =>
+          block.type === 'action' &&
+          block.action_type === 'tool_call_permission' &&
+          block.status === 'pending'
       )
 
       if (hasPendingPermissions) {
@@ -182,7 +185,10 @@ export class ThreadPresenter implements IThreadPresenter {
         // 保持消息在generating状态，等待权限响应
         // 但是要更新非权限块为success状态
         state.message.content.forEach((block) => {
-          if (block.type !== 'tool_call_permission' && block.status === 'loading') {
+          if (
+            !(block.type === 'action' && block.action_type === 'tool_call_permission') &&
+            block.status === 'loading'
+          ) {
             block.status = 'success'
           }
         })
@@ -221,7 +227,7 @@ export class ThreadPresenter implements IThreadPresenter {
   ): Promise<void> {
     // 将所有块设为success状态，但保留权限块的状态
     state.message.content.forEach((block) => {
-      if (block.type === 'tool_call_permission') {
+      if (block.type === 'action' && block.action_type === 'tool_call_permission') {
         // 权限块保持其当前状态（granted/denied/error）
         return
       }
@@ -549,7 +555,11 @@ export class ThreadPresenter implements IThreadPresenter {
         : undefined
 
     if (lastBlock) {
-      if (lastBlock.type === 'tool_call_permission' && lastBlock.status === 'pending') {
+      if (
+        lastBlock.type === 'action' &&
+        lastBlock.action_type === 'tool_call_permission' &&
+        lastBlock.status === 'pending'
+      ) {
         lastBlock.status = 'granted'
         return
       }
@@ -592,7 +602,11 @@ export class ThreadPresenter implements IThreadPresenter {
             ? state.message.content[state.message.content.length - 1]
             : undefined
         if (lastBlock) {
-          if (lastBlock.type === 'tool_call_permission' && lastBlock.status === 'pending') {
+          if (
+            lastBlock.type === 'action' &&
+            lastBlock.action_type === 'tool_call_permission' &&
+            lastBlock.status === 'pending'
+          ) {
             lastBlock.status = 'granted'
             return
           }
@@ -807,7 +821,8 @@ export class ThreadPresenter implements IThreadPresenter {
           const { permission_request } = msg
 
           state.message.content.push({
-            type: 'tool_call_permission',
+            type: 'action',
+            action_type: 'tool_call_permission',
             content:
               typeof tool_call_response === 'string'
                 ? tool_call_response
@@ -1002,6 +1017,10 @@ export class ThreadPresenter implements IThreadPresenter {
     if (latestConversation?.settings) {
       defaultSettings = { ...latestConversation.settings }
       defaultSettings.systemPrompt = ''
+      defaultSettings.reasoningEffort = undefined
+      defaultSettings.enableSearch = undefined
+      defaultSettings.forcedSearch = undefined
+      defaultSettings.searchStrategy = undefined
     }
     Object.keys(settings).forEach((key) => {
       if (settings[key] === undefined || settings[key] === null || settings[key] === '') {
@@ -1762,7 +1781,10 @@ export class ThreadPresenter implements IThreadPresenter {
         enabledMcpTools: currentEnabledMcpTools,
         thinkingBudget: currentThinkingBudget,
         reasoningEffort: currentReasoningEffort,
-        verbosity: currentVerbosity
+        verbosity: currentVerbosity,
+        enableSearch: currentEnableSearch,
+        forcedSearch: currentForcedSearch,
+        searchStrategy: currentSearchStrategy
       } = currentConversation.settings
       const stream = this.llmProviderPresenter.startStreamCompletion(
         currentProviderId, // 使用最新的设置
@@ -1774,7 +1796,10 @@ export class ThreadPresenter implements IThreadPresenter {
         currentEnabledMcpTools,
         currentThinkingBudget,
         currentReasoningEffort,
-        currentVerbosity
+        currentVerbosity,
+        currentEnableSearch,
+        currentForcedSearch,
+        currentSearchStrategy
       )
       for await (const event of stream) {
         const msg = event.data
@@ -1880,7 +1905,10 @@ export class ThreadPresenter implements IThreadPresenter {
         enabledMcpTools,
         thinkingBudget,
         reasoningEffort,
-        verbosity
+        verbosity,
+        enableSearch,
+        forcedSearch,
+        searchStrategy
       } = conversation.settings
       const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
 
@@ -1952,7 +1980,10 @@ export class ThreadPresenter implements IThreadPresenter {
         enabledMcpTools,
         thinkingBudget,
         reasoningEffort,
-        verbosity
+        verbosity,
+        enableSearch,
+        forcedSearch,
+        searchStrategy
       )
       for await (const event of stream) {
         const msg = event.data
@@ -2114,10 +2145,13 @@ export class ThreadPresenter implements IThreadPresenter {
         ? '\n\n' + ContentEnricher.enrichUserMessageWithUrlContent(userContent, urlResults)
         : ''
 
-    // 计算token数量
+    // 处理系统提示词，添加当前时间信息
+    const finalSystemPrompt = this.enhanceSystemPromptWithDateTime(systemPrompt, isImageGeneration)
+
+    // 计算token数量（使用处理后的系统提示词）
     const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt ?? '') : 0
     const systemPromptTokens =
-      !isImageGeneration && systemPrompt ? approximateTokenSize(systemPrompt ?? '') : 0
+      !isImageGeneration && finalSystemPrompt ? approximateTokenSize(finalSystemPrompt ?? '') : 0
     const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
     // 图片生成模型不使用MCP工具
     const mcpTools = !isImageGeneration
@@ -2142,7 +2176,7 @@ export class ThreadPresenter implements IThreadPresenter {
     // 格式化消息
     const formattedMessages = this.formatMessagesForCompletion(
       selectedContextMessages,
-      isImageGeneration ? '' : systemPrompt, // 图片生成模型不使用系统提示词
+      isImageGeneration ? '' : finalSystemPrompt, // 图片生成模型不使用系统提示词
       artifacts,
       searchPrompt,
       userContent,
@@ -3713,7 +3747,10 @@ export class ThreadPresenter implements IThreadPresenter {
 
       const content = message.content as AssistantMessageBlock[]
       const permissionBlock = content.find(
-        (block) => block.type === 'tool_call_permission' && block.tool_call?.id === toolCallId
+        (block) =>
+          block.type === 'action' &&
+          block.action_type === 'tool_call_permission' &&
+          block.tool_call?.id === toolCallId
       )
 
       if (!permissionBlock) {
@@ -3831,7 +3868,10 @@ export class ThreadPresenter implements IThreadPresenter {
       // 验证权限是否生效 - 获取最新的服务器配置
       const content = message.content as AssistantMessageBlock[]
       const permissionBlock = content.find(
-        (block) => block.type === 'tool_call_permission' && block.status === 'granted'
+        (block) =>
+          block.type === 'action' &&
+          block.action_type === 'tool_call_permission' &&
+          block.status === 'granted'
       )
 
       if (!permissionBlock) {
@@ -3921,7 +3961,7 @@ export class ThreadPresenter implements IThreadPresenter {
 
       // 将所有loading状态的块设为success，但保留权限块的状态
       content.forEach((block) => {
-        if (block.type === 'tool_call_permission') {
+        if (block.type === 'action' && block.action_type === 'tool_call_permission') {
           // 权限块保持其当前状态（granted/denied/error）
           return
         }
@@ -3986,7 +4026,10 @@ export class ThreadPresenter implements IThreadPresenter {
         enabledMcpTools,
         thinkingBudget,
         reasoningEffort,
-        verbosity
+        verbosity,
+        enableSearch,
+        forcedSearch,
+        searchStrategy
       } = conversation.settings
       const modelConfig = this.configPresenter.getModelConfig(modelId, providerId)
 
@@ -4044,7 +4087,10 @@ export class ThreadPresenter implements IThreadPresenter {
         enabledMcpTools,
         thinkingBudget,
         reasoningEffort,
-        verbosity
+        verbosity,
+        enableSearch,
+        forcedSearch,
+        searchStrategy
       )
 
       for await (const event of stream) {
@@ -4125,7 +4171,10 @@ export class ThreadPresenter implements IThreadPresenter {
   ): { id: string; name: string; params: string } | null {
     // 查找已授权的权限块
     const grantedPermissionBlock = content.find(
-      (block) => block.type === 'tool_call_permission' && block.status === 'granted'
+      (block) =>
+        block.type === 'action' &&
+        block.action_type === 'tool_call_permission' &&
+        block.status === 'granted'
     )
 
     if (!grantedPermissionBlock?.tool_call) {
@@ -4155,11 +4204,12 @@ export class ThreadPresenter implements IThreadPresenter {
     const { systemPrompt } = conversation.settings
     const formattedMessages: ChatMessage[] = []
 
-    // 1. 添加系统提示
+    // 1. 添加系统提示（包含当前时间信息）
     if (systemPrompt) {
+      const finalSystemPrompt = this.enhanceSystemPromptWithDateTime(systemPrompt)
       formattedMessages.push({
         role: 'system',
-        content: systemPrompt
+        content: finalSystemPrompt
       })
     }
 
@@ -4220,6 +4270,36 @@ export class ThreadPresenter implements IThreadPresenter {
     }
 
     return formattedMessages
+  }
+
+  /**
+   * 为系统提示词添加当前时间信息
+   * @param systemPrompt 原始系统提示词
+   * @param isImageGeneration 是否为图片生成模型
+   * @returns 处理后的系统提示词
+   */
+  private enhanceSystemPromptWithDateTime(
+    systemPrompt: string,
+    isImageGeneration: boolean = false
+  ): string {
+    // 如果是图片生成模型或者系统提示词为空，则直接返回原值
+    if (isImageGeneration || !systemPrompt || !systemPrompt.trim()) {
+      return systemPrompt
+    }
+
+    // 生成当前时间字符串，包含完整的时区信息
+    const currentDateTime = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      timeZoneName: 'short',
+      hour12: false
+    })
+
+    return `${systemPrompt}\nToday's date and time is ${currentDateTime}`
   }
 
   /**

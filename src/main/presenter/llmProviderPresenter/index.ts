@@ -18,6 +18,7 @@ import { BaseLLMProvider } from './baseProvider'
 import { OpenAIProvider } from './providers/openAIProvider'
 import { DeepseekProvider } from './providers/deepseekProvider'
 import { SiliconcloudProvider } from './providers/siliconcloudProvider'
+import { DashscopeProvider } from './providers/dashscopeProvider'
 import { eventBus, SendTarget } from '@/eventbus'
 import { OpenAICompatibleProvider } from './providers/openAICompatibleProvider'
 import { PPIOProvider } from './providers/ppioProvider'
@@ -46,13 +47,13 @@ import { _302AIProvider } from './providers/_302AIProvider'
 import { ModelscopeProvider } from './providers/modelscopeProvider'
 import { VercelAIGatewayProvider } from './providers/vercelAIGatewayProvider'
 
-// 速率限制配置接口
+// Rate limit configuration interface
 interface RateLimitConfig {
   qpsLimit: number
   enabled: boolean
 }
 
-// 队列项接口
+// Queue item interface
 interface QueueItem {
   id: string
   timestamp: number
@@ -60,7 +61,7 @@ interface QueueItem {
   reject: (error: Error) => void
 }
 
-// 提供商速率限制状态接口
+// Provider rate limit state interface
 interface ProviderRateLimitState {
   config: RateLimitConfig
   queue: QueueItem[]
@@ -68,7 +69,7 @@ interface ProviderRateLimitState {
   isProcessing: boolean
 }
 
-// 流的状态
+// Stream state
 interface StreamState {
   isGenerating: boolean
   providerId: string
@@ -77,7 +78,7 @@ interface StreamState {
   provider: BaseLLMProvider
 }
 
-// 配置项
+// Configuration options
 interface ProviderConfig {
   maxConcurrentStreams: number
 }
@@ -86,15 +87,15 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
   private providers: Map<string, LLM_PROVIDER> = new Map()
   private providerInstances: Map<string, BaseLLMProvider> = new Map()
   private currentProviderId: string | null = null
-  // 通过 eventId 管理所有的 stream
+  // Manage all streams by eventId
   private activeStreams: Map<string, StreamState> = new Map()
-  // 配置
+  // Configuration
   private config: ProviderConfig = {
     maxConcurrentStreams: 10
   }
   private configPresenter: IConfigPresenter
 
-  // 速率限制相关属性
+  // Rate limit related properties
   private providerRateLimitStates: Map<string, ProviderRateLimitState> = new Map()
   private readonly DEFAULT_RATE_LIMIT_CONFIG: RateLimitConfig = {
     qpsLimit: 0.1,
@@ -105,15 +106,15 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     this.configPresenter = configPresenter
     this.initializeProviderRateLimitConfigs()
     this.init()
-    // 监听代理更新事件
+    // Listen for proxy update events
     eventBus.on(CONFIG_EVENTS.PROXY_RESOLVED, () => {
-      // 遍历所有活跃的 provider 实例，调用 onProxyResolved
+      // Iterate through all active provider instances and call onProxyResolved
       for (const provider of this.providerInstances.values()) {
         provider.onProxyResolved()
       }
     })
 
-    // 监听原子操作事件
+    // Listen for atomic operation events
     eventBus.on(CONFIG_EVENTS.PROVIDER_ATOMIC_UPDATE, (change: ProviderChange) => {
       this.handleProviderAtomicUpdate(change)
     })
@@ -158,37 +159,66 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
   private createProviderInstance(provider: LLM_PROVIDER): BaseLLMProvider | undefined {
     try {
-      if (provider.id === '302ai') {
-        return new _302AIProvider(provider, this.configPresenter)
-      }
-      if (provider.id === 'minimax') {
-        return new MinimaxProvider(provider, this.configPresenter)
-      }
-      // 特殊处理 grok
-      if (provider.apiType === 'grok' || provider.id === 'grok') {
-        console.log('match grok')
-        return new GrokProvider(provider, this.configPresenter)
-      }
-      // 特殊处理 openrouter
-      if (provider.id === 'openrouter') {
-        return new OpenRouterProvider(provider, this.configPresenter)
+      switch (provider.id) {
+        case '302ai':
+          return new _302AIProvider(provider, this.configPresenter)
+        case 'minimax':
+          return new MinimaxProvider(provider, this.configPresenter)
+        case 'grok':
+          return new GrokProvider(provider, this.configPresenter)
+        case 'openrouter':
+          return new OpenRouterProvider(provider, this.configPresenter)
+        case 'ppio':
+          return new PPIOProvider(provider, this.configPresenter)
+        case 'tokenflux':
+          return new TokenFluxProvider(provider, this.configPresenter)
+        case 'deepseek':
+          return new DeepseekProvider(provider, this.configPresenter)
+        case 'aihubmix':
+          return new AihubmixProvider(provider, this.configPresenter)
+        case 'modelscope':
+          return new ModelscopeProvider(provider, this.configPresenter)
+        case 'silicon':
+        case 'siliconcloud':
+          return new SiliconcloudProvider(provider, this.configPresenter)
+        case 'dashscope':
+          return new DashscopeProvider(provider, this.configPresenter)
+        case 'gemini':
+          return new GeminiProvider(provider, this.configPresenter)
+        case 'zhipu':
+          return new ZhipuProvider(provider, this.configPresenter)
+        case 'github':
+          return new GithubProvider(provider, this.configPresenter)
+        case 'github-copilot':
+          return new GithubCopilotProvider(provider, this.configPresenter)
+        case 'ollama':
+          return new OllamaProvider(provider, this.configPresenter)
+        case 'anthropic':
+          return new AnthropicProvider(provider, this.configPresenter)
+        case 'doubao':
+          return new DoubaoProvider(provider, this.configPresenter)
+        case 'openai':
+          return new OpenAIProvider(provider, this.configPresenter)
+        case 'openai-responses':
+          return new OpenAIResponsesProvider(provider, this.configPresenter)
+        case 'lmstudio':
+          return new LMStudioProvider(provider, this.configPresenter)
+        case 'together':
+          return new TogetherProvider(provider, this.configPresenter)
+        case 'groq':
+          return new GroqProvider(provider, this.configPresenter)
+        case 'vercel-ai-gateway':
+          return new VercelAIGatewayProvider(provider, this.configPresenter)
+        case 'aws-bedrock':
+          return new AwsBedrockProvider(provider, this.configPresenter)
+        default:
+          console.log(
+            `No specific provider found for id: ${provider.id}, falling back to apiType: ${provider.apiType}`
+          )
+          break
       }
 
-      if (provider.id === 'ppio') {
-        return new PPIOProvider(provider, this.configPresenter)
-      }
-      if (provider.id === 'tokenflux') {
-        return new TokenFluxProvider(provider, this.configPresenter)
-      }
-      if (provider.id === 'deepseek') {
-        return new DeepseekProvider(provider, this.configPresenter)
-      }
-      if (provider.id === 'aihubmix') {
-        return new AihubmixProvider(provider, this.configPresenter)
-      }
-      if (provider.id === 'modelscope') {
-        return new ModelscopeProvider(provider, this.configPresenter)
-      }
+      // Fallback logic: Create provider based on apiType
       switch (provider.apiType) {
         case 'minimax':
           return new OpenAIProvider(provider, this.configPresenter)
@@ -197,6 +227,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
         case 'silicon':
         case 'siliconcloud':
           return new SiliconcloudProvider(provider, this.configPresenter)
+        case 'dashscope':
+          return new DashscopeProvider(provider, this.configPresenter)
         case 'ppio':
           return new PPIOProvider(provider, this.configPresenter)
         case 'gemini':
@@ -225,12 +257,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new TogetherProvider(provider, this.configPresenter)
         case 'groq':
           return new GroqProvider(provider, this.configPresenter)
+        case 'grok':
+          return new GrokProvider(provider, this.configPresenter)
         case 'vercel-ai-gateway':
           return new VercelAIGatewayProvider(provider, this.configPresenter)
         case 'aws-bedrock':
           return new AwsBedrockProvider(provider, this.configPresenter)
         default:
-          console.warn(`Unknown provider type: ${provider.apiType}`)
+          console.warn(`Unknown provider type: ${provider.apiType} for provider id: ${provider.id}`)
           return undefined
       }
     } catch (error) {
@@ -667,14 +701,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     enabledMcpTools?: string[],
     thinkingBudget?: number,
     reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high',
-    verbosity?: 'low' | 'medium' | 'high'
+    verbosity?: 'low' | 'medium' | 'high',
+    enableSearch?: boolean,
+    forcedSearch?: boolean,
+    searchStrategy?: 'turbo' | 'max'
   ): AsyncGenerator<LLMAgentEvent, void, unknown> {
     console.log(`[Agent Loop] Starting agent loop for event: ${eventId} with model: ${modelId}`)
     if (!this.canStartNewStream()) {
       // Instead of throwing, yield an error event
-      yield { type: 'error', data: { eventId, error: '已达到最大并发流数量限制' } }
+      yield { type: 'error', data: { eventId, error: 'Maximum concurrent stream limit reached' } }
       return
-      // throw new Error('已达到最大并发流数量限制')
+      // throw new Error('Maximum concurrent stream limit reached')
     }
 
     const provider = this.getProviderInstance(providerId)
@@ -689,6 +726,15 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     }
     if (verbosity !== undefined) {
       modelConfig.verbosity = verbosity
+    }
+    if (enableSearch !== undefined) {
+      modelConfig.enableSearch = enableSearch
+    }
+    if (forcedSearch !== undefined) {
+      modelConfig.forcedSearch = forcedSearch
+    }
+    if (searchStrategy !== undefined) {
+      modelConfig.searchStrategy = searchStrategy
     }
 
     this.activeStreams.set(eventId, {
@@ -928,6 +974,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
 
                 needContinueConversation = false
                 break // Break inner loop on provider error
+              case 'rate_limit':
+                if (chunk.rate_limit) {
+                  yield {
+                    type: 'response',
+                    data: {
+                      eventId,
+                      rate_limit: chunk.rate_limit
+                    }
+                  }
+                }
+                break
               case 'stop':
                 console.log(
                   `Provider stream stopped for event ${eventId}. Reason: ${chunk.stop_reason}`
@@ -1383,7 +1440,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string> {
-    // 记录输入到大模型的消息内容
+    // Record input messages to the large model
     console.log('generateCompletion', providerId, modelId, temperature, maxTokens, messages)
     const provider = this.getProviderInstance(providerId)
     const response = await provider.completions(messages, modelId, temperature, maxTokens)
@@ -1588,11 +1645,11 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       throw new Error('Ollama provider not found')
     }
     return provider.pullModel(modelName, (progress) => {
-      console.log('pullOllamaModels', {
-        eventId: 'pullOllamaModels',
-        modelName: modelName,
-        ...progress
-      })
+      // console.log('pullOllamaModels', {
+      //   eventId: 'pullOllamaModels',
+      //   modelName: modelName,
+      //   ...progress
+      // })
       eventBus.sendToRenderer(OLLAMA_EVENTS.PULL_MODEL_PROGRESS, SendTarget.ALL_WINDOWS, {
         eventId: 'pullOllamaModels',
         modelName: modelName,
@@ -1620,8 +1677,8 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       const provider = this.getProviderInstance(providerId)
       return await provider.getEmbeddings(modelId, texts)
     } catch (error) {
-      console.error(`${modelId} embedding 失败:`, error)
-      throw new Error('当前 LLM 提供商未实现 embedding 能力')
+      console.error(`${modelId} embedding failed:`, error)
+      throw new Error('Current LLM provider does not implement embedding capability')
     }
   }
 
@@ -1639,7 +1696,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       const provider = this.getProviderInstance(providerId)
       return { data: await provider.getDimensions(modelId) }
     } catch (error) {
-      console.error(`获取模型 ${modelId} 的 embedding 维度失败:`, error)
+      console.error(`Failed to get embedding dimensions for model ${modelId}:`, error)
       return {
         data: {
           dimensions: 0,

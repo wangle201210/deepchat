@@ -90,7 +90,8 @@
               @blur="stopEditingLimit"
               @keydown.enter="stopEditingLimit"
               @keydown.escape="stopEditingLimit"
-              class="min-w-16 h-8 text-center text-sm font-semibold"
+              class="min-w-16 h-8 text-center text-sm font-semibold rounded px-2"
+              :class="{ 'bg-accent': isEditingLimit }"
             />
           </div>
           <Button
@@ -402,7 +403,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
 import {
   Dialog,
@@ -446,7 +447,7 @@ const showUrlError = ref(false)
 // 网页内容长度限制
 const webContentLengthLimit = ref(3000)
 const isEditingLimit = ref(false)
-const limitInputRef = ref<HTMLInputElement>()
+const limitInputRef = ref<{ dom: HTMLInputElement }>()
 
 // 新增搜索引擎相关
 const isAddSearchEngineDialogOpen = ref(false)
@@ -591,6 +592,16 @@ watch(customProxyUrl, () => {
     validateProxyUrl()
   }, 300)
 })
+
+watch(
+  () => isEditingLimit.value,
+  async (newValue) => {
+    if (newValue) {
+      await nextTick()
+      limitInputRef.value?.dom?.focus?.()
+    }
+  }
+)
 
 const isDialogOpen = ref(false)
 const modelSelectOpen = ref(false)
@@ -818,3 +829,18 @@ const testSearchEngine = async () => {
   }
 }
 </script>
+
+<style scoped>
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  /* display: none; <- Crashes Chrome on hover */
+  -webkit-appearance: none;
+  margin: 0;
+  /* <-- Apparently some margin are still there even though it's hidden */
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  /* Firefox */
+}
+</style>
