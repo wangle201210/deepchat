@@ -404,6 +404,11 @@ export class UpgradePresenter implements IUpgradePresenter {
         console.log('macOS update: calling quitAndInstall directly')
         // Set flag to prevent lifecycle interception
         this.setUpdatingFlag(true)
+        
+        // Set application quitting state to allow window closing
+        console.log('Setting application quitting flag for update')
+        eventBus.sendToMain('SET_APPLICATION_QUITTING', { isQuitting: true })
+        
         // Delay to ensure message delivery completion
         setTimeout(() => {
           autoUpdater.quitAndInstall(false, true) // silent=false, forceRunAfter=true
@@ -422,6 +427,11 @@ export class UpgradePresenter implements IUpgradePresenter {
     } catch (e) {
       console.error('Failed to quit and install update', e)
       this.setUpdatingFlag(false)
+      
+      // Reset application quitting state on error
+      console.log('Resetting application quitting flag after update error')
+      eventBus.sendToMain('SET_APPLICATION_QUITTING', { isQuitting: false })
+      
       eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: e instanceof Error ? e.message : String(e)
       })
@@ -467,9 +477,11 @@ export class UpgradePresenter implements IUpgradePresenter {
     }
   }
 
-  // Set update flag
+  // Set update flag and broadcast state
   private setUpdatingFlag(updating: boolean): void {
     this._isUpdating = updating
+    // Broadcast update state to lifecycle manager
+    eventBus.sendToMain('UPDATE_STATE_CHANGED', { isUpdating: updating })
   }
 
   // Get update flag

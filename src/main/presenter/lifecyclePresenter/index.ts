@@ -33,6 +33,7 @@ export class LifecycleManager implements ILifecycleManager {
   private hookIdCounter = 0
   private splashManager: ISplashWindowManager
   private lifecycleContext: LifecycleContext
+  private isUpdateInProgress = false
 
   constructor() {
     this.state = {
@@ -63,6 +64,9 @@ export class LifecycleManager implements ILifecycleManager {
 
     // Set up lifecycle event listeners for debugging and monitoring
     this.setupLifecycleEventListeners()
+
+    // Listen for update state changes
+    this.setupUpdateStateListener()
   }
 
   /**
@@ -414,16 +418,11 @@ export class LifecycleManager implements ILifecycleManager {
     app.on('before-quit', async (event) => {
       if (!this.state.isShuttingDown) {
         // Check if update installation is in progress
-        try {
-          const { presenter } = await import('@/presenter')
-          if (presenter?.upgradePresenter?.isUpdatingInProgress?.()) {
-            console.log(
-              'LifecycleManager: Update installation in progress, allowing quit without hooks'
-            )
-            return // Allow normal quit without executing hooks
-          }
-        } catch (error) {
-          console.log('LifecycleManager: Could not check update status:', error)
+        if (this.isUpdateInProgress) {
+          console.log(
+            'LifecycleManager: Update installation in progress, allowing quit without hooks'
+          )
+          return // Allow normal quit without executing hooks
         }
 
         event.preventDefault()
@@ -552,5 +551,15 @@ export class LifecycleManager implements ILifecycleManager {
     console.log('Force shutdown requested')
     this.state.isShuttingDown = true
     app.quit() // Main exit: force quit
+  }
+
+  /**
+   * Set up listener for update state changes
+   */
+  private setupUpdateStateListener(): void {
+    eventBus.on('UPDATE_STATE_CHANGED', (data: { isUpdating: boolean }) => {
+      console.log(`LifecycleManager: Update state changed to ${data.isUpdating}`)
+      this.isUpdateInProgress = data.isUpdating
+    })
   }
 }
