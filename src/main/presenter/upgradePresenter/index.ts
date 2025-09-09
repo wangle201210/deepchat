@@ -62,6 +62,7 @@ export class UpgradePresenter implements IUpgradePresenter {
   private _updateMarkerPath: string
   private _previousUpdateFailed: boolean = false // 标记上次更新是否失败
   private _configPresenter: IConfigPresenter // 配置presenter
+  private _isUpdating: boolean = false // Flag to track if update installation is in progress
 
   constructor(configPresenter: IConfigPresenter) {
     this._configPresenter = configPresenter
@@ -397,15 +398,30 @@ export class UpgradePresenter implements IUpgradePresenter {
     try {
       // 发送即将重启的消息
       eventBus.sendToRenderer(UPDATE_EVENTS.WILL_RESTART, SendTarget.ALL_WINDOWS)
-      // 通知需要完全退出应用
-      eventBus.sendToMain(WINDOW_EVENTS.FORCE_QUIT_APP)
-      autoUpdater.quitAndInstall()
-      // 如果30秒还没完成，就强制退出重启
+
+      // Special handling for macOS to avoid lifecycle management conflicts
+      if (process.platform === 'darwin') {
+        console.log('macOS update: calling quitAndInstall directly')
+        // Set flag to prevent lifecycle interception
+        this.setUpdatingFlag(true)
+        // Delay to ensure message delivery completion
+        setTimeout(() => {
+          autoUpdater.quitAndInstall(false, true) // silent=false, forceRunAfter=true
+        }, 500)
+      } else {
+        // Keep original logic for other platforms
+        eventBus.sendToMain(WINDOW_EVENTS.FORCE_QUIT_APP)
+        autoUpdater.quitAndInstall()
+      }
+
+      // Force quit if installation doesn't complete within 30 seconds
       setTimeout(() => {
+        console.log('Update installation timeout, force quit')
         app.quit() // Exit trigger: upgrade
       }, 30000)
     } catch (e) {
-      console.error('退出并安装失败', e)
+      console.error('Failed to quit and install update', e)
+      this.setUpdatingFlag(false)
       eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: e instanceof Error ? e.message : String(e)
       })
@@ -449,5 +465,15 @@ export class UpgradePresenter implements IUpgradePresenter {
         error: e instanceof Error ? e.message : String(e)
       })
     }
+  }
+
+  // Set update flag
+  private setUpdatingFlag(updating: boolean): void {
+    this._isUpdating = updating
+  }
+
+  // Get update flag
+  isUpdatingInProgress(): boolean {
+    return this._isUpdating
   }
 }
