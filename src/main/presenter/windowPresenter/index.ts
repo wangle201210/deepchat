@@ -153,7 +153,7 @@ export class WindowPresenter implements IWindowPresenter {
     })
 
     // 监听更新进程设置应用退出状态的事件
-    eventBus.on('SET_APPLICATION_QUITTING', (data: { isQuitting: boolean }) => {
+    eventBus.on(WINDOW_EVENTS.SET_APPLICATION_QUITTING, (data: { isQuitting: boolean }) => {
       console.log(`WindowPresenter: Setting application quitting state to ${data.isQuitting}`)
       this.setApplicationQuitting(data.isQuitting)
     })

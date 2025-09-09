@@ -4,7 +4,7 @@
 
 import { app } from 'electron'
 import { eventBus, SendTarget } from '@/eventbus'
-import { LIFECYCLE_EVENTS, WINDOW_EVENTS } from '@/events'
+import { LIFECYCLE_EVENTS, WINDOW_EVENTS, UPDATE_EVENTS } from '@/events'
 import { SplashWindowManager } from './SplashWindowManager'
 import {
   HookExecutionResult,
@@ -557,7 +557,7 @@ export class LifecycleManager implements ILifecycleManager {
    * Set up listener for update state changes
    */
   private setupUpdateStateListener(): void {
-    eventBus.on('UPDATE_STATE_CHANGED', (data: { isUpdating: boolean }) => {
+    eventBus.on(UPDATE_EVENTS.STATE_CHANGED, (data: { isUpdating: boolean }) => {
       console.log(`LifecycleManager: Update state changed to ${data.isUpdating}`)
       this.isUpdateInProgress = data.isUpdating
     })

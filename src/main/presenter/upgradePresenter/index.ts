@@ -402,8 +402,8 @@ export class UpgradePresenter implements IUpgradePresenter {
       // Set flags to prevent lifecycle and window management interference
       console.log('Update installation: setting application state for proper quit behavior')
       this.setUpdatingFlag(true)
-      eventBus.sendToMain('SET_APPLICATION_QUITTING', { isQuitting: true })
-      
+      eventBus.sendToMain(WINDOW_EVENTS.SET_APPLICATION_QUITTING, { isQuitting: true })
+
       // Platform-specific quit and install behavior
       if (process.platform === 'darwin') {
         console.log('macOS update: calling quitAndInstall with forceRunAfter=true')
@@ -427,11 +427,11 @@ export class UpgradePresenter implements IUpgradePresenter {
     } catch (e) {
       console.error('Failed to quit and install update', e)
       this.setUpdatingFlag(false)
-      
+
       // Reset application quitting state on error
       console.log('Resetting application quitting flag after update error')
-      eventBus.sendToMain('SET_APPLICATION_QUITTING', { isQuitting: false })
-      
+      eventBus.sendToMain(WINDOW_EVENTS.SET_APPLICATION_QUITTING, { isQuitting: false })
+
       eventBus.sendToRenderer(UPDATE_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
         error: e instanceof Error ? e.message : String(e)
       })
@@ -481,7 +481,7 @@ export class UpgradePresenter implements IUpgradePresenter {
   private setUpdatingFlag(updating: boolean): void {
     this._isUpdating = updating
     // Broadcast update state to lifecycle manager
-    eventBus.sendToMain('UPDATE_STATE_CHANGED', { isUpdating: updating })
+    eventBus.sendToMain(UPDATE_EVENTS.STATE_CHANGED, { isUpdating: updating })
   }
 
   // Get update flag
