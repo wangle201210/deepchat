@@ -392,31 +392,31 @@ export class UpgradePresenter implements IUpgradePresenter {
     }
   }
 
-  // 执行退出并安装
+  // Execute quit and install update for all platforms
   private _doQuitAndInstall(): void {
-    console.log('准备退出并安装更新')
+    console.log('Preparing to quit and install update')
     try {
-      // 发送即将重启的消息
+      // Send restart notification to all windows
       eventBus.sendToRenderer(UPDATE_EVENTS.WILL_RESTART, SendTarget.ALL_WINDOWS)
 
-      // Special handling for macOS to avoid lifecycle management conflicts
+      // Set flags to prevent lifecycle and window management interference
+      console.log('Update installation: setting application state for proper quit behavior')
+      this.setUpdatingFlag(true)
+      eventBus.sendToMain('SET_APPLICATION_QUITTING', { isQuitting: true })
+      
+      // Platform-specific quit and install behavior
       if (process.platform === 'darwin') {
-        console.log('macOS update: calling quitAndInstall directly')
-        // Set flag to prevent lifecycle interception
-        this.setUpdatingFlag(true)
-        
-        // Set application quitting state to allow window closing
-        console.log('Setting application quitting flag for update')
-        eventBus.sendToMain('SET_APPLICATION_QUITTING', { isQuitting: true })
-        
+        console.log('macOS update: calling quitAndInstall with forceRunAfter=true')
         // Delay to ensure message delivery completion
         setTimeout(() => {
           autoUpdater.quitAndInstall(false, true) // silent=false, forceRunAfter=true
         }, 500)
       } else {
-        // Keep original logic for other platforms
-        eventBus.sendToMain(WINDOW_EVENTS.FORCE_QUIT_APP)
-        autoUpdater.quitAndInstall()
+        console.log(`${process.platform} update: calling quitAndInstall`)
+        // For Windows/Linux, still use shorter delay but same approach
+        setTimeout(() => {
+          autoUpdater.quitAndInstall()
+        }, 500)
       }
 
       // Force quit if installation doesn't complete within 30 seconds
