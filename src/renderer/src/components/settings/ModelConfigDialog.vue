@@ -703,15 +703,41 @@ const getThinkingBudgetConfig = (modelId: string) => {
     }
   }
 
-  if (
-    modelId.includes('qwen-plus') ||
-    modelId.includes('qwen-turbo') ||
-    modelId.includes('qwen-flash')
-  ) {
+  // qwen-plus
+  if (modelId.includes('qwen-plus-latest') || modelId.includes('qwen-plus-2025-07-28')) {
     return {
       min: 0,
-      max: 500000,
-      defaultValue: 500000,
+      max: 81920,
+      defaultValue: 81920,
+      canDisable: true
+    }
+  }
+
+  if (modelId.includes('qwen-plus')) {
+    return {
+      min: 0,
+      max: 38912,
+      defaultValue: 38912,
+      canDisable: true
+    }
+  }
+
+  // qwen-flash
+  if (modelId.includes('qwen-flash')) {
+    return {
+      min: 0,
+      max: 81920,
+      defaultValue: 81920,
+      canDisable: true
+    }
+  }
+
+  // qwen-turbo
+  if (modelId.includes('qwen-turbo')) {
+    return {
+      min: 0,
+      max: 38912,
+      defaultValue: 38912,
       canDisable: true
     }
   }
