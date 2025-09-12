@@ -14,6 +14,7 @@ export class DashscopeProvider extends OpenAICompatibleProvider {
   // List of models that support enable_thinking parameter (dual-mode models)
   private static readonly ENABLE_THINKING_MODELS: string[] = [
     // Open source versions
+    'qwen3-next-80b-a3b-thinking',
     'qwen3-235b-a22b',
     'qwen3-32b',
     'qwen3-30b-a3b',

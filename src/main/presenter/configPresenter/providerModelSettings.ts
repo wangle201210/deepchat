@@ -2889,6 +2889,30 @@ export const providerModelSettings: Record<string, { models: ProviderModelSettin
         functionCall: false,
         reasoning: true,
         enableSearch: false
+      },
+      // Qwen3 Next 80B series models
+      {
+        id: 'qwen3-next-80b-a3b-thinking',
+        name: 'Qwen3 Next 80B A3B Thinking',
+        temperature: 0.7,
+        maxTokens: 32768,
+        contextLength: 131072,
+        match: ['qwen3-next-80b-a3b-thinking'],
+        vision: false,
+        functionCall: false,
+        reasoning: true,
+        thinkingBudget: 81920
+      },
+      {
+        id: 'qwen3-next-80b-a3b-instruct',
+        name: 'Qwen3 Next 80B A3B Instruct',
+        temperature: 0.7,
+        maxTokens: 32768,
+        contextLength: 131072,
+        match: ['qwen3-next-80b-a3b-instruct'],
+        vision: false,
+        functionCall: true,
+        reasoning: false
       }
     ]
   },

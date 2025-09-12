@@ -729,6 +729,16 @@ const getThinkingBudgetConfig = (modelId: string) => {
     }
   }
 
+  // qwen3-next-80b-a3b-thinking
+  if (modelId.includes('qwen3-next-80b-a3b-thinking')) {
+    return {
+      min: 0,
+      max: 81920,
+      defaultValue: 81920,
+      canDisable: true
+    }
+  }
+
   // qwen-plus
   if (modelId.includes('qwen-plus-latest') || modelId.includes('qwen-plus-2025-07-28')) {
     return {
@@ -802,6 +812,7 @@ const showQwen3ThinkingBudget = computed(() => {
   // DashScope - ENABLE_THINKING_MODELS
   const supportedThinkingModels = [
     // Open source versions
+    'qwen3-next-80b-a3b-thinking',
     'qwen3-235b-a22b',
     'qwen3-32b',
     'qwen3-30b-a3b',
@@ -812,8 +823,13 @@ const showQwen3ThinkingBudget = computed(() => {
     'qwen3-0.6b',
     // Commercial versions
     'qwen-plus',
+    'qwen-plus-latest',
+    'qwen-plus-2025-04-28',
     'qwen-flash',
-    'qwen-turbo'
+    'qwen-flash-2025-07-28',
+    'qwen-turbo',
+    'qwen-turbo-latest',
+    'qwen-turbo-2025-04-28'
   ]
   const isSupported = supportedThinkingModels.some((supportedModel) =>
     modelId.includes(supportedModel)
