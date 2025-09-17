@@ -1,4 +1,5 @@
-@import 'vue-renderer-markdown/index.css';
+@layer vrm, base;
+@import 'vue-renderer-markdown/index.css' layer(vrm);
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
