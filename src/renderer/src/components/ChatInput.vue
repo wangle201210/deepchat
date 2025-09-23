@@ -481,10 +481,10 @@ const previewFile = (filePath: string) => {
   windowPresenter.previewFile(filePath)
 }
 
-const handlePaste = async (e: ClipboardEvent) => {
-  // Avoid double-processing when we already handled the event in the
-  // capture-phase editor listener.
-  if ((e as any)?._deepchatHandled) return
+const handlePaste = async (e: ClipboardEvent, fromCapture = false) => {
+  // Avoid double-processing only for bubble-phase handler on wrapper.
+  // Allow processing when invoked from the capture-phase editor listener.
+  if (!fromCapture && (e as any)?._deepchatHandled) return
 
   const files = e.clipboardData?.files
   if (files && files.length > 0) {
@@ -1062,7 +1062,7 @@ onMounted(() => {
             // Prevent TipTap from treating files as plain text
             e.preventDefault()
             e.stopPropagation()
-            void handlePaste(e)
+            void handlePaste(e, true)
             return
           }
 
@@ -1078,8 +1078,22 @@ onMounted(() => {
             const from = sel.from
             const to = sel.to
 
-            // Replace current selection (or insert at cursor) with sanitized text
-            editor.commands.insertContentAt({ from, to }, clean, { updateSelection: true })
+            // Convert text with newlines to TipTap inline nodes (preserves blank lines, handles CRLF)
+            const convertTextToNodes = (txt: string): JSONContent[] => {
+              const lines = txt.replace(/\r/g, '').split('\n')
+              const content: JSONContent[] = []
+              for (let i = 0; i < lines.length; i++) {
+                if (i > 0) content.push({ type: 'hardBreak' })
+                const line = lines[i]
+                if (line.length > 0) content.push({ type: 'text', text: line })
+              }
+              return content
+            }
+            editor
+              .chain()
+              .insertContentAt({ from, to }, convertTextToNodes(clean), { updateSelection: true })
+              .scrollIntoView()
+              .run()
             // keep the reactive inputText in sync
             inputText.value = editor.getText()
           }

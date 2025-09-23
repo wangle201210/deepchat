@@ -127,6 +127,8 @@ export interface ResourceListEntry {
   }
 }
 
+export type ModelConfigSource = 'user' | 'provider' | 'system'
+
 export interface ModelConfig {
   maxTokens: number
   contextLength: number
@@ -151,6 +153,7 @@ export interface IModelConfig {
   id: string
   providerId: string
   config: ModelConfig
+  source?: ModelConfigSource
 }
 export interface ProviderModelConfigs {
   [modelId: string]: ModelConfig
@@ -190,6 +193,7 @@ export interface IWindowPresenter {
   sendToAllWindows(channel: string, ...args: unknown[]): void
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean
   sendToDefaultTab(channel: string, switchToTarget?: boolean, ...args: unknown[]): Promise<boolean>
+  openOrFocusSettingsTab(windowId: number): Promise<void>
   closeWindow(windowId: number, forceClose?: boolean): Promise<void>
   isApplicationQuitting(): boolean
   setApplicationQuitting(isQuitting: boolean): void
@@ -308,6 +312,7 @@ export interface ISQLitePresenter {
       tokenCount?: number
     }
   ): Promise<void>
+  updateMessageParentId(messageId: string, parentId: string): Promise<void>
   deleteMessage(messageId: string): Promise<void>
   getMaxOrderSeq(conversationId: string): Promise<number>
   addMessageAttachment(
@@ -450,7 +455,14 @@ export interface IConfigPresenter {
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
   getMcpConfHelper(): any // Used to get MCP configuration helper
   getModelConfig(modelId: string, providerId?: string): ModelConfig
-  setModelConfig(modelId: string, providerId: string, config: ModelConfig): void
+  setModelConfig(
+    modelId: string,
+    providerId: string,
+    config: ModelConfig,
+    options?: {
+      source?: ModelConfigSource
+    }
+  ): void
   resetModelConfig(modelId: string, providerId: string): void
   getAllModelConfigs(): Record<string, IModelConfig>
   getProviderModelConfigs(providerId: string): Array<{ modelId: string; config: ModelConfig }>
@@ -769,6 +781,7 @@ export interface IThreadPresenter {
   ): Promise<{ total: number; list: MESSAGE[] }>
   sendMessage(conversationId: string, content: string, role: MESSAGE_ROLE): Promise<MESSAGE | null>
   startStreamCompletion(conversationId: string, queryMsgId?: string): Promise<void>
+  regenerateFromUserMessage(conversationId: string, userMessageId: string): Promise<MESSAGE>
   editMessage(messageId: string, content: string): Promise<MESSAGE>
   deleteMessage(messageId: string): Promise<void>
   retryMessage(messageId: string, modelId?: string): Promise<MESSAGE>
@@ -967,6 +980,7 @@ export interface IUpgradePresenter {
   startDownloadUpdate(): boolean
   restartToUpdate(): boolean
   restartApp(): void
+  isUpdatingInProgress(): boolean
 }
 // Update status types
 export type UpdateStatus =
