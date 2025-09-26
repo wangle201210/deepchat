@@ -16,8 +16,8 @@ body:
     id: system-details
     attributes:
       label: System details / 系统信息
-      description: CPU, GPU, OS and DeepChat version / CPU、GPU、操作系统与 DeepChat 版本
-      placeholder: e.g. M3 Max, macOS 15.0, DeepChat 0.10.0
+      description: CPU, OS and DeepChat version / CPU、操作系统与 DeepChat 版本
+      placeholder: e.g. M3 Max, macOS 26.0, DeepChat 0.3.7
     validations:
       required: true
 
