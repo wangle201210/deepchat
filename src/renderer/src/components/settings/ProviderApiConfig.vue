@@ -68,7 +68,7 @@
       <div class="flex flex-row gap-2">
         <Button
           variant="outline"
-          size="xs"
+          size="sm"
           class="text-xs text-normal rounded-lg"
           @click="openModelCheckDialog"
         >
@@ -79,7 +79,7 @@
         <Button
           v-if="!provider.custom && provider.id !== 'doubao'"
           variant="outline"
-          size="xs"
+          size="sm"
           class="text-xs text-normal rounded-lg"
           :disabled="isRefreshing"
           @click="refreshModels"
@@ -128,9 +128,9 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Label } from '@shadcn/components/ui/label'
+import { Input } from '@shadcn/components/ui/input'
+import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
 import GitHubCopilotOAuth from './GitHubCopilotOAuth.vue'
 import { usePresenter } from '@/composables/usePresenter'

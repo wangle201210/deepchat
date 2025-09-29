@@ -11,12 +11,12 @@
       <Icon
         v-if="thread.is_pinned === 1"
         icon="lucide:pin"
-        class="mr-1 h-3 w-3 flex-shrink-0 text-yellow-500"
+        class="mr-1 h-3 w-3 shrink-0 text-yellow-500"
       />
       <Icon
         v-if="workingStatus && !isActive"
         :icon="getStatusIcon(workingStatus)"
-        class="mr-1 h-3 w-3 flex-shrink-0"
+        class="mr-1 h-3 w-3 shrink-0"
         :class="{
           'text-blue-500 animate-spin': workingStatus === 'working',
           'text-red-500': workingStatus === 'error',
@@ -93,7 +93,7 @@
 <script setup lang="ts">
 import { useChatStore } from '@/stores/chat'
 import { useI18n } from 'vue-i18n'
-import { Button } from '@/components/ui/button'
+import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
 import type { CONVERSATION } from '@shared/presenter'
 import type { WorkingStatus } from '@/stores/chat'
@@ -106,9 +106,9 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent
-} from '@/components/ui/dropdown-menu'
+} from '@shadcn/components/ui/dropdown-menu'
 import { useLanguageStore } from '@/stores/language'
-import { useToast } from '@/components/ui/toast/use-toast'
+import { useToast } from '@/components/use-toast'
 
 const langStore = useLanguageStore()
 

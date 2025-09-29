@@ -18,9 +18,9 @@
           <Tooltip :delay-duration="200">
             <TooltipTrigger as-child>
               <Switch
-                :checked="isBuiltinMcpEnabled"
+                :model-value="isBuiltinMcpEnabled"
                 :disabled="!mcpStore.mcpEnabled"
-                @update:checked="toggleBuiltinMcpServer"
+                @update:model-value="toggleBuiltinMcpServer"
               />
             </TooltipTrigger>
             <TooltipContent v-if="!mcpStore.mcpEnabled">
@@ -53,9 +53,9 @@
             >
               <div class="absolute top-2 right-2 flex gap-2">
                 <Switch
-                  :checked="config.enabled === true"
+                  :model-value="config.enabled === true"
                   size="sm"
-                  @update:checked="toggleConfigEnabled(index, $event)"
+                  @update:model-value="(value) => toggleConfigEnabled(index, value)"
                 />
                 <button
                   type="button"
@@ -198,7 +198,7 @@
                         }}</span>
                       </div>
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="ghost"
                         class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center"
                       >
@@ -238,7 +238,7 @@
                         </span>
                       </div>
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="ghost"
                         v-if="selectRerankModel"
                         class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center hover:bg-zinc-200"
@@ -247,7 +247,7 @@
                         <Icon icon="lucide:x" class="w-4 h-4 text-muted-foreground" />
                       </Button>
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="ghost"
                         v-else
                         class="text-xs text-muted-foreground rounded-full w-6 h-6 flex items-center justify-center"
@@ -289,7 +289,8 @@
                   </div>
                   <Switch
                     id="edit-builtin-config-auto-detect-switch"
-                    v-model:checked="autoDetectDimensionsSwitch"
+                    :model-value="autoDetectDimensionsSwitch"
+                    @update:model-value="(value) => (autoDetectDimensionsSwitch = value)"
                   ></Switch>
                 </div>
               </div>
@@ -351,8 +352,9 @@
                   </div>
                   <Switch
                     id="edit-builtin-config-auto-detect-switch"
-                    v-model:checked="editingBuiltinConfig.normalized"
+                    :model-value="editingBuiltinConfig.normalized"
                     :disabled="isEditing"
+                    @update:model-value="(value) => (editingBuiltinConfig.normalized = value)"
                   ></Switch>
                 </div>
               </div>
@@ -394,7 +396,7 @@
                         <Popover v-model:open="separatorsPopoverOpen">
                           <PopoverTrigger as-child>
                             <Button
-                              size="xs"
+                              size="sm"
                               variant="ghost"
                               class="whitespace-nowrap"
                               :title="t('settings.knowledgeBase.separatorsPreset')"
@@ -551,9 +553,9 @@
 import { ref, onMounted, toRaw, computed, watch, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
+import { Button } from '@shadcn/components/ui/button'
+import { Switch } from '@shadcn/components/ui/switch'
+import { Collapsible, CollapsibleContent } from '@shadcn/components/ui/collapsible'
 import {
   Dialog,
   DialogContent,
@@ -561,8 +563,8 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription
-} from '@/components/ui/dialog'
-import { Slider } from '@/components/ui/slider'
+} from '@shadcn/components/ui/dialog'
+import { Slider } from '@shadcn/components/ui/slider'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -573,25 +575,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger
-} from '@/components/ui/alert-dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+} from '@shadcn/components/ui/alert-dialog'
+import { Input } from '@shadcn/components/ui/input'
+import { Label } from '@shadcn/components/ui/label'
+import { Popover, PopoverContent, PopoverTrigger } from '@shadcn/components/ui/popover'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@shadcn/components/ui/tooltip'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger
-} from '@/components/ui/accordion'
+} from '@shadcn/components/ui/accordion'
 import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import { useMcpStore } from '@/stores/mcp'
 import { ModelType } from '@shared/model'
 import { useThemeStore } from '@/stores/theme'
 import { BuiltinKnowledgeConfig, RENDERER_MODEL_META } from '@shared/presenter'
-import { toast } from '../ui/toast'
+import { toast } from '@/components/use-toast'
 import { useRoute } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import { nanoid } from 'nanoid'
@@ -895,7 +902,7 @@ const isBuiltinMcpEnabled = computed(() => {
 })
 
 // 切换BuitinKnowledge MCP服务器启用状态
-const toggleBuiltinMcpServer = async () => {
+const toggleBuiltinMcpServer = async (_value: boolean) => {
   if (!mcpStore.mcpEnabled) return
   await mcpStore.toggleServer('builtinKnowledge')
 }

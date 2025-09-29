@@ -87,6 +87,8 @@ defineEmits(['copy'])
 </script>
 
 <style lang="css">
+@reference '../../assets/style.css';
+
 .prose {
   pre {
     margin-top: 0;
@@ -96,7 +98,10 @@ defineEmits(['copy'])
     margin: 0 !important;
   }
   li p {
-    @apply py-0 my-0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
   hr {
@@ -112,7 +117,7 @@ defineEmits(['copy'])
     这可以保留链接组件原有的所有样式（包括颜色）。
   */
   a .markdown-renderer {
-    @apply inline;
+    display: inline;
   }
 }
 </style>

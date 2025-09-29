@@ -1,26 +1,26 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@shadcn/components/ui/button'
+import { Input } from '@shadcn/components/ui/input'
+import { Label } from '@shadcn/components/ui/label'
+import { Textarea } from '@shadcn/components/ui/textarea'
+import { Checkbox } from '@shadcn/components/ui/checkbox'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+} from '@shadcn/components/ui/select'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import { MCPServerConfig } from '@shared/presenter'
-import { EmojiPicker } from '@/components/ui/emoji-picker'
-import { useToast } from '@/components/ui/toast'
+import { EmojiPicker } from '@/components/emoji-picker'
+import { useToast } from '@/components/use-toast'
 import { Icon } from '@iconify/vue'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@shadcn/components/ui/popover'
 import { ChevronDown, X } from 'lucide-vue-next'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@shadcn/components/ui/badge'
 import ModelSelect from '@/components/ModelSelect.vue'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { useSettingsStore } from '@/stores/settings'
@@ -724,7 +724,7 @@ HTTP-Referer=deepchatai.cn`
 <template>
   <!-- 简单表单 -->
   <form v-if="currentStep === 'simple'" class="space-y-4 h-full flex flex-col">
-    <ScrollArea class="h-0 flex-grow">
+    <ScrollArea class="h-0 grow">
       <div class="space-y-4 px-4 pb-4">
         <div class="text-sm">
           {{ t('settings.mcp.serverForm.jsonConfigIntro') }}
@@ -778,7 +778,7 @@ HTTP-Referer=deepchatai.cn`
 
   <!-- 详细表单 -->
   <form v-else class="space-y-2 h-full flex flex-col" @submit.prevent="handleSubmit">
-    <ScrollArea class="h-0 flex-grow">
+    <ScrollArea class="h-0 grow">
       <div class="space-y-2 px-4 pb-4">
         <!-- 服务器名称 -->
         <!-- 本地化名称 (针对inmemory类型) -->

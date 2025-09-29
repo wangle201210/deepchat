@@ -7,7 +7,7 @@
       <Button variant="ghost" size="icon" class="w-4 h-4 text-muted-foreground">
         <Icon icon="lucide:chevrons-up-down" class="w-4 h-4" />
       </Button>
-      <span class="flex-grow"
+      <span class="grow"
         >{{
           block.status === 'loading'
             ? t('chat.features.deepThinkingProgress')
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import { Button } from '@shadcn/components/ui/button'
 import { usePresenter } from '@/composables/usePresenter'
 import { Icon } from '@iconify/vue'
 import { AssistantMessageBlock } from '@shared/chat'
@@ -59,6 +59,7 @@ const configPresenter = usePresenter('configPresenter')
 const messageBlock = ref<HTMLDivElement | null>(null)
 
 const collapse = ref(false)
+
 const reasoningDuration = computed(() => {
   let duration: number
   if (props.block.reasoning_time) {

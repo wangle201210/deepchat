@@ -6,7 +6,7 @@
       :icon="getFileIcon()"
       class="w-10 h-10 text-muted-foreground p-1 bg-accent rounded-md border"
     />
-    <div class="flex-grow flex-1 w-[calc(100%-170px)]">
+    <div class="grow flex-1 w-[calc(100%-170px)]">
       <div
         :title="file.name"
         class="text-sm leading-none pb-2 truncate text-ellipsis whitespace-nowrap"
@@ -120,8 +120,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+} from '@shadcn/components/ui/alert-dialog'
+import { Button } from '@shadcn/components/ui/button'
 import dayjs from 'dayjs'
 
 dayjs.extend(utc)

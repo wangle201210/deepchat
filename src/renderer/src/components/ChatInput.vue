@@ -193,15 +193,20 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button } from '@shadcn/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@shadcn/components/ui/tooltip'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@shadcn/components/ui/select'
 import { Icon } from '@iconify/vue'
 import FileItem from './FileItem.vue'
 import { useChatStore } from '@/stores/chat'
@@ -238,10 +243,11 @@ import { useMcpStore } from '@/stores/mcp'
 import { ResourceListEntry } from '@shared/presenter'
 import { searchHistory } from '@/lib/searchHistory'
 import { useLanguageStore } from '@/stores/language'
-import { useToast } from '@/components/ui/toast/use-toast'
+import { useToast } from '@/components/use-toast'
 import type { CategorizedData } from './editor/mention/suggestion'
 import type { PromptListEntry } from '@shared/presenter'
 import { sanitizeText } from '@/lib/sanitizeText'
+import type { AcceptableValue } from 'reka-ui'
 
 const langStore = useLanguageStore()
 const mcpStore = useMcpStore()
@@ -266,7 +272,7 @@ const editor = new Editor({
   editorProps: {
     attributes: {
       class:
-        'outline-none focus:outline-none focus-within:outline-none min-h-[3rem] max-h-[7rem] overflow-y-auto'
+        'outline-none focus:outline-none focus-within:outline-none min-h-12 max-h-28 overflow-y-auto'
     }
   },
   autofocus: true,
@@ -278,7 +284,7 @@ const editor = new Editor({
     Mention.configure({
       HTMLAttributes: {
         class:
-          'mention px-1.5 py-0.5 text-xs rounded-md bg-secondary text-foreground inline-block max-w-64 align-sub !truncate'
+          'mention px-1.5 py-0.5 text-xs rounded-md bg-secondary text-foreground inline-block max-w-64 align-sub truncate!'
       },
       suggestion,
       deleteTriggerWithBackspace: true
@@ -855,8 +861,8 @@ const onWebSearchClick = async () => {
 //   await configPresenter.setSetting('input_deepThinking', settings.value.deepThinking)
 // }
 
-const onSearchEngineChange = async (engineName: string) => {
-  await settingsStore.setSearchEngine(engineName)
+const onSearchEngineChange = async (engineName: AcceptableValue) => {
+  await settingsStore.setSearchEngine(engineName as string)
 }
 
 const initSettings = async () => {
@@ -1448,8 +1454,10 @@ defineExpose({
 }
 </style>
 <style>
+@reference '../assets/style.css';
+
 .tiptap p.is-editor-empty:first-child::before {
-  @apply text-muted-foreground;
+  color: var(--muted-foreground);
   content: attr(data-placeholder);
   float: left;
   height: 0;

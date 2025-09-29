@@ -48,7 +48,7 @@
         <div class="flex flex-row gap-2">
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
             class="text-xs text-normal rounded-lg"
             @click="openModelCheckDialog"
           >
@@ -65,7 +65,7 @@
         <div class="flex flex-row gap-2 items-center">
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
             class="text-xs text-normal rounded-lg"
             @click="showPullModelDialog = true"
           >
@@ -74,7 +74,7 @@
           </Button>
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
             class="text-xs text-normal rounded-lg"
             @click="refreshModels"
           >
@@ -145,7 +145,7 @@
               </template>
               <template v-else>
                 <div class="flex flex-row items-center justify-between p-2 hover:bg-accent">
-                  <div class="flex flex-col flex-grow">
+                  <div class="flex flex-col grow">
                     <div class="flex flex-row items-center gap-1">
                       <span class="text-sm font-medium">{{ model.name }}</span>
                       <span class="text-xs text-primary-foreground bg-primary px-1 py-0.5 rounded">
@@ -189,7 +189,7 @@
               </div>
               <Button
                 variant="outline"
-                size="xs"
+                size="sm"
                 class="text-xs rounded-lg"
                 :disabled="isModelLocal(model.name)"
                 @click="pullModel(model.name)"
@@ -264,10 +264,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { computed, onMounted, ref, watch } from 'vue'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
+import { Label } from '@shadcn/components/ui/label'
+import { Input } from '@shadcn/components/ui/input'
+import { Button } from '@shadcn/components/ui/button'
+import { Progress } from '@shadcn/components/ui/progress'
 import { Icon } from '@iconify/vue'
 import {
   Dialog,
@@ -276,12 +276,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
+} from '@shadcn/components/ui/dialog'
 import { useSettingsStore } from '@/stores/settings'
 import { useModelCheckStore } from '@/stores/modelCheck'
 import type { LLM_PROVIDER } from '@shared/presenter'
 import ModelConfigItem from './ModelConfigItem.vue'
-import { useToast } from '../ui/toast'
+import { useToast } from '@/components/use-toast'
 import { ModelType } from '@shared/model'
 
 const { t } = useI18n()

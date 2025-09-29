@@ -9,10 +9,10 @@
       </DialogHeader>
 
       <!-- 显示错误或成功消息 -->
-      <div v-if="result" class="mb-4 flex-shrink-0">
+      <div v-if="result" class="mb-4 shrink-0">
         <div v-if="result.isOk" class="p-4 bg-green-50 border border-green-200 rounded-lg">
           <div class="flex items-center">
-            <Icon icon="lucide:check-circle" class="w-5 h-5 text-green-600 mr-2 flex-shrink-0" />
+            <Icon icon="lucide:check-circle" class="w-5 h-5 text-green-600 mr-2 shrink-0" />
             <span class="text-green-800 font-medium">{{
               t('settings.provider.dialog.modelCheck.success')
             }}</span>
@@ -20,7 +20,7 @@
         </div>
         <div v-else class="p-4 bg-red-50 border border-red-200 rounded-lg">
           <div class="flex items-start">
-            <Icon icon="lucide:x-circle" class="w-5 h-5 text-red-600 mr-2 mt-0.5 flex-shrink-0" />
+            <Icon icon="lucide:x-circle" class="w-5 h-5 text-red-600 mr-2 mt-0.5 shrink-0" />
             <div class="text-red-800 min-w-0 flex-1">
               <div class="font-medium">{{ t('settings.provider.dialog.modelCheck.failed') }}</div>
               <div class="text-sm mt-1 break-words whitespace-pre-wrap overflow-y-auto max-h-40">
@@ -73,7 +73,7 @@
         </div>
       </div>
 
-      <DialogFooter class="flex-shrink-0">
+      <DialogFooter class="shrink-0">
         <Button type="button" variant="outline" @click="closeDialog">
           {{ result ? t('dialog.close') : t('dialog.cancel') }}
         </Button>
@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import { Button } from '@shadcn/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -107,15 +107,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+} from '@shadcn/components/ui/dialog'
+import { Label } from '@shadcn/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@shadcn/components/ui/select'
 import { useSettingsStore } from '@/stores/settings'
 import { Icon } from '@iconify/vue'
 import { computed, ref, watch } from 'vue'

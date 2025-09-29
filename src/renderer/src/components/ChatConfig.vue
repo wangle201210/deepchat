@@ -2,21 +2,26 @@
 import { useI18n } from 'vue-i18n'
 import { computed, watch, ref } from 'vue'
 import { useSettingsStore } from '@/stores/settings'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
+import { Label } from '@shadcn/components/ui/label'
+import { Slider } from '@shadcn/components/ui/slider'
 import { Icon } from '@iconify/vue'
-import { Textarea } from '@/components/ui/textarea'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Textarea } from '@shadcn/components/ui/textarea'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@shadcn/components/ui/tooltip'
 import { useLanguageStore } from '@/stores/language'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
+import { Input } from '@shadcn/components/ui/input'
+import { Switch } from '@shadcn/components/ui/switch'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@shadcn/components/ui/select'
 
 // Define props to receive config from parent
 const props = defineProps<{
@@ -542,8 +547,8 @@ const qwen3ThinkingBudgetError = computed(() => {
               }}</Label>
             </div>
             <Switch
-              :checked="(props.thinkingBudget ?? -1) === -1"
-              @update:checked="handleDynamicThinkingToggle"
+              :model-value="(props.thinkingBudget ?? -1) === -1"
+              @update:model-value="handleDynamicThinkingToggle"
             />
           </div>
 
@@ -644,8 +649,8 @@ const qwen3ThinkingBudgetError = computed(() => {
               }}</Label>
             </div>
             <Switch
-              :checked="props.enableSearch ?? false"
-              @update:checked="(value) => emit('update:enableSearch', value)"
+              :model-value="props.enableSearch ?? false"
+              @update:model-value="(value) => emit('update:enableSearch', value)"
             />
           </div>
 
@@ -686,8 +691,8 @@ const qwen3ThinkingBudgetError = computed(() => {
               }}</Label>
             </div>
             <Switch
-              :checked="props.enableSearch ?? false"
-              @update:checked="(value) => emit('update:enableSearch', value)"
+              :model-value="props.enableSearch ?? false"
+              @update:model-value="(value) => emit('update:enableSearch', value)"
             />
           </div>
 
@@ -699,8 +704,8 @@ const qwen3ThinkingBudgetError = computed(() => {
               }}</Label>
             </div>
             <Switch
-              :checked="props.forcedSearch ?? false"
-              @update:checked="(value) => emit('update:forcedSearch', value)"
+              :model-value="props.forcedSearch ?? false"
+              @update:model-value="(value) => emit('update:forcedSearch', value)"
             />
           </div>
 
@@ -839,7 +844,11 @@ const qwen3ThinkingBudgetError = computed(() => {
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-2">
             <Label for="artifacts-mode">Artifacts</Label>
-            <Switch id="artifacts-mode" v-model:checked="artifactsEnabled" />
+            <Switch
+              id="artifacts-mode"
+              :model-value="artifactsEnabled"
+              @update:model-value="(value) => (artifactsEnabled = value)"
+            />
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>

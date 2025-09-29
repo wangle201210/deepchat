@@ -20,7 +20,7 @@
               :key="tag"
               variant="outline"
               class="py-0 rounded-lg"
-              size="xs"
+              size="sm"
               >{{ t(`model.tags.${tag}`) }}</Badge
             >
             <div
@@ -45,7 +45,7 @@
     <div class="flex items-center gap-2">
       <!-- 消息导航按钮 -->
       <Button
-        class="w-7 h-7 rounded-md relative !p-0"
+        class="w-7 h-7 rounded-md relative p-0!"
         size="icon"
         variant="outline"
         :class="{ 'bg-accent': chatStore.isMessageNavigationOpen }"
@@ -99,9 +99,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@shadcn/components/ui/button'
+import { Badge } from '@shadcn/components/ui/badge'
+import { Popover, PopoverContent, PopoverTrigger } from '@shadcn/components/ui/popover'
 import ScrollablePopover from './ScrollablePopover.vue'
 import ChatConfig from './ChatConfig.vue'
 import ModelSelect from './ModelSelect.vue'

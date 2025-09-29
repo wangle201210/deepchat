@@ -1,19 +1,24 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
+import { Button } from '@shadcn/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@shadcn/components/ui/tooltip'
+import { Badge } from '@shadcn/components/ui/badge'
+import { Switch } from '@shadcn/components/ui/switch'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu'
+} from '@shadcn/components/ui/dropdown-menu'
 import { useI18n } from 'vue-i18n'
 import { computed, ref, nextTick, onMounted, watch } from 'vue'
-import { Separator } from '@/components/ui/separator'
+import { Separator } from '@shadcn/components/ui/separator'
 
 interface ServerInfo {
   name: string
@@ -142,7 +147,7 @@ watch(watchDescription, () => {
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center space-x-2 flex-1 min-w-0">
           <!-- 服务器图标 -->
-          <div class="text-lg flex-shrink-0">{{ server.icons }}</div>
+          <div class="text-lg shrink-0">{{ server.icons }}</div>
 
           <!-- 名称 -->
           <h3 class="text-sm font-bold truncate flex-1">
@@ -156,7 +161,7 @@ watch(watchDescription, () => {
             <Button
               variant="ghost"
               size="icon"
-              class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+              class="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
             >
               <Icon icon="lucide:more-horizontal" class="h-3 w-3" />
             </Button>
@@ -256,9 +261,9 @@ watch(watchDescription, () => {
 
         <div class="flex items-center space-x-2">
           <Switch
-            :checked="server.isRunning"
+            :model-value="server.isRunning"
             :disabled="disabled || isLoading"
-            @update:checked="$emit('toggle')"
+            @update:model-value="$emit('toggle')"
           />
         </div>
       </div>

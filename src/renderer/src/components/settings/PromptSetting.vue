@@ -146,7 +146,7 @@
             <!-- 卡片头部 -->
             <div class="flex items-start justify-between mb-3">
               <div class="flex items-center gap-3 flex-1 min-w-0">
-                <div class="p-2 bg-primary/10 rounded-lg flex-shrink-0">
+                <div class="p-2 bg-primary/10 rounded-lg shrink-0">
                   <Icon icon="lucide:scroll-text" class="w-5 h-5 text-primary" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -178,7 +178,7 @@
               </div>
 
               <!-- 操作按钮 -->
-              <div class="flex items-center gap-1 flex-shrink-0 ml-2">
+              <div class="flex items-center gap-1 shrink-0 ml-2">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -276,7 +276,7 @@
     <Sheet v-model:open="openSystemPromptDialog">
       <SheetContent
         side="right"
-        class="!w-[60vw] !max-w-[90vw] h-full flex flex-col p-0 bg-background"
+        class="w-[60vw]! max-w-[90vw]! h-full flex flex-col p-0 bg-background"
       >
         <SheetHeader class="px-6 py-4 border-b bg-card/50">
           <SheetTitle class="flex items-center gap-2">
@@ -350,7 +350,7 @@
     <Sheet v-model:open="openAddDialog">
       <SheetContent
         side="right"
-        class="!w-[75vw] !max-w-[95vw] h-full flex flex-col p-0 bg-background"
+        class="w-[75vw]! max-w-[95vw]! h-full flex flex-col p-0 bg-background"
       >
         <SheetHeader class="px-6 py-4 border-b bg-card/50">
           <SheetTitle class="flex items-center gap-2">
@@ -483,8 +483,8 @@
                       <div class="flex items-center gap-2">
                         <Checkbox
                           :id="'required-' + index"
-                          :checked="param.required"
-                          @update:checked="(value) => (param.required = value)"
+                          :model-value="param.required"
+                          @update:model-value="(value) => (param.required = value as boolean)"
                         />
                         <Label :for="'required-' + index" class="text-sm whitespace-nowrap">
                           {{ t('promptSetting.required') }}
@@ -591,7 +591,7 @@
                           class="px-2 py-0.5 bg-muted rounded truncate text-ellipsis whitespace-nowrap flex-1"
                           >{{ file.type || 'unknown' }}</span
                         >
-                        <span class="flex-shrink-0">{{ formatFileSize(file.size) }}</span>
+                        <span class="shrink-0">{{ formatFileSize(file.size) }}</span>
                       </div>
 
                       <p
@@ -646,18 +646,18 @@
 import { ref, reactive, onMounted, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
+import { Button } from '@shadcn/components/ui/button'
+import { Input } from '@shadcn/components/ui/input'
+import { Label } from '@shadcn/components/ui/label'
+import { Checkbox } from '@shadcn/components/ui/checkbox'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@shadcn/components/ui/select'
 import {
   Sheet,
   SheetContent,
@@ -665,7 +665,7 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter
-} from '@/components/ui/sheet'
+} from '@shadcn/components/ui/sheet'
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -676,8 +676,8 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction
-} from '@/components/ui/alert-dialog'
-import { useToast } from '@/components/ui/toast'
+} from '@shadcn/components/ui/alert-dialog'
+import { useToast } from '@/components/use-toast'
 import { usePromptsStore } from '@/stores/prompts'
 import { useSettingsStore } from '@/stores/settings'
 import { MessageFile } from '@shared/chat'
@@ -685,6 +685,7 @@ import { usePresenter } from '@/composables/usePresenter'
 import { nanoid } from 'nanoid'
 import { getMimeTypeIcon } from '@/lib/utils'
 import { FileItem } from '@shared/presenter'
+import type { AcceptableValue } from 'reka-ui'
 
 const { t } = useI18n()
 const { toast } = useToast()
@@ -825,10 +826,10 @@ const updateCurrentSystemPrompt = () => {
     systemPrompts.value.find((p) => p.id === selectedSystemPromptId.value) || null
 }
 
-const handleSystemPromptChange = async (promptId: string) => {
+const handleSystemPromptChange = async (promptId: AcceptableValue) => {
   try {
-    await settingsStore.setDefaultSystemPromptId(promptId)
-    selectedSystemPromptId.value = promptId
+    await settingsStore.setDefaultSystemPromptId(promptId as string)
+    selectedSystemPromptId.value = promptId as string
     updateCurrentSystemPrompt()
     toast({
       title: t('promptSetting.systemPromptChanged'),

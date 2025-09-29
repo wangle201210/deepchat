@@ -19,7 +19,7 @@
         title="联网搜索能力"
       />
     </div>
-    <div class="flex-grow"></div>
+    <div class="grow"></div>
     <div class="flex flex-row items-center gap-2">
       <span v-if="group" class="text-xs text-muted-foreground">{{ group }}</span>
       <span
@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Button } from '@/components/ui/button'
+import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
 import { ModelType } from '@shared/model'
 import ModelConfigDialog from './ModelConfigDialog.vue'
