@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@shadcn/components/ui/button'
+import { Badge } from '@shadcn/components/ui/badge'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription
-} from '@/components/ui/sheet'
+} from '@shadcn/components/ui/sheet'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@shadcn/components/ui/select'
 import { useMcpStore } from '@/stores/mcp'
 import { useI18n } from 'vue-i18n'
 import McpJsonViewer from './McpJsonViewer.vue'
@@ -129,7 +129,7 @@ const getResourceType = (uri: string) => {
       side="right"
       class="w-4/5 min-w-[80vw] max-w-[80vw] p-0 bg-white dark:bg-black h-screen flex flex-col gap-0"
     >
-      <SheetHeader class="px-4 py-3 border-b bg-card flex-shrink-0">
+      <SheetHeader class="px-4 py-3 border-b bg-card shrink-0">
         <SheetTitle class="flex items-center space-x-2">
           <Icon icon="lucide:folder" class="h-5 w-5 text-primary" />
           <span>{{ props.serverName ? `${props.serverName} Resources` : 'MCP Resources' }}</span>
@@ -141,7 +141,7 @@ const getResourceType = (uri: string) => {
 
       <div class="flex flex-col flex-1 overflow-hidden">
         <!-- 小屏幕：资源选择下拉菜单 -->
-        <div class="flex-shrink-0 px-4 py-4 lg:hidden">
+        <div class="shrink-0 px-4 py-4 lg:hidden">
           <Select v-model="selectedResource">
             <SelectTrigger class="w-full">
               <SelectValue placeholder="Select a resource" />
@@ -190,7 +190,7 @@ const getResourceType = (uri: string) => {
                   <div class="flex items-start space-x-2 w-full">
                     <Icon
                       :icon="getResourceIcon(resource.uri)"
-                      class="h-4 w-4 text-primary mt-0.5 flex-shrink-0"
+                      class="h-4 w-4 text-primary mt-0.5 shrink-0"
                     />
                     <div class="flex-1 min-w-0">
                       <div class="font-medium text-sm truncate">

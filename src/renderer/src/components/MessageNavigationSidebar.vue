@@ -59,7 +59,7 @@
         >
           <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
-              <div class="flex-shrink-0">
+              <div class="shrink-0">
                 <div
                   v-if="message.role === 'assistant'"
                   class="w-4 h-4 flex items-center justify-center bg-base-900/5 dark:bg-base-100/10 border border-input rounded-sm"
@@ -126,8 +126,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@shadcn/components/ui/button'
+import { Input } from '@shadcn/components/ui/input'
 import { useI18n } from 'vue-i18n'
 import { useThemeStore } from '@/stores/theme'
 import ModelIcon from '@/components/icons/ModelIcon.vue'

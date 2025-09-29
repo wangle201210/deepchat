@@ -72,7 +72,7 @@
         <div class="flex flex-row gap-2">
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
             class="text-xs text-normal rounded-lg"
             @click="
               handleVerifyCredential({ credential: { accessKeyId, secretAccessKey, region } })
@@ -134,11 +134,16 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { AWS_BEDROCK_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
 import { useSettingsStore } from '@/stores/settings'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
+import { Label } from '@shadcn/components/ui/label'
+import { Input } from '@shadcn/components/ui/input'
+import { Button } from '@shadcn/components/ui/button'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@shadcn/components/ui/tooltip'
 import { Icon } from '@iconify/vue'
 import ProviderModelManager from './ProviderModelManager.vue'
 import ProviderDialogContainer from './ProviderDialogContainer.vue'
@@ -319,6 +324,12 @@ const handleConfigChanged = async () => {
 
 <style scoped>
 .hint {
-  @apply text-xs text-red-700 dark:text-red-400;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: #b91c1c;
+}
+
+:global(.dark) .hint {
+  color: #f87171;
 }
 </style>

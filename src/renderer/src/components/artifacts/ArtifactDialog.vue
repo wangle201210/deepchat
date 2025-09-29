@@ -9,13 +9,13 @@
   >
     <div
       v-if="artifactStore.isOpen"
-      class="absolute right-0 top-0 bottom-0 w-[calc(60%_-_104px)] border-l shadow-lg flex flex-col max-lg:!w-3/4 max-lg:bg-white max-lg:dark:!bg-black z-[60]"
+      class="absolute right-0 top-0 bottom-0 w-[calc(60%-104px)] border-l shadow-lg flex flex-col max-lg:w-3/4! max-lg:bg-white max-lg:dark:bg-black! z-60"
     >
       <!-- 顶部导航栏 -->
       <div
         class="flex items-center justify-between bg-card px-4 h-11 border-b w-full overflow-hidden"
       >
-        <div class="flex items-center gap-2 flex-grow w-0">
+        <div class="flex items-center gap-2 grow w-0">
           <button class="p-2 hover:bg-accent/50 rounded-md" @click="artifactStore.hideArtifact">
             <Icon icon="lucide:arrow-left" class="w-4 h-4" />
           </button>
@@ -231,7 +231,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useArtifactStore } from '@/stores/artifact'
 import { Icon } from '@iconify/vue'
-import Button from '@/components/ui/button/Button.vue'
+import { Button } from '@shadcn/components/ui/button'
 import CodeArtifact from './CodeArtifact.vue'
 import MarkdownArtifact from './MarkdownArtifact.vue'
 import HTMLArtifact from './HTMLArtifact.vue'
@@ -240,7 +240,7 @@ import MermaidArtifact from './MermaidArtifact.vue'
 import mermaid from 'mermaid'
 import { useI18n } from 'vue-i18n'
 import ReactArtifact from './ReactArtifact.vue'
-import { useToast } from '@/components/ui/toast/use-toast'
+import { useToast } from '@/components/use-toast'
 import { usePageCapture } from '@/composables/usePageCapture'
 import { useThemeStore } from '@/stores/theme'
 import { usePresenter } from '@/composables/usePresenter'

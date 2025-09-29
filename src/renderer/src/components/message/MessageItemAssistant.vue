@@ -4,7 +4,7 @@
     class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
   >
     <div
-      class="flex-shrink-0 w-5 h-5 flex items-center justify-center bg-base-900/5 dark:bg-base-100/10 border border-input rounded-md"
+      class="shrink-0 w-5 h-5 flex items-center justify-center bg-base-900/5 dark:bg-base-100/10 border border-input rounded-md"
     >
       <ModelIcon
         :model-id="currentMessage.model_provider"
@@ -136,8 +136,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
+} from '@shadcn/components/ui/dialog'
+import { Button } from '@shadcn/components/ui/button'
 import { useThemeStore } from '@/stores/theme'
 const props = defineProps<{
   message: AssistantMessage
@@ -295,10 +295,14 @@ const handleAction = (action: HandleActionType) => {
   } else if (action === 'prev' || action === 'next') {
     switch (action) {
       case 'prev':
-        currentVariantIndex.value > 0 && currentVariantIndex.value--
+        if (currentVariantIndex.value > 0) {
+          currentVariantIndex.value--
+        }
         break
       case 'next':
-        currentVariantIndex.value < totalVariants.value - 1 && currentVariantIndex.value++
+        if (currentVariantIndex.value < totalVariants.value - 1) {
+          currentVariantIndex.value++
+        }
         break
     }
 

@@ -41,7 +41,7 @@
               class="w-8 h-8 text-muted-foreground p-1 bg-accent rounded-md border"
             />
 
-            <div class="flex-grow flex-1 max-w-28">
+            <div class="grow flex-1 max-w-28">
               <div class="text-xs leading-none pb-1 truncate text-ellipsis whitespace-nowrap">
                 {{ fileName }}
               </div>
@@ -71,7 +71,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@shadcn/components/ui/tooltip'
 import { getMimeTypeIcon } from '@/lib/utils'
 
 const props = withDefaults(

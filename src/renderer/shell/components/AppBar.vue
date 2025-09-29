@@ -1,14 +1,14 @@
 <template>
   <div class="flex flex-row h-10" :dir="langStore.dir">
     <div
-      class="h-10 flex-shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start window-drag-region"
+      class="h-10 shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start window-drag-region"
       :class="['', isMacOS ? (isFullscreened ? 'pl-2 pr-2' : 'pl-20 pr-2') : 'px-2']"
     >
       <!-- App title/content in center -->
       <Button
         v-if="isTabContainerOverflowingLeft"
         variant="ghost"
-        class="flex-shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
+        class="shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
         @click="scrollTabContainer('left')"
       >
         <Icon icon="lucide:chevron-left" class="w-4 h-4" />
@@ -16,7 +16,7 @@
       <Button
         v-if="isTabContainerOverflowingRight"
         variant="ghost"
-        class="flex-shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
+        class="shrink-0 text-xs font-medium px-2 h-6 mt-0.5 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20 mr-1"
         @click="scrollTabContainer('right')"
       >
         <Icon icon="lucide:chevron-right" class="w-4 h-4" />
@@ -53,14 +53,14 @@
             class="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-10 pointer-events-none"
             :style="{ left: dragInsertPosition + 'px' }"
           ></div>
-          <div ref="endOfTabs" class="w-0 flex-shrink-0 h-full"></div>
+          <div ref="endOfTabs" class="w-0 shrink-0 h-full"></div>
         </div>
       </div>
 
       <Button
         variant="ghost"
-        class="flex-shrink-0 text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
-        @click="openNewTab"
+        class="shrink-0 text-xs ml-1 font-medium px-2 h-6 bg-transparent rounded-md flex items-center justify-center hover:bg-zinc-500/20"
+        @click="onNewTabClick"
       >
         <Icon icon="lucide:plus" class="w-4 h-4" />
       </Button>
@@ -121,19 +121,22 @@ import { MinusIcon, XIcon } from 'lucide-vue-next'
 import MaximizeIcon from './icons/MaximizeIcon.vue'
 import RestoreIcon from './icons/RestoreIcon.vue'
 import { usePresenter } from '@/composables/usePresenter'
-import { Button } from '@/components/ui/button'
+import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
 import AppBarTabItem from './app-bar/AppBarTabItem.vue'
 import { useTabStore } from '@shell/stores/tab'
 import { useThemeStore } from '@/stores/theme'
 import { useElementSize } from '@vueuse/core'
 import { useLanguageStore } from '@/stores/language'
+import { useI18n } from 'vue-i18n'
 const tabStore = useTabStore()
 const langStore = useLanguageStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
 const tabPresenter = usePresenter('tabPresenter')
 const endOfTabs = ref<HTMLElement | null>(null)
+
+const { t } = useI18n()
 
 const isMacOS = ref(false)
 const isMaximized = ref(false)
@@ -461,12 +464,24 @@ onMounted(() => {
   window.addEventListener('dragend', handleDragEnd)
 })
 
-const openNewTab = () => {
-  tabStore.addTab({
-    name: 'New Tab',
-    icon: 'lucide:plus',
-    viewType: 'chat'
-  })
+const isPlaygroundEnabled = import.meta.env.VITE_ENABLE_PLAYGROUND === 'true'
+
+const openNewTab = (event?: MouseEvent, forcePlayground = false) => {
+  const shouldOpenPlayground = isPlaygroundEnabled && (forcePlayground || event?.shiftKey)
+
+  const config = shouldOpenPlayground
+    ? {
+        name: t('routes.playground'),
+        icon: 'lucide:flask-conical',
+        viewType: 'playground'
+      }
+    : {
+        name: t('common.newTab'),
+        icon: 'lucide:plus',
+        viewType: 'chat'
+      }
+
+  tabStore.addTab(config)
   setTimeout(() => {
     nextTick(() => {
       if (endOfTabs.value) {
@@ -475,6 +490,10 @@ const openNewTab = () => {
       }
     })
   }, 300)
+}
+
+const onNewTabClick = (event: MouseEvent) => {
+  openNewTab(event)
 }
 
 const scrollTabContainer = (direction: 'left' | 'right') => {

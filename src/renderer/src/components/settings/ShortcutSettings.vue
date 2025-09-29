@@ -13,7 +13,7 @@
         </Button>
       </div>
     </div>
-    <ScrollArea class="px-4 flex-1 w-full h-full">
+    <ScrollArea class="px-4 flex-1 w-full h-full pb-8">
       <div class="w-full h-full flex flex-col gap-1.5">
         <!-- 快捷键列表 -->
         <div class="flex flex-col gap-2">
@@ -22,19 +22,16 @@
             :key="shortcut.id"
             class="flex flex-row p-2 items-center gap-2 px-2"
           >
-            <span
-              class="flex flex-row items-center gap-2 flex-grow w-full"
-              :dir="languageStore.dir"
-            >
+            <span class="flex flex-row items-center gap-2 grow w-full" :dir="languageStore.dir">
               <Icon :icon="shortcut.icon" class="w-4 h-4 text-muted-foreground" />
               <span class="text-sm font-medium">{{ t(shortcut.label) }}</span>
             </span>
 
-            <div class="flex-shrink-0 min-w-32">
+            <div class="shrink-0 min-w-32">
               <div class="relative w-full group">
                 <Button
                   variant="outline"
-                  class="h-10 min-w-[200px] justify-end relative px-2"
+                  class="h-10 min-w-[140px] justify-end relative px-2"
                   :class="{
                     'ring-2 ring-primary': recordingShortcutId === shortcut.id && !shortcutError,
                     'ring-2 ring-destructive': recordingShortcutId === shortcut.id && shortcutError
@@ -106,8 +103,8 @@ import { Loader2 } from 'lucide-vue-next'
 
 import { useShortcutKeyStore } from '@/stores/shortcutKey'
 import { useLanguageStore } from '@/stores/language'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@shadcn/components/ui/button'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import type { ShortcutKey } from '@shared/presenter'
 
 const { t } = useI18n()
@@ -446,7 +443,31 @@ const clearShortcut = async (shortcutId: string) => {
 
 <style scoped>
 .tw-keycap {
-  @apply inline-flex min-w-8 h-8 items-center justify-center px-2 py-0.5 mx-0.5 rounded-md text-sm align-middle border shadow-sm transition-colors select-none;
-  @apply border-border bg-background;
+  display: inline-flex;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.125rem 0.375rem;
+  margin: 0 0.125rem;
+  border-radius: 0.3rem;
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  vertical-align: middle;
+  border-width: 1px;
+  border-style: solid;
+  box-shadow:
+    inset 0 -1px 0 rgb(15 23 42 / 0.08),
+    0 1px 2px rgb(15 23 42 / 0.06);
+  transition:
+    color 150ms ease,
+    background-color 150ms ease,
+    border-color 150ms ease;
+  user-select: none;
+  background-color: hsl(var(--muted));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
 }
 </style>

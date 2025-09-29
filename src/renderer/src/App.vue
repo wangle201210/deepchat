@@ -7,8 +7,8 @@ import SelectedTextContextMenu from './components/message/SelectedTextContextMen
 import { useArtifactStore } from './stores/artifact'
 import { useChatStore } from '@/stores/chat'
 import { NOTIFICATION_EVENTS, SHORTCUT_EVENTS } from './events'
-import Toaster from './components/ui/toast/Toaster.vue'
-import { useToast } from './components/ui/toast/use-toast'
+import { Toaster } from '@shadcn/components/ui/sonner'
+import { useToast } from '@/components/use-toast'
 import { useSettingsStore } from '@/stores/settings'
 import { useThemeStore } from '@/stores/theme'
 import { useLanguageStore } from '@/stores/language'
@@ -17,6 +17,7 @@ import TranslatePopup from '@/components/popup/TranslatePopup.vue'
 import ModelCheckDialog from '@/components/settings/ModelCheckDialog.vue'
 import { useModelCheckStore } from '@/stores/modelCheck'
 import MessageDialog from './components/ui/MessageDialog.vue'
+import 'vue-sonner/style.css' // vue-sonner v2 requires this import
 
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
@@ -306,10 +307,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex flex-col h-screen bg-container">
-    <div
-      class="flex flex-row h-0 flex-grow relative overflow-hidden px-[1px] py-[1px]"
-      :dir="langStore.dir"
-    >
+    <div class="flex flex-row h-0 grow relative overflow-hidden px-px py-px" :dir="langStore.dir">
       <!-- Main content area -->
 
       <RouterView />

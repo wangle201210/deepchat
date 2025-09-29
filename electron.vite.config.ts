@@ -1,12 +1,12 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import vue from '@vitejs/plugin-vue'
-import autoprefixer from 'autoprefixer'
-import tailwind from 'tailwindcss'
 import vueDevTools from 'vite-plugin-vue-devtools'
 import svgLoader from 'vite-svg-loader'
 import monacoEditorPlugin from 'vite-plugin-monaco-editor-esm'
 import path from 'node:path'
+import tailwindcss from '@tailwindcss/vite'
+
 
 export default defineConfig({
   main: {
@@ -23,7 +23,7 @@ export default defineConfig({
     },
     build: {
       rollupOptions: {
-        external: ['sharp','@duckdb/node-api'],
+        external: ['sharp', '@duckdb/node-api'],
         output: {
           inlineDynamicImports: true,
           manualChunks: undefined,  // Disable automatic chunk splitting
@@ -48,6 +48,11 @@ export default defineConfig({
     }
   },
   renderer: {
+    define: {
+      'import.meta.env.VITE_ENABLE_PLAYGROUND': JSON.stringify(
+        process.env.VITE_ENABLE_PLAYGROUND ?? 'false'
+      )
+    },
     optimizeDeps: {
       include: [
         'monaco-editor',
@@ -59,19 +64,15 @@ export default defineConfig({
         '@': resolve('src/renderer/src'),
         '@shell': resolve('src/renderer/shell'),
         '@shared': resolve('src/shared'),
+        "@shadcn": resolve('src/shadcn'),
         vue: 'vue/dist/vue.esm-bundler.js'
-      }
-    },
-    css: {
-      postcss: {
-        // @ts-ignore
-        plugins: [tailwind(), autoprefixer()]
       }
     },
     server: {
       host: '0.0.0.0' // 防止代理干扰，导致vite-electron之间ws://localhost:5713和http://localhost:5713通信失败、页面组件无法加载
     },
     plugins: [
+      tailwindcss(),
       monacoEditorPlugin({
         languageWorkers: ['editorWorkerService', 'typescript', 'css', 'html', 'json'],
         customDistPath(_root, buildOutDir, _base) {
@@ -80,10 +81,7 @@ export default defineConfig({
       }),
       vue(),
       svgLoader(),
-      vueDevTools({
-        // use export LAUNCH_EDITOR=cursor instead
-        // launchEditor: 'cursor'
-      })
+      vueDevTools()
     ],
     build: {
       minify: 'esbuild',

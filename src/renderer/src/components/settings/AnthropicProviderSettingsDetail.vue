@@ -17,7 +17,9 @@
         </div>
         <Select
           v-model="authMethod"
-          @update:model-value="(value: string) => switchAuthMethod(value as 'apikey' | 'oauth')"
+          @update:model-value="
+            (value: AcceptableValue) => switchAuthMethod(value as 'apikey' | 'oauth')
+          "
         >
           <SelectTrigger class="w-full">
             <SelectValue :placeholder="t('settings.provider.authMethodPlaceholder')" />
@@ -87,7 +89,7 @@
         <div class="flex flex-row gap-2">
           <Button
             variant="outline"
-            size="xs"
+            size="sm"
             class="text-xs text-normal rounded-lg"
             @click="openModelCheckDialog"
           >
@@ -117,7 +119,7 @@
           <div class="flex flex-row gap-2">
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               class="text-xs text-normal rounded-lg"
               @click="validateOAuthConnection"
             >
@@ -126,7 +128,7 @@
             </Button>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               class="text-xs text-normal rounded-lg"
               @click="openModelCheckDialog"
             >
@@ -135,7 +137,7 @@
             </Button>
             <Button
               variant="outline"
-              size="xs"
+              size="sm"
               class="text-xs text-normal rounded-lg text-destructive"
               @click="disconnectOAuth"
             >
@@ -337,9 +339,9 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { onMounted, ref, watch, onUnmounted, computed } from 'vue'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
+import { Label } from '@shadcn/components/ui/label'
+import { Input } from '@shadcn/components/ui/input'
+import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
 import {
   Dialog,
@@ -348,20 +350,21 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
+} from '@shadcn/components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@shadcn/components/ui/select'
 import { useSettingsStore } from '@/stores/settings'
 import { useModelCheckStore } from '@/stores/modelCheck'
 import { usePresenter } from '@/composables/usePresenter'
 import type { LLM_PROVIDER, RENDERER_MODEL_META } from '@shared/presenter'
 import ProviderModelManager from './ProviderModelManager.vue'
 import ProviderDialogContainer from './ProviderDialogContainer.vue'
+import type { AcceptableValue } from 'reka-ui'
 
 const { t } = useI18n()
 

@@ -3,23 +3,26 @@
     <div class="w-full h-full flex flex-col gap-1.5">
       <!-- 同步功能开关 -->
       <div class="flex flex-row p-2 items-center gap-2 px-2">
-        <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
+        <span class="flex flex-row items-center gap-2 grow w-full" :dir="languageStore.dir">
           <Icon icon="lucide:refresh-cw" class="w-4 h-4 text-muted-foreground" />
           <span class="text-sm font-medium">{{ t('settings.data.syncEnable') }}</span>
         </span>
-        <div class="flex-shrink-0">
-          <Switch v-model:checked="syncEnabled" />
+        <div class="shrink-0">
+          <Switch
+            :model-value="syncEnabled"
+            @update:model-value="(value) => (syncEnabled = value)"
+          />
         </div>
       </div>
 
       <!-- 同步文件夹设置 -->
       <div class="flex flex-col p-2 gap-2 px-2">
         <div class="flex flex-row items-center gap-2">
-          <span class="flex flex-row items-center gap-2 flex-grow w-full" :dir="languageStore.dir">
+          <span class="flex flex-row items-center gap-2 grow w-full" :dir="languageStore.dir">
             <Icon icon="lucide:folder" class="w-4 h-4 text-muted-foreground" />
             <span class="text-sm font-medium">{{ t('settings.data.syncFolder') }}</span>
           </span>
-          <div class="flex-shrink-0 w-96 flex gap-2">
+          <div class="shrink-0 w-96 flex gap-2">
             <Input
               v-model="syncFolderPath"
               :disabled="!syncStore.syncEnabled"
@@ -238,7 +241,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import { ref, onMounted, computed } from 'vue'
 import {
   Dialog,
@@ -248,7 +251,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger
-} from '@/components/ui/dialog'
+} from '@shadcn/components/ui/dialog'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -259,13 +262,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
+} from '@shadcn/components/ui/alert-dialog'
+import { Button } from '@shadcn/components/ui/button'
+import { Input } from '@shadcn/components/ui/input'
+import { Switch } from '@shadcn/components/ui/switch'
+import { RadioGroup, RadioGroupItem } from '@shadcn/components/ui/radio-group'
+import { Label } from '@shadcn/components/ui/label'
+import { Separator } from '@shadcn/components/ui/separator'
 import { useSyncStore } from '@/stores/sync'
 import { useLanguageStore } from '@/stores/language'
 import { usePresenter } from '@/composables/usePresenter'

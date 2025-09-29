@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@shadcn/components/ui/button'
+import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import {
   Dialog,
   DialogContent,
@@ -11,11 +11,11 @@ import {
   DialogTrigger,
   DialogFooter,
   DialogDescription
-} from '@/components/ui/dialog'
+} from '@shadcn/components/ui/dialog'
 import { useMcpStore } from '@/stores/mcp'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18n } from 'vue-i18n'
-import { useToast } from '@/components/ui/toast'
+import { useToast } from '@/components/use-toast'
 import { useRouter } from 'vue-router'
 import McpServerCard from './McpServerCard.vue'
 import McpServerForm from '../mcpServerForm.vue'
@@ -373,7 +373,7 @@ const handleViewResources = async (serverName: string) => {
               </Button>
             </DialogTrigger>
             <DialogContent class="w-[95vw] max-w-[500px] px-0 h-[85vh] max-h-[500px] flex flex-col">
-              <DialogHeader class="px-3 flex-shrink-0 pb-2">
+              <DialogHeader class="px-3 shrink-0 pb-2">
                 <DialogTitle class="text-base">{{
                   t('settings.mcp.addServerDialog.title')
                 }}</DialogTitle>
@@ -394,7 +394,7 @@ const handleViewResources = async (serverName: string) => {
     <!-- 编辑服务器对话框 -->
     <Dialog v-model:open="isEditServerDialogOpen">
       <DialogContent class="w-[95vw] max-w-[500px] px-0 h-[85vh] max-h-[500px] flex flex-col">
-        <DialogHeader class="px-3 flex-shrink-0 pb-2">
+        <DialogHeader class="px-3 shrink-0 pb-2">
           <DialogTitle class="text-base">{{
             t('settings.mcp.editServerDialog.title')
           }}</DialogTitle>

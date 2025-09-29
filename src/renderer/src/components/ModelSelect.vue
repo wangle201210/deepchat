@@ -27,7 +27,7 @@
               :key="tag"
               variant="outline"
               class="py-0 rounded-lg"
-              size="xs"
+              size="sm"
               >{{ tag }}</Badge
             > -->
           </div>
@@ -39,7 +39,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { ref, computed, PropType } from 'vue'
-import Input from './ui/input/Input.vue'
+import { Input } from '@shadcn/components/ui/input'
 // import Badge from './ui/badge/Badge.vue'
 import { useChatStore } from '@/stores/chat'
 import { type RENDERER_MODEL_META } from '@shared/presenter'
