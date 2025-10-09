@@ -721,6 +721,7 @@ export type CONVERSATION_SETTINGS = {
   searchStrategy?: 'turbo' | 'max'
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
   verbosity?: 'low' | 'medium' | 'high'
+  selectedVariantsMap?: Record<string, string>
 }
 
 export type CONVERSATION = {
@@ -758,7 +759,8 @@ export interface IThreadPresenter {
     targetConversationId: string,
     targetMessageId: string,
     newTitle: string,
-    settings?: Partial<CONVERSATION_SETTINGS>
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    selectedVariantsMap?: Record<string, string>
   ): Promise<string>
 
   // Conversation list and activation status
@@ -782,8 +784,16 @@ export interface IThreadPresenter {
     pageSize: number
   ): Promise<{ total: number; list: MESSAGE[] }>
   sendMessage(conversationId: string, content: string, role: MESSAGE_ROLE): Promise<MESSAGE | null>
-  startStreamCompletion(conversationId: string, queryMsgId?: string): Promise<void>
-  regenerateFromUserMessage(conversationId: string, userMessageId: string): Promise<MESSAGE>
+  startStreamCompletion(
+    conversationId: string,
+    queryMsgId?: string,
+    selectedVariantsMap?: Record<string, string>
+  ): Promise<void>
+  regenerateFromUserMessage(
+    conversationId: string,
+    userMessageId: string,
+    selectedVariantsMap?: Record<string, string>
+  ): Promise<MESSAGE>
   editMessage(messageId: string, content: string): Promise<MESSAGE>
   deleteMessage(messageId: string): Promise<void>
   retryMessage(messageId: string, modelId?: string): Promise<MESSAGE>
@@ -813,7 +823,11 @@ export interface IThreadPresenter {
   setSearchAssistantModel(model: MODEL_META, providerId: string): void
   getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
-  continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
+  continueStreamCompletion(
+    conversationId: string,
+    queryMsgId: string,
+    selectedVariantsMap?: Record<string, string>
+  ): Promise<AssistantMessage>
   toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
   findTabForConversation(conversationId: string): Promise<number | null>
 
