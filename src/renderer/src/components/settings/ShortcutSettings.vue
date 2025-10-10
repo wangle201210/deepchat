@@ -29,7 +29,7 @@
 
             <div class="shrink-0 min-w-[240px]">
               <div
-                class="group flex min-h-[44px] items-center gap-3 rounded-md border bg-background px-3 py-2 transition"
+                class="group flex min-h-[44px] items-center gap-3 rounded-md border bg-background/60 px-3 py-2 transition"
                 :class="{
                   'border-primary ring-2 ring-primary/50':
                     recordingShortcutId === shortcut.id && !shortcutError,
@@ -41,16 +41,29 @@
                 <KbdGroup class="flex flex-wrap items-center gap-1">
                   <template v-if="recordingShortcutId === shortcut.id">
                     <template v-if="formattedTempShortcut.length">
-                      <Kbd v-for="(key, idx) in formattedTempShortcut" :key="idx">
-                        {{ key }}
-                      </Kbd>
+                      <template v-for="(key, idx) in formattedTempShortcut" :key="`${key}-${idx}`">
+                        <Kbd>
+                          {{ key }}
+                        </Kbd>
+                        <span
+                          v-if="idx < formattedTempShortcut.length - 1"
+                          class="text-muted-foreground"
+                        >
+                          +
+                        </span>
+                      </template>
                     </template>
                     <Kbd v-else class="text-muted-foreground">...</Kbd>
                   </template>
                   <template v-else-if="shortcut.key.length">
-                    <Kbd v-for="(key, idx) in shortcut.key" :key="idx">
-                      {{ key }}
-                    </Kbd>
+                    <template v-for="(key, idx) in shortcut.key" :key="`${key}-${idx}`">
+                      <Kbd>
+                        {{ key }}
+                      </Kbd>
+                      <span v-if="idx < shortcut.key.length - 1" class="text-muted-foreground">
+                        +
+                      </span>
+                    </template>
                   </template>
                   <Kbd v-else class="text-muted-foreground">—</Kbd>
                 </KbdGroup>
