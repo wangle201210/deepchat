@@ -147,10 +147,9 @@ const handleBarClick = (messageId: string) => {
   box-sizing: border-box;
   position: absolute;
   top: 8px;
-  right: 12px;
+  right: 4px;
   width: 56px;
   min-height: 148px;
-  border: 1px dashed #9747ff;
   border-radius: 6px;
   padding: 16px 12px;
   display: flex;
@@ -161,10 +160,6 @@ const handleBarClick = (messageId: string) => {
   backdrop-filter: none;
   pointer-events: auto;
   z-index: 5;
-}
-
-.dark .message-minimap-container {
-  border-color: rgba(151, 71, 255, 0.6);
 }
 
 .message-minimap-bars {
