@@ -3,6 +3,7 @@
     <div
       ref="messagesContainer"
       class="message-list-container relative flex-1 overflow-y-auto scroll-smooth w-full h-full pr-16 lg:pr-24"
+      @scroll="handleScroll"
     >
       <div
         ref="messageList"
@@ -97,6 +98,7 @@
       v-if="messages.length > 0"
       :messages="messages"
       :hovered-message-id="hoveredMessageId"
+      :scroll-info="scrollInfo"
       @bar-hover="handleMinimapHover"
       @bar-click="handleMinimapClick"
     />
@@ -139,6 +141,11 @@ const messageList = ref<HTMLDivElement>()
 const scrollAnchor = ref<HTMLDivElement>()
 const visible = ref(false)
 const hoveredMessageId = ref<string | null>(null)
+const scrollInfo = reactive({
+  viewportHeight: 0,
+  contentHeight: 0,
+  scrollTop: 0
+})
 
 // Store refs as Record to avoid type checking issues
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -162,6 +169,18 @@ const handleMinimapHover = (messageId: string | null) => {
 
 const handleMinimapClick = (messageId: string) => {
   scrollToMessage(messageId)
+}
+
+const updateScrollInfo = () => {
+  const container = messagesContainer.value
+  if (!container) return
+  scrollInfo.viewportHeight = container.clientHeight
+  scrollInfo.contentHeight = container.scrollHeight
+  scrollInfo.scrollTop = container.scrollTop
+}
+
+const handleScroll = () => {
+  updateScrollInfo()
 }
 
 /**
@@ -310,6 +329,7 @@ const scrollToBottom = (smooth = false) => {
         block: 'end'
       })
     }
+    updateScrollInfo()
   })
 }
 
@@ -331,6 +351,7 @@ const scrollToMessage = (messageId: string) => {
         messageElement.classList.remove('message-highlight')
       }, 2000)
     }
+    updateScrollInfo()
   })
 }
 
@@ -345,6 +366,7 @@ onMounted(() => {
     nextTick(() => {
       visible.value = true
       setupScrollObserver()
+      updateScrollInfo()
     })
   }, 100)
 
@@ -356,8 +378,18 @@ onMounted(() => {
       if (lastMessage?.status === 'pending' && !aboveThreshold.value) {
         nextTick(() => {
           scrollToBottom()
+          updateScrollInfo()
         })
       }
+    }
+  )
+
+  watch(
+    () => props.messages.length,
+    () => {
+      nextTick(() => {
+        updateScrollInfo()
+      })
     }
   )
 })
@@ -381,6 +413,7 @@ const setupScrollObserver = () => {
     (entries) => {
       const entry = entries[0]
       aboveThreshold.value = !entry.isIntersecting
+      updateScrollInfo()
     },
     {
       root: messagesContainer.value,
@@ -392,6 +425,8 @@ const setupScrollObserver = () => {
   if (scrollAnchor.value) {
     intersectionObserver.observe(scrollAnchor.value)
   }
+
+  updateScrollInfo()
 }
 
 const showCancelButton = computed(() => {

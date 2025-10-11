@@ -1,25 +1,27 @@
 <template>
-  <div class="message-minimap-container">
-    <div class="message-minimap-bars" role="list">
-      <button
-        v-for="bar in bars"
-        :key="bar.id"
-        type="button"
-        class="message-minimap-bar"
-        :class="[
-          bar.role === 'assistant' ? 'assistant-bar' : 'user-bar',
-          hoveredMessageId === bar.id ? 'is-hovered' : '',
-          activeMessageId === bar.id ? 'is-active' : ''
-        ]"
-        :style="{ width: `${bar.width}px` }"
-        :aria-label="bar.ariaLabel"
-        role="listitem"
-        @mouseenter="handleBarEnter(bar.id)"
-        @mouseleave="handleBarLeave"
-        @focus="handleBarEnter(bar.id)"
-        @blur="handleBarLeave"
-        @click="handleBarClick(bar.id)"
-      />
+  <div class="message-minimap-container" :style="containerStyle">
+    <div class="message-minimap-track" :style="trackStyle">
+      <div class="message-minimap-bars" role="list" :style="barsWrapperStyle">
+        <button
+          v-for="bar in bars"
+          :key="bar.id"
+          type="button"
+          class="message-minimap-bar"
+          :class="[
+            bar.role === 'assistant' ? 'assistant-bar' : 'user-bar',
+            hoveredMessageId === bar.id ? 'is-hovered' : '',
+            activeMessageId === bar.id ? 'is-active' : ''
+          ]"
+          :style="{ width: `${bar.width}px` }"
+          :aria-label="bar.ariaLabel"
+          role="listitem"
+          @mouseenter="handleBarEnter(bar.id)"
+          @mouseleave="handleBarLeave"
+          @focus="handleBarEnter(bar.id)"
+          @blur="handleBarLeave"
+          @click="handleBarClick(bar.id)"
+        />
+      </div>
     </div>
     <div v-if="overallContextUsage !== null" class="message-minimap-usage">
       {{ overallContextUsage.toFixed(0) }}%
@@ -31,10 +33,17 @@
 import { computed, ref, watch } from 'vue'
 import type { AssistantMessage, Message, UserMessage } from '@shared/chat'
 
+interface ScrollInfo {
+  viewportHeight: number
+  contentHeight: number
+  scrollTop: number
+}
+
 interface Props {
   messages: Message[]
   hoveredMessageId?: string | null
   activeMessageId?: string | null
+  scrollInfo?: ScrollInfo
 }
 
 const props = defineProps<Props>()
@@ -48,6 +57,12 @@ const localHoveredId = ref<string | null>(null)
 
 const MIN_WIDTH = 8
 const MAX_WIDTH = 24
+const DEFAULT_VIEWPORT_HEIGHT = 220
+const BAR_HEIGHT = 6
+const BAR_GAP = 4
+const MIN_TRACK_HEIGHT = BAR_HEIGHT
+const USAGE_LABEL_HEIGHT = 24
+const USAGE_SECTION_GAP = 6
 
 const getMessageContentLength = (message: Message) => {
   if (message.role === 'assistant') {
@@ -105,6 +120,16 @@ const bars = computed(() => {
   })
 })
 
+const totalBarsHeight = computed(() => {
+  if (!bars.value.length) return 0
+  return bars.value.length * BAR_HEIGHT + (bars.value.length - 1) * BAR_GAP
+})
+
+const containerHeight = computed(() => {
+  const viewportHeight = props.scrollInfo?.viewportHeight ?? DEFAULT_VIEWPORT_HEIGHT
+  return Math.max(viewportHeight, DEFAULT_VIEWPORT_HEIGHT)
+})
+
 const overallContextUsage = computed(() => {
   const usageValues = props.messages
     ?.map((message) => message.usage?.context_usage)
@@ -116,6 +141,50 @@ const overallContextUsage = computed(() => {
 
   return Math.max(...usageValues)
 })
+
+const usageSectionHeight = computed(() => {
+  if (overallContextUsage.value === null) {
+    return 0
+  }
+  return USAGE_LABEL_HEIGHT + USAGE_SECTION_GAP
+})
+
+const maxTrackHeight = computed(() =>
+  Math.max(containerHeight.value - usageSectionHeight.value, MIN_TRACK_HEIGHT)
+)
+
+const trackHeight = computed(() => {
+  if (!totalBarsHeight.value) {
+    return maxTrackHeight.value
+  }
+  return Math.min(totalBarsHeight.value, maxTrackHeight.value)
+})
+
+const scaleRatio = computed(() => {
+  if (!totalBarsHeight.value) return 1
+  if (totalBarsHeight.value <= trackHeight.value) return 1
+  return trackHeight.value / totalBarsHeight.value
+})
+
+const barsWrapperStyle = computed(() => {
+  const style: Record<string, string> = {
+    height: `${Math.max(totalBarsHeight.value, 0)}px`,
+    width: '100%'
+  }
+  if (scaleRatio.value < 0.999) {
+    style.transform = `scaleY(${scaleRatio.value})`
+    style.transformOrigin = 'top right'
+  }
+  return style
+})
+
+const containerStyle = computed(() => ({
+  height: `${containerHeight.value}px`
+}))
+
+const trackStyle = computed(() => ({
+  height: `${Math.max(trackHeight.value, MIN_TRACK_HEIGHT)}px`
+}))
 
 watch(
   () => props.hoveredMessageId,
@@ -154,12 +223,20 @@ const handleBarClick = (messageId: string) => {
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  background-color: transparent;
-  backdrop-filter: none;
+  align-items: stretch;
+  gap: 0;
   pointer-events: auto;
   z-index: 5;
+  overflow: hidden;
+}
+
+.message-minimap-track {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: flex-end;
+  overflow: hidden;
+  width: 100%;
 }
 
 .message-minimap-bars {
@@ -168,6 +245,8 @@ const handleBarClick = (messageId: string) => {
   align-items: flex-end;
   gap: 4px;
   width: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .message-minimap-bar {
@@ -220,6 +299,8 @@ const handleBarClick = (messageId: string) => {
   font-size: 11px;
   line-height: 1;
   color: rgba(37, 37, 37, 0.6);
+  margin-top: 6px;
+  align-self: flex-end;
 }
 
 .dark .message-minimap-usage {
