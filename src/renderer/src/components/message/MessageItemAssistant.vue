@@ -3,12 +3,10 @@
     :data-message-id="message.id"
     class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
   >
-    <div
-      class="shrink-0 w-5 h-5 flex items-center justify-center bg-base-900/5 dark:bg-base-100/10 border border-input rounded-md"
-    >
+    <div class="shrink-0 w-5 h-5 flex items-center justify-center">
       <ModelIcon
         :model-id="currentMessage.model_provider"
-        custom-class="w-3 h-3"
+        custom-class="w-[18px] h-[18px]"
         :is-dark="themeStore.isDark"
         :alt="currentMessage.role"
       />
