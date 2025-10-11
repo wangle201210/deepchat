@@ -14,13 +14,7 @@
 
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="currentMessage.model_name" :timestamp="currentMessage.timestamp" />
-      <div
-        v-if="currentContent.length === 0"
-        class="flex flex-row items-center gap-2 text-xs text-muted-foreground"
-      >
-        <Icon icon="lucide:loader-circle" class="w-4 h-4 animate-spin" />
-        {{ t('chat.messages.thinking') }}
-      </div>
+      <Spinner v-if="currentContent.length === 0" class="size-3 text-muted-foreground" />
       <div v-else class="flex flex-col w-full space-y-2">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
           <MessageBlockContent
@@ -122,7 +116,7 @@ import MessageInfo from './MessageInfo.vue'
 import { useChatStore } from '@/stores/chat'
 import { useSettingsStore } from '@/stores/settings'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
-import { Icon } from '@iconify/vue'
+import { Spinner } from '@shadcn/components/ui/spinner'
 import MessageBlockAction from './MessageBlockAction.vue'
 import { useI18n } from 'vue-i18n'
 import MessageBlockImage from './MessageBlockImage.vue'
