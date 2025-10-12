@@ -1,6 +1,6 @@
 <template>
   <div
-    class="message-navigation-sidebar h-full w-full bg-background border-l border-border flex flex-col"
+    class="message-navigation-sidebar h-full w-full bg-card border-l border-border flex flex-col"
   >
     <!-- 头部 -->
     <div class="flex items-center justify-between p-4 border-b border-border">
@@ -161,12 +161,8 @@ const getFullMessageContent = (message: Message): string => {
     return userContent.text || ''
   } else if (message.role === 'assistant') {
     const assistantMessage = message as import('@shared/chat').AssistantMessage
-    let contentToDisplay =
+    const contentToDisplay =
       assistantMessage.content as import('@shared/chat').AssistantMessageBlock[]
-    if (assistantMessage.variants && assistantMessage.variants.length > 0) {
-      const latestVariant = assistantMessage.variants[assistantMessage.variants.length - 1]
-      contentToDisplay = latestVariant.content as import('@shared/chat').AssistantMessageBlock[]
-    }
     return contentToDisplay
       .filter((block: import('@shared/chat').AssistantMessageBlock) => block.type === 'content')
       .map((block: import('@shared/chat').AssistantMessageBlock) => block.content || '')

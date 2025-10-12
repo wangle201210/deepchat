@@ -36,7 +36,7 @@ export const useChatStore = defineStore('chat', () => {
       dtThreads: CONVERSATION[]
     }[]
   >([])
-  const messagesMap = ref<Map<number, AssistantMessage[] | UserMessage[]>>(new Map())
+  const messagesMap = ref<Map<number, Array<AssistantMessage | UserMessage>>>(new Map())
   const generatingThreadIds = ref(new Set<string>())
   const isSidebarOpen = ref(false)
   const isMessageNavigationOpen = ref(false)
@@ -64,7 +64,8 @@ export const useChatStore = defineStore('chat', () => {
     forcedSearch: undefined,
     searchStrategy: undefined,
     reasoningEffort: undefined,
-    verbosity: undefined
+    verbosity: undefined,
+    selectedVariantsMap: {}
   })
 
   // Deeplink 消息缓存
@@ -76,6 +77,9 @@ export const useChatStore = defineStore('chat', () => {
     mentions?: string[]
   } | null>(null)
 
+  // 用于管理当前激活会话的 selectedVariantsMap
+  const selectedVariantsMap = ref<Map<string, string>>(new Map())
+
   // Getters
   const getTabId = () => window.api.getWebContentsId()
   const getActiveThreadId = () => activeThreadIdMap.value.get(getTabId()) ?? null
@@ -83,7 +87,7 @@ export const useChatStore = defineStore('chat', () => {
     activeThreadIdMap.value.set(getTabId(), threadId)
   }
   const getMessages = () => messagesMap.value.get(getTabId()) ?? []
-  const setMessages = (msgs: AssistantMessage[] | UserMessage[]) => {
+  const setMessages = (msgs: Array<AssistantMessage | UserMessage>) => {
     messagesMap.value.set(getTabId(), msgs)
   }
   const getCurrentThreadMessages = () => {
@@ -106,6 +110,43 @@ export const useChatStore = defineStore('chat', () => {
 
   const activeThread = computed(() => {
     return threads.value.flatMap((t) => t.dtThreads).find((t) => t.id === getActiveThreadId())
+  })
+
+  const variantAwareMessages = computed((): Array<AssistantMessage | UserMessage> => {
+    const messages = getMessages()
+    const currentSelectedVariants = selectedVariantsMap.value
+
+    if (currentSelectedVariants.size === 0) {
+      return messages
+    }
+
+    return messages.map((msg) => {
+      if (msg.role === 'assistant' && currentSelectedVariants.has(msg.id)) {
+        const selectedVariantId = currentSelectedVariants.get(msg.id)
+
+        if (!selectedVariantId) {
+          return msg
+        }
+
+        const selectedVariant = (msg as AssistantMessage).variants?.find(
+          (v) => v.id === selectedVariantId
+        )
+
+        if (selectedVariant) {
+          const newMsg = JSON.parse(JSON.stringify(msg))
+
+          newMsg.content = selectedVariant.content
+          newMsg.usage = selectedVariant.usage
+          newMsg.model_id = selectedVariant.model_id
+          newMsg.model_provider = selectedVariant.model_provider
+          newMsg.model_name = selectedVariant.model_name
+
+          return newMsg
+        }
+      }
+
+      return msg
+    }) as Array<AssistantMessage | UserMessage>
   })
 
   // Actions
@@ -145,6 +186,7 @@ export const useChatStore = defineStore('chat', () => {
     if (!getActiveThreadId()) return
     await threadP.clearActiveThread(tabId)
     setActiveThreadId(null)
+    selectedVariantsMap.value.clear()
   }
 
   // 处理消息的 extra 信息
@@ -257,7 +299,11 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       await loadMessages()
-      await threadP.startStreamCompletion(getActiveThreadId()!)
+      await threadP.startStreamCompletion(
+        getActiveThreadId()!,
+        undefined,
+        Object.fromEntries(selectedVariantsMap.value)
+      )
     } catch (error) {
       console.error('Failed to send message:', error)
       throw error
@@ -277,7 +323,11 @@ export const useChatStore = defineStore('chat', () => {
       generatingThreadIds.value.add(getActiveThreadId()!)
       // 设置当前会话的workingStatus为working
       updateThreadWorkingStatus(getActiveThreadId()!, 'working')
-      await threadP.startStreamCompletion(getActiveThreadId()!, messageId)
+      await threadP.startStreamCompletion(
+        getActiveThreadId()!,
+        messageId,
+        Object.fromEntries(selectedVariantsMap.value)
+      )
     } catch (error) {
       console.error('Failed to retry message:', error)
       throw error
@@ -292,7 +342,8 @@ export const useChatStore = defineStore('chat', () => {
 
       const aiResponseMessage = await threadP.regenerateFromUserMessage(
         getActiveThreadId()!,
-        userMessageId
+        userMessageId,
+        Object.fromEntries(selectedVariantsMap.value)
       )
 
       getGeneratingMessagesCache().set(aiResponseMessage.id, {
@@ -323,7 +374,8 @@ export const useChatStore = defineStore('chat', () => {
         getActiveThreadId()!,
         messageId,
         newThreadTitle,
-        currentThread.settings
+        currentThread.settings,
+        Object.fromEntries(selectedVariantsMap.value)
       )
 
       // 切换到新会话
@@ -540,34 +592,32 @@ export const useChatStore = defineStore('chat', () => {
         // 处理普通内容
         else if (msg.content) {
           const lastContentBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastContentBlock && lastContentBlock.type === 'content') {
-            lastContentBlock.content += msg.content
-            // 打字机音效，与实际数据流同步
-            playTypewriterSound()
-          } else {
-            if (lastContentBlock) {
-              lastContentBlock.status = 'success'
+          if (lastContentBlock) {
+            lastContentBlock.status = 'success'
+            if (lastContentBlock.type === 'content') {
+              lastContentBlock.content += msg.content
             }
+          } else {
             curMsg.content.push({
               type: 'content',
               content: msg.content,
               status: 'loading',
               timestamp: Date.now()
             })
-            // 如果是新块的第一个字符，也播放声音
-            playTypewriterSound()
           }
+          // 打字机音效，与实际数据流同步
+          playTypewriterSound()
         }
 
         // 处理推理内容
         if (msg.reasoning_content) {
           const lastReasoningBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastReasoningBlock && lastReasoningBlock.type === 'reasoning_content') {
-            lastReasoningBlock.content += msg.reasoning_content
-          } else {
-            if (lastReasoningBlock) {
-              lastReasoningBlock.status = 'success'
+          if (lastReasoningBlock) {
+            lastReasoningBlock.status = 'success'
+            if (lastReasoningBlock.type === 'reasoning_content') {
+              lastReasoningBlock.content += msg.reasoning_content
             }
+          } else {
             curMsg.content.push({
               type: 'reasoning_content',
               content: msg.reasoning_content,
@@ -675,63 +725,62 @@ export const useChatStore = defineStore('chat', () => {
     // 从缓存中获取消息
     const cached = getGeneratingMessagesCache().get(msg.eventId)
     if (cached) {
-      if (getActiveThreadId() === getActiveThreadId()) {
-        try {
-          const updatedMessage = await threadP.getMessage(msg.eventId)
-          const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
+      try {
+        const updatedMessage = await threadP.getMessage(msg.eventId)
+        const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
 
-          if (enrichedMessage.is_variant && enrichedMessage.parentId) {
-            // 处理变体消息的错误状态
-            const parentMsgIndex = getMessages().findIndex((m) => m.id === enrichedMessage.parentId)
-            if (parentMsgIndex !== -1) {
-              const parentMsg = getMessages()[parentMsgIndex] as AssistantMessage
-              if (!parentMsg.variants) {
-                parentMsg.variants = []
-              }
-              const variantIndex = parentMsg.variants.findIndex((v) => v.id === enrichedMessage.id)
-              if (variantIndex !== -1) {
-                parentMsg.variants[variantIndex] = enrichedMessage
-              } else {
-                parentMsg.variants.push(enrichedMessage)
-              }
-              getMessages()[parentMsgIndex] = { ...parentMsg }
+        if (enrichedMessage.is_variant && enrichedMessage.parentId) {
+          // 处理变体消息的错误状态
+          const parentMsgIndex = getMessages().findIndex((m) => m.id === enrichedMessage.parentId)
+          if (parentMsgIndex !== -1) {
+            const parentMsg = getMessages()[parentMsgIndex] as AssistantMessage
+            if (!parentMsg.variants) {
+              parentMsg.variants = []
             }
-          } else {
-            // 非变体消息的原有错误处理逻辑
-            const messageIndex = getMessages().findIndex((m) => m.id === msg.eventId)
-            if (messageIndex !== -1) {
-              getMessages()[messageIndex] = enrichedMessage as AssistantMessage | UserMessage
+            const variantIndex = parentMsg.variants.findIndex((v) => v.id === enrichedMessage.id)
+            if (variantIndex !== -1) {
+              parentMsg.variants[variantIndex] = enrichedMessage
+            } else {
+              parentMsg.variants.push(enrichedMessage)
             }
+            getMessages()[parentMsgIndex] = { ...parentMsg }
           }
-          const wid = window.api.getWindowId() || 0
-          // 检查窗口是否聚焦，如果未聚焦则发送错误通知
-          const isFocused = await windowP.isMainWindowFocused(wid)
-          if (!isFocused) {
-            // 获取错误信息
-            let errorMessage = t('chat.notify.generationError')
-            if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
-              const assistantMsg = enrichedMessage as AssistantMessage
-              // 查找错误信息块
-              for (const block of assistantMsg.content) {
-                if (block.status === 'error' && block.content) {
-                  errorMessage = block.content.substring(0, 20)
-                  if (block.content.length > 20) errorMessage += '...'
-                  break
-                }
-              }
-            }
-
-            // 发送错误通知
-            await notificationP.showNotification({
-              id: `error-${msg.eventId}`,
-              title: t('chat.notify.generationError'),
-              body: errorMessage
-            })
+        } else {
+          // 非变体消息的原有错误处理逻辑
+          const messageIndex = getMessages().findIndex((m) => m.id === msg.eventId)
+          if (messageIndex !== -1) {
+            getMessages()[messageIndex] = enrichedMessage as AssistantMessage | UserMessage
           }
-        } catch (error) {
-          console.error('Failed to load error message:', error)
         }
+        const wid = window.api.getWindowId() || 0
+        // 检查窗口是否聚焦，如果未聚焦则发送错误通知
+        const isFocused = await windowP.isMainWindowFocused(wid)
+        if (!isFocused) {
+          // 获取错误信息
+          let errorMessage = t('chat.notify.generationError')
+          if (enrichedMessage && (enrichedMessage as AssistantMessage).content) {
+            const assistantMsg = enrichedMessage as AssistantMessage
+            // 查找错误信息块
+            for (const block of assistantMsg.content) {
+              if (block.status === 'error' && block.content) {
+                errorMessage = block.content.substring(0, 20)
+                if (block.content.length > 20) errorMessage += '...'
+                break
+              }
+            }
+          }
+
+          // 发送错误通知
+          await notificationP.showNotification({
+            id: `error-${msg.eventId}`,
+            title: t('chat.notify.generationError'),
+            body: errorMessage
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load error message:', error)
       }
+
       getGeneratingMessagesCache().delete(msg.eventId)
       generatingThreadIds.value.delete(cached.threadId)
       // 设置会话的workingStatus为error
@@ -765,6 +814,14 @@ export const useChatStore = defineStore('chat', () => {
       }
       if (conversation) {
         chatConfig.value = { ...conversation.settings }
+        // Populate the in-memory map from the loaded settings
+        if (conversation.settings.selectedVariantsMap) {
+          selectedVariantsMap.value = new Map(
+            Object.entries(conversation.settings.selectedVariantsMap)
+          )
+        } else {
+          selectedVariantsMap.value.clear()
+        }
       }
     } catch (error) {
       console.error('Failed to load conversation config:', error)
@@ -789,14 +846,47 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const deleteMessage = async (messageId: string) => {
-    if (!getActiveThreadId()) return
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) return
+
     try {
+      const messages = getMessages()
+      let parentMessage: AssistantMessage | undefined
+      let parentIndex = -1
+      const mainMsgIndex = messages.findIndex((m) => m.id === messageId)
+      if (mainMsgIndex !== -1 && (messages[mainMsgIndex] as AssistantMessage).is_variant === 0) {
+        if (selectedVariantsMap.value.has(messageId)) {
+          selectedVariantsMap.value.delete(messageId)
+          await updateSelectedVariant(messageId, null)
+        }
+      } else {
+        for (let i = 0; i < messages.length; i++) {
+          const msg = messages[i] as AssistantMessage
+          if (msg.role === 'assistant' && msg.variants?.some((v) => v.id === messageId)) {
+            parentMessage = msg
+            parentIndex = i
+            break
+          }
+        }
+
+        if (parentMessage && parentIndex !== -1) {
+          const remainingVariants = parentMessage.variants?.filter((v) => v.id !== messageId) || []
+          parentMessage.variants = remainingVariants
+          messages[parentIndex] = { ...parentMessage }
+          const newSelectedVariantId =
+            remainingVariants.length > 0 ? remainingVariants[remainingVariants.length - 1].id : null
+          await updateSelectedVariant(parentMessage.id, newSelectedVariantId)
+        }
+      }
+
       await threadP.deleteMessage(messageId)
-      loadMessages()
+      await loadMessages()
     } catch (error) {
       console.error('Failed to delete message:', error)
+      await loadMessages()
     }
   }
+
   const clearAllMessages = async (threadId: string) => {
     if (!threadId) return
     try {
@@ -828,7 +918,7 @@ export const useChatStore = defineStore('chat', () => {
       const cache = getGeneratingMessagesCache()
       const generatingMessage = Array.from(cache.entries()).find(
         ([, cached]) => cached.threadId === threadId
-      )
+      ) as string[]
       if (generatingMessage) {
         const [messageId] = generatingMessage
         await threadP.stopMessageGeneration(messageId)
@@ -886,7 +976,11 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       await loadMessages()
-      await threadP.continueStreamCompletion(conversationId, messageId)
+      await threadP.continueStreamCompletion(
+        conversationId,
+        messageId,
+        Object.fromEntries(selectedVariantsMap.value)
+      )
     } catch (error) {
       console.error('Failed to continue generation:', error)
       throw error
@@ -956,6 +1050,34 @@ export const useChatStore = defineStore('chat', () => {
           getMessages()[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
         }
       }
+    }
+  }
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // 更新和持久化变体选择
+  const updateSelectedVariant = async (mainMessageId: string, selectedVariantId: string | null) => {
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) return
+
+    // 更新内存中的 Map
+    if (selectedVariantId && selectedVariantId !== mainMessageId) {
+      selectedVariantsMap.value.set(mainMessageId, selectedVariantId)
+    } else {
+      selectedVariantsMap.value.delete(mainMessageId)
+    }
+
+    // 同步更新 chatConfig 内的 selectedVariantsMap
+    if (chatConfig.value) {
+      chatConfig.value.selectedVariantsMap = Object.fromEntries(selectedVariantsMap.value)
+    }
+
+    // 持久化到后端
+    try {
+      await threadP.updateConversationSettings(activeThreadId, {
+        selectedVariantsMap: Object.fromEntries(selectedVariantsMap.value)
+      })
+    } catch (error) {
+      console.error('Failed to update selected variant:', error)
     }
   }
 
@@ -1107,7 +1229,7 @@ export const useChatStore = defineStore('chat', () => {
     )
 
     // 监听：定向的会话激活事件
-    window.electron.ipcRenderer.on(CONVERSATION_EVENTS.ACTIVATED, (_, msg) => {
+    window.electron.ipcRenderer.on(CONVERSATION_EVENTS.ACTIVATED, async (_, msg) => {
       // 确保是发给当前Tab的事件
       if (msg.tabId !== getTabId()) {
         return
@@ -1124,8 +1246,8 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
-      loadMessages()
-      loadChatConfig() // 加载对话配置
+      await loadChatConfig() // 加载对话配置
+      await loadMessages()
 
       // 新增：在会话激活处理完成后，通过usePresenter发送确认信号
       tabP.onRendererTabActivated(msg.conversationId)
@@ -1228,8 +1350,10 @@ export const useChatStore = defineStore('chat', () => {
     threads,
     messagesMap,
     generatingThreadIds,
+    selectedVariantsMap,
     // Getters
     activeThread,
+    variantAwareMessages,
     // Actions
     createThread,
     setActiveThread,
@@ -1261,6 +1385,7 @@ export const useChatStore = defineStore('chat', () => {
     getCurrentThreadMessages,
     exportThread,
     showProviderSelector,
-    regenerateFromUserMessage
+    regenerateFromUserMessage,
+    updateSelectedVariant
   }
 })

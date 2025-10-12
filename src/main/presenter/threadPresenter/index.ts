@@ -37,6 +37,7 @@ import { getFileContext } from './fileContext'
 import { ContentEnricher } from './contentEnricher'
 import { CONVERSATION_EVENTS, STREAM_EVENTS, TAB_EVENTS } from '@/events'
 import { DEFAULT_SETTINGS } from './const'
+import { nanoid } from 'nanoid'
 
 interface GeneratingMessageState {
   message: AssistantMessage
@@ -714,45 +715,48 @@ export class ThreadPresenter implements IThreadPresenter {
               .filter(Boolean)
 
             if (searchResults.length > 0) {
-              // 检查是否已经存在搜索块
-              const existingSearchBlock =
-                state.message.content.length > 0 && state.message.content[0].type === 'search'
-                  ? state.message.content[0]
-                  : null
+              const searchId = nanoid()
+              const pages = searchResults
+                .filter((item) => item && (item.icon || item.favicon))
+                .slice(0, 6)
+                .map((item) => ({
+                  url: item?.url ?? '',
+                  icon: item?.icon || item?.favicon || ''
+                }))
 
-              if (existingSearchBlock) {
-                // 如果已经存在搜索块，更新其状态和总数
-                existingSearchBlock.status = 'success'
-                existingSearchBlock.timestamp = currentTime
-                if (existingSearchBlock.extra) {
-                  // 累加搜索结果数量
-                  existingSearchBlock.extra.total =
-                    (existingSearchBlock.extra.total || 0) + searchResults.length
-                } else {
-                  existingSearchBlock.extra = {
-                    total: searchResults.length
-                  }
+              const searchBlock: AssistantMessageBlock = {
+                id: searchId,
+                type: 'search',
+                content: '',
+                status: 'success',
+                timestamp: currentTime,
+                extra: {
+                  total: searchResults.length,
+                  searchId,
+                  pages,
+                  label: tool_call_name || 'web_search',
+                  name: tool_call_name || 'web_search',
+                  engine: tool_call_server_name || undefined,
+                  provider: tool_call_server_name || undefined
                 }
-              } else {
-                // 如果不存在搜索块，创建新的并添加到内容的最前面
-                const searchBlock: AssistantMessageBlock = {
-                  type: 'search',
-                  content: '',
-                  status: 'success',
-                  timestamp: currentTime,
-                  extra: {
-                    total: searchResults.length
-                  }
-                }
-                state.message.content.unshift(searchBlock)
               }
 
-              // 保存搜索结果
+              finalizeLastBlock()
+              state.message.content.push(searchBlock)
+
               for (const result of searchResults) {
                 await this.sqlitePresenter.addMessageAttachment(
                   eventId,
                   'search_result',
-                  JSON.stringify(result)
+                  JSON.stringify({
+                    title: result?.title || '',
+                    url: result?.url || '',
+                    content: result?.content || '',
+                    description: result?.description || '',
+                    icon: result?.icon || result?.favicon || '',
+                    rank: typeof result?.rank === 'number' ? result.rank : undefined,
+                    searchId
+                  })
                 )
               }
 
@@ -1535,20 +1539,34 @@ export class ThreadPresenter implements IThreadPresenter {
       throw new Error('找不到生成状态')
     }
 
+    const activeEngine = this.searchManager.getActiveEngine()
+    const labelValue = 'web_search'
+    const engineId = activeEngine?.id ?? labelValue
+    const engineName = activeEngine?.name ?? engineId
+
     // 检查是否已被取消
     this.throwIfCancelled(messageId)
 
+    const searchId = nanoid()
     // 添加搜索加载状态
     const searchBlock: AssistantMessageBlock = {
+      id: searchId,
       type: 'search',
       content: '',
       status: 'loading',
       timestamp: Date.now(),
       extra: {
-        total: 0
+        total: 0,
+        searchId,
+        pages: [],
+        label: labelValue,
+        name: labelValue,
+        engine: engineName,
+        provider: engineName
       }
     }
-    state.message.content.unshift(searchBlock)
+    this.finalizeLastBlock(state)
+    state.message.content.push(searchBlock)
     await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
     // 标记消息为搜索状态
     state.isSearching = true
@@ -1600,7 +1618,7 @@ export class ThreadPresenter implements IThreadPresenter {
         query,
         formattedContext,
         conversationId,
-        this.searchManager.getActiveEngine().name
+        engineName
       ).catch((err) => {
         console.error('重写搜索查询失败:', err)
         return query
@@ -1630,8 +1648,18 @@ export class ThreadPresenter implements IThreadPresenter {
       this.throwIfCancelled(messageId)
 
       searchBlock.status = 'loading'
+      const pages = results
+        .filter((item) => item && (item.icon || item.favicon))
+        .slice(0, 6)
+        .map((item) => ({
+          url: item?.url || '',
+          icon: item?.icon || item?.favicon || ''
+        }))
+      const previousExtra = searchBlock.extra ?? {}
       searchBlock.extra = {
-        total: results.length
+        ...previousExtra,
+        total: results.length,
+        pages
       }
       await this.messageManager.editMessage(messageId, JSON.stringify(state.message.content))
 
@@ -1648,7 +1676,9 @@ export class ThreadPresenter implements IThreadPresenter {
             url: result.url,
             content: result.content || '',
             description: result.description || '',
-            icon: result.icon || ''
+            icon: result.icon || result.favicon || '',
+            rank: typeof result.rank === 'number' ? result.rank : undefined,
+            searchId
           })
         )
       }
@@ -1689,12 +1719,40 @@ export class ThreadPresenter implements IThreadPresenter {
   }
 
   // 从数据库获取搜索结果
-  async getSearchResults(messageId: string): Promise<SearchResult[]> {
+  async getSearchResults(messageId: string, searchId?: string): Promise<SearchResult[]> {
     const results = await this.sqlitePresenter.getMessageAttachments(messageId, 'search_result')
-    return results.map((result) => JSON.parse(result.content) as SearchResult) ?? []
+    const parsed =
+      results
+        .map((result) => {
+          try {
+            return JSON.parse(result.content) as SearchResult
+          } catch (error) {
+            console.warn('解析搜索结果附件失败:', error)
+            return null
+          }
+        })
+        .filter((item): item is SearchResult => item !== null) ?? []
+
+    if (searchId) {
+      const filtered = parsed.filter((item) => item.searchId === searchId)
+      if (filtered.length > 0) {
+        return filtered
+      }
+      // 历史数据兼容：如果没有匹配的 searchId，则回退到没有 searchId 的结果
+      const legacyResults = parsed.filter((item) => !item.searchId)
+      if (legacyResults.length > 0) {
+        return legacyResults
+      }
+    }
+
+    return parsed
   }
 
-  async startStreamCompletion(conversationId: string, queryMsgId?: string) {
+  async startStreamCompletion(
+    conversationId: string,
+    queryMsgId?: string,
+    selectedVariantsMap?: Record<string, string>
+  ) {
     const state = this.findGeneratingState(conversationId)
     if (!state) {
       console.warn('未找到状态，conversationId:', conversationId)
@@ -1707,7 +1765,8 @@ export class ThreadPresenter implements IThreadPresenter {
       // 1. 获取上下文信息
       const { conversation, userMessage, contextMessages } = await this.prepareConversationContext(
         conversationId,
-        queryMsgId
+        queryMsgId,
+        selectedVariantsMap
       )
 
       const { providerId, modelId } = conversation.settings
@@ -1823,7 +1882,11 @@ export class ThreadPresenter implements IThreadPresenter {
       throw error
     }
   }
-  async continueStreamCompletion(conversationId: string, queryMsgId: string) {
+  async continueStreamCompletion(
+    conversationId: string,
+    queryMsgId: string,
+    selectedVariantsMap?: Record<string, string>
+  ) {
     const state = this.findGeneratingState(conversationId)
     if (!state) {
       console.warn('未找到状态，conversationId:', conversationId)
@@ -1890,7 +1953,8 @@ export class ThreadPresenter implements IThreadPresenter {
       // 6. 获取上下文信息
       const { conversation, contextMessages, userMessage } = await this.prepareConversationContext(
         conversationId,
-        state.message.id
+        state.message.id,
+        selectedVariantsMap
       )
 
       // 检查是否已被取消
@@ -2020,7 +2084,8 @@ export class ThreadPresenter implements IThreadPresenter {
   // 准备会话上下文
   private async prepareConversationContext(
     conversationId: string,
-    queryMsgId?: string
+    queryMsgId?: string,
+    selectedVariantsMap?: Record<string, string>
   ): Promise<{
     conversation: CONVERSATION
     userMessage: Message
@@ -2065,6 +2130,32 @@ export class ThreadPresenter implements IThreadPresenter {
         throw new Error('找不到用户消息')
       }
       contextMessages = await this.getContextMessages(conversationId)
+    }
+
+    // 在获取原始 contextMessages 列表之后，但在将其传递给 LLM 上下文筛选和格式化函数之前，
+    // 插入核心“变体内容和元数据替换”逻辑。
+    if (selectedVariantsMap && Object.keys(selectedVariantsMap).length > 0) {
+      contextMessages = contextMessages.map((msg) => {
+        if (msg.role === 'assistant' && selectedVariantsMap[msg.id] && msg.variants) {
+          const selectedVariantId = selectedVariantsMap[msg.id]
+          const selectedVariant = msg.variants.find((v) => v.id === selectedVariantId)
+
+          if (selectedVariant) {
+            // 创建一个新的 Message 对象副本，并用变体的内容和元数据替换
+            // 使用深拷贝以避免意外修改原始对象
+            const newMsg = JSON.parse(JSON.stringify(msg))
+            newMsg.content = selectedVariant.content
+            newMsg.usage = selectedVariant.usage
+            newMsg.model_id = selectedVariant.model_id
+            newMsg.model_provider = selectedVariant.model_provider
+            // 返回修改后的副本
+            return newMsg
+          }
+          // 防御性代码：如果找不到变体，则静默回退到使用原始主消息
+        }
+        // 对于非助手消息或没有选择变体的助手消息，返回原始消息
+        return msg
+      })
     }
 
     // 处理 UserMessageMentionBlock
@@ -2677,7 +2768,8 @@ export class ThreadPresenter implements IThreadPresenter {
 
   async regenerateFromUserMessage(
     conversationId: string,
-    userMessageId: string
+    userMessageId: string,
+    selectedVariantsMap?: Record<string, string>
   ): Promise<AssistantMessage> {
     const userMessage = await this.messageManager.getMessage(userMessageId)
     if (!userMessage || userMessage.role !== 'user') {
@@ -2717,7 +2809,7 @@ export class ThreadPresenter implements IThreadPresenter {
       lastReasoningTime: null
     })
 
-    this.startStreamCompletion(conversationId, userMessageId).catch((e) => {
+    this.startStreamCompletion(conversationId, userMessageId, selectedVariantsMap).catch((e) => {
       console.error('Failed to start regeneration from user message:', e)
     })
 
@@ -2835,17 +2927,37 @@ export class ThreadPresenter implements IThreadPresenter {
     const modelId = this.searchAssistantModel?.id
     summaryProviderId = this.searchAssistantProviderId || conversation.settings.providerId
     const messages = await this.getContextMessages(conversation.id)
-    const messagesWithLength = messages
+    const selectedVariantsMap = conversation.settings.selectedVariantsMap || {}
+    const variantAwareMessages = messages.map((msg) => {
+      if (msg.role === 'assistant' && selectedVariantsMap[msg.id] && msg.variants) {
+        const selectedVariantId = selectedVariantsMap[msg.id]
+        const selectedVariant = msg.variants.find((v) => v.id === selectedVariantId)
+
+        if (selectedVariant) {
+          const newMsg = JSON.parse(JSON.stringify(msg))
+          newMsg.content = selectedVariant.content
+          newMsg.usage = selectedVariant.usage
+          newMsg.model_id = selectedVariant.model_id
+          newMsg.model_provider = selectedVariant.model_provider
+          newMsg.model_name = selectedVariant.model_name
+          return newMsg
+        }
+      }
+      return msg
+    })
+    const messagesWithLength = variantAwareMessages
       .map((msg) => {
         if (msg.role === 'user') {
           return {
             message: msg,
-            length:
-              `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
-                .length,
+            length: `${(msg.content as UserMessageContent).text}${getFileContext(
+              (msg.content as UserMessageContent).files
+            )}`.length,
             formattedMessage: {
               role: 'user' as const,
-              content: `${(msg.content as UserMessageContent).text}${getFileContext((msg.content as UserMessageContent).files)}`
+              content: `${(msg.content as UserMessageContent).text}${getFileContext(
+                (msg.content as UserMessageContent).files
+              )}`
             }
           }
         } else {
@@ -2918,13 +3030,15 @@ export class ThreadPresenter implements IThreadPresenter {
    * @param targetMessageId 目标消息ID（截止到该消息的所有消息将被复制）
    * @param newTitle 新会话标题
    * @param settings 新会话设置
+   * @param selectedVariantsMap 选定的变体映射表 (可选)
    * @returns 新创建的会话ID
    */
   async forkConversation(
     targetConversationId: string,
     targetMessageId: string,
     newTitle: string,
-    settings?: Partial<CONVERSATION_SETTINGS>
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    selectedVariantsMap?: Record<string, string>
   ): Promise<string> {
     try {
       // 1. 获取源会话信息
@@ -2936,88 +3050,107 @@ export class ThreadPresenter implements IThreadPresenter {
       // 2. 创建新会话
       const newConversationId = await this.sqlitePresenter.createConversation(newTitle)
 
-      // 更新会话设置
-      if (settings || sourceConversation.settings) {
-        await this.updateConversationSettings(
-          newConversationId,
-          settings || sourceConversation.settings
-        )
-      }
+      const newSettings = { ...(settings || sourceConversation.settings) }
+      newSettings.selectedVariantsMap = {} // 确保新会话不继承变体选择
+      await this.updateConversationSettings(newConversationId, newSettings)
 
-      // 更新is_new标志
       await this.sqlitePresenter.updateConversation(newConversationId, { is_new: 0 })
 
-      // 3. 获取源会话中的消息历史
-      const message = await this.messageManager.getMessage(targetMessageId)
-      if (!message) {
+      // 3.1. 获取完整的、未截断的会话历史（只包含主消息）
+      const { list: fullHistory } = await this.messageManager.getMessageThread(
+        targetConversationId,
+        1,
+        99999 // 使用一个足够大的数字确保获取全部历史
+      )
+
+      // 3.2. 获取用户点击的目标消息对象
+      const targetMessage = await this.messageManager.getMessage(targetMessageId)
+      if (!targetMessage) {
         throw new Error('目标消息不存在')
       }
 
-      // 获取目标消息之前的所有消息（包括目标消息）
-      const messageHistory = await this.getMessageHistory(targetMessageId, 100)
+      // 3.3. 确定目标消息所属的“主消息”ID
+      let mainTargetId: string | null = null
+      if (targetMessage.is_variant) {
+        // 如果是变体，则通过其 parentId（指向用户消息）找到其主消息
+        if (!targetMessage.parentId) {
+          throw new Error('变体消息缺少 parentId，无法定位主消息')
+        }
+        const mainMessage = await this.messageManager.getMainMessageByParentId(
+          targetConversationId,
+          targetMessage.parentId
+        )
+        mainTargetId = mainMessage ? mainMessage.id : null
+      } else {
+        // 如果本身就是主消息
+        mainTargetId = targetMessage.id
+      }
+
+      if (!mainTargetId) {
+        throw new Error('无法确定用于分叉的历史记录目标主消息ID')
+      }
+
+      // 3.4. 在完整历史中找到主消息的索引
+      const forkEndIndex = fullHistory.findIndex((msg) => msg.id === mainTargetId)
+      if (forkEndIndex === -1) {
+        throw new Error('目标主消息在会话历史中未找到，无法分叉。')
+      }
+
+      // 3.5. 截取从开始到目标主消息（包括）的正确历史记录
+      const messageHistory = fullHistory.slice(0, forkEndIndex + 1)
 
       // 4. 创建消息ID映射表，用于维护父子关系
       const messageIdMap = new Map<string, string>() // 旧消息ID -> 新消息ID
-      const parentChildMap = new Map<string, string[]>() // 父消息ID -> 子消息ID列表
       const messagesToProcess: Array<{ msg: any; orderSeq: number }> = []
 
-      // 首先收集所有需要复制的消息，并建立父子关系映射
       for (const msg of messageHistory) {
-        // 只复制已发送成功的消息
         if (msg.status !== 'sent') {
           continue
         }
-
-        // 获取消息序号
         const orderSeq = (await this.sqlitePresenter.getMaxOrderSeq(newConversationId)) + 1
-
-        // 记录父子关系
-        if (msg.parentId && msg.parentId !== '') {
-          if (!parentChildMap.has(msg.parentId)) {
-            parentChildMap.set(msg.parentId, [])
-          }
-          parentChildMap.get(msg.parentId)!.push(msg.id)
-        }
-
         messagesToProcess.push({ msg, orderSeq })
       }
 
       // 5. 按顺序插入所有消息，先不设置父ID
       for (const { msg, orderSeq } of messagesToProcess) {
-        // 解析元数据
+        let finalMsg = msg
+        // 当循环到我们关心的主消息时，检查 selectedVariantsMap
+        if (msg.role === 'assistant' && selectedVariantsMap && selectedVariantsMap[msg.id]) {
+          const selectedVariantId = selectedVariantsMap[msg.id]
+          const variant = msg.variants?.find((v) => v.id === selectedVariantId)
+          if (variant) {
+            finalMsg = variant // 使用选定的变体对象进行复制
+          }
+        }
+
         const metadata: MESSAGE_METADATA = {
-          totalTokens: msg.usage?.total_tokens || 0,
+          totalTokens: finalMsg.usage?.total_tokens || 0,
           generationTime: 0,
           firstTokenTime: 0,
           tokensPerSecond: 0,
           contextUsage: 0,
-          inputTokens: msg.usage?.input_tokens || 0,
-          outputTokens: msg.usage?.output_tokens || 0,
-          ...(msg.model_id ? { model: msg.model_id } : {}),
-          ...(msg.model_provider ? { provider: msg.model_provider } : {})
+          inputTokens: finalMsg.usage?.input_tokens || 0,
+          outputTokens: finalMsg.usage?.output_tokens || 0,
+          ...(finalMsg.model_id ? { model: finalMsg.model_id } : {}),
+          ...(finalMsg.model_provider ? { provider: finalMsg.model_provider } : {})
         }
 
-        // 计算token数量
-        const tokenCount = msg.usage?.total_tokens || 0
+        const tokenCount = finalMsg.usage?.total_tokens || 0
+        const content =
+          typeof finalMsg.content === 'string' ? finalMsg.content : JSON.stringify(finalMsg.content)
 
-        // 内容处理（确保是字符串）
-        const content = typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content)
-
-        // 插入消息记录，暂时不设置父ID
         const newMessageId = await this.sqlitePresenter.insertMessage(
-          newConversationId, // 新会话ID
-          content, // 内容
-          msg.role, // 角色
-          '', // 暂时无父消息ID，稍后更新
-          JSON.stringify(metadata), // 元数据
-          orderSeq, // 序号
-          tokenCount, // token数
-          'sent', // 状态固定为sent
-          0, // 不是上下文边界
-          0 // 不是变体
+          newConversationId,
+          content,
+          finalMsg.role,
+          '',
+          JSON.stringify(metadata),
+          orderSeq,
+          tokenCount,
+          'sent',
+          0,
+          0
         )
-
-        // 记录新旧消息ID的映射关系
         messageIdMap.set(msg.id, newMessageId)
       }
 
@@ -3026,7 +3159,6 @@ export class ThreadPresenter implements IThreadPresenter {
         if (msg.parentId && msg.parentId !== '') {
           const newMessageId = messageIdMap.get(msg.id)
           const newParentId = messageIdMap.get(msg.parentId)
-
           if (newMessageId && newParentId) {
             await this.sqlitePresenter.updateMessageParentId(newMessageId, newParentId)
           }
@@ -3245,6 +3377,26 @@ export class ThreadPresenter implements IThreadPresenter {
       // 过滤掉未发送成功的消息
       const validMessages = messages.filter((msg) => msg.status === 'sent')
 
+      // 应用变体选择
+      const selectedVariantsMap = conversation.settings.selectedVariantsMap || {}
+      const variantAwareMessages = validMessages.map((msg) => {
+        if (msg.role === 'assistant' && selectedVariantsMap[msg.id] && msg.variants) {
+          const selectedVariantId = selectedVariantsMap[msg.id]
+          const selectedVariant = msg.variants.find((v) => v.id === selectedVariantId)
+
+          if (selectedVariant) {
+            const newMsg = JSON.parse(JSON.stringify(msg))
+            newMsg.content = selectedVariant.content
+            newMsg.usage = selectedVariant.usage
+            newMsg.model_id = selectedVariant.model_id
+            newMsg.model_provider = selectedVariant.model_provider
+            newMsg.model_name = selectedVariant.model_name
+            return newMsg
+          }
+        }
+        return msg
+      })
+
       // 生成文件名 - 使用简化的时间戳格式
       const timestamp = new Date()
         .toISOString()
@@ -3258,13 +3410,13 @@ export class ThreadPresenter implements IThreadPresenter {
       let content: string
       switch (format) {
         case 'markdown':
-          content = this.exportToMarkdown(conversation, validMessages)
+          content = this.exportToMarkdown(conversation, variantAwareMessages)
           break
         case 'html':
-          content = this.exportToHtml(conversation, validMessages)
+          content = this.exportToHtml(conversation, variantAwareMessages)
           break
         case 'txt':
-          content = this.exportToText(conversation, validMessages)
+          content = this.exportToText(conversation, variantAwareMessages)
           break
         default:
           throw new Error(`不支持的导出格式: ${format}`)

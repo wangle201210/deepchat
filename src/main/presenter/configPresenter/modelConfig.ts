@@ -1,8 +1,8 @@
 import { ModelType } from '@shared/model'
 import { IModelConfig, ModelConfig, ModelConfigSource } from '@shared/presenter'
 import ElectronStore from 'electron-store'
-import { defaultModelsSettings } from './modelDefaultSettings'
-import { getProviderSpecificModelConfig } from './providerModelSettings'
+import { providerDbLoader } from './providerDbLoader'
+import { isImageInputSupported } from '@shared/types/model-db'
 
 const SPECIAL_CONCAT_CHAR = '-_-'
 
@@ -20,6 +20,9 @@ export class ModelConfigHelper {
   private memoryCache: Map<string, IModelConfig> = new Map()
   private cacheInitialized: boolean = false
   private currentVersion: string
+  private static readonly PROVIDER_ID_ALIASES: Record<string, string> = {
+    dashscope: 'alibaba-cn'
+  }
 
   constructor(appVersion: string = '0.0.0') {
     this.modelConfigStore = new ElectronStore<ModelConfigStoreSchema>({
@@ -39,6 +42,12 @@ export class ModelConfigHelper {
     if (meta.lastRefreshVersion !== this.currentVersion) {
       this.refreshDerivedConfigs(meta)
     }
+  }
+
+  private resolveProviderId(providerId: string | undefined): string | undefined {
+    if (!providerId) return undefined
+    const alias = ModelConfigHelper.PROVIDER_ID_ALIASES[providerId]
+    return alias || providerId
   }
 
   private initializeMetaFromLegacyStore(): void {
@@ -219,10 +228,8 @@ export class ModelConfigHelper {
   }
 
   /**
-   * Get model configuration with priority: user config > provider config > default config
-   * @param modelId - The model ID
-   * @param providerId - Optional provider ID
-   * @returns ModelConfig with isUserDefined flag
+   * 获取模型配置（优先级：用户自定义 > 远端缓存/本地内置 Provider DB 严格匹配 > 默认兜底）
+   * 严格匹配要求 providerId 与 modelId 全等；不再做模糊匹配。
    */
   getModelConfig(modelId: string, providerId?: string): ModelConfig {
     this.initializeCache()
@@ -230,21 +237,29 @@ export class ModelConfigHelper {
     let storedConfig: ModelConfig | null = null
     let storedSource: ModelConfigSource | undefined
 
+    // 统一小写用于 DB 严格匹配；用户配置读取先原样，再尝试小写键
+    const normModelId = modelId ? modelId.toLowerCase() : modelId
+    const normProviderId = providerId ? providerId.toLowerCase() : providerId
+
     if (providerId) {
       const cacheKey = this.generateCacheKey(providerId, modelId)
-      let cachedEntry = this.memoryCache.get(cacheKey)
-
-      if (!cachedEntry) {
-        const entryFromStore = this.modelConfigStore.get(cacheKey) as IModelConfig | undefined
-        if (entryFromStore) {
-          cachedEntry = entryFromStore
-          this.memoryCache.set(cacheKey, entryFromStore)
-        }
-      }
+      const cachedEntry = this.memoryCache.has(cacheKey)
+        ? (this.memoryCache.get(cacheKey) as IModelConfig | undefined)
+        : undefined
 
       if (cachedEntry?.config) {
         storedConfig = cachedEntry.config
         storedSource = cachedEntry.source ?? (cachedEntry.config.isUserDefined ? 'user' : undefined)
+      } else if (normProviderId && normModelId) {
+        // 二次尝试：小写键（兼容历史大小写不一致的存储键）
+        const normKey = this.generateCacheKey(normProviderId, normModelId)
+        const normCached = this.memoryCache.has(normKey)
+          ? (this.memoryCache.get(normKey) as IModelConfig | undefined)
+          : undefined
+        if (normCached?.config) {
+          storedConfig = normCached.config
+          storedSource = normCached.source ?? (normCached.config.isUserDefined ? 'user' : undefined)
+        }
       }
     }
 
@@ -264,35 +279,28 @@ export class ModelConfigHelper {
 
     let finalConfig: ModelConfig | null = null
 
-    if (providerId) {
-      const providerConfig = getProviderSpecificModelConfig(providerId, modelId)
-      if (providerConfig) {
-        finalConfig = { ...providerConfig }
-      }
-    }
-
-    if (!finalConfig) {
-      const lowerModelId = modelId.toLowerCase()
-
-      for (const config of defaultModelsSettings) {
-        if (config.match.some((matchStr) => lowerModelId.includes(matchStr.toLowerCase()))) {
-          finalConfig = {
-            maxTokens: config.maxTokens,
-            contextLength: config.contextLength,
-            temperature: config.temperature,
-            vision: config.vision,
-            functionCall: config.functionCall || false,
-            reasoning: config.reasoning || false,
-            type: config.type || ModelType.Chat,
-            thinkingBudget: config.thinkingBudget,
-            enableSearch: config.enableSearch || false,
-            forcedSearch: config.forcedSearch || false,
-            searchStrategy: config.searchStrategy || 'turbo',
-            reasoningEffort: config.reasoningEffort,
-            verbosity: config.verbosity,
-            maxCompletionTokens: config.maxCompletionTokens
-          }
-          break
+    // 严格匹配：仅当提供 providerId 时从 Provider DB 查找
+    if (normProviderId) {
+      const db = providerDbLoader.getDb()
+      const resolvedProviderId = this.resolveProviderId(normProviderId)
+      const provider = db?.providers?.[resolvedProviderId!]
+      const model = provider?.models.find((m) => m.id === normModelId)
+      if (model) {
+        finalConfig = {
+          maxTokens: model.limit?.output ?? 4096,
+          contextLength: model.limit?.context ?? 8192,
+          temperature: 0.6,
+          vision: isImageInputSupported(model),
+          functionCall: model.tool_call ?? false,
+          reasoning: Boolean(model.reasoning?.default ?? false),
+          type: ModelType.Chat,
+          thinkingBudget: model.reasoning?.budget?.default ?? undefined,
+          enableSearch: Boolean(model.search?.default ?? false),
+          forcedSearch: Boolean(model.search?.forced_search),
+          searchStrategy: model.search?.search_strategy === 'max' ? 'max' : 'turbo',
+          reasoningEffort: undefined,
+          verbosity: undefined,
+          maxCompletionTokens: undefined
         }
       }
     }
