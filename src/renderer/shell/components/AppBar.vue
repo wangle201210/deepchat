@@ -1,10 +1,13 @@
 <template>
   <div
-    class="flex flex-row h-9 min-h-9 bg-window-background border border-b-0 border-window-inner-border box-border rounded-t-[10px] relative overflow-hidden"
-    :class="[!isFullscreened && isMacOS ? '' : ' rounded-t-none']"
+    class="flex flex-row h-9 min-h-9 border border-b-0 border-window-inner-border box-border rounded-t-[10px] relative overflow-hidden"
+    :class="[
+      !isFullscreened && isMacOS ? '' : ' rounded-t-none',
+      isMacOS ? 'bg-window-background' : 'bg-window-background/10'
+    ]"
     :dir="langStore.dir"
   >
-    <div class="absolute bottom-0 left-0 w-full h-[1px] bg-border"></div>
+    <div class="absolute bottom-0 left-0 w-full h-[1px] bg-border z-10"></div>
     <div
       class="h-full shrink-0 w-0 flex-1 flex select-none text-center text-sm font-medium flex-row items-center justify-start window-drag-region"
     >
@@ -102,7 +105,7 @@
       </Button>
       <Button
         v-if="!isMacOS"
-        class="window-no-drag-region shrink-0 w-12 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group"
+        class="window-no-drag-region shrink-0 w-12 bg-transparent shadow-none rounded-none hover:bg-red-700/80 hover:text-white text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group"
         @click="closeWindow"
       >
         <CloseIcon class="h-3! w-3!" />
