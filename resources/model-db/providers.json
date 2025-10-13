@@ -6862,10 +6862,10 @@
           },
           "limit": {
             "context": 128000,
-            "output": 128000
+            "output": 64000
           },
           "temperature": true,
-          "tool_call": true,
+          "tool_call": false,
           "reasoning": {
             "supported": true,
             "default": true
@@ -22065,6 +22065,29 @@
           "limit": {
             "context": 128000,
             "output": 16384
+          },
+          "temperature": true,
+          "tool_call": true,
+          "reasoning": {
+            "supported": false
+          },
+          "attachment": false
+        },
+        {
+          "id": "inclusionai/ling-1t",
+          "name": "inclusionAI: Ling-1T",
+          "display_name": "inclusionAI: Ling-1T",
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "limit": {
+            "context": 131072,
+            "output": 131072
           },
           "temperature": true,
           "tool_call": true,
