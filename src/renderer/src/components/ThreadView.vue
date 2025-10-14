@@ -1,30 +1,27 @@
 <template>
   <Teleport to="body">
     <Transition
-      enter-active-class="transition-opacity duration-200 ease-out"
-      leave-active-class="transition-opacity duration-150 ease-in"
-      enter-from-class="opacity-0"
-      leave-to-class="opacity-0"
+      enter-active-class="transition-all duration-200 ease-out"
+      leave-active-class="transition-all duration-150 ease-in"
+      :enter-from-class="'translate-x-full'"
+      :leave-to-class="'translate-x-full'"
     >
-      <div v-if="chatStore.isSidebarOpen" class="fixed inset-0 z-50" :dir="langStore.dir">
-        <div class="absolute inset-0 bg-transparent" @click="closeSidebar"></div>
+      <div
+        v-if="chatStore.isSidebarOpen"
+        class="fixed inset-0 z-50 flex justify-end"
+        :dir="langStore.dir"
+        @click.self="closeSidebar"
+      >
         <div
-          class="relative h-full flex"
-          :class="langStore.dir === 'rtl' ? 'justify-end' : 'justify-start'"
+          v-if="chatStore.isSidebarOpen"
+          :class="[
+            'h-full w-60 max-w-60 shadow-lg bg-card',
+            langStore.dir === 'rtl' ? 'border-l' : 'border-r',
+            'border-border'
+          ]"
+          @click.stop
         >
-          <Transition
-            enter-active-class="transition-transform duration-200 ease-out"
-            leave-active-class="transition-transform duration-150 ease-in"
-            :enter-from-class="langStore.dir === 'rtl' ? 'translate-x-full' : '-translate-x-full'"
-            :leave-to-class="langStore.dir === 'rtl' ? 'translate-x-full' : '-translate-x-full'"
-          >
-            <div
-              v-if="chatStore.isSidebarOpen"
-              class="h-full w-60 max-w-60 shadow-lg border-r border-border bg-card"
-            >
-              <ThreadsView class="h-full" />
-            </div>
-          </Transition>
+          <ThreadsView class="h-full" />
         </div>
       </div>
     </Transition>

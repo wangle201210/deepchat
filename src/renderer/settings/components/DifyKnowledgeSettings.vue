@@ -1,13 +1,16 @@
 <template>
   <div class="border rounded-lg overflow-hidden">
-    <div class="flex items-center p-4 bg-muted">
+    <div
+      class="flex items-center p-4 hover:bg-accent cursor-default"
+      @click="toggleDifyConfigPanel"
+    >
       <div class="flex-1">
         <div class="flex items-center">
-          <img src="@/assets/images/ragflow.png" class="h-5 mr-2" />
-          <span class="text-base font-medium">RAGFlow</span>
+          <img src="@/assets/images/dify.png" class="h-5 mr-2" />
+          <span class="text-base font-medium">{{ $t('settings.knowledgeBase.dify') }}</span>
         </div>
         <p class="text-sm text-muted-foreground mt-1">
-          {{ t('settings.knowledgeBase.ragflowDescription') }}
+          {{ t('settings.knowledgeBase.difyDescription') }}
         </p>
       </div>
       <div class="flex items-center gap-2">
@@ -16,9 +19,9 @@
           <Tooltip :delay-duration="200">
             <TooltipTrigger>
               <Switch
-                :model-value="isRagflowMcpEnabled"
+                :model-value="isDifyMcpEnabled"
                 :disabled="!mcpStore.mcpEnabled"
-                @update:model-value="toggleRagflowMcpServer"
+                @update:model-value="toggleDifyMcpServer"
               />
             </TooltipTrigger>
             <TooltipContent v-if="!mcpStore.mcpEnabled">
@@ -26,29 +29,21 @@
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <Button
-          variant="outline"
-          size="sm"
-          class="flex items-center gap-1"
-          @click="toggleRagflowConfigPanel"
-        >
-          <Icon
-            :icon="isRagflowConfigPanelOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'"
-            class="w-4 h-4"
-          />
-          {{ isRagflowConfigPanelOpen ? t('common.collapse') : t('common.expand') }}
-        </Button>
+        <Icon
+          :icon="isDifyConfigPanelOpen ? 'lucide:chevron-up' : 'lucide:chevron-down'"
+          class="w-4 h-4"
+        />
       </div>
     </div>
 
-    <!-- RAGFlow配置面板 -->
-    <Collapsible v-model:open="isRagflowConfigPanelOpen">
+    <!-- Dify配置面板 -->
+    <Collapsible v-model:open="isDifyConfigPanelOpen">
       <CollapsibleContent>
         <div class="p-4 border-t space-y-4">
           <!-- 已添加的配置列表 -->
-          <div v-if="ragflowConfigs.length > 0" class="space-y-3">
+          <div v-if="difyConfigs.length > 0" class="space-y-3">
             <div
-              v-for="(config, index) in ragflowConfigs"
+              v-for="(config, index) in difyConfigs"
               :key="index"
               class="p-3 border rounded-md relative"
             >
@@ -56,19 +51,19 @@
                 <Switch
                   :model-value="config.enabled === true"
                   size="sm"
-                  @update:model-value="toggleConfigEnabled(index, $event)"
+                  @update:model-value="(value) => toggleConfigEnabled(index, value)"
                 />
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-primary"
-                  @click="editRagflowConfig(index)"
+                  @click="editDifyConfig(index)"
                 >
                   <Icon icon="lucide:edit" class="h-4 w-4" />
                 </button>
                 <button
                   type="button"
                   class="text-muted-foreground hover:text-destructive"
-                  @click="removeRagflowConfig(index)"
+                  @click="removeDifyConfig(index)"
                 >
                   <Icon icon="lucide:trash-2" class="h-4 w-4" />
                 </button>
@@ -84,8 +79,8 @@
                     <span>{{ config.apiKey.substring(0, 8) + '****' }}</span>
                   </div>
                   <div>
-                    <span class="font-medium">Dataset IDs:</span>
-                    <span>{{ config.datasetIds.join(', ') }}</span>
+                    <span class="font-medium">Dataset ID:</span>
+                    <span>{{ config.datasetId }}</span>
                   </div>
                   <div class="col-span-2">
                     <span class="font-medium">Endpoint:</span>
@@ -106,77 +101,77 @@
               @click="openAddConfig"
             >
               <Icon icon="lucide:plus" class="w-8 h-4" />
-              {{ t('settings.knowledgeBase.addRagflowConfig') }}
+              {{ t('settings.knowledgeBase.addDifyConfig') }}
             </Button>
           </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
 
-    <!-- RAGFlow配置对话框 -->
-    <Dialog v-model:open="isRagflowConfigDialogOpen">
+    <!-- Dify配置对话框 -->
+    <Dialog v-model:open="isDifyConfigDialogOpen">
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{{
             isEditing
-              ? t('settings.knowledgeBase.editRagflowConfig')
-              : t('settings.knowledgeBase.addRagflowConfig')
+              ? t('settings.knowledgeBase.editDifyConfig')
+              : t('settings.knowledgeBase.addDifyConfig')
           }}</DialogTitle>
           <DialogDescription>
-            {{ t('settings.knowledgeBase.ragflowDescription') }}
+            {{ t('settings.knowledgeBase.difyDescription') }}
           </DialogDescription>
         </DialogHeader>
         <div class="space-y-4 py-4">
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-ragflow-description">
+            <Label class="text-xs text-muted-foreground" for="edit-dify-description">
               {{ t('settings.knowledgeBase.descriptionDesc') }}
             </Label>
             <Input
-              id="edit-ragflow-description"
-              v-model="editingRagflowConfig.description"
+              id="edit-dify-description"
+              v-model="editingDifyConfig.description"
               :placeholder="t('settings.knowledgeBase.descriptionPlaceholder')"
             />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-ragflow-api-key">
+            <Label class="text-xs text-muted-foreground" for="edit-dify-api-key">
               {{ t('settings.knowledgeBase.apiKey') }}
             </Label>
             <Input
-              id="edit-ragflow-api-key"
-              v-model="editingRagflowConfig.apiKey"
+              id="edit-dify-api-key"
+              v-model="editingDifyConfig.apiKey"
               type="password"
-              placeholder="RAGFlow API Key"
+              placeholder="Dify API Key"
             />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-ragflow-dataset-ids">
+            <Label class="text-xs text-muted-foreground" for="edit-dify-dataset-id">
               {{ t('settings.knowledgeBase.datasetId') }}
             </Label>
             <Input
-              id="edit-ragflow-dataset-ids"
-              v-model="editingRagflowConfig.datasetIdsStr"
-              placeholder="Dataset IDs (用逗号分隔)"
+              id="edit-dify-dataset-id"
+              v-model="editingDifyConfig.datasetId"
+              placeholder="Dify Dataset ID"
             />
           </div>
 
           <div class="space-y-2">
-            <Label class="text-xs text-muted-foreground" for="edit-ragflow-endpoint">
+            <Label class="text-xs text-muted-foreground" for="edit-dify-endpoint">
               {{ t('settings.knowledgeBase.endpoint') }}
             </Label>
             <Input
-              id="edit-ragflow-endpoint"
-              v-model="editingRagflowConfig.endpoint"
-              placeholder="http://localhost"
+              id="edit-dify-endpoint"
+              v-model="editingDifyConfig.endpoint"
+              placeholder="https://api.dify.ai/v1"
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" @click="closeRagflowConfigDialog">{{
+          <Button variant="outline" @click="closeEditDifyConfigDialog">{{
             t('common.cancel')
           }}</Button>
-          <Button type="button" :disabled="!isEditingRagflowConfigValid" @click="saveRagflowConfig">
+          <Button type="button" :disabled="!isEditingDifyConfigValid" @click="saveDifyConfig">
             {{ isEditing ? t('common.confirm') : t('settings.knowledgeBase.addConfig') }}
           </Button>
         </DialogFooter>
@@ -210,166 +205,148 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@shadcn/components/ui/tooltip'
-import { useRoute } from 'vue-router'
-
-const { t } = useI18n()
-const mcpStore = useMcpStore()
-const { toast } = useToast()
-const route = useRoute()
 
 // 对话框状态
-const isRagflowConfigPanelOpen = ref(false)
-const isRagflowConfigDialogOpen = ref(false)
-const isEditing = ref(false)
-
-// RAGFlow配置状态
-interface RagflowConfig {
-  description: string
-  apiKey: string
-  datasetIds: string[]
-  endpoint: string
-  enabled?: boolean
-}
-
-interface EditingRagflowConfig extends Omit<RagflowConfig, 'datasetIds'> {
-  datasetIdsStr: string
-}
-
-const ragflowConfigs = ref<RagflowConfig[]>([])
-const editingRagflowConfig = ref<EditingRagflowConfig>({
-  description: '',
-  apiKey: '',
-  datasetIdsStr: '',
-  endpoint: 'http://localhost',
-  enabled: true
-})
-const editingConfigIndex = ref<number>(-1)
-
-// 验证配置是否有效
-const isEditingRagflowConfigValid = computed(() => {
-  return (
-    editingRagflowConfig.value.apiKey.trim() !== '' &&
-    editingRagflowConfig.value.datasetIdsStr.trim() !== '' &&
-    editingRagflowConfig.value.description.trim() !== ''
-  )
-})
+const isDifyConfigDialogOpen = ref(false)
 
 // 打开添加配置对话框
 const openAddConfig = () => {
   isEditing.value = false
   editingConfigIndex.value = -1
-  editingRagflowConfig.value = {
+  editingDifyConfig.value = {
     description: '',
     apiKey: '',
-    datasetIdsStr: '',
-    endpoint: 'http://localhost',
+    datasetId: '',
+    endpoint: 'https://api.dify.ai/v1',
     enabled: true
   }
-  isRagflowConfigDialogOpen.value = true
+  isDifyConfigDialogOpen.value = true
 }
 
 defineExpose({
   openAddConfig
 })
 
+const { t } = useI18n()
+const mcpStore = useMcpStore()
+const { toast } = useToast()
+
+// 对话框状态
+const isDifyConfigPanelOpen = ref(false)
+const isEditing = ref(false)
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+// Dify配置状态
+interface DifyConfig {
+  description: string
+  apiKey: string
+  datasetId: string
+  endpoint: string
+  enabled?: boolean
+}
+
+const difyConfigs = ref<DifyConfig[]>([])
+const editingDifyConfig = ref<DifyConfig>({
+  description: '',
+  apiKey: '',
+  datasetId: '',
+  endpoint: 'https://api.dify.ai/v1',
+  enabled: true
+})
+const editingConfigIndex = ref<number>(-1)
+
+// 验证配置是否有效
+const isEditingDifyConfigValid = computed(() => {
+  return (
+    editingDifyConfig.value.apiKey.trim() !== '' &&
+    editingDifyConfig.value.datasetId.trim() !== '' &&
+    editingDifyConfig.value.description.trim() !== ''
+  )
+})
+
 // 打开编辑配置对话框
-const editRagflowConfig = (index: number) => {
+const editDifyConfig = (index: number) => {
   isEditing.value = true
   editingConfigIndex.value = index
-  const config = ragflowConfigs.value[index]
-  editingRagflowConfig.value = {
-    ...config,
-    datasetIdsStr: config.datasetIds.join(',')
-  }
-  isRagflowConfigDialogOpen.value = true
+  const config = difyConfigs.value[index]
+  editingDifyConfig.value = { ...config }
+  isDifyConfigDialogOpen.value = true
 }
 
 // 关闭配置对话框
-const closeRagflowConfigDialog = () => {
-  isRagflowConfigDialogOpen.value = false
+const closeEditDifyConfigDialog = () => {
+  isDifyConfigDialogOpen.value = false
   editingConfigIndex.value = -1
-  editingRagflowConfig.value = {
+  editingDifyConfig.value = {
     description: '',
     apiKey: '',
-    datasetIdsStr: '',
-    endpoint: 'http://localhost',
+    datasetId: '',
+    endpoint: 'https://api.dify.ai/v1',
     enabled: true
   }
 }
 
 // 保存配置
-const saveRagflowConfig = async () => {
-  if (!isEditingRagflowConfigValid.value) return
-
-  const datasetIds = editingRagflowConfig.value.datasetIdsStr
-    .split(',')
-    .map((id) => id.trim())
-    .filter((id) => id !== '')
-
-  const config: RagflowConfig = {
-    description: editingRagflowConfig.value.description,
-    apiKey: editingRagflowConfig.value.apiKey,
-    datasetIds,
-    endpoint: editingRagflowConfig.value.endpoint,
-    enabled: editingRagflowConfig.value.enabled
-  }
+const saveDifyConfig = async () => {
+  if (!isEditingDifyConfigValid.value) return
 
   if (isEditing.value) {
     // 更新配置
     if (editingConfigIndex.value !== -1) {
-      ragflowConfigs.value[editingConfigIndex.value] = config
+      difyConfigs.value[editingConfigIndex.value] = { ...editingDifyConfig.value }
     }
     toast({
       title: t('settings.knowledgeBase.configUpdated'),
       description: t('settings.knowledgeBase.configUpdatedDesc', {
-        name: t('settings.knowledgeBase.ragflowTitle')
+        name: t('settings.knowledgeBase.dify')
       })
     })
   } else {
     // 添加配置
-    ragflowConfigs.value.push(config)
+    difyConfigs.value.push({ ...editingDifyConfig.value })
     toast({
       title: t('settings.knowledgeBase.configAdded'),
       description: t('settings.knowledgeBase.configAddedDesc', {
-        name: t('settings.knowledgeBase.ragflowTitle')
+        name: t('settings.knowledgeBase.dify')
       })
     })
   }
 
   // 更新到MCP配置
-  await updateRagflowConfigToMcp()
+  await updateDifyConfigToMcp()
 
   // 关闭对话框
-  closeRagflowConfigDialog()
+  closeEditDifyConfigDialog()
 }
 
-// 移除RAGFlow配置
-const removeRagflowConfig = async (index: number) => {
-  ragflowConfigs.value.splice(index, 1)
-  await updateRagflowConfigToMcp()
+// 移除Dify配置
+const removeDifyConfig = async (index: number) => {
+  difyConfigs.value.splice(index, 1)
+  await updateDifyConfigToMcp()
 }
 
 // 切换配置启用状态
 const toggleConfigEnabled = async (index: number, enabled: boolean) => {
-  ragflowConfigs.value[index].enabled = enabled
-  await updateRagflowConfigToMcp()
+  difyConfigs.value[index].enabled = enabled
+  await updateDifyConfigToMcp()
 }
 
-// 更新RAGFlow配置到MCP
-const updateRagflowConfigToMcp = async () => {
+// 更新Dify配置到MCP
+const updateDifyConfigToMcp = async () => {
   try {
     // 将配置转换为MCP需要的格式 - 转换为JSON字符串
     const envJson = {
-      configs: toRaw(ragflowConfigs.value)
+      configs: toRaw(difyConfigs.value)
     }
     // 更新到MCP服务器
-    await mcpStore.updateServer('ragflowKnowledge', {
+    await mcpStore.updateServer('difyKnowledge', {
       env: envJson
     })
 
     return true
   } catch (error) {
-    console.error('更新RAGFlow配置失败:', error)
+    console.error('更新Dify配置失败:', error)
     toast({
       title: t('common.error.operationFailed'),
       description: String(error),
@@ -379,51 +356,52 @@ const updateRagflowConfigToMcp = async () => {
   }
 }
 
-// 从MCP加载RAGFlow配置
-const loadRagflowConfigFromMcp = async () => {
+// 从MCP加载Dify配置
+const loadDifyConfigFromMcp = async () => {
   try {
-    // 获取ragflowKnowledge服务器配置
-    const serverConfig = mcpStore.config.mcpServers['ragflowKnowledge']
+    // 获取difyKnowledge服务器配置
+    const serverConfig = mcpStore.config.mcpServers['difyKnowledge']
     if (serverConfig && serverConfig.env) {
       // 解析配置 - env可能是JSON字符串
       try {
         // 尝试解析JSON字符串
         const envObj =
           typeof serverConfig.env === 'string' ? JSON.parse(serverConfig.env) : serverConfig.env
+        // const envObj = serverConfig.env
         if (envObj.configs && Array.isArray(envObj.configs)) {
-          ragflowConfigs.value = envObj.configs
+          difyConfigs.value = envObj.configs
         }
       } catch (parseError) {
-        console.error('解析RAGFlow配置JSON失败:', parseError)
+        console.error('解析Dify配置JSON失败:', parseError)
       }
     }
   } catch (error) {
-    console.error('加载RAGFlow配置失败:', error)
+    console.error('加载Dify配置失败:', error)
   }
 }
 
-// 切换RAGFlow配置面板
-const toggleRagflowConfigPanel = () => {
-  isRagflowConfigPanelOpen.value = !isRagflowConfigPanelOpen.value
+// 切换Dify配置面板
+const toggleDifyConfigPanel = () => {
+  isDifyConfigPanelOpen.value = !isDifyConfigPanelOpen.value
 }
 
-// 计算RAGFlow MCP服务器是否启用
-const isRagflowMcpEnabled = computed(() => {
-  return mcpStore.serverStatuses['ragflowKnowledge'] || false
+// 计算Dify MCP服务器是否启用
+const isDifyMcpEnabled = computed(() => {
+  return mcpStore.serverStatuses['difyKnowledge'] || false
 })
 
-// 切换RAGFlow MCP服务器状态
-const toggleRagflowMcpServer = async () => {
+// 切换Dify MCP服务器状态
+const toggleDifyMcpServer = async (_value: boolean) => {
   if (!mcpStore.mcpEnabled) return
-  await mcpStore.toggleServer('ragflowKnowledge')
+  await mcpStore.toggleServer('difyKnowledge')
 }
 
 // 监听MCP全局状态变化
 watch(
   () => mcpStore.mcpEnabled,
   async (enabled) => {
-    if (!enabled && isRagflowMcpEnabled.value) {
-      await mcpStore.toggleServer('ragflowKnowledge')
+    if (!enabled && isDifyMcpEnabled.value) {
+      await mcpStore.toggleServer('difyKnowledge')
     }
   }
 )
@@ -432,8 +410,8 @@ watch(
 watch(
   () => route.query.subtab,
   (newSubtab) => {
-    if (newSubtab === 'ragflow') {
-      isRagflowConfigPanelOpen.value = true
+    if (newSubtab === 'dify') {
+      isDifyConfigPanelOpen.value = true
     }
   },
   { immediate: true }
@@ -447,7 +425,7 @@ onMounted(async () => {
     async (ready) => {
       if (ready) {
         unwatch?.() // only run once to avoid multiple calls
-        await loadRagflowConfigFromMcp()
+        await loadDifyConfigFromMcp()
       }
     },
     { immediate: true }
