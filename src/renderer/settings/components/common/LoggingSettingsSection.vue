@@ -8,7 +8,8 @@
         <Icon icon="lucide:file-text" class="w-4 h-4 text-muted-foreground" />
         <span class="truncate">{{ t('settings.common.loggingEnabled') }}</span>
         <Button
-          variant="outline"
+          variant="ghost"
+          size="sm"
           class="shrink-0 ltr:ml-2 rtl:mr-2"
           :dir="langStore.dir"
           @click="openLogFolder"
