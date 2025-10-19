@@ -1,12 +1,14 @@
 <template>
-  <div class="mermaid-artifact artifact-dialog-content">
+  <div class="w-full h-full flex flex-col overflow-hidden">
     <div
       v-if="props.isPreview"
       ref="mermaidRef"
-      class="mermaid h-full flex items-center justify-center"
+      class="w-full h-full p-4 overflow-auto flex items-center justify-center [&_svg]:!w-full [&_svg]:!h-full [&_svg]:max-h-[calc(100vh-120px)] [&_svg]:object-contain"
     ></div>
     <div v-else class="h-full p-4">
-      <pre class="rounded-lg bg-muted p-4 h-full"><code>{{ props.block.content }}</code></pre>
+      <pre
+        class="rounded-lg bg-muted p-4 h-full m-0 overflow-auto"
+      ><code class="font-mono text-sm leading-6 h-full block">{{ props.block.content }}</code></pre>
     </div>
   </div>
 </template>
@@ -14,6 +16,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue'
 import mermaid from 'mermaid'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   block: {
@@ -47,17 +52,29 @@ const renderDiagram = async () => {
   if (!mermaidRef.value || !props.block.content) return
 
   try {
-    // 清空之前的内容
+    // Clear previous content
     mermaidRef.value.innerHTML = props.block.content
 
-    // 使用 mermaid API 重新渲染
+    // Re-render using mermaid API
     await mermaid.run({
       nodes: [mermaidRef.value]
     })
   } catch (error) {
     console.error('Failed to render mermaid diagram:', error)
     if (mermaidRef.value) {
-      mermaidRef.value.innerHTML = `<div class="text-destructive p-4">渲染失败: ${error instanceof Error ? error.message : '未知错误'}</div>`
+      // Create localized error message safely without innerHTML
+      const msg = error instanceof Error ? error.message : t('common.unknownError')
+      const text = t('artifacts.mermaid.renderError', { message: msg })
+
+      // Clear existing content
+      mermaidRef.value.innerHTML = ''
+
+      // Create error element and set text safely
+      const errorDiv = document.createElement('div')
+      errorDiv.classList.add('text-destructive', 'p-4', 'm-0')
+      errorDiv.textContent = text
+
+      mermaidRef.value.appendChild(errorDiv)
     }
   }
 }
@@ -73,49 +90,3 @@ watch(
   }
 )
 </script>
-
-<style scoped>
-.mermaid-artifact {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.mermaid {
-  width: 100%;
-  height: 100%;
-  padding: 1rem;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mermaid-block-header img {
-  margin: 0 !important;
-}
-
-.mermaid :deep(svg) {
-  width: 100% !important;
-  height: 100% !important;
-  max-height: calc(100vh - 120px);
-  object-fit: contain;
-}
-
-pre {
-  margin: 0;
-  overflow: auto;
-  height: 100%;
-}
-
-code {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  height: 100%;
-  display: block;
-}
-</style>

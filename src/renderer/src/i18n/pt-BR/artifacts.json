@@ -40,9 +40,13 @@
   "desktop": "Desktop",
   "tablet": "Tablet",
   "mobile": "Celular",
+  "responsive": "Responsive",
   "width": "Largura",
   "height": "Altura",
   "sanitizingSvg": "Sanitizando conteúdo SVG...",
   "svgSanitizationFailed": "O conteúdo SVG falhou na validação de segurança",
-  "noSvgContent": "Nenhum conteúdo SVG disponível"
+  "noSvgContent": "Nenhum conteúdo SVG disponível",
+  "mermaid": {
+    "renderError": "Falha ao renderizar: {message}"
+  }
 }
