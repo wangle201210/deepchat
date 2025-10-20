@@ -15,14 +15,19 @@ import { h, ref, watch } from 'vue'
 import NodeRenderer, {
   CodeBlockNode,
   ReferenceNode,
-  setCustomComponents
+  setCustomComponents,
+  setKaTeXWorker,
+  setMermaidWorker
 } from 'vue-renderer-markdown'
+import KatexWorker from 'vue-renderer-markdown/workers/katexRenderer.worker?worker&inline'
+import MermaidWorker from 'vue-renderer-markdown/workers/mermaidParser.worker?worker&inline'
 
 const props = defineProps<{
   content: string
   debug?: boolean
 }>()
-
+setKaTeXWorker(new KatexWorker())
+setMermaidWorker(new MermaidWorker())
 // 组件映射表
 const artifactStore = useArtifactStore()
 // 生成唯一的 message ID 和 thread ID，用于 MarkdownRenderer
