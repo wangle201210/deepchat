@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="prose prose-zinc prose-sm dark:prose-invert w-full max-w-none break-all">
-    <NodeRenderer :content="content" @copy="$emit('copy', $event)" />
+    <NodeRenderer :content="debouncedContent" @copy="$emit('copy', $event)" />
   </div>
 </template>
 
@@ -10,14 +10,15 @@ import { usePresenter } from '@/composables/usePresenter'
 import { useArtifactStore } from '@/stores/artifact'
 import { useReferenceStore } from '@/stores/reference'
 import { nanoid } from 'nanoid'
-import { h, ref } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import { h, ref, watch } from 'vue'
 import NodeRenderer, {
   CodeBlockNode,
   ReferenceNode,
   setCustomComponents
 } from 'vue-renderer-markdown'
 
-defineProps<{
+const props = defineProps<{
   content: string
   debug?: boolean
 }>()
@@ -30,6 +31,18 @@ const threadId = `artifact-thread-${nanoid()}`
 const referenceStore = useReferenceStore()
 const threadPresenter = usePresenter('threadPresenter')
 const referenceNode = ref<HTMLElement | null>(null)
+const debouncedContent = ref(props.content)
+
+const updateContent = useDebounceFn((value: string) => {
+  debouncedContent.value = value
+}, 16)
+
+watch(
+  () => props.content,
+  (value) => {
+    updateContent(value)
+  }
+)
 
 setCustomComponents({
   reference: (_props) =>
