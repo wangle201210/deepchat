@@ -33,9 +33,13 @@ const threadPresenter = usePresenter('threadPresenter')
 const referenceNode = ref<HTMLElement | null>(null)
 const debouncedContent = ref(props.content)
 
-const updateContent = useDebounceFn((value: string) => {
-  debouncedContent.value = value
-}, 16)
+const updateContent = useDebounceFn(
+  (value: string) => {
+    debouncedContent.value = value
+  },
+  16,
+  { maxWait: 64 }
+)
 
 watch(
   () => props.content,
@@ -108,12 +112,15 @@ defineEmits(['copy'])
     margin-top: 0;
     margin-bottom: 0;
   }
+
   .mermaid-block-header img {
     margin: 0 !important;
   }
+
   p {
     @apply my-0;
   }
+
   li p {
     padding-top: 0;
     padding-bottom: 0;
