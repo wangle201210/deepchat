@@ -42,7 +42,7 @@ const updateContent = useDebounceFn(
   (value: string) => {
     debouncedContent.value = value
   },
-  16,
+  32,
   { maxWait: 64 }
 )
 
