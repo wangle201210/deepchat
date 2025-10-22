@@ -1,7 +1,7 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="prose prose-zinc prose-sm dark:prose-invert w-full max-w-none break-all">
-    <NodeRenderer :content="content" @copy="$emit('copy', $event)" />
+    <NodeRenderer :content="debouncedContent" @copy="$emit('copy', $event)" />
   </div>
 </template>
 
@@ -10,18 +10,26 @@ import { usePresenter } from '@/composables/usePresenter'
 import { useArtifactStore } from '@/stores/artifact'
 import { useReferenceStore } from '@/stores/reference'
 import { nanoid } from 'nanoid'
-import { h, ref } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import { h, ref, watch } from 'vue'
 import NodeRenderer, {
   CodeBlockNode,
   ReferenceNode,
-  setCustomComponents
+  setCustomComponents,
+  setKaTeXWorker,
+  setMermaidWorker,
+  getUseMonaco
 } from 'vue-renderer-markdown'
+import KatexWorker from 'vue-renderer-markdown/workers/katexRenderer.worker?worker&inline'
+import MermaidWorker from 'vue-renderer-markdown/workers/mermaidParser.worker?worker&inline'
 
-defineProps<{
+const props = defineProps<{
   content: string
   debug?: boolean
 }>()
-
+getUseMonaco()
+setKaTeXWorker(new KatexWorker())
+setMermaidWorker(new MermaidWorker())
 // 组件映射表
 const artifactStore = useArtifactStore()
 // 生成唯一的 message ID 和 thread ID，用于 MarkdownRenderer
@@ -30,6 +38,22 @@ const threadId = `artifact-thread-${nanoid()}`
 const referenceStore = useReferenceStore()
 const threadPresenter = usePresenter('threadPresenter')
 const referenceNode = ref<HTMLElement | null>(null)
+const debouncedContent = ref(props.content)
+
+const updateContent = useDebounceFn(
+  (value: string) => {
+    debouncedContent.value = value
+  },
+  32,
+  { maxWait: 64 }
+)
+
+watch(
+  () => props.content,
+  (value) => {
+    updateContent(value)
+  }
+)
 
 setCustomComponents({
   reference: (_props) =>
@@ -95,21 +119,47 @@ defineEmits(['copy'])
     margin-top: 0;
     margin-bottom: 0;
   }
+
   .mermaid-block-header img {
     margin: 0 !important;
   }
+
+  p {
+    @apply my-2;
+  }
+
   li p {
     padding-top: 0;
     padding-bottom: 0;
     margin-top: 0;
     margin-bottom: 0;
   }
+  h1 {
+    @apply text-2xl font-bold my-3 py-0;
+  }
+  h2 {
+    @apply text-xl font-medium my-3 py-0;
+  }
+  h3 {
+    @apply text-base font-medium my-2 py-0;
+  }
+  h4 {
+    @apply text-sm font-medium my-2 py-0;
+  }
+  h5 {
+    @apply text-sm my-1.5 py-0;
+  }
+  h6 {
+    @apply text-sm my-1.5 py-0;
+  }
+
+  ul,
+  ol {
+    @apply my-1.5;
+  }
 
   hr {
-    margin-block-start: 0.5em;
-    margin-block-end: 0.5em;
-    margin-inline-start: auto;
-    margin-inline-end: auto;
+    @apply my-8;
   }
 
   /*
@@ -119,6 +169,31 @@ defineEmits(['copy'])
   */
   a .markdown-renderer {
     display: inline;
+  }
+
+  .table-node-wrapper {
+    @apply border border-border rounded-lg py-0 my-0 overflow-hidden shadow-sm;
+  }
+
+  table {
+    @apply py-0 my-0;
+    /* @apply bg-card border block rounded-lg my-0 py-0 overflow-hidden; */
+    border-collapse: collapse;
+  }
+
+  thead,
+  thead tr,
+  thead th {
+    @apply bg-muted;
+  }
+
+  th,
+  td {
+    @apply border-b not-last:border-r border-border;
+  }
+
+  tbody tr:last-child td {
+    @apply border-b-0;
   }
 }
 </style>

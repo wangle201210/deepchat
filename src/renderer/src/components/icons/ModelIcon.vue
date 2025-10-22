@@ -44,6 +44,7 @@ import ppioColorIcon from '@/assets/llm-icons/ppio-color.svg?url'
 import tokenfluxColorIcon from '@/assets/llm-icons/tokenflux-color.svg?url'
 import moonshotColorIcon from '@/assets/llm-icons/moonshot.svg?url'
 import openrouterColorIcon from '@/assets/llm-icons/openrouter.svg?url'
+import poeColorIcon from '@/assets/llm-icons/poe-color.svg?url'
 import geminiColorIcon from '@/assets/llm-icons/gemini-color.svg?url'
 import githubColorIcon from '@/assets/llm-icons/github.svg?url'
 import azureOpenaiColorIcon from '@/assets/llm-icons/azure-color.svg?url'
@@ -61,6 +62,8 @@ import lmstudioColorIcon from '@/assets/llm-icons/lmstudio.svg?url'
 import _302aiIcon from '@/assets/llm-icons/302ai.svg?url'
 import modelscopeColorIcon from '@/assets/llm-icons/modelscope-color.svg?url'
 import awsBedrockIcon from '@/assets/llm-icons/aws-bedrock.svg?url'
+import jiekouColorIcon from '@/assets/llm-icons/jiekou-color.svg?url'
+
 // 导入所有图标
 const icons = {
   cherryin: cherryinColorIcon,
@@ -119,6 +122,7 @@ const icons = {
   qwen: qwenColorIcon,
   moonshot: moonshotColorIcon,
   openrouter: openrouterColorIcon,
+  poe: poeColorIcon,
   gemini: geminiColorIcon,
   github: githubColorIcon,
   anthropic: claudeColorIcon,
@@ -130,6 +134,7 @@ const icons = {
   glm: zhipuColorIcon,
   meta: metaColorIcon,
   'aws-bedrock': awsBedrockIcon,
+  jiekou: jiekouColorIcon,
   default: defaultIcon
 }
 

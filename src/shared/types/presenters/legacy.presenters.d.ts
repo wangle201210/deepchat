@@ -396,6 +396,13 @@ export interface IConfigPresenter {
     providerId: string,
     modelId: string
   ): { default?: boolean; forced?: boolean; strategy?: 'turbo' | 'max' }
+  supportsReasoningEffortCapability?(providerId: string, modelId: string): boolean
+  getReasoningEffortDefault?(
+    providerId: string,
+    modelId: string
+  ): 'minimal' | 'low' | 'medium' | 'high' | undefined
+  supportsVerbosityCapability?(providerId: string, modelId: string): boolean
+  getVerbosityDefault?(providerId: string, modelId: string): 'low' | 'medium' | 'high' | undefined
   setProviderModels(providerId: string, models: MODEL_META[]): void
   getEnabledProviders(): LLM_PROVIDER[]
   getModelDefaultConfig(modelId: string, providerId?: string): ModelConfig
@@ -682,7 +689,6 @@ export interface ILlmProviderPresenter {
   showOllamaModelInfo(modelName: string): Promise<ShowResponse>
   listOllamaRunningModels(): Promise<OllamaModel[]>
   pullOllamaModels(modelName: string): Promise<boolean>
-  deleteOllamaModel(modelName: string): Promise<boolean>
   getEmbeddings(providerId: string, modelId: string, texts: string[]): Promise<number[][]>
   getDimensions(
     providerId: string,
@@ -1339,7 +1345,9 @@ export interface ISyncPresenter {
   getBackupStatus(): Promise<{ isBackingUp: boolean; lastBackupTime: number }>
 
   // Import related operations
-  importFromSync(importMode?: ImportMode): Promise<{ success: boolean; message: string }>
+  importFromSync(
+    importMode?: ImportMode
+  ): Promise<{ success: boolean; message: string; count?: number }>
   checkSyncFolder(): Promise<{ exists: boolean; path: string }>
   openSyncFolder(): Promise<void>
 

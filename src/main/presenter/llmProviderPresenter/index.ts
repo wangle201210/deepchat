@@ -47,6 +47,8 @@ import { AihubmixProvider } from './providers/aihubmixProvider'
 import { _302AIProvider } from './providers/_302AIProvider'
 import { ModelscopeProvider } from './providers/modelscopeProvider'
 import { VercelAIGatewayProvider } from './providers/vercelAIGatewayProvider'
+import { PoeProvider } from './providers/poeProvider'
+import { JiekouProvider } from './providers/jiekouProvider'
 
 // Rate limit configuration interface
 interface RateLimitConfig {
@@ -212,8 +214,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new GroqProvider(provider, this.configPresenter)
         case 'vercel-ai-gateway':
           return new VercelAIGatewayProvider(provider, this.configPresenter)
+        case 'poe':
+          return new PoeProvider(provider, this.configPresenter)
         case 'aws-bedrock':
           return new AwsBedrockProvider(provider, this.configPresenter)
+        case 'jiekou':
+          return new JiekouProvider(provider, this.configPresenter)
         default:
           console.log(
             `No specific provider found for id: ${provider.id}, falling back to apiType: ${provider.apiType}`
@@ -264,8 +270,12 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return new GrokProvider(provider, this.configPresenter)
         case 'vercel-ai-gateway':
           return new VercelAIGatewayProvider(provider, this.configPresenter)
+        case 'poe':
+          return new PoeProvider(provider, this.configPresenter)
         case 'aws-bedrock':
           return new AwsBedrockProvider(provider, this.configPresenter)
+        case 'jiekou':
+          return new JiekouProvider(provider, this.configPresenter)
         default:
           console.warn(`Unknown provider type: ${provider.apiType} for provider id: ${provider.id}`)
           return undefined
@@ -1531,8 +1541,17 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
           return { isOk: false, errorMsg: `Model test failed: ${errorMessage}` }
         }
       } else {
-        // 如果没有提供modelId，使用provider的check方法进行基础验证
-        return await provider.check()
+        // 如果没有提供modelId，使用provider自己的check方法进行基本验证
+        console.log(
+          `[LLMProviderPresenter] No modelId provided, using provider's own check method for ${providerId}`
+        )
+        try {
+          return await provider.check()
+        } catch (error) {
+          console.error(`Provider ${providerId} check failed:`, error)
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          return { isOk: false, errorMsg: `Provider check failed: ${errorMessage}` }
+        }
       }
     } catch (error) {
       console.error(`Provider ${providerId} check failed:`, error)
@@ -1660,14 +1679,6 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       })
     })
   }
-  deleteOllamaModel(modelName: string): Promise<boolean> {
-    const provider = this.getOllamaProviderInstance()
-    if (!provider) {
-      throw new Error('Ollama provider not found')
-    }
-    return provider.deleteModel(modelName)
-  }
-
   /**
    * 获取文本的 embedding 表示
    * @param providerId 提供商ID

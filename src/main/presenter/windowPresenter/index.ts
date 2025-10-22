@@ -1289,6 +1289,25 @@ export class WindowPresenter implements IWindowPresenter {
     this.settingsWindow = settingsWindow
     const windowId = settingsWindow.id
 
+    // Ensure links with target="_blank" open in the user's default browser
+    settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
+      try {
+        // Validate URL protocol - only allow http/https
+        const parsedUrl = new URL(url)
+        if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+          console.log(`Opening external URL from settings window: ${url}`)
+          shell.openExternal(url).catch((error) => {
+            console.error(`Failed to open external URL: ${url}`, error)
+          })
+        } else {
+          console.warn(`Blocked attempt to open non-http(s) URL: ${url}`)
+        }
+      } catch (error) {
+        console.error(`Invalid URL format: ${url}`, error)
+      }
+      return { action: 'deny' }
+    })
+
     // Apply content protection settings
     const contentProtectionEnabled = this.configPresenter.getContentProtectionEnabled()
     this.updateContentProtection(settingsWindow, contentProtectionEnabled)

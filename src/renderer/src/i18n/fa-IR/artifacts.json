@@ -40,10 +40,14 @@
   "desktop": "رایانه رومیزی",
   "tablet": "تبلت",
   "mobile": "موبایل",
+  "responsive": "Responsive",
   "width": "عرض",
   "height": "ارتفاع",
   "copyImageFailedDesc": "رونویسی تصویر به بریده‌دان انجام نشد",
   "noSvgContent": "بدون محتوای SVG در دسترس نیست",
   "sanitizingSvg": "تصفیه محتوای SVG ...",
-  "svgSanitizationFailed": "محتوای SVG تأیید امنیتی را شکست داد"
+  "svgSanitizationFailed": "محتوای SVG تأیید امنیتی را شکست داد",
+  "mermaid": {
+    "renderError": "رندر ناموفق بود: {message}"
+  }
 }

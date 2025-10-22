@@ -94,6 +94,22 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
   },
 
   {
+    id: 'jiekou',
+    name: 'JieKou.AI',
+    apiType: 'jiekou',
+    apiKey: '',
+    baseUrl: 'https://api.jiekou.ai/openai',
+    enable: false,
+    websites: {
+      official: 'https://jiekou.ai?utm_source=github_deepchat',
+      apiKey: 'https://jiekou.ai/settings/key-management?utm_source=github_deepchat',
+      docs: 'https://docs.jiekou.ai/docs/support/quickstart?utm_source=github_deepchat',
+      models: 'https://jiekou.ai/?utm_source=github_deepchat',
+      defaultBaseUrl: 'https://api.jiekou.ai/openai'
+    }
+  },
+
+  {
     id: 'tokenflux',
     name: 'TokenFlux',
     apiType: 'openai',
@@ -197,6 +213,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
       docs: 'https://openrouter.ai/docs/quick-start',
       models: 'https://openrouter.ai/docs/models',
       defaultBaseUrl: 'https://openrouter.ai/api/v1/'
+    }
+  },
+  {
+    id: 'poe',
+    name: 'Poe',
+    apiType: 'poe',
+    apiKey: '',
+    baseUrl: 'https://api.poe.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://poe.com/',
+      apiKey: 'https://poe.com/api_key',
+      docs: 'https://creator.poe.com/docs/external-applications/openai-compatible-api',
+      models: 'https://api.poe.com/v1/models',
+      defaultBaseUrl: 'https://api.poe.com/v1'
     }
   },
   {

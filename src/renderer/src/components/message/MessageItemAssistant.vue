@@ -1,7 +1,7 @@
 <template>
   <div
     :data-message-id="message.id"
-    class="flex flex-row py-4 pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
+    class="flex flex-row pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
   >
     <div class="shrink-0 w-5 h-5 flex items-center justify-center">
       <ModelIcon
@@ -15,7 +15,7 @@
     <div class="flex flex-col w-full space-y-1.5">
       <MessageInfo :name="currentMessage.model_name" :timestamp="currentMessage.timestamp" />
       <Spinner v-if="currentContent.length === 0" class="size-3 text-muted-foreground" />
-      <div v-else class="flex flex-col w-full space-y-2">
+      <div v-else class="flex flex-col w-full gap-1.5">
         <template v-for="(block, idx) in currentContent" :key="`${message.id}-${idx}`">
           <MessageBlockContent
             v-if="block.type === 'content'"

@@ -7,11 +7,7 @@
       class="inline-flex items-center gap-[10px] cursor-pointer select-none self-start"
       @click="$emit('toggle')"
     >
-      <span
-        class="whitespace-nowrap"
-        :class="{ 'loading-shimmer': thinking }"
-        :style="shimmerStyle"
-      >
+      <span class="whitespace-nowrap">
         {{ label }}
       </span>
       <Icon
@@ -34,7 +30,7 @@
     <div v-show="expanded" class="w-full relative">
       <NodeRenderer
         v-if="content"
-        class="think-prose w-full max-w-full mt-[6px]"
+        class="think-prose w-full max-w-full"
         :content="content"
         :customId="customId"
       />
@@ -50,23 +46,19 @@
 
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { computed, h, type CSSProperties } from 'vue'
+import { h } from 'vue'
 import NodeRenderer, {
   setCustomComponents,
   CodeBlockNode,
   PreCodeNode
 } from 'vue-renderer-markdown'
 
-const props = defineProps<{
+defineProps<{
   label: string
   expanded: boolean
   thinking: boolean
   content?: string
 }>()
-
-const shimmerStyle = computed<CSSProperties | undefined>(() =>
-  props.thinking ? { '--cot-shimmer-duration': '1s' } : undefined
-)
 
 defineEmits<{
   (e: 'toggle'): void
@@ -94,6 +86,16 @@ setCustomComponents(customId, {
 </script>
 
 <style scoped>
+@reference '../../assets/style.css';
+.think-prose :where(p, ul, li) {
+  @apply mb-1 mt-0;
+}
+.think-prose :where(ul) {
+  @apply my-1.5;
+}
+.think-prose :where(li) {
+  @apply my-1.5;
+}
 .think-prose :where(p, li, ol, ul) {
   font-size: 12px;
   line-height: 16px;
