@@ -72,6 +72,10 @@
     "importData": "وارد کردن داده",
     "incrementImport": "وروردی افزایشی باشد",
     "overwriteImport": "ورودی بازنویسی کند",
+    "backupSelectLabel": "انتخاب پشتیبان",
+    "backupSelectDescription": "لطفاً نسخهٔ پشتیبان موردنظر برای وارد کردن را انتخاب کنید.",
+    "selectBackupPlaceholder": "یک نسخهٔ پشتیبان انتخاب کنید",
+    "noBackupsAvailable": "هیچ نسخهٔ پشتیبانی در دسترس نیست. ابتدا یک پشتیبان تهیه کنید.",
     "importConfirmTitle": "پذیرش وارد کردن داده",
     "importConfirmDescription": "وارد کردن داده همه داده‌های کنونی، دارای تاریخچه گفت‌وگو و تنظیمات را بازنویسی می‌کند. مطمئن شوید که از داده‌های مهم پشتیبان گرفته‌اید. پس از وارد کردن، نیاز به بازراه‌اندازی برنامه است.",
     "importing": "در حال وارد کردن...",
@@ -92,7 +96,11 @@
     "resetting": "در حال بازنشانی...",
     "confirmReset": "پذیرش بازنشانی",
     "resetCompleteDevTitle": "بازنشانی داده‌ها تکمیل شد",
-    "resetCompleteDevMessage": "در محیط توسعه لطفاً برنامه را به صورت دستی مجدداً راه‌اندازی کنید. فرآیند فعلی را متوقف کرده و pnpm run dev را دوباره اجرا کنید"
+    "resetCompleteDevMessage": "در محیط توسعه لطفاً برنامه را به صورت دستی مجدداً راه‌اندازی کنید. فرآیند فعلی را متوقف کرده و pnpm run dev را دوباره اجرا کنید",
+    "toast": {
+      "backupSuccessTitle": "پشتیبان گیری با موفقیت انجام شد",
+      "backupSuccessMessage": "داده ها با موفقیت پشتیبان گیری شدند"
+    }
   },
   "model": {
     "title": "تنظیمات مدل",
@@ -372,7 +380,11 @@
     "refreshingModels": "طراوت ...",
     "toast": {
       "modelRunning": "مدل در حال اجرا است",
-      "modelRunningDesc": "لطفاً ابتدا مدل {مدل را متوقف کرده و سپس آن را حذف کنید."
+      "modelRunningDesc": "لطفاً ابتدا مدل {model} را متوقف کرده و سپس آن را حذف کنید.",
+      "backupSuccessTitle": "پشتیبان‌گیری کامل شد",
+      "backupSuccessMessage": "فایل پشتیبان در {time} ذخیره شد (حجم: {size})",
+      "importSuccessTitle": "درون‌ریزی با موفقیت انجام شد",
+      "importSuccessMessage": "{count} گفتگو با موفقیت درون‌ریزی شد"
     },
     "anthropicApiKeyTip": "لطفاً برای دریافت کلید API خود به کنسول انسان شناسی بروید",
     "anthropicConnected": "انسان شناسی متصل",
