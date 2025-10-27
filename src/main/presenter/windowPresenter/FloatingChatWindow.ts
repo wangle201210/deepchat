@@ -30,11 +30,11 @@ interface FloatingButtonPosition {
 
 const DEFAULT_FLOATING_CHAT_CONFIG: FloatingChatConfig = {
   size: {
-    width: 400,
+    width: 500,
     height: 600
   },
   minSize: {
-    width: 350,
+    width: 460,
     height: 450
   },
   opacity: 0.95,

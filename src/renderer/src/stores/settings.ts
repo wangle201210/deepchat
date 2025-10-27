@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, onMounted, toRaw, computed } from 'vue'
-import { type LLM_PROVIDER, type RENDERER_MODEL_META } from '@shared/presenter'
+import { type LLM_PROVIDER, type MODEL_META, type RENDERER_MODEL_META } from '@shared/presenter'
 import type { ProviderChange, ProviderBatchUpdate } from '@shared/provider-operations'
 import { ModelType } from '@shared/model'
 import { usePresenter } from '@/composables/usePresenter'
@@ -36,9 +36,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const notificationsEnabled = ref<boolean>(true) // 系统通知是否启用，默认启用
   const fontSizeLevel = ref<number>(DEFAULT_FONT_SIZE_LEVEL) // 字体大小级别，默认为 1
   // Ollama 相关状态
-  const ollamaRunningModels = ref<OllamaModel[]>([])
-  const ollamaLocalModels = ref<OllamaModel[]>([])
-  const ollamaPullingModels = ref<Map<string, number>>(new Map()) // 模型名 -> 进度
+  const ollamaRunningModels = ref<Record<string, OllamaModel[]>>({})
+  const ollamaLocalModels = ref<Record<string, OllamaModel[]>>({})
+  const ollamaPullingModels = ref<Record<string, Record<string, number>>>({})
 
   // 搜索助手模型相关
   const searchAssistantModelRef = ref<RENDERER_MODEL_META | null>(null)
@@ -364,8 +364,9 @@ export const useSettingsStore = defineStore('settings', () => {
       setupCopyWithCotEnabledListener()
 
       // 单独刷新一次 Ollama 模型，确保即使没有启用 Ollama provider 也能获取模型列表
-      if (providers.value.some((p) => p.id === 'ollama')) {
-        await refreshOllamaModels()
+      const ollamaProviders = providers.value.filter((p) => p.apiType === 'ollama')
+      for (const provider of ollamaProviders) {
+        await refreshOllamaModels(provider.id)
       }
       // 初始化搜索助手模型
       await initOrUpdateSearchAssistantModel()
@@ -458,7 +459,58 @@ export const useSettingsStore = defineStore('settings', () => {
       // 优先使用聚合 Provider DB（统一由主进程映射）
       let models: RENDERER_MODEL_META[] = await configP.getDbProviderModels(providerId)
 
-      // 若聚合 DB 为空，回退到 LLMProviderPresenter 的模型列表
+      const storedModels = configP.getProviderModels(providerId)
+
+      if (storedModels && storedModels.length > 0) {
+        const dbModelMap = new Map(models.map((model) => [model.id, model]))
+        const storedModelMap = new Map<string, RENDERER_MODEL_META>()
+
+        const normalizeStoredModel = (
+          model: MODEL_META,
+          fallback?: RENDERER_MODEL_META
+        ): RENDERER_MODEL_META => {
+          return {
+            id: model.id,
+            name: model.name || fallback?.name || model.id,
+            group: model.group || fallback?.group || 'default',
+            providerId,
+            enabled: false,
+            isCustom: model.isCustom ?? fallback?.isCustom ?? false,
+            contextLength: model.contextLength ?? fallback?.contextLength ?? 4096,
+            maxTokens: model.maxTokens ?? fallback?.maxTokens ?? 2048,
+            vision: model.vision ?? fallback?.vision ?? false,
+            functionCall: model.functionCall ?? fallback?.functionCall ?? false,
+            reasoning: model.reasoning ?? fallback?.reasoning ?? false,
+            enableSearch: model.enableSearch ?? fallback?.enableSearch ?? false,
+            type: model.type ?? fallback?.type ?? ModelType.Chat
+          }
+        }
+
+        for (const storedModel of storedModels) {
+          const normalized = normalizeStoredModel(storedModel, dbModelMap.get(storedModel.id))
+          storedModelMap.set(storedModel.id, normalized)
+        }
+
+        const mergedModels: RENDERER_MODEL_META[] = []
+
+        for (const model of models) {
+          const override = storedModelMap.get(model.id)
+          if (override) {
+            storedModelMap.delete(model.id)
+            mergedModels.push({ ...model, ...override, providerId })
+          } else {
+            mergedModels.push({ ...model, providerId })
+          }
+        }
+
+        for (const model of storedModelMap.values()) {
+          mergedModels.push(model)
+        }
+
+        models = mergedModels
+      }
+
+      // 若聚合 DB 为空且没有持久化模型，回退到 LLMProviderPresenter 的模型列表
       if (!models || models.length === 0) {
         try {
           const modelMetas = await llmP.getModelList(providerId)
@@ -564,8 +616,9 @@ export const useSettingsStore = defineStore('settings', () => {
     if (!provider || !provider.enable) return
 
     // Ollama 提供商的特殊处理
-    if (providerId === 'ollama') {
-      await refreshOllamaModels()
+    if (provider.apiType === 'ollama') {
+      await refreshOllamaModels(providerId)
+      refreshCustomModels(providerId)
       return
     }
 
@@ -671,9 +724,16 @@ export const useSettingsStore = defineStore('settings', () => {
           allProviderModels.value = allProviderModels.value.filter(
             (p) => p.providerId !== change.providerId
           )
+          clearOllamaProviderData(change.providerId)
         } else {
-          // add 或 update 操作，刷新该provider的模型
-          await refreshProviderModels(change.providerId)
+          const changedProvider = providers.value.find((p) => p.id === change.providerId)
+          if (changedProvider?.apiType === 'ollama') {
+            await refreshOllamaModels(change.providerId)
+            refreshCustomModels(change.providerId)
+          } else {
+            // add 或 update 操作，刷新该provider的模型
+            await refreshProviderModels(change.providerId)
+          }
         }
       }
     )
@@ -693,8 +753,15 @@ export const useSettingsStore = defineStore('settings', () => {
             allProviderModels.value = allProviderModels.value.filter(
               (p) => p.providerId !== change.providerId
             )
+            clearOllamaProviderData(change.providerId)
           } else if (change.operation !== 'reorder') {
-            await refreshProviderModels(change.providerId)
+            const changedProvider = providers.value.find((p) => p.id === change.providerId)
+            if (changedProvider?.apiType === 'ollama') {
+              await refreshOllamaModels(change.providerId)
+              refreshCustomModels(change.providerId)
+            } else {
+              await refreshProviderModels(change.providerId)
+            }
           }
         }
       }
@@ -746,70 +813,104 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // 更新本地模型状态，不触发后端请求
   const updateLocalModelStatus = (providerId: string, modelId: string, enabled: boolean) => {
-    // 更新allProviderModels中的模型状态
-    const providerIndex = allProviderModels.value.findIndex((p) => p.providerId === providerId)
-    if (providerIndex !== -1) {
-      const models = allProviderModels.value[providerIndex].models
-      const modelIndex = models.findIndex((m) => m.id === modelId)
-      if (modelIndex !== -1) {
-        models[modelIndex].enabled = enabled
-      }
+    const provider = allProviderModels.value.find((p) => p.providerId === providerId)
+    const customProvider = customModels.value.find((p) => p.providerId === providerId)
+
+    const providerModel = provider?.models.find((m) => m.id === modelId)
+    if (providerModel) {
+      providerModel.enabled = enabled
     }
 
-    // 更新enabledModels中的模型状态
-    const enabledProviderIndex = enabledModels.value.findIndex((p) => p.providerId === providerId)
-    if (enabledProviderIndex !== -1) {
-      const models = enabledModels.value[enabledProviderIndex].models
+    const customModel = customProvider?.models.find((m) => m.id === modelId)
+    if (customModel) {
+      customModel.enabled = enabled
+    }
+
+    let enabledProvider = enabledModels.value.find((p) => p.providerId === providerId)
+    let updatedEnabledModels: { providerId: string; models: RENDERER_MODEL_META[] }[] | null = null
+
+    if (!enabledProvider && enabled) {
+      enabledProvider = {
+        providerId,
+        models: []
+      }
+      updatedEnabledModels = [...enabledModels.value, enabledProvider]
+    }
+
+    if (enabledProvider) {
+      const models = enabledProvider.models
+      const modelIndex = models.findIndex((m) => m.id === modelId)
+
       if (enabled) {
-        // 如果启用，确保模型在列表中
-        const modelIndex = models.findIndex((m) => m.id === modelId)
-        if (modelIndex === -1) {
-          // 模型不在启用列表中，从allProviderModels查找并添加
-          const provider = allProviderModels.value.find((p) => p.providerId === providerId)
-          const model = provider?.models.find((m) => m.id === modelId)
-          if (model) {
-            models.push({
-              ...model,
-              enabled: true,
-              vision: model.vision || false,
-              functionCall: model.functionCall || false,
-              reasoning: model.reasoning || false,
-              type: model.type || ModelType.Chat
-            })
+        const sourceModel = providerModel ?? customModel ?? models[modelIndex]
+        if (sourceModel) {
+          const normalizedModel: RENDERER_MODEL_META = {
+            ...sourceModel,
+            enabled: true,
+            vision: sourceModel.vision ?? false,
+            functionCall: sourceModel.functionCall ?? false,
+            reasoning: sourceModel.reasoning ?? false,
+            type: sourceModel.type ?? ModelType.Chat
+          }
+
+          if (modelIndex === -1) {
+            models.push(normalizedModel)
+          } else {
+            models[modelIndex] = normalizedModel
           }
         }
-      } else {
-        // 如果禁用，从列表中移除
-        const modelIndex = models.findIndex((m) => m.id === modelId)
-        if (modelIndex !== -1) {
-          models.splice(modelIndex, 1)
-        }
+      } else if (modelIndex !== -1) {
+        models.splice(modelIndex, 1)
+      }
+
+      if (!enabled && enabledProvider.models.length === 0) {
+        updatedEnabledModels = enabledModels.value.filter((p) => p.providerId !== providerId)
       }
     }
 
-    // 更新customModels中的模型状态
-    const customProviderIndex = customModels.value.findIndex((p) => p.providerId === providerId)
-    if (customProviderIndex !== -1) {
-      const models = customModels.value[customProviderIndex].models
-      const modelIndex = models.findIndex((m) => m.id === modelId)
-      if (modelIndex !== -1) {
-        models[modelIndex].enabled = enabled
-      }
+    if (!updatedEnabledModels) {
+      updatedEnabledModels = [...enabledModels.value]
     }
 
-    // 强制触发响应式更新
-    enabledModels.value = [...enabledModels.value]
+    enabledModels.value = updatedEnabledModels
     console.log('enabledModels updated:', enabledModels.value)
+  }
+
+  const getLocalModelEnabledState = (providerId: string, modelId: string): boolean | null => {
+    const provider = allProviderModels.value.find((p) => p.providerId === providerId)
+    const providerModel = provider?.models.find((m) => m.id === modelId)
+    if (providerModel) {
+      return !!providerModel.enabled
+    }
+
+    const customProvider = customModels.value.find((p) => p.providerId === providerId)
+    const customModel = customProvider?.models.find((m) => m.id === modelId)
+    if (customModel) {
+      return !!customModel.enabled
+    }
+
+    const enabledProvider = enabledModels.value.find((p) => p.providerId === providerId)
+    if (enabledProvider) {
+      return enabledProvider.models.some((model) => model.id === modelId)
+    }
+
+    return null
   }
 
   // 更新模型状态
   const updateModelStatus = async (providerId: string, modelId: string, enabled: boolean) => {
+    const previousState = getLocalModelEnabledState(providerId, modelId)
+    updateLocalModelStatus(providerId, modelId, enabled)
+
     try {
       await llmP.updateModelStatus(providerId, modelId, enabled)
       // 调用成功后，刷新该 provider 的模型列表
       await refreshProviderModels(providerId)
     } catch (error) {
       console.error('Failed to update model status:', error)
+      if (previousState !== null && previousState !== enabled) {
+        updateLocalModelStatus(providerId, modelId, previousState)
+      }
     }
   }
 
@@ -950,13 +1051,42 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // 更新provider的启用状态
   const updateProviderStatus = async (providerId: string, enable: boolean): Promise<void> => {
-    // 更新时间戳
-    providerTimestamps.value[providerId] = Date.now()
-    // 保存时间戳
-    await saveProviderTimestamps()
-    await updateProviderConfig(providerId, { enable })
+    const providerIndex = providers.value.findIndex((p) => p.id === providerId)
+    const previousProvider = providerIndex !== -1 ? { ...providers.value[providerIndex] } : null
 
-    await optimizeProviderOrder(providerId, enable)
+    if (providerIndex !== -1) {
+      const nextProviders = [...providers.value]
+      nextProviders[providerIndex] = {
+        ...nextProviders[providerIndex],
+        enable
+      }
+      providers.value = nextProviders
+    }
+
+    const previousTimestamp = providerTimestamps.value[providerId]
+    providerTimestamps.value[providerId] = Date.now()
+
+    try {
+      await saveProviderTimestamps()
+      await updateProviderConfig(providerId, { enable })
+      await optimizeProviderOrder(providerId, enable)
+    } catch (error) {
+      if (providerIndex !== -1 && previousProvider) {
+        const revertedProviders = [...providers.value]
+        revertedProviders[providerIndex] = previousProvider
+        providers.value = revertedProviders
+      }
+
+      if (previousTimestamp === undefined) {
+        delete providerTimestamps.value[providerId]
+      } else {
+        providerTimestamps.value[providerId] = previousTimestamp
+      }
+
+      await saveProviderTimestamps()
+      console.error('Failed to update provider status:', error)
+      throw error
+    }
   }
 
   const optimizeProviderOrder = async (providerId: string, enable: boolean): Promise<void> => {
@@ -1089,6 +1219,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // 删除Provider
   const removeProvider = async (providerId: string): Promise<void> => {
     try {
+      const removedProvider = providers.value.find((p) => p.id === providerId)
       // 使用新的原子操作接口
       await configP.removeProviderAtomic(providerId)
 
@@ -1100,6 +1231,10 @@ export const useSettingsStore = defineStore('settings', () => {
       await configP.setSetting('providerOrder', providerOrder.value)
 
       await refreshAllModels()
+
+      if (removedProvider?.apiType === 'ollama') {
+        clearOllamaProviderData(providerId)
+      }
     } catch (error) {
       console.error('Failed to remove provider:', error)
       throw error
@@ -1170,32 +1305,92 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   // Ollama 模型管理方法
-  /**
-   * 刷新 Ollama 模型列表
-   */
-  const refreshOllamaModels = async (): Promise<void> => {
-    try {
-      ollamaRunningModels.value = await llmP.listOllamaRunningModels()
-      ollamaLocalModels.value = await llmP.listOllamaModels()
+  const getOllamaRunningModels = (providerId: string): OllamaModel[] =>
+    ollamaRunningModels.value[providerId] || []
 
-      // 更新到全局模型列表中
-      await syncOllamaModelsToGlobal()
-    } catch (error) {
-      console.error('Failed to refresh Ollama models:', error)
+  const getOllamaLocalModels = (providerId: string): OllamaModel[] =>
+    ollamaLocalModels.value[providerId] || []
+
+  const getOllamaPullingModels = (providerId: string): Record<string, number> =>
+    ollamaPullingModels.value[providerId] || {}
+
+  const setOllamaRunningModels = (providerId: string, models: OllamaModel[]) => {
+    ollamaRunningModels.value = {
+      ...ollamaRunningModels.value,
+      [providerId]: models
     }
   }
 
-  /**
-   * 同步 Ollama 模型到全局模型列表
-   */
-  const syncOllamaModelsToGlobal = async (): Promise<void> => {
-    // 找到 Ollama provider
-    const ollamaProvider = providers.value.find((p) => p.id === 'ollama')
+  const setOllamaLocalModels = (providerId: string, models: OllamaModel[]) => {
+    ollamaLocalModels.value = {
+      ...ollamaLocalModels.value,
+      [providerId]: models
+    }
+  }
+
+  const updateOllamaPullingProgress = (
+    providerId: string,
+    modelName: string,
+    progress?: number
+  ) => {
+    const existingProgress = ollamaPullingModels.value[providerId]
+    const providerProgress = existingProgress ? { ...existingProgress } : {}
+    if (progress === undefined) {
+      delete providerProgress[modelName]
+    } else {
+      providerProgress[modelName] = progress
+    }
+
+    const next = { ...ollamaPullingModels.value }
+    if (Object.keys(providerProgress).length > 0) {
+      next[providerId] = providerProgress
+    } else {
+      delete next[providerId]
+    }
+
+    ollamaPullingModels.value = next
+  }
+
+  const clearOllamaProviderData = (providerId: string) => {
+    if (ollamaRunningModels.value[providerId]) {
+      const nextRunning = { ...ollamaRunningModels.value }
+      delete nextRunning[providerId]
+      ollamaRunningModels.value = nextRunning
+    }
+    if (ollamaLocalModels.value[providerId]) {
+      const nextLocal = { ...ollamaLocalModels.value }
+      delete nextLocal[providerId]
+      ollamaLocalModels.value = nextLocal
+    }
+    if (ollamaPullingModels.value[providerId]) {
+      const nextPulling = { ...ollamaPullingModels.value }
+      delete nextPulling[providerId]
+      ollamaPullingModels.value = nextPulling
+    }
+  }
+
+  const refreshOllamaModels = async (providerId: string): Promise<void> => {
+    try {
+      const [running, local] = await Promise.all([
+        llmP.listOllamaRunningModels(providerId),
+        llmP.listOllamaModels(providerId)
+      ])
+
+      setOllamaRunningModels(providerId, running)
+      setOllamaLocalModels(providerId, local)
+
+      await syncOllamaModelsToGlobal(providerId)
+    } catch (error) {
+      console.error(`Failed to refresh Ollama models for provider ${providerId}:`, error)
+    }
+  }
+
+  const syncOllamaModelsToGlobal = async (providerId: string): Promise<void> => {
+    const ollamaProvider = providers.value.find((p) => p.id === providerId)
     if (!ollamaProvider) return
 
-    // 获取现有的 Ollama 模型，以保留自定义设置
     const existingOllamaModels =
-      allProviderModels.value.find((item) => item.providerId === 'ollama')?.models || []
+      allProviderModels.value.find((item) => item.providerId === providerId)?.models || []
 
     const existingModelMap = new Map<string, RENDERER_MODEL_META & { ollamaModel?: OllamaModel }>(
       existingOllamaModels.map((model) => [
@@ -1204,13 +1399,13 @@ export const useSettingsStore = defineStore('settings', () => {
       ])
     )
 
-    const modelNames = ollamaLocalModels.value.map((model) => model.name)
+    const localModels = getOllamaLocalModels(providerId)
+    const modelNames = localModels.map((model) => model.name)
     const modelStatusMap =
-      modelNames.length > 0 ? await configP.getBatchModelStatus('ollama', modelNames) : {}
+      modelNames.length > 0 ? await configP.getBatchModelStatus(providerId, modelNames) : {}
 
-    // 将 Ollama 本地模型转换为全局模型格式
     const ollamaModelsAsGlobal = await Promise.all(
-      ollamaLocalModels.value.map(async (model) => {
+      localModels.map(async (model) => {
         const existingModel = existingModelMap.get(model.name)
         const existingModelExtra = existingModel as
           | (RENDERER_MODEL_META & {
@@ -1222,7 +1417,7 @@ export const useSettingsStore = defineStore('settings', () => {
               searchStrategy?: string
             })
           | undefined
-        const modelConfig = await configP.getModelConfig(model.name, 'ollama')
+        const modelConfig = await configP.getModelConfig(model.name, providerId)
 
         const capabilitySources: string[] = []
         if (Array.isArray((model as any)?.capabilities)) {
@@ -1247,7 +1442,7 @@ export const useSettingsStore = defineStore('settings', () => {
         const statusFromStore = modelStatusMap[model.name]
         const enabled = statusFromStore ?? existingModel?.enabled ?? true
 
-        const type =
+        const resolvedType =
           modelConfig?.type ??
           existingModel?.type ??
           (capabilitySet.has('embedding') ? ModelType.Embedding : ModelType.Chat)
@@ -1258,11 +1453,11 @@ export const useSettingsStore = defineStore('settings', () => {
           name: model.name,
           contextLength,
           maxTokens,
-          provider: 'ollama',
+          provider: providerId,
           group: existingModel?.group || 'local',
           enabled,
           isCustom: existingModel?.isCustom || false,
-          providerId: 'ollama',
+          providerId,
           vision: modelConfig?.vision ?? existingModel?.vision ?? capabilitySet.has('vision'),
           functionCall:
             modelConfig?.functionCall ?? existingModel?.functionCall ?? capabilitySet.has('tools'),
@@ -1275,99 +1470,87 @@ export const useSettingsStore = defineStore('settings', () => {
           thinkingBudget: modelConfig?.thinkingBudget ?? existingModelExtra?.thinkingBudget,
           forcedSearch: modelConfig?.forcedSearch ?? existingModelExtra?.forcedSearch,
           searchStrategy: modelConfig?.searchStrategy ?? existingModelExtra?.searchStrategy,
-          type,
+          type: resolvedType,
           ollamaModel: model
         } as RENDERER_MODEL_META & { ollamaModel: OllamaModel }
       })
     )
 
-    // 更新全局模型列表
-    const existingIndex = allProviderModels.value.findIndex((item) => item.providerId === 'ollama')
+    const existingIndex = allProviderModels.value.findIndex(
+      (item) => item.providerId === providerId
+    )
 
     if (existingIndex !== -1) {
-      // 只替换 Ollama 的模型，保留全局数据中的其他字段
       allProviderModels.value[existingIndex].models = ollamaModelsAsGlobal
     } else {
       allProviderModels.value.push({
-        providerId: 'ollama',
+        providerId,
         models: ollamaModelsAsGlobal
       })
     }
 
-    // 更新已启用的模型列表
-    const enabledIndex = enabledModels.value.findIndex((item) => item.providerId === 'ollama')
+    const enabledIndex = enabledModels.value.findIndex((item) => item.providerId === providerId)
     const enabledOllamaModels = ollamaModelsAsGlobal.filter((model) => model.enabled)
 
     if (enabledIndex !== -1) {
       enabledModels.value[enabledIndex].models = enabledOllamaModels
     } else if (enabledOllamaModels.length > 0) {
       enabledModels.value.push({
-        providerId: 'ollama',
+        providerId,
         models: enabledOllamaModels
       })
     }
 
-    // 触发搜索助手模型更新，确保如果有 Ollama 模型符合条件也能被用作搜索助手
     await initOrUpdateSearchAssistantModel()
   }
 
-  /**
-   * 拉取 Ollama 模型
-   */
-  const pullOllamaModel = async (modelName: string): Promise<boolean> => {
+  const pullOllamaModel = async (providerId: string, modelName: string): Promise<boolean> => {
     try {
-      // 初始化进度为0
-      ollamaPullingModels.value.set(modelName, 0)
+      updateOllamaPullingProgress(providerId, modelName, 0)
 
-      // 开始拉取
-      const success = await llmP.pullOllamaModels(modelName)
+      const success = await llmP.pullOllamaModels(providerId, modelName)
 
       if (!success) {
-        // 如果拉取失败，删除进度记录
-        ollamaPullingModels.value.delete(modelName)
+        updateOllamaPullingProgress(providerId, modelName)
       }
 
       return success
     } catch (error) {
-      console.error(`Failed to pull Ollama model ${modelName}:`, error)
-      ollamaPullingModels.value.delete(modelName)
+      console.error(`Failed to pull Ollama model ${modelName} for provider ${providerId}:`, error)
+      updateOllamaPullingProgress(providerId, modelName)
       return false
     }
   }
 
-  /**
-   * 处理 Ollama 模型拉取事件
-   */
   const handleOllamaModelPullEvent = (event: Record<string, unknown>) => {
-    if (event?.eventId !== 'pullOllamaModels' || !event?.modelName) return
+    if (
+      event?.eventId !== 'pullOllamaModels' ||
+      !event?.modelName ||
+      typeof event.providerId !== 'string'
+    )
+      return
 
+    const providerId = event.providerId as string
     const modelName = event.modelName as string
-    const status = event.status as string
-    const total = event.total as number
-    const completed = event.completed as number
+    const status = event.status as string | undefined
+    const total = event.total as number | undefined
+    const completed = event.completed as number | undefined
 
-    // 如果有 completed 和 total，计算进度
-    if (typeof completed === 'number' && typeof total === 'number' && total > 0) {
+    if (typeof completed === 'number' && typeof total === 'number' && total > 0 && completed >= 0) {
       const progress = Math.min(Math.round((completed / total) * 100), 100)
-      ollamaPullingModels.value.set(modelName, progress)
-    }
-    // 如果只有 status 是 pulling manifest 或没有 total，设置为初始状态
-    else if (status && status.includes('manifest')) {
-      ollamaPullingModels.value.set(modelName, 1) // 设置为1%表示开始
+      updateOllamaPullingProgress(providerId, modelName, progress)
+    } else if (status && status.includes('manifest')) {
+      updateOllamaPullingProgress(providerId, modelName, 1)
     }
 
-    // 如果拉取完成
     if (status === 'success' || status === 'completed') {
       setTimeout(() => {
-        ollamaPullingModels.value.delete(modelName)
-        refreshOllamaModels()
+        updateOllamaPullingProgress(providerId, modelName)
+        refreshOllamaModels(providerId)
       }, 1000)
     }
   }
 
-  /**
-   * 设置 Ollama 拉取事件监听器
-   */
   const setupOllamaEventListeners = () => {
     window.electron?.ipcRenderer?.on(
       OLLAMA_EVENTS.PULL_MODEL_PROGRESS,
@@ -1377,32 +1560,16 @@ export const useSettingsStore = defineStore('settings', () => {
     )
   }
 
-  /**
-   * 移除 Ollama 事件监听器
-   */
   const removeOllamaEventListeners = () => {
     window.electron?.ipcRenderer?.removeAllListeners(OLLAMA_EVENTS.PULL_MODEL_PROGRESS)
   }
 
-  /**
-   * 判断模型是否正在运行
-   */
-  const isOllamaModelRunning = (modelName: string): boolean => {
-    return ollamaRunningModels.value.some((m) => m.name === modelName)
+  const isOllamaModelRunning = (providerId: string, modelName: string): boolean => {
+    return getOllamaRunningModels(providerId).some((m) => m.name === modelName)
   }
 
-  /**
-   * 判断模型是否已存在于本地
-   */
-  const isOllamaModelLocal = (modelName: string): boolean => {
-    return ollamaLocalModels.value.some((m) => m.name === modelName)
-  }
-
-  /**
-   * 获取正在拉取的 Ollama 模型列表
-   */
-  const getOllamaPullingModels = () => {
-    return ollamaPullingModels.value
+  const isOllamaModelLocal = (providerId: string, modelName: string): boolean => {
+    return getOllamaLocalModels(providerId).some((m) => m.name === modelName)
   }
 
   // 在 store 创建时初始化
@@ -1771,14 +1938,14 @@ export const useSettingsStore = defineStore('settings', () => {
     initOrUpdateSearchAssistantModel,
     cleanAllMessages,
     defaultProviders,
-    ollamaRunningModels,
-    ollamaLocalModels,
-    ollamaPullingModels,
+    getOllamaRunningModels,
+    getOllamaLocalModels,
+    getOllamaPullingModels,
     refreshOllamaModels,
     pullOllamaModel,
     isOllamaModelRunning,
     isOllamaModelLocal,
-    getOllamaPullingModels,
+    clearOllamaProviderData,
     removeOllamaEventListeners,
     cleanup,
     getSearchPreviewEnabled,
