@@ -15,7 +15,7 @@
           <SelectValue :placeholder="t('promptSetting.selectSystemPrompt')" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem v-for="prompt in systemPrompts" :key="prompt.id" :value="prompt.id">
+          <SelectItem v-for="prompt in selectableSystemPrompts" :key="prompt.id" :value="prompt.id">
             {{ prompt.name }}
           </SelectItem>
         </SelectContent>
@@ -25,7 +25,13 @@
       </Button>
     </div>
 
-    <div v-if="currentSystemPrompt" class="space-y-2">
+    <div v-if="isEmptyPromptSelected" class="rounded-md border border-dashed border-border p-3">
+      <p class="text-xs text-muted-foreground">
+        {{ t('promptSetting.emptySystemPromptDescription') }}
+      </p>
+    </div>
+
+    <div v-else-if="currentSystemPrompt" class="space-y-2">
       <Textarea
         v-model="currentSystemPrompt.content"
         class="w-full h-48"
@@ -87,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import { useToast } from '@/components/use-toast'
@@ -129,11 +135,28 @@ const { t } = useI18n()
 const { toast } = useToast()
 const settingsStore = useSettingsStore()
 
+const EMPTY_SYSTEM_PROMPT_ID = 'empty'
+
 const systemPrompts = ref<SystemPromptItem[]>([])
 const selectedSystemPromptId = ref('')
 const currentSystemPrompt = ref<SystemPromptItem | null>(null)
 const systemPromptEditorOpen = ref(false)
 const editingSystemPrompt = ref<SystemPromptItem | null>(null)
+
+const emptySystemPromptOption = computed<SystemPromptItem>(() => ({
+  id: EMPTY_SYSTEM_PROMPT_ID,
+  name: t('promptSetting.emptySystemPromptOption'),
+  content: ''
+}))
+
+const selectableSystemPrompts = computed(() => [
+  emptySystemPromptOption.value,
+  ...systemPrompts.value
+])
+
+const isEmptyPromptSelected = computed(
+  () => selectedSystemPromptId.value === EMPTY_SYSTEM_PROMPT_ID
+)
 
 const loadSystemPrompts = async () => {
   try {
@@ -146,14 +169,34 @@ const loadSystemPrompts = async () => {
 }
 
 const updateCurrentSystemPrompt = () => {
+  if (isEmptyPromptSelected.value) {
+    currentSystemPrompt.value = null
+    return
+  }
+
   currentSystemPrompt.value =
     systemPrompts.value.find((prompt) => prompt.id === selectedSystemPromptId.value) || null
 }
 
 const handleSystemPromptChange = async (promptId: AcceptableValue) => {
   try {
-    await settingsStore.setDefaultSystemPromptId(promptId as string)
-    selectedSystemPromptId.value = promptId as string
+    const id = promptId as string
+    await settingsStore.setDefaultSystemPromptId(id)
+    selectedSystemPromptId.value = id
+
+    if (id === EMPTY_SYSTEM_PROMPT_ID) {
+      systemPrompts.value = systemPrompts.value.map((prompt) => ({
+        ...prompt,
+        isDefault: false
+      }))
+      currentSystemPrompt.value = null
+      return
+    }
+
+    systemPrompts.value = systemPrompts.value.map((prompt) => ({
+      ...prompt,
+      isDefault: prompt.id === id
+    }))
     updateCurrentSystemPrompt()
   } catch (error) {
     console.error('Failed to change default system prompt:', error)

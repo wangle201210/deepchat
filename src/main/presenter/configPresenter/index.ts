@@ -1415,9 +1415,27 @@ export class ConfigPresenter implements IConfigPresenter {
   async setDefaultSystemPromptId(promptId: string): Promise<void> {
     const prompts = await this.getSystemPrompts()
     const updatedPrompts = prompts.map((p) => ({ ...p, isDefault: false }))
+
+    if (promptId === 'empty') {
+      await this.setSystemPrompts(updatedPrompts)
+      await this.clearSystemPrompt()
+      eventBus.sendToRenderer(CONFIG_EVENTS.DEFAULT_SYSTEM_PROMPT_CHANGED, SendTarget.ALL_WINDOWS, {
+        promptId: 'empty',
+        content: ''
+      })
+      return
+    }
+
     const targetIndex = updatedPrompts.findIndex((p) => p.id === promptId)
     if (targetIndex !== -1) {
       updatedPrompts[targetIndex].isDefault = true
+      await this.setSystemPrompts(updatedPrompts)
+      await this.setDefaultSystemPrompt(updatedPrompts[targetIndex].content)
+      eventBus.sendToRenderer(CONFIG_EVENTS.DEFAULT_SYSTEM_PROMPT_CHANGED, SendTarget.ALL_WINDOWS, {
+        promptId,
+        content: updatedPrompts[targetIndex].content
+      })
+    } else {
       await this.setSystemPrompts(updatedPrompts)
     }
   }
@@ -1425,7 +1443,16 @@ export class ConfigPresenter implements IConfigPresenter {
   async getDefaultSystemPromptId(): Promise<string> {
     const prompts = await this.getSystemPrompts()
     const defaultPrompt = prompts.find((p) => p.isDefault)
-    return defaultPrompt?.id || 'default'
+    if (defaultPrompt) {
+      return defaultPrompt.id
+    }
+
+    const storedPrompt = this.getSetting<string>('default_system_prompt')
+    if (!storedPrompt || storedPrompt.trim() === '') {
+      return 'empty'
+    }
+
+    return prompts.find((p) => p.id === 'default')?.id || 'default'
   }
 
   // 获取更新渠道
