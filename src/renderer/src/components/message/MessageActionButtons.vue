@@ -53,28 +53,43 @@ defineEmits<{
 
 const handleBeforeLeave = (el: Element) => {
   const element = el as HTMLElement
-  const { offsetWidth, offsetHeight, offsetLeft, offsetTop } = element
-  element.style.width = `${offsetWidth}px`
-  element.style.height = `${offsetHeight}px`
-  element.style.left = `${offsetLeft}px`
-  element.style.top = `${offsetTop}px`
-  element.style.position = 'absolute'
-  element.style.pointerEvents = 'none'
+  const rect = element.getBoundingClientRect()
+  // 只写入四个 CSS 变量，减少重排/回流次数
+  element.style.setProperty('--leave-w', `${rect.width}px`)
+  element.style.setProperty('--leave-h', `${rect.height}px`)
+  element.style.setProperty('--leave-l', `${rect.left}px`)
+  element.style.setProperty('--leave-t', `${rect.top}px`)
+  element.classList.add('message-action-leaving')
+  // 强制回流，确保样式变更被浏览器采纳（触发过渡）
+  void element.offsetWidth
 }
 
 const handleAfterLeave = (el: Element) => {
   const element = el as HTMLElement
-  element.style.width = ''
-  element.style.height = ''
-  element.style.left = ''
-  element.style.top = ''
-  element.style.position = ''
-  element.style.pointerEvents = ''
+  element.classList.remove('message-action-leaving')
+  element.style.removeProperty('--leave-w')
+  element.style.removeProperty('--leave-h')
+  element.style.removeProperty('--leave-l')
+  element.style.removeProperty('--leave-t')
 }
 </script>
 
 <style scoped>
 .message-actions-move {
   transition: transform 0.3s ease;
+}
+
+/* 当元素离开时切换到这个 class，由 CSS 控制定位与过渡 */
+.message-action-leaving {
+  position: absolute;
+  width: var(--leave-w);
+  height: var(--leave-h);
+  left: var(--leave-l);
+  top: var(--leave-t);
+  pointer-events: none;
+  /* 控制离场的属性过渡（和 template 中的 leave-* class 一起工作） */
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 </style>

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute top-0 right-0 w-14 min-h-[148px] box-border rounded-[6px] py-4 px-3 flex flex-col items-stretch gap-0 pointer-events-none z-[5] overflow-hidden"
+    class="absolute top-0 right-0 w-14 min-h-[148px] box-border rounded-md py-4 px-3 flex flex-col items-stretch gap-0 pointer-events-none z-[5] overflow-hidden"
     :style="containerStyle"
   >
     <div
@@ -8,7 +8,7 @@
       :style="trackStyle"
     >
       <div
-        class="flex flex-col items-end gap-1 w-full relative z-[2]"
+        class="flex flex-col items-end gap-1 w-full relative z-2"
         role="list"
         :style="barsWrapperStyle"
       >
@@ -16,7 +16,7 @@
           v-for="bar in bars"
           :key="bar.id"
           type="button"
-          class="h-1.5 rounded-xs transition-[transform,opacity,background-color] duration-200 ease-out opacity-30 outline-none border-0 cursor-pointer focus-visible:outline-none"
+          class="h-1.5 rounded-xs transition-transform transition-opacity transition-background-colorduration-200 ease-out opacity-30 outline-none border-0 cursor-pointer focus-visible:outline-none"
           :class="[
             bar.role === 'assistant'
               ? 'bg-[rgba(37,37,37,0.65)] dark:bg-[rgba(255,255,255,0.9)]'
