@@ -16,7 +16,7 @@
           v-for="bar in bars"
           :key="bar.id"
           type="button"
-          class="h-1.5 rounded-xs transition-transform transition-opacity transition-background-colorduration-200 ease-out opacity-30 outline-none border-0 cursor-pointer focus-visible:outline-none"
+          class="h-1.5 rounded-xs transition-[transform,opacity,background-color] duration-200 ease-out opacity-30 outline-none border-0 cursor-pointer focus-visible:outline-none"
           :class="[
             bar.role === 'assistant'
               ? 'bg-[rgba(37,37,37,0.65)] dark:bg-[rgba(255,255,255,0.9)]'
