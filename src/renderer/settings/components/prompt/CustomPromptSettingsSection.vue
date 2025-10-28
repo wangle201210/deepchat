@@ -173,6 +173,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@shadcn/components/ui/alert-dialog'
+import { downloadBlob } from '@/lib/download'
 
 interface PromptParameter {
   name: string
@@ -381,14 +382,7 @@ const exportPrompts = () => {
       2
     )
     const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'prompts.json'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadBlob(blob, 'prompts.json')
     toast({
       title: t('promptSetting.exportSuccess'),
       variant: 'default'

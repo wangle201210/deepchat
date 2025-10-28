@@ -66,6 +66,13 @@ import { AssistantMessageBlock } from '@shared/chat'
 import { useI18n } from 'vue-i18n'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@shadcn/components/ui/dialog'
 
+const keyMap = {
+  'image.title': '生成的图片',
+  'image.generatedImage': 'AI生成的图片',
+  'image.loadError': '图片加载失败',
+  'image.viewFull': '查看原图',
+  'image.close': '关闭'
+}
 // 创建一个安全的翻译函数
 const t = (() => {
   try {
@@ -73,14 +80,7 @@ const t = (() => {
     return t
   } catch (e) {
     // 如果 i18n 未初始化，提供默认翻译
-    return (key: string) => {
-      if (key === 'image.title') return '生成的图片'
-      if (key === 'image.generatedImage') return 'AI生成的图片'
-      if (key === 'image.loadError') return '图片加载失败'
-      if (key === 'image.viewFull') return '查看原图'
-      if (key === 'image.close') return '关闭'
-      return key
-    }
+    return (key: string) => keyMap[key] || key
   }
 })()
 

@@ -62,6 +62,17 @@ import { AssistantMessageBlock } from '@shared/chat'
 import { computed, ref } from 'vue'
 import { JsonObject } from '@/components/json-viewer'
 
+const keyMap = {
+  'toolCall.calling': '工具调用中',
+  'toolCall.response': '工具响应',
+  'toolCall.end': '工具调用完成',
+  'toolCall.error': '工具调用错误',
+  'toolCall.title': '工具调用',
+  'toolCall.clickToView': '点击查看详情',
+  'toolCall.functionName': '函数名称',
+  'toolCall.params': '参数',
+  'toolCall.responseData': '响应数据'
+}
 // 创建一个安全的翻译函数
 const t = (() => {
   try {
@@ -69,18 +80,7 @@ const t = (() => {
     return t
   } catch (e) {
     // 如果 i18n 未初始化，提供默认翻译
-    return (key: string) => {
-      if (key === 'toolCall.calling') return '工具调用中'
-      if (key === 'toolCall.response') return '工具响应'
-      if (key === 'toolCall.end') return '工具调用完成'
-      if (key === 'toolCall.error') return '工具调用错误'
-      if (key === 'toolCall.title') return '工具调用'
-      if (key === 'toolCall.clickToView') return '点击查看详情'
-      if (key === 'toolCall.functionName') return '函数名称'
-      if (key === 'toolCall.params') return '参数'
-      if (key === 'toolCall.responseData') return '响应数据'
-      return key
-    }
+    return (key: string) => keyMap[key] || key
   }
 })()
 
