@@ -3492,7 +3492,7 @@ export class ThreadPresenter implements IThreadPresenter {
           tool_call_response: toolContent,
           permission_request: toolRawData.permissionRequest
         })
-        // 新的权限请求会触发新的处理流程
+        // A new permission request will trigger a new handling flow
         return
       }
 
