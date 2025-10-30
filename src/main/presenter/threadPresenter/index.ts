@@ -436,6 +436,30 @@ export class ThreadPresenter implements IThreadPresenter {
         }
 
         this.finalizeLastBlock(state)
+        const permissionExtra: Record<string, string | boolean> = {
+          needsUserAction: true
+        }
+
+        if (permission_request?.permissionType) {
+          permissionExtra.permissionType = permission_request.permissionType
+        }
+        if (permission_request) {
+          permissionExtra.permissionRequest = JSON.stringify(permission_request)
+          if (permission_request.toolName) {
+            permissionExtra.toolName = permission_request.toolName
+          }
+          if (permission_request.serverName) {
+            permissionExtra.serverName = permission_request.serverName
+          }
+        } else {
+          if (tool_call_name) {
+            permissionExtra.toolName = tool_call_name
+          }
+          if (tool_call_server_name) {
+            permissionExtra.serverName = tool_call_server_name
+          }
+        }
+
         state.message.content.push({
           type: 'action',
           content: tool_call_response || '',
@@ -450,7 +474,7 @@ export class ThreadPresenter implements IThreadPresenter {
             server_icons: tool_call_server_icons,
             server_description: tool_call_server_description
           },
-          extra
+          extra: permissionExtra
         })
 
         if (state) {
