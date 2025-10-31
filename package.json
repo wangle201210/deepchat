@@ -133,7 +133,7 @@
     "clsx": "^2.1.1",
     "cross-env": "^10.1.0",
     "dayjs": "^1.11.18",
-    "electron": "^37.6.1",
+    "electron": "^37.8.0",
     "electron-builder": "26.0.12",
     "electron-vite": "^4.0.1",
     "jsdom": "^26.1.0",
