@@ -76,6 +76,8 @@
   "editSystemPromptDesc": "修改选中的系统提示词",
   "selectSystemPrompt": "选择系统提示词",
   "systemPromptDescription": "选择的系统提示词将作为新对话的默认系统提示词",
+  "emptySystemPromptOption": "空系统提示词",
+  "emptySystemPromptDescription": "选择此项后，新会话将不包含系统提示词。",
   "preview": "预览",
   "systemPromptChanged": "系统提示词已更改",
   "systemPromptChangeFailed": "更改系统提示词失败",
@@ -88,5 +90,6 @@
   "systemPromptEditTip": "修改后失去焦点时自动保存",
   "resetToDefault": "恢复默认",
   "resetToDefaultSuccess": "已恢复为默认内容",
-  "resetToDefaultFailed": "恢复默认失败"
+  "resetToDefaultFailed": "恢复默认失败",
+  "parameterRequired": "必填参数"
 }

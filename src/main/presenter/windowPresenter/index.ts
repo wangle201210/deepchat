@@ -533,6 +533,14 @@ export class WindowPresenter implements IWindowPresenter {
       }
     }
 
+    if (this.settingsWindow && !this.settingsWindow.isDestroyed()) {
+      try {
+        this.settingsWindow.webContents.send(channel, ...args)
+      } catch (error) {
+        console.error(`Error sending message "${channel}" to settings window:`, error)
+      }
+    }
+
     if (this.floatingChatWindow && this.floatingChatWindow.isShowing()) {
       const floatingWindow = this.floatingChatWindow.getWindow()
       if (floatingWindow && !floatingWindow.isDestroyed()) {
@@ -554,6 +562,21 @@ export class WindowPresenter implements IWindowPresenter {
    */
   sendToWindow(windowId: number, channel: string, ...args: unknown[]): boolean {
     console.log(`Sending message "${channel}" to window ${windowId}.`)
+
+    if (
+      this.settingsWindow &&
+      !this.settingsWindow.isDestroyed() &&
+      this.settingsWindow.id === windowId
+    ) {
+      try {
+        this.settingsWindow.webContents.send(channel, ...args)
+        return true
+      } catch (error) {
+        console.error(`Error sending message "${channel}" to settings window ${windowId}:`, error)
+        return false
+      }
+    }
+
     const window = this.windows.get(windowId)
     if (window && !window.isDestroyed()) {
       // 向窗口主 WebContents 发送
@@ -1253,10 +1276,19 @@ export class WindowPresenter implements IWindowPresenter {
     // Choose icon based on platform
     const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
 
-    // Create Settings Window with fixed size (no state persistence)
+    // Initialize window state manager to remember position and size
+    const settingsWindowState = windowStateManager({
+      file: 'settings-window-state.json',
+      defaultWidth: 900,
+      defaultHeight: 600
+    })
+
+    // Create Settings Window with state persistence
     const settingsWindow = new BrowserWindow({
-      width: 900,
-      height: 600,
+      x: settingsWindowState.x,
+      y: settingsWindowState.y,
+      width: settingsWindowState.width,
+      height: settingsWindowState.height,
       show: false,
       autoHideMenuBar: true,
       fullscreenable: false,
@@ -1288,6 +1320,9 @@ export class WindowPresenter implements IWindowPresenter {
 
     this.settingsWindow = settingsWindow
     const windowId = settingsWindow.id
+
+    // Manage window state to track position and size changes
+    settingsWindowState.manage(settingsWindow)
 
     // Ensure links with target="_blank" open in the user's default browser
     settingsWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -1322,6 +1357,8 @@ export class WindowPresenter implements IWindowPresenter {
 
     settingsWindow.on('closed', () => {
       console.log(`Settings window ${windowId} closed.`)
+      // Unmanage window state when window is closed
+      settingsWindowState.unmanage()
       this.settingsWindow = null
     })
 

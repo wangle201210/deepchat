@@ -25,7 +25,7 @@
             :is-search-result="isSearchResult"
           />
           <MessageBlockThink
-            v-else-if="block.type === 'reasoning_content'"
+            v-else-if="block.type === 'reasoning_content' && block.content"
             :block="block"
             :usage="message.usage"
           />

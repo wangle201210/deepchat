@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, onBeforeUnmount } from 'vue'
+import { onMounted, ref, watch, onBeforeUnmount, computed } from 'vue'
 import { RouterView, useRoute, useRouter } from 'vue-router'
 import UpdateDialog from './components/ui/UpdateDialog.vue'
 import { usePresenter } from './composables/usePresenter'
@@ -18,6 +18,7 @@ import ThreadView from '@/components/ThreadView.vue'
 import ModelCheckDialog from '@/components/settings/ModelCheckDialog.vue'
 import { useModelCheckStore } from '@/stores/modelCheck'
 import MessageDialog from './components/ui/MessageDialog.vue'
+import McpSamplingDialog from '@/components/mcp/McpSamplingDialog.vue'
 import 'vue-sonner/style.css' // vue-sonner v2 requires this import
 
 const route = useRoute()
@@ -30,6 +31,9 @@ const themeStore = useThemeStore()
 const langStore = useLanguageStore()
 const modelCheckStore = useModelCheckStore()
 const { t } = useI18n()
+const toasterTheme = computed(() =>
+  themeStore.themeMode === 'system' ? (themeStore.isDark ? 'dark' : 'light') : themeStore.themeMode
+)
 // Error notification queue and currently displayed error
 const errorQueue = ref<Array<{ id: string; title: string; message: string; type: string }>>([])
 const currentErrorId = ref<string | null>(null)
@@ -335,8 +339,9 @@ onBeforeUnmount(() => {
     <UpdateDialog />
     <!-- Global message dialog -->
     <MessageDialog />
+    <McpSamplingDialog />
     <!-- Global Toast notifications -->
-    <Toaster />
+    <Toaster :theme="toasterTheme" />
     <SelectedTextContextMenu />
     <TranslatePopup />
     <ThreadView />

@@ -72,6 +72,10 @@
     "importData": "導入數據",
     "incrementImport": "增量導入",
     "overwriteImport": "覆蓋導入",
+    "backupSelectLabel": "選擇備份時間點",
+    "backupSelectDescription": "請選擇需要導入的備份。",
+    "selectBackupPlaceholder": "請選擇備份",
+    "noBackupsAvailable": "當前沒有可用備份，請先進行備份。",
     "importConfirmTitle": "確認導入數據",
     "importConfirmDescription": "導入將會覆蓋所有當前數據，包括聊天記錄和設置。請確保已備份重要數據。導入後需要重新啟動應用程序。",
     "importing": "導入中...",
@@ -92,7 +96,11 @@
     "resetting": "重置中...",
     "confirmReset": "確認重置",
     "resetCompleteDevTitle": "數據重置完成",
-    "resetCompleteDevMessage": "開發環境下請手動重新啟動應用程式。請停止當前進程並重新執行 pnpm run dev"
+    "resetCompleteDevMessage": "開發環境下請手動重新啟動應用程式。請停止當前進程並重新執行 pnpm run dev",
+    "toast": {
+      "backupSuccessTitle": "備份成功",
+      "backupSuccessMessage": "成功備份了數據"
+    }
   },
   "model": {
     "title": "模型設置",
@@ -372,7 +380,11 @@
     "refreshingModels": "刷新中...",
     "toast": {
       "modelRunning": "模型正在運行",
-      "modelRunningDesc": "請先停止模型 {model}，然後再刪除。"
+      "modelRunningDesc": "請先停止模型 {model}，然後再刪除。",
+      "backupSuccessTitle": "備份完成",
+      "backupSuccessMessage": "備份已儲存（時間：{time}，大小：{size}）",
+      "importSuccessTitle": "匯入完成",
+      "importSuccessMessage": "成功匯入 {count} 個對話"
     },
     "anthropicApiKeyTip": "請前往 Anthropic Console 獲取您的 API Key",
     "anthropicConnected": "Anthropic 已連接",
@@ -805,10 +817,7 @@
   },
   "promptSetting": {
     "resetToDefault": "重置為默認提示詞",
-    "clear": "清空提示詞",
     "resetToDefaultSuccess": "已重置為默認系統提示詞",
-    "resetToDefaultFailed": "重置失敗，請重試",
-    "clearSuccess": "已清空系統提示詞",
-    "clearFailed": "清空失敗，請重試"
+    "resetToDefaultFailed": "重置失敗，請重試"
   }
 }

@@ -72,6 +72,10 @@
     "importData": "Import Data",
     "incrementImport": "Incremental Import",
     "overwriteImport": "Overwrite Import",
+    "backupSelectLabel": "Select backup",
+    "backupSelectDescription": "Choose the backup snapshot to import.",
+    "selectBackupPlaceholder": "Select a backup",
+    "noBackupsAvailable": "No backups available. Run a backup first.",
     "importConfirmTitle": "Confirm Data Import",
     "importConfirmDescription": "Importing will overwrite all current data, including chat history and settings. Make sure you have backed up important data. You'll need to restart the application after import.",
     "importing": "Importing...",
@@ -92,7 +96,11 @@
     "resetting": "Resetting...",
     "confirmReset": "Confirm Reset",
     "resetCompleteDevTitle": "Data Reset Complete",
-    "resetCompleteDevMessage": "Please manually restart the application in development mode. Stop the current process and run pnpm run dev again"
+    "resetCompleteDevMessage": "Please manually restart the application in development mode. Stop the current process and run pnpm run dev again",
+    "toast": {
+      "backupSuccessTitle": "Backup successful",
+      "backupSuccessMessage": "Data backed up successfully"
+    }
   },
   "model": {
     "title": "Model Settings",
@@ -372,7 +380,11 @@
     "refreshingModels": "Refreshing...",
     "toast": {
       "modelRunning": "The model is running",
-      "modelRunningDesc": "Please stop the model {model} first and then delete it."
+      "modelRunningDesc": "Please stop the model {model} first and then delete it.",
+      "backupSuccessTitle": "Backup completed",
+      "backupSuccessMessage": "Backup saved at {time} ({size})",
+      "importSuccessTitle": "Import completed",
+      "importSuccessMessage": "Successfully imported {count} conversations"
     },
     "modelscope": {
       "mcpSync": {
@@ -805,10 +817,7 @@
   },
   "promptSetting": {
     "resetToDefault": "Reset to default prompt",
-    "clear": "Clear prompt words",
     "resetToDefaultSuccess": "Reset to default system prompt successfully",
-    "resetToDefaultFailed": "Failed to reset, please try again",
-    "clearSuccess": "System prompt cleared successfully",
-    "clearFailed": "Failed to clear, please try again"
+    "resetToDefaultFailed": "Failed to reset, please try again"
   }
 }

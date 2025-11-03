@@ -76,6 +76,8 @@
   "editSystemPromptDesc": "Modifier le prompt système sélectionné",
   "selectSystemPrompt": "Sélectionner un prompt système",
   "systemPromptDescription": "Le prompt système sélectionné sera utilisé par défaut pour les nouvelles conversations",
+  "emptySystemPromptOption": "Aucun prompt système",
+  "emptySystemPromptDescription": "En sélectionnant cette option, les nouvelles conversations démarrent sans prompt système.",
   "preview": "Aperçu",
   "systemPromptChanged": "Prompt système modifié avec succès",
   "systemPromptChangeFailed": "Échec de la modification du prompt système",
@@ -88,5 +90,6 @@
   "systemPromptEditTip": "Sauvegarde automatique lorsque le focus est perdu après modification",
   "resetToDefault": "Rétablir par défaut",
   "resetToDefaultSuccess": "Rétabli au contenu par défaut avec succès",
-  "resetToDefaultFailed": "Échec de la réinitialisation par défaut"
+  "resetToDefaultFailed": "Échec de la réinitialisation par défaut",
+  "parameterRequired": "Paramètres requis"
 }

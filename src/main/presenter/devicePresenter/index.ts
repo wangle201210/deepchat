@@ -494,20 +494,6 @@ export class DevicePresenter implements IDevicePresenter {
   async sanitizeSvgContent(svgContent: string): Promise<string | null> {
     try {
       console.log('Sanitizing SVG content, length:', svgContent.length)
-
-      // 基本输入验证
-      if (!svgContent || typeof svgContent !== 'string') {
-        console.warn('Invalid SVG content provided')
-        return null
-      }
-
-      // 长度限制检查
-      if (svgContent.length > 1024 * 1024) {
-        // 1MB limit
-        console.warn('SVG content exceeds size limit')
-        return null
-      }
-
       // Debug: 显示SVG前100个字符
       console.log('SVG preview:', svgContent.substring(0, 100) + '...')
 

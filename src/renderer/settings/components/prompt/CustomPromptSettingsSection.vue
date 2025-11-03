@@ -173,6 +173,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@shadcn/components/ui/alert-dialog'
+import { downloadBlob } from '@/lib/download'
 
 interface PromptParameter {
   name: string
@@ -204,6 +205,7 @@ const getContent = (prompt: PromptItem) => prompt.content ?? ''
 const loadPrompts = async () => {
   await promptsStore.loadPrompts()
   prompts.value = promptsStore.prompts.map((prompt) => ({ ...prompt }))
+  // Note: Main window will be notified via CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED event
 }
 
 const isExpanded = (id: string) => expandedPrompts.value.has(id)
@@ -381,14 +383,7 @@ const exportPrompts = () => {
       2
     )
     const blob = new Blob([data], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'prompts.json'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    downloadBlob(blob, 'prompts.json')
     toast({
       title: t('promptSetting.exportSuccess'),
       variant: 'default'

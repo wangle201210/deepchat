@@ -7,6 +7,7 @@ import type {
   UserMessage,
   Message
 } from '@shared/chat'
+import { finalizeAssistantMessageBlocks } from '@shared/chat/messageBlocks'
 import type { CONVERSATION, CONVERSATION_SETTINGS } from '@shared/presenter'
 import { usePresenter } from '@/composables/usePresenter'
 import { CONVERSATION_EVENTS, DEEPLINK_EVENTS, MEETING_EVENTS } from '@/events'
@@ -15,6 +16,7 @@ import { useI18n } from 'vue-i18n'
 import { useSoundStore } from './sound'
 import sfxfcMp3 from '/sounds/sfx-fc.mp3?url'
 import sfxtyMp3 from '/sounds/sfx-typing.mp3?url'
+import { downloadBlob } from '@/lib/download'
 
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
@@ -182,8 +184,8 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const clearActiveThread = async () => {
-    const tabId = getTabId()
     if (!getActiveThreadId()) return
+    const tabId = getTabId()
     await threadP.clearActiveThread(tabId)
     setActiveThreadId(null)
     selectedVariantsMap.value.clear()
@@ -238,8 +240,9 @@ export const useChatStore = defineStore('chat', () => {
       const mergedMessages = [...result.list]
 
       // 查找当前会话的缓存消息
+      const activeThread = getActiveThreadId()
       for (const [, cached] of getGeneratingMessagesCache()) {
-        if (cached.threadId === getActiveThreadId()) {
+        if (cached.threadId === activeThread) {
           const message = cached.message
           if (message.is_variant && message.parentId) {
             // 如果是变体消息，找到父消息并添加到其 variants 数组中
@@ -335,13 +338,14 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const regenerateFromUserMessage = async (userMessageId: string) => {
-    if (!getActiveThreadId()) return
+    const activeThread = getActiveThreadId()
+    if (!activeThread) return
     try {
-      generatingThreadIds.value.add(getActiveThreadId()!)
-      updateThreadWorkingStatus(getActiveThreadId()!, 'working')
+      generatingThreadIds.value.add(activeThread)
+      updateThreadWorkingStatus(activeThread, 'working')
 
       const aiResponseMessage = await threadP.regenerateFromUserMessage(
-        getActiveThreadId()!,
+        activeThread,
         userMessageId,
         Object.fromEntries(selectedVariantsMap.value)
       )
@@ -360,18 +364,19 @@ export const useChatStore = defineStore('chat', () => {
 
   // 创建会话分支（从指定消息开始fork一个新会话）
   const forkThread = async (messageId: string, forkTag: string = '(fork)') => {
-    if (!getActiveThreadId()) return
+    const activeThread = getActiveThreadId()
+    if (!activeThread) return
 
     try {
       // 获取当前会话信息
-      const currentThread = await threadP.getConversation(getActiveThreadId()!)
+      const currentThread = await threadP.getConversation(activeThread)
 
       // 创建分支会话标题
       const newThreadTitle = `${currentThread.title} ${forkTag}`
 
       // 调用main层的forkConversation方法
       const newThreadId = await threadP.forkConversation(
-        getActiveThreadId()!,
+        activeThread,
         messageId,
         newThreadTitle,
         currentThread.settings,
@@ -424,21 +429,9 @@ export const useChatStore = defineStore('chat', () => {
     if (cached) {
       const curMsg = cached.message as AssistantMessage
       if (curMsg.content) {
-        // 提取一个可复用的保护逻辑
-        const finalizeLastBlock = () => {
-          const lastBlock =
-            curMsg.content.length > 0 ? curMsg.content[curMsg.content.length - 1] : undefined
-          if (lastBlock) {
-            // 只有当上一个块不是一个正在等待结果的工具调用时，才将其标记为成功
-            if (!(lastBlock.type === 'tool_call' && lastBlock.status === 'loading')) {
-              lastBlock.status = 'success'
-            }
-          }
-        }
-
         // 处理工具调用达到最大次数的情况
         if (msg.maximum_tool_calls_reached) {
-          finalizeLastBlock() // 使用保护逻辑
+          finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
           curMsg.content.push({
             type: 'action',
             content: 'common.error.maximumToolCallsReached',
@@ -460,7 +453,7 @@ export const useChatStore = defineStore('chat', () => {
         } else if (msg.tool_call) {
           if (msg.tool_call === 'start') {
             // 工具调用开始解析参数 - 创建新的工具调用块
-            finalizeLastBlock() // 使用保护逻辑
+            finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
 
             // 工具调用音效，与实际数据流同步
             playToolcallSound()
@@ -515,7 +508,7 @@ export const useChatStore = defineStore('chat', () => {
               }
             } else {
               // 如果没有找到现有的工具调用块，创建一个新的（兼容旧逻辑）
-              finalizeLastBlock() // 使用保护逻辑
+              finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
 
               curMsg.content.push({
                 type: 'tool_call',
@@ -559,7 +552,7 @@ export const useChatStore = defineStore('chat', () => {
         }
         // 处理图像数据
         else if (msg.image_data) {
-          finalizeLastBlock() // 使用保护逻辑
+          finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
           curMsg.content.push({
             type: 'image',
             content: 'image',
@@ -573,7 +566,7 @@ export const useChatStore = defineStore('chat', () => {
         }
         // 处理速率限制
         else if (msg.rate_limit) {
-          finalizeLastBlock() // 使用保护逻辑
+          finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
           curMsg.content.push({
             type: 'action',
             content: 'chat.messages.rateLimitWaiting',
@@ -803,12 +796,13 @@ export const useChatStore = defineStore('chat', () => {
 
   // 配置相关的方法
   const loadChatConfig = async () => {
-    if (!getActiveThreadId()) return
+    const activeThread = getActiveThreadId()
+    if (!activeThread) return
     try {
-      const conversation = await threadP.getConversation(getActiveThreadId()!)
+      const conversation = await threadP.getConversation(activeThread)
       const threadToUpdate = threads.value
         .flatMap((thread) => thread.dtThreads)
-        .find((t) => t.id === getActiveThreadId())
+        .find((t) => t.id === activeThread)
       if (threadToUpdate) {
         Object.assign(threadToUpdate, conversation)
       }
@@ -830,9 +824,10 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const saveChatConfig = async () => {
-    if (!getActiveThreadId()) return
+    const activeThread = getActiveThreadId()
+    if (!activeThread) return
     try {
-      await threadP.updateConversationSettings(getActiveThreadId()!, chatConfig.value)
+      await threadP.updateConversationSettings(activeThread, chatConfig.value)
     } catch (error) {
       console.error('Failed to save conversation config:', error)
       throw error
@@ -1304,14 +1299,7 @@ export const useChatStore = defineStore('chat', () => {
     const blob = new Blob([result.content], {
       type: getContentType(format)
     })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = result.filename
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    downloadBlob(blob, result.filename)
 
     return result
   }

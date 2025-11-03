@@ -1302,6 +1302,10 @@ export class ConfigPresenter implements IConfigPresenter {
     await this.customPromptsStore.set('prompts', prompts)
     this.clearCustomPromptsCache()
     console.log(`[Config] Custom prompts cache updated: ${prompts.length} prompts`)
+    // Notify all windows about custom prompts change
+    eventBus.sendToRenderer(CONFIG_EVENTS.CUSTOM_PROMPTS_CHANGED, SendTarget.ALL_WINDOWS, {
+      count: prompts.length
+    })
   }
 
   // 添加单个 prompt (optimized with cache)
@@ -1309,7 +1313,6 @@ export class ConfigPresenter implements IConfigPresenter {
     const prompts = await this.getCustomPrompts()
     const updatedPrompts = [...prompts, prompt] // Create new array
     await this.setCustomPrompts(updatedPrompts)
-    this.clearCustomPromptsCache()
     console.log(`[Config] Added custom prompt: ${prompt.name}`)
   }
 
@@ -1321,8 +1324,6 @@ export class ConfigPresenter implements IConfigPresenter {
       const updatedPrompts = [...prompts] // Create new array
       updatedPrompts[index] = { ...updatedPrompts[index], ...updates }
       await this.setCustomPrompts(updatedPrompts)
-      // remove cache
-      this.clearCustomPromptsCache()
       console.log(`[Config] Updated custom prompt: ${promptId}`)
     } else {
       console.warn(`[Config] Custom prompt not found for update: ${promptId}`)
@@ -1341,7 +1342,6 @@ export class ConfigPresenter implements IConfigPresenter {
     }
 
     await this.setCustomPrompts(filteredPrompts)
-    this.clearCustomPromptsCache()
     console.log(`[Config] Deleted custom prompt: ${promptId}`)
   }
 
@@ -1415,9 +1415,27 @@ export class ConfigPresenter implements IConfigPresenter {
   async setDefaultSystemPromptId(promptId: string): Promise<void> {
     const prompts = await this.getSystemPrompts()
     const updatedPrompts = prompts.map((p) => ({ ...p, isDefault: false }))
+
+    if (promptId === 'empty') {
+      await this.setSystemPrompts(updatedPrompts)
+      await this.clearSystemPrompt()
+      eventBus.sendToRenderer(CONFIG_EVENTS.DEFAULT_SYSTEM_PROMPT_CHANGED, SendTarget.ALL_WINDOWS, {
+        promptId: 'empty',
+        content: ''
+      })
+      return
+    }
+
     const targetIndex = updatedPrompts.findIndex((p) => p.id === promptId)
     if (targetIndex !== -1) {
       updatedPrompts[targetIndex].isDefault = true
+      await this.setSystemPrompts(updatedPrompts)
+      await this.setDefaultSystemPrompt(updatedPrompts[targetIndex].content)
+      eventBus.sendToRenderer(CONFIG_EVENTS.DEFAULT_SYSTEM_PROMPT_CHANGED, SendTarget.ALL_WINDOWS, {
+        promptId,
+        content: updatedPrompts[targetIndex].content
+      })
+    } else {
       await this.setSystemPrompts(updatedPrompts)
     }
   }
@@ -1425,7 +1443,16 @@ export class ConfigPresenter implements IConfigPresenter {
   async getDefaultSystemPromptId(): Promise<string> {
     const prompts = await this.getSystemPrompts()
     const defaultPrompt = prompts.find((p) => p.isDefault)
-    return defaultPrompt?.id || 'default'
+    if (defaultPrompt) {
+      return defaultPrompt.id
+    }
+
+    const storedPrompt = this.getSetting<string>('default_system_prompt')
+    if (!storedPrompt || storedPrompt.trim() === '') {
+      return 'empty'
+    }
+
+    return prompts.find((p) => p.id === 'default')?.id || 'default'
   }
 
   // 获取更新渠道

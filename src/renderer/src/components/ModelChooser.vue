@@ -1,8 +1,5 @@
 <template>
-  <Card
-    class="w-full border-border/60 bg-card/95 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80"
-    :dir="langStore.dir"
-  >
+  <Card class="w-full border-border bg-card shadow-sm" :dir="langStore.dir">
     <CardContent class="flex flex-col gap-4 p-4">
       <Input
         v-model="keyword"
@@ -89,6 +86,10 @@ const props = defineProps({
   type: {
     type: Array as PropType<ModelType[]>,
     default: undefined
+  },
+  requiresVision: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -111,12 +112,14 @@ const providers = computed(() => {
               (model) => model.type !== undefined && props.type!.includes(model.type as ModelType)
             )
 
-      if (!models || models.length === 0) return null
+      const eligibleModels = props.requiresVision ? models.filter((model) => model.vision) : models
+
+      if (!eligibleModels || eligibleModels.length === 0) return null
 
       return {
         id: provider.id,
         name: provider.name,
-        models
+        models: eligibleModels
       }
     })
     .filter(

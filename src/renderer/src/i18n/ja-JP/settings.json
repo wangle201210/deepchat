@@ -72,6 +72,10 @@
     "importData": "データをインポート",
     "incrementImport": "増分インポート",
     "overwriteImport": "上書きインポート",
+    "backupSelectLabel": "バックアップを選択",
+    "backupSelectDescription": "インポートするバックアップを選択してください。",
+    "selectBackupPlaceholder": "バックアップを選択",
+    "noBackupsAvailable": "利用可能なバックアップがありません。まずバックアップを作成してください。",
     "importConfirmTitle": "データインポートの確認",
     "importConfirmDescription": "インポートすると、チャット履歴や設定を含むすべての現在のデータが上書きされます。重要なデータをバックアップしたことを確認してください。インポート後はアプリケーションを再起動する必要があります。",
     "importing": "インポート中...",
@@ -92,7 +96,11 @@
     "resetting": "リセット中...",
     "confirmReset": "リセットを確認",
     "resetCompleteDevTitle": "データリセット完了",
-    "resetCompleteDevMessage": "開発環境では手動でアプリケーションを再起動してください。現在のプロセスを停止して pnpm run dev を再実行してください"
+    "resetCompleteDevMessage": "開発環境では手動でアプリケーションを再起動してください。現在のプロセスを停止して pnpm run dev を再実行してください",
+    "toast": {
+      "backupSuccessTitle": "バックアップ成功",
+      "backupSuccessMessage": "データは正常にバックアップされました"
+    }
   },
   "model": {
     "title": "モデル設定",
@@ -372,7 +380,11 @@
     "refreshingModels": "更新中...",
     "toast": {
       "modelRunning": "モデルが実行されています",
-      "modelRunningDesc": "最初にモデル{model}を停止してから削除してください。"
+      "modelRunningDesc": "最初にモデル{model}を停止してから削除してください。",
+      "backupSuccessTitle": "バックアップが完了しました",
+      "backupSuccessMessage": "バックアップを保存しました（時刻：{time}、サイズ：{size}）",
+      "importSuccessTitle": "インポートが完了しました",
+      "importSuccessMessage": "{count} 件の会話を正常にインポートしました"
     },
     "anthropicApiKeyTip": "APIキーを取得するには、人類コンソールにアクセスしてください",
     "anthropicConnected": "人類接続",
@@ -805,10 +817,7 @@
   },
   "promptSetting": {
     "resetToDefault": "デフォルトのプロンプトワードにリセットします",
-    "clear": "迅速な単語を明確にします",
     "resetToDefaultSuccess": "デフォルトのシステムプロンプトに正常にリセットしました",
-    "resetToDefaultFailed": "リセットに失敗しました。もう一度お試しください",
-    "clearSuccess": "システムプロンプトが正常にクリアされました",
-    "clearFailed": "クリアに失敗しました。もう一度お試しください"
+    "resetToDefaultFailed": "リセットに失敗しました。もう一度お試しください"
   }
 }

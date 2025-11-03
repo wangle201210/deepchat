@@ -73,6 +73,8 @@
   "editSystemPromptDesc": "تغییر دستورکار سامانه انتخاب شده",
   "selectSystemPrompt": "انتخاب دستورکار سامانه",
   "systemPromptDescription": "دستورکار سامانه انتخاب شده به عنوان پیش‌فرض برای گفت‌وگوهای جدید استفاده خواهد شد",
+  "emptySystemPromptOption": "بدون دستورکار سامانه",
+  "emptySystemPromptDescription": "با انتخاب این گزینه، گفتگوهای جدید بدون دستورکار سامانه آغاز می‌شوند.",
   "preview": "پیش‌نمایش",
   "promptContent": "دستورکار",
   "systemPromptChanged": "دستورکار سامانه با موفقیت تغییر کرد",
@@ -88,5 +90,6 @@
   "resetToDefaultSuccess": "محتوای پیش‌فرض بازیابی شد",
   "resetToDefaultFailed": "بازگشت به پیش‌فرض ناموفق بود",
   "confirmDeleteSystemPrompt": "آیا مطمئن هستید که می‌خواهید دستورکار سامانه \"{name}\" را حذف کنید؟",
-  "confirmDeleteSystemPromptDescription": "این عمل قابل بازگشت نیست. دستورکار سامانه به طور دائم حذف خواهد شد."
+  "confirmDeleteSystemPromptDescription": "این عمل قابل بازگشت نیست. دستورکار سامانه به طور دائم حذف خواهد شد.",
+  "parameterRequired": "پارامترهای مورد نیاز"
 }

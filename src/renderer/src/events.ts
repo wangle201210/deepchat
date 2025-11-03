@@ -24,7 +24,9 @@ export const CONFIG_EVENTS = {
   SOUND_ENABLED_CHANGED: 'config:sound-enabled-changed', // 新增：声音启用状态变更事件
   COPY_WITH_COT_CHANGED: 'config:copy-with-cot-enabled-changed',
   THEME_CHANGED: 'config:theme-changed',
-  FONT_SIZE_CHANGED: 'config:font-size-changed'
+  FONT_SIZE_CHANGED: 'config:font-size-changed',
+  DEFAULT_SYSTEM_PROMPT_CHANGED: 'config:default-system-prompt-changed',
+  CUSTOM_PROMPTS_CHANGED: 'config:custom-prompts-changed'
 }
 
 // 会话相关事件
@@ -69,7 +71,10 @@ export const MCP_EVENTS = {
   SERVER_STOPPED: 'mcp:server-stopped',
   CONFIG_CHANGED: 'mcp:config-changed',
   TOOL_CALL_RESULT: 'mcp:tool-call-result',
-  SERVER_STATUS_CHANGED: 'mcp:server-status-changed'
+  SERVER_STATUS_CHANGED: 'mcp:server-status-changed',
+  SAMPLING_REQUEST: 'mcp:sampling-request',
+  SAMPLING_DECISION: 'mcp:sampling-decision',
+  SAMPLING_CANCELLED: 'mcp:sampling-cancelled'
 }
 
 // 新增会议相关事件
@@ -82,6 +87,7 @@ export const SYNC_EVENTS = {
   BACKUP_STARTED: 'sync:backup-started',
   BACKUP_COMPLETED: 'sync:backup-completed',
   BACKUP_ERROR: 'sync:backup-error',
+  BACKUP_STATUS_CHANGED: 'sync:backup-status-changed',
   IMPORT_STARTED: 'sync:import-started',
   IMPORT_COMPLETED: 'sync:import-completed',
   IMPORT_ERROR: 'sync:import-error',

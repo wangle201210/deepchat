@@ -355,7 +355,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
    * 处理单个 provider 的原子更新
    */
   private handleProviderAtomicUpdate(change: ProviderChange): void {
-    console.log(`Handling atomic provider update:`, change)
+    // console.log(`Handling atomic provider update:`, change)
 
     switch (change.operation) {
       case 'add':

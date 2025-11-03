@@ -54,40 +54,43 @@ watch(
   () => {
     nextTick(() => {
       for (const part of processedContent.value) {
-        if (part.type === 'artifact' && part.artifact) {
-          if (props.block.status === 'loading') {
-            if (artifactStore.currentArtifact?.id === part.artifact.identifier) {
-              // Use updateArtifactContent to trigger reactivity
-              artifactStore.updateArtifactContent({
-                content: part.content,
-                title: part.artifact.title,
-                type: part.artifact.type,
-                status: part.loading ? 'loading' : 'loaded'
-              })
-            } else {
-              artifactStore.showArtifact(
-                {
-                  id: part.artifact.identifier,
-                  type: part.artifact.type,
-                  title: part.artifact.title,
-                  language: part.artifact.language,
-                  content: part.content,
-                  status: part.loading ? 'loading' : 'loaded'
-                },
-                props.messageId,
-                props.threadId
-              )
-            }
+        const artifact = part.type === 'artifact' && part.artifact
+        if (!artifact) continue
+        const { title, type } = artifact
+        const { content, loading } = part
+        if (props.block.status === 'loading') {
+          const status = loading ? 'loading' : 'loaded'
+          if (artifactStore.currentArtifact?.id === artifact.identifier) {
+            // Use updateArtifactContent to trigger reactivity
+            artifactStore.updateArtifactContent({
+              content,
+              title,
+              type,
+              status
+            })
           } else {
-            if (artifactStore.currentArtifact?.id === part.artifact.identifier) {
-              // Use updateArtifactContent to trigger reactivity
-              artifactStore.updateArtifactContent({
-                content: part.content,
-                title: part.artifact.title,
-                type: part.artifact.type,
-                status: 'loaded'
-              })
-            }
+            artifactStore.showArtifact(
+              {
+                id: artifact.identifier,
+                type,
+                title,
+                language: artifact.language,
+                content,
+                status
+              },
+              props.messageId,
+              props.threadId
+            )
+          }
+        } else {
+          if (artifactStore.currentArtifact?.id === artifact.identifier) {
+            // Use updateArtifactContent to trigger reactivity
+            artifactStore.updateArtifactContent({
+              content,
+              title: artifact.title,
+              type,
+              status: 'loaded'
+            })
           }
         }
       }
