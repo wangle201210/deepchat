@@ -304,7 +304,9 @@ export class SVGSanitizer {
 }
 
 // Export singleton instance for easy use
-export const svgSanitizer = new SVGSanitizer()
+export const svgSanitizer = new SVGSanitizer({
+  maxSize: 1024 * 1024
+})
 
 // Export factory function for custom options
 export const createSVGSanitizer = (options?: SanitizeOptions) => new SVGSanitizer(options)

@@ -1,4 +1,3 @@
-<!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="prose prose-zinc prose-sm dark:prose-invert w-full max-w-none break-all">
     <NodeRenderer :content="debouncedContent" @copy="$emit('copy', $event)" />
