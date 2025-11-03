@@ -1,4 +1,3 @@
-<!-- eslint-disable vue/no-v-html -->
 <template>
   <div class="text-xs text-muted-foreground rounded-lg flex flex-row gap-2 px-2 py-2">
     <Icon icon="lucide:loader-2" class="w-4 h-4 animate-spin" />
