@@ -547,6 +547,7 @@ export interface IConfigPresenter {
   removeProviderAtomic(providerId: string): void
   reorderProvidersAtomic(providers: LLM_PROVIDER[]): void
   updateProvidersBatch(batchUpdate: ProviderBatchUpdate): void
+  setTraceDebugEnabled(enabled: boolean): void
 }
 export type RENDERER_MODEL_META = {
   id: string
@@ -723,6 +724,7 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string>
+  getProviderInstance(providerId: string): unknown
 }
 
 export type CONVERSATION_SETTINGS = {
@@ -862,6 +864,9 @@ export interface IThreadPresenter {
     conversationId: string,
     format: 'markdown' | 'html' | 'txt'
   ): Promise<{ filename: string; content: string }>
+
+  // Dev tools
+  getMessageRequestPreview(messageId: string): Promise<unknown>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'
