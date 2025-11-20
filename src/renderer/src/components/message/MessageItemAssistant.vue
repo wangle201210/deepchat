@@ -5,6 +5,13 @@
   >
     <div class="shrink-0 w-5 h-5 flex items-center justify-center">
       <ModelIcon
+        v-if="currentMessage.model_provider === 'acp'"
+        :model-id="currentMessage.model_id"
+        :is-dark="themeStore.isDark"
+        custom-class="w-[18px] h-[18px]"
+      />
+      <ModelIcon
+        v-else
         :model-id="currentMessage.model_provider"
         custom-class="w-[18px] h-[18px]"
         :is-dark="themeStore.isDark"
@@ -115,7 +122,7 @@ import MessageBlockPermissionRequest from './MessageBlockPermissionRequest.vue'
 import MessageToolbar from './MessageToolbar.vue'
 import MessageInfo from './MessageInfo.vue'
 import { useChatStore } from '@/stores/chat'
-import { useSettingsStore } from '@/stores/settings'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
 import { Spinner } from '@shadcn/components/ui/spinner'
 import MessageBlockAction from './MessageBlockAction.vue'
@@ -139,7 +146,7 @@ const props = defineProps<{
 
 const themeStore = useThemeStore()
 const chatStore = useChatStore()
-const settingsStore = useSettingsStore()
+const uiSettingsStore = useUiSettingsStore()
 const { t } = useI18n()
 
 // 定义事件
@@ -284,7 +291,7 @@ const handleAction = (action: HandleActionType) => {
         .filter((block) => {
           if (
             (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
-            !settingsStore.copyWithCotEnabled
+            !uiSettingsStore.copyWithCotEnabled
           ) {
             return false
           }
@@ -294,7 +301,7 @@ const handleAction = (action: HandleActionType) => {
           const trimmedContent = (block.content ?? '').trim()
           if (
             (block.type === 'reasoning_content' || block.type === 'artifact-thinking') &&
-            settingsStore.copyWithCotEnabled
+            uiSettingsStore.copyWithCotEnabled
           ) {
             return `<think>\n${trimmedContent}\n</think>`
           }

@@ -13,6 +13,7 @@
         :rows="3"
         :max-rows="10"
         :context-length="contextLength"
+        :model-info="{ id: activeModel.id, providerId: activeModel.providerId }"
         @send="handleSend"
       >
         <template #addon-actions>
@@ -24,6 +25,13 @@
                 size="sm"
               >
                 <ModelIcon
+                  v-if="activeModel.providerId === 'acp'"
+                  class="w-4 h-4"
+                  :model-id="activeModel.id"
+                  :is-dark="themeStore.isDark"
+                ></ModelIcon>
+                <ModelIcon
+                  v-else
                   class="w-4 h-4"
                   :model-id="activeModel.providerId"
                   :is-dark="themeStore.isDark"
@@ -103,7 +111,6 @@ import { Icon } from '@iconify/vue'
 import ModelSelect from './ModelSelect.vue'
 import { useChatStore } from '@/stores/chat'
 import { MODEL_META } from '@shared/presenter'
-import { useSettingsStore } from '@/stores/settings'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { UserMessageContent } from '@shared/chat'
 import ChatConfig from './ChatConfig.vue'
@@ -112,6 +119,8 @@ import { useThemeStore } from '@/stores/theme'
 import { ModelType } from '@shared/model'
 import type { IpcRendererEvent } from 'electron'
 import { CONFIG_EVENTS } from '@/events'
+import { useModelStore } from '@/stores/modelStore'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 
 const configPresenter = usePresenter('configPresenter')
 const themeStore = useThemeStore()
@@ -123,7 +132,8 @@ interface PreferredModel {
 
 const { t } = useI18n()
 const chatStore = useChatStore()
-const settingsStore = useSettingsStore()
+const modelStore = useModelStore()
+const uiSettingsStore = useUiSettingsStore()
 const activeModel = ref({
   name: '',
   id: '',
@@ -144,7 +154,7 @@ const contextLengthLimit = ref(16384)
 const maxTokens = ref(4096)
 const maxTokensLimit = ref(4096)
 const systemPrompt = ref('')
-const artifacts = ref(settingsStore.artifactsEffectEnabled ? 1 : 0)
+const artifacts = ref(uiSettingsStore.artifactsEffectEnabled ? 1 : 0)
 const thinkingBudget = ref<number | undefined>(undefined)
 const enableSearch = ref<boolean | undefined>(undefined)
 const forcedSearch = ref<boolean | undefined>(undefined)
@@ -167,6 +177,13 @@ const handleDefaultSystemPromptChange = async (
 
 const name = computed(() => {
   return activeModel.value?.name ? activeModel.value.name.split('/').pop() : ''
+})
+
+const acpWorkdirMap = computed(() => chatStore.chatConfig.acpWorkdirMap ?? {})
+
+const pendingAcpWorkdir = computed(() => {
+  if (activeModel.value.providerId !== 'acp') return null
+  return acpWorkdirMap.value?.[activeModel.value.id] ?? null
 })
 
 watch(
@@ -197,7 +214,7 @@ watch(
 const initialized = ref(false)
 
 const findEnabledModel = (providerId: string, modelId: string) => {
-  for (const provider of settingsStore.enabledModels) {
+  for (const provider of modelStore.enabledModels) {
     if (provider.providerId === providerId) {
       for (const model of provider.models) {
         if (model.id === modelId) {
@@ -210,7 +227,7 @@ const findEnabledModel = (providerId: string, modelId: string) => {
 }
 
 const pickFirstEnabledModel = () => {
-  const found = settingsStore.enabledModels
+  const found = modelStore.enabledModels
     .flatMap((p) => p.models.map((m) => ({ ...m, providerId: p.providerId })))
     .find((m) => m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
   return found
@@ -283,7 +300,7 @@ const initActiveModel = async () => {
 // - 若未初始化，进行一次初始化
 // - 若已初始化但当前模型不再可用，则回退到第一个 enabled 模型
 watch(
-  () => settingsStore.enabledModels,
+  () => modelStore.enabledModels,
   async () => {
     if (!initialized.value) {
       await initActiveModel()
@@ -338,7 +355,7 @@ watch(
   (newCache) => {
     if (newCache) {
       if (newCache.modelId) {
-        const matchedModel = settingsStore.findModelByIdOrName(newCache.modelId)
+        const matchedModel = modelStore.findModelByIdOrName(newCache.modelId)
         console.log('matchedModel', matchedModel)
         if (matchedModel) {
           handleModelUpdate(matchedModel.model, matchedModel.providerId)
@@ -433,7 +450,11 @@ const handleSend = async (content: UserMessageContent) => {
     searchStrategy: searchStrategy.value,
     reasoningEffort: reasoningEffort.value,
     verbosity: verbosity.value,
-    enabledMcpTools: chatStore.chatConfig.enabledMcpTools
+    enabledMcpTools: chatStore.chatConfig.enabledMcpTools,
+    acpWorkdirMap:
+      pendingAcpWorkdir.value && activeModel.value.providerId === 'acp'
+        ? { [activeModel.value.id]: pendingAcpWorkdir.value }
+        : undefined
   } as any)
   console.log('threadId', threadId, activeModel.value)
   chatStore.sendMessage(content)

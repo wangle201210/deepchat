@@ -16,7 +16,12 @@
     "rateLimitWait": "Ожидание {seconds}с",
     "rateLimitQueueTooltip": "{count} запросов в очереди, интервал {interval} секунд",
     "rateLimitReadyTooltip": "Готов к отправке, интервал {interval} секунд",
-    "rateLimitWaitingTooltip": "Ещё {seconds} секунд ожидания, интервал {interval} секунд"
+    "rateLimitWaitingTooltip": "Ещё {seconds} секунд ожидания, интервал {interval} секунд",
+    "acpWorkdir": "ACP Workdir",
+    "acpWorkdirTooltip": "Set ACP working directory",
+    "acpWorkdirSelect": "Select a folder to use as the ACP workdir",
+    "acpWorkdirChange": "Reset to default workdir",
+    "acpWorkdirCurrent": "Current workdir: {path}"
   },
   "features": {
     "webSearch": "Поиск в интернете",
@@ -64,5 +69,16 @@
     "userMessage": "Сообщение пользователя",
     "assistantMessage": "Ответ ассистента",
     "unknownMessage": "Неизвестное сообщение"
+  },
+  "toolCall": {
+    "title": "Вызов инструмента",
+    "calling": "Вызов инструмента выполняется",
+    "response": "Ответ инструмента",
+    "end": "Вызов инструмента завершён",
+    "error": "Ошибка вызова инструмента",
+    "clickToView": "Нажмите, чтобы посмотреть детали",
+    "functionName": "Имя функции",
+    "params": "Параметры",
+    "responseData": "Данные ответа"
   }
 }

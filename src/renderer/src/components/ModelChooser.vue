@@ -31,6 +31,13 @@
                   class="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-muted/40 text-[11px] font-semibold uppercase text-muted-foreground transition group-data-[selected=true]:border-primary group-data-[selected=true]:bg-primary/20 group-data-[selected=true]:text-primary"
                 >
                   <ModelIcon
+                    v-if="provider.id === 'acp'"
+                    class="h-4 w-4 shrink-0 opacity-80 transition group-hover:opacity-100 group-data-[selected=true]:opacity-100"
+                    :model-id="model.id"
+                    :is-dark="themeStore.isDark"
+                  />
+                  <ModelIcon
+                    v-else
                     class="h-4 w-4 shrink-0 opacity-80 transition group-hover:opacity-100 group-data-[selected=true]:opacity-100"
                     :model-id="provider.id"
                     :is-dark="themeStore.isDark"
@@ -63,7 +70,8 @@ import { Card, CardContent } from '@shadcn/components/ui/card'
 import { Input } from '@shadcn/components/ui/input'
 import { ScrollArea } from '@shadcn/components/ui/scroll-area'
 import { useChatStore } from '@/stores/chat'
-import { useSettingsStore } from '@/stores/settings'
+import { useProviderStore } from '@/stores/providerStore'
+import { useModelStore } from '@/stores/modelStore'
 import { useThemeStore } from '@/stores/theme'
 import { useLanguageStore } from '@/stores/language'
 import ModelIcon from '@/components/icons/ModelIcon.vue'
@@ -74,7 +82,8 @@ import { Icon } from '@iconify/vue'
 const { t } = useI18n()
 const keyword = ref('')
 const chatStore = useChatStore()
-const settingsStore = useSettingsStore()
+const providerStore = useProviderStore()
+const modelStore = useModelStore()
 const themeStore = useThemeStore()
 const langStore = useLanguageStore()
 
@@ -94,8 +103,8 @@ const props = defineProps({
 })
 
 const providers = computed(() => {
-  const sortedProviders = settingsStore.sortedProviders
-  const enabledModels = settingsStore.enabledModels
+  const sortedProviders = providerStore.sortedProviders
+  const enabledModels = modelStore.enabledModels
 
   const orderedProviders = sortedProviders
     .filter((provider) => provider.enable)

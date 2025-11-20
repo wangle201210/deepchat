@@ -5,6 +5,7 @@ import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 import { ModelType } from '@shared/model'
 import { ProviderChange, ProviderBatchUpdate } from './provider-operations'
+import type { AgentSessionLifecycleStatus } from './agent-provider'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -147,6 +148,7 @@ export interface ModelConfig {
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
   verbosity?: 'low' | 'medium' | 'high'
   maxCompletionTokens?: number // GPT-5 series uses this parameter to replace maxTokens
+  conversationId?: string
 }
 
 export interface IModelConfig {
@@ -327,6 +329,25 @@ export interface ISQLitePresenter {
   getLastUserMessage(conversationId: string): Promise<SQLITE_MESSAGE | null>
   getMainMessageByParentId(conversationId: string, parentId: string): Promise<SQLITE_MESSAGE | null>
   deleteAllMessagesInConversation(conversationId: string): Promise<void>
+  getAcpSession(conversationId: string, agentId: string): Promise<AcpSessionEntity | null>
+  upsertAcpSession(
+    conversationId: string,
+    agentId: string,
+    data: AcpSessionUpsertPayload
+  ): Promise<void>
+  updateAcpSessionId(
+    conversationId: string,
+    agentId: string,
+    sessionId: string | null
+  ): Promise<void>
+  updateAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
+  updateAcpSessionStatus(
+    conversationId: string,
+    agentId: string,
+    status: AgentSessionLifecycleStatus
+  ): Promise<void>
+  deleteAcpSessions(conversationId: string): Promise<void>
+  deleteAcpSession(conversationId: string, agentId: string): Promise<void>
 }
 
 export interface IOAuthPresenter {
@@ -474,6 +495,41 @@ export interface IConfigPresenter {
   addMcpServer(serverName: string, config: MCPServerConfig): Promise<boolean>
   removeMcpServer(serverName: string): Promise<void>
   updateMcpServer(serverName: string, config: Partial<MCPServerConfig>): Promise<void>
+  // ACP configuration methods
+  getAcpEnabled(): Promise<boolean>
+  setAcpEnabled(enabled: boolean): Promise<void>
+  setAcpAgents(agents: AcpAgentConfig[]): Promise<AcpAgentConfig[]>
+  getAcpAgents(): Promise<AcpAgentConfig[]>
+  addAcpAgent(agent: Omit<AcpAgentConfig, 'id'> & { id?: string }): Promise<AcpAgentConfig>
+  updateAcpAgent(
+    agentId: string,
+    updates: Partial<Omit<AcpAgentConfig, 'id'>>
+  ): Promise<AcpAgentConfig | null>
+  removeAcpAgent(agentId: string): Promise<boolean>
+  getAcpBuiltinAgents(): Promise<AcpBuiltinAgent[]>
+  getAcpCustomAgents(): Promise<AcpCustomAgent[]>
+  addAcpBuiltinProfile(
+    agentId: AcpBuiltinAgentId,
+    profile: Omit<AcpAgentProfile, 'id'>,
+    options?: { activate?: boolean }
+  ): Promise<AcpAgentProfile>
+  updateAcpBuiltinProfile(
+    agentId: AcpBuiltinAgentId,
+    profileId: string,
+    updates: Partial<Omit<AcpAgentProfile, 'id'>>
+  ): Promise<AcpAgentProfile | null>
+  removeAcpBuiltinProfile(agentId: AcpBuiltinAgentId, profileId: string): Promise<boolean>
+  setAcpBuiltinActiveProfile(agentId: AcpBuiltinAgentId, profileId: string): Promise<void>
+  setAcpBuiltinEnabled(agentId: AcpBuiltinAgentId, enabled: boolean): Promise<void>
+  addCustomAcpAgent(
+    agent: Omit<AcpCustomAgent, 'id' | 'enabled'> & { id?: string; enabled?: boolean }
+  ): Promise<AcpCustomAgent>
+  updateCustomAcpAgent(
+    agentId: string,
+    updates: Partial<Omit<AcpCustomAgent, 'id'>>
+  ): Promise<AcpCustomAgent | null>
+  removeCustomAcpAgent(agentId: string): Promise<boolean>
+  setCustomAcpAgentEnabled(agentId: string, enabled: boolean): Promise<void>
   getMcpConfHelper(): any // Used to get MCP configuration helper
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setModelConfig(
@@ -616,6 +672,72 @@ export type LLM_EMBEDDING_ATTRS = {
   normalized: boolean
 }
 
+export type AcpBuiltinAgentId = 'kimi-cli' | 'claude-code-acp' | 'codex-acp'
+
+export interface AcpAgentProfile {
+  id: string
+  name: string
+  command: string
+  args?: string[]
+  env?: Record<string, string>
+}
+
+export interface AcpBuiltinAgent {
+  id: AcpBuiltinAgentId
+  name: string
+  enabled: boolean
+  activeProfileId: string | null
+  profiles: AcpAgentProfile[]
+}
+
+export interface AcpCustomAgent {
+  id: string
+  name: string
+  command: string
+  args?: string[]
+  env?: Record<string, string>
+  enabled: boolean
+}
+
+export interface AcpStoreData {
+  builtins: AcpBuiltinAgent[]
+  customs: AcpCustomAgent[]
+  enabled: boolean
+  version?: string
+}
+
+export interface AcpAgentConfig {
+  id: string
+  name: string
+  command: string
+  args?: string[]
+  env?: Record<string, string>
+}
+
+export interface AcpSessionEntity {
+  id: number
+  conversationId: string
+  agentId: string
+  sessionId: string | null
+  workdir: string | null
+  status: AgentSessionLifecycleStatus
+  createdAt: number
+  updatedAt: number
+  metadata: Record<string, unknown> | null
+}
+
+export interface AcpSessionUpsertPayload {
+  sessionId?: string | null
+  workdir?: string | null
+  status?: AgentSessionLifecycleStatus
+  metadata?: Record<string, unknown> | null
+}
+
+export interface AcpWorkdirInfo {
+  path: string
+  isCustom: boolean
+}
+
 // Simplified ModelScope MCP sync options
 export interface ModelScopeMcpSyncOptions {
   page_number?: number
@@ -643,6 +765,7 @@ export interface ILlmProviderPresenter {
   setProviders(provider: LLM_PROVIDER[]): void
   getProviders(): LLM_PROVIDER[]
   getProviderById(id: string): LLM_PROVIDER
+  isAgentProvider(providerId: string): boolean
   getModelList(providerId: string): Promise<MODEL_META[]>
   updateModelStatus(providerId: string, modelId: string, enabled: boolean): Promise<void>
   addCustomModel(
@@ -669,7 +792,8 @@ export interface ILlmProviderPresenter {
     verbosity?: 'low' | 'medium' | 'high',
     enableSearch?: boolean,
     forcedSearch?: boolean,
-    searchStrategy?: 'turbo' | 'max'
+    searchStrategy?: 'turbo' | 'max',
+    conversationId?: string
   ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
@@ -724,6 +848,9 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string>
+  getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo>
+  setAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
+  resolveAgentPermission(requestId: string, granted: boolean): Promise<void>
   getProviderInstance(providerId: string): unknown
 }
 
@@ -743,6 +870,7 @@ export type CONVERSATION_SETTINGS = {
   reasoningEffort?: 'minimal' | 'low' | 'medium' | 'high'
   verbosity?: 'low' | 'medium' | 'high'
   selectedVariantsMap?: Record<string, string>
+  acpWorkdirMap?: Record<string, string | null>
 }
 
 export type CONVERSATION = {
@@ -844,6 +972,8 @@ export interface IThreadPresenter {
   setSearchAssistantModel(model: MODEL_META, providerId: string): void
   getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
+  getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo>
+  setAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
   continueStreamCompletion(
     conversationId: string,
     queryMsgId: string,
