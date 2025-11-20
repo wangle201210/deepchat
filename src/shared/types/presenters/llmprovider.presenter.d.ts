@@ -1,6 +1,7 @@
 import { ShowResponse } from 'ollama'
 import { ChatMessage, LLMAgentEvent } from '../core/chat'
 import { ModelType } from '../core/model'
+import type { AcpWorkdirInfo } from './legacy.presenters'
 
 /**
  * LLM Provider Presenter Interface
@@ -130,6 +131,7 @@ export interface ILlmProviderPresenter {
   setProviders(provider: LLM_PROVIDER[]): void
   getProviders(): LLM_PROVIDER[]
   getProviderById(id: string): LLM_PROVIDER
+  isAgentProvider(providerId: string): boolean
   getProviderInstance(providerId: string): unknown
   getModelList(providerId: string): Promise<MODEL_META[]>
   updateModelStatus(providerId: string, modelId: string, enabled: boolean): Promise<void>
@@ -157,7 +159,8 @@ export interface ILlmProviderPresenter {
     verbosity?: 'low' | 'medium' | 'high',
     enableSearch?: boolean,
     forcedSearch?: boolean,
-    searchStrategy?: 'turbo' | 'max'
+    searchStrategy?: 'turbo' | 'max',
+    conversationId?: string
   ): AsyncGenerator<LLMAgentEvent, void, unknown>
   generateCompletion(
     providerId: string,
@@ -212,4 +215,8 @@ export interface ILlmProviderPresenter {
     temperature?: number,
     maxTokens?: number
   ): Promise<string>
+
+  getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo>
+  setAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
+  resolveAgentPermission(requestId: string, granted: boolean): Promise<void>
 }

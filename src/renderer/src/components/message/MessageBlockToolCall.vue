@@ -1,12 +1,12 @@
 <template>
   <div class="flex flex-col w-full">
     <div
-      class="w-fit min-h-7 py-1.5 flex bg-accent hover:bg-accent/40 border rounded-lg flex-wrap items-center gap-2 px-2 text-xs leading-4 transition-colors duration-150 select-none cursor-pointer"
+      class="inline-flex w-fit max-w-full sm:max-w-2xl min-h-7 py-1.5 bg-accent hover:bg-accent/40 border rounded-lg items-center gap-2 px-2 text-xs leading-4 transition-colors duration-150 select-none cursor-pointer overflow-hidden"
       @click="toggleExpanded"
     >
       <Icon :icon="statusIconName" :class="['w-3.5 h-3.5 shrink-0', statusIconClass]" />
       <div
-        class="flex items-center gap-2 font-mono font-medium tracking-tight text-foreground/80 truncate leading-none"
+        class="flex items-center gap-2 font-mono font-medium tracking-tight text-foreground/80 truncate leading-none min-w-0"
       >
         <span class="truncate text-xs">{{ primaryLabel }}.{{ functionLabel }}</span>
       </div>
@@ -23,7 +23,7 @@
     >
       <div
         v-if="isExpanded"
-        class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4"
+        class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4 max-w-full sm:max-w-2xl"
       >
         <div class="space-y-4">
           <!-- 参数 -->

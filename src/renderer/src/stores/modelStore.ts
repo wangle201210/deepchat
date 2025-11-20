@@ -1,11 +1,12 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 import { useThrottleFn } from '@vueuse/core'
 import type { MODEL_META, RENDERER_MODEL_META, ModelConfig } from '@shared/presenter'
 import { ModelType } from '@shared/model'
 import { useIpcMutation } from '@/composables/useIpcMutation'
 import { usePresenter } from '@/composables/usePresenter'
+import { useAgentModelStore } from '@/stores/agentModelStore'
 import { useModelConfigStore } from '@/stores/modelConfigStore'
 import { useProviderStore } from '@/stores/providerStore'
 import { CONFIG_EVENTS, PROVIDER_DB_EVENTS } from '@/events'
@@ -19,6 +20,7 @@ export const useModelStore = defineStore('model', () => {
   const llmP = usePresenter('llmproviderPresenter')
   const providerStore = useProviderStore()
   const modelConfigStore = useModelConfigStore()
+  const agentModelStore = useAgentModelStore()
 
   const enabledModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
   const allProviderModels = ref<{ providerId: string; models: RENDERER_MODEL_META[] }[]>([])
@@ -27,6 +29,75 @@ export const useModelStore = defineStore('model', () => {
 
   const providerModelQueries = new Map<string, ReturnType<typeof getProviderModelsQuery>>()
   const customModelQueries = new Map<string, ReturnType<typeof getCustomModelsQuery>>()
+  const queryCache = useQueryCache()
+  const isAgentProvider = async (providerId: string): Promise<boolean> => {
+    try {
+      return Boolean(await llmP.isAgentProvider(providerId))
+    } catch (error) {
+      console.warn(`[ModelStore] Failed to determine provider type: ${providerId}`, error)
+      return false
+    }
+  }
+
+  const matchesProviderModelsEntry = (
+    entry: { key: readonly unknown[] },
+    targetProviderId?: string
+  ) => {
+    const key = entry.key
+    if (!Array.isArray(key) || key.length < 3) return false
+    const [namespace, scope, providerId] = key
+    if (namespace !== 'model-store' || scope !== 'provider-models') return false
+    if (!targetProviderId) return true
+
+    // Strict matching: providerId must be a string and exactly match
+    const matches = typeof providerId === 'string' && providerId === targetProviderId
+    if (!matches && targetProviderId) {
+      console.warn(
+        `[ModelStore] matchesProviderModelsEntry: Cache key providerId "${providerId}" does not match target "${targetProviderId}"`
+      )
+    }
+    return matches
+  }
+
+  const invalidateProviderModelsCache = async (providerId?: string) => {
+    await queryCache.invalidateQueries({
+      predicate: (entry) => matchesProviderModelsEntry(entry, providerId)
+    })
+  }
+
+  const updateProviderModelsCache = (providerId: string, data: MODEL_META[]) => {
+    console.log(
+      `[ModelStore] updateProviderModelsCache: updating cache for provider "${providerId}" with ${data.length} models`
+    )
+
+    // Validate that all models have the correct providerId
+    const validatedData = data.filter((model) => {
+      if (model.providerId !== providerId) {
+        console.warn(
+          `[ModelStore] updateProviderModelsCache: Model ${model.id} has mismatched providerId: expected "${providerId}", got "${model.providerId}". Filtering out.`
+        )
+        return false
+      }
+      return true
+    })
+
+    if (validatedData.length !== data.length) {
+      console.error(
+        `[ModelStore] updateProviderModelsCache: Filtered out ${data.length - validatedData.length} models with incorrect providerId for provider "${providerId}"`
+      )
+    }
+
+    console.log(
+      `[ModelStore] updateProviderModelsCache: updating cache with ${validatedData.length} validated models for provider "${providerId}"`
+    )
+
+    queryCache.setQueriesData(
+      {
+        predicate: (entry) => matchesProviderModelsEntry(entry, providerId)
+      },
+      () => validatedData
+    )
+  }
 
   const normalizeRendererModel = (model: MODEL_META, providerId: string): RENDERER_MODEL_META => ({
     id: model.id,
@@ -41,7 +112,7 @@ export const useModelStore = defineStore('model', () => {
     functionCall: model.functionCall ?? false,
     reasoning: model.reasoning ?? false,
     enableSearch: (model as RENDERER_MODEL_META).enableSearch ?? false,
-    type: model.type ?? ModelType.Chat
+    type: (model.type ?? ModelType.Chat) as ModelType
   })
 
   const getProviderModelsQuery = (providerId: string) => {
@@ -145,6 +216,9 @@ export const useModelStore = defineStore('model', () => {
   }
 
   const updateEnabledState = (providerId: string, models: RENDERER_MODEL_META[]) => {
+    console.log(
+      `[ModelStore] updateEnabledState: updating enabled state for provider "${providerId}" with ${models.length} models`
+    )
     const enabledModelsList = models.filter((model) => model.enabled)
     const idx = enabledModels.value.findIndex((item) => item.providerId === providerId)
     if (idx !== -1) {
@@ -196,10 +270,30 @@ export const useModelStore = defineStore('model', () => {
 
   const refreshStandardModels = async (providerId: string): Promise<void> => {
     try {
+      console.log(
+        `[ModelStore] refreshStandardModels: refreshing models for provider "${providerId}"`
+      )
+      await invalidateProviderModelsCache(providerId)
       let models: RENDERER_MODEL_META[] = await configP.getDbProviderModels(providerId)
+      console.log(
+        `[ModelStore] refreshStandardModels: got ${models.length} models from DB for provider "${providerId}"`
+      )
+
       const providerModelsQuery = getProviderModelsQuery(providerId)
       await providerModelsQuery.refetch()
-      const storedModels = providerModelsQuery.data.value ?? []
+      let storedModels = providerModelsQuery.data.value ?? []
+      console.log(
+        `[ModelStore] refreshStandardModels: got ${storedModels.length} stored models for provider "${providerId}"`
+      )
+
+      if (storedModels.length === 0) {
+        // Fallback: try to get models directly from config
+        const fallbackProviderModels = (await configP.getProviderModels(providerId)) ?? []
+        if (fallbackProviderModels.length > 0) {
+          storedModels = fallbackProviderModels
+          updateProviderModelsCache(providerId, fallbackProviderModels)
+        }
+      }
 
       if (storedModels.length > 0) {
         const dbModelMap = new Map(models.map((model) => [model.id, model]))
@@ -225,7 +319,7 @@ export const useModelStore = defineStore('model', () => {
               (model as RENDERER_MODEL_META).enableSearch ??
               (fallback as RENDERER_MODEL_META | undefined)?.enableSearch ??
               false,
-            type: model.type ?? fallback?.type ?? ModelType.Chat
+            type: (model.type ?? fallback?.type ?? ModelType.Chat) as ModelType
           }
         }
 
@@ -236,18 +330,27 @@ export const useModelStore = defineStore('model', () => {
 
         const mergedModels: RENDERER_MODEL_META[] = []
 
-        for (const model of models) {
-          const override = storedModelMap.get(model.id)
-          if (override) {
-            storedModelMap.delete(model.id)
-            mergedModels.push({ ...model, ...override, providerId })
-          } else {
-            mergedModels.push({ ...model, providerId })
+        // If models array is empty, use storedModels directly
+        if (models.length === 0) {
+          for (const model of storedModelMap.values()) {
+            mergedModels.push(model)
           }
-        }
+        } else {
+          // Otherwise, merge db models with stored models
+          for (const model of models) {
+            const override = storedModelMap.get(model.id)
+            if (override) {
+              storedModelMap.delete(model.id)
+              mergedModels.push({ ...model, ...override, providerId })
+            } else {
+              mergedModels.push({ ...model, providerId })
+            }
+          }
 
-        for (const model of storedModelMap.values()) {
-          mergedModels.push(model)
+          // Add remaining stored models that are not in db
+          for (const model of storedModelMap.values()) {
+            mergedModels.push(model)
+          }
         }
 
         models = mergedModels
@@ -270,7 +373,7 @@ export const useModelStore = defineStore('model', () => {
               vision: meta.vision || false,
               functionCall: meta.functionCall || false,
               reasoning: meta.reasoning || false,
-              type: meta.type || ModelType.Chat
+              type: (meta.type || ModelType.Chat) as ModelType
             }))
           }
         } catch (error) {
@@ -304,6 +407,18 @@ export const useModelStore = defineStore('model', () => {
   }
 
   const refreshProviderModels = async (providerId: string) => {
+    if (await isAgentProvider(providerId)) {
+      try {
+        const { rendererModels, modelMetas } = await agentModelStore.refreshAgentModels(providerId)
+        updateProviderModelsCache(providerId, modelMetas)
+        updateAllProviderState(providerId, rendererModels)
+        updateEnabledState(providerId, rendererModels)
+      } catch (error) {
+        console.error(`[ModelStore] Failed to refresh agent models for ${providerId}:`, error)
+      }
+      return
+    }
+
     await refreshStandardModels(providerId)
     await refreshCustomModels(providerId)
   }

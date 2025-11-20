@@ -10,7 +10,8 @@ import {
   ISQLitePresenter,
   IConfigPresenter,
   ILlmProviderPresenter,
-  LLMAgentEventData
+  LLMAgentEventData,
+  AcpWorkdirInfo
 } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { MessageManager } from './managers/messageManager'
@@ -253,7 +254,32 @@ export class ThreadPresenter implements IThreadPresenter {
     tabId: number,
     options: CreateConversationOptions = {}
   ): Promise<string> {
-    return this.conversationManager.createConversation(title, settings, tabId, options)
+    const conversationId = await this.conversationManager.createConversation(
+      title,
+      settings,
+      tabId,
+      options
+    )
+
+    if (settings?.acpWorkdirMap) {
+      const tasks = Object.entries(settings.acpWorkdirMap)
+        .filter(([, path]) => typeof path === 'string' && path.trim().length > 0)
+        .map(([agentId, path]) =>
+          this.llmProviderPresenter
+            .setAcpWorkdir(conversationId, agentId, path as string)
+            .catch((error) =>
+              console.warn('[ThreadPresenter] Failed to set ACP workdir during creation', {
+                conversationId,
+                agentId,
+                error
+              })
+            )
+        )
+
+      await Promise.all(tasks)
+    }
+
+    return conversationId
   }
 
   async renameConversation(conversationId: string, title: string): Promise<CONVERSATION> {
@@ -713,5 +739,17 @@ export class ThreadPresenter implements IThreadPresenter {
    */
   async getMessageRequestPreview(messageId: string): Promise<unknown> {
     return this.utilityHandler.getMessageRequestPreview(messageId)
+  }
+
+  async getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo> {
+    return this.llmProviderPresenter.getAcpWorkdir(conversationId, agentId)
+  }
+
+  async setAcpWorkdir(
+    conversationId: string,
+    agentId: string,
+    workdir: string | null
+  ): Promise<void> {
+    await this.llmProviderPresenter.setAcpWorkdir(conversationId, agentId, workdir)
   }
 }

@@ -10,7 +10,12 @@ import {
   Prompt,
   SystemPrompt,
   IModelConfig,
-  BuiltinKnowledgeConfig
+  BuiltinKnowledgeConfig,
+  AcpAgentConfig,
+  AcpAgentProfile,
+  AcpBuiltinAgent,
+  AcpBuiltinAgentId,
+  AcpCustomAgent
 } from '@shared/presenter'
 import { ProviderBatchUpdate } from '@shared/provider-operations'
 import { SearchEngineTemplate } from '@shared/chat'
@@ -35,6 +40,8 @@ import { ModelStatusHelper } from './modelStatusHelper'
 import { ProviderModelHelper, PROVIDER_MODELS_DIR } from './providerModelHelper'
 import { SystemPromptHelper, DEFAULT_SYSTEM_PROMPT } from './systemPromptHelper'
 import { UiSettingsHelper } from './uiSettingsHelper'
+import { AcpConfHelper } from './acpConfHelper'
+import { AcpProvider } from '../llmProviderPresenter/providers/acpProvider'
 
 // Define application settings interface
 interface IAppSettings {
@@ -83,6 +90,7 @@ export class ConfigPresenter implements IConfigPresenter {
   private userDataPath: string
   private currentAppVersion: string
   private mcpConfHelper: McpConfHelper // Use MCP configuration helper
+  private acpConfHelper: AcpConfHelper
   private modelConfigHelper: ModelConfigHelper // Model configuration helper
   private knowledgeConfHelper: KnowledgeConfHelper // Knowledge configuration helper
   private providerHelper: ProviderHelper
@@ -171,6 +179,9 @@ export class ConfigPresenter implements IConfigPresenter {
       setSetting: this.setSetting.bind(this)
     })
 
+    this.acpConfHelper = new AcpConfHelper()
+    this.syncAcpProviderEnabled(this.acpConfHelper.getGlobalEnabled())
+
     // Initialize MCP configuration helper
     this.mcpConfHelper = new McpConfHelper()
 
@@ -188,6 +199,7 @@ export class ConfigPresenter implements IConfigPresenter {
       deleteModelStatus: this.modelStatusHelper.deleteModelStatus.bind(this.modelStatusHelper)
     })
 
+    // Initialize built-in ACP agents on first run or version upgrade
     // Initialize provider models directory
     this.initProviderModelsDir()
 
@@ -904,6 +916,180 @@ export class ConfigPresenter implements IConfigPresenter {
   // Update MCP server configuration
   async updateMcpServer(name: string, config: Partial<MCPServerConfig>): Promise<void> {
     await this.mcpConfHelper.updateMcpServer(name, config)
+  }
+
+  private syncAcpProviderEnabled(enabled: boolean): void {
+    const provider = this.getProviderById('acp')
+    if (!provider || provider.enable === enabled) {
+      return
+    }
+    console.log(`[ACP] syncAcpProviderEnabled: updating provider enable state to ${enabled}`)
+    this.updateProviderAtomic('acp', { enable: enabled })
+  }
+
+  async getAcpEnabled(): Promise<boolean> {
+    return this.acpConfHelper.getGlobalEnabled()
+  }
+
+  async setAcpEnabled(enabled: boolean): Promise<void> {
+    const changed = this.acpConfHelper.setGlobalEnabled(enabled)
+    if (!changed) return
+
+    console.log('[ACP] setAcpEnabled: updating global toggle to', enabled)
+    this.syncAcpProviderEnabled(enabled)
+
+    if (!enabled) {
+      console.log('[ACP] Disabling: clearing provider models and status cache')
+      this.providerModelHelper.setProviderModels('acp', [])
+      this.clearProviderModelStatusCache('acp')
+    }
+
+    this.notifyAcpAgentsChanged()
+  }
+
+  // ===================== ACP configuration methods =====================
+  async getAcpAgents(): Promise<AcpAgentConfig[]> {
+    return this.acpConfHelper.getEnabledAgents()
+  }
+
+  async setAcpAgents(agents: AcpAgentConfig[]): Promise<AcpAgentConfig[]> {
+    const sanitizedAgents = this.acpConfHelper.replaceWithLegacyAgents(agents)
+    this.handleAcpAgentsMutated(sanitizedAgents.map((agent) => agent.id))
+    return sanitizedAgents
+  }
+
+  async addAcpAgent(agent: Omit<AcpAgentConfig, 'id'> & { id?: string }): Promise<AcpAgentConfig> {
+    const created = this.acpConfHelper.addLegacyAgent(agent)
+    this.handleAcpAgentsMutated([created.id])
+    return created
+  }
+
+  async updateAcpAgent(
+    agentId: string,
+    updates: Partial<Omit<AcpAgentConfig, 'id'>>
+  ): Promise<AcpAgentConfig | null> {
+    const updated = this.acpConfHelper.updateLegacyAgent(agentId, updates)
+    if (updated) {
+      this.handleAcpAgentsMutated([agentId])
+    }
+    return updated
+  }
+
+  async removeAcpAgent(agentId: string): Promise<boolean> {
+    const removed = this.acpConfHelper.removeLegacyAgent(agentId)
+    if (removed) {
+      this.handleAcpAgentsMutated([agentId])
+    }
+    return removed
+  }
+
+  async getAcpBuiltinAgents(): Promise<AcpBuiltinAgent[]> {
+    return this.acpConfHelper.getBuiltins()
+  }
+
+  async getAcpCustomAgents(): Promise<AcpCustomAgent[]> {
+    return this.acpConfHelper.getCustoms()
+  }
+
+  async addAcpBuiltinProfile(
+    agentId: AcpBuiltinAgentId,
+    profile: Omit<AcpAgentProfile, 'id'>,
+    options?: { activate?: boolean }
+  ): Promise<AcpAgentProfile> {
+    const created = this.acpConfHelper.addBuiltinProfile(agentId, profile, options)
+    this.handleAcpAgentsMutated([agentId])
+    return created
+  }
+
+  async updateAcpBuiltinProfile(
+    agentId: AcpBuiltinAgentId,
+    profileId: string,
+    updates: Partial<Omit<AcpAgentProfile, 'id'>>
+  ): Promise<AcpAgentProfile | null> {
+    const updated = this.acpConfHelper.updateBuiltinProfile(agentId, profileId, updates)
+    if (updated) {
+      this.handleAcpAgentsMutated([agentId])
+    }
+    return updated
+  }
+
+  async removeAcpBuiltinProfile(agentId: AcpBuiltinAgentId, profileId: string): Promise<boolean> {
+    const removed = this.acpConfHelper.removeBuiltinProfile(agentId, profileId)
+    if (removed) {
+      this.handleAcpAgentsMutated([agentId])
+    }
+    return removed
+  }
+
+  async setAcpBuiltinActiveProfile(agentId: AcpBuiltinAgentId, profileId: string): Promise<void> {
+    this.acpConfHelper.setBuiltinActiveProfile(agentId, profileId)
+    this.handleAcpAgentsMutated([agentId])
+  }
+
+  async setAcpBuiltinEnabled(agentId: AcpBuiltinAgentId, enabled: boolean): Promise<void> {
+    this.acpConfHelper.setBuiltinEnabled(agentId, enabled)
+    this.handleAcpAgentsMutated([agentId])
+  }
+
+  async addCustomAcpAgent(
+    agent: Omit<AcpCustomAgent, 'id' | 'enabled'> & { id?: string; enabled?: boolean }
+  ): Promise<AcpCustomAgent> {
+    const created = this.acpConfHelper.addCustomAgent(agent)
+    this.handleAcpAgentsMutated([created.id])
+    return created
+  }
+
+  async updateCustomAcpAgent(
+    agentId: string,
+    updates: Partial<Omit<AcpCustomAgent, 'id'>>
+  ): Promise<AcpCustomAgent | null> {
+    const updated = this.acpConfHelper.updateCustomAgent(agentId, updates)
+    if (updated) {
+      this.handleAcpAgentsMutated([agentId])
+    }
+    return updated
+  }
+
+  async removeCustomAcpAgent(agentId: string): Promise<boolean> {
+    const removed = this.acpConfHelper.removeCustomAgent(agentId)
+    if (removed) {
+      this.handleAcpAgentsMutated([agentId])
+    }
+    return removed
+  }
+
+  async setCustomAcpAgentEnabled(agentId: string, enabled: boolean): Promise<void> {
+    this.acpConfHelper.setCustomAgentEnabled(agentId, enabled)
+    this.handleAcpAgentsMutated([agentId])
+  }
+
+  private handleAcpAgentsMutated(agentIds?: string[]) {
+    this.clearProviderModelStatusCache('acp')
+    this.notifyAcpAgentsChanged()
+    this.refreshAcpProviderAgents(agentIds)
+  }
+
+  private refreshAcpProviderAgents(agentIds?: string[]): void {
+    try {
+      const providerInstance = presenter?.llmproviderPresenter?.getProviderInstance('acp')
+      if (!providerInstance) {
+        return
+      }
+
+      const acpProvider = providerInstance as AcpProvider
+      if (typeof acpProvider.refreshAgents !== 'function') {
+        return
+      }
+
+      void acpProvider.refreshAgents(agentIds)
+    } catch (error) {
+      console.warn('[ACP] Failed to refresh agent processes after config change:', error)
+    }
+  }
+
+  private notifyAcpAgentsChanged() {
+    console.log('[ACP] notifyAcpAgentsChanged: sending MODEL_LIST_CHANGED event for provider "acp"')
+    eventBus.sendToRenderer(CONFIG_EVENTS.MODEL_LIST_CHANGED, SendTarget.ALL_WINDOWS, 'acp')
   }
 
   // Provide getMcpConfHelper method to get MCP configuration helper

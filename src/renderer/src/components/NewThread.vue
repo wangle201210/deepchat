@@ -13,6 +13,7 @@
         :rows="3"
         :max-rows="10"
         :context-length="contextLength"
+        :model-info="{ id: activeModel.id, providerId: activeModel.providerId }"
         @send="handleSend"
       >
         <template #addon-actions>
@@ -24,6 +25,13 @@
                 size="sm"
               >
                 <ModelIcon
+                  v-if="activeModel.providerId === 'acp'"
+                  class="w-4 h-4"
+                  :model-id="activeModel.id"
+                  :is-dark="themeStore.isDark"
+                ></ModelIcon>
+                <ModelIcon
+                  v-else
                   class="w-4 h-4"
                   :model-id="activeModel.providerId"
                   :is-dark="themeStore.isDark"
@@ -169,6 +177,13 @@ const handleDefaultSystemPromptChange = async (
 
 const name = computed(() => {
   return activeModel.value?.name ? activeModel.value.name.split('/').pop() : ''
+})
+
+const acpWorkdirMap = computed(() => chatStore.chatConfig.acpWorkdirMap ?? {})
+
+const pendingAcpWorkdir = computed(() => {
+  if (activeModel.value.providerId !== 'acp') return null
+  return acpWorkdirMap.value?.[activeModel.value.id] ?? null
 })
 
 watch(
@@ -435,7 +450,11 @@ const handleSend = async (content: UserMessageContent) => {
     searchStrategy: searchStrategy.value,
     reasoningEffort: reasoningEffort.value,
     verbosity: verbosity.value,
-    enabledMcpTools: chatStore.chatConfig.enabledMcpTools
+    enabledMcpTools: chatStore.chatConfig.enabledMcpTools,
+    acpWorkdirMap:
+      pendingAcpWorkdir.value && activeModel.value.providerId === 'acp'
+        ? { [activeModel.value.id]: pendingAcpWorkdir.value }
+        : undefined
   } as any)
   console.log('threadId', threadId, activeModel.value)
   chatStore.sendMessage(content)
