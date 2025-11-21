@@ -1,8 +1,8 @@
 import * as path from 'path'
 import { type WebContents } from 'electron'
 import type { AcpBuiltinAgentId, AcpAgentConfig, AcpAgentProfile } from '@shared/presenter'
-import { spawn } from 'node-pty'
-import type { IPty } from 'node-pty'
+import { spawn } from '@homebridge/node-pty-prebuilt-multiarch'
+import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch'
 import { RuntimeHelper } from '@/lib/runtimeHelper'
 
 interface InitCommandConfig {

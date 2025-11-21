@@ -67,6 +67,7 @@
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@google/genai": "^1.29.0",
+    "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@jxa/run": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.22.0",
     "axios": "^1.13.2",
@@ -86,7 +87,6 @@
     "jsonrepair": "^3.13.1",
     "mammoth": "^1.11.0",
     "nanoid": "^5.1.6",
-    "node-pty": "^1.0.0",
     "ollama": "^0.5.18",
     "openai": "^5.23.2",
     "pdf-parse-new": "^1.4.1",
@@ -132,6 +132,8 @@
     "@vitest/ui": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "@vueuse/core": "^12.8.2",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
     "autoprefixer": "^10.4.22",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -176,9 +178,7 @@
     "vue-virtual-scroller": "^2.0.0-beta.8",
     "vuedraggable": "^4.1.0",
     "yaml": "^2.8.1",
-    "zod-to-json-schema": "^3.24.6",
-    "@xterm/addon-fit": "^0.10.0",
-    "@xterm/xterm": "^5.5.0"
+    "zod-to-json-schema": "^3.24.6"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged && pnpm typecheck",
@@ -201,6 +201,7 @@
       "simple-git-hooks"
     ],
     "ignoredBuiltDependencies": [
+      "@homebridge/node-pty-prebuilt-multiarch",
       "better-sqlite3-multiple-ciphers",
       "esbuild",
       "maplibre-gl",
