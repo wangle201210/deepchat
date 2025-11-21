@@ -4,8 +4,15 @@ import {
   FileValidationResult,
   IFileValidationService
 } from '../../../src/main/presenter/filePresenter/FileValidationService'
+import { IConfigPresenter } from '../../../src/shared/presenter'
 
 // Mock all external dependencies
+const mockConfigPresenter: IConfigPresenter = {
+  getKnowledgeConfigs: vi.fn(),
+  diffKnowledgeConfigs: vi.fn(),
+  setKnowledgeConfigs: vi.fn()
+} as any
+
 vi.mock('electron', () => ({
   app: {
     getPath: vi.fn().mockReturnValue('/mock/user/data')
@@ -59,7 +66,7 @@ describe('FilePresenter Integration with FileValidationService', () => {
     }
 
     // Create FilePresenter with mocked service
-    filePresenter = new FilePresenter(mockFileValidationService)
+    filePresenter = new FilePresenter(mockConfigPresenter, mockFileValidationService)
   })
 
   describe('constructor', () => {
@@ -70,12 +77,12 @@ describe('FilePresenter Integration with FileValidationService', () => {
         getSupportedMimeTypes: vi.fn()
       }
 
-      const presenter = new FilePresenter(customService)
+      const presenter = new FilePresenter(mockConfigPresenter, customService)
       expect(presenter).toBeInstanceOf(FilePresenter)
     })
 
     it('should initialize with default FileValidationService when none provided', () => {
-      const presenter = new FilePresenter()
+      const presenter = new FilePresenter(mockConfigPresenter)
       expect(presenter).toBeInstanceOf(FilePresenter)
     })
   })
@@ -215,7 +222,7 @@ describe('FilePresenter Integration with FileValidationService', () => {
 
     it('should maintain backward compatibility', () => {
       // Ensure new methods don't break existing interface
-      const presenter = new FilePresenter()
+      const presenter = new FilePresenter(mockConfigPresenter)
       expect(presenter).toHaveProperty('validateFileForKnowledgeBase')
       expect(presenter).toHaveProperty('getSupportedExtensions')
     })
