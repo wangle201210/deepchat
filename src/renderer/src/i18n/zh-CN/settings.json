@@ -59,7 +59,9 @@
     "loggingRestartNotice": "切换此设置将导致程序重启，请确认是否继续？",
     "openLogFolder": "打开日志文件夹",
     "notifications": "系统通知",
-    "notificationsDesc": "当 DeepChat 不在前台时，如有会话生成完毕会发送系统通知"
+    "notificationsDesc": "当 DeepChat 不在前台时，如有会话生成完毕会发送系统通知",
+    "fileMaxSize": "文件最大大小",
+    "fileMaxSizeHint": "限制单个文件的最大上传大小"
   },
   "data": {
     "title": "数据设置",
@@ -800,6 +802,8 @@
     "description": "管理由 DeepChat 启动的本地 ACP Agent。",
     "enabledTitle": "启用 ACP",
     "enabledDescription": "启用后，配置好的 ACP Agent 会出现在模型列表中。",
+    "useBuiltinRuntimeTitle": "使用 DeepChat 内置环境",
+    "useBuiltinRuntimeDescription": "勾选后会绕过系统的 node 和 uv 命令，使用 DeepChat 自带的版本。",
     "enableToAccess": "启用 ACP 后才能配置 Agent。",
     "addCustomAgent": "新增自定义 Agent",
     "customEmpty": "还没有自定义 Agent。",

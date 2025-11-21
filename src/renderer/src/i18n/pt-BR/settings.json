@@ -59,7 +59,9 @@
     "notifications": "Notificações do Sistema",
     "notificationsDesc": "Quando o DeepChat não estiver em primeiro plano, se uma sessão for gerada, uma notificação do sistema será enviada",
     "contentProtection": "Proteção contra captura de tela",
-    "traceDebugEnabled": "Rastreamento de Chamadas"
+    "traceDebugEnabled": "Rastreamento de Chamadas",
+    "fileMaxSize": "Tamanho máximo do arquivo",
+    "fileMaxSizeHint": "Limita o tamanho máximo de um arquivo enviado"
   },
   "data": {
     "title": "Configurações de Dados",
@@ -832,6 +834,8 @@
     "enableToAccess": "Ative primeiro o ACP para acessar a configuração do proxy",
     "enabledDescription": "Quando habilitado, o agente ACP configurado aparecerá como modelo no seletor de modelo.",
     "enabledTitle": "Habilitar ACP",
+    "useBuiltinRuntimeTitle": "Usar ambiente de execução integrado do DeepChat",
+    "useBuiltinRuntimeDescription": "Quando habilitado, ignora os comandos node e uv do sistema, usando as versões incluídas com o DeepChat.",
     "env": "variáveis ​​de ambiente",
     "envKeyPlaceholder": "CHAVE",
     "envValuePlaceholder": "VALOR",

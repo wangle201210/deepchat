@@ -59,7 +59,9 @@
     },
     "notifications": "システム通知",
     "notificationsDesc": "DeepChatがバックグラウンドのとき、応答が完了すると通知を送信します",
-    "traceDebugEnabled": "追跡呼び出し"
+    "traceDebugEnabled": "追跡呼び出し",
+    "fileMaxSize": "ファイルの最大サイズ",
+    "fileMaxSizeHint": "アップロードできるファイルの最大サイズを制限します"
   },
   "data": {
     "title": "データ設定",
@@ -832,6 +834,8 @@
     "enableToAccess": "まずACPを有効にしてプロキシ設定にアクセスしてください",
     "enabledDescription": "有効にすると、設定されたACPプロキシがモデルセレクターにモデルとして表示されます。",
     "enabledTitle": "ACPを有効にする",
+    "useBuiltinRuntimeTitle": "DeepChat内蔵ランタイムを使用",
+    "useBuiltinRuntimeDescription": "有効にすると、システムのnodeとuvコマンドをバイパスし、DeepChatにバンドルされたバージョンを使用します。",
     "env": "環境変数",
     "envKeyPlaceholder": "キー",
     "envValuePlaceholder": "価値",

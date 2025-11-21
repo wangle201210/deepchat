@@ -59,7 +59,9 @@
     },
     "notifications": "System Notifications",
     "notificationsDesc": "When DeepChat is not in the foreground, if a session is generated, a system notification will be sent",
-    "contentProtection": "Screen capture protection"
+    "contentProtection": "Screen capture protection",
+    "fileMaxSize": "File Maximum Size",
+    "fileMaxSizeHint": "Limits the maximum size of a single uploaded file"
   },
   "data": {
     "title": "Data Settings",
@@ -800,6 +802,8 @@
     "description": "Manage local Agent Client Protocol agents started by DeepChat.",
     "enabledTitle": "Enable ACP",
     "enabledDescription": "When enabled, configured ACP agents will appear as models in the selector.",
+    "useBuiltinRuntimeTitle": "Use DeepChat Built-in Runtime",
+    "useBuiltinRuntimeDescription": "When enabled, bypasses system node and uv commands, using DeepChat's bundled versions.",
     "enableToAccess": "Enable ACP to configure agents.",
     "addCustomAgent": "Add Custom Agent",
     "customEmpty": "No custom agents yet.",
