@@ -53,7 +53,8 @@ export const ModelSchema = z.object({
   knowledge: z.string().optional(),
   release_date: z.string().optional(),
   last_updated: z.string().optional(),
-  cost: z.record(z.union([z.string(), z.number()])).optional()
+  cost: z.record(z.union([z.string(), z.number()])).optional(),
+  type: z.enum(['chat', 'embedding', 'rerank', 'imageGeneration']).optional()
 })
 
 export type ProviderModel = z.infer<typeof ModelSchema>
@@ -130,6 +131,7 @@ function getStringNumberRecord(obj: unknown): Record<string, string | number> | 
 
 type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high'
 type Verbosity = 'low' | 'medium' | 'high'
+type ModelTypeValue = 'chat' | 'embedding' | 'rerank' | 'imageGeneration'
 
 function getEffortValue(v: unknown): ReasoningEffort | undefined {
   if (typeof v !== 'string') return undefined
@@ -151,6 +153,35 @@ function getVerbosityValue(v: unknown): Verbosity | undefined {
     case 'medium':
     case 'high':
       return v
+    default:
+      return undefined
+  }
+}
+
+function getModelTypeValue(v: unknown): ModelTypeValue | undefined {
+  if (typeof v !== 'string') return undefined
+
+  // First try exact match (for standard format)
+  switch (v) {
+    case 'chat':
+    case 'embedding':
+    case 'rerank':
+    case 'imageGeneration':
+      return v
+  }
+
+  // Normalize and handle variants (like image_generation, image-generation, etc.)
+  const normalized = v.toLowerCase().replace(/[_-]/g, '')
+  switch (normalized) {
+    case 'chat':
+      return 'chat'
+    case 'embedding':
+      return 'embedding'
+    case 'rerank':
+      return 'rerank'
+    case 'imagegeneration':
+    case 'imagegen':
+      return 'imageGeneration'
     default:
       return undefined
   }
@@ -267,7 +298,8 @@ export function sanitizeAggregate(input: unknown): ProviderAggregate | null {
         knowledge: getString(rm, 'knowledge'),
         release_date: getString(rm, 'release_date'),
         last_updated: getString(rm, 'last_updated'),
-        cost: getStringNumberRecord(rm['cost'])
+        cost: getStringNumberRecord(rm['cost']),
+        type: getModelTypeValue(rm['type'])
       }
 
       sanitizedModels.push(model)
