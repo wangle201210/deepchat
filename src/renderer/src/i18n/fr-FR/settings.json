@@ -883,6 +883,38 @@
     "profilePlaceholder": "Veuillez sélectionner la configuration",
     "profileSwitched": "Configuration commutée",
     "disabledBadge": "Non activé",
-    "manageProfiles": "Gestion de la configuration"
+    "manageProfiles": "Gestion de la configuration",
+    "initialize": "initialisation",
+    "initializeDescription": "Ouvert dans le terminal et commande d'initialisation exécutée",
+    "initializeFailed": "L'initialisation a échoué",
+    "initializeSuccess": "L'initialisation a commencé",
+    "initializing": "Initialisation...",
+    "terminal": {
+      "close": "fermeture",
+      "closing": "Clôture...",
+      "exitError": "Une erreur s'est produite lors de la fermeture du processus (code de sortie : {code})",
+      "exitSuccess": "Processus terminé avec succès (code de sortie : {code})",
+      "processError": "erreur de processus",
+      "starting": "Démarrage de l'initialisation...",
+      "status": {
+        "completed": "Complété",
+        "error": "erreur",
+        "idle": "inactif",
+        "running": "En cours d'exécution"
+      },
+      "title": "Initialiser le terminal",
+      "waiting": "En attente du début de l'initialisation...",
+      "paste": "Coller",
+      "pasteError": "Le collage depuis le presse-papiers a échoué"
+    },
+    "dependency": {
+      "copied": "Copié dans le presse-papiers",
+      "copy": "copie",
+      "copyFailed": "Échec de la copie",
+      "description": "Les dépendances suivantes doivent être installées avant l'initialisation.",
+      "downloadUrl": "Lien de téléchargement",
+      "installCommands": "Commande d'installation",
+      "title": "Dépendances externes manquantes"
+    }
   }
 }
