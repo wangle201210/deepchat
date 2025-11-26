@@ -10,7 +10,7 @@
               <p>{{ t('update.releaseDate') }}: {{ upgrade.updateInfo?.releaseDate }}</p>
               <p>{{ t('update.releaseNotes') }}:</p>
               <p class="whitespace-pre-line">
-                <NodeRenderer :content="upgrade.updateInfo?.releaseNotes"></NodeRenderer>
+                <NodeRenderer :isDark="themeStore.isDark" :content="upgrade.updateInfo?.releaseNotes"></NodeRenderer>
               </p>
               <!-- 显示下载进度 -->
               <div v-if="upgrade.isDownloading && upgrade.updateProgress" class="mt-4">
@@ -65,10 +65,12 @@ import {
   DialogTitle
 } from '@shadcn/components/ui/dialog'
 import { useUpgradeStore } from '@/stores/upgrade'
-import NodeRenderer from 'vue-renderer-markdown'
+import NodeRenderer from 'markstream-vue'
+import { useThemeStore } from '@/stores/theme'
 
 const { t } = useI18n()
 const upgrade = useUpgradeStore()
+const themeStore = useThemeStore()
 
 const handleUpdate = async (type: 'github' | 'netdisk' | 'auto') => {
   await upgrade.handleUpdate(type)

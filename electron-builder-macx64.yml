@@ -3,6 +3,9 @@ productName: DeepChat
 directories:
   buildResources: build
 files:
+  - '!**/.claude/*'
+  - '!**/.github/*'
+  - '!**/.cursor/*'
   - '!**/.vscode/*'
   - '!src/*'
   - '!test/*'
@@ -28,6 +31,9 @@ asarUnpack:
 extraResources:
   - from: ./runtime/
     to: app.asar.unpacked/runtime
+    filter: ['**/*']
+  - from: ./resources/cdn/
+    to: app.asar.unpacked/resources/cdn
     filter: ['**/*']
 afterSign: scripts/notarize.js
 afterPack: scripts/afterPack.js
