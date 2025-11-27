@@ -10,7 +10,7 @@ on:
 
 jobs:
   deploy-cdn:
-    runs-on: japan-cdn-deploy
+    runs-on: self-hosted
     steps:
       - name: Download artifacts from workflow
         uses: dawidd6/action-download-artifact@v6
