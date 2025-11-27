@@ -7,10 +7,6 @@ on:
         description: 'Build workflow run ID to use for artifacts'
         required: true
         type: string
-      version:
-        description: 'Version number for CDN directory (e.g., 1.0.0)'
-        required: true
-        type: string
 
 jobs:
   deploy-cdn:
@@ -28,30 +24,30 @@ jobs:
 
       - name: Prepare CDN upload structure
         run: |
-          mkdir -p canary2/v${{ github.event.inputs.version }}/{linuxx64,macarm,macx64,winx64}
+          mkdir -p canary2/{linuxx64,macarm,macx64,winx64}
 
           # Process Linux x64 artifacts
           if [ -d "artifacts/deepchat-linux-x64" ]; then
             echo "Processing Linux x64 artifacts..."
-            cp -r artifacts/deepchat-linux-x64/* canary2/v${{ github.event.inputs.version }}/linuxx64/ 2>/dev/null || true
+            cp -r artifacts/deepchat-linux-x64/* canary2/linuxx64/ 2>/dev/null || true
           fi
 
           # Process Mac arm64 artifacts
           if [ -d "artifacts/deepchat-mac-arm64" ]; then
             echo "Processing Mac arm64 artifacts..."
-            cp -r artifacts/deepchat-mac-arm64/* canary2/v${{ github.event.inputs.version }}/macarm/ 2>/dev/null || true
+            cp -r artifacts/deepchat-mac-arm64/* canary2/macarm/ 2>/dev/null || true
           fi
 
           # Process Mac x64 artifacts
           if [ -d "artifacts/deepchat-mac-x64" ]; then
             echo "Processing Mac x64 artifacts..."
-            cp -r artifacts/deepchat-mac-x64/* canary2/v${{ github.event.inputs.version }}/macx64/ 2>/dev/null || true
+            cp -r artifacts/deepchat-mac-x64/* canary2/macx64/ 2>/dev/null || true
           fi
 
           # Process Windows x64 artifacts
           if [ -d "artifacts/deepchat-win-x64" ]; then
             echo "Processing Windows x64 artifacts..."
-            cp -r artifacts/deepchat-win-x64/* canary2/v${{ github.event.inputs.version }}/winx64/ 2>/dev/null || true
+            cp -r artifacts/deepchat-win-x64/* canary2/winx64/ 2>/dev/null || true
           fi
 
           echo "CDN upload structure prepared:"
@@ -84,7 +80,7 @@ jobs:
           echo "📦 版本: v${{ github.event.inputs.version }}"
           echo ""
           echo "🗂️ CDN 目录结构:"
-          echo "📁 upgrade2/v${{ github.event.inputs.version }}/ (完整产物)"
+          echo "📁 canary2/ (完整产物)"
           echo "  - linuxx64/ (所有 Linux x64 文件)"
           echo "  - macarm/ (所有 Mac ARM64 文件)"
           echo "  - macx64/ (所有 Mac x64 文件)"
