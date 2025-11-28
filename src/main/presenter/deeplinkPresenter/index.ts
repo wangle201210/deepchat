@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { presenter } from '@/presenter'
 import { IDeeplinkPresenter, MCPServerConfig } from '@shared/presenter'
 import path from 'path'
@@ -35,6 +35,13 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
   private pendingMcpInstallUrl: string | null = null
 
   init(): void {
+    // 检查启动时的命令行参数是否包含deeplink URL（冷启动情况）
+    const startupDeepLinkUrl = this.checkStartupDeepLink()
+    if (startupDeepLinkUrl) {
+      console.log('Found startup deeplink URL:', startupDeepLinkUrl)
+      this.startupUrl = startupDeepLinkUrl
+    }
+
     // 注册协议处理器
     if (process.defaultApp) {
       if (process.argv.length >= 2) {
@@ -49,6 +56,7 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     // 处理 macOS 上协议被调用的情况
     app.on('open-url', (event, url) => {
       event.preventDefault()
+      console.log('open-url event received:', url)
       if (!app.isReady()) {
         console.log('App not ready yet, saving URL:', url)
         this.startupUrl = url
@@ -111,17 +119,23 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
 
   // 新增：处理DeepLink的方法，根据URL类型和系统状态决定如何处理
   private processDeepLink(url: string): void {
+    console.log('processDeepLink called with URL:', url)
     try {
       const urlObj = new URL(url)
       const command = urlObj.hostname
       const subCommand = urlObj.pathname.slice(1)
 
+      console.log('Parsed deeplink - command:', command, 'subCommand:', subCommand)
+
       // 如果是MCP安装命令，需要等待MCP初始化完成
       if (command === 'mcp' && subCommand === 'install') {
+        console.log('MCP install deeplink detected')
         if (!presenter.mcpPresenter.isReady()) {
           console.log('MCP not ready yet, saving MCP install URL for later')
           this.pendingMcpInstallUrl = url
           return
+        } else {
+          console.log('MCP is ready, processing MCP install immediately')
         }
       }
 
@@ -130,6 +144,39 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
     } catch (error) {
       console.error('Error processing DeepLink:', error)
     }
+  }
+
+  /**
+   * 检查启动时的deeplink URL
+   * 用于处理冷启动时传递的deeplink
+   */
+  private checkStartupDeepLink(): string | null {
+    console.log('Checking for startup deeplink...')
+
+    // 首先检查环境变量（在main.ts中设置的）
+    const envDeepLink = process.env.STARTUP_DEEPLINK
+    if (envDeepLink) {
+      console.log('Found deeplink in startup environment variable:', envDeepLink)
+      // 清理环境变量，避免重复处理
+      delete process.env.STARTUP_DEEPLINK
+      return envDeepLink
+    }
+
+    // 检查命令行参数 - 尝试多种deeplink格式
+    const deepLinkArg = process.argv.find((arg) => {
+      return arg.startsWith('deepchat://') || arg.includes('deepchat://') || arg.match(/^deepchat:/)
+    })
+
+    if (deepLinkArg) {
+      console.log('Found deeplink in command line arguments:', deepLinkArg)
+      return deepLinkArg
+    }
+
+    // 检查所有命令行参数
+    console.log('All command line arguments:', process.argv)
+
+    console.log('No startup deeplink found')
+    return null
   }
 
   async handleDeepLink(url: string): Promise<void> {
@@ -298,17 +345,29 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
       return
     }
 
+    console.log('Found code parameter, processing MCP config')
+
     try {
       // 解码 Base64 并解析 JSON
       const jsonString = Buffer.from(jsonBase64, 'base64').toString('utf-8')
-
       const mcpConfig = JSON.parse(jsonString) as MCPInstallConfig
+
+      console.log('Parsed MCP config:', mcpConfig)
 
       // 检查 MCP 配置是否有效
       if (!mcpConfig || !mcpConfig.mcpServers) {
         console.error('Invalid MCP configuration: missing mcpServers field')
         return
       }
+
+      // 检查应用程序是否已经完全启动（有窗口存在）
+      const allWindows = presenter.windowPresenter.getAllWindows()
+      const hasWindows = allWindows.length > 0
+
+      console.log('Window check - hasWindows:', hasWindows, 'windowCount:', allWindows.length)
+
+      // Prepare complete MCP configuration for all servers
+      const completeMcpConfig: { mcpServers: Record<string, any> } = { mcpServers: {} }
 
       // 遍历并安装所有 MCP 服务器
       for (const [serverName, serverConfig] of Object.entries(mcpConfig.mcpServers)) {
@@ -400,25 +459,109 @@ export class DeeplinkPresenter implements IDeeplinkPresenter {
           baseUrl: determinedType === 'sse' ? determinedUrl! : defaultConfig.baseUrl!
         }
 
-        // 安装 MCP 服务器
+        // 添加服务器配置到完整配置中
         console.log(
           `Preparing to install MCP server: ${serverName} (type: ${determinedType})`,
           finalConfig
         )
-        const resultServerConfig = {
-          mcpServers: {
-            [serverName]: finalConfig
+        completeMcpConfig.mcpServers[serverName] = finalConfig
+      }
+
+      if (hasWindows) {
+        // 应用程序已启动，使用现有逻辑创建 Settings 窗口
+        const settingsWindowId = await presenter.windowPresenter.createSettingsWindow()
+        if (!settingsWindowId) {
+          console.error('Failed to open Settings window for MCP install deeplink')
+          return
+        }
+
+        // Store the complete MCP configuration in localStorage of the Settings window
+        const settingsWindow = BrowserWindow.fromId(settingsWindowId)
+        if (settingsWindow && !settingsWindow.isDestroyed()) {
+          try {
+            await settingsWindow.webContents.executeJavaScript(`
+              localStorage.setItem('pending-mcp-install', '${JSON.stringify(completeMcpConfig).replace(/'/g, "\\'")}');
+            `)
+            console.log('Complete MCP configuration stored in Settings window localStorage')
+          } catch (error) {
+            console.error('Failed to store MCP configuration in localStorage:', error)
           }
         }
-        // 如果配置中指定了该服务器为默认服务器，则添加到默认服务器列表
-        eventBus.sendToRenderer(DEEPLINK_EVENTS.MCP_INSTALL, SendTarget.DEFAULT_TAB, {
-          mcpConfig: JSON.stringify(resultServerConfig)
-        })
+      } else {
+        // 应用程序未启动，将配置保存到第一个 shell 窗口的 localStorage
+        console.log('App not fully started yet, saving MCP config for shell window')
+        await this.saveMcpConfigToShellWindow(completeMcpConfig)
       }
+
       console.log('All MCP servers processing completed')
     } catch (error) {
       console.error('Error parsing or processing MCP configuration:', error)
     }
+  }
+
+  /**
+   * 将 MCP 配置保存到第一个 shell 窗口的 localStorage
+   * @param mcpConfig MCP 配置对象
+   */
+  private async saveMcpConfigToShellWindow(mcpConfig: {
+    mcpServers: Record<string, any>
+  }): Promise<void> {
+    try {
+      // 等待第一个 shell 窗口创建并准备就绪
+      const shellWindow = await this.waitForFirstShellWindow()
+      if (!shellWindow) {
+        console.error('No shell window available to store MCP configuration')
+        return
+      }
+
+      // 确保 webContents 已准备就绪
+      if (shellWindow.webContents.isLoading()) {
+        await new Promise<void>((resolve) => {
+          shellWindow.webContents.once('dom-ready', () => resolve())
+        })
+      }
+
+      // 存储到 localStorage
+      await shellWindow.webContents.executeJavaScript(`
+        localStorage.setItem('pending-mcp-install', '${JSON.stringify(mcpConfig).replace(/'/g, "\\'")}');
+      `)
+      console.log('MCP configuration stored in shell window localStorage for cold start')
+    } catch (error) {
+      console.error('Failed to store MCP configuration in shell window localStorage:', error)
+    }
+  }
+
+  /**
+   * 等待第一个 shell 窗口创建并返回
+   * @returns Promise<BrowserWindow | null>
+   */
+  private async waitForFirstShellWindow(): Promise<BrowserWindow | null> {
+    return new Promise((resolve) => {
+      // 先检查是否已经有窗口
+      const existingWindows = presenter.windowPresenter.getAllWindows()
+      if (existingWindows.length > 0) {
+        resolve(existingWindows[0])
+        return
+      }
+
+      // 监听窗口创建事件
+      const checkForWindow = () => {
+        const windows = presenter.windowPresenter.getAllWindows()
+        if (windows.length > 0) {
+          eventBus.off(WINDOW_EVENTS.WINDOW_CREATED, checkForWindow)
+          resolve(windows[0])
+        }
+      }
+
+      eventBus.on(WINDOW_EVENTS.WINDOW_CREATED, checkForWindow)
+
+      // 设置超时，避免无限等待
+      setTimeout(() => {
+        eventBus.off(WINDOW_EVENTS.WINDOW_CREATED, checkForWindow)
+        console.warn('Timeout waiting for shell window creation')
+        resolve(null)
+      }, 10000) // 10秒超时
+    })
   }
 
   /**
