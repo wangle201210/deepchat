@@ -122,19 +122,6 @@
             </div>
           </div>
         </div>
-        <!-- Connection Test Section -->
-        <div class="space-y-3" v-if="connectionResult">
-          <div
-            :class="[
-              'p-3 rounded-md text-sm',
-              connectionResult.success
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
-            ]"
-          >
-            {{ connectionResult.message || connectionResult.error }}
-          </div>
-        </div>
         <!-- Save Configuration Button -->
         <div class="flex gap-2">
           <Button
@@ -175,13 +162,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed, nextTick, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChatStore } from '@/stores/chat'
 import { Button } from '@shadcn/components/ui/button'
 import { Input } from '@shadcn/components/ui/input'
 import { Label } from '@shadcn/components/ui/label'
 import { Icon } from '@iconify/vue'
+import { useToast } from '@/components/use-toast'
 
 const chatStore = useChatStore()
+const { toast } = useToast()
+const { t } = useI18n()
 
 const testingConnection = ref(false)
 const savingConfig = ref(false)
@@ -207,8 +198,6 @@ const timeoutSeconds = computed({
     config.timeout = value * 1000
   }
 })
-
-const connectionResult = ref<{ success: boolean; message?: string; error?: string } | null>(null)
 
 const toggleNowledgeMemConfigPanel = () => {
   showConfigPanel.value = !showConfigPanel.value
@@ -268,16 +257,19 @@ watch(
 
 const testConnection = async () => {
   testingConnection.value = true
-  connectionResult.value = null
 
   try {
     const result = await chatStore.testNowledgeMemConnection()
-    connectionResult.value = result
+    toast({
+      title: t('settings.knowledgeBase.nowledgeMem.testConnection'),
+      description: result.message || 'Connection successful'
+    })
   } catch (error) {
-    connectionResult.value = {
-      success: false,
-      error: error instanceof Error ? error.message : 'Connection test failed'
-    }
+    toast({
+      title: t('settings.knowledgeBase.nowledgeMem.testConnection'),
+      description: error instanceof Error ? error.message : 'Connection test failed',
+      variant: 'destructive'
+    })
   } finally {
     testingConnection.value = false
   }
