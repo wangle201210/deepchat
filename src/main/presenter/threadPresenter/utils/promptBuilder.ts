@@ -494,11 +494,12 @@ function addContextMessages(
 
         // Add assistant message with tool_calls (without responses in content)
         if (toolCalls.length > 0) {
-          resultMessages.push({
+          const assistantMessage: ChatMessage = {
             role: 'assistant',
             content: messageContent.length > 0 ? messageContent : undefined,
             tool_calls: toolCalls
-          })
+          }
+          resultMessages.push(assistantMessage)
 
           // Add separate role:tool messages for each tool response
           toolResponses.forEach((toolResp) => {
@@ -509,10 +510,11 @@ function addContextMessages(
             })
           })
         } else if (messageContent.length > 0) {
-          resultMessages.push({
+          const assistantMessage: ChatMessage = {
             role: 'assistant',
             content: messageContent
-          })
+          }
+          resultMessages.push(assistantMessage)
         }
       } else {
         resultMessages.push({
