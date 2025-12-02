@@ -93,12 +93,6 @@ jobs:
             # 🚀 DeepChat ${{ steps.get_version.outputs.version }} 正式发布 | 重新定义你的 AI 对话体验！
             —— 不再是简单的 ChatBot，而是你的自然语言 Agent  工具🌟
 
-            📦 **构建信息**
-            - Workflow ID: `${{ github.event.inputs.workflow_id }}`
-            - 版本: `${{ steps.get_version.outputs.version }}`
-            - 预发布: `${{ github.event.inputs.prerelease }}`
-            - 构建时间: `${{ github.run_id }}`
-
             🔥 为什么选择 DeepChat？
 
             ✅ **商业友好**：基于原版 [Apache License 2.0](https://github.com/ThinkInAIXYZ/deepchat/blob/main/LICENSE) 开源，无任何协议外的额外约束，面向开源。
@@ -111,6 +105,29 @@ jobs:
 
             💬 反馈有礼：欢迎提交你的宝贵建议，加入 VIP 用户社群，与我们一同塑造 DeepChat 的未来！
             <img width="400px" src="https://github.com/user-attachments/assets/2ebc21e8-3eef-4a11-b3ab-de28e8f9d9c0"/>
+
+            🎮 加入 Discord 社区：[https://discord.gg/6RBatENX](https://discord.gg/6RBatENX)
+
+            ---
+
+            # 🚀 DeepChat ${{ steps.get_version.outputs.version }} Official Release | Redefine Your AI Conversation Experience!
+            —— Not just a simple ChatBot, but your natural language Agent tool 🌟
+
+            🔥 Why Choose DeepChat?
+
+            ✅ **Business-Friendly**: Open source under [Apache License 2.0](https://github.com/ThinkInAIXYZ/deepchat/blob/main/LICENSE), with no additional constraints beyond the license, truly open source.
+            ✅ **Ready to Use**: Minimal configuration, start your intelligent conversation journey immediately.
+            ✅ **Ultra Flexible**: Freely switch models, customize model sources, meet your diverse conversation and exploration needs.
+            ✅ **Excellent Experience**: LaTeX formula rendering, code highlighting, Markdown support, model conversations have never been smoother.
+            ✅ **Continuous Evolution**: We listen to user feedback, continuously iterate and update, bringing you an even better AI conversation experience.
+
+            📥 Experience the Future Now
+
+            💬 Feedback Welcome: We welcome your valuable suggestions, join the user community, and shape the future of DeepChat together!
+
+            <img width="400px" src="https://github.com/user-attachments/assets/2ebc21e8-3eef-4a11-b3ab-de28e8f9d9c0"/>
+
+            🎮 Join Discord Community: [https://discord.gg/6RBatENX](https://discord.gg/6RBatENX)
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

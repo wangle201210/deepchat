@@ -261,6 +261,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
     messages: ChatMessage[],
     supportsFunctionCall: boolean = false
   ): ChatCompletionMessageParam[] {
+    // console.log('formatMessages', messages)
     const result: ChatCompletionMessageParam[] = []
     // Track pending tool calls for non-FC models (to pair with tool responses)
     const pendingToolCalls: Map<
@@ -400,6 +401,7 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
 
       // Handle assistant messages with tool_calls
       if (msg.role === 'assistant' && msg.tool_calls && msg.tool_calls.length > 0) {
+        const reasoningContent = (msg as any).reasoning_content as string | undefined
         if (supportsFunctionCall) {
           // Standard OpenAI format - preserve tool_calls structure
           const normalizedToolCalls = msg.tool_calls.map((toolCall) => {
@@ -414,7 +416,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           result.push({
             role: 'assistant',
             content: baseMessage.content || null,
-            tool_calls: normalizedToolCalls
+            tool_calls: normalizedToolCalls,
+            ...(reasoningContent !== undefined ? { reasoning_content: reasoningContent } : {})
           } as ChatCompletionMessageParam)
         } else {
           // Mock format: Store tool calls and assistant content, wait for tool responses
@@ -422,7 +425,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
           if (baseMessage.content) {
             result.push({
               role: 'assistant',
-              content: baseMessage.content
+              content: baseMessage.content,
+              ...(reasoningContent !== undefined ? { reasoning_content: reasoningContent } : {})
             } as ChatCompletionMessageParam)
           }
 
@@ -523,6 +527,12 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
       }
 
       // Handle other messages (system, assistant without tool_calls)
+      if (msg.role === 'assistant') {
+        const reasoningContent = (msg as any).reasoning_content as string | undefined
+        if (reasoningContent !== undefined) {
+          ;(baseMessage as any).reasoning_content = reasoningContent
+        }
+      }
       result.push(baseMessage as ChatCompletionMessageParam)
     }
 
@@ -1723,7 +1733,8 @@ export class OpenAICompatibleProvider extends BaseLLMProvider {
         .filter(
           (
             call
-          ): call is { id: string; type: string; function: { name: string; arguments: string } } => // Type guard ensures correct structure
+          ): call is { id: string; type: string; function: { name: string; arguments: string } } =>
+            // Type guard ensures correct structure
             call !== null &&
             typeof call.id === 'string' &&
             typeof call.function === 'object' &&

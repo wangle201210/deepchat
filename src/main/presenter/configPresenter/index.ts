@@ -685,7 +685,8 @@ export class ConfigPresenter implements IConfigPresenter {
       'ja-JP',
       'fr-FR',
       'fa-IR',
-      'pt-BR'
+      'pt-BR',
+      'da-DK'
     ]
 
     // Exact match
@@ -1568,6 +1569,42 @@ export class ConfigPresenter implements IConfigPresenter {
   // 根据包名查找服务器
   async findMcpServerByPackage(packageName: string): Promise<string | null> {
     return this.mcpConfHelper.findServerByPackage(packageName)
+  }
+
+  // ===================== Nowledge-mem configuration methods =====================
+  async getNowledgeMemConfig(): Promise<{
+    baseUrl: string
+    apiKey?: string
+    timeout: number
+  } | null> {
+    try {
+      return this.store.get('nowledgeMemConfig', null) as {
+        baseUrl: string
+        apiKey?: string
+        timeout: number
+      } | null
+    } catch (error) {
+      console.error('[Config] Failed to get nowledge-mem config:', error)
+      return null
+    }
+  }
+
+  async setNowledgeMemConfig(config: {
+    baseUrl: string
+    apiKey?: string
+    timeout: number
+  }): Promise<void> {
+    try {
+      this.store.set('nowledgeMemConfig', config)
+      eventBus.sendToRenderer(
+        CONFIG_EVENTS.NOWLEDGE_MEM_CONFIG_UPDATED,
+        SendTarget.ALL_WINDOWS,
+        config
+      )
+    } catch (error) {
+      console.error('[Config] Failed to set nowledge-mem config:', error)
+      throw error
+    }
   }
 }
 

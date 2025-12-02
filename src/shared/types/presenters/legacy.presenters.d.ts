@@ -4,6 +4,7 @@ import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
 import { ModelType } from '@shared/model'
+import type { NowledgeMemThread, NowledgeMemExportSummary } from '../nowledgeMem'
 import { ProviderChange, ProviderBatchUpdate } from './provider-operations'
 import type { AgentSessionLifecycleStatus } from './agent-provider'
 
@@ -188,6 +189,7 @@ export interface IWindowPresenter {
   minimize(windowId: number): void
   maximize(windowId: number): void
   close(windowId: number): void
+  createSettingsWindow(): Promise<number | null>
   closeSettingsWindow(): void
   getSettingsWindowId(): number | null
   hide(windowId: number): void
@@ -498,6 +500,13 @@ export interface IConfigPresenter {
   // ACP configuration methods
   getAcpEnabled(): Promise<boolean>
   setAcpEnabled(enabled: boolean): Promise<void>
+  // Nowledge-mem configuration methods
+  getNowledgeMemConfig(): Promise<{
+    baseUrl: string
+    apiKey?: string
+    timeout: number
+  } | null>
+  setNowledgeMemConfig(config: { baseUrl: string; apiKey?: string; timeout: number }): Promise<void>
   getAcpUseBuiltinRuntime(): Promise<boolean>
   setAcpUseBuiltinRuntime(enabled: boolean): Promise<void>
   setAcpAgents(agents: AcpAgentConfig[]): Promise<AcpAgentConfig[]>
@@ -758,6 +767,15 @@ export type AWS_BEDROCK_PROVIDER = LLM_PROVIDER & {
   credential?: AwsBedrockCredential
 }
 
+export type VERTEX_PROVIDER = LLM_PROVIDER & {
+  projectId?: string
+  location?: string
+  accountPrivateKey?: string
+  accountClientEmail?: string
+  apiVersion?: 'v1' | 'v1beta1'
+  endpointMode?: 'standard' | 'express'
+}
+
 export interface AwsBedrockCredential {
   accessKeyId: string
   secretAccessKey: string
@@ -997,6 +1015,36 @@ export interface IThreadPresenter {
     conversationId: string,
     format: 'markdown' | 'html' | 'txt'
   ): Promise<{ filename: string; content: string }>
+
+  // Nowledge-mem integration
+  submitToNowledgeMem(conversationId: string): Promise<{
+    success: boolean
+    threadId?: string
+    data?: NowledgeMemThread
+    errors?: string[]
+  }>
+  exportToNowledgeMem(conversationId: string): Promise<{
+    success: boolean
+    data?: NowledgeMemThread
+    summary?: NowledgeMemExportSummary
+    errors?: string[]
+    warnings?: string[]
+  }>
+  testNowledgeMemConnection(): Promise<{
+    success: boolean
+    message?: string
+    error?: string
+  }>
+  updateNowledgeMemConfig(config: {
+    baseUrl?: string
+    apiKey?: string
+    timeout?: number
+  }): Promise<void>
+  getNowledgeMemConfig(): {
+    baseUrl: string
+    apiKey?: string
+    timeout: number
+  }
 
   // Dev tools
   getMessageRequestPreview(messageId: string): Promise<unknown>

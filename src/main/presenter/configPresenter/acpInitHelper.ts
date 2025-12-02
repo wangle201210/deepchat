@@ -4,8 +4,8 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import { type WebContents, app } from 'electron'
 import type { AcpBuiltinAgentId, AcpAgentConfig, AcpAgentProfile } from '@shared/presenter'
-import { spawn } from '@homebridge/node-pty-prebuilt-multiarch'
-import type { IPty } from '@homebridge/node-pty-prebuilt-multiarch'
+import { spawn } from 'node-pty'
+import type { IPty } from 'node-pty'
 import { RuntimeHelper } from '@/lib/runtimeHelper'
 
 const execAsync = promisify(exec)
@@ -52,7 +52,7 @@ const EXTERNAL_DEPENDENCIES: ExternalDependency[] = [
 
 const BUILTIN_INIT_COMMANDS: Record<AcpBuiltinAgentId, InitCommandConfig> = {
   'kimi-cli': {
-    commands: ['uv tool run --from kimi-cli kimi'],
+    commands: ['uv tool install --python 3.13 kimi-cli', 'kimi'],
     description: 'Initialize Kimi CLI'
   },
   'claude-code-acp': {
