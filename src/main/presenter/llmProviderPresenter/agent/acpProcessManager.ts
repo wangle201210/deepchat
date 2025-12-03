@@ -15,6 +15,9 @@ import type { AcpAgentConfig } from '@shared/presenter'
 import type { AgentProcessHandle, AgentProcessManager } from './types'
 import { getShellEnvironment } from './shellEnvHelper'
 import { RuntimeHelper } from '@/lib/runtimeHelper'
+import { buildClientCapabilities } from './acpCapabilities'
+import { AcpFsHandler } from './acpFsHandler'
+import { AcpTerminalManager } from './acpTerminalManager'
 
 export interface AcpProcessHandle extends AgentProcessHandle {
   child: ChildProcessWithoutNullStreams
@@ -64,12 +67,58 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
   private readonly sessionListeners = new Map<string, SessionListenerEntry>()
   private readonly permissionResolvers = new Map<string, PermissionResolverEntry>()
   private readonly runtimeHelper = RuntimeHelper.getInstance()
+  private readonly terminalManager = new AcpTerminalManager()
+  private readonly sessionWorkdirs = new Map<string, string>()
+  private readonly fsHandlers = new Map<string, AcpFsHandler>()
 
   constructor(options: AcpProcessManagerOptions) {
     this.providerId = options.providerId
     this.getUseBuiltinRuntime = options.getUseBuiltinRuntime
     this.getNpmRegistry = options.getNpmRegistry
     this.getUvRegistry = options.getUvRegistry
+  }
+
+  /**
+   * Register a session's working directory for file system operations.
+   * This must be called when a session is created, before any fs/terminal operations.
+   */
+  registerSessionWorkdir(sessionId: string, workdir: string): void {
+    this.sessionWorkdirs.set(sessionId, workdir)
+    // Create fs handler for this session
+    this.fsHandlers.set(sessionId, new AcpFsHandler({ workspaceRoot: workdir }))
+  }
+
+  /**
+   * Get the fs handler for a session.
+   */
+  private getFsHandler(sessionId: string): AcpFsHandler {
+    const handler = this.fsHandlers.get(sessionId)
+    if (!handler) {
+      // Fallback: restrict to a temporary workspace instead of unrestricted access
+      const fallbackWorkdir = this.getFallbackWorkdir()
+      console.warn(
+        `[ACP] No fs handler registered for session ${sessionId}, using fallback workdir: ${fallbackWorkdir}`
+      )
+      const fallbackHandler = new AcpFsHandler({ workspaceRoot: fallbackWorkdir })
+      this.fsHandlers.set(sessionId, fallbackHandler)
+      return fallbackHandler
+    }
+    return handler
+  }
+
+  /**
+   * Provide a fallback workspace for sessions that haven't registered a workdir.
+   * Keeps file access constrained to a temp directory rather than the entire filesystem.
+   */
+  private getFallbackWorkdir(): string {
+    const tempDir = path.join(app.getPath('temp'), 'deepchat-acp', 'sessions')
+    try {
+      fs.mkdirSync(tempDir, { recursive: true })
+    } catch (error) {
+      console.warn('[ACP] Failed to create fallback workdir, defaulting to system temp:', error)
+      return app.getPath('temp')
+    }
+    return tempDir
   }
 
   async getConnection(agent: AcpAgentConfig): Promise<AcpProcessHandle> {
@@ -115,10 +164,13 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
   async shutdown(): Promise<void> {
     const releases = Array.from(this.handles.keys()).map((agentId) => this.release(agentId))
     await Promise.allSettled(releases)
+    await this.terminalManager.shutdown()
     this.handles.clear()
     this.sessionListeners.clear()
     this.permissionResolvers.clear()
     this.pendingHandles.clear()
+    this.sessionWorkdirs.clear()
+    this.fsHandlers.clear()
   }
 
   registerSessionListener(
@@ -166,6 +218,10 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
   clearSession(sessionId: string): void {
     this.sessionListeners.delete(sessionId)
     this.permissionResolvers.delete(sessionId)
+    this.sessionWorkdirs.delete(sessionId)
+    this.fsHandlers.delete(sessionId)
+    // Clean up terminals for this session
+    void this.terminalManager.releaseSessionTerminals(sessionId)
   }
 
   private async spawnProcess(agent: AcpAgentConfig): Promise<AcpProcessHandle> {
@@ -188,7 +244,10 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
     try {
       const initPromise = connection.initialize({
         protocolVersion: PROTOCOL_VERSION,
-        clientCapabilities: {},
+        clientCapabilities: buildClientCapabilities({
+          enableFs: true,
+          enableTerminal: true
+        }),
         clientInfo: { name: 'DeepChat', version: app.getVersion() }
       })
 
@@ -202,8 +261,35 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
         }, timeoutMs)
       })
 
-      await Promise.race([initPromise, timeoutPromise])
+      const initResult = await Promise.race([initPromise, timeoutPromise])
       console.info(`[ACP] Connection initialization completed successfully for agent ${agent.id}`)
+
+      // Log Agent capabilities from initialization
+      const resultData = initResult as unknown as {
+        sessionId?: string
+        models?: {
+          availableModels?: Array<{ modelId: string }>
+          currentModelId?: string
+        }
+        modes?: {
+          availableModes?: Array<{ id: string }>
+          currentModeId?: string
+        }
+      }
+
+      if (resultData.sessionId) {
+        console.info(`[ACP] Session ID: ${resultData.sessionId}`)
+      }
+      if (resultData.models) {
+        console.info(`[ACP] Available models: ${resultData.models.availableModels?.length ?? 0}`)
+        console.info(`[ACP] Current model: ${resultData.models.currentModelId}`)
+      }
+      if (resultData.modes) {
+        console.info(
+          `[ACP] Available modes: ${JSON.stringify(resultData.modes.availableModes?.map((m) => m.id) ?? [])}`
+        )
+        console.info(`[ACP] Current mode: ${resultData.modes.currentModeId}`)
+      }
     } catch (error) {
       console.error(`[ACP] Connection initialization failed for agent ${agent.id}:`, error)
 
@@ -498,6 +584,31 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
       requestPermission: async (params) => this.dispatchPermissionRequest(params),
       sessionUpdate: async (notification) => {
         this.dispatchSessionUpdate(notification)
+      },
+      // File system operations
+      readTextFile: async (params) => {
+        const handler = this.getFsHandler(params.sessionId)
+        return handler.readTextFile(params)
+      },
+      writeTextFile: async (params) => {
+        const handler = this.getFsHandler(params.sessionId)
+        return handler.writeTextFile(params)
+      },
+      // Terminal operations
+      createTerminal: async (params) => {
+        return this.terminalManager.createTerminal(params)
+      },
+      terminalOutput: async (params) => {
+        return this.terminalManager.terminalOutput(params)
+      },
+      waitForTerminalExit: async (params) => {
+        return this.terminalManager.waitForTerminalExit(params)
+      },
+      killTerminal: async (params) => {
+        return this.terminalManager.killTerminal(params)
+      },
+      releaseTerminal: async (params) => {
+        return this.terminalManager.releaseTerminal(params)
       }
     }
   }

@@ -26,21 +26,34 @@
         class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4 max-w-full sm:max-w-2xl"
       >
         <div class="space-y-4">
+          <!-- Terminal output (for terminal-related tool calls) -->
+          <div v-if="isTerminalTool && block.tool_call?.response" class="space-y-2">
+            <h5 class="text-xs font-medium text-accent-foreground flex items-center gap-2">
+              <Icon icon="lucide:terminal" class="w-4 h-4" />
+              {{ t('toolCall.terminalOutput') }}
+            </h5>
+            <div
+              ref="terminalContainer"
+              class="rounded-md bg-black text-white font-mono text-xs p-2 overflow-auto max-h-64"
+            />
+            <hr v-if="hasParams" />
+          </div>
+
           <!-- 参数 -->
-          <div v-if="block.tool_call?.params" class="space-y-2">
+          <div v-if="hasParams" class="space-y-2">
             <h5 class="text-xs font-medium text-accent-foreground flex flex-row gap-2 items-center">
               <Icon icon="lucide:arrow-up-from-dot" class="w-4 h-4 text-foreground" />
               {{ t('toolCall.params') }}
             </h5>
             <div class="text-sm rounded-md p-2">
-              <JsonObject :data="parseJson(block.tool_call.params)" />
+              <JsonObject :data="parsedParams" />
             </div>
           </div>
 
-          <hr />
+          <hr v-if="hasParams && block.tool_call?.response && !isTerminalTool" />
 
-          <!-- 响应 -->
-          <div v-if="block.tool_call?.response" class="space-y-2">
+          <!-- 响应 (hide for terminal tools as output is shown above) -->
+          <div v-if="block.tool_call?.response && !isTerminalTool" class="space-y-2">
             <h5 class="text-xs font-medium text-accent-foreground flex flex-row gap-2 items-center">
               <Icon icon="lucide:arrow-down-to-dot" class="w-4 h-4 text-foreground" />
               {{ t('toolCall.responseData') }}
@@ -59,8 +72,10 @@
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { AssistantMessageBlock } from '@shared/chat'
-import { computed, ref } from 'vue'
+import { computed, ref, nextTick, watch, onBeforeUnmount } from 'vue'
 import { JsonObject } from '@/components/json-viewer'
+import { Terminal } from '@xterm/xterm'
+import '@xterm/xterm/css/xterm.css'
 
 const keyMap = {
   'toolCall.calling': '工具调用中',
@@ -143,35 +158,104 @@ const statusIconClass = computed(() => {
   }
 })
 
-// 解析JSON为对象
+// 解析JSON为对象；解析失败时回退原文
 const parseJson = (jsonStr: string) => {
+  if (!jsonStr) return {}
   try {
     const parsed = JSON.parse(jsonStr)
-    if (parsed) {
-      if (typeof parsed === 'object' || Array.isArray(parsed)) {
-        return parsed
-      } else {
-        return { raw: parsed }
-      }
+    if (parsed && (typeof parsed === 'object' || Array.isArray(parsed))) {
+      return parsed
     }
-    return parsed
+    return { raw: parsed ?? jsonStr }
   } catch (e) {
     return { raw: jsonStr }
   }
 }
 
-// const simpleIn = computed(() => {
-//   if (!props.block.tool_call) return false
-//   if (props.block.tool_call.params) {
-//     const params = parseJson(props.block.tool_call.params)
-//     const strArr: string[] = []
-//     for (const key in params) {
-//       strArr.push(`${params[key]}`)
-//     }
-//     return strArr.join(', ')
-//   }
-//   return ''
-// })
+// Terminal detection
+const isTerminalTool = computed(() => {
+  const name = props.block.tool_call?.name?.toLowerCase() || ''
+  return name.includes('terminal') || name.includes('command') || name.includes('exec')
+})
+
+// Terminal rendering
+const terminalContainer = ref<HTMLElement | null>(null)
+let terminal: Terminal | null = null
+
+const parsedParams = computed(() => parseJson(props.block.tool_call?.params ?? ''))
+const hasParams = computed(() => {
+  const data = parsedParams.value as unknown
+  if (Array.isArray(data)) return data.length > 0
+  if (data && typeof data === 'object') return Object.keys(data).length > 0
+  if (typeof data === 'string') return data.trim().length > 0
+  return false
+})
+
+const initTerminal = () => {
+  if (!terminalContainer.value || !isTerminalTool.value) return
+
+  // Clean up any existing terminal before creating a new one
+  if (terminal) {
+    try {
+      terminal.dispose()
+    } catch (error) {
+      console.warn('[MessageBlockToolCall] Failed to dispose existing terminal:', error)
+    }
+    terminal = null
+  }
+  // Clear previous terminal DOM content
+  terminalContainer.value.innerHTML = ''
+
+  terminal = new Terminal({
+    convertEol: true,
+    fontSize: 12,
+    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    theme: {
+      background: '#000000',
+      foreground: '#ffffff'
+    },
+    cursorStyle: 'bar',
+    scrollback: 1000,
+    disableStdin: true // Read-only
+  })
+
+  terminal.open(terminalContainer.value)
+
+  // Write terminal output from response
+  const response = props.block.tool_call?.response
+  if (response) {
+    try {
+      const data = parseJson(response)
+      const output = data.output || data.stdout || ''
+      if (output) {
+        terminal.write(output.replace(/\n/g, '\r\n'))
+      }
+    } catch {
+      // Fallback: treat response as plain text
+      terminal.write(response.replace(/\n/g, '\r\n'))
+    }
+  }
+}
+
+// Watch for expanded state and initialize terminal
+watch(
+  [isExpanded, () => props.block.tool_call?.response],
+  () => {
+    if (isExpanded.value && isTerminalTool.value) {
+      nextTick(() => {
+        initTerminal()
+      })
+    }
+  },
+  { immediate: true }
+)
+
+onBeforeUnmount(() => {
+  if (terminal) {
+    terminal.dispose()
+    terminal = null
+  }
+})
 </script>
 
 <style scoped>

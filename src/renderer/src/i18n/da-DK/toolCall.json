@@ -1,12 +1,19 @@
 {
-  "calling": "Kalder...",
-  "response": "Kører...",
-  "end": "Færdig",
-  "error": "Fejl",
-  "title": "Værktøjskald",
+  "calling": "Ringer",
   "clickToView": "Klik for at se detaljer",
-  "functionName": "Funktionsnavn",
-  "permission": "Anmoder om tilladelse...",
+  "end": "Slutte",
+  "error": "fejl",
+  "failed": "svigte",
+  "fileOperation": "Filhandlinger",
+  "filePath": "filsti",
+  "fileRead": "læse fil",
+  "fileWrite": "skrive fil",
+  "functionName": "funktions navn",
   "params": "Funktionsparametre",
-  "responseData": "Svar"
+  "response": "Løb",
+  "permission": "Anmoder om tilladelse",
+  "responseData": "funktionsrespons",
+  "success": "succes",
+  "title": "Værktøjskald",
+  "terminalOutput": "Terminaludgang"
 }

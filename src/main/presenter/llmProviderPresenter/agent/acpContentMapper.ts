@@ -2,9 +2,19 @@ import type * as schema from '@agentclientprotocol/sdk/dist/schema.js'
 import type { AssistantMessageBlock } from '@shared/chat'
 import { createStreamEvent, type LLMCoreStreamEvent } from '@shared/types/core/llm-events'
 
+export interface PlanEntry {
+  content: string
+  priority?: string | null
+  status?: string | null
+}
+
 export interface MappedContent {
   events: LLMCoreStreamEvent[]
   blocks: AssistantMessageBlock[]
+  /** Structured plan entries from the agent (optional) */
+  planEntries?: PlanEntry[]
+  /** Current mode ID from mode change notification (optional) */
+  currentModeId?: string
 }
 
 interface ToolCallState {
@@ -12,6 +22,7 @@ interface ToolCallState {
   toolCallId: string
   toolName: string
   argumentsBuffer: string
+  paramsCaptured: boolean
   status?: schema.ToolCallStatus | null
   started: boolean
 }
@@ -37,13 +48,27 @@ export class AcpContentMapper {
         this.handleToolCallUpdate(sessionId, update, payload)
         break
       case 'plan':
+        console.info('[ACP] Plan update received:', JSON.stringify(update))
         this.handlePlanUpdate(update, payload)
+        break
+      case 'current_mode_update':
+        console.info('[ACP] Mode update received:', update)
+        this.handleModeUpdate(update, payload)
+        break
+      case 'available_commands_update':
+        console.info(
+          '[ACP] Available commands update:',
+          JSON.stringify(update.availableCommands?.map((c) => c.name) ?? [])
+        )
         break
       case 'user_message_chunk':
         // ignore echo
         break
       default:
-        console.debug('[ACP] Unhandled session update', update.sessionUpdate)
+        // Handle any unrecognized session update types
+        const sessionUpdate = (update as { sessionUpdate?: string }).sessionUpdate
+        console.warn('[ACP] Unhandled session update type:', sessionUpdate)
+        console.debug('[ACP] Full update data:', JSON.stringify(update))
         break
     }
 
@@ -148,9 +173,14 @@ export class AcpContentMapper {
     }
 
     const content = 'content' in update ? (update.content ?? undefined) : undefined
-    const chunk = this.formatToolCallContent(content, '')
+    const paramsChunk = this.stringifyToolParams(update)
+    const contentChunk = this.formatToolCallContent(content, '')
+    const chunk = paramsChunk ?? (state.paramsCaptured ? '' : contentChunk)
     if (chunk) {
       this.emitToolCallChunk(state, chunk, payload)
+      if (paramsChunk) {
+        state.paramsCaptured = true
+      }
     }
 
     if (status === 'completed' || status === 'failed') {
@@ -162,13 +192,43 @@ export class AcpContentMapper {
     update: Extract<schema.SessionNotification['update'], { sessionUpdate: 'plan' }>,
     payload: MappedContent
   ) {
-    const summary = (update.entries || [])
-      .map((entry) => `${entry.content} (${entry.status})`)
-      .join('; ')
-    if (!summary) return
-    const text = `Plan updated: ${summary}`
+    const entries = update.entries || []
+    if (!entries.length) return
+
+    // Store structured plan entries
+    payload.planEntries = entries.map((entry) => ({
+      content: entry.content,
+      priority: entry.priority ?? null,
+      status: entry.status ?? null
+    }))
+
+    // Create dedicated plan block
+    payload.events.push(createStreamEvent.reasoning('')) // Empty event for plan
+    payload.blocks.push(
+      this.createBlock('plan', '', {
+        extra: { plan_entries: payload.planEntries }
+      })
+    )
+  }
+
+  private handleModeUpdate(
+    update: Extract<schema.SessionNotification['update'], { sessionUpdate: 'current_mode_update' }>,
+    payload: MappedContent
+  ) {
+    const modeId = update.currentModeId
+    if (!modeId) return
+
+    // Store mode change
+    payload.currentModeId = modeId
+
+    // Emit as reasoning for visibility
+    const text = `Mode changed to: ${modeId}`
     payload.events.push(createStreamEvent.reasoning(text))
-    payload.blocks.push(this.createBlock('reasoning_content', text))
+    payload.blocks.push(
+      this.createBlock('reasoning_content', text, {
+        extra: { mode_change: modeId }
+      })
+    )
   }
 
   private formatToolCallContent(
@@ -301,6 +361,7 @@ export class AcpContentMapper {
       toolCallId,
       toolName: toolName ?? toolCallId,
       argumentsBuffer: '',
+      paramsCaptured: false,
       status: undefined,
       started: false
     }
@@ -324,5 +385,35 @@ export class AcpContentMapper {
       timestamp: now(),
       ...extra
     } as AssistantMessageBlock
+  }
+
+  private stringifyToolParams(
+    update: Extract<
+      schema.SessionNotification['update'],
+      { sessionUpdate: 'tool_call' | 'tool_call_update' }
+    >
+  ): string | undefined {
+    const rawInput = (update as any).rawInput ?? (update as any).raw_input
+    if (rawInput && typeof rawInput === 'object' && Object.keys(rawInput).length > 0) {
+      try {
+        return JSON.stringify(rawInput)
+      } catch (error) {
+        console.warn('[ACP] Failed to stringify rawInput for tool call params:', error)
+      }
+    }
+
+    if (update.locations?.length) {
+      try {
+        return JSON.stringify({ locations: update.locations })
+      } catch (error) {
+        console.warn('[ACP] Failed to stringify locations for tool call params:', error)
+      }
+    }
+
+    if ('title' in update && typeof update.title === 'string' && update.title.trim()) {
+      return update.title.trim()
+    }
+
+    return undefined
   }
 }
