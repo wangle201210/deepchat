@@ -20,14 +20,16 @@
     "acpWorkdir": "ACP Workdir",
     "acpWorkdirTooltip": "Set ACP working directory",
     "acpWorkdirSelect": "Select a folder to use as the ACP workdir",
-    "acpWorkdirChange": "Reset to default workdir",
-    "acpWorkdirCurrent": "Current workdir: {path}"
+    "acpWorkdirCurrent": "Current workdir: {path}",
+    "acpMode": "モード",
+    "acpModeTooltip": "現在のモード：{mode}"
   },
   "features": {
     "webSearch": "ウェブ検索",
     "artifactThinking": "アーティファクト思考",
     "thoughtForSeconds": "{seconds}秒間思考しました",
-    "thoughtForSecondsLoading": "{seconds}秒間思考中..."
+    "thoughtForSecondsLoading": "{seconds}秒間思考中...",
+    "modeChanged": "モードが次のように切り替わりました: {mode}"
   },
   "search": {
     "results": "{0}件のウェブページが見つかりました",
@@ -86,5 +88,36 @@
     "collapse": "折りたたむ",
     "expand": "展開",
     "title": "MCP UI"
+  },
+  "acp": {
+    "workspace": {
+      "title": "ワークスペース",
+      "collapse": "折りたたむ",
+      "plan": {
+        "section": "プラン",
+        "empty": "タスクはまだありません",
+        "status": {
+          "pending": "保留中",
+          "in_progress": "進行中",
+          "completed": "完了",
+          "failed": "失敗",
+          "skipped": "スキップ"
+        }
+      },
+      "files": {
+        "section": "ファイル",
+        "empty": "ファイルはまだありません",
+        "loading": "ファイルを読み込み中...",
+        "contextMenu": {
+          "insertPath": "入力ボックスに挿入",
+          "openFile": "ファイルを開く",
+          "revealInFolder": "ファイルマネージャーで開く"
+        }
+      },
+      "terminal": {
+        "section": "ターミナル",
+        "empty": "出力はまだありません"
+      }
+    }
   }
 }

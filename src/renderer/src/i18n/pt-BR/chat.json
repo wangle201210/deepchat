@@ -20,14 +20,16 @@
     "acpWorkdir": "ACP Workdir",
     "acpWorkdirTooltip": "Set ACP working directory",
     "acpWorkdirSelect": "Select a folder to use as the ACP workdir",
-    "acpWorkdirChange": "Reset to default workdir",
-    "acpWorkdirCurrent": "Current workdir: {path}"
+    "acpWorkdirCurrent": "Current workdir: {path}",
+    "acpMode": "Modo",
+    "acpModeTooltip": "Modo atual: {mode}"
   },
   "features": {
     "webSearch": "Busca na Web",
     "thoughtForSeconds": "Pensou por {seconds}s",
     "thoughtForSecondsLoading": "Pensando por {seconds}s...",
-    "artifactThinking": "Processando Artefato"
+    "artifactThinking": "Processando Artefato",
+    "modeChanged": "Modo alterado para: {mode}"
   },
   "search": {
     "results": "Encontradas {0} páginas web",
@@ -86,5 +88,36 @@
     "collapse": "fechar",
     "expand": "Expandir",
     "title": "MCP UI"
+  },
+  "acp": {
+    "workspace": {
+      "title": "Área de trabalho",
+      "collapse": "Recolher",
+      "plan": {
+        "section": "Plano",
+        "empty": "Nenhuma tarefa ainda",
+        "status": {
+          "pending": "Pendente",
+          "in_progress": "Em andamento",
+          "completed": "Concluído",
+          "failed": "Falhou",
+          "skipped": "Ignorado"
+        }
+      },
+      "files": {
+        "section": "Arquivos",
+        "empty": "Nenhum arquivo",
+        "loading": "Carregando arquivos...",
+        "contextMenu": {
+          "insertPath": "Insira na caixa de entrada",
+          "openFile": "abrir arquivo",
+          "revealInFolder": "Abrir no gerenciador de arquivos"
+        }
+      },
+      "terminal": {
+        "section": "Terminal",
+        "empty": "Nenhuma saída"
+      }
+    }
   }
 }

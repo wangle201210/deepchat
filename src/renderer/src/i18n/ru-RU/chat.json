@@ -20,14 +20,16 @@
     "acpWorkdir": "ACP Workdir",
     "acpWorkdirTooltip": "Set ACP working directory",
     "acpWorkdirSelect": "Select a folder to use as the ACP workdir",
-    "acpWorkdirChange": "Reset to default workdir",
-    "acpWorkdirCurrent": "Current workdir: {path}"
+    "acpWorkdirCurrent": "Current workdir: {path}",
+    "acpMode": "Режим",
+    "acpModeTooltip": "Текущий режим: {mode}"
   },
   "features": {
     "webSearch": "Поиск в интернете",
     "artifactThinking": "Артефакт мышление",
     "thoughtForSeconds": "Мышление {seconds} секунд",
-    "thoughtForSecondsLoading": "Мышление ({seconds} секунд)"
+    "thoughtForSecondsLoading": "Мышление ({seconds} секунд)",
+    "modeChanged": "Режим переключен на: {mode}"
   },
   "search": {
     "results": "Найдено {0} веб-страниц",
@@ -86,5 +88,36 @@
     "collapse": "закрывать",
     "expand": "Расширять",
     "title": "MCP UI"
+  },
+  "acp": {
+    "workspace": {
+      "title": "Рабочее пространство",
+      "collapse": "Свернуть",
+      "plan": {
+        "section": "План",
+        "empty": "Пока нет задач",
+        "status": {
+          "pending": "Ожидание",
+          "in_progress": "Выполняется",
+          "completed": "Завершено",
+          "failed": "Ошибка",
+          "skipped": "Пропущено"
+        }
+      },
+      "files": {
+        "section": "Файлы",
+        "empty": "Нет файлов",
+        "loading": "Загрузка файлов...",
+        "contextMenu": {
+          "insertPath": "Вставить в поле ввода",
+          "openFile": "открыть файл",
+          "revealInFolder": "Открыть в файловом менеджере"
+        }
+      },
+      "terminal": {
+        "section": "Терминал",
+        "empty": "Нет вывода"
+      }
+    }
   }
 }

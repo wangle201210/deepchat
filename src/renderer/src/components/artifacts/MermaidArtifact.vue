@@ -14,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick } from 'vue'
+import { ref, onMounted, watch, nextTick, onBeforeUnmount } from 'vue'
 import mermaid from 'mermaid'
 import { useI18n } from 'vue-i18n'
 
@@ -34,8 +34,8 @@ const props = defineProps<{
 const mermaidRef = ref<HTMLElement>()
 
 /**
- * 过滤 Mermaid 内容中的危险 HTML 标签和属性，防止 XSS 攻击
- * 参考 svgSanitizer.ts 和 deeplinkPresenter 的实现
+ * Sanitize Mermaid content to strip dangerous HTML and attributes to prevent XSS.
+ * Mirrors the logic used in svgSanitizer/deeplinkPresenter.
  */
 const sanitizeMermaidContent = (content: string): string => {
   if (!content || typeof content !== 'string') {
@@ -84,16 +84,47 @@ const sanitizeMermaidContent = (content: string): string => {
   return sanitized
 }
 
-// 初始化 mermaid，使用更合适的配置
-onMounted(() => {
+type MermaidTheme = 'default' | 'base' | 'dark' | 'forest' | 'neutral' | 'null'
+
+const getTheme = (): MermaidTheme =>
+  document.documentElement.classList.contains('dark') ? 'dark' : 'default'
+
+const initMermaid = (theme: MermaidTheme) => {
   mermaid.initialize({
-    startOnLoad: true,
-    theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
+    startOnLoad: false, // avoid auto-render conflicts
+    theme,
     securityLevel: 'strict',
     fontFamily: 'inherit'
   })
+}
 
-  // 初始渲染
+let themeObserver: MutationObserver | null = null
+const setupThemeWatcher = () => {
+  const applyThemeChange = () => {
+    initMermaid(getTheme())
+    if (props.isPreview) {
+      void nextTick().then(() => renderDiagram())
+    }
+  }
+
+  // Observe class changes on documentElement for dark-mode toggles
+  themeObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        applyThemeChange()
+        break
+      }
+    }
+  })
+  themeObserver.observe(document.documentElement, { attributes: true })
+}
+
+// Initialize mermaid with manual control and set up theme reactivity
+onMounted(() => {
+  initMermaid(getTheme())
+  setupThemeWatcher()
+
+  // Initial render
   if (props.isPreview) {
     nextTick(() => renderDiagram())
   }
@@ -105,7 +136,7 @@ const renderDiagram = async () => {
   try {
     // Clear previous content
     const sanitizedContent = sanitizeMermaidContent(props.block.content)
-    mermaidRef.value.innerHTML = sanitizedContent
+    mermaidRef.value.textContent = sanitizedContent
 
     // Re-render using mermaid API
     await mermaid.run({
@@ -114,12 +145,11 @@ const renderDiagram = async () => {
   } catch (error) {
     console.error('Failed to render mermaid diagram:', error)
     if (mermaidRef.value) {
-      // Create localized error message safely without innerHTML
       const msg = error instanceof Error ? error.message : t('common.unknownError')
       const text = t('artifacts.mermaid.renderError', { message: msg })
 
       // Clear existing content
-      mermaidRef.value.innerHTML = ''
+      mermaidRef.value.textContent = ''
 
       // Create error element and set text safely
       const errorDiv = document.createElement('div')
@@ -141,4 +171,11 @@ watch(
     }
   }
 )
+
+onBeforeUnmount(() => {
+  if (themeObserver) {
+    themeObserver.disconnect()
+    themeObserver = null
+  }
+})
 </script>

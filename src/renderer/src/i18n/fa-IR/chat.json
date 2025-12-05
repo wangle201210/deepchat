@@ -17,17 +17,19 @@
     "rateLimitQueueTooltip": "{count} درخواست در صف، فاصله {interval} ثانیه",
     "rateLimitReadyTooltip": "آماده ارسال، فاصله {interval} ثانیه",
     "rateLimitWaitingTooltip": "باید {seconds} ثانیه دیگر منتظر بمانید، فاصله {interval} ثانیه",
-    "acpWorkdir": "ACP Workdir",
-    "acpWorkdirTooltip": "Set ACP working directory",
-    "acpWorkdirSelect": "Select a folder to use as the ACP workdir",
-    "acpWorkdirChange": "Reset to default workdir",
-    "acpWorkdirCurrent": "Current workdir: {path}"
+    "acpWorkdir": "دایرکتوری کاری ACP",
+    "acpWorkdirTooltip": "تنظیم دایرکتوری کاری ACP",
+    "acpWorkdirSelect": "یک پوشه برای استفاده به عنوان دایرکتوری کاری ACP انتخاب کنید",
+    "acpWorkdirCurrent": "دایرکتوری جاری: {path}",
+    "acpMode": "حالت",
+    "acpModeTooltip": "حالت فعلی: {mode}"
   },
   "features": {
     "webSearch": "جستجوی وب",
     "artifactThinking": "تفکر مصنوعی",
     "thoughtForSeconds": "تفکر به مدت {seconds} ثانیه",
-    "thoughtForSecondsLoading": "در حال تفکر ({seconds} ثانیه)"
+    "thoughtForSecondsLoading": "در حال تفکر ({seconds} ثانیه)",
+    "modeChanged": "تغییر حالت به: {mode}"
   },
   "search": {
     "results": "{0} صفحه وب یافت شد",
@@ -86,5 +88,36 @@
     "collapse": "بستن",
     "expand": "گسترش دهید",
     "title": "MCP UI"
+  },
+  "acp": {
+    "workspace": {
+      "title": "فضای کاری",
+      "collapse": "بستن",
+      "plan": {
+        "section": "برنامه",
+        "empty": "هنوز وظیفه‌ای وجود ندارد",
+        "status": {
+          "pending": "در انتظار",
+          "in_progress": "در حال انجام",
+          "completed": "تکمیل شده",
+          "failed": "ناموفق",
+          "skipped": "رد شده"
+        }
+      },
+      "files": {
+        "section": "فایل‌ها",
+        "empty": "فایلی وجود ندارد",
+        "loading": "در حال بارگذاری فایل‌ها...",
+        "contextMenu": {
+          "insertPath": "در جعبه ورودی وارد کنید",
+          "openFile": "باز کردن فایل",
+          "revealInFolder": "در فایل منیجر باز کنید"
+        }
+      },
+      "terminal": {
+        "section": "ترمینال",
+        "empty": "خروجی وجود ندارد"
+      }
+    }
   }
 }

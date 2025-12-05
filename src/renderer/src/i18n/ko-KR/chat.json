@@ -20,14 +20,16 @@
     "acpWorkdir": "ACP Workdir",
     "acpWorkdirTooltip": "Set ACP working directory",
     "acpWorkdirSelect": "Select a folder to use as the ACP workdir",
-    "acpWorkdirChange": "Reset to default workdir",
-    "acpWorkdirCurrent": "Current workdir: {path}"
+    "acpWorkdirCurrent": "Current workdir: {path}",
+    "acpMode": "모드",
+    "acpModeTooltip": "현재 모드: {mode}"
   },
   "features": {
     "webSearch": "웹 검색",
     "artifactThinking": "아티팩트 추론",
     "thoughtForSeconds": "{seconds}초 동안 생각했습니다",
-    "thoughtForSecondsLoading": "{seconds}초째 생각 중..."
+    "thoughtForSecondsLoading": "{seconds}초째 생각 중...",
+    "modeChanged": "모드가 다음으로 전환되었습니다: {mode}"
   },
   "search": {
     "results": "{0}개의 웹 페이지를 찾았습니다",
@@ -86,5 +88,36 @@
     "collapse": "닫다",
     "expand": "확장하다",
     "title": "MCP UI"
+  },
+  "acp": {
+    "workspace": {
+      "title": "작업 공간",
+      "collapse": "접기",
+      "plan": {
+        "section": "계획",
+        "empty": "아직 작업이 없습니다",
+        "status": {
+          "pending": "대기 중",
+          "in_progress": "진행 중",
+          "completed": "완료",
+          "failed": "실패",
+          "skipped": "건너뜀"
+        }
+      },
+      "files": {
+        "section": "파일",
+        "empty": "파일이 없습니다",
+        "loading": "파일 로딩 중...",
+        "contextMenu": {
+          "insertPath": "입력창에 삽입",
+          "openFile": "파일 열기",
+          "revealInFolder": "파일 관리자에서 열기"
+        }
+      },
+      "terminal": {
+        "section": "터미널",
+        "empty": "출력이 없습니다"
+      }
+    }
   }
 }
