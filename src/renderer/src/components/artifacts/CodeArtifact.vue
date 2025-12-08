@@ -44,6 +44,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { Icon } from '@iconify/vue'
 import { MermaidBlockNode } from 'markstream-vue'
 import { useArtifactStore } from '@/stores/artifact'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { getLanguageIcon } from 'markstream-vue'
 import { detectLanguage, useMonaco } from 'stream-monaco'
 import { nanoid } from 'nanoid'
@@ -63,9 +64,11 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const { createEditor, updateCode } = useMonaco({
+const uiSettingsStore = useUiSettingsStore()
+const { createEditor, updateCode, getEditorView } = useMonaco({
   wordWrap: 'on',
-  wrappingIndent: 'same'
+  wrappingIndent: 'same',
+  fontFamily: uiSettingsStore.formattedCodeFontFamily
 })
 const artifactStore = useArtifactStore()
 const copyText = ref(t('common.copy'))
@@ -89,6 +92,12 @@ const sanitizeLanguage = (language?: string | null) => {
 }
 
 const codeLanguage = ref(sanitizeLanguage(props.block.artifact?.language))
+const applyFontFamily = (fontFamily: string) => {
+  const editor = getEditorView()
+  if (editor) {
+    editor.updateOptions({ fontFamily })
+  }
+}
 
 // 创建节流版本的语言检测函数，1秒内最多执行一次
 const throttledDetectLanguage = useThrottleFn(
@@ -257,18 +266,19 @@ watch(
 onMounted(() => {
   if (!codeEditor.value) return
   createEditor(codeEditor.value, props.block.content, codeLanguage.value)
+  applyFontFamily(uiSettingsStore.formattedCodeFontFamily)
 })
+
+watch(
+  () => uiSettingsStore.formattedCodeFontFamily,
+  (font) => {
+    applyFontFamily(font)
+  }
+)
 </script>
 <style>
 /* Ensure CodeMirror inherits the right font in the editor */
 .cm-editor .cm-content {
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SF Mono,
-    Menlo,
-    Consolas,
-    Liberation Mono,
-    monospace !important;
+  font-family: var(--dc-code-font-family) !important;
 }
 </style>

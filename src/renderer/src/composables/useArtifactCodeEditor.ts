@@ -7,6 +7,7 @@ import { ref, watch, onBeforeUnmount } from 'vue'
 
 // === Composables ===
 import { useMonaco, detectLanguage } from 'stream-monaco'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { useThrottleFn } from '@vueuse/core'
 
 /**
@@ -76,12 +77,20 @@ export function useArtifactCodeEditor(
   // === Local State ===
   const codeLanguage = ref(normalizeLanguage(artifact.value))
 
+  const uiSettingsStore = useUiSettingsStore()
   // === Monaco Integration ===
-  const { createEditor, updateCode, cleanupEditor } = useMonaco({
+  const { createEditor, updateCode, cleanupEditor, getEditorView } = useMonaco({
     MAX_HEIGHT: '100%',
     wordWrap: 'on',
-    wrappingIndent: 'same'
+    wrappingIndent: 'same',
+    fontFamily: uiSettingsStore.formattedCodeFontFamily
   })
+  const applyFontFamily = (fontFamily: string) => {
+    const editor = getEditorView()
+    if (editor) {
+      editor.updateOptions({ fontFamily })
+    }
+  }
 
   // === Internal Helpers ===
   /**
@@ -159,6 +168,7 @@ export function useArtifactCodeEditor(
     ([editorEl, previewActive, open]) => {
       if (!open || previewActive || !editorEl) return
       void createEditor(editorEl, artifact.value?.content || '', codeLanguage.value)
+      applyFontFamily(uiSettingsStore.formattedCodeFontFamily)
     },
     {
       flush: 'post',
@@ -190,6 +200,13 @@ export function useArtifactCodeEditor(
   onBeforeUnmount(() => {
     cleanupEditor()
   })
+
+  watch(
+    () => uiSettingsStore.formattedCodeFontFamily,
+    (font) => {
+      applyFontFamily(font)
+    }
+  )
 
   // === Return API ===
   return {

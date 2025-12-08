@@ -106,16 +106,19 @@ import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { usePresenter } from '@/composables/usePresenter'
 import { useMonaco } from 'stream-monaco'
+import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 
 const { t } = useI18n()
 const threadPresenter = usePresenter('threadPresenter')
+const uiSettingsStore = useUiSettingsStore()
 
 // Monaco Editor setup
 const jsonEditor = ref<HTMLElement | null>(null)
-const { createEditor, updateCode, cleanupEditor } = useMonaco({
+const { createEditor, updateCode, cleanupEditor, getEditorView } = useMonaco({
   readOnly: true,
   wordWrap: 'off',
   wrappingIndent: 'same',
+  fontFamily: uiSettingsStore.formattedCodeFontFamily,
   minimap: { enabled: false },
   scrollBeyondLastLine: true,
   fontSize: 12,
@@ -191,6 +194,12 @@ watch(isOpen, (newValue) => {
 
 // Track if editor is initialized
 const editorInitialized = ref(false)
+const applyFontFamily = (fontFamily: string) => {
+  const editor = getEditorView()
+  if (editor) {
+    editor.updateOptions({ fontFamily })
+  }
+}
 
 // Initialize Monaco Editor when dialog opens and data is ready
 watch(
@@ -205,6 +214,7 @@ watch(
         try {
           createEditor(editorEl, json, 'json')
           editorInitialized.value = true
+          applyFontFamily(uiSettingsStore.formattedCodeFontFamily)
         } catch (err) {
           console.error('Failed to create Monaco Editor:', err)
         }
@@ -225,12 +235,20 @@ onMounted(async () => {
       try {
         createEditor(jsonEditor.value, formattedJson.value, 'json')
         editorInitialized.value = true
+        applyFontFamily(uiSettingsStore.formattedCodeFontFamily)
       } catch (err) {
         console.error('Failed to create Monaco Editor on mount:', err)
       }
     }
   }
 })
+
+watch(
+  () => uiSettingsStore.formattedCodeFontFamily,
+  (font) => {
+    applyFontFamily(font)
+  }
+)
 
 onBeforeUnmount(() => {
   cleanupEditor()
