@@ -152,8 +152,6 @@
 
           <!-- Actions -->
           <div class="flex items-center gap-2 flex-wrap">
-            <!-- NewThread model selector and settings (right-aligned) -->
-            <slot name="addon-actions"></slot>
             <div
               v-if="shouldShowContextLength"
               :class="[
@@ -195,7 +193,11 @@
 
             <!-- Mode Switcher (ACPs only, chat mode, only when agent declares modes) -->
             <Tooltip
-              v-if="variant === 'chat' && acpMode.isAcpModel.value && acpMode.hasAgentModes.value"
+              v-if="
+                ['chat', 'newThread'].includes(variant) &&
+                acpMode.isAcpModel.value &&
+                acpMode.hasAgentModes.value
+              "
             >
               <TooltipTrigger>
                 <Button
@@ -223,6 +225,9 @@
                 </p>
               </TooltipContent>
             </Tooltip>
+
+            <!-- NewThread model selector and settings (right-aligned) -->
+            <slot name="addon-actions"></slot>
 
             <!-- Model Selector (only in chat mode) -->
             <Popover v-if="variant === 'chat'" v-model:open="modelSelectOpen">
@@ -620,7 +625,8 @@ const { disabledSend, isStreaming } = sendButtonState
 const acpMode = useAcpMode({
   activeModel: activeModelSource,
   conversationId,
-  isStreaming
+  isStreaming,
+  workdir: acpWorkdir.workdir
 })
 
 // === Computed ===

@@ -12,7 +12,9 @@ import {
   ModelScopeMcpSyncResult,
   IConfigPresenter,
   ISQLitePresenter,
-  AcpWorkdirInfo
+  AcpWorkdirInfo,
+  AcpDebugRequest,
+  AcpDebugRunResult
 } from '@shared/presenter'
 import { ProviderChange, ProviderBatchUpdate } from '@shared/provider-operations'
 import { eventBus } from '@/eventbus'
@@ -479,6 +481,37 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     await this.acpSessionPersistence.updateWorkdir(conversationId, agentId, trimmed)
   }
 
+  async warmupAcpProcess(agentId: string, workdir: string): Promise<void> {
+    const provider = this.getAcpProviderInstance()
+    if (!provider) return
+
+    await provider.warmupProcess(agentId, workdir)
+  }
+
+  async getAcpProcessModes(
+    agentId: string,
+    workdir: string
+  ): Promise<
+    | {
+        availableModes?: Array<{ id: string; name: string; description: string }>
+        currentModeId?: string
+      }
+    | undefined
+  > {
+    const provider = this.getAcpProviderInstance()
+    if (!provider) {
+      return undefined
+    }
+    return provider.getProcessModes(agentId, workdir)
+  }
+
+  async setAcpPreferredProcessMode(agentId: string, workdir: string, modeId: string) {
+    const provider = this.getAcpProviderInstance()
+    if (!provider) return
+
+    await provider.setPreferredProcessMode(agentId, workdir, modeId)
+  }
+
   async setAcpSessionMode(conversationId: string, modeId: string): Promise<void> {
     const provider = this.getAcpProviderInstance()
     if (!provider) {
@@ -496,6 +529,14 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
       return null
     }
     return await provider.getSessionModes(conversationId)
+  }
+
+  async runAcpDebugAction(request: AcpDebugRequest): Promise<AcpDebugRunResult> {
+    const provider = this.getAcpProviderInstance()
+    if (!provider) {
+      throw new Error('ACP provider unavailable')
+    }
+    return await provider.runDebugAction(request)
   }
 
   async resolveAgentPermission(requestId: string, granted: boolean): Promise<void> {

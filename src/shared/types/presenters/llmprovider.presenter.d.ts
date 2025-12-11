@@ -1,7 +1,7 @@
 import { ShowResponse } from 'ollama'
 import { ChatMessage, LLMAgentEvent } from '../core/chat'
 import { ModelType } from '../core/model'
-import type { AcpWorkdirInfo } from './legacy.presenters'
+import type { AcpDebugRequest, AcpDebugRunResult, AcpWorkdirInfo } from './legacy.presenters'
 
 /**
  * LLM Provider Presenter Interface
@@ -227,10 +227,23 @@ export interface ILlmProviderPresenter {
 
   getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo>
   setAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
+  warmupAcpProcess(agentId: string, workdir: string): Promise<void>
+  getAcpProcessModes(
+    agentId: string,
+    workdir: string
+  ): Promise<
+    | {
+        availableModes?: Array<{ id: string; name: string; description: string }>
+        currentModeId?: string
+      }
+    | undefined
+  >
+  setAcpPreferredProcessMode(agentId: string, workdir: string, modeId: string): Promise<void>
   setAcpSessionMode(conversationId: string, modeId: string): Promise<void>
   getAcpSessionModes(conversationId: string): Promise<{
     current: string
     available: Array<{ id: string; name: string; description: string }>
   } | null>
+  runAcpDebugAction(request: AcpDebugRequest): Promise<AcpDebugRunResult>
   resolveAgentPermission(requestId: string, granted: boolean): Promise<void>
 }

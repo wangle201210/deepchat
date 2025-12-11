@@ -944,6 +944,48 @@
       "copy": "Copy",
       "copied": "Copied to clipboard",
       "copyFailed": "Failed to copy"
+    },
+    "debug": {
+      "title": "ACP Debug",
+      "description": "Send raw ACP calls to \"{name}\" and watch the responses.",
+      "entry": "Debug",
+      "workdirPlaceholder": "Use agent default if empty",
+      "close": "Close",
+      "customMethod": "Custom method name",
+      "customMethodPlaceholder": "e.g. session/ping",
+      "payloadHint": "Edit the JSON body before sending.",
+      "format": "Format JSON",
+      "resetTemplate": "Reset template",
+      "clearHistory": "Clear history",
+      "send": "Send request",
+      "sending": "Sending...",
+      "processReady": "Process ready",
+      "processNotReady": "Initialize to start",
+      "needInitialize": "Run initialize first",
+      "events": "Events",
+      "eventCount": "{count} items",
+      "empty": "No debug events yet.",
+      "parseError": "Invalid JSON payload",
+      "customMethodRequired": "Provide a method name for extension calls",
+      "requestFailed": "Request failed",
+      "methods": {
+        "initialize": "initialize",
+        "newSession": "session/new",
+        "loadSession": "session/load",
+        "prompt": "session/prompt",
+        "cancel": "session/cancel",
+        "setSessionMode": "session/setMode",
+        "setSessionModel": "session/setModel",
+        "extMethod": "ext/method",
+        "extNotification": "ext/notification"
+      },
+      "eventKinds": {
+        "request": "Request",
+        "response": "Response",
+        "notification": "Notification",
+        "permission": "Permission",
+        "error": "Error"
+      }
     }
   },
   "rateLimit": {
