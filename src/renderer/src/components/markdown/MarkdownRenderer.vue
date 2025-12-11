@@ -99,6 +99,13 @@ setCustomComponents({
         referenceStore.hideReference()
       }
     }),
+  mermaid: (_props) => {
+    // 对于 Mermaid 代码块，直接返回 MermaidNode 组件
+    return h(MermaidBlockNode, {
+      ..._props,
+      isStrict: true
+    })
+  },
   code_block: (_props) => {
     const isMermaid = _props.node.language === 'mermaid'
     if (isMermaid) {
