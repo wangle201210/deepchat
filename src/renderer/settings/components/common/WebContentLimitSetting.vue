@@ -43,7 +43,7 @@
       <Button
         variant="outline"
         size="icon"
-        class="h-7 w-7"
+        class="h-8 w-8"
         @click="increaseWebContentLimit"
         :disabled="webContentLengthLimit >= 10000"
       >
