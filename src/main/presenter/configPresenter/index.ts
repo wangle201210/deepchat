@@ -74,6 +74,8 @@ interface IAppSettings {
   default_system_prompt?: string // Default system prompt
   webContentLengthLimit?: number // Web content truncation length limit, default 3000 characters
   updateChannel?: string // Update channel: 'stable' | 'canary'
+  fontFamily?: string // Custom UI font
+  codeFontFamily?: string // Custom code font
   [key: string]: unknown // Allow arbitrary keys, using unknown type instead of any
 }
 
@@ -131,6 +133,8 @@ export class ConfigPresenter implements IConfigPresenter {
         copyWithCotEnabled: true,
         loggingEnabled: false,
         floatingButtonEnabled: false,
+        fontFamily: '',
+        codeFontFamily: '',
         default_system_prompt: '',
         webContentLengthLimit: 3000,
         updateChannel: 'stable', // Default to stable version
@@ -686,7 +690,8 @@ export class ConfigPresenter implements IConfigPresenter {
       'fr-FR',
       'fa-IR',
       'pt-BR',
-      'da-DK'
+      'da-DK',
+      'he-IL'
     ]
 
     // Exact match
@@ -860,6 +865,30 @@ export class ConfigPresenter implements IConfigPresenter {
 
   setTraceDebugEnabled(enabled: boolean): void {
     this.uiSettingsHelper.setTraceDebugEnabled(enabled)
+  }
+
+  getFontFamily(): string {
+    return this.uiSettingsHelper.getFontFamily()
+  }
+
+  setFontFamily(fontFamily?: string | null): void {
+    this.uiSettingsHelper.setFontFamily(fontFamily)
+  }
+
+  getCodeFontFamily(): string {
+    return this.uiSettingsHelper.getCodeFontFamily()
+  }
+
+  setCodeFontFamily(fontFamily?: string | null): void {
+    this.uiSettingsHelper.setCodeFontFamily(fontFamily)
+  }
+
+  resetFontSettings(): void {
+    this.uiSettingsHelper.resetFontSettings()
+  }
+
+  async getSystemFonts(): Promise<string[]> {
+    return this.uiSettingsHelper.getSystemFonts()
   }
 
   // Get floating button switch status
@@ -1163,7 +1192,7 @@ export class ConfigPresenter implements IConfigPresenter {
 
   private refreshAcpProviderAgents(agentIds?: string[]): void {
     try {
-      const providerInstance = presenter?.llmproviderPresenter?.getProviderInstance('acp')
+      const providerInstance = presenter?.llmproviderPresenter?.getProviderInstance?.('acp')
       if (!providerInstance) {
         return
       }

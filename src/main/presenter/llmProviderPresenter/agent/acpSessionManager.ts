@@ -133,6 +133,15 @@ export class AcpSessionManager {
       console.warn(`[ACP] Failed to cancel session ${session.sessionId}:`, error)
     }
 
+    try {
+      await this.processManager.unbindProcess(session.agentId, conversationId)
+    } catch (error) {
+      console.warn(
+        `[ACP] Failed to unbind process for conversation ${conversationId} (agent ${session.agentId}):`,
+        error
+      )
+    }
+
     await this.sessionPersistence.clearSession(conversationId, session.agentId)
   }
 
@@ -153,8 +162,22 @@ export class AcpSessionManager {
     workdir: string
   ): Promise<AcpSessionRecord> {
     // Pass workdir to process manager so the process runs in the correct directory
-    const handle = await this.processManager.getConnection(agent, workdir)
-    const session = await this.initializeSession(handle, agent, workdir)
+    let handle: AcpProcessHandle
+    try {
+      handle = await this.processManager.getConnection(agent, workdir)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message.includes('shutting down')) {
+        throw new Error('[ACP] Cannot create session: process manager is shutting down')
+      }
+      throw error
+    }
+    this.processManager.bindProcess(agent.id, conversationId, workdir)
+
+    const session = await this.initializeSession(handle, agent, workdir).catch(async (error) => {
+      await this.processManager.unbindProcess(agent.id, conversationId)
+      throw error
+    })
     const detachListeners = this.attachSessionHooks(agent.id, session.sessionId, hooks)
 
     // Register session workdir for fs/terminal operations
@@ -168,6 +191,37 @@ export class AcpSessionManager {
         console.warn('[ACP] Failed to persist session metadata:', error)
       })
 
+    const availableModes = session.availableModes ?? handle.availableModes
+    // Prefer handle.currentModeId (which may contain preferredMode from warmup) over session default
+    let currentModeId = handle.currentModeId ?? session.currentModeId
+    handle.availableModes = availableModes
+    handle.currentModeId = currentModeId
+
+    // Apply preferred mode to session if it differs from session default and is valid
+    if (
+      availableModes?.length &&
+      currentModeId &&
+      currentModeId !== session.currentModeId &&
+      availableModes.some((mode) => mode.id === currentModeId)
+    ) {
+      try {
+        await handle.connection.setSessionMode({
+          sessionId: session.sessionId,
+          modeId: currentModeId
+        })
+        console.info(
+          `[ACP] Applied preferred mode "${currentModeId}" to session ${session.sessionId} for conversation ${conversationId}`
+        )
+      } catch (error) {
+        console.warn(
+          `[ACP] Failed to apply preferred mode "${currentModeId}" for conversation ${conversationId}:`,
+          error
+        )
+        // Fallback to session default mode if preferred mode application fails
+        currentModeId = session.currentModeId ?? currentModeId
+      }
+    }
+
     return {
       ...session,
       providerId: this.providerId,
@@ -180,8 +234,8 @@ export class AcpSessionManager {
       connection: handle.connection,
       detachHandlers: detachListeners,
       workdir,
-      availableModes: session.availableModes,
-      currentModeId: session.currentModeId
+      availableModes,
+      currentModeId
     }
   }
 
@@ -220,12 +274,25 @@ export class AcpSessionManager {
 
       // Extract modes from response if available
       const modes = response.modes
-      const availableModes = modes?.availableModes?.map((m) => ({
-        id: m.id,
-        name: m.name,
-        description: m.description ?? ''
-      }))
-      const currentModeId = modes?.currentModeId
+      const availableModes =
+        modes?.availableModes?.map((m) => ({
+          id: m.id,
+          name: m.name,
+          description: m.description ?? ''
+        })) ?? handle.availableModes
+
+      const preferredModeId = handle.currentModeId
+      const responseModeId = modes?.currentModeId
+      let currentModeId = preferredModeId
+      if (
+        !currentModeId ||
+        (availableModes && !availableModes.some((m) => m.id === currentModeId))
+      ) {
+        currentModeId = responseModeId ?? currentModeId ?? availableModes?.[0]?.id
+      }
+
+      handle.availableModes = availableModes
+      handle.currentModeId = currentModeId
 
       // Log available modes for the agent
       if (availableModes && availableModes.length > 0) {

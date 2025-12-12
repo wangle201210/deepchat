@@ -814,7 +814,18 @@
     "text-xl": "Ekstra stor",
     "text-2xl": "XXL",
     "floatingButton": "Flydende knap",
-    "floatingButtonDesc": "Vis en flydende knap på skrivebordet for hurtigt at aktivere vinduet"
+    "floatingButtonDesc": "Vis en flydende knap på skrivebordet for hurtigt at aktivere vinduet",
+    "codeFontFamily": "monospace skrifttype",
+    "codeFontFamilyDesc": "Anvendes til kodeblokke og områder med konstant bredde.",
+    "fontDefaultLabel": "Standard (indbygget skrifttypestak)",
+    "fontFamily": "Interface skrifttype",
+    "fontFamilyDesc": "Vælg grænsefladens hovedskrifttype. Hvis det efterlades tomt, skal du bruge den indbyggede skrifttypestak.",
+    "fontReset": "nulstilles til standard",
+    "fontSearchEmpty": "Ingen matchende skrifttype",
+    "fontSearchPlaceholder": "Søg skrifttype",
+    "fontSystemLoading": "Indlæser systemskrifttyper...",
+    "fontTitle": "skrifttype",
+    "fontUsageHint": "Nogle grænseflader kræver genstart af applikationen for at træde i kraft. Hvis skrifttypen ikke er tilgængelig, vil den automatisk falde tilbage til standardskrifttypen."
   },
   "shortcuts": {
     "title": "Indstillinger for genvejstaster",
@@ -933,6 +944,48 @@
       "copy": "Kopiér",
       "copied": "Kopieret til udklipsholder",
       "copyFailed": "Kunne ikke kopiere"
+    },
+    "debug": {
+      "clearHistory": "Ryd historik",
+      "close": "Luk",
+      "customMethod": "Navn på tilpasset metode",
+      "customMethodPlaceholder": "For eksempel session/ping",
+      "customMethodRequired": "Udfyld venligst udvidelsesmetodens navn",
+      "description": "Send en ACP-anmodning til \"{name}\", og se svaret i realtid.",
+      "empty": "Der er ingen fejlretningsbegivenheder endnu.",
+      "entry": "Fejlsøg",
+      "eventCount": "{count} hændelser",
+      "eventKinds": {
+        "error": "fejl",
+        "notification": "Meddelelse",
+        "permission": "Tilladelse",
+        "request": "Anmodning",
+        "response": "Svar"
+      },
+      "events": "Hændelser",
+      "format": "Formater JSON",
+      "methods": {
+        "cancel": "session/aflys",
+        "extMethod": "ext/metode",
+        "extNotification": "ext/meddelelse",
+        "initialize": "initialisere",
+        "loadSession": "session/belastning",
+        "newSession": "session/nyt",
+        "prompt": "session/prompt",
+        "setSessionMode": "session/setMode",
+        "setSessionModel": "session/sætModel"
+      },
+      "needInitialize": "Udfør initialisering først",
+      "parseError": "JSON-parsing mislykkedes",
+      "payloadHint": "JSON kan justeres før afsendelse.",
+      "processNotReady": "Initialiser venligst først",
+      "processReady": "Processen er klar",
+      "requestFailed": "Anmodningen mislykkedes",
+      "resetTemplate": "Gendannelsesskabelon",
+      "send": "Send anmodning",
+      "sending": "Sender...",
+      "title": "ACP-fejlsøgning",
+      "workdirPlaceholder": "Lad tom for at bruge standard arbejdsmappe"
     }
   },
   "rateLimit": {

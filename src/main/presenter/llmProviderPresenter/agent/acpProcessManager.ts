@@ -18,14 +18,20 @@ import { RuntimeHelper } from '@/lib/runtimeHelper'
 import { buildClientCapabilities } from './acpCapabilities'
 import { AcpFsHandler } from './acpFsHandler'
 import { AcpTerminalManager } from './acpTerminalManager'
+import { eventBus, SendTarget } from '@/eventbus'
+import { ACP_WORKSPACE_EVENTS } from '@/events'
 
 export interface AcpProcessHandle extends AgentProcessHandle {
   child: ChildProcessWithoutNullStreams
   connection: ClientSideConnectionType
   agent: AcpAgentConfig
   readyAt: number
+  state: 'warmup' | 'bound'
+  boundConversationId?: string
   /** The working directory this process was spawned with */
   workdir: string
+  availableModes?: Array<{ id: string; name: string; description: string }>
+  currentModeId?: string
 }
 
 interface AcpProcessManagerOptions {
@@ -65,6 +71,7 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
   private readonly getNpmRegistry?: () => Promise<string | null>
   private readonly getUvRegistry?: () => Promise<string | null>
   private readonly handles = new Map<string, AcpProcessHandle>()
+  private readonly boundHandles = new Map<string, AcpProcessHandle>()
   private readonly pendingHandles = new Map<string, Promise<AcpProcessHandle>>()
   private readonly sessionListeners = new Map<string, SessionListenerEntry>()
   private readonly permissionResolvers = new Map<string, PermissionResolverEntry>()
@@ -73,6 +80,8 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
   private readonly sessionWorkdirs = new Map<string, string>()
   private readonly fsHandlers = new Map<string, AcpFsHandler>()
   private readonly agentLocks = new Map<string, Promise<void>>()
+  private readonly preferredModes = new Map<string, string>()
+  private shuttingDown = false
 
   constructor(options: AcpProcessManagerOptions) {
     this.providerId = options.providerId
@@ -130,51 +139,7 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
    * the existing process will be released and a new one spawned with the new workdir.
    */
   async getConnection(agent: AcpAgentConfig, workdir?: string): Promise<AcpProcessHandle> {
-    const resolvedWorkdir = this.resolveWorkdir(workdir)
-    const existing = this.handles.get(agent.id)
-
-    // Fast-path for already-alive handles with matching workdir
-    if (existing && this.isHandleAlive(existing) && existing.workdir === resolvedWorkdir) {
-      return existing
-    }
-
-    const releaseLock = await this.acquireAgentLock(agent.id)
-    try {
-      const currentHandle = this.handles.get(agent.id)
-      if (currentHandle && this.isHandleAlive(currentHandle)) {
-        if (currentHandle.workdir === resolvedWorkdir) {
-          return currentHandle
-        }
-        console.info(
-          `[ACP] Workdir changed for agent ${agent.id}: "${currentHandle.workdir}" -> "${resolvedWorkdir}", recreating process`
-        )
-        await this.release(agent.id)
-      }
-
-      const inflight = this.pendingHandles.get(agent.id)
-      if (inflight) {
-        const inflightHandle = await inflight
-        if (inflightHandle.workdir === resolvedWorkdir) {
-          return inflightHandle
-        }
-        console.info(
-          `[ACP] Workdir mismatch for inflight agent ${agent.id}, recreating with workdir: "${resolvedWorkdir}"`
-        )
-        await this.release(agent.id)
-      }
-
-      const handlePromise = this.spawnProcess(agent, resolvedWorkdir)
-      this.pendingHandles.set(agent.id, handlePromise)
-      try {
-        const handle = await handlePromise
-        this.handles.set(agent.id, handle)
-        return handle
-      } finally {
-        this.pendingHandles.delete(agent.id)
-      }
-    } finally {
-      releaseLock()
-    }
+    return await this.warmupProcess(agent, workdir)
   }
 
   /**
@@ -187,34 +152,259 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
     return this.getFallbackWorkdir()
   }
 
+  /**
+   * Build a stable key for warmup handles scoped by agent and workdir.
+   */
+  private getWarmupKey(agentId: string, workdir: string): string {
+    return `${agentId}::${workdir}`
+  }
+
+  /**
+   * Warm up a process for the given agent/workdir without binding it to a conversation.
+   * Reuses an existing warmup handle when possible; never reuses bound handles.
+   */
+  async warmupProcess(agent: AcpAgentConfig, workdir?: string): Promise<AcpProcessHandle> {
+    if (this.shuttingDown) {
+      throw new Error('[ACP] Process manager is shutting down, refusing to spawn new process')
+    }
+    const resolvedWorkdir = this.resolveWorkdir(workdir)
+    const warmupKey = this.getWarmupKey(agent.id, resolvedWorkdir)
+    const preferredModeId = this.preferredModes.get(warmupKey)
+    const releaseLock = await this.acquireAgentLock(agent.id)
+
+    try {
+      const warmupCount = this.getHandlesByAgent(agent.id).filter((handle) =>
+        this.isHandleAlive(handle)
+      ).length
+      console.info(
+        `[ACP] Warmup requested for agent ${agent.id} (workdir=${resolvedWorkdir}, warmups=${warmupCount})`
+      )
+      const reusable = this.findReusableHandle(agent.id, resolvedWorkdir)
+      if (reusable && this.isHandleAlive(reusable)) {
+        console.info(
+          `[ACP] Reusing warmup process for agent ${agent.id} (pid=${reusable.pid}, workdir=${resolvedWorkdir})`
+        )
+        this.applyPreferredMode(reusable, preferredModeId)
+        return reusable
+      }
+
+      const inflight = this.pendingHandles.get(warmupKey)
+      if (inflight) {
+        const inflightHandle = await inflight
+        if (
+          this.isHandleAlive(inflightHandle) &&
+          inflightHandle.workdir === resolvedWorkdir &&
+          inflightHandle.state === 'warmup'
+        ) {
+          console.info(
+            `[ACP] Awaiting inflight warmup for agent ${agent.id} (pid=${inflightHandle.pid}, workdir=${resolvedWorkdir})`
+          )
+          this.applyPreferredMode(inflightHandle, preferredModeId)
+          return inflightHandle
+        }
+        if (inflightHandle.state === 'warmup') {
+          console.info(
+            `[ACP] Discarding inflight warmup for agent ${agent.id} (workdir "${inflightHandle.workdir}") in favor of "${resolvedWorkdir}"`
+          )
+          await this.disposeHandle(inflightHandle)
+        }
+      } else {
+        console.info(
+          `[ACP] No inflight handle for agent ${agent.id} (workdir=${resolvedWorkdir}), spawning new warmup`
+        )
+      }
+
+      const handlePromise = this.spawnProcess(agent, resolvedWorkdir)
+      this.pendingHandles.set(warmupKey, handlePromise)
+
+      try {
+        const handle = await handlePromise
+        handle.state = 'warmup'
+        handle.boundConversationId = undefined
+        handle.workdir = resolvedWorkdir
+        this.handles.set(warmupKey, handle)
+        void this.fetchProcessModes(handle).catch((error) => {
+          console.warn(`[ACP] Failed to fetch modes during warmup for agent ${agent.id}:`, error)
+        })
+        this.applyPreferredMode(handle, preferredModeId)
+        console.info(
+          `[ACP] Warmup process ready for agent ${agent.id} (pid=${handle.pid}, workdir=${resolvedWorkdir})`
+        )
+        return handle
+      } finally {
+        this.pendingHandles.delete(warmupKey)
+      }
+    } finally {
+      releaseLock()
+    }
+  }
+
+  /**
+   * Update preferred mode for future warmup processes and sessions.
+   * The mode will be applied when a warmup process is created or when a session is created.
+   */
+  async setPreferredMode(agent: AcpAgentConfig, workdir: string, modeId: string): Promise<void> {
+    const resolvedWorkdir = this.resolveWorkdir(workdir)
+    const warmupKey = this.getWarmupKey(agent.id, resolvedWorkdir)
+    this.preferredModes.set(warmupKey, modeId)
+
+    // Apply to existing warmup handle if available
+    const existingWarmup = this.findReusableHandle(agent.id, resolvedWorkdir)
+    if (existingWarmup && this.isHandleAlive(existingWarmup)) {
+      existingWarmup.currentModeId = modeId
+      this.notifyModesReady(existingWarmup)
+    }
+  }
+
   getProcess(agentId: string): AcpProcessHandle | null {
-    return this.handles.get(agentId) ?? null
+    const warmupHandle = Array.from(this.handles.values()).find(
+      (handle) => handle.agentId === agentId
+    )
+    if (warmupHandle) return warmupHandle
+
+    for (const handle of this.boundHandles.values()) {
+      if (handle.agentId === agentId) return handle
+    }
+
+    return null
   }
 
   listProcesses(): AcpProcessHandle[] {
-    return Array.from(this.handles.values())
+    const seen = new Set<AcpProcessHandle>()
+    const processes: AcpProcessHandle[] = []
+
+    for (const handle of this.handles.values()) {
+      if (!seen.has(handle)) {
+        processes.push(handle)
+        seen.add(handle)
+      }
+    }
+
+    for (const handle of this.boundHandles.values()) {
+      if (!seen.has(handle)) {
+        processes.push(handle)
+        seen.add(handle)
+      }
+    }
+
+    return processes
   }
 
   async release(agentId: string): Promise<void> {
-    const handle = this.handles.get(agentId)
-    if (!handle) return
+    const targets = this.getHandlesByAgent(agentId)
+    if (!targets.length) return
 
-    this.handles.delete(agentId)
-    this.clearSessionsForAgent(agentId)
-
-    this.killChild(handle.child)
+    const releaseLock = await this.acquireAgentLock(agentId)
+    try {
+      await Promise.allSettled(targets.map((handle) => this.disposeHandle(handle)))
+      this.clearSessionsForAgent(agentId)
+    } finally {
+      releaseLock()
+    }
   }
 
   async shutdown(): Promise<void> {
-    const releases = Array.from(this.handles.keys()).map((agentId) => this.release(agentId))
+    if (this.shuttingDown) return
+    this.shuttingDown = true
+    // Kill eagerly so subprocesses don't survive app shutdown even if async cleanup is skipped
+    this.forceKillAllProcesses('shutdown')
+    const allAgents = new Set<string>()
+    for (const handle of this.handles.values()) {
+      allAgents.add(handle.agentId)
+    }
+    for (const handle of this.boundHandles.values()) {
+      allAgents.add(handle.agentId)
+    }
+    const releases = Array.from(allAgents.values()).map((agentId) => this.release(agentId))
     await Promise.allSettled(releases)
     await this.terminalManager.shutdown()
     this.handles.clear()
+    this.boundHandles.clear()
     this.sessionListeners.clear()
     this.permissionResolvers.clear()
     this.pendingHandles.clear()
     this.sessionWorkdirs.clear()
     this.fsHandlers.clear()
+  }
+
+  bindProcess(agentId: string, conversationId: string, workdir?: string): void {
+    const resolvedWorkdir = this.resolveWorkdir(workdir)
+    // Prefer warmup handle matching requested workdir if provided
+    const warmupHandles = Array.from(this.handles.entries()).filter(
+      ([, handle]) =>
+        handle.agentId === agentId &&
+        handle.state === 'warmup' &&
+        (!workdir || !handle.workdir || handle.workdir === resolvedWorkdir)
+    )
+    const handle =
+      warmupHandles.find(([, candidate]) => candidate.workdir === resolvedWorkdir)?.[1] ??
+      warmupHandles[0]?.[1]
+    if (!handle) {
+      console.warn(`[ACP] No warmup handle to bind for agent ${agentId}`)
+      return
+    }
+    if (handle.state !== 'warmup') {
+      console.warn(
+        `[ACP] Cannot bind handle in state "${handle.state}" for agent ${agentId}, expected warmup`
+      )
+      return
+    }
+    if (!this.isHandleAlive(handle)) {
+      console.warn(`[ACP] Cannot bind dead handle for agent ${agentId}`)
+      void this.disposeHandle(handle)
+      return
+    }
+
+    handle.state = 'bound'
+    handle.boundConversationId = conversationId
+    // Remove from warmup map
+    for (const [key, value] of this.handles.entries()) {
+      if (value === handle) {
+        this.handles.delete(key)
+        break
+      }
+    }
+    this.boundHandles.set(conversationId, handle)
+
+    // Immediately notify renderer if modes are already known
+    this.notifyModesReady(handle, conversationId)
+    console.info(
+      `[ACP] Bound process for agent ${agentId} to conversation ${conversationId} (pid=${handle.pid}, workdir=${handle.workdir})`
+    )
+  }
+
+  async unbindProcess(agentId: string, conversationId: string): Promise<void> {
+    const releaseLock = await this.acquireAgentLock(agentId)
+    try {
+      const handle = this.boundHandles.get(conversationId)
+      if (!handle || handle.agentId !== agentId) return
+
+      await this.disposeHandle(handle)
+    } finally {
+      releaseLock()
+    }
+  }
+
+  getProcessModes(
+    agentId: string,
+    workdir?: string
+  ):
+    | {
+        availableModes?: Array<{ id: string; name: string; description: string }>
+        currentModeId?: string
+      }
+    | undefined {
+    const resolvedWorkdir = this.resolveWorkdir(workdir)
+    const candidates = this.getHandlesByAgent(agentId).filter(
+      (handle) => handle.workdir === resolvedWorkdir && this.isHandleAlive(handle)
+    )
+    const handle = candidates[0]
+    if (!handle) return undefined
+
+    return {
+      availableModes: handle.availableModes,
+      currentModeId: handle.currentModeId
+    }
   }
 
   registerSessionListener(
@@ -273,6 +463,7 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
     const stream = this.createAgentStream(child)
     const client = this.createClientProxy()
     const connection = new ClientSideConnection(() => client, stream)
+    const handleSeed: Partial<AcpProcessHandle> = {}
 
     // Add process health check before initialization
     if (child.killed) {
@@ -328,12 +519,21 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
         console.info(`[ACP] Available models: ${resultData.models.availableModels?.length ?? 0}`)
         console.info(`[ACP] Current model: ${resultData.models.currentModelId}`)
       }
-      if (resultData.modes) {
+      const initAvailableModes = resultData.modes?.availableModes?.map(
+        (m: { id: string; name?: string; description?: string }) => ({
+          id: m.id,
+          name: m.name ?? m.id,
+          description: m.description ?? ''
+        })
+      )
+      if (initAvailableModes) {
         console.info(
-          `[ACP] Available modes: ${JSON.stringify(resultData.modes.availableModes?.map((m) => m.id) ?? [])}`
+          `[ACP] Available modes: ${JSON.stringify(initAvailableModes.map((m) => m.id) ?? [])}`
         )
-        console.info(`[ACP] Current mode: ${resultData.modes.currentModeId}`)
+        console.info(`[ACP] Current mode: ${resultData.modes?.currentModeId}`)
       }
+      handleSeed.availableModes = initAvailableModes
+      handleSeed.currentModeId = resultData.modes?.currentModeId
     } catch (error) {
       console.error(`[ACP] Connection initialization failed for agent ${agent.id}:`, error)
 
@@ -356,22 +556,24 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
       agent,
       status: 'ready',
       pid: child.pid ?? undefined,
-      restarts: (this.handles.get(agent.id)?.restarts ?? 0) + 1,
+      restarts: this.getRestartCount(agent.id) + 1,
       lastHeartbeatAt: Date.now(),
       metadata: { command: agent.command },
       child,
       connection,
       readyAt: Date.now(),
-      workdir
+      state: 'warmup',
+      boundConversationId: undefined,
+      workdir,
+      availableModes: handleSeed.availableModes,
+      currentModeId: handleSeed.currentModeId
     }
 
     child.on('exit', (code, signal) => {
       console.warn(
         `[ACP] Agent process for ${agent.id} exited (PID: ${child.pid}, code=${code ?? 'null'}, signal=${signal ?? 'null'})`
       )
-      if (this.handles.get(agent.id)?.child === child) {
-        this.handles.delete(agent.id)
-      }
+      this.removeHandleReferences(handle)
       this.clearSessionsForAgent(agent.id)
     })
 
@@ -695,6 +897,121 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
     }
   }
 
+  private async fetchProcessModes(handle: AcpProcessHandle): Promise<void> {
+    if (!this.isHandleAlive(handle)) return
+    try {
+      const response = await handle.connection.newSession({
+        cwd: handle.workdir,
+        mcpServers: []
+      })
+      if (response.sessionId) {
+        this.registerSessionWorkdir(response.sessionId, handle.workdir)
+      }
+
+      const modes = response.modes
+      if (modes?.availableModes?.length) {
+        handle.availableModes = modes.availableModes.map((mode) => ({
+          id: mode.id,
+          name: mode.name ?? mode.id,
+          description: mode.description ?? ''
+        }))
+        // Preserve user-selected preferred mode if it exists in the available list
+        if (
+          handle.currentModeId &&
+          handle.availableModes.some((m) => m.id === handle.currentModeId)
+        ) {
+          // keep preferred
+        } else if (modes.currentModeId) {
+          handle.currentModeId = modes.currentModeId
+        } else {
+          handle.currentModeId = handle.availableModes[0]?.id ?? handle.currentModeId
+        }
+        this.notifyModesReady(handle)
+      }
+
+      if (response.sessionId) {
+        try {
+          await handle.connection.cancel({ sessionId: response.sessionId })
+          this.clearSession(response.sessionId)
+        } catch (cancelError) {
+          console.warn(
+            `[ACP] Failed to cancel warmup session ${response.sessionId} for agent ${handle.agentId}:`,
+            cancelError
+          )
+        }
+      }
+    } catch (error) {
+      console.warn(`[ACP] Warmup session failed to fetch modes for agent ${handle.agentId}:`, error)
+    }
+  }
+
+  private notifyModesReady(handle: AcpProcessHandle, conversationId?: string): void {
+    if (!handle.availableModes || handle.availableModes.length === 0) return
+
+    eventBus.sendToRenderer(ACP_WORKSPACE_EVENTS.SESSION_MODES_READY, SendTarget.ALL_WINDOWS, {
+      conversationId: conversationId ?? handle.boundConversationId,
+      agentId: handle.agentId,
+      workdir: handle.workdir,
+      current: handle.currentModeId ?? 'default',
+      available: handle.availableModes
+    })
+  }
+
+  private getHandlesByAgent(agentId: string): AcpProcessHandle[] {
+    const handles: AcpProcessHandle[] = []
+    for (const handle of this.handles.values()) {
+      if (handle.agentId === agentId && !handles.includes(handle)) {
+        handles.push(handle)
+      }
+    }
+    for (const handle of this.boundHandles.values()) {
+      if (handle.agentId === agentId && !handles.includes(handle)) {
+        handles.push(handle)
+      }
+    }
+    return handles
+  }
+
+  private getRestartCount(agentId: string): number {
+    return this.getHandlesByAgent(agentId).reduce(
+      (max, handle) => Math.max(max, handle.restarts ?? 0),
+      0
+    )
+  }
+
+  private removeHandleReferences(handle: AcpProcessHandle): void {
+    for (const [key, warmupHandle] of this.handles.entries()) {
+      if (warmupHandle === handle) {
+        this.handles.delete(key)
+      }
+    }
+
+    for (const [conversationId, boundHandle] of this.boundHandles.entries()) {
+      if (boundHandle === handle) {
+        this.boundHandles.delete(conversationId)
+      }
+    }
+  }
+
+  private async disposeHandle(handle: AcpProcessHandle): Promise<void> {
+    this.removeHandleReferences(handle)
+    this.killChild(handle.child, 'dispose')
+  }
+
+  private findReusableHandle(agentId: string, workdir: string): AcpProcessHandle | undefined {
+    const candidates = this.getHandlesByAgent(agentId).filter(
+      (handle) =>
+        handle.workdir === workdir && handle.state === 'warmup' && this.isHandleAlive(handle)
+    )
+    return candidates[0]
+  }
+
+  private applyPreferredMode(handle: AcpProcessHandle, preferredModeId?: string): void {
+    if (!preferredModeId) return
+    handle.currentModeId = preferredModeId
+    this.notifyModesReady(handle)
+  }
+
   private clearSessionsForAgent(agentId: string): void {
     for (const [sessionId, entry] of this.sessionListeners.entries()) {
       if (entry.agentId === agentId) {
@@ -707,14 +1024,50 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
         this.permissionResolvers.delete(sessionId)
       }
     }
+
+    for (const [conversationId, handle] of this.boundHandles.entries()) {
+      if (handle.agentId === agentId) {
+        this.boundHandles.delete(conversationId)
+      }
+    }
   }
 
-  private killChild(child: ChildProcessWithoutNullStreams): void {
+  private forceKillAllProcesses(reason: string): void {
+    const handles = this.listProcesses()
+    handles.forEach((handle) => this.killChild(handle.child, reason))
+  }
+
+  private killChild(child: ChildProcessWithoutNullStreams, reason?: string): void {
+    const pid = child.pid
+    if (pid) {
+      if (process.platform === 'win32') {
+        try {
+          spawn('taskkill', ['/PID', `${pid}`, '/T', '/F'], { stdio: 'ignore' })
+        } catch (error) {
+          console.warn(`[ACP] Failed to taskkill process ${pid} (${reason ?? 'unknown'}):`, error)
+        }
+      } else {
+        try {
+          spawn('pkill', ['-TERM', '-P', `${pid}`], { stdio: 'ignore' })
+        } catch (error) {
+          console.warn(`[ACP] Failed to pkill children for process ${pid}:`, error)
+        }
+        try {
+          process.kill(pid, 'SIGTERM')
+        } catch (error) {
+          console.warn(`[ACP] Failed to SIGTERM process ${pid}:`, error)
+        }
+      }
+    }
+
     if (!child.killed) {
       try {
         child.kill()
       } catch (error) {
-        console.warn('[ACP] Failed to kill agent process:', error)
+        console.warn(
+          `[ACP] Failed to kill agent process${pid ? ` ${pid}` : ''} (${reason ?? 'unknown'}):`,
+          error
+        )
       }
     }
   }
@@ -739,6 +1092,8 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
   }
 
   private isHandleAlive(handle: AcpProcessHandle): boolean {
-    return !handle.child.killed && !handle.connection.signal.aborted
+    return (
+      !handle.child.killed && handle.child.exitCode === null && handle.child.signalCode === null
+    )
   }
 }

@@ -21,6 +21,7 @@ import MessageDialog from './components/ui/MessageDialog.vue'
 import McpSamplingDialog from '@/components/mcp/McpSamplingDialog.vue'
 import { initAppStores, useMcpInstallDeeplinkHandler } from '@/lib/storeInitializer'
 import 'vue-sonner/style.css' // vue-sonner v2 requires this import
+import { useFontManager } from './composables/useFontManager'
 
 const route = useRoute()
 const configPresenter = usePresenter('configPresenter')
@@ -28,6 +29,9 @@ const artifactStore = useArtifactStore()
 const chatStore = useChatStore()
 const { toast } = useToast()
 const uiSettingsStore = useUiSettingsStore()
+const { setupFontListener } = useFontManager()
+setupFontListener()
+
 const themeStore = useThemeStore()
 const langStore = useLanguageStore()
 const modelCheckStore = useModelCheckStore()

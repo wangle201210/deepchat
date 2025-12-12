@@ -175,6 +175,10 @@ const parseJson = (jsonStr: string) => {
 // Terminal detection
 const isTerminalTool = computed(() => {
   const name = props.block.tool_call?.name?.toLowerCase() || ''
+  const serverName = props.block.tool_call?.server_name?.toLowerCase() || ''
+  if (name == 'run_shell_command' && serverName === 'powerpack') {
+    return false
+  }
   return name.includes('terminal') || name.includes('command') || name.includes('exec')
 })
 
@@ -266,9 +270,7 @@ onBeforeUnmount(() => {
 }
 
 pre {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
+  font-family: var(--dc-code-font-family);
   font-size: 0.85em;
 }
 </style>

@@ -10,6 +10,7 @@ interface UseAcpModeOptions {
   conversationId: Ref<string | null>
   /** Streaming state - used to detect when session has been created */
   isStreaming?: Ref<boolean>
+  workdir?: Ref<string | null>
 }
 
 interface ModeInfo {
@@ -24,12 +25,15 @@ export function useAcpMode(options: UseAcpModeOptions) {
   const currentMode = ref<string>('default')
   const availableModes = ref<ModeInfo[]>([])
   const loading = ref(false)
+  const lastWarmupModesKey = ref<string | null>(null)
+  const pendingPreferredMode = ref<string | null>(null)
 
   const isAcpModel = computed(
     () => options.activeModel.value?.providerId === 'acp' && !!options.activeModel.value?.id
   )
 
   const hasConversation = computed(() => Boolean(options.conversationId.value))
+  const selectedWorkdir = computed(() => options.workdir?.value ?? null)
 
   /**
    * Whether the agent has declared any available modes.
@@ -66,11 +70,48 @@ export function useAcpMode(options: UseAcpModeOptions) {
     }
   }
 
+  const loadWarmupModes = async () => {
+    if (!isAcpModel.value || hasConversation.value) return
+    const agentId = options.activeModel.value?.id
+    const workdir = selectedWorkdir.value
+    if (!agentId || !workdir) return
+    if (availableModes.value.length > 0) return
+
+    const warmupKey = `${agentId}::${workdir}`
+    if (lastWarmupModesKey.value === warmupKey) return
+    lastWarmupModesKey.value = warmupKey
+
+    try {
+      const result = await threadPresenter.getAcpProcessModes(agentId, workdir)
+      if (result?.availableModes && result.availableModes.length > 0) {
+        currentMode.value =
+          result.currentModeId ?? result.availableModes[0]?.id ?? currentMode.value
+        availableModes.value = result.availableModes
+        console.info(
+          `[useAcpMode] Loaded warmup modes: current="${currentMode.value}", available=[${result.availableModes.map((m) => m.id).join(', ')}]`
+        )
+      }
+    } catch (error) {
+      console.warn('[useAcpMode] Failed to load warmup modes', error)
+    }
+  }
+
   // Watch for conversation and model changes
   watch(
     [isAcpModel, options.conversationId],
     () => {
       void loadModes()
+    },
+    { immediate: true }
+  )
+
+  // Load warmup modes when a workdir is selected but no conversation exists yet
+  watch(
+    [isAcpModel, selectedWorkdir, options.conversationId],
+    () => {
+      if (!hasConversation.value) {
+        void loadWarmupModes()
+      }
     },
     { immediate: true }
   )
@@ -90,14 +131,31 @@ export function useAcpMode(options: UseAcpModeOptions) {
   // Listen for session modes ready event from main process
   const handleModesReady = (
     _: unknown,
-    payload: { conversationId: string; current: string; available: ModeInfo[] }
+    payload: {
+      conversationId?: string
+      agentId?: string
+      workdir?: string
+      current: string
+      available: ModeInfo[]
+    }
   ) => {
-    if (payload.conversationId === options.conversationId.value && isAcpModel.value) {
+    if (!isAcpModel.value) return
+
+    const conversationMatch =
+      payload.conversationId && payload.conversationId === options.conversationId.value
+    const agentMatch = payload.agentId && payload.agentId === options.activeModel.value?.id
+    const workdirMatch =
+      !selectedWorkdir.value || !payload.workdir || selectedWorkdir.value === payload.workdir
+
+    if (conversationMatch || (agentMatch && workdirMatch)) {
       console.info(
         `[useAcpMode] Received modes from main: current="${payload.current}", available=[${payload.available.map((m) => m.id).join(', ')}]`
       )
       currentMode.value = payload.current
       availableModes.value = payload.available
+      if (!conversationMatch && pendingPreferredMode.value) {
+        currentMode.value = pendingPreferredMode.value
+      }
     }
   }
 
@@ -117,12 +175,7 @@ export function useAcpMode(options: UseAcpModeOptions) {
    * Only works when agent has declared modes.
    */
   const cycleMode = async () => {
-    if (
-      loading.value ||
-      !isAcpModel.value ||
-      !options.conversationId.value ||
-      !hasAgentModes.value
-    ) {
+    if (loading.value || !isAcpModel.value || !hasAgentModes.value) {
       return
     }
 
@@ -137,8 +190,19 @@ export function useAcpMode(options: UseAcpModeOptions) {
       console.info(
         `[useAcpMode] Cycling mode: "${currentMode.value}" -> "${nextModeId}" (cycle: [${cycleOrder.join(', ')}])`
       )
-      await threadPresenter.setAcpSessionMode(options.conversationId.value, nextModeId)
-      currentMode.value = nextModeId
+      if (options.conversationId.value) {
+        await threadPresenter.setAcpSessionMode(options.conversationId.value, nextModeId)
+        currentMode.value = nextModeId
+        pendingPreferredMode.value = null
+      } else if (selectedWorkdir.value) {
+        await threadPresenter.setAcpPreferredProcessMode(
+          options.activeModel.value!.id!,
+          selectedWorkdir.value,
+          nextModeId
+        )
+        currentMode.value = nextModeId
+        pendingPreferredMode.value = nextModeId
+      }
     } catch (error) {
       console.error('[useAcpMode] Failed to cycle mode', error)
     } finally {

@@ -814,7 +814,18 @@
     "text-xl": "XL",
     "text-2xl": "XXL",
     "floatingButton": "دکمه شناور",
-    "floatingButtonDesc": "نمایش یک دکمه شناور بر روی دسکتاپ برای فعال‌سازی سریع پنجره برنامه"
+    "floatingButtonDesc": "نمایش یک دکمه شناور بر روی دسکتاپ برای فعال‌سازی سریع پنجره برنامه",
+    "codeFontFamily": "فونت تک فاصله",
+    "codeFontFamilyDesc": "برای بلوک های کد و مناطق با عرض ثابت استفاده می شود.",
+    "fontDefaultLabel": "پیش فرض (پشته فونت داخلی)",
+    "fontFamily": "فونت رابط",
+    "fontFamilyDesc": "فونت اصلی رابط را انتخاب کنید. اگر خالی باقی بماند، از پشته فونت داخلی استفاده کنید.",
+    "fontReset": "به حالت پیش فرض بازنشانی کنید",
+    "fontSearchEmpty": "بدون فونت منطبق",
+    "fontSearchPlaceholder": "جستجوی فونت",
+    "fontSystemLoading": "در حال بارگیری فونت های سیستم...",
+    "fontTitle": "فونت",
+    "fontUsageHint": "برخی از اینترفیس ها برای اعمال شدن نیاز به راه اندازی مجدد برنامه دارند. اگر فونت در دسترس نباشد، به طور خودکار به فونت پیش فرض برمی گردد."
   },
   "shortcuts": {
     "title": "تنظیمات کلید میانبر",
@@ -959,6 +970,48 @@
       "downloadUrl": "لینک دانلود",
       "installCommands": "دستور نصب",
       "title": "عدم وابستگی خارجی"
+    },
+    "debug": {
+      "clearHistory": "حذف تاریخچه",
+      "close": "بستن",
+      "customMethod": "نام روش سفارشی",
+      "customMethodPlaceholder": "به عنوان مثال جلسه / پینگ",
+      "customMethodRequired": "لطفاً نام روش پسوند را وارد کنید",
+      "description": "یک درخواست ACP به \"{name}\" ارسال کنید و پاسخ را در زمان واقعی مشاهده کنید.",
+      "empty": "هنوز هیچ رویداد اشکال‌زدایی وجود ندارد.",
+      "entry": "اشکال زدایی",
+      "eventCount": "{count} مورد",
+      "eventKinds": {
+        "error": "اشتباه",
+        "notification": "اطلاع‌رسانی",
+        "permission": "مجوزها",
+        "request": "درخواست",
+        "response": "پاسخ"
+      },
+      "events": "رویداد",
+      "format": "فرمت JSON",
+      "methods": {
+        "cancel": "session/cancel",
+        "extMethod": "ext/method",
+        "extNotification": "ext/notification",
+        "initialize": "initialize",
+        "loadSession": "session/load",
+        "newSession": "session/new",
+        "prompt": "session/prompt",
+        "setSessionMode": "session/setMode",
+        "setSessionModel": "session/setModel"
+      },
+      "needInitialize": "لطفا ابتدا مقداردهی اولیه را اجرا کنید",
+      "parseError": "تجزیه JSON انجام نشد",
+      "payloadHint": "JSON را می توان قبل از ارسال تنظیم کرد.",
+      "processNotReady": "لطفا ابتدا مقداردهی اولیه کنید",
+      "processReady": "فرآیند آماده است",
+      "requestFailed": "درخواست ناموفق بود",
+      "resetTemplate": "قالب بازیابی",
+      "send": "ارسال درخواست",
+      "sending": "ارسال...",
+      "title": "اشکال زدایی ACP",
+      "workdirPlaceholder": "برای استفاده از دایرکتوری کاری پیش فرض، خالی بگذارید"
     }
   }
 }
