@@ -80,7 +80,7 @@
     "selectBackupPlaceholder": "Sélectionnez une sauvegarde",
     "noBackupsAvailable": "Aucune sauvegarde disponible. Lancez d'abord une sauvegarde.",
     "importConfirmTitle": "Confirmer l'importation des données",
-    "importConfirmDescription": "L'importation écrasera toutes les données actuelles, y compris l'historique des conversations et les paramètres. Assurez-vous d'avoir sauvegardé les données importantes. Vous devrez redémarrer l'application après l'importation.",
+    "importConfirmDescription": "L'importation écrasera toutes les données actuelles, y compris l'historique des conversations et les paramètres. Assurez-vous d'avoir sauvegardé les données importantes. Les données seront actualisées automatiquement après l'importation.",
     "importing": "Importation en cours...",
     "confirmImport": "Confirmer l'importation",
     "importSuccessTitle": "Importation réussie",
@@ -103,6 +103,19 @@
     "toast": {
       "backupSuccessTitle": "Sauvegarde réussie",
       "backupSuccessMessage": "Données sauvegardées avec succès"
+    },
+    "yoBrowser": {
+      "clearButton": "Effacer les données de YoBrowser",
+      "clearFailedDescription": "Veuillez réessayer ou consulter les journaux pour plus d'informations.",
+      "clearFailedTitle": "Échec de la compensation",
+      "clearedDescription": "La session sandbox a été réinitialisée et l'onglet associé sera rechargé.",
+      "clearedTitle": "Données YoBrowser effacées",
+      "clearing": "Faire le ménage...",
+      "confirmAction": "Effacer maintenant",
+      "confirmDescription": "Les cookies, le cache, LocalStorage, IndexedDB et autres données de la session YoBrowser seront supprimés et vous devrez peut-être vous reconnecter au site Web.",
+      "confirmTitle": "Confirmer pour effacer les données de YoBrowser ?",
+      "description": "Un bac à sable de navigateur indépendant qui ne partage pas de cookies ni de stockage local avec l'application principale. Les données YoBrowser peuvent être effacées en un seul clic ici.",
+      "title": "Bac à sable YoBrowser"
     }
   },
   "model": {
@@ -397,6 +410,8 @@
     "githubCopilotNotConnected": "GitHub Copilot non connecté",
     "loginWithGitHub": "Se connecter avec GitHub",
     "loggingIn": "Connexion en cours...",
+    "githubCopilotClientId": "Custom Client ID",
+    "githubCopilotClientIdHint": "Optional. Leave empty to use the built-in default Client ID. Only affects GitHub Copilot auth.",
     "githubCopilotLoginTip": "Autorisez DeepChat à accéder à votre abonnement GitHub Copilot. Les autorisations 'read:user' et 'read:org' sont requises pour accéder à l'API Copilot.",
     "loginSuccess": "Connexion réussie",
     "loginFailed": "Échec de la connexion",

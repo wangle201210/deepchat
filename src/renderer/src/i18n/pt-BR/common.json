@@ -78,5 +78,20 @@
   "newTab": "Nova Aba",
   "unknownError": "Erro desconhecido",
   "testing": "Em teste",
-  "saving": "Salvando"
+  "saving": "Salvando",
+  "scrollLeft": "Rolar para a esquerda",
+  "scrollRight": "Rolar para a direita",
+  "history": "Histórico",
+  "minimize": "Minimizar",
+  "maximize": "Maximizar",
+  "restore": "Restaurar",
+  "browser": {
+    "back": "Voltar",
+    "forward": "Avançar",
+    "reload": "Recarregar",
+    "addressPlaceholder": "Digite uma URL",
+    "enterUrlDescription": "Digite o URL na barra de endereço acima para acessar o site",
+    "enterUrlToStart": "Digite o URL para começar a visitar",
+    "name": "Seu navegador"
+  }
 }

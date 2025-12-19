@@ -78,5 +78,20 @@
   "newTab": "Nouvel onglet",
   "unknownError": "Erreur inconnue",
   "testing": "En cours de test",
-  "saving": "En cours d'enregistrement"
+  "saving": "En cours d'enregistrement",
+  "scrollLeft": "Défiler à gauche",
+  "scrollRight": "Défiler à droite",
+  "history": "Historique",
+  "minimize": "Réduire",
+  "maximize": "Agrandir",
+  "restore": "Restaurer",
+  "browser": {
+    "back": "Précédent",
+    "forward": "Suivant",
+    "reload": "Actualiser",
+    "addressPlaceholder": "Saisir une URL",
+    "enterUrlDescription": "Entrez l'URL dans la barre d'adresse ci-dessus pour accéder au site Web",
+    "enterUrlToStart": "Entrez l'URL pour commencer la visite",
+    "name": "Votre navigateur"
+  }
 }

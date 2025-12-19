@@ -105,7 +105,7 @@ export class ConversationsTable extends BaseTable {
       return `
         -- 添加 reasoning_effort 字段
         ALTER TABLE conversations ADD COLUMN reasoning_effort TEXT DEFAULT NULL;
-        
+
         -- 添加 verbosity 字段
         ALTER TABLE conversations ADD COLUMN verbosity TEXT DEFAULT NULL;
       `

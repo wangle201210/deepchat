@@ -80,7 +80,7 @@
     "selectBackupPlaceholder": "Vælg en backup",
     "noBackupsAvailable": "Ingen backups tilgængelige. Kør først en sikkerhedskopi.",
     "importConfirmTitle": "Bekræft dataimport",
-    "importConfirmDescription": "Import overskriver alle aktuelle data, inklusiv chat- og indstillingshistorik. Sørg for at sikkerhedskopiere vigtige data. Appen skal genstartes efter import.",
+    "importConfirmDescription": "Import overskriver alle aktuelle data, inklusiv chat- og indstillingshistorik. Sørg for at sikkerhedskopiere vigtige data. Data bliver automatisk opdateret efter import.",
     "importing": "Importerer...",
     "confirmImport": "Bekræft import",
     "importSuccessTitle": "Import gennemført",
@@ -103,6 +103,19 @@
     "toast": {
       "backupSuccessTitle": "Backup lykkedes",
       "backupSuccessMessage": "Data blev sikkerhedskopieret"
+    },
+    "yoBrowser": {
+      "clearButton": "Ryd YoBrowser-data",
+      "clearFailedDescription": "Prøv venligst igen, eller tjek logfilerne for at få flere oplysninger.",
+      "clearFailedTitle": "Rydningen mislykkedes",
+      "clearedDescription": "Sandbox-sessionen er blevet nulstillet, og den tilknyttede fane vil blive genindlæst.",
+      "clearedTitle": "YoBrowser-data blev ryddet",
+      "clearing": "Rydder op...",
+      "confirmAction": "Ryd nu",
+      "confirmDescription": "YoBrowser-sessionens cookies, cache, LocalStorage, IndexedDB og andre data vil blive slettet, og du skal muligvis logge ind på hjemmesiden igen.",
+      "confirmTitle": "Bekræft at rydde YoBrowser-data?",
+      "description": "En uafhængig browsersandbox, der ikke deler cookies og lokal lagring med hovedapplikationen. YoBrowser-data kan ryddes med et enkelt klik her.",
+      "title": "YoBrowser Sandbox"
     }
   },
   "model": {
@@ -385,6 +398,8 @@
     "githubCopilotNotConnected": "GitHub Copilot ikke forbundet",
     "loginWithGitHub": "Log ind med GitHub",
     "loggingIn": "Logger ind...",
+    "githubCopilotClientId": "Custom Client ID",
+    "githubCopilotClientIdHint": "Optional. Leave empty to use the built-in default Client ID. Only affects GitHub Copilot auth.",
     "githubCopilotLoginTip": "Giv DeepChat adgang til dit GitHub Copilot-abonnement. Rettighederne 'read:user' og 'read:org' er nødvendige for Copilot API'et.",
     "loginSuccess": "Login lykkedes",
     "loginFailed": "Login mislykkedes",

@@ -8,6 +8,12 @@ import type { NowledgeMemThread, NowledgeMemExportSummary } from '../nowledgeMem
 import { ProviderChange, ProviderBatchUpdate } from './provider-operations'
 import type { AgentSessionLifecycleStatus } from './agent-provider'
 import type { IAcpWorkspacePresenter } from './acp-workspace'
+import type {
+  BrowserTabInfo,
+  BrowserContextSnapshot,
+  DownloadInfo,
+  ScreenshotOptions
+} from '../browser'
 
 export type SQLITE_MESSAGE = {
   id: string
@@ -171,6 +177,44 @@ export interface TabData {
   closable: boolean
   url: string
   icon?: string
+  browserTabId?: string
+}
+
+export interface BrowserContextSnapshot {
+  activeTabId: string | null
+  tabs: BrowserTabInfo[]
+}
+
+export interface IYoBrowserPresenter {
+  initialize(): Promise<void>
+  ensureWindow(): Promise<number | null>
+  hasWindow(): Promise<boolean>
+  show(): Promise<void>
+  hide(): Promise<void>
+  toggleVisibility(): Promise<boolean>
+  isVisible(): Promise<boolean>
+  listTabs(): Promise<BrowserTabInfo[]>
+  getActiveTab(): Promise<BrowserTabInfo | null>
+  createTab(url?: string): Promise<BrowserTabInfo | null>
+  navigateTab(tabId: string, url: string): Promise<void>
+  activateTab(tabId: string): Promise<void>
+  closeTab(tabId: string): Promise<void>
+  reuseTab(url: string): Promise<BrowserTabInfo | null>
+  goBack(tabId?: string): Promise<void>
+  goForward(tabId?: string): Promise<void>
+  reload(tabId?: string): Promise<void>
+  getBrowserContext(): Promise<BrowserContextSnapshot>
+  getNavigationState(tabId?: string): Promise<{
+    canGoBack: boolean
+    canGoForward: boolean
+  }>
+  getTabIdByViewId(viewId: number): Promise<string | null>
+  getToolDefinitions(supportsVision: boolean): Promise<MCPToolDefinition[]>
+  callTool(toolName: string, params: Record<string, unknown>): Promise<string>
+  captureScreenshot(tabId: string, options?: ScreenshotOptions): Promise<string>
+  startDownload(url: string, savePath?: string): Promise<DownloadInfo>
+  clearSandboxData(): Promise<void>
+  shutdown(): Promise<void>
 }
 
 export interface IWindowPresenter {
@@ -182,6 +226,7 @@ export interface IWindowPresenter {
       icon?: string
     }
     forMovedTab?: boolean
+    windowType?: 'chat' | 'browser'
     x?: number
     y?: number
   }): Promise<number | null>
@@ -258,12 +303,14 @@ export interface ITabPresenter {
   registerFloatingWindow(webContentsId: number, webContents: Electron.WebContents): void
   unregisterFloatingWindow(webContentsId: number): void
   resetTabToBlank(tabId: number): Promise<void>
+  setTabBrowserId(tabId: number, browserTabId: string): void
   destroy(): Promise<void>
 }
 
 export interface TabCreateOptions {
   active?: boolean
   position?: number
+  allowNonLocal?: boolean
 }
 
 export interface ILlamaCppPresenter {
@@ -281,6 +328,7 @@ export interface IShortcutPresenter {
 
 export interface ISQLitePresenter {
   close(): void
+  reopen(): void
   createConversation(title: string, settings?: Partial<CONVERSATION_SETTINGS>): Promise<string>
   deleteConversation(conversationId: string): Promise<void>
   renameConversation(conversationId: string, title: string): Promise<CONVERSATION>
@@ -389,6 +437,7 @@ export interface IPresenter {
   deeplinkPresenter: IDeeplinkPresenter
   notificationPresenter: INotificationPresenter
   tabPresenter: ITabPresenter
+  yoBrowserPresenter: IYoBrowserPresenter
   oauthPresenter: IOAuthPresenter
   dialogPresenter: IDialogPresenter
   knowledgePresenter: IKnowledgePresenter
@@ -661,6 +710,7 @@ export type LLM_PROVIDER = {
   name: string
   apiType: string
   apiKey: string
+  copilotClientId?: string
   baseUrl: string
   enable: boolean
   custom?: boolean
@@ -1396,7 +1446,7 @@ export interface ProgressResponse {
 export interface MCPServerConfig {
   command: string
   args: string[]
-  env: Record<string, unknow>
+  env: Record<string, unknown>
   descriptions: string
   icons: string
   autoApprove: string[]

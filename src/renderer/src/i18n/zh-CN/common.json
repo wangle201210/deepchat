@@ -78,5 +78,20 @@
   "newTab": "新建标签页",
   "unknownError": "未知错误",
   "testing": "测试中",
-  "saving": "保存中"
+  "saving": "保存中",
+  "scrollLeft": "向左滚动",
+  "scrollRight": "向右滚动",
+  "history": "历史",
+  "minimize": "最小化",
+  "maximize": "最大化",
+  "restore": "还原",
+  "browser": {
+    "back": "后退",
+    "forward": "前进",
+    "reload": "刷新",
+    "addressPlaceholder": "输入网址",
+    "enterUrlToStart": "输入网址开始访问",
+    "enterUrlDescription": "在上方地址栏输入网址以访问网站",
+    "name": "Yo Browser"
+  }
 }

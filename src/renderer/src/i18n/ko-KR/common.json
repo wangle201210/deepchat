@@ -78,5 +78,20 @@
   "newTab": "새 탭",
   "unknownError": "알 수 없는 오류",
   "testing": "테스트 중",
-  "saving": "저장 중"
+  "saving": "저장 중",
+  "scrollLeft": "왼쪽으로 스크롤",
+  "scrollRight": "오른쪽으로 스크롤",
+  "history": "기록",
+  "minimize": "최소화",
+  "maximize": "최대화",
+  "restore": "복원",
+  "browser": {
+    "back": "뒤로",
+    "forward": "앞으로",
+    "reload": "새로고침",
+    "addressPlaceholder": "URL을 입력하세요",
+    "enterUrlDescription": "위 주소창에 URL을 입력하시면 해당 홈페이지에 접속하실 수 있습니다.",
+    "enterUrlToStart": "방문을 시작하려면 URL을 입력하세요.",
+    "name": "요 브라우저"
+  }
 }

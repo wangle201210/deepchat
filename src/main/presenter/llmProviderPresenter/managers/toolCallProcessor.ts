@@ -8,7 +8,7 @@ import {
 } from '@shared/presenter'
 
 interface ToolCallProcessorOptions {
-  getAllToolDefinitions: (enabledMcpTools?: string[]) => Promise<MCPToolDefinition[]>
+  getAllToolDefinitions: (context: ToolCallExecutionContext) => Promise<MCPToolDefinition[]>
   callTool: (request: MCPToolCall) => Promise<{ content: unknown; rawData: MCPToolResponse }>
 }
 
@@ -37,14 +37,14 @@ export class ToolCallProcessor {
     let toolCallCount = context.currentToolCallCount
     let needContinueConversation = context.toolCalls.length > 0
 
-    let toolDefinitions = await this.options.getAllToolDefinitions(context.enabledMcpTools)
+    let toolDefinitions = await this.options.getAllToolDefinitions(context)
 
     const resolveToolDefinition = async (
       toolName: string
     ): Promise<MCPToolDefinition | undefined> => {
       const match = toolDefinitions.find((tool) => tool.function.name === toolName)
       if (match) return match
-      toolDefinitions = await this.options.getAllToolDefinitions(context.enabledMcpTools)
+      toolDefinitions = await this.options.getAllToolDefinitions(context)
       return toolDefinitions.find((tool) => tool.function.name === toolName)
     }
 
@@ -326,6 +326,36 @@ export class ToolCallProcessor {
     errorMessage: string
   ): void {
     if (modelConfig?.functionCall) {
+      // For native function-calling models, ensure every tool error is still paired
+      // with a preceding assistant message that declares the tool_call in tool_calls.
+      const toolCallEntry = {
+        id: toolCall.id,
+        type: 'function' as const,
+        function: {
+          name: toolCall.name,
+          arguments: toolCall.arguments
+        }
+      }
+
+      let lastAssistantMessage = conversationMessages.findLast(
+        (message) => message.role === 'assistant'
+      )
+
+      if (lastAssistantMessage) {
+        if (!lastAssistantMessage.tool_calls) {
+          lastAssistantMessage.tool_calls = []
+        }
+        lastAssistantMessage.tool_calls.push(toolCallEntry)
+      } else {
+        // Extremely defensive fallback – create a synthetic assistant message
+        // so the OpenAI API still sees a valid tool_calls declaration.
+        lastAssistantMessage = {
+          role: 'assistant',
+          tool_calls: [toolCallEntry]
+        }
+        conversationMessages.push(lastAssistantMessage)
+      }
+
       conversationMessages.push({
         role: 'tool',
         content: `The tool call with ID ${toolCall.id} and name ${toolCall.name} failed to execute: ${errorMessage}`,

@@ -18,6 +18,8 @@
         variant="ghost"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-r border-border"
         @click="scrollTabContainer('left')"
+        @mouseenter="onOverlayMouseEnter('scroll-left', t('common.scrollLeft'), $event)"
+        @mouseleave="onOverlayMouseLeave('scroll-left')"
       >
         <Icon icon="lucide:chevron-left" class="w-4 h-4" />
       </Button>
@@ -26,6 +28,8 @@
         variant="ghost"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-border"
         @click="scrollTabContainer('right')"
+        @mouseenter="onOverlayMouseEnter('scroll-right', t('common.scrollRight'), $event)"
+        @mouseleave="onOverlayMouseLeave('scroll-right')"
       >
         <Icon icon="lucide:chevron-right" class="w-4 h-4" />
       </Button>
@@ -51,6 +55,8 @@
             @close="tabStore.removeTab(tab.id)"
             @dragstart="onTabDragStart(tab.id, $event)"
             @dragover="onTabItemDragOver(idx, $event)"
+            @mouseenter="onTabMouseEnter(tab, $event)"
+            @mouseleave="onTabMouseLeave(tab.id)"
           >
             <img src="@/assets/logo.png" class="w-4 h-4 mr-2 rounded-sm" />
             <span class="truncate">{{ tab.title ?? 'DeepChat' }}</span>
@@ -69,22 +75,40 @@
         size="icon"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group"
         @click="onNewTabClick"
+        @mouseenter="onOverlayMouseEnter('new-tab', t('common.newTab'), $event)"
+        @mouseleave="onOverlayMouseLeave('new-tab')"
       >
         <Icon icon="lucide:plus" class="w-4 h-4" />
       </Button>
       <div class="flex-1"></div>
 
       <Button
+        v-if="windowType !== 'browser'"
+        size="icon"
+        class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
+        @click="onBrowserClick"
+        @mouseenter="onOverlayMouseEnter('browser', t('common.browser.name'), $event)"
+        @mouseleave="onOverlayMouseLeave('browser')"
+      >
+        <Icon icon="lucide:compass" class="w-4 h-4" />
+      </Button>
+      <Button
+        v-if="windowType !== 'browser'"
         size="icon"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
         @click="onHistoryClick"
+        @mouseenter="onOverlayMouseEnter('history', t('common.history'), $event)"
+        @mouseleave="onOverlayMouseLeave('history')"
       >
         <Icon icon="lucide:history" class="w-4 h-4" />
       </Button>
       <Button
+        v-if="windowType !== 'browser'"
         size="icon"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
         @click="openSettings"
+        @mouseenter="onOverlayMouseEnter('settings', t('routes.settings'), $event)"
+        @mouseleave="onOverlayMouseLeave('settings')"
       >
         <Icon icon="lucide:ellipsis" class="w-4 h-4" />
       </Button>
@@ -92,6 +116,8 @@
         v-if="!isMacOS"
         class="window-no-drag-region shrink-0 w-12 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
         @click="minimizeWindow"
+        @mouseenter="onOverlayMouseEnter('minimize', t('common.minimize'), $event)"
+        @mouseleave="onOverlayMouseLeave('minimize')"
       >
         <MinimizeIcon class="h-3! w-3!" />
       </Button>
@@ -99,6 +125,14 @@
         v-if="!isMacOS"
         class="window-no-drag-region shrink-0 w-12 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group"
         @click="toggleMaximize"
+        @mouseenter="
+          onOverlayMouseEnter(
+            'toggle-maximize',
+            isMaximized ? t('common.restore') : t('common.maximize'),
+            $event
+          )
+        "
+        @mouseleave="onOverlayMouseLeave('toggle-maximize')"
       >
         <MaximizeIcon v-if="!isMaximized" class="h-3! w-3!" />
         <RestoreIcon v-else class="h-3! w-3!" />
@@ -107,6 +141,8 @@
         v-if="!isMacOS"
         class="window-no-drag-region shrink-0 w-12 bg-transparent shadow-none rounded-none hover:bg-red-700/80 hover:text-white text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group"
         @click="closeWindow"
+        @mouseenter="onOverlayMouseEnter('close-window', t('common.close'), $event)"
+        @mouseleave="onOverlayMouseLeave('close-window')"
       >
         <CloseIcon class="h-3! w-3!" />
       </Button>
@@ -123,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
 import MaximizeIcon from './icons/MaximizeIcon.vue'
 import RestoreIcon from './icons/RestoreIcon.vue'
 import { usePresenter } from '@/composables/usePresenter'
@@ -138,14 +174,19 @@ import { WINDOW_EVENTS } from '../lib/events'
 import CloseIcon from './icons/CloseIcon.vue'
 import MinimizeIcon from './icons/MinimizeIcon.vue'
 import { THREAD_VIEW_EVENTS } from '@/events'
+const props = defineProps<{
+  windowType?: 'chat' | 'browser'
+}>()
 const tabStore = useTabStore()
 const langStore = useLanguageStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
 const tabPresenter = usePresenter('tabPresenter')
+const yoBrowserPresenter = usePresenter('yoBrowserPresenter')
 const endOfTabs = ref<HTMLElement | null>(null)
 
 const { t } = useI18n()
+const windowType = computed(() => props.windowType ?? 'chat')
 
 const isMacOS = ref(false)
 const isMaximized = ref(false)
@@ -160,13 +201,76 @@ let draggedTabId: number | null = null
 const dragInsertIndex = ref(-1)
 const dragInsertPosition = ref(0)
 
+type TooltipHoverTarget = { key: string; text: string; el: HTMLElement }
+
+const hoveredTarget = ref<TooltipHoverTarget | null>(null)
+const isTooltipOpen = ref(false)
+let tooltipTimer: number | null = null
+
 const tabContainerWrapperSize = useElementSize(tabContainerWrapper)
 const tabContainerSize = useElementSize(tabContainer)
 const tabContainerWrapperScrollLeft = ref(0)
 
+const sendTooltipShow = (el: HTMLElement, text: string) => {
+  const rect = el.getBoundingClientRect()
+  ipcRenderer.send('shell-tooltip:show', {
+    x: rect.left + rect.width / 2,
+    y: rect.bottom + 8,
+    text
+  })
+}
+
+const hideTooltip = () => {
+  isTooltipOpen.value = false
+  ipcRenderer.send('shell-tooltip:hide')
+}
+
+const updateTooltipPosition = () => {
+  if (!isTooltipOpen.value) return
+  const current = hoveredTarget.value
+  if (!current) return
+  sendTooltipShow(current.el, current.text)
+}
+
+const onOverlayMouseEnter = (key: string, text: string, event: MouseEvent) => {
+  if (tooltipTimer != null) window.clearTimeout(tooltipTimer)
+
+  const el = event.currentTarget as HTMLElement | null
+  if (!el) return
+
+  hoveredTarget.value = { key, el, text }
+
+  tooltipTimer = window.setTimeout(() => {
+    if (!hoveredTarget.value || hoveredTarget.value.key !== key) return
+    isTooltipOpen.value = true
+    updateTooltipPosition()
+  }, 200)
+}
+
+const onOverlayMouseLeave = (key: string) => {
+  if (tooltipTimer != null) {
+    window.clearTimeout(tooltipTimer)
+    tooltipTimer = null
+  }
+
+  if (hoveredTarget.value && hoveredTarget.value.key === key) {
+    hoveredTarget.value = null
+    hideTooltip()
+  }
+}
+
+const onTabMouseEnter = (tab: { id: number; title?: string | null }, event: MouseEvent) => {
+  onOverlayMouseEnter(`tab:${tab.id}`, tab.title ?? 'DeepChat', event)
+}
+
+const onTabMouseLeave = (tabId: number) => {
+  onOverlayMouseLeave(`tab:${tabId}`)
+}
+
 const onTabContainerWrapperScroll = () => {
   requestAnimationFrame(() => {
     tabContainerWrapperScrollLeft.value = tabContainerWrapper.value?.scrollLeft ?? 0
+    updateTooltipPosition()
   })
 }
 
@@ -486,11 +590,36 @@ onMounted(() => {
 
   window.addEventListener('dragover', handleDragOver)
   window.addEventListener('dragend', handleDragEnd)
+  window.addEventListener('resize', updateTooltipPosition)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateTooltipPosition)
+  hideTooltip()
 })
 
 const isPlaygroundEnabled = import.meta.env.VITE_ENABLE_PLAYGROUND === 'true'
 
-const openNewTab = (event?: MouseEvent, forcePlayground = false) => {
+const openNewTab = async (event?: MouseEvent, forcePlayground = false) => {
+  // In browser mode, create browser tab
+  if (windowType.value === 'browser') {
+    try {
+      await yoBrowserPresenter.createTab('about:blank')
+      setTimeout(() => {
+        nextTick(() => {
+          if (endOfTabs.value) {
+            console.log('newTabButton', endOfTabs.value)
+            endOfTabs.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        })
+      }, 300)
+    } catch (error) {
+      console.error('Failed to create browser tab:', error)
+    }
+    return
+  }
+
+  // In chat mode, create chat tab or playground
   const shouldOpenPlayground = isPlaygroundEnabled && (forcePlayground || event?.shiftKey)
 
   const config = shouldOpenPlayground
@@ -562,6 +691,14 @@ const openSettings = () => {
   const windowId = window.api.getWindowId()
   if (windowId != null) {
     windowPresenter.openOrFocusSettingsTab(windowId)
+  }
+}
+
+const onBrowserClick = async () => {
+  try {
+    await yoBrowserPresenter.show()
+  } catch (error) {
+    console.warn('Failed to open browser window.', error)
   }
 }
 </script>
