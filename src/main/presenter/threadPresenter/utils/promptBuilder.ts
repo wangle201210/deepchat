@@ -18,8 +18,9 @@ import {
 import type { MCPToolDefinition } from '@shared/presenter'
 import { ContentEnricher } from './contentEnricher'
 import { buildUserMessageContext, getNormalizedUserMessageText } from './messageContent'
-import { generateSearchPrompt } from '../managers/searchManager'
 import { nanoid } from 'nanoid'
+import { BrowserContextBuilder } from '../../browser/BrowserContextBuilder'
+import { modelCapabilities } from '../../configPresenter/modelCapabilities'
 
 export type PendingToolCall = {
   id: string
@@ -65,7 +66,7 @@ export async function preparePromptContent({
   conversation,
   userContent,
   contextMessages,
-  searchResults,
+  searchResults: _searchResults,
   urlResults,
   userMessage,
   vision,
@@ -79,20 +80,12 @@ export async function preparePromptContent({
   const { systemPrompt, contextLength, artifacts, enabledMcpTools } = conversation.settings
 
   const isImageGeneration = modelType === ModelType.ImageGeneration
-  const searchPrompt =
-    !isImageGeneration && searchResults ? generateSearchPrompt(userContent, searchResults) : ''
-
   const enrichedUserMessage =
     !isImageGeneration && urlResults.length > 0
       ? '\n\n' + ContentEnricher.enrichUserMessageWithUrlContent(userContent, urlResults)
       : ''
 
   const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt, isImageGeneration)
-
-  const searchPromptTokens = searchPrompt ? approximateTokenSize(searchPrompt) : 0
-  const systemPromptTokens =
-    !isImageGeneration && finalSystemPrompt ? approximateTokenSize(finalSystemPrompt) : 0
-  const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
 
   let mcpTools: MCPToolDefinition[] = []
   if (!isImageGeneration) {
@@ -106,13 +99,41 @@ export async function preparePromptContent({
       mcpTools = []
     }
   }
-  const mcpToolsTokens = mcpTools.reduce(
-    (acc, tool) => acc + approximateTokenSize(JSON.stringify(tool)),
-    0
-  )
 
-  const reservedTokens =
-    searchPromptTokens + systemPromptTokens + userMessageTokens + mcpToolsTokens
+  let browserContextPrompt = ''
+  const { providerId, modelId } = conversation.settings
+  // Check if browser window is open - independent of MCP
+  const hasBrowserWindow = await presenter.yoBrowserPresenter.hasWindow()
+  if (!isImageGeneration && hasBrowserWindow) {
+    try {
+      const supportsVision = modelCapabilities.supportsVision(providerId, modelId)
+      const browserTools = await presenter.yoBrowserPresenter.getToolDefinitions(supportsVision)
+      // console.log('browserTools', browserTools)
+      mcpTools = [...mcpTools, ...browserTools]
+      const browserContext = await presenter.yoBrowserPresenter.getBrowserContext()
+      browserContextPrompt = BrowserContextBuilder.buildSystemPrompt(
+        browserContext.tabs,
+        browserContext.activeTabId
+      )
+    } catch (error) {
+      console.warn('ThreadPresenter: Failed to load Yo Browser context/tools', error)
+    }
+  }
+
+  const finalSystemPromptWithBrowser = browserContextPrompt
+    ? `${finalSystemPrompt}\n${browserContextPrompt}`
+    : finalSystemPrompt
+
+  const systemPromptTokens =
+    !isImageGeneration && finalSystemPromptWithBrowser
+      ? approximateTokenSize(finalSystemPromptWithBrowser)
+      : 0
+  const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
+  const mcpToolsTokens = mcpTools.reduce((acc, tool) => {
+    return acc + approximateTokenSize(JSON.stringify(tool))
+  }, 0)
+
+  const reservedTokens = systemPromptTokens + userMessageTokens + mcpToolsTokens
   const remainingContextLength = contextLength - reservedTokens
 
   const selectedContextMessages = selectContextMessages(
@@ -123,9 +144,8 @@ export async function preparePromptContent({
 
   const formattedMessages = formatMessagesForCompletion(
     selectedContextMessages,
-    isImageGeneration ? '' : finalSystemPrompt,
+    isImageGeneration ? '' : finalSystemPromptWithBrowser,
     artifacts,
-    searchPrompt,
     userContent,
     enrichedUserMessage,
     imageFiles,
@@ -382,7 +402,6 @@ function formatMessagesForCompletion(
   contextMessages: Message[],
   systemPrompt: string,
   artifacts: number,
-  searchPrompt: string,
   userContent: string,
   enrichedUserMessage: string,
   imageFiles: MessageFile[],
@@ -400,7 +419,7 @@ function formatMessagesForCompletion(
     })
   }
 
-  let finalContent = searchPrompt || userContent
+  let finalContent = userContent
   if (enrichedUserMessage) {
     finalContent += enrichedUserMessage
   }

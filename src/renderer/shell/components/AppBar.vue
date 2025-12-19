@@ -83,6 +83,17 @@
       <div class="flex-1"></div>
 
       <Button
+        v-if="windowType !== 'browser'"
+        size="icon"
+        class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
+        @click="onBrowserClick"
+        @mouseenter="onOverlayMouseEnter('browser', t('common.browser.name'), $event)"
+        @mouseleave="onOverlayMouseLeave('browser')"
+      >
+        <Icon icon="lucide:globe" class="w-4 h-4" />
+      </Button>
+      <Button
+        v-if="windowType !== 'browser'"
         size="icon"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
         @click="onHistoryClick"
@@ -92,6 +103,7 @@
         <Icon icon="lucide:history" class="w-4 h-4" />
       </Button>
       <Button
+        v-if="windowType !== 'browser'"
         size="icon"
         class="window-no-drag-region shrink-0 w-10 bg-transparent shadow-none rounded-none hover:bg-card/80 text-xs font-medium text-foreground flex items-center justify-center transition-all duration-200 group border-l"
         @click="openSettings"
@@ -162,14 +174,19 @@ import { WINDOW_EVENTS } from '../lib/events'
 import CloseIcon from './icons/CloseIcon.vue'
 import MinimizeIcon from './icons/MinimizeIcon.vue'
 import { THREAD_VIEW_EVENTS } from '@/events'
+const props = defineProps<{
+  windowType?: 'chat' | 'browser'
+}>()
 const tabStore = useTabStore()
 const langStore = useLanguageStore()
 const windowPresenter = usePresenter('windowPresenter')
 const devicePresenter = usePresenter('devicePresenter')
 const tabPresenter = usePresenter('tabPresenter')
+const yoBrowserPresenter = usePresenter('yoBrowserPresenter')
 const endOfTabs = ref<HTMLElement | null>(null)
 
 const { t } = useI18n()
+const windowType = computed(() => props.windowType ?? 'chat')
 
 const isMacOS = ref(false)
 const isMaximized = ref(false)
@@ -583,7 +600,26 @@ onBeforeUnmount(() => {
 
 const isPlaygroundEnabled = import.meta.env.VITE_ENABLE_PLAYGROUND === 'true'
 
-const openNewTab = (event?: MouseEvent, forcePlayground = false) => {
+const openNewTab = async (event?: MouseEvent, forcePlayground = false) => {
+  // In browser mode, create browser tab
+  if (windowType.value === 'browser') {
+    try {
+      await yoBrowserPresenter.createTab('about:blank')
+      setTimeout(() => {
+        nextTick(() => {
+          if (endOfTabs.value) {
+            console.log('newTabButton', endOfTabs.value)
+            endOfTabs.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        })
+      }, 300)
+    } catch (error) {
+      console.error('Failed to create browser tab:', error)
+    }
+    return
+  }
+
+  // In chat mode, create chat tab or playground
   const shouldOpenPlayground = isPlaygroundEnabled && (forcePlayground || event?.shiftKey)
 
   const config = shouldOpenPlayground
@@ -655,6 +691,14 @@ const openSettings = () => {
   const windowId = window.api.getWindowId()
   if (windowId != null) {
     windowPresenter.openOrFocusSettingsTab(windowId)
+  }
+}
+
+const onBrowserClick = async () => {
+  try {
+    await yoBrowserPresenter.show()
+  } catch (error) {
+    console.warn('Failed to open browser window.', error)
   }
 }
 </script>
