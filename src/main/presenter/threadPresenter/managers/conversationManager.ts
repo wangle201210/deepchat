@@ -193,7 +193,6 @@ export class ConversationManager {
           delete sanitizedSettings[typedKey]
         }
       })
-
       const mergedSettings = { ...defaultSettings }
       const previewSettings = { ...mergedSettings, ...sanitizedSettings }
 
@@ -223,7 +222,6 @@ export class ConversationManager {
       if (mergedSettings.temperature === undefined || mergedSettings.temperature === null) {
         mergedSettings.temperature = defaultModelsSettings?.temperature ?? 0.7
       }
-
       const conversationId = await this.sqlitePresenter.createConversation(title, mergedSettings)
 
       if (options.forceNewAndActivate) {

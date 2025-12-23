@@ -387,8 +387,9 @@ export class WindowPresenter implements IWindowPresenter {
   /**
    * 显示指定 ID 的窗口。如果未指定 ID，则显示焦点窗口或第一个窗口。
    * @param windowId 可选。要显示的窗口 ID。
+   * @param shouldFocus 可选。是否获取焦点，默认为 true。
    */
-  show(windowId?: number): void {
+  show(windowId?: number, shouldFocus: boolean = true): void {
     let targetWindow: BrowserWindow | undefined
     if (windowId === undefined) {
       // 未指定 ID，查找焦点窗口或第一个窗口
@@ -410,7 +411,9 @@ export class WindowPresenter implements IWindowPresenter {
     }
 
     targetWindow.show()
-    targetWindow.focus() // Bring to foreground
+    if (shouldFocus) {
+      targetWindow.focus() // Bring to foreground
+    }
     // 触发恢复逻辑以确保活动标签页可见且位置正确
     this.handleWindowRestore(targetWindow.id).catch((error) => {
       console.error(`Error handling restore logic after showing window ${targetWindow!.id}:`, error)
@@ -678,10 +681,14 @@ export class WindowPresenter implements IWindowPresenter {
     // 根据平台选择图标
     const iconFile = nativeImage.createFromPath(process.platform === 'win32' ? iconWin : icon)
 
+    // 根据窗口类型设置默认宽度
+    const defaultWidth = windowType === 'browser' ? 600 : 800
+    const defaultHeight = 620
+
     // 使用窗口状态管理器恢复位置和尺寸
     const shellWindowState = windowStateManager({
-      defaultWidth: 800,
-      defaultHeight: 620
+      defaultWidth,
+      defaultHeight
     })
 
     // 计算初始位置，确保窗口完全在屏幕范围内
@@ -757,7 +764,16 @@ export class WindowPresenter implements IWindowPresenter {
     shellWindow.on('ready-to-show', () => {
       console.log(`Window ${windowId} is ready to show.`)
       if (!shellWindow.isDestroyed()) {
-        shellWindow.show() // 显示窗口避免白屏
+        // For browser windows, don't auto-show/focus to prevent stealing focus from chat windows
+        // Browser windows should only be shown when explicitly requested by user (e.g., clicking browser button)
+        const tabPresenterInstance = presenter.tabPresenter as TabPresenter
+        const windowType = tabPresenterInstance.getWindowType(windowId)
+        const shouldAutoShow = windowType !== 'browser'
+
+        if (shouldAutoShow) {
+          shellWindow.show()
+          shellWindow.focus()
+        }
         eventBus.sendToMain(WINDOW_EVENTS.WINDOW_CREATED, windowId)
       } else {
         console.warn(`Window ${windowId} was destroyed before ready-to-show.`)
@@ -1029,10 +1045,7 @@ export class WindowPresenter implements IWindowPresenter {
       })
     }
 
-    // 开发模式下可选开启 DevTools
-    if (is.dev) {
-      shellWindow.webContents.openDevTools({ mode: 'detach' })
-    }
+    // DevTools 不再自动打开，需要手动通过菜单或快捷键打开
 
     console.log(`Shell window ${windowId} created successfully.`)
 

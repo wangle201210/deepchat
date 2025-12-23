@@ -1,4 +1,5 @@
-import { BrowserWindow, WebContents } from 'electron'
+import { BrowserWindow, WebContents, screen } from 'electron'
+import type { Rectangle } from 'electron'
 import { eventBus, SendTarget } from '@/eventbus'
 import { TAB_EVENTS, YO_BROWSER_EVENTS } from '@/events'
 import { BrowserTabInfo, BrowserContextSnapshot, ScreenshotOptions } from '@shared/types/browser'
@@ -42,23 +43,20 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
     // Lazy initialization: only create browser window/tabs when explicitly requested.
   }
 
-  async ensureWindow(): Promise<number | null> {
+  async ensureWindow(options?: { x?: number; y?: number }): Promise<number | null> {
     const window = this.getWindow()
     if (window) return window.id
 
     this.windowId = await this.windowPresenter.createShellWindow({
-      windowType: 'browser'
+      windowType: 'browser',
+      x: options?.x,
+      y: options?.y
     })
 
     const created = this.getWindow()
     if (created) {
       created.on('closed', () => this.handleWindowClosed())
       this.emitVisibility(created.isVisible())
-
-      // Auto-create a blank tab when the window is first created
-      if (this.tabIdToBrowserTab.size === 0) {
-        await this.createTab('about:blank')
-      }
     }
 
     return this.windowId
@@ -68,12 +66,63 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
     return this.windowId !== null && this.getWindow() !== null
   }
 
-  async show(): Promise<void> {
-    await this.ensureWindow()
+  async show(shouldFocus: boolean = true): Promise<void> {
+    const existingWindow = this.getWindow()
+    const referenceBounds = existingWindow
+      ? this.getReferenceBounds(existingWindow.id)
+      : this.getReferenceBounds()
+
+    // Calculate position before creating window if it doesn't exist
+    let initialPosition: { x: number; y: number } | undefined
+    if (!existingWindow && referenceBounds) {
+      // Use default window size for calculation (browser window is 600px wide)
+      const defaultBounds: Rectangle = {
+        x: 0,
+        y: 0,
+        width: 600,
+        height: 620
+      }
+      initialPosition = this.calculateWindowPosition(defaultBounds, referenceBounds)
+    }
+
+    await this.ensureWindow({
+      x: initialPosition?.x,
+      y: initialPosition?.y
+    })
+
+    if (this.tabIdToBrowserTab.size === 0) {
+      await this.createTab('about:blank')
+    }
+
     const window = this.getWindow()
     if (window && !window.isDestroyed()) {
-      this.windowPresenter.show(window.id)
-      this.emitVisibility(true)
+      // If window already existed, recalculate position based on actual bounds
+      if (existingWindow) {
+        const currentReferenceBounds = this.getReferenceBounds(window.id)
+        const position = this.calculateWindowPosition(window.getBounds(), currentReferenceBounds)
+        window.setPosition(position.x, position.y)
+      }
+
+      // For existing windows, directly show them (they're already ready)
+      // For new windows, wait for ready-to-show event
+      if (existingWindow) {
+        // Window already exists, just show it directly
+        this.windowPresenter.show(window.id, shouldFocus)
+        this.emitVisibility(true)
+      } else {
+        // New window, wait for ready-to-show
+        const reveal = () => {
+          if (!window.isDestroyed()) {
+            this.windowPresenter.show(window.id, shouldFocus)
+            this.emitVisibility(true)
+          }
+        }
+        if (window.isVisible()) {
+          reveal()
+        } else {
+          window.once('ready-to-show', reveal)
+        }
+      }
     }
   }
 
@@ -111,7 +160,8 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
     await this.syncActiveTabId()
     if (!this.activeTabId) return null
     const tab = this.tabIdToBrowserTab.get(this.activeTabId)
-    return tab ? this.toTabInfo(tab) : null
+    const result = tab ? this.toTabInfo(tab) : null
+    return result
   }
 
   async getTabById(tabId: string): Promise<BrowserTabInfo | null> {
@@ -181,7 +231,9 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
     this.setupTabListeners(tabKey, viewId as number, view.webContents)
     this.emitTabCreated(browserTab)
     this.emitTabCount()
-    return this.toTabInfo(browserTab)
+
+    const result = this.toTabInfo(browserTab)
+    return result
   }
 
   async navigateTab(tabId: string, url: string, timeoutMs?: number): Promise<void> {
@@ -297,14 +349,14 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
 
   async callTool(toolName: string, params: Record<string, unknown>): Promise<string> {
     const result = await this.browserToolManager.executeTool(toolName, params)
+    const textParts = result.content
+      .filter((c): c is { type: 'text'; text: string } => c.type === 'text')
+      .map((c) => c.text)
+    const textContent = textParts.join('\n\n')
     if (result.isError) {
-      const textContent = result.content.find((c) => c.type === 'text')
-      throw new Error(
-        textContent && 'text' in textContent ? textContent.text : 'Tool execution failed'
-      )
+      throw new Error(textContent || 'Tool execution failed')
     }
-    const textContent = result.content.find((c) => c.type === 'text')
-    return textContent && 'text' in textContent ? textContent.text : ''
+    return textContent
   }
 
   async captureScreenshot(tabId: string, options?: ScreenshotOptions): Promise<string> {
@@ -367,6 +419,79 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
     return window
   }
 
+  private getReferenceBounds(excludeWindowId?: number): Rectangle | undefined {
+    const focused = this.windowPresenter.getFocusedWindow()
+    if (focused && !focused.isDestroyed() && focused.id !== excludeWindowId) {
+      return focused.getBounds()
+    }
+    const fallback = this.windowPresenter
+      .getAllWindows()
+      .find((candidate) => candidate.id !== excludeWindowId)
+    return fallback?.getBounds()
+  }
+
+  private calculateWindowPosition(
+    windowBounds: Rectangle,
+    referenceBounds?: Rectangle
+  ): { x: number; y: number } {
+    if (!referenceBounds) {
+      // 如果没有参考窗口，使用默认位置
+      const display = screen.getDisplayMatching(windowBounds)
+      const { workArea } = display
+      return {
+        x: workArea.x + workArea.width - windowBounds.width - 20,
+        y: workArea.y + (workArea.height - windowBounds.height) / 2
+      }
+    }
+
+    const gap = 20
+    const display = screen.getDisplayMatching(referenceBounds)
+    const { workArea } = display
+
+    // Browser 窗口尺寸
+    const browserWidth = windowBounds.width
+    const browserHeight = windowBounds.height
+
+    // 计算主窗口右侧和左侧的空间
+    const spaceOnRight = workArea.x + workArea.width - (referenceBounds.x + referenceBounds.width)
+    const spaceOnLeft = referenceBounds.x - workArea.x
+
+    let targetX: number
+    let targetY: number
+
+    if (spaceOnRight >= browserWidth + gap) {
+      // 显示在主窗口右侧
+      targetX = referenceBounds.x + referenceBounds.width + gap
+      targetY = referenceBounds.y + (referenceBounds.height - browserHeight) / 2
+    } else if (spaceOnLeft >= browserWidth + gap) {
+      // 显示在主窗口左侧
+      targetX = referenceBounds.x - browserWidth - gap
+      targetY = referenceBounds.y + (referenceBounds.height - browserHeight) / 2
+    } else {
+      // 空间不够，显示在主窗口下方
+      targetX = referenceBounds.x
+      const spaceBelow = workArea.y + workArea.height - (referenceBounds.y + referenceBounds.height)
+      if (spaceBelow >= browserHeight + gap) {
+        targetY = referenceBounds.y + referenceBounds.height + gap
+      } else {
+        // 下方空间也不够，显示在主窗口上方
+        targetY = referenceBounds.y - browserHeight - gap
+      }
+    }
+
+    // 确保窗口在屏幕范围内
+    const clampedX = Math.max(
+      workArea.x,
+      Math.min(targetX, workArea.x + workArea.width - browserWidth)
+    )
+    const clampedY = Math.max(
+      workArea.y,
+      Math.min(targetY, workArea.y + workArea.height - browserHeight)
+    )
+
+    return { x: Math.round(clampedX), y: Math.round(clampedY) }
+  }
+
   private handleWindowClosed(): void {
     this.cleanup()
     this.emitVisibility(false)
@@ -386,6 +511,20 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
       const tab = this.tabIdToBrowserTab.get(tabId)
       if (!tab) return
       tab.title = title || tab.url
+      tab.updatedAt = Date.now()
+      this.emitTabUpdated(tab)
+    })
+
+    contents.on('page-favicon-updated', (_event, favicons) => {
+      if (favicons.length > 0) {
+        const tab = this.tabIdToBrowserTab.get(tabId)
+        if (!tab) return
+        if (tab.favicon !== favicons[0]) {
+          tab.favicon = favicons[0]
+          tab.updatedAt = Date.now()
+          this.emitTabUpdated(tab)
+        }
+      }
     })
 
     contents.on('destroyed', () => {
@@ -511,6 +650,11 @@ export class YoBrowserPresenter implements IYoBrowserPresenter {
       tabId,
       url
     })
+  }
+
+  private emitTabUpdated(tab: BrowserTab) {
+    const info = this.toTabInfo(tab)
+    eventBus.sendToRenderer(YO_BROWSER_EVENTS.TAB_UPDATED, SendTarget.ALL_WINDOWS, info)
   }
 
   private emitTabCount() {

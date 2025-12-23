@@ -29,23 +29,23 @@
       <ContextMenuContent class="w-48">
         <ContextMenuItem v-if="!node.isDirectory" @select="handleOpenFile">
           <Icon icon="lucide:external-link" class="h-4 w-4" />
-          {{ t('chat.acp.workspace.files.contextMenu.openFile') }}
+          {{ t('chat.workspace.files.contextMenu.openFile') }}
         </ContextMenuItem>
         <ContextMenuItem @select="handleRevealInFolder">
           <Icon icon="lucide:folder-open-dot" class="h-4 w-4" />
-          {{ t('chat.acp.workspace.files.contextMenu.revealInFolder') }}
+          {{ t('chat.workspace.files.contextMenu.revealInFolder') }}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem @select="handleAppendFromMenu">
           <Icon icon="lucide:arrow-down-left" class="h-4 w-4" />
-          {{ t('chat.acp.workspace.files.contextMenu.insertPath') }}
+          {{ t('chat.workspace.files.contextMenu.insertPath') }}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
 
     <!-- Recursive children -->
     <template v-if="node.isDirectory && node.expanded && node.children">
-      <AcpWorkspaceFileNode
+      <WorkspaceFileNode
         v-for="child in node.children"
         :key="child.path"
         :node="child"
@@ -62,6 +62,7 @@ import { computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { usePresenter } from '@/composables/usePresenter'
+import { useChatMode } from '@/components/chat-input/composables/useChatMode'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -69,20 +70,26 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@shadcn/components/ui/context-menu'
-import type { AcpFileNode } from '@shared/presenter'
+import type { WorkspaceFileNode } from '@shared/presenter'
 
 const props = defineProps<{
-  node: AcpFileNode
+  node: WorkspaceFileNode
   depth: number
 }>()
 
 const emit = defineEmits<{
-  toggle: [node: AcpFileNode]
+  toggle: [node: WorkspaceFileNode]
   'append-path': [filePath: string]
 }>()
 
 const { t } = useI18n()
+const chatMode = useChatMode()
+const workspacePresenter = usePresenter('workspacePresenter')
 const acpWorkspacePresenter = usePresenter('acpWorkspacePresenter')
+
+const presenter = computed(() =>
+  chatMode.currentMode.value === 'acp agent' ? acpWorkspacePresenter : workspacePresenter
+)
 
 const extensionIconMap: Record<string, string> = {
   pdf: 'lucide:file-text',
@@ -139,17 +146,17 @@ const handleOpenFile = async () => {
   }
 
   try {
-    await acpWorkspacePresenter.openFile(props.node.path)
+    await presenter.value.openFile(props.node.path)
   } catch (error) {
-    console.error(`[AcpWorkspace] Failed to open file: ${props.node.path}`, error)
+    console.error(`[Workspace] Failed to open file: ${props.node.path}`, error)
   }
 }
 
 const handleRevealInFolder = async () => {
   try {
-    await acpWorkspacePresenter.revealFileInFolder(props.node.path)
+    await presenter.value.revealFileInFolder(props.node.path)
   } catch (error) {
-    console.error(`[AcpWorkspace] Failed to reveal path: ${props.node.path}`, error)
+    console.error(`[Workspace] Failed to reveal path: ${props.node.path}`, error)
   }
 }
 
@@ -157,3 +164,24 @@ const handleAppendFromMenu = () => {
   emitAppendPath()
 }
 </script>
+
+<style scoped>
+.workspace-collapse-enter-active,
+.workspace-collapse-leave-active {
+  transition: all 0.18s ease;
+}
+
+.workspace-collapse-enter-from,
+.workspace-collapse-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+  max-height: 0;
+}
+
+.workspace-collapse-enter-to,
+.workspace-collapse-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+  max-height: 500px;
+}
+</style>

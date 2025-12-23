@@ -110,6 +110,7 @@ import { Badge } from '@shadcn/components/ui/badge'
 import { Icon } from '@iconify/vue'
 import ModelSelect from './ModelSelect.vue'
 import { useChatStore } from '@/stores/chat'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { MODEL_META } from '@shared/presenter'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { UserMessageContent } from '@shared/chat'
@@ -121,9 +122,11 @@ import type { IpcRendererEvent } from 'electron'
 import { CONFIG_EVENTS } from '@/events'
 import { useModelStore } from '@/stores/modelStore'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
+import { useChatMode } from '@/components/chat-input/composables/useChatMode'
 
 const configPresenter = usePresenter('configPresenter')
 const themeStore = useThemeStore()
+const chatMode = useChatMode()
 // 定义偏好模型的类型
 interface PreferredModel {
   modelId: string
@@ -132,6 +135,7 @@ interface PreferredModel {
 
 const { t } = useI18n()
 const chatStore = useChatStore()
+const workspaceStore = useWorkspaceStore()
 const modelStore = useModelStore()
 const uiSettingsStore = useUiSettingsStore()
 const activeModel = ref({
@@ -233,6 +237,28 @@ const pickFirstEnabledModel = () => {
   return found
 }
 
+const pickFirstAcpModel = () => {
+  const found = modelStore.enabledModels
+    .flatMap((p) => p.models.map((m) => ({ ...m, providerId: p.providerId })))
+    .find(
+      (m) =>
+        m.providerId === 'acp' &&
+        (m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
+    )
+  return found
+}
+
+const pickFirstNonAcpModel = () => {
+  const found = modelStore.enabledModels
+    .flatMap((p) => p.models.map((m) => ({ ...m, providerId: p.providerId })))
+    .find(
+      (m) =>
+        m.providerId !== 'acp' &&
+        (m.type === ModelType.Chat || m.type === ModelType.ImageGeneration)
+    )
+  return found
+}
+
 const setActiveFromEnabled = (m: {
   name: string
   id: string
@@ -321,6 +347,47 @@ watch(
     }
   },
   { immediate: false, deep: true }
+)
+
+// 监听 chat mode 变化，自动切换模型
+watch(
+  () => chatMode.currentMode.value,
+  async (newMode, oldMode) => {
+    // 只在 mode 真正变化时切换模型，避免初始化时触发
+    if (!initialized.value || newMode === oldMode) {
+      return
+    }
+
+    const currentProviderId = activeModel.value.providerId
+    const isCurrentAcp = currentProviderId === 'acp'
+    const shouldBeAcp = newMode === 'acp agent'
+
+    // 如果当前模型类型与 mode 不匹配，需要切换
+    if (isCurrentAcp !== shouldBeAcp) {
+      let targetModel
+      if (shouldBeAcp) {
+        // 切换到 ACP 模型
+        targetModel = pickFirstAcpModel()
+      } else {
+        // 切换到非 ACP 模型
+        targetModel = pickFirstNonAcpModel()
+      }
+
+      if (targetModel) {
+        setActiveFromEnabled(targetModel)
+        // 更新 chat config 和偏好设置
+        chatStore.updateChatConfig({
+          modelId: targetModel.id,
+          providerId: targetModel.providerId
+        })
+        configPresenter.setSetting('preferredModel', {
+          modelId: targetModel.id,
+          providerId: targetModel.providerId
+        })
+      }
+    }
+  },
+  { immediate: false }
 )
 
 const modelSelectOpen = ref(false)
@@ -436,9 +503,15 @@ onBeforeUnmount(() => {
 })
 
 const handleSend = async (content: UserMessageContent) => {
+  const chatInput = chatInputRef.value
+  const pathFromInput = chatInput?.getAgentWorkspacePath?.()
+  const pathFromStore = chatStore.chatConfig.agentWorkspacePath
+  const chatMode = chatInput?.getChatMode?.()
+  const agentWorkspacePath = pathFromInput ?? pathFromStore ?? undefined
   const threadId = await chatStore.createThread(content.text, {
     providerId: activeModel.value.providerId,
     modelId: activeModel.value.id,
+    chatMode,
     systemPrompt: systemPrompt.value,
     temperature: temperature.value,
     contextLength: contextLength.value,
@@ -451,12 +524,16 @@ const handleSend = async (content: UserMessageContent) => {
     reasoningEffort: reasoningEffort.value,
     verbosity: verbosity.value,
     enabledMcpTools: chatStore.chatConfig.enabledMcpTools,
+    agentWorkspacePath,
     acpWorkdirMap:
       pendingAcpWorkdir.value && activeModel.value.providerId === 'acp'
         ? { [activeModel.value.id]: pendingAcpWorkdir.value }
         : undefined
   } as any)
   console.log('threadId', threadId, activeModel.value)
+  if (chatMode === 'agent' || chatMode === 'acp agent') {
+    await workspaceStore.refreshFileTree()
+  }
   chatStore.sendMessage(content)
 }
 </script>

@@ -9,7 +9,7 @@
       <span
         class="flex-1 text-[12px] font-medium tracking-wide text-foreground/80 dark:text-white/80"
       >
-        {{ t('chat.acp.workspace.plan.section') }}
+        {{ t(sectionKey) }}
       </span>
       <span class="text-[10px] text-muted-foreground">
         {{ store.completedPlanCount }}/{{ store.totalPlanCount }}
@@ -56,17 +56,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import { useAcpWorkspaceStore } from '@/stores/acpWorkspace'
-import type { AcpPlanStatus } from '@shared/presenter'
+import { useWorkspaceStore } from '@/stores/workspace'
+import { useChatMode } from '@/components/chat-input/composables/useChatMode'
+import type { WorkspacePlanStatus } from '@shared/presenter'
 
 const { t } = useI18n()
-const store = useAcpWorkspaceStore()
+const store = useWorkspaceStore()
+const chatMode = useChatMode()
 const showPlan = ref(true)
 
-const getStatusIcon = (status: AcpPlanStatus): string => {
+const i18nPrefix = computed(() =>
+  chatMode.currentMode.value === 'acp agent' ? 'chat.acp.workspace' : 'chat.workspace'
+)
+
+const sectionKey = computed(() => `${i18nPrefix.value}.plan.section`)
+
+const getStatusIcon = (status: WorkspacePlanStatus): string => {
   switch (status) {
     case 'pending':
       return '○'
@@ -83,7 +91,7 @@ const getStatusIcon = (status: AcpPlanStatus): string => {
   }
 }
 
-const getStatusTextClass = (status: AcpPlanStatus): string => {
+const getStatusTextClass = (status: WorkspacePlanStatus): string => {
   switch (status) {
     case 'completed':
       return 'text-muted-foreground line-through'
