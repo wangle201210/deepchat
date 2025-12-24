@@ -28,6 +28,18 @@ const categorizedData: CategorizedData[] = [
 export const mentionSelected = ref(false)
 export const mentionData: Ref<CategorizedData[]> = ref(categorizedData)
 
+export type WorkspaceMentionHandler = {
+  searchWorkspaceFiles: (query: string) => void
+  workspaceFileResults: Ref<CategorizedData[]>
+  isEnabled: Ref<boolean>
+}
+
+let workspaceMentionHandler: WorkspaceMentionHandler | null = null
+
+export const setWorkspaceMention = (handler: WorkspaceMentionHandler | null) => {
+  workspaceMentionHandler = handler
+}
+
 // 存储文件处理回调函数
 let promptFilesHandler:
   | ((
@@ -53,24 +65,39 @@ export const setPromptFilesHandler = (handler: typeof promptFilesHandler) => {
 export const getPromptFilesHandler = () => promptFilesHandler
 
 export default {
-  allowedPrefixes: null,
+  char: '@',
+  allowedPrefixes: null, // null means allow @ after any character
   items: ({ query }) => {
-    // If there's a query, search across all categories
-    if (query) {
-      const allItems: CategorizedData[] = []
-      // Flatten the structure and search in all categories
+    // Note: TipTap mention passes query WITHOUT the trigger character (@)
+    // So if user types "@", query is ""
+    // If user types "@p", query is "p"
 
-      for (const item of mentionData.value) {
-        if (item.label.toLowerCase().includes(query.toLowerCase())) {
-          allItems.push(item)
-        }
-      }
-
-      return allItems.slice(0, 5)
+    // Collect workspace results if enabled
+    let workspaceResults: CategorizedData[] = []
+    if (workspaceMentionHandler?.isEnabled.value) {
+      workspaceMentionHandler.searchWorkspaceFiles(query)
+      workspaceResults = workspaceMentionHandler.workspaceFileResults.value
     }
 
-    // If no query, return the full list
-    return mentionData.value
+    // Collect other mention data (prompts, tools, files, resources)
+    let otherItems: CategorizedData[] = []
+    if (query) {
+      // Search across all categories
+      for (const item of mentionData.value) {
+        if (item.label.toLowerCase().includes(query.toLowerCase())) {
+          otherItems.push(item)
+        }
+      }
+      otherItems = otherItems.slice(0, 5)
+    } else {
+      // If no query, return all mention data
+      otherItems = mentionData.value
+    }
+
+    // Combine workspace results with other mention data
+    // Workspace results come first, then other mention data
+    const combined = [...workspaceResults, ...otherItems]
+    return combined
   },
 
   render: () => {
