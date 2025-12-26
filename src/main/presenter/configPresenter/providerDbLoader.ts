@@ -7,6 +7,7 @@ import {
   ProviderModel,
   sanitizeAggregate
 } from '@shared/types/model-db'
+import { resolveProviderId } from './providerId'
 import { eventBus, SendTarget } from '@/eventbus'
 import { PROVIDER_DB_EVENTS } from '@/events'
 
@@ -66,7 +67,8 @@ export class ProviderDbLoader {
   getProvider(providerId: string): ProviderEntry | undefined {
     const db = this.getDb()
     if (!db) return undefined
-    return db.providers?.[providerId]
+    const resolvedId = resolveProviderId(providerId)
+    return db.providers?.[resolvedId ?? providerId]
   }
 
   getModel(providerId: string, modelId: string): ProviderModel | undefined {
