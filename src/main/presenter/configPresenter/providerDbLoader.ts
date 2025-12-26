@@ -131,8 +131,8 @@ export class ProviderDbLoader {
 
   private getTtlHours(): number {
     const env = process.env.PROVIDER_DB_TTL_HOURS
-    const v = env ? Number(env) : 24
-    return Number.isFinite(v) && v > 0 ? v : 24
+    const v = env ? Number(env) : 12
+    return Number.isFinite(v) && v > 0 ? v : 12
   }
 
   private getProviderDbUrl(): string {
