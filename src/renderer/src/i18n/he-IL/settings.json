@@ -882,7 +882,7 @@
     "builtinSectionDescription": "לכל סוכן מובנה יכולים להיות מספר פרופילי הפעלה. רק סוכנים מופעלים עם פרופיל פעיל מופיעים ברשימת המודלים.",
     "builtinHint": "הפעל את {name} עם הגדרות אלה.",
     "disabledBadge": "מושבת",
-    "manageProfiles": "נהל פרופילים",
+    "manageProfiles": "פרופילים",
     "addProfile": "הוסף פרופיל",
     "activeProfile": "פרופיל פעיל",
     "profilePlaceholder": "בחר פרופיל",
@@ -1001,7 +1001,10 @@
       "sending": "שְׁלִיחָה...",
       "title": "איתור באגים של ACP",
       "workdirPlaceholder": "השאר ריק כדי להשתמש בספריית העבודה המוגדרת כברירת מחדל"
-    }
+    },
+    "mcpAccessBadge": "MCP {count}",
+    "mcpAccessEmpty": "כרגע אין MCP אופציונלי.",
+    "mcpAccessTitle": "MCPs זמינים"
   },
   "rateLimit": {
     "title": "מגבלת קצב (Rate Limit)",

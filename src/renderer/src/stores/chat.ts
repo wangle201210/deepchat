@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import type {
   UserMessageContent,
   AssistantMessageBlock,
@@ -8,25 +8,46 @@ import type {
   Message
 } from '@shared/chat'
 import { finalizeAssistantMessageBlocks } from '@shared/chat/messageBlocks'
-import type { CONVERSATION, CONVERSATION_SETTINGS } from '@shared/presenter'
+import type { CONVERSATION, CONVERSATION_SETTINGS, ParentSelection } from '@shared/presenter'
 import { usePresenter } from '@/composables/usePresenter'
-import { CONVERSATION_EVENTS, DEEPLINK_EVENTS, MEETING_EVENTS, STREAM_EVENTS } from '@/events'
+import {
+  CONVERSATION_EVENTS,
+  CONFIG_EVENTS,
+  DEEPLINK_EVENTS,
+  MEETING_EVENTS,
+  STREAM_EVENTS
+} from '@/events'
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
 import { useSoundStore } from './sound'
 import sfxfcMp3 from '/sounds/sfx-fc.mp3?url'
 import sfxtyMp3 from '/sounds/sfx-typing.mp3?url'
 import { downloadBlob } from '@/lib/download'
+import { useChatMode } from '@/components/chat-input/composables/useChatMode'
 
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
+
+type PendingContextMention = {
+  id: string
+  label: string
+  category: 'context'
+  content: string
+}
+
+type PendingScrollTarget = {
+  messageId?: string
+  childConversationId?: string
+}
 
 export const useChatStore = defineStore('chat', () => {
   const threadP = usePresenter('threadPresenter')
   const windowP = usePresenter('windowPresenter')
   const notificationP = usePresenter('notificationPresenter')
   const tabP = usePresenter('tabPresenter')
+  const configP = usePresenter('configPresenter')
   const { t } = useI18n()
+  const { currentMode } = useChatMode()
 
   const soundStore = useSoundStore()
 
@@ -42,6 +63,9 @@ export const useChatStore = defineStore('chat', () => {
   const generatingThreadIds = ref(new Set<string>())
   const isSidebarOpen = ref(false)
   const isMessageNavigationOpen = ref(false)
+  const childThreadsByMessageId = ref<Map<string, CONVERSATION[]>>(new Map())
+  const pendingContextMentions = ref<Map<string, PendingContextMention>>(new Map())
+  const pendingScrollTargetByConversation = ref<Map<string, PendingScrollTarget>>(new Map())
 
   // 使用Map来存储会话工作状态
   const threadsWorkingStatusMap = ref<Map<number, Map<string, WorkingStatus>>>(new Map())
@@ -68,7 +92,8 @@ export const useChatStore = defineStore('chat', () => {
     reasoningEffort: undefined,
     verbosity: undefined,
     selectedVariantsMap: {},
-    acpWorkdirMap: {}
+    acpWorkdirMap: {},
+    agentWorkspacePath: null
   })
 
   // Deeplink 消息缓存
@@ -115,6 +140,55 @@ export const useChatStore = defineStore('chat', () => {
     return threads.value.flatMap((t) => t.dtThreads).find((t) => t.id === getActiveThreadId())
   })
 
+  const activeContextMention = computed(() => {
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) return null
+    return pendingContextMentions.value.get(activeThreadId) ?? null
+  })
+
+  const activePendingScrollTarget = computed(() => {
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) return null
+    return pendingScrollTargetByConversation.value.get(activeThreadId) ?? null
+  })
+
+  const isAcpMode = computed(() => currentMode.value === 'acp agent')
+  const activeAcpAgentId = computed(() =>
+    isAcpMode.value ? chatConfig.value.modelId?.trim() || null : null
+  )
+
+  const activeAgentMcpSelectionsState = ref<string[] | null>(null)
+  let activeAgentMcpSelectionsRequestId = 0
+
+  const refreshActiveAgentMcpSelections = async () => {
+    const requestId = ++activeAgentMcpSelectionsRequestId
+
+    if (!isAcpMode.value || !activeAcpAgentId.value) {
+      activeAgentMcpSelectionsState.value = null
+      return
+    }
+
+    try {
+      const selections = await configP.getAgentMcpSelections(activeAcpAgentId.value)
+      if (activeAgentMcpSelectionsRequestId !== requestId) return
+      activeAgentMcpSelectionsState.value = Array.isArray(selections) ? selections : []
+    } catch (error) {
+      if (activeAgentMcpSelectionsRequestId !== requestId) return
+      console.warn('[Chat Store] Failed to load ACP agent MCP selections:', error)
+      activeAgentMcpSelectionsState.value = []
+    }
+  }
+
+  watch(
+    [isAcpMode, activeAcpAgentId],
+    () => {
+      void refreshActiveAgentMcpSelections()
+    },
+    { immediate: true }
+  )
+
+  const activeAgentMcpSelections = computed(() => activeAgentMcpSelectionsState.value)
+
   const variantAwareMessages = computed((): Array<AssistantMessage | UserMessage> => {
     const messages = getMessages()
     const currentSelectedVariants = selectedVariantsMap.value
@@ -152,6 +226,50 @@ export const useChatStore = defineStore('chat', () => {
     }) as Array<AssistantMessage | UserMessage>
   })
 
+  const formatContextLabel = (value: string) => {
+    const normalized = value.trim().replace(/\s+/g, ' ')
+    if (!normalized) return 'context'
+    const maxLength = 48
+    if (normalized.length <= maxLength) return normalized
+    return `${normalized.slice(0, maxLength)}...`
+  }
+
+  const setPendingContextMention = (threadId: string, content: string, label?: string) => {
+    if (!threadId || !content.trim()) {
+      return
+    }
+    const displayLabel = formatContextLabel(label ?? '')
+    const next = new Map(pendingContextMentions.value)
+    next.set(threadId, {
+      id: displayLabel,
+      label: displayLabel,
+      category: 'context',
+      content
+    })
+    pendingContextMentions.value = next
+  }
+
+  const consumeContextMention = (threadId: string) => {
+    if (!threadId) return
+    const next = new Map(pendingContextMentions.value)
+    next.delete(threadId)
+    pendingContextMentions.value = next
+  }
+
+  const queueScrollTarget = (conversationId: string, target: PendingScrollTarget) => {
+    if (!conversationId || (!target.messageId && !target.childConversationId)) return
+    const next = new Map(pendingScrollTargetByConversation.value)
+    next.set(conversationId, target)
+    pendingScrollTargetByConversation.value = next
+  }
+
+  const consumePendingScrollMessage = (conversationId: string) => {
+    if (!conversationId) return
+    const next = new Map(pendingScrollTargetByConversation.value)
+    next.delete(conversationId)
+    pendingScrollTargetByConversation.value = next
+  }
+
   // Actions
   const createNewEmptyThread = async () => {
     try {
@@ -181,6 +299,12 @@ export const useChatStore = defineStore('chat', () => {
         }
       }
 
+      if (normalizedSettings.agentWorkspacePath === undefined) {
+        const pendingWorkspacePath = chatConfig.value.agentWorkspacePath ?? null
+        if (pendingWorkspacePath) {
+          normalizedSettings.agentWorkspacePath = pendingWorkspacePath
+        }
+      }
       const threadId = await threadP.createConversation(title, normalizedSettings, getTabId())
       // 因为 createConversation 内部已经调用了 setActiveConversation
       // 并且可以确定是为当前tab激活，所以在这里可以直接、安全地更新本地状态
@@ -201,12 +325,38 @@ export const useChatStore = defineStore('chat', () => {
     await threadP.setActiveConversation(threadId, tabId)
   }
 
+  const openThreadInNewTab = async (
+    threadId: string,
+    options?: { messageId?: string; childConversationId?: string }
+  ) => {
+    if (!threadId) return
+    try {
+      const tabId = getTabId()
+      await threadP.openConversationInNewTab({
+        conversationId: threadId,
+        tabId,
+        messageId: options?.messageId,
+        childConversationId: options?.childConversationId
+      })
+    } catch (error) {
+      console.error('Failed to open thread in new tab:', error)
+    }
+  }
+
   const clearActiveThread = async () => {
     if (!getActiveThreadId()) return
     const tabId = getTabId()
     await threadP.clearActiveThread(tabId)
     setActiveThreadId(null)
     selectedVariantsMap.value.clear()
+    childThreadsByMessageId.value = new Map()
+    pendingContextMentions.value = new Map()
+    pendingScrollTargetByConversation.value = new Map()
+    chatConfig.value = {
+      ...chatConfig.value,
+      acpWorkdirMap: {},
+      agentWorkspacePath: null
+    }
   }
 
   const setAcpWorkdirPreference = (agentId: string, workdir: string | null) => {
@@ -219,6 +369,11 @@ export const useChatStore = defineStore('chat', () => {
       delete nextMap[agentId]
     }
     chatConfig.value = { ...chatConfig.value, acpWorkdirMap: nextMap }
+  }
+
+  const setAgentWorkspacePreference = (workspacePath: string | null) => {
+    const nextPath = workspacePath?.trim() ? workspacePath : null
+    chatConfig.value = { ...chatConfig.value, agentWorkspacePath: nextPath }
   }
 
   // 处理消息的 extra 信息
@@ -261,10 +416,73 @@ export const useChatStore = defineStore('chat', () => {
     return message
   }
 
+  const getMessageTextForContext = (message: Message | null): string => {
+    if (!message) return ''
+    if (typeof message.content === 'string') {
+      return message.content
+    }
+    if (Array.isArray(message.content)) {
+      return message.content
+        .map((block) => (typeof block.content === 'string' ? block.content : ''))
+        .join('')
+    }
+    const userContent = message.content as UserMessageContent
+    if (userContent.text) {
+      return userContent.text
+    }
+    if (userContent.content && Array.isArray(userContent.content)) {
+      return userContent.content.map((block) => block.content || '').join('')
+    }
+    return ''
+  }
+
+  const refreshChildThreadsForActiveThread = async () => {
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) {
+      childThreadsByMessageId.value = new Map()
+      return
+    }
+
+    const messageIds = getMessages().map((message) => message.id)
+    if (messageIds.length === 0) {
+      childThreadsByMessageId.value = new Map()
+      return
+    }
+
+    const childThreads = (await threadP.listChildConversationsByMessageIds(messageIds)) || []
+    const nextMap = new Map<string, CONVERSATION[]>()
+    for (const child of childThreads) {
+      if (!child.parentMessageId) continue
+      if (child.parentConversationId && child.parentConversationId !== activeThreadId) continue
+      const existing = nextMap.get(child.parentMessageId) ?? []
+      existing.push(child)
+      nextMap.set(child.parentMessageId, existing)
+    }
+    childThreadsByMessageId.value = nextMap
+  }
+
+  const maybeQueueContextMention = async () => {
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) return
+    if (pendingContextMentions.value.has(activeThreadId)) return
+    if (getMessages().length > 0) return
+
+    const active = activeThread.value
+    if (!active?.parentMessageId) return
+
+    const parentMessage = await threadP.getMessage(active.parentMessageId)
+    const parentText = getMessageTextForContext(parentMessage)
+    if (!parentText.trim()) return
+
+    const selectionLabel = active.parentSelection?.selectedText ?? ''
+    setPendingContextMention(activeThreadId, parentText, selectionLabel)
+  }
+
   const loadMessages = async () => {
     if (!getActiveThreadId()) return
 
     try {
+      childThreadsByMessageId.value = new Map()
       const result = await threadP.getMessages(getActiveThreadId()!, 1, 100)
       // 合并数据库消息和缓存中的消息
       const mergedMessages = [...result.list]
@@ -306,6 +524,8 @@ export const useChatStore = defineStore('chat', () => {
           | AssistantMessage[]
           | UserMessage[]
       )
+      await refreshChildThreadsForActiveThread()
+      await maybeQueueContextMention()
     } catch (error) {
       console.error('Failed to load messages:', error)
       throw error
@@ -423,6 +643,48 @@ export const useChatStore = defineStore('chat', () => {
       return newThreadId
     } catch (error) {
       console.error('Failed to create thread branch:', error)
+      throw error
+    }
+  }
+
+  const createChildThreadFromSelection = async (payload: {
+    parentMessageId: string
+    parentSelection: ParentSelection
+  }) => {
+    const activeThread = getActiveThreadId()
+    if (!activeThread) return
+
+    try {
+      const parentThreadId = activeThread
+      const parentConversation = await threadP.getConversation(activeThread)
+      const selectionSnippet = payload.parentSelection.selectedText
+        .trim()
+        .replace(/\s+/g, ' ')
+        .slice(0, 48)
+      const title = selectionSnippet
+        ? `${parentConversation.title} - ${selectionSnippet}`
+        : parentConversation.title
+
+      const newThreadId = await threadP.createChildConversationFromSelection({
+        parentConversationId: activeThread,
+        parentMessageId: payload.parentMessageId,
+        parentSelection: payload.parentSelection,
+        title,
+        settings: parentConversation.settings,
+        tabId: getTabId(),
+        openInNewTab: true
+      })
+
+      if (!newThreadId) {
+        return
+      }
+
+      if (getActiveThreadId() === parentThreadId) {
+        await refreshChildThreadsForActiveThread()
+      }
+      return newThreadId
+    } catch (error) {
+      console.error('Failed to create child thread from selection:', error)
       throw error
     }
   }
@@ -895,7 +1157,8 @@ export const useChatStore = defineStore('chat', () => {
   const updateChatConfig = async (newConfig: Partial<CONVERSATION_SETTINGS>) => {
     chatConfig.value = { ...chatConfig.value, ...newConfig }
     await saveChatConfig()
-    await loadChatConfig() // 加载对话配置
+    // Removed loadChatConfig() call to avoid triggering watch loops
+    // loadChatConfig() should only be called when switching conversations, not after every config update
   }
 
   const deleteMessage = async (messageId: string) => {
@@ -1136,6 +1399,13 @@ export const useChatStore = defineStore('chat', () => {
     }
   }
 
+  const clearSelectedVariantForMessage = (mainMessageId: string): boolean => {
+    if (!mainMessageId) return false
+    if (!selectedVariantsMap.value.has(mainMessageId)) return false
+    void updateSelectedVariant(mainMessageId, null)
+    return true
+  }
+
   /////////////////////////////////////////////////////////////////////////////////////////////////////////
   let typewriterAudio: HTMLAudioElement | null = null
   let toolcallAudio: HTMLAudioElement | null = null
@@ -1318,6 +1588,22 @@ export const useChatStore = defineStore('chat', () => {
       }
       setActiveThreadId(null)
     })
+
+    window.electron.ipcRenderer.on(CONVERSATION_EVENTS.SCROLL_TO_MESSAGE, (_, payload) => {
+      if (!payload?.conversationId) {
+        return
+      }
+      queueScrollTarget(payload.conversationId, {
+        messageId: payload.messageId,
+        childConversationId: payload.childConversationId
+      })
+    })
+
+    window.electron.ipcRenderer.on(CONFIG_EVENTS.MODEL_LIST_CHANGED, (_, providerId?: string) => {
+      if (providerId === 'acp') {
+        void refreshActiveAgentMcpSelections()
+      }
+    })
   }
 
   onMounted(() => {
@@ -1479,9 +1765,14 @@ export const useChatStore = defineStore('chat', () => {
     messagesMap,
     generatingThreadIds,
     selectedVariantsMap,
+    childThreadsByMessageId,
     // Getters
     activeThread,
     variantAwareMessages,
+    activeContextMention,
+    activePendingScrollTarget,
+    isAcpMode,
+    activeAgentMcpSelections,
     // Actions
     createThread,
     setActiveThread,
@@ -1495,6 +1786,7 @@ export const useChatStore = defineStore('chat', () => {
     chatConfig,
     updateChatConfig,
     setAcpWorkdirPreference,
+    setAgentWorkspacePreference,
     retryMessage,
     deleteMessage,
     clearActiveThread,
@@ -1504,6 +1796,11 @@ export const useChatStore = defineStore('chat', () => {
     deeplinkCache,
     clearDeeplinkCache,
     forkThread,
+    createChildThreadFromSelection,
+    openThreadInNewTab,
+    consumeContextMention,
+    consumePendingScrollMessage,
+    clearSelectedVariantForMessage,
     updateThreadWorkingStatus,
     getThreadWorkingStatus,
     threadsWorkingStatusMap,

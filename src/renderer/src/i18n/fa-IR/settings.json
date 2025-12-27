@@ -926,7 +926,7 @@
     "customSectionTitle": "عامل سفارشی",
     "disabledBadge": "فعال نیست",
     "loading": "در حال بارگیری داده های ACP...",
-    "manageProfiles": "پیکربندی مدیریت",
+    "manageProfiles": "پروفایل ها",
     "none": "هیچ کدام",
     "profileDialog": {
       "addBuiltinTitle": "پیکربندی {name} را اضافه کنید",
@@ -1027,6 +1027,9 @@
       "sending": "ارسال...",
       "title": "اشکال زدایی ACP",
       "workdirPlaceholder": "برای استفاده از دایرکتوری کاری پیش فرض، خالی بگذارید"
-    }
+    },
+    "mcpAccessBadge": "MCP {count}",
+    "mcpAccessEmpty": "در حال حاضر هیچ MCP اختیاری وجود ندارد.",
+    "mcpAccessTitle": "MCPهای موجود"
   }
 }

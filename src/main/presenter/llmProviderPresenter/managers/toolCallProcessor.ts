@@ -6,10 +6,18 @@ import {
   MCPToolResponse,
   ModelConfig
 } from '@shared/presenter'
+import { isNonRetryableError } from './errorClassification'
 
 interface ToolCallProcessorOptions {
   getAllToolDefinitions: (context: ToolCallExecutionContext) => Promise<MCPToolDefinition[]>
   callTool: (request: MCPToolCall) => Promise<{ content: unknown; rawData: MCPToolResponse }>
+  onToolCallFinished?: (info: {
+    toolName: string
+    toolCallId: string
+    toolServerName?: string
+    conversationId?: string
+    status: 'success' | 'error' | 'permission'
+  }) => void
 }
 
 interface ToolCallExecutionContext {
@@ -21,6 +29,7 @@ interface ToolCallExecutionContext {
   abortSignal: AbortSignal
   currentToolCallCount: number
   maxToolCalls: number
+  conversationId?: string
 }
 
 interface ToolCallProcessResult {
@@ -92,6 +101,21 @@ export class ToolCallProcessor {
         continue
       }
 
+      const notifyToolCallFinished = (status: 'success' | 'error' | 'permission') => {
+        if (!this.options.onToolCallFinished) return
+        try {
+          this.options.onToolCallFinished({
+            toolName: toolCall.name,
+            toolCallId: toolCall.id,
+            toolServerName: toolDef.server?.name,
+            conversationId: context.conversationId,
+            status
+          })
+        } catch (error) {
+          console.warn('[ToolCallProcessor] onToolCallFinished handler failed:', error)
+        }
+      }
+
       const mcpToolInput: MCPToolCall = {
         id: toolCall.id,
         type: 'function',
@@ -99,7 +123,8 @@ export class ToolCallProcessor {
           name: toolCall.name,
           arguments: toolCall.arguments
         },
-        server: toolDef.server
+        server: toolDef.server,
+        conversationId: context.conversationId
       }
 
       yield {
@@ -118,10 +143,10 @@ export class ToolCallProcessor {
 
       try {
         const toolResponse = await this.options.callTool(mcpToolInput)
+        const requiresPermission = Boolean(toolResponse.rawData?.requiresPermission)
 
-        if (context.abortSignal.aborted) break
-
-        if (toolResponse.rawData?.requiresPermission) {
+        if (requiresPermission) {
+          notifyToolCallFinished('permission')
           console.log(
             `[Agent Loop] Permission required for tool ${toolCall.name}, creating permission request`
           )
@@ -145,6 +170,10 @@ export class ToolCallProcessor {
           needContinueConversation = false
           break
         }
+
+        notifyToolCallFinished('success')
+
+        if (context.abortSignal.aborted) break
 
         const supportsFunctionCall = context.modelConfig?.functionCall || false
 
@@ -194,6 +223,7 @@ export class ToolCallProcessor {
           }
         }
       } catch (toolError) {
+        notifyToolCallFinished('error')
         if (context.abortSignal.aborted) break
 
         console.error(
@@ -201,6 +231,11 @@ export class ToolCallProcessor {
           toolError
         )
         const errorMessage = toolError instanceof Error ? toolError.message : String(toolError)
+
+        // Check if error is non-retryable (should stop the loop)
+        const errorForClassification: Error | string =
+          toolError instanceof Error ? toolError : String(toolError)
+        const isNonRetryable = isNonRetryableError(errorForClassification)
 
         this.appendToolError(
           context.conversationMessages,
@@ -223,6 +258,14 @@ export class ToolCallProcessor {
             tool_call_server_description: toolDef.server.description
           }
         }
+
+        // If error is non-retryable, stop the loop
+        // Otherwise, keep needContinueConversation = true (default) to let LLM decide
+        if (isNonRetryable) {
+          needContinueConversation = false
+          break
+        }
+        // For retryable errors, continue the loop (needContinueConversation remains true)
       }
     }
 
@@ -266,9 +309,10 @@ export class ToolCallProcessor {
       })
     }
 
+    const toolContent = this.stringifyToolContent(toolResponse.content)
     conversationMessages.push({
       role: 'tool',
-      content: this.stringifyToolContent(toolResponse.content),
+      content: toolContent,
       tool_call_id: toolCall.id
     })
   }

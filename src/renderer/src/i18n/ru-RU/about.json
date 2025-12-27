@@ -7,7 +7,7 @@
   "checkUpdateButton": "Проверить обновления",
   "updateChannel": "Канал обновлений",
   "stableChannel": "Стабильный",
-  "canaryChannel": "Канареечный",
+  "betaChannel": "Beta",
   "deviceInfo": {
     "title": "Сведения об устройстве",
     "platform": "Платформа",
@@ -15,5 +15,6 @@
     "cpuModel": "Модель процессора",
     "totalMemory": "Общий объем памяти",
     "osVersion": "Версия системы"
-  }
+  },
+  "feedbackButton": "Обратная связь"
 }

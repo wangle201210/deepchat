@@ -1,23 +1,23 @@
 /**
- * ACP Workspace Types
- * Types for the ACP workspace panel functionality
+ * Workspace Types
+ * Types for the generic workspace panel functionality (supports all Agent modes)
  */
 
 /**
  * Plan entry status
  */
-export type AcpPlanStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped'
+export type WorkspacePlanStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped'
 
 /**
- * Plan entry - task from ACP agent
+ * Plan entry - task from Agent
  */
-export type AcpPlanEntry = {
+export type WorkspacePlanEntry = {
   /** Unique identifier (system generated) */
   id: string
   /** Task content description */
   content: string
   /** Task status */
-  status: AcpPlanStatus
+  status: WorkspacePlanStatus
   /** Priority (optional, from agent) */
   priority?: string | null
   /** Update timestamp */
@@ -27,7 +27,7 @@ export type AcpPlanEntry = {
 /**
  * File tree node
  */
-export type AcpFileNode = {
+export type WorkspaceFileNode = {
   /** File/directory name */
   name: string
   /** Full path */
@@ -35,15 +35,15 @@ export type AcpFileNode = {
   /** Whether it's a directory */
   isDirectory: boolean
   /** Child nodes (directories only) */
-  children?: AcpFileNode[]
+  children?: WorkspaceFileNode[]
   /** Whether expanded (frontend state) */
   expanded?: boolean
 }
 
 /**
- * Terminal output snippet - from ACP tool_call terminal output
+ * Terminal output snippet - from Agent tool_call terminal output
  */
-export type AcpTerminalSnippet = {
+export type WorkspaceTerminalSnippet = {
   /** Unique identifier */
   id: string
   /** Executed command */
@@ -61,9 +61,9 @@ export type AcpTerminalSnippet = {
 }
 
 /**
- * Raw plan entry from acpContentMapper
+ * Raw plan entry from agent content mapper
  */
-export type AcpRawPlanEntry = {
+export type WorkspaceRawPlanEntry = {
   content: string
   status?: string | null
   priority?: string | null
@@ -72,15 +72,27 @@ export type AcpRawPlanEntry = {
 /**
  * Workspace Presenter interface
  */
-export interface IAcpWorkspacePresenter {
+export interface IWorkspacePresenter {
   /**
-   * Register a workdir as allowed for reading (security boundary)
+   * Register a workspace path as allowed for reading (security boundary)
+   * @param workspacePath Workspace directory path
+   */
+  registerWorkspace(workspacePath: string): Promise<void>
+
+  /**
+   * Register a workdir path as allowed for reading (ACP alias)
    * @param workdir Workspace directory path
    */
   registerWorkdir(workdir: string): Promise<void>
 
   /**
-   * Unregister a workdir
+   * Unregister a workspace path
+   * @param workspacePath Workspace directory path
+   */
+  unregisterWorkspace(workspacePath: string): Promise<void>
+
+  /**
+   * Unregister a workdir path (ACP alias)
    * @param workdir Workspace directory path
    */
   unregisterWorkdir(workdir: string): Promise<void>
@@ -91,14 +103,14 @@ export interface IAcpWorkspacePresenter {
    * @param dirPath Directory path
    * @returns Array of file tree nodes (directories have children = undefined)
    */
-  readDirectory(dirPath: string): Promise<AcpFileNode[]>
+  readDirectory(dirPath: string): Promise<WorkspaceFileNode[]>
 
   /**
    * Expand a directory to load its children (lazy loading)
    * @param dirPath Directory path to expand
    * @returns Array of child file tree nodes
    */
-  expandDirectory(dirPath: string): Promise<AcpFileNode[]>
+  expandDirectory(dirPath: string): Promise<WorkspaceFileNode[]>
 
   /**
    * Reveal a file or directory in the system file manager
@@ -116,25 +128,32 @@ export interface IAcpWorkspacePresenter {
    * Get plan entries for a conversation
    * @param conversationId Conversation ID
    */
-  getPlanEntries(conversationId: string): Promise<AcpPlanEntry[]>
+  getPlanEntries(conversationId: string): Promise<WorkspacePlanEntry[]>
 
   /**
-   * Update plan entries for a conversation (called internally by ACP events)
+   * Update plan entries for a conversation (called internally by Agent events)
    * @param conversationId Conversation ID
    * @param entries Raw plan entries from agent
    */
-  updatePlanEntries(conversationId: string, entries: AcpRawPlanEntry[]): Promise<void>
+  updatePlanEntries(conversationId: string, entries: WorkspaceRawPlanEntry[]): Promise<void>
 
   /**
-   * Emit terminal snippet (called internally by ACP events)
+   * Emit terminal snippet (called internally by Agent events)
    * @param conversationId Conversation ID
    * @param snippet Terminal snippet
    */
-  emitTerminalSnippet(conversationId: string, snippet: AcpTerminalSnippet): Promise<void>
+  emitTerminalSnippet(conversationId: string, snippet: WorkspaceTerminalSnippet): Promise<void>
 
   /**
    * Clear workspace data for a conversation
    * @param conversationId Conversation ID
    */
   clearWorkspaceData(conversationId: string): Promise<void>
+
+  /**
+   * Search workspace files by query (query does not include @)
+   * @param workspacePath Workspace directory path
+   * @param query Search query (plain string)
+   */
+  searchFiles(workspacePath: string, query: string): Promise<WorkspaceFileNode[]>
 }

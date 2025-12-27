@@ -11,9 +11,10 @@
     "osVersion": "System Version"
   },
   "disclaimerButton": "Disclaimer",
+  "feedbackButton": "Feedback",
   "disclaimerTitle": "Terms of Use Statement",
   "checkUpdateButton": "Check for Updates",
   "updateChannel": "Update Channel",
   "stableChannel": "Stable",
-  "canaryChannel": "Canary"
+  "betaChannel": "Beta"
 }

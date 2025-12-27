@@ -10,10 +10,10 @@
         />
       </div>
 
-      <!-- ACP Workspace 面板 -->
+      <!-- Workspace 面板 (for agent and acp agent modes) -->
       <Transition name="workspace-slide">
-        <AcpWorkspaceView
-          v-if="showAcpWorkspace"
+        <WorkspaceView
+          v-if="showWorkspace"
           class="h-full flex-shrink-0"
           @append-file-path="handleAppendFilePath"
         />
@@ -55,15 +55,16 @@
 import { ref, onMounted, onUnmounted, watch, computed, nextTick } from 'vue'
 import MessageList from './message/MessageList.vue'
 import ChatInput from './chat-input/ChatInput.vue'
-import AcpWorkspaceView from './acp-workspace/AcpWorkspaceView.vue'
+import WorkspaceView from './workspace/WorkspaceView.vue'
 import { useRoute } from 'vue-router'
 import { UserMessageContent } from '@shared/chat'
 import { STREAM_EVENTS, SHORTCUT_EVENTS } from '@/events'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 import { useChatStore } from '@/stores/chat'
-import { useAcpWorkspaceStore } from '@/stores/acpWorkspace'
+import { useWorkspaceStore } from '@/stores/workspace'
 import { useCleanDialog } from '@/composables/message/useCleanDialog'
 import { useI18n } from 'vue-i18n'
+import type { CategorizedData } from '@/components/editor/mention/suggestion'
 import {
   Dialog,
   DialogContent,
@@ -78,11 +79,11 @@ const { t } = useI18n()
 const route = useRoute()
 const uiSettingsStore = useUiSettingsStore()
 const chatStore = useChatStore()
-const acpWorkspaceStore = useAcpWorkspaceStore()
+const workspaceStore = useWorkspaceStore()
 const cleanDialog = useCleanDialog()
 
-// Show workspace only in ACP mode and when open
-const showAcpWorkspace = computed(() => acpWorkspaceStore.isAcpMode && acpWorkspaceStore.isOpen)
+// Show workspace only in agent mode and when open
+const showWorkspace = computed(() => workspaceStore.isAgentMode && workspaceStore.isOpen)
 
 const messageList = ref()
 const chatInput = ref()
@@ -110,8 +111,8 @@ const formatFilePathForEditor = (filePath: string) =>
   window.api?.formatPathForInput?.(filePath) ?? (/\s/.test(filePath) ? `"${filePath}"` : filePath)
 
 const toRelativePath = (filePath: string) => {
-  const workdir = acpWorkspaceStore.currentWorkdir ?? undefined
-  return window.api?.toRelativePath?.(filePath, workdir) ?? filePath
+  const workspacePath = workspaceStore.currentWorkspacePath ?? undefined
+  return window.api?.toRelativePath?.(filePath, workspacePath) ?? filePath
 }
 
 const handleAppendFilePath = (filePath: string) => {
@@ -144,6 +145,27 @@ const onStreamError = (_, _msg) => {
 const onCleanChatHistory = () => {
   cleanDialog.open()
 }
+
+watch(
+  () => [chatStore.activeContextMention, chatInput.value] as const,
+  ([mention, input]) => {
+    if (!mention || !input) return
+    const activeThreadId = chatStore.getActiveThreadId()
+    if (!activeThreadId) return
+    const mentionData: CategorizedData = {
+      id: mention.id,
+      label: mention.label,
+      category: mention.category,
+      type: 'item',
+      content: mention.content
+    }
+    const inserted = input.appendCustomMention?.(mentionData)
+    if (inserted) {
+      chatStore.consumeContextMention(activeThreadId)
+    }
+  },
+  { immediate: true }
+)
 
 // 监听流式响应
 onMounted(async () => {

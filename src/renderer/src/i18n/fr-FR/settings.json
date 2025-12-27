@@ -953,7 +953,7 @@
     "profilePlaceholder": "Veuillez sélectionner la configuration",
     "profileSwitched": "Configuration commutée",
     "disabledBadge": "Non activé",
-    "manageProfiles": "Gestion de la configuration",
+    "manageProfiles": "Profils",
     "initialize": "initialisation",
     "initializeDescription": "Ouvert dans le terminal et commande d'initialisation exécutée",
     "initializeFailed": "L'initialisation a échoué",
@@ -1027,6 +1027,9 @@
       "sending": "Envoi...",
       "title": "Débogage ACP",
       "workdirPlaceholder": "Laissez vide pour utiliser le répertoire de travail par défaut"
-    }
+    },
+    "mcpAccessBadge": "MCP {count}",
+    "mcpAccessEmpty": "Il n’existe actuellement aucun MCP facultatif.",
+    "mcpAccessTitle": "MCP disponibles"
   }
 }

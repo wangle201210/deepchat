@@ -35,15 +35,18 @@ export type {
 
 export type * from './agent-provider'
 
-// ACP Workspace types
+// Generic Workspace types (for all Agent modes)
 export type {
-  AcpPlanStatus,
-  AcpPlanEntry,
-  AcpFileNode,
-  AcpTerminalSnippet,
-  AcpRawPlanEntry,
-  IAcpWorkspacePresenter
-} from './acp-workspace'
+  WorkspacePlanStatus,
+  WorkspacePlanEntry,
+  WorkspaceFileNode,
+  WorkspaceTerminalSnippet,
+  WorkspaceRawPlanEntry,
+  IWorkspacePresenter
+} from './workspace'
+
+// Tool Presenter types
+export type { IToolPresenter } from './tool.presenter'
 
 // Re-export legacy types temporarily for compatibility
 export * from './legacy.presenters'

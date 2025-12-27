@@ -48,7 +48,7 @@ export class TabPresenter implements ITabPresenter {
     this.windowTypes.set(windowId, type)
   }
 
-  private getWindowType(windowId: number): 'chat' | 'browser' {
+  getWindowType(windowId: number): 'chat' | 'browser' {
     return this.windowTypes.get(windowId) ?? TabPresenter.DEFAULT_WINDOW_TYPE
   }
 
@@ -180,9 +180,14 @@ export class TabPresenter implements ITabPresenter {
     }
 
     const webPreferences: WebPreferences = {
-      preload: join(__dirname, '../preload/index.mjs'),
       sandbox: false,
       devTools: is.dev
+    }
+
+    // 对于 browser 窗口，不注入 preload（安全考虑）
+    // 对于 chat 窗口，注入 preload
+    if (windowType !== 'browser') {
+      webPreferences.preload = join(__dirname, '../preload/index.mjs')
     }
 
     if (windowType === 'browser') {
@@ -211,7 +216,9 @@ export class TabPresenter implements ITabPresenter {
       view.webContents.loadURL(url)
     }
 
-    if (is.dev) {
+    // 对于 browser 窗口，不自动打开 DevTools
+    // 对于 chat 窗口，开发模式下可以自动打开
+    if (is.dev && windowType !== 'browser') {
       view.webContents.openDevTools({ mode: 'detach' })
     }
 
@@ -654,6 +661,7 @@ export class TabPresenter implements ITabPresenter {
 
     // 检查是否是窗口的第一个标签页
     const isFirstTab = this.windowTabs.get(windowId)?.length === 1
+    const windowType = this.getWindowType(windowId)
 
     // 页面加载完成
     if (isFirstTab) {
@@ -661,12 +669,16 @@ export class TabPresenter implements ITabPresenter {
       // Once did-finish-load happens, emit first content loaded
       webContents.once('did-finish-load', () => {
         eventBus.sendToMain(WINDOW_EVENTS.FIRST_CONTENT_LOADED, windowId)
-        setTimeout(() => {
-          const windowPresenter = presenter.windowPresenter as any
-          if (windowPresenter && typeof windowPresenter.focusActiveTab === 'function') {
-            windowPresenter.focusActiveTab(windowId, 'initial')
-          }
-        }, 300)
+        // Only call focusActiveTab for chat windows, not browser windows
+        // Browser windows should stay hidden when created via tool calls
+        if (windowType !== 'browser') {
+          setTimeout(() => {
+            const windowPresenter = presenter.windowPresenter as any
+            if (windowPresenter && typeof windowPresenter.focusActiveTab === 'function') {
+              windowPresenter.focusActiveTab(windowId, 'initial')
+            }
+          }, 300)
+        }
       })
     }
 
@@ -743,7 +755,16 @@ export class TabPresenter implements ITabPresenter {
     // Re-adding ensures it's on top in most view hierarchies
     window.contentView.addChildView(view)
     this.updateViewBounds(window, view)
-    if (!view.webContents.isDestroyed()) {
+    const windowType = this.getWindowType(window.id)
+    const isVisible = window.isVisible()
+    const isFocused = window.isFocused()
+
+    // For browser windows, only focus if window is already focused
+    // This prevents focus stealing when tools call activateTab() on hidden browser windows
+    // For chat windows, focus if visible (normal behavior)
+    const shouldFocus = windowType === 'browser' ? isVisible && isFocused : isVisible
+
+    if (shouldFocus && !view.webContents.isDestroyed()) {
       view.webContents.focus()
     }
   }

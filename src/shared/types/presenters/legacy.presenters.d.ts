@@ -7,7 +7,8 @@ import { ModelType } from '@shared/model'
 import type { NowledgeMemThread, NowledgeMemExportSummary } from '../nowledgeMem'
 import { ProviderChange, ProviderBatchUpdate } from './provider-operations'
 import type { AgentSessionLifecycleStatus } from './agent-provider'
-import type { IAcpWorkspacePresenter } from './acp-workspace'
+import type { IWorkspacePresenter } from './workspace'
+import type { IToolPresenter } from './tool.presenter'
 import type {
   BrowserTabInfo,
   BrowserContextSnapshot,
@@ -189,7 +190,7 @@ export interface IYoBrowserPresenter {
   initialize(): Promise<void>
   ensureWindow(): Promise<number | null>
   hasWindow(): Promise<boolean>
-  show(): Promise<void>
+  show(shouldFocus?: boolean): Promise<void>
   hide(): Promise<void>
   toggleVisibility(): Promise<boolean>
   isVisible(): Promise<boolean>
@@ -239,7 +240,7 @@ export interface IWindowPresenter {
   closeSettingsWindow(): void
   getSettingsWindowId(): number | null
   hide(windowId: number): void
-  show(windowId?: number): void
+  show(windowId?: number, shouldFocus?: boolean): void
   isMaximized(windowId: number): boolean
   isMainWindowFocused(windowId: number): boolean
   sendToAllWindows(channel: string, ...args: unknown[]): void
@@ -338,6 +339,8 @@ export interface ISQLitePresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
+  listChildConversationsByParent(parentConversationId: string): Promise<CONVERSATION[]>
+  listChildConversationsByMessageIds(parentMessageIds: string[]): Promise<CONVERSATION[]>
   getConversationCount(): Promise<number>
   insertMessage(
     conversationId: string,
@@ -441,7 +444,8 @@ export interface IPresenter {
   oauthPresenter: IOAuthPresenter
   dialogPresenter: IDialogPresenter
   knowledgePresenter: IKnowledgePresenter
-  acpWorkspacePresenter: IAcpWorkspacePresenter
+  workspacePresenter: IWorkspacePresenter
+  toolPresenter: IToolPresenter
   init(): void
   destroy(): void
 }
@@ -600,6 +604,10 @@ export interface IConfigPresenter {
   removeCustomAcpAgent(agentId: string): Promise<boolean>
   setCustomAcpAgentEnabled(agentId: string, enabled: boolean): Promise<void>
   initializeAcpAgent(agentId: string, isBuiltin: boolean): Promise<void>
+  getAgentMcpSelections(agentId: string, isBuiltin?: boolean): Promise<string[]>
+  setAgentMcpSelections(agentId: string, isBuiltin: boolean, mcpIds: string[]): Promise<void>
+  addMcpToAgent(agentId: string, isBuiltin: boolean, mcpId: string): Promise<void>
+  removeMcpFromAgent(agentId: string, isBuiltin: boolean, mcpId: string): Promise<void>
   getMcpConfHelper(): any // Used to get MCP configuration helper
   getModelConfig(modelId: string, providerId?: string): ModelConfig
   setModelConfig(
@@ -800,6 +808,11 @@ export interface AcpBuiltinAgent {
   enabled: boolean
   activeProfileId: string | null
   profiles: AcpAgentProfile[]
+  /**
+   * Selected MCP server names the agent can access (ACP mode).
+   * Empty/undefined means no MCP access.
+   */
+  mcpSelections?: string[]
 }
 
 export interface AcpCustomAgent {
@@ -809,6 +822,11 @@ export interface AcpCustomAgent {
   args?: string[]
   env?: Record<string, string>
   enabled: boolean
+  /**
+   * Selected MCP server names the agent can access (ACP mode).
+   * Empty/undefined means no MCP access.
+   */
+  mcpSelections?: string[]
 }
 
 export interface AcpStoreData {
@@ -1012,6 +1030,18 @@ export type CONVERSATION_SETTINGS = {
   verbosity?: 'low' | 'medium' | 'high'
   selectedVariantsMap?: Record<string, string>
   acpWorkdirMap?: Record<string, string | null>
+  chatMode?: 'chat' | 'agent' | 'acp agent'
+  agentWorkspacePath?: string | null
+}
+
+export type ParentSelection = {
+  selectedText: string
+  startOffset: number
+  endOffset: number
+  contextBefore: string
+  contextAfter: string
+  contentHash: string
+  version?: number
 }
 
 export type CONVERSATION = {
@@ -1023,6 +1053,9 @@ export type CONVERSATION = {
   is_new?: number
   artifacts?: number
   is_pinned?: number
+  parentConversationId?: string | null
+  parentMessageId?: string | null
+  parentSelection?: ParentSelection | null
 }
 
 export interface IThreadPresenter {
@@ -1053,13 +1086,31 @@ export interface IThreadPresenter {
     selectedVariantsMap?: Record<string, string>
   ): Promise<string>
 
+  createChildConversationFromSelection(payload: {
+    parentConversationId: string
+    parentMessageId: string
+    parentSelection: ParentSelection | string
+    title: string
+    settings?: Partial<CONVERSATION_SETTINGS>
+    tabId?: number
+    openInNewTab?: boolean
+  }): Promise<string>
+
   // Conversation list and activation status
   getConversationList(
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: CONVERSATION[] }>
+  listChildConversationsByParent(parentConversationId: string): Promise<CONVERSATION[]>
+  listChildConversationsByMessageIds(parentMessageIds: string[]): Promise<CONVERSATION[]>
   loadMoreThreads(): Promise<{ hasMore: boolean; total: number }>
   setActiveConversation(conversationId: string, tabId: number): Promise<void>
+  openConversationInNewTab(payload: {
+    conversationId: string
+    tabId?: number
+    messageId?: string
+    childConversationId?: string
+  }): Promise<number | null>
   getActiveConversation(tabId: number): Promise<CONVERSATION | null>
   getActiveConversationId(tabId: number): Promise<string | null>
   clearActiveThread(tabId: number): Promise<void>
@@ -1496,6 +1547,10 @@ export interface MCPToolCall {
     icons: string
     description: string
   }
+  /**
+   * Optional conversation context (used for ACP agent MCP access control).
+   */
+  conversationId?: string
 }
 
 export interface MCPToolResponse {

@@ -7,7 +7,7 @@
   "checkUpdateButton": "檢查更新",
   "updateChannel": "更新頻道",
   "stableChannel": "正式版",
-  "canaryChannel": "測試版",
+  "betaChannel": "内测版",
   "deviceInfo": {
     "title": "裝置資訊",
     "platform": "平台",
@@ -15,5 +15,6 @@
     "cpuModel": "CPU 型號",
     "totalMemory": "總記憶體",
     "osVersion": "系統版本"
-  }
+  },
+  "feedbackButton": "意見反饋"
 }

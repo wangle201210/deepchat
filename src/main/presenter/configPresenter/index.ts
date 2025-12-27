@@ -73,7 +73,7 @@ interface IAppSettings {
   floatingButtonEnabled?: boolean // Whether floating button is enabled
   default_system_prompt?: string // Default system prompt
   webContentLengthLimit?: number // Web content truncation length limit, default 3000 characters
-  updateChannel?: string // Update channel: 'stable' | 'canary'
+  updateChannel?: string // Update channel: 'stable' | 'beta'
   fontFamily?: string // Custom UI font
   codeFontFamily?: string // Custom code font
   [key: string]: unknown // Allow arbitrary keys, using unknown type instead of any
@@ -190,12 +190,12 @@ export class ConfigPresenter implements IConfigPresenter {
       setSetting: this.setSetting.bind(this)
     })
 
-    this.acpConfHelper = new AcpConfHelper()
-    this.syncAcpProviderEnabled(this.acpConfHelper.getGlobalEnabled())
-    this.setupIpcHandlers()
-
     // Initialize MCP configuration helper
     this.mcpConfHelper = new McpConfHelper()
+
+    this.acpConfHelper = new AcpConfHelper({ mcpConfHelper: this.mcpConfHelper })
+    this.syncAcpProviderEnabled(this.acpConfHelper.getGlobalEnabled())
+    this.setupIpcHandlers()
 
     // Initialize model configuration helper
     this.modelConfigHelper = new ModelConfigHelper(this.currentAppVersion)
@@ -226,6 +226,9 @@ export class ConfigPresenter implements IConfigPresenter {
       this.migrateConfigData(oldVersion)
       this.mcpConfHelper.onUpgrade(oldVersion)
     }
+
+    // Migrate minimax provider from OpenAI format to Anthropic format
+    this.migrateMinimaxProvider()
 
     const existingProviders = this.getSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY) || []
     const newProviders = defaultProviders.filter(
@@ -422,6 +425,38 @@ export class ConfigPresenter implements IConfigPresenter {
       } catch (e) {
         console.warn('Failed to migrate legacy default_system_prompt:', e)
       }
+    }
+  }
+
+  private migrateMinimaxProvider(): void {
+    const providers = this.getProviders()
+    const legacyMinimax = providers.find(
+      (provider) =>
+        provider.id === 'minimax' &&
+        (provider.apiType === 'openai' || provider.apiType === 'minimax')
+    )
+
+    if (!legacyMinimax) {
+      return
+    }
+
+    const defaultMinimax = defaultProviders.find((provider) => provider.id === 'minimax')
+    if (!defaultMinimax) {
+      return
+    }
+
+    const updatedProvider: LLM_PROVIDER = {
+      ...defaultMinimax,
+      apiKey: legacyMinimax.apiKey
+    }
+
+    this.setProviderById('minimax', updatedProvider)
+
+    if (providers.some((provider) => provider.id === 'minimax-an')) {
+      const filteredProviders = this.getProviders().filter(
+        (provider) => provider.id !== 'minimax-an'
+      )
+      this.setProviders(filteredProviders)
     }
   }
 
@@ -1184,6 +1219,29 @@ export class ConfigPresenter implements IConfigPresenter {
     this.handleAcpAgentsMutated([agentId])
   }
 
+  async getAgentMcpSelections(agentId: string, isBuiltin?: boolean): Promise<string[]> {
+    return await this.acpConfHelper.getAgentMcpSelections(agentId, isBuiltin)
+  }
+
+  async setAgentMcpSelections(
+    agentId: string,
+    isBuiltin: boolean,
+    mcpIds: string[]
+  ): Promise<void> {
+    await this.acpConfHelper.setAgentMcpSelections(agentId, isBuiltin, mcpIds)
+    this.handleAcpAgentsMutated([agentId])
+  }
+
+  async addMcpToAgent(agentId: string, isBuiltin: boolean, mcpId: string): Promise<void> {
+    await this.acpConfHelper.addMcpToAgent(agentId, isBuiltin, mcpId)
+    this.handleAcpAgentsMutated([agentId])
+  }
+
+  async removeMcpFromAgent(agentId: string, isBuiltin: boolean, mcpId: string): Promise<void> {
+    await this.acpConfHelper.removeMcpFromAgent(agentId, isBuiltin, mcpId)
+    this.handleAcpAgentsMutated([agentId])
+  }
+
   private handleAcpAgentsMutated(agentIds?: string[]) {
     this.clearProviderModelStatusCache('acp')
     this.notifyAcpAgentsChanged()
@@ -1475,7 +1533,12 @@ export class ConfigPresenter implements IConfigPresenter {
 
   // 获取更新渠道
   getUpdateChannel(): string {
-    return this.getSetting<string>('updateChannel') || 'stable'
+    const raw = this.getSetting<string>('updateChannel') || 'stable'
+    const channel = raw === 'stable' || raw === 'beta' ? raw : 'beta'
+    if (channel !== raw) {
+      this.setSetting('updateChannel', channel)
+    }
+    return channel
   }
 
   // 设置更新渠道

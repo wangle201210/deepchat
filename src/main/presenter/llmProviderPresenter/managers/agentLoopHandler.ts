@@ -1,17 +1,16 @@
-import {
-  ChatMessage,
-  IConfigPresenter,
-  LLMAgentEvent,
-  MCPToolCall,
-  MCPToolDefinition
-} from '@shared/presenter'
+import { ChatMessage, IConfigPresenter, LLMAgentEvent, MCPToolCall } from '@shared/presenter'
 import { presenter } from '@/presenter'
 import { eventBus, SendTarget } from '@/eventbus'
-import { ACP_WORKSPACE_EVENTS } from '@/events'
+import { WORKSPACE_EVENTS } from '@/events'
 import { BaseLLMProvider } from '../baseProvider'
 import { StreamState } from '../types'
 import { RateLimitManager } from './rateLimitManager'
 import { ToolCallProcessor } from './toolCallProcessor'
+import { ToolPresenter } from '../../toolPresenter'
+import { getAgentFilteredTools } from '../../mcpPresenter/agentMcpFilter'
+import fs from 'fs'
+import path from 'path'
+import { app } from 'electron'
 
 interface AgentLoopHandlerOptions {
   configPresenter: IConfigPresenter
@@ -23,52 +22,197 @@ interface AgentLoopHandlerOptions {
 
 export class AgentLoopHandler {
   private readonly toolCallProcessor: ToolCallProcessor
+  private toolPresenter: ToolPresenter | null = null
   private currentSupportsVision = false
 
   constructor(private readonly options: AgentLoopHandlerOptions) {
     this.toolCallProcessor = new ToolCallProcessor({
       getAllToolDefinitions: async (context) => {
-        const defs: MCPToolDefinition[] = []
-        const mcpDefs = await presenter.mcpPresenter.getAllToolDefinitions(context.enabledMcpTools)
-        defs.push(...mcpDefs)
-
-        // Check if browser window is open - independent of MCP
-        const hasBrowserWindow = await presenter.yoBrowserPresenter.hasWindow()
-        if (hasBrowserWindow) {
+        // Get modelId from conversation
+        let modelId: string | undefined
+        if (context.conversationId) {
           try {
-            const yoDefs = await presenter.yoBrowserPresenter.getToolDefinitions(
-              this.currentSupportsVision
+            const conversation = await presenter.threadPresenter.getConversation(
+              context.conversationId
             )
-            defs.push(...yoDefs)
-          } catch (error) {
-            console.warn('[AgentLoop] Failed to load Yo Browser tool definitions', error)
+            modelId = conversation?.settings.modelId
+          } catch {
+            // Ignore errors, modelId will be undefined
           }
         }
 
-        return defs
+        const { chatMode, agentWorkspacePath } = await this.resolveWorkspaceContext(
+          context.conversationId,
+          modelId
+        )
+
+        const toolDefs = await this.getToolPresenter().getAllToolDefinitions({
+          enabledMcpTools: context.enabledMcpTools,
+          chatMode,
+          supportsVision: this.currentSupportsVision,
+          agentWorkspacePath
+        })
+
+        return await this.filterToolsForChatMode(toolDefs, chatMode, modelId)
       },
       callTool: async (request: MCPToolCall) => {
-        if (request.function.name.startsWith('browser_')) {
-          const response = await presenter.yoBrowserPresenter.callTool(
-            request.function.name,
-            JSON.parse(request.function.arguments || '{}') as Record<string, unknown>
-          )
-          return {
-            content: typeof response === 'string' ? response : JSON.stringify(response),
-            rawData: {
-              toolCallId: request.id,
-              content: response
-            }
+        return await this.getToolPresenter().callTool(request)
+      },
+      onToolCallFinished: ({ toolServerName, conversationId }) => {
+        if (toolServerName !== 'agent-filesystem') return
+        this.notifyWorkspaceFilesChanged(conversationId)
+      }
+    })
+  }
+
+  /**
+   * Lazy initialization of ToolPresenter
+   * This is needed because ToolPresenter depends on mcpPresenter and yoBrowserPresenter
+   * which are created after LLMProviderPresenter in the Presenter initialization order
+   */
+  private getToolPresenter(): ToolPresenter {
+    if (!this.toolPresenter) {
+      // Check if presenter is fully initialized
+      if (!presenter.mcpPresenter || !presenter.yoBrowserPresenter) {
+        throw new Error(
+          'ToolPresenter dependencies not initialized. mcpPresenter and yoBrowserPresenter must be initialized first.'
+        )
+      }
+      this.toolPresenter = new ToolPresenter({
+        mcpPresenter: presenter.mcpPresenter,
+        yoBrowserPresenter: presenter.yoBrowserPresenter,
+        configPresenter: this.options.configPresenter
+      })
+    }
+    return this.toolPresenter
+  }
+
+  private async getDefaultAgentWorkspacePath(conversationId?: string | null): Promise<string> {
+    const tempRoot = path.join(app.getPath('temp'), 'deepchat-agent', 'workspaces')
+    try {
+      await fs.promises.mkdir(tempRoot, { recursive: true })
+    } catch (error) {
+      console.warn(
+        '[AgentLoopHandler] Failed to create default workspace root, using system temp:',
+        error
+      )
+      return app.getPath('temp')
+    }
+
+    if (!conversationId) {
+      return tempRoot
+    }
+
+    const workspaceDir = path.join(tempRoot, conversationId)
+    try {
+      await fs.promises.mkdir(workspaceDir, { recursive: true })
+      return workspaceDir
+    } catch (error) {
+      console.warn(
+        '[AgentLoopHandler] Failed to create conversation workspace, using root temp workspace:',
+        error
+      )
+      return tempRoot
+    }
+  }
+
+  private async resolveAgentWorkspacePath(
+    conversationId: string | undefined,
+    currentPath: string | null
+  ): Promise<string | null> {
+    const trimmedPath = currentPath?.trim()
+    if (trimmedPath) return trimmedPath
+
+    const fallback = await this.getDefaultAgentWorkspacePath(conversationId ?? null)
+    if (conversationId && fallback) {
+      try {
+        await presenter.threadPresenter.updateConversationSettings(conversationId, {
+          agentWorkspacePath: fallback
+        })
+      } catch (error) {
+        console.warn('[AgentLoopHandler] Failed to persist agent workspace path:', error)
+      }
+    }
+    return fallback
+  }
+
+  /**
+   * Resolve workspace context (chatMode and agentWorkspacePath) for tool definitions
+   * @param conversationId Optional conversation ID
+   * @param modelId Optional model ID (required for acp agent mode)
+   * @returns Resolved workspace context
+   */
+  private async resolveWorkspaceContext(
+    conversationId?: string,
+    modelId?: string
+  ): Promise<{ chatMode: 'chat' | 'agent' | 'acp agent'; agentWorkspacePath: string | null }> {
+    // Get chatMode from global config (default to 'chat')
+    const chatMode =
+      ((await this.options.configPresenter.getSetting('input_chatMode')) as
+        | 'chat'
+        | 'agent'
+        | 'acp agent') || 'chat'
+
+    // Get agentWorkspacePath from conversation settings
+    let agentWorkspacePath: string | null = null
+    if (conversationId) {
+      try {
+        const conversation = await presenter.threadPresenter.getConversation(conversationId)
+        if (conversation) {
+          // For acp agent mode, use acpWorkdirMap
+          if (chatMode === 'acp agent' && conversation.settings.acpWorkdirMap && modelId) {
+            agentWorkspacePath = conversation.settings.acpWorkdirMap[modelId] ?? null
+          } else {
+            // For agent mode, use agentWorkspacePath
+            agentWorkspacePath = conversation.settings.agentWorkspacePath ?? null
           }
         }
-        return await presenter.mcpPresenter.callTool(request)
+      } catch (error) {
+        console.warn('[AgentLoopHandler] Failed to get conversation settings:', error)
       }
+    }
+
+    if (chatMode === 'agent') {
+      agentWorkspacePath = await this.resolveAgentWorkspacePath(conversationId, agentWorkspacePath)
+    }
+
+    return { chatMode, agentWorkspacePath }
+  }
+
+  private notifyWorkspaceFilesChanged(conversationId?: string): void {
+    if (!conversationId) return
+    eventBus.sendToRenderer(WORKSPACE_EVENTS.FILES_CHANGED, SendTarget.ALL_WINDOWS, {
+      conversationId
     })
   }
 
   private requiresReasoningField(modelId: string): boolean {
     const lower = modelId.toLowerCase()
     return lower.includes('deepseek-reasoner') || lower.includes('kimi-k2-thinking')
+  }
+
+  private isAgentToolDefinition(tool: { server?: { name: string } }): boolean {
+    const name = tool.server?.name
+    return Boolean(name && (name === 'yo-browser' || name.startsWith('agent-')))
+  }
+
+  private async filterToolsForChatMode(
+    tools: Awaited<ReturnType<ToolPresenter['getAllToolDefinitions']>>,
+    chatMode: 'chat' | 'agent' | 'acp agent',
+    agentId?: string
+  ): Promise<Awaited<ReturnType<ToolPresenter['getAllToolDefinitions']>>> {
+    if (chatMode !== 'acp agent') return tools
+    if (!agentId) return []
+
+    const agentTools = tools.filter((tool) => this.isAgentToolDefinition(tool))
+    const mcpTools = tools.filter((tool) => !this.isAgentToolDefinition(tool))
+    const filteredMcp = await getAgentFilteredTools(
+      agentId,
+      undefined,
+      mcpTools,
+      this.options.configPresenter
+    )
+    return [...filteredMcp, ...agentTools]
   }
 
   async *startStreamCompletion(
@@ -183,19 +327,20 @@ export class AgentLoopHandler {
 
         try {
           console.log(`[Agent Loop] Iteration ${toolCallCount + 1} for event: ${eventId}`)
-          // Check if browser window is open - independent of MCP
-          const hasBrowserWindow = await presenter.yoBrowserPresenter.hasWindow()
-          let toolDefs = await presenter.mcpPresenter.getAllToolDefinitions(enabledMcpTools)
-          if (hasBrowserWindow) {
-            try {
-              const yoDefs = await presenter.yoBrowserPresenter.getToolDefinitions(
-                this.currentSupportsVision
-              )
-              toolDefs = [...toolDefs, ...yoDefs]
-            } catch (error) {
-              console.warn('[AgentLoop] Failed to load Yo Browser tool definitions', error)
-            }
-          }
+          // Resolve workspace context
+          const { chatMode, agentWorkspacePath } = await this.resolveWorkspaceContext(
+            conversationId,
+            modelId
+          )
+
+          // Get all tool definitions using ToolPresenter
+          const toolDefs = await this.getToolPresenter().getAllToolDefinitions({
+            enabledMcpTools,
+            chatMode,
+            supportsVision: this.currentSupportsVision,
+            agentWorkspacePath
+          })
+          const filteredToolDefs = await this.filterToolsForChatMode(toolDefs, chatMode, modelId)
 
           const canExecute = this.options.rateLimitManager.canExecuteImmediately(providerId)
           if (!canExecute) {
@@ -229,7 +374,7 @@ export class AgentLoopHandler {
             modelConfig,
             temperature,
             maxTokens,
-            toolDefs
+            filteredToolDefs
           )
 
           // Process the standardized stream events
@@ -509,7 +654,8 @@ export class AgentLoopHandler {
               modelConfig,
               abortSignal: abortController.signal,
               currentToolCallCount: toolCallCount,
-              maxToolCalls: MAX_TOOL_CALLS
+              maxToolCalls: MAX_TOOL_CALLS,
+              conversationId
             })
 
             while (true) {
@@ -522,7 +668,9 @@ export class AgentLoopHandler {
               yield value
             }
 
-            if (abortController.signal.aborted) break // Check after tool loop
+            if (abortController.signal.aborted) {
+              break // Check after tool loop
+            }
 
             if (!needContinueConversation) {
               // If max tool calls reached or explicit stop, break outer loop
@@ -549,7 +697,6 @@ export class AgentLoopHandler {
           needContinueConversation = false // Stop loop on inner error
         }
       } // --- End of Agent Loop (while) ---
-
       console.log(
         `[Agent Loop] Agent loop completed for event: ${eventId}, iterations: ${toolCallCount}`
       )
@@ -587,10 +734,8 @@ export class AgentLoopHandler {
       console.log('Agent loop finished for event:', eventId, 'User stopped:', userStop)
 
       // Trigger ACP workspace file refresh (only for ACP provider)
-      if (providerId === 'acp' && conversationId) {
-        eventBus.sendToRenderer(ACP_WORKSPACE_EVENTS.FILES_CHANGED, SendTarget.ALL_WINDOWS, {
-          conversationId
-        })
+      if (providerId === 'acp') {
+        this.notifyWorkspaceFilesChanged(conversationId)
       }
     }
   }

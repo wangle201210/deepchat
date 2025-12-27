@@ -40,7 +40,8 @@ export const CONVERSATION_EVENTS = {
 
   ACTIVATED: 'conversation:activated', // 替代 conversation-activated
   DEACTIVATED: 'conversation:deactivated', // 替代 active-conversation-cleared
-  MESSAGE_EDITED: 'conversation:message-edited' // 替代 message-edited
+  MESSAGE_EDITED: 'conversation:message-edited', // 替代 message-edited
+  SCROLL_TO_MESSAGE: 'conversation:scroll-to-message'
 }
 
 // 通信相关事件
@@ -156,6 +157,7 @@ export const YO_BROWSER_EVENTS = {
   TAB_CLOSED: 'yo-browser:tab-closed',
   TAB_ACTIVATED: 'yo-browser:tab-activated',
   TAB_NAVIGATED: 'yo-browser:tab-navigated',
+  TAB_UPDATED: 'yo-browser:tab-updated',
   TAB_COUNT_CHANGED: 'yo-browser:tab-count-changed',
   WINDOW_VISIBILITY_CHANGED: 'yo-browser:window-visibility-changed'
 }
@@ -184,11 +186,15 @@ export const SYSTEM_EVENTS = {
   SYSTEM_THEME_UPDATED: 'system:theme-updated'
 }
 
-// ACP Workspace events
+// Workspace events
+export const WORKSPACE_EVENTS = {
+  PLAN_UPDATED: 'workspace:plan-updated', // Plan entries updated
+  TERMINAL_OUTPUT: 'workspace:terminal-output', // Terminal output snippet
+  FILES_CHANGED: 'workspace:files-changed' // File tree changed
+}
+
+// ACP-specific workspace events
 export const ACP_WORKSPACE_EVENTS = {
-  PLAN_UPDATED: 'acp-workspace:plan-updated', // Plan entries updated
-  TERMINAL_OUTPUT: 'acp-workspace:terminal-output', // Terminal output snippet
-  FILES_CHANGED: 'acp-workspace:files-changed', // File tree changed
   SESSION_MODES_READY: 'acp-workspace:session-modes-ready' // Session modes available
 }
 

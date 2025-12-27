@@ -70,6 +70,93 @@
         <div class="flex items-center justify-between">
           <!-- Tools -->
           <div class="flex gap-1.5">
+            <!-- Mode Switch -->
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <span class="inline-flex">
+                  <Popover v-model:open="modeSelectOpen">
+                    <PopoverTrigger as-child>
+                      <Button
+                        variant="outline"
+                        :class="[
+                          'w-7 h-7 text-xs rounded-lg',
+                          variant === 'chat' ? 'text-accent-foreground' : ''
+                        ]"
+                        size="icon"
+                        :title="t('chat.mode.current', { mode: chatMode.currentLabel.value })"
+                      >
+                        <Icon :icon="chatMode.currentIcon.value" class="w-4 h-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      class="w-64 border-none bg-transparent p-0 shadow-none"
+                    >
+                      <div class="rounded-lg border bg-card p-1 shadow-md">
+                        <div
+                          v-for="mode in chatMode.modes.value"
+                          :key="mode.value"
+                          :class="[
+                            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors',
+                            chatMode.currentMode.value === mode.value
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted'
+                          ]"
+                          @click="handleModeSelect(mode.value)"
+                        >
+                          <Icon :icon="mode.icon" class="w-4 h-4" />
+                          <span class="flex-1">{{ mode.label }}</span>
+                          <Icon
+                            v-if="chatMode.currentMode.value === mode.value"
+                            icon="lucide:check"
+                            class="w-4 h-4"
+                          />
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {{ t('chat.mode.current', { mode: chatMode.currentLabel.value }) }}
+              </TooltipContent>
+            </Tooltip>
+
+            <!-- Unified Workspace Path Selection (for agent and acp agent modes) -->
+            <Tooltip v-if="chatMode.isAgentMode.value">
+              <TooltipTrigger>
+                <Button
+                  :class="[
+                    'w-7 h-7 text-xs rounded-lg',
+                    variant === 'chat' ? 'text-accent-foreground' : '',
+                    workspace.hasWorkspace.value
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      : ''
+                  ]"
+                  :variant="workspace.hasWorkspace.value ? 'default' : 'outline'"
+                  size="icon"
+                  :disabled="workspace.loading.value"
+                  @click="workspace.selectWorkspace"
+                >
+                  <Icon
+                    :icon="workspace.hasWorkspace.value ? 'lucide:folder-open' : 'lucide:folder'"
+                    class="w-4 h-4"
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent class="max-w-xs">
+                <p class="text-xs font-semibold">
+                  {{ workspace.tooltipTitle }}
+                </p>
+                <p v-if="workspace.hasWorkspace.value" class="text-xs text-muted-foreground mt-1">
+                  {{ workspace.tooltipCurrent }}
+                </p>
+                <p v-else class="text-xs text-muted-foreground mt-1">
+                  {{ workspace.tooltipSelect }}
+                </p>
+              </TooltipContent>
+            </Tooltip>
+
             <Tooltip>
               <TooltipTrigger>
                 <Button
@@ -95,7 +182,7 @@
               <TooltipContent>{{ t('chat.input.fileSelect') }}</TooltipContent>
             </Tooltip>
 
-            <Tooltip>
+            <Tooltip v-if="canUseWebSearch">
               <TooltipTrigger>
                 <Button
                   variant="outline"
@@ -112,40 +199,6 @@
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{{ t('chat.features.webSearch') }}</TooltipContent>
-            </Tooltip>
-
-            <Tooltip v-if="acpWorkdir.isAcpModel.value">
-              <TooltipTrigger>
-                <Button
-                  :class="[
-                    'w-7 h-7 text-xs rounded-lg',
-                    variant === 'chat' ? 'text-accent-foreground' : '',
-                    acpWorkdir.hasWorkdir.value
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                      : ''
-                  ]"
-                  :variant="acpWorkdir.hasWorkdir.value ? 'default' : 'outline'"
-                  size="icon"
-                  :disabled="acpWorkdir.loading.value"
-                  @click="acpWorkdir.selectWorkdir"
-                >
-                  <Icon
-                    :icon="acpWorkdir.hasWorkdir.value ? 'lucide:folder-open' : 'lucide:folder'"
-                    class="w-4 h-4"
-                  />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent class="max-w-xs">
-                <p class="text-xs font-semibold">
-                  {{ t('chat.input.acpWorkdirTooltip') }}
-                </p>
-                <p v-if="acpWorkdir.hasWorkdir.value" class="text-xs text-muted-foreground mt-1">
-                  {{ t('chat.input.acpWorkdirCurrent', { path: acpWorkdir.workdir.value }) }}
-                </p>
-                <p v-else class="text-xs text-muted-foreground mt-1">
-                  {{ t('chat.input.acpWorkdirSelect') }}
-                </p>
-              </TooltipContent>
             </Tooltip>
 
             <McpToolsList />
@@ -377,6 +430,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@shadcn/components/ui/popover'
 import { Icon } from '@iconify/vue'
 import { Editor, EditorContent } from '@tiptap/vue-3'
+import { TextSelection } from '@tiptap/pm/state'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
@@ -404,6 +458,9 @@ import { useContextLength } from './composables/useContextLength'
 import { useSendButtonState } from './composables/useSendButtonState'
 import { useAcpWorkdir } from './composables/useAcpWorkdir'
 import { useAcpMode } from './composables/useAcpMode'
+import { useChatMode, type ChatMode } from './composables/useChatMode'
+import { useAgentWorkspace } from './composables/useAgentWorkspace'
+import { useWorkspaceMention } from './composables/useWorkspaceMention'
 
 // === Stores ===
 import { useChatStore } from '@/stores/chat'
@@ -412,8 +469,11 @@ import { useThemeStore } from '@/stores/theme'
 
 // === Mention System ===
 import { Mention } from '../editor/mention/mention'
-import suggestion, { setPromptFilesHandler } from '../editor/mention/suggestion'
-import { mentionData } from '../editor/mention/suggestion'
+import suggestion, {
+  setPromptFilesHandler,
+  setWorkspaceMention
+} from '../editor/mention/suggestion'
+import { mentionData, type CategorizedData } from '../editor/mention/suggestion'
 import { useEventListener } from '@vueuse/core'
 
 // === Props & Emits ===
@@ -502,7 +562,12 @@ const showFakeCaret = computed(() => caretVisible.value && !props.disabled)
 // === Composable Integrations ===
 
 // Initialize settings management
-const { settings, toggleWebSearch } = useInputSettings()
+const { settings, setWebSearch, toggleWebSearch } = useInputSettings()
+
+// Initialize chat mode management
+const chatMode = useChatMode()
+const modeSelectOpen = ref(false)
+const canUseWebSearch = computed(() => chatMode.currentMode.value === 'chat')
 
 // Initialize history composable first (needed for editor placeholder)
 const history = useInputHistory(null as any, t)
@@ -674,6 +739,20 @@ const acpWorkdir = useAcpWorkdir({
   conversationId
 })
 
+// Unified workspace management (for agent and acp agent modes)
+const workspace = useAgentWorkspace({
+  conversationId,
+  activeModel: activeModelSource,
+  chatMode
+})
+
+const workspaceMention = useWorkspaceMention({
+  workspacePath: workspace.workspacePath,
+  chatMode: chatMode.currentMode,
+  conversationId
+})
+setWorkspaceMention(workspaceMention)
+
 // Extract isStreaming first so we can pass it to useAcpMode
 const { disabledSend, isStreaming } = sendButtonState
 
@@ -716,7 +795,7 @@ const emitSend = async () => {
       text: editorComposable.inputText.value.trim(),
       files: files.selectedFiles.value,
       links: [],
-      search: settings.value.webSearch,
+      search: canUseWebSearch.value ? settings.value.webSearch : false,
       think: settings.value.deepThinking,
       content: blocks
     }
@@ -735,7 +814,20 @@ const emitSend = async () => {
 }
 
 const onWebSearchClick = async () => {
+  if (!canUseWebSearch.value) return
   await toggleWebSearch()
+}
+
+const handleModeSelect = async (mode: ChatMode) => {
+  await chatMode.setMode(mode)
+  if (conversationId.value && chatMode.currentMode.value === mode) {
+    try {
+      await chatStore.updateChatConfig({ chatMode: mode })
+    } catch (error) {
+      console.warn('Failed to update chat mode in conversation settings:', error)
+    }
+  }
+  modeSelectOpen.value = false
 }
 
 const onKeydown = (e: KeyboardEvent) => {
@@ -787,6 +879,57 @@ const handleVisibilityChange = () => {
   }
 }
 
+const hasContextMention = () => {
+  let found = false
+  editor.state.doc.descendants((node) => {
+    if (node.type.name === 'mention' && node.attrs?.category === 'context') {
+      found = true
+      return false
+    }
+    return true
+  })
+  return found
+}
+
+const setCaretToEnd = () => {
+  if (editor.isDestroyed) return
+  const { state, view } = editor
+  const endSelection = TextSelection.atEnd(state.doc)
+  view.dispatch(state.tr.setSelection(endSelection))
+  editor.commands.focus()
+}
+
+const scheduleCaretToEnd = () => {
+  const delays = [0, 50, 120]
+  for (const delay of delays) {
+    setTimeout(() => {
+      if (editor.isDestroyed) return
+      requestAnimationFrame(() => {
+        setCaretToEnd()
+      })
+    }, delay)
+  }
+}
+
+const appendCustomMention = (mention: CategorizedData) => {
+  const shouldInsertAtEnd = mention.category === 'context'
+  if (shouldInsertAtEnd && hasContextMention()) {
+    scheduleCaretToEnd()
+    return true
+  }
+  if (shouldInsertAtEnd) {
+    setCaretToEnd()
+  }
+  const insertPosition = shouldInsertAtEnd
+    ? editor.state.selection.to
+    : editor.state.selection.anchor
+  const inserted = editorComposable.insertMentionToEditor(mention, insertPosition)
+  if (inserted && shouldInsertAtEnd) {
+    scheduleCaretToEnd()
+  }
+  return inserted
+}
+
 useEventListener(window, 'resize', updateFakeCaretPosition)
 useEventListener(editorContainer, 'scroll', updateFakeCaretPosition)
 
@@ -831,6 +974,8 @@ onUnmounted(() => {
   if (caretAnimationFrame) {
     cancelAnimationFrame(caretAnimationFrame)
   }
+
+  setWorkspaceMention(null)
 })
 
 // === Watchers ===
@@ -856,12 +1001,48 @@ watch(
   }
 )
 
+watch(
+  () => [chatMode.currentMode.value, settings.value.webSearch] as const,
+  ([mode, webSearch]) => {
+    if (mode !== 'chat' && webSearch) {
+      void setWebSearch(false)
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [conversationId.value, chatStore.chatConfig.chatMode] as const,
+  async ([activeId, storedMode]) => {
+    if (!activeId) return
+    try {
+      if (!storedMode) {
+        await chatStore.updateChatConfig({ chatMode: chatMode.currentMode.value })
+        return
+      }
+      if (chatMode.currentMode.value !== storedMode) {
+        await chatMode.setMode(storedMode)
+      }
+    } catch (error) {
+      console.warn('Failed to sync chat mode for conversation:', error)
+    }
+  },
+  { immediate: true }
+)
+
 // === Expose ===
 defineExpose({
   clearContent: editorComposable.clearContent,
   appendText: editorComposable.appendText,
   appendMention: (name: string) => editorComposable.appendMention(name, mentionData),
-  restoreFocus
+  appendCustomMention,
+  restoreFocus,
+  getAgentWorkspacePath: () => {
+    const mode = chatMode.currentMode.value
+    if (mode !== 'agent') return null
+    return workspace.workspacePath.value
+  },
+  getChatMode: () => chatMode.currentMode.value
 })
 </script>
 

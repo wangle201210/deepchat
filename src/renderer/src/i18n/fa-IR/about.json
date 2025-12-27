@@ -15,5 +15,6 @@
   "checkUpdateButton": "بررسی به‌روزرسانی",
   "updateChannel": "کانال به‌روزرسانی",
   "stableChannel": "پایدار",
-  "canaryChannel": "کاناری"
+  "betaChannel": "Beta",
+  "feedbackButton": "بازخورد"
 }

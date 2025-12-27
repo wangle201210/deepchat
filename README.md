@@ -310,11 +310,27 @@ DeepChat is suitable for various AI application scenarios:
 
 ### Download and Install
 
+You can install DeepChat using one of the following methods:
+
+**Option 1: GitHub Releases**
+
 Download the latest version for your system from the [GitHub Releases](https://github.com/ThinkInAIXYZ/deepchat/releases) page:
 
 - Windows: `.exe` installation file
 - macOS: `.dmg` installation file
 - Linux: `.AppImage` or `.deb` installation file
+
+**Option 2: Official Website**
+
+Download from the [official website](https://deepchatai.cn/#/download).
+
+**Option 3: Homebrew (macOS only)**
+
+For macOS users, you can install DeepChat using Homebrew:
+
+```bash
+brew install --cask deepchat
+```
 
 ### Configure Models
 
