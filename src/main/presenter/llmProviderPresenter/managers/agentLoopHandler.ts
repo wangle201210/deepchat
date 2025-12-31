@@ -72,6 +72,10 @@ export class AgentLoopHandler {
    */
   private getToolPresenter(): ToolPresenter {
     if (!this.toolPresenter) {
+      if (presenter.toolPresenter) {
+        this.toolPresenter = presenter.toolPresenter as ToolPresenter
+        return this.toolPresenter
+      }
       // Check if presenter is fully initialized
       if (!presenter.mcpPresenter || !presenter.yoBrowserPresenter) {
         throw new Error(
@@ -188,7 +192,11 @@ export class AgentLoopHandler {
 
   private requiresReasoningField(modelId: string): boolean {
     const lower = modelId.toLowerCase()
-    return lower.includes('deepseek-reasoner') || lower.includes('kimi-k2-thinking')
+    return (
+      lower.includes('deepseek-reasoner') ||
+      lower.includes('kimi-k2-thinking') ||
+      lower.includes('glm-4.7')
+    )
   }
 
   private isAgentToolDefinition(tool: { server?: { name: string } }): boolean {

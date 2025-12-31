@@ -7,16 +7,50 @@ import path from 'path'
 import { app } from 'electron'
 import logger from '@shared/logger'
 import { AgentFileSystemHandler } from './agentFileSystemHandler'
+import { AgentBashHandler } from './agentBashHandler'
+import {
+  CommandPermissionHandler,
+  CommandPermissionRequiredError
+} from '../../threadPresenter/handlers/commandPermissionHandler'
+
+export interface AgentToolCallResult {
+  content: string
+  rawData?: {
+    content?: string
+    isError?: boolean
+    toolResult?: unknown
+    requiresPermission?: boolean
+    permissionRequest?: {
+      toolName: string
+      serverName: string
+      permissionType: 'read' | 'write' | 'all' | 'command'
+      description: string
+      command?: string
+      commandSignature?: string
+      commandInfo?: {
+        command: string
+        riskLevel: 'low' | 'medium' | 'high' | 'critical'
+        suggestion: string
+        signature?: string
+        baseCommand?: string
+      }
+      conversationId?: string
+    }
+  }
+}
 
 interface AgentToolManagerOptions {
   yoBrowserPresenter: IYoBrowserPresenter
   agentWorkspacePath: string | null
+  commandPermissionHandler?: CommandPermissionHandler
 }
 
 export class AgentToolManager {
   private readonly yoBrowserPresenter: IYoBrowserPresenter
   private agentWorkspacePath: string | null
   private fileSystemHandler: AgentFileSystemHandler | null = null
+  private bashHandler: AgentBashHandler | null = null
+  private readonly commandPermissionHandler?: CommandPermissionHandler
   private readonly fileSystemSchemas = {
     read_file: z.object({
       paths: z.array(z.string()).min(1)
@@ -110,14 +144,34 @@ export class AgentToolManager {
     }),
     get_file_info: z.object({
       path: z.string()
+    }),
+    execute_command: z.object({
+      command: z.string().min(1).describe('The shell command to execute'),
+      timeout: z
+        .number()
+        .min(100)
+        .max(600000)
+        .optional()
+        .describe('Optional timeout in milliseconds'),
+      workdir: z
+        .string()
+        .min(1)
+        .optional()
+        .describe('Working directory (defaults to workspace root); prefer this over using cd'),
+      description: z.string().min(5).max(100).describe('Brief description of what the command does')
     })
   }
 
   constructor(options: AgentToolManagerOptions) {
     this.yoBrowserPresenter = options.yoBrowserPresenter
     this.agentWorkspacePath = options.agentWorkspacePath
+    this.commandPermissionHandler = options.commandPermissionHandler
     if (this.agentWorkspacePath) {
       this.fileSystemHandler = new AgentFileSystemHandler([this.agentWorkspacePath])
+      this.bashHandler = new AgentBashHandler(
+        [this.agentWorkspacePath],
+        this.commandPermissionHandler
+      )
     }
   }
 
@@ -139,8 +193,13 @@ export class AgentToolManager {
     if (effectiveWorkspacePath !== this.agentWorkspacePath) {
       if (effectiveWorkspacePath) {
         this.fileSystemHandler = new AgentFileSystemHandler([effectiveWorkspacePath])
+        this.bashHandler = new AgentBashHandler(
+          [effectiveWorkspacePath],
+          this.commandPermissionHandler
+        )
       } else {
         this.fileSystemHandler = null
+        this.bashHandler = null
       }
       this.agentWorkspacePath = effectiveWorkspacePath
     }
@@ -167,14 +226,20 @@ export class AgentToolManager {
   /**
    * Call an Agent tool
    */
-  async callTool(toolName: string, args: Record<string, unknown>): Promise<string> {
+  async callTool(
+    toolName: string,
+    args: Record<string, unknown>,
+    conversationId?: string
+  ): Promise<AgentToolCallResult | string> {
     // Route to Yo Browser tools
     if (toolName.startsWith('browser_')) {
       const response = await this.yoBrowserPresenter.callTool(
         toolName,
         args as Record<string, unknown>
       )
-      return typeof response === 'string' ? response : JSON.stringify(response)
+      return {
+        content: typeof response === 'string' ? response : JSON.stringify(response)
+      }
     }
 
     // Route to FileSystem tools
@@ -182,7 +247,7 @@ export class AgentToolManager {
       if (!this.fileSystemHandler) {
         throw new Error(`FileSystem handler not initialized for tool: ${toolName}`)
       }
-      return await this.callFileSystemTool(toolName, args)
+      return await this.callFileSystemTool(toolName, args, conversationId)
     }
 
     throw new Error(`Unknown Agent tool: ${toolName}`)
@@ -381,6 +446,24 @@ export class AgentToolManager {
           icons: '📁',
           description: 'Agent FileSystem tools'
         }
+      },
+      {
+        type: 'function',
+        function: {
+          name: 'execute_command',
+          description:
+            'Execute a shell command in the workspace directory. Prefer file system tools for read/write/search operations.',
+          parameters: zodToJsonSchema(schemas.execute_command) as {
+            type: string
+            properties: Record<string, unknown>
+            required?: string[]
+          }
+        },
+        server: {
+          name: 'agent-filesystem',
+          icons: '📁',
+          description: 'Agent FileSystem tools'
+        }
       }
     ]
   }
@@ -397,15 +480,17 @@ export class AgentToolManager {
       'directory_tree',
       'get_file_info',
       'grep_search',
-      'text_replace'
+      'text_replace',
+      'execute_command'
     ]
     return filesystemTools.includes(toolName)
   }
 
   private async callFileSystemTool(
     toolName: string,
-    args: Record<string, unknown>
-  ): Promise<string> {
+    args: Record<string, unknown>,
+    conversationId?: string
+  ): Promise<AgentToolCallResult> {
     if (!this.fileSystemHandler) {
       throw new Error('FileSystem handler not initialized')
     }
@@ -422,31 +507,53 @@ export class AgentToolManager {
 
     const parsedArgs = validationResult.data
 
-    switch (toolName) {
-      case 'read_file':
-        return await this.fileSystemHandler.readFile(parsedArgs)
-      case 'write_file':
-        return await this.fileSystemHandler.writeFile(parsedArgs)
-      case 'list_directory':
-        return await this.fileSystemHandler.listDirectory(parsedArgs)
-      case 'create_directory':
-        return await this.fileSystemHandler.createDirectory(parsedArgs)
-      case 'move_files':
-        return await this.fileSystemHandler.moveFiles(parsedArgs)
-      case 'edit_text':
-        return await this.fileSystemHandler.editText(parsedArgs)
-      case 'glob_search':
-        return await this.fileSystemHandler.globSearch(parsedArgs)
-      case 'directory_tree':
-        return await this.fileSystemHandler.directoryTree(parsedArgs)
-      case 'get_file_info':
-        return await this.fileSystemHandler.getFileInfo(parsedArgs)
-      case 'grep_search':
-        return await this.fileSystemHandler.grepSearch(parsedArgs)
-      case 'text_replace':
-        return await this.fileSystemHandler.textReplace(parsedArgs)
-      default:
-        throw new Error(`Unknown FileSystem tool: ${toolName}`)
+    try {
+      switch (toolName) {
+        case 'read_file':
+          return { content: await this.fileSystemHandler.readFile(parsedArgs) }
+        case 'write_file':
+          return { content: await this.fileSystemHandler.writeFile(parsedArgs) }
+        case 'list_directory':
+          return { content: await this.fileSystemHandler.listDirectory(parsedArgs) }
+        case 'create_directory':
+          return { content: await this.fileSystemHandler.createDirectory(parsedArgs) }
+        case 'move_files':
+          return { content: await this.fileSystemHandler.moveFiles(parsedArgs) }
+        case 'edit_text':
+          return { content: await this.fileSystemHandler.editText(parsedArgs) }
+        case 'glob_search':
+          return { content: await this.fileSystemHandler.globSearch(parsedArgs) }
+        case 'directory_tree':
+          return { content: await this.fileSystemHandler.directoryTree(parsedArgs) }
+        case 'get_file_info':
+          return { content: await this.fileSystemHandler.getFileInfo(parsedArgs) }
+        case 'grep_search':
+          return { content: await this.fileSystemHandler.grepSearch(parsedArgs) }
+        case 'text_replace':
+          return { content: await this.fileSystemHandler.textReplace(parsedArgs) }
+        case 'execute_command':
+          if (!this.bashHandler) {
+            throw new Error('Bash handler not initialized for execute_command tool')
+          }
+          return {
+            content: await this.bashHandler.executeCommand(parsedArgs, { conversationId })
+          }
+        default:
+          throw new Error(`Unknown FileSystem tool: ${toolName}`)
+      }
+    } catch (error) {
+      if (error instanceof CommandPermissionRequiredError) {
+        return {
+          content: error.responseContent,
+          rawData: {
+            content: error.responseContent,
+            isError: false,
+            requiresPermission: true,
+            permissionRequest: error.permissionRequest
+          }
+        }
+      }
+      throw error
     }
   }
 

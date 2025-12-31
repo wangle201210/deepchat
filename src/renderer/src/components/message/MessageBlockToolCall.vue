@@ -26,19 +26,6 @@
         class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4 max-w-full sm:max-w-2xl"
       >
         <div class="space-y-4">
-          <!-- Terminal output (for terminal-related tool calls) -->
-          <div v-if="isTerminalTool && block.tool_call?.response" class="space-y-2">
-            <h5 class="text-xs font-medium text-accent-foreground flex items-center gap-2">
-              <Icon icon="lucide:terminal" class="w-4 h-4" />
-              {{ t('toolCall.terminalOutput') }}
-            </h5>
-            <div
-              ref="terminalContainer"
-              class="rounded-md bg-black text-white font-mono text-xs p-2 overflow-auto max-h-64"
-            />
-            <hr v-if="hasParams" />
-          </div>
-
           <!-- 参数 -->
           <div v-if="hasParams" class="space-y-2">
             <h5 class="text-xs font-medium text-accent-foreground flex flex-row gap-2 items-center">
@@ -61,6 +48,20 @@
             <div class="text-sm rounded-md p-3">
               <JsonObject :data="parseJson(block.tool_call.response)" />
             </div>
+          </div>
+
+          <hr v-if="hasParams && block.tool_call?.response && isTerminalTool" />
+
+          <!-- Terminal output (for terminal-related tool calls) -->
+          <div v-if="isTerminalTool && block.tool_call?.response" class="space-y-2">
+            <h5 class="text-xs font-medium text-accent-foreground flex items-center gap-2">
+              <Icon icon="lucide:terminal" class="w-4 h-4" />
+              {{ t('toolCall.terminalOutput') }}
+            </h5>
+            <div
+              ref="terminalContainer"
+              class="rounded-md bg-black text-white font-mono text-xs p-2 overflow-auto max-h-64"
+            />
           </div>
         </div>
       </div>
@@ -86,7 +87,8 @@ const keyMap = {
   'toolCall.clickToView': '点击查看详情',
   'toolCall.functionName': '函数名称',
   'toolCall.params': '参数',
-  'toolCall.responseData': '响应数据'
+  'toolCall.responseData': '响应数据',
+  'toolCall.terminalOutput': 'Terminal output'
 }
 // 创建一个安全的翻译函数
 const t = (() => {
@@ -172,6 +174,21 @@ const parseJson = (jsonStr: string) => {
   }
 }
 
+const parseTerminalOutput = (response: string) => {
+  if (!response) return ''
+  try {
+    const parsed = JSON.parse(response)
+    if (typeof parsed === 'string') return parsed
+    if (parsed && typeof parsed === 'object') {
+      if (typeof parsed.output === 'string') return parsed.output
+      if (typeof parsed.stdout === 'string') return parsed.stdout
+    }
+  } catch {
+    // Fallback to raw response
+  }
+  return response
+}
+
 // Terminal detection
 const isTerminalTool = computed(() => {
   const name = props.block.tool_call?.name?.toLowerCase() || ''
@@ -226,18 +243,10 @@ const initTerminal = () => {
   terminal.open(terminalContainer.value)
 
   // Write terminal output from response
-  const response = props.block.tool_call?.response
-  if (response) {
-    try {
-      const data = parseJson(response)
-      const output = data.output || data.stdout || ''
-      if (output) {
-        terminal.write(output.replace(/\n/g, '\r\n'))
-      }
-    } catch {
-      // Fallback: treat response as plain text
-      terminal.write(response.replace(/\n/g, '\r\n'))
-    }
+  const response = props.block.tool_call?.response ?? ''
+  const output = parseTerminalOutput(response)
+  if (output) {
+    terminal.write(output.replace(/\n/g, '\r\n'))
   }
 }
 

@@ -92,37 +92,6 @@
     "responseData": "Svardata",
     "title": "Værktøjsopkald"
   },
-  "acp": {
-    "workspace": {
-      "title": "Arbejdsområde",
-      "collapse": "Skjul",
-      "plan": {
-        "section": "Plan",
-        "empty": "Ingen opgaver endnu",
-        "status": {
-          "pending": "Afventer",
-          "in_progress": "I gang",
-          "completed": "Fuldført",
-          "failed": "Fejlet",
-          "skipped": "Sprunget over"
-        }
-      },
-      "files": {
-        "section": "Filer",
-        "empty": "Ingen filer",
-        "loading": "Indlæser filer...",
-        "contextMenu": {
-          "insertPath": "Indsæt i inputboksen",
-          "openFile": "åbne fil",
-          "revealInFolder": "Åbn i filhåndtering"
-        }
-      },
-      "terminal": {
-        "section": "Terminal",
-        "empty": "Ingen output"
-      }
-    }
-  },
   "mode": {
     "acpAgent": "ACP-agent",
     "agent": "Agent",
@@ -150,7 +119,7 @@
       "section": "plan",
       "status": {
         "completed": "Afsluttet",
-        "failed": "svigte",
+        "failed": "Mislykket",
         "in_progress": "i gang",
         "pending": "Indtil",
         "skipped": "sprunget over"
@@ -158,7 +127,24 @@
     },
     "terminal": {
       "empty": "Ingen output endnu",
-      "section": "terminal"
+      "section": "terminal",
+      "status": {
+        "aborted": "afbrudt",
+        "completed": "succes",
+        "failed": "Mislykket",
+        "running": "Kører",
+        "timed_out": "Timeout"
+      },
+      "contextMenu": {
+        "delete": "Slet post",
+        "expand": "Udvid for at se",
+        "terminate": "Afslut kommando",
+        "collapse": "Foldning"
+      },
+      "noOutput": "Ingen uddata",
+      "output": {
+        "truncated": "[afkortet]"
+      }
     },
     "title": "arbejdsrum"
   }

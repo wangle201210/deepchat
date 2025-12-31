@@ -92,37 +92,6 @@
     "expand": "Expandir",
     "title": "MCP UI"
   },
-  "acp": {
-    "workspace": {
-      "title": "Área de trabalho",
-      "collapse": "Recolher",
-      "plan": {
-        "section": "Plano",
-        "empty": "Nenhuma tarefa ainda",
-        "status": {
-          "pending": "Pendente",
-          "in_progress": "Em andamento",
-          "completed": "Concluído",
-          "failed": "Falhou",
-          "skipped": "Ignorado"
-        }
-      },
-      "files": {
-        "section": "Arquivos",
-        "empty": "Nenhum arquivo",
-        "loading": "Carregando arquivos...",
-        "contextMenu": {
-          "insertPath": "Insira na caixa de entrada",
-          "openFile": "abrir arquivo",
-          "revealInFolder": "Abrir no gerenciador de arquivos"
-        }
-      },
-      "terminal": {
-        "section": "Terminal",
-        "empty": "Nenhuma saída"
-      }
-    }
-  },
   "mode": {
     "acpAgent": "Agente ACP",
     "agent": "Agente",
@@ -158,7 +127,24 @@
     },
     "terminal": {
       "empty": "Nenhuma saída ainda",
-      "section": "terminal"
+      "section": "terminal",
+      "contextMenu": {
+        "collapse": "Dobrar",
+        "expand": "Expandir para visualizar",
+        "terminate": "Comando de Término",
+        "delete": "Excluir registro"
+      },
+      "output": {
+        "truncated": "[Truncado]"
+      },
+      "status": {
+        "aborted": "Cancelado",
+        "completed": "sucesso",
+        "failed": "Falha",
+        "running": "Em execução",
+        "timed_out": "Tempo esgotado"
+      },
+      "noOutput": "Sem saída"
     },
     "title": "área de trabalho"
   }
