@@ -148,7 +148,7 @@
     "katex": "^0.16.27",
     "lint-staged": "^16.2.7",
     "lucide-vue-next": "^0.544.0",
-    "markstream-vue": "0.0.3",
+    "markstream-vue": "0.0.4-beta.8",
     "mermaid": "^11.12.2",
     "minimatch": "^10.1.1",
     "monaco-editor": "^0.52.2",
