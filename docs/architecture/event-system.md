@@ -4,10 +4,10 @@
 
 ## 📋 核心组件
 
-| 组件 | 文件位置 | 行数 | 职责 |
-|------|---------|------|------|
-| **EventBus** | `src/main/eventbus.ts` | 152 | 统一事件发射和接收 |
-| **events.ts** | `src/main/events.ts` | 263 | 事件常量定义 |
+| 组件 | 文件位置 | 职责 |
+|------|---------|------|
+| **EventBus** | `src/main/eventbus.ts` | 统一事件发射和接收 |
+| **events.ts** | `src/main/events.ts` | 事件常量定义 |
 
 ## 🏗️ EventBus 架构
 
@@ -602,7 +602,7 @@ sequenceDiagram
             Files-->>MCP: 结果
             MCP-->>AgentLoop: toolResponse
         else 拒绝
-            AgentLoop AgentLoop: 返回错误
+            AgentLoop->>AgentLoop: 返回错误
         end
     else 已批准权限
         MCP->>Files: 执行工具
@@ -644,6 +644,122 @@ sequenceDiagram
 
     SessionP->>EventBus: send CONVERSATION_EVENTS.LIST_UPDATED
     EventBus->>UI: 刷新会话列表
+```
+
+## 📤 渲染层到主进程的 IPC 调用模式
+
+### usePresenter - 类型安全的 Presenter 调用
+
+**文件位置**：`src/renderer/src/composables/usePresenter.ts`
+
+| 组件 | 文件位置 | 职责 |
+|------|---------|------|
+| **usePresenter** | `src/renderer/src/composables/usePresenter.ts` | 为渲染层提供类型安全的 Presenter 方法调用代理 |
+
+### 工作原理
+
+usePresenter 实现了渲染层到主进程的双向代理调用系统：
+
+1. **类型安全** - 通过 TypeScript 泛型确保调用方法的类型正确
+2. **WebContentsId 映射** - 自动获取并缓存当前的 webContentsId，供主进程映射到 tabId/windowId
+3. **安全序列化** - `safeSerialize()` 处理不可序列化对象
+4. **统一 IPC 通道** - 所有调用通过 `presenter:call` 路由到主进程
+
+```mermaid
+sequenceDiagram
+    participant UI as Vue Component
+    participant UP as usePresenter
+    participant IPC as electron.ipcRenderer
+    participant Router as presenter:call
+    participant P as Presenter
+
+    UI->>UP: usePresenter('agent')
+    UI->>UP: sendMessage(...)
+    UP->>UP: safeSerialize(payloads)
+    UP->>UP: getWebContentsId()
+    UP->>IPC: invoke(presenter:call)
+    IPC->>Router: 路由到指定 Presenter
+    Router->>P: 调用 sendMessage
+    P-->>Router: 返回结果
+    Router-->>IPC: 返回结果
+    IPC-->>UP: Promise resolve
+    UP-->>UI: 返回结果
+```
+
+### 核心实现
+
+```typescript
+export function usePresenter<T extends keyof IPresenter>(name: T): IPresenter[T] {
+  return presentersProxy[name]
+}
+```
+
+通过 Proxy 机制，所有对 Presenter 方法的调用都会被拦截并转换为 IPC 调用：
+
+```typescript
+Proxy handler:
+  get(presenterName, functionName) {
+    return async (...payloads) => {
+      const webContentsId = getWebContentsId()
+      const rawPayloads = payloads.map((e) => safeSerialize(toRaw(e)))
+      return window.electron.ipcRenderer.invoke(
+        'presenter:call',
+        presenterName,
+        functionName,
+        ...rawPayloads
+      )
+    }
+  }
+```
+
+### WebContentsId 到 tabId/windowId 映射
+
+- 渲染进程通过 `window.api.getWebContentsId()` 获取自己的 webContentsId
+- 主进程通过 IPC 调用携带的 webContentsId 自动映射到对应的 tabId 和 windowId
+- 这解决了渲染层不知道自己所属 tabId 的问题
+
+### 使用示例
+
+```typescript
+// Vue 组件中
+import { usePresenter } from '@/composables/usePresenter'
+
+const agentPresenter = usePresenter('agent')
+const conversationPresenter = usePresenter('conversation')
+
+// 发送消息
+async function sendMessage(content: string) {
+  await agentPresenter.sendMessage(conversationId, content)
+}
+
+// 删除会话
+async function deleteConversation(id: string) {
+  await conversationPresenter.deleteConversation(id)
+}
+```
+
+### 与 EventBus 的区别
+
+| 特性 | EventBus | usePresenter (IPC) |
+|------|----------|-------------------|
+| 模式 | pub/sub（发布/订阅） | request/response（请求/响应） |
+| 方向 | 主要主→渲染（广播） | 渲染→主（调用） |
+| 返回值 | 无返回值 | Promise |
+| 典型用途 | 状态通知、流式更新、UI 同步 | CRUD 操作、命令执行、数据查询 |
+| 监听方式 | renderer 监听事件 | renderer 调用方法 |
+| 通信通道 | `sendToRenderer()` / `on()` | `invoke('presenter:call')` |
+
+### 调试支持
+
+通过环境变量 `VITE_LOG_IPC_CALL=1` 可以开启 IPC 调用日志：
+
+```bash
+VITE_LOG_IPC_CALL=1 npm run dev
+```
+
+控制台输出：
+```
+[Renderer IPC] WebContents:42 -> agent.sendMessage
 ```
 
 ## 🔍 在渲染进程监听事件
@@ -709,6 +825,7 @@ export const useChatStore = defineStore('chat', {
 - **EventBus**: `src/main/eventbus.ts:1-152`
 - **事件常量**: `src/main/events.ts:1-263`
 - **Presenter 初始化**: `src/main/presenter/index.ts`
+- **usePresenter**: `src/renderer/src/composables/usePresenter.ts`
 
 ## 📚 相关阅读
 

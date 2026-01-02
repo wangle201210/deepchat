@@ -6,10 +6,10 @@
 
 | 组件 | 文件位置 | 职责 |
 |------|---------|------|
-| **SessionPresenter** | `src/main/presenter/sessionPresenter/index.ts` (900行) | 会话管理的主入口，实现 ISessionPresenter 接口 |
-| **SessionManager** | `src/main/presenter/sessionPresenter/session/sessionManager.ts` (245行) | 会话上下文解析和运行时状态管理 |
-| **MessageManager** | `src/main/presenter/sessionPresenter/managers/messageManager.ts` (~400行) | 消息持久化和查询 |
-| **ConversationManager** | `src/main/presenter/sessionPresenter/managers/conversationManager.ts` (~500行) | 会话持久化和标签绑定 |
+| **SessionPresenter** | `src/main/presenter/sessionPresenter/index.ts` | 会话管理的主入口，实现 ISessionPresenter 接口 |
+| **SessionManager** | `src/main/presenter/sessionPresenter/session/sessionManager.ts` | 会话上下文解析和运行时状态管理 |
+| **MessageManager** | `src/main/presenter/sessionPresenter/managers/messageManager.ts` | 消息持久化和查询 |
+| **ConversationManager** | `src/main/presenter/sessionPresenter/managers/conversationManager.ts` | 会话持久化和标签绑定 |
 
 ## 🏗️ 架构关系
 

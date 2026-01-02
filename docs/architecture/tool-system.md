@@ -4,31 +4,31 @@
 
 ## 📋 核心组件概览
 
-| 组件 | 文件位置 | 行数 | 职责 |
-|------|---------|------|------|
-| **ToolPresenter** | `src/main/presenter/toolPresenter/index.ts` | 161 | 统一工具定义接口、工具调用路由 |
-| **ToolMapper** | `src/main/presenter/toolPresenter/toolMapper.ts` | ~100 | 工具名称→来源映射 |
-| **McpPresenter** | `src/main/presenter/mcpPresenter/index.ts` | ~500 | MCP 服务器管理、工具定义、工具调用 |
-| **AgentToolManager** | `src/main/presenter/agentPresenter/acp/agentToolManager.ts` | 577 | Agent 工具管理 |
-| **AgentFileSystemHandler** | `src/main/presenter/agentPresenter/acp/agentFileSystemHandler.ts` | 960 | 文件系统工具实现 |
+| 组件 | 文件位置 | 职责 |
+|------|---------|------|
+| **ToolPresenter** | `src/main/presenter/toolPresenter/index.ts` | 统一工具定义接口、工具调用路由 |
+| **ToolMapper** | `src/main/presenter/toolPresenter/toolMapper.ts` | 工具名称→来源映射 |
+| **McpPresenter** | `src/main/presenter/mcpPresenter/index.ts` | MCP 服务器管理、工具定义、工具调用 |
+| **AgentToolManager** | `src/main/presenter/agentPresenter/acp/agentToolManager.ts` | Agent 工具管理 |
+| **AgentFileSystemHandler** | `src/main/presenter/agentPresenter/acp/agentFileSystemHandler.ts` | 文件系统工具实现 |
 
 ## 🏗️ 架构关系
 
 ```mermaid
 graph TB
     subgraph "工具路由层"
-        ToolP[ToolPresenter<br/>161行]
-        Mapper[ToolMapper<br/>~100行]
+        ToolP[ToolPresenter]
+        Mapper[ToolMapper]
     end
 
     subgraph "工具来源"
-        McpP[McpPresenter<br/>~500行]
+        McpP[McpPresenter]
         ServerMgr[MCP ServerManager]
         ToolMgr[MCP ToolManager]
         McpClient[MCP Clients]
 
-        AgentToolMgr[AgentToolManager<br/>577行]
-        FsHandler[AgentFileSystemHandler<br/>960行]
+        AgentToolMgr[AgentToolManager]
+        FsHandler[AgentFileSystemHandler]
         Browser[Yo Browser Tools]
     end
 
@@ -683,10 +683,10 @@ sequenceDiagram
 
     ToolMgr->>ToolMgr: 检查 autoApprove 配置
 
-    auto 批准
+    alt 权限在 autoApprove 中
         Note over ToolMgr: 权限在 autoApprove 中
         ToolMgr-->>McpP: granted: true
-    else 权限类型
+    else 需要权限请求
         ToolMgr->>ToolMgr: 查找最高权限类型
         ToolMgr-->>McpP: granted: false, permissionType: 'read'|'write'
     end

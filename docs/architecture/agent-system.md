@@ -4,43 +4,43 @@
 
 ## 📋 核心组件概览
 
-| 组件 | 文件位置 | 行数 | 职责 |
-|------|---------|------|------|
-| **AgentPresenter** | `src/main/presenter/agentPresenter/index.ts` | 472 | Agent 编排主入口，实现 IAgentPresenter 接口 |
-| **agentLoopHandler** | `src/main/presenter/agentPresenter/loop/agentLoopHandler.ts` | 670 | Agent Loop 主循环（while 循环） |
-| **streamGenerationHandler** | `src/main/presenter/agentPresenter/streaming/streamGenerationHandler.ts` | 645 | 流生成协调，准备上下文、启动 Loop |
-| **loopOrchestrator** | `src/main/presenter/agentPresenter/loop/loopOrchestrator.ts` | ~30 | Loop 状态管理器 |
-| **toolCallProcessor** | `src/main/presenter/agentPresenter/loop/toolCallProcessor.ts` | 445 | 工具调用执行和结果处理 |
-| **llmEventHandler** | `src/main/presenter/agentPresenter/streaming/llmEventHandler.ts` | ~400 | 标准化 LLM 事件 |
-| **permissionHandler** | `src/main/presenter/agentPresenter/permission/permissionHandler.ts` | ~600 | 权限请求响应协调 |
-| **messageBuilder** | `src/main/presenter/agentPresenter/message/messageBuilder.ts` | ~285 | 提示词构建 |
-| **contentBufferHandler** | `src/main/presenter/agentPresenter/streaming/contentBufferHandler.ts` | ~200 | 流式内容缓冲优化 |
-| **toolCallHandler** | `src/main/presenter/agentPresenter/loop/toolCallHandler.ts` | ~500 | 工具调用 UI 块管理 |
+| 组件 | 文件位置 | 职责 |
+|------|---------|------|
+| **AgentPresenter** | `src/main/presenter/agentPresenter/index.ts` | Agent 编排主入口，实现 IAgentPresenter 接口 |
+| **agentLoopHandler** | `src/main/presenter/agentPresenter/loop/agentLoopHandler.ts` | Agent Loop 主循环（while 循环） |
+| **streamGenerationHandler** | `src/main/presenter/agentPresenter/streaming/streamGenerationHandler.ts` | 流生成协调，准备上下文、启动 Loop |
+| **loopOrchestrator** | `src/main/presenter/agentPresenter/loop/loopOrchestrator.ts` | Loop 状态管理器 |
+| **toolCallProcessor** | `src/main/presenter/agentPresenter/loop/toolCallProcessor.ts` | 工具调用执行和结果处理 |
+| **llmEventHandler** | `src/main/presenter/agentPresenter/streaming/llmEventHandler.ts` | 标准化 LLM 事件 |
+| **permissionHandler** | `src/main/presenter/agentPresenter/permission/permissionHandler.ts` | 权限请求响应协调 |
+| **messageBuilder** | `src/main/presenter/agentPresenter/message/messageBuilder.ts` | 提示词构建 |
+| **contentBufferHandler** | `src/main/presenter/agentPresenter/streaming/contentBufferHandler.ts` | 流式内容缓冲优化 |
+| **toolCallHandler** | `src/main/presenter/agentPresenter/loop/toolCallHandler.ts` | 工具调用 UI 块管理 |
 
 ## 🏗️ 架构关系
 
 ```mermaid
 graph TB
     subgraph "AgentPresenter 主入口"
-        AgentP[AgentPresenter<br/>472行]
+        AgentP[AgentPresenter]
     end
 
     subgraph "Agent Loop 执行层"
-        StreamGen[streamGenerationHandler<br/>645行]
-        AgentLoop[agentLoopHandler<br/>670行]
+        StreamGen[streamGenerationHandler]
+        AgentLoop[agentLoopHandler]
         LoopOrch[loopOrchestrator]
-        ToolCallProc[toolCallProcessor<br/>445行]
+        ToolCallProc[toolCallProcessor]
     end
 
     subgraph "事件处理层"
-        LLMEvent[llmEventHandler<br/>~400行]
-        ToolCall[toolCallHandler<br/>~500行]
-        BufHandler[contentBufferHandler<br/>~200行]
+        LLMEvent[llmEventHandler]
+        ToolCall[toolCallHandler]
+        BufHandler[contentBufferHandler]
     end
 
     subgraph "辅助组件"
-        MessageBuilder[messageBuilder<br/>~285行]
-        PermHandler[permissionHandler<br/>~600行]
+        MessageBuilder[messageBuilder]
+        PermHandler[permissionHandler]
         Utility[utilityHandler]
     end
 
@@ -249,7 +249,7 @@ flowchart TD
     LoopEvents --> EventToolEnd{tool_call_end}
     EventToolEnd --> IsACP{providerId == 'acp'?}
 
-    IsACP -->|是| SendACPResult[发送 tool_call: 'end' 事件<br/>ACP 已执行]}
+    IsACP -->|是| SendACPResult[发送 tool_call: end 事件<br/>ACP 已执行]
     IsACP -->|否| PushToolCall[将工具调用加入 currentToolCalls]
     PushToolCall --> LoopEvents
 
@@ -547,44 +547,43 @@ class ToolCallProcessor {
 
 ```mermaid
 sequenceDiagram
-    participant Loop as Agent Loop
-    participant TCP as toolCallProcessor
-    participant TP as ToolPresenter
-    participant EventBus as EventBus
+    participant L as Agent Loop
+    participant T as toolCallProcessor
+    participant P as ToolPresenter
+    participant E as EventBus
 
-    Loop->>TCP: process({toolCalls, eventId, ...})
+    L->>T: process(toolCalls)
 
-    TCP->>TCP: 检查工具列表
+    T->>T: 检查工具列表
     loop 遍历每个 toolCall
-        TCP->>TP: callTool(toolCall)
-        TP->>TP: ToolMapper 路由
+        T->>P: callTool(toolCall)
+        P->>P: ToolMapper 路由
 
         alt MCP 工具
-            TP->>TP: mcpPresenter.callTool()
+            P->>P: mcpPresenter.callTool()
         else Agent 工具
-            TP->>TP: agentToolManager.callTool()
+            P->>P: agentToolManager.callTool()
         end
 
-        TP-->>TCP: toolResponse
+        P-->>T: toolResponse
 
-        TCP->>EventBus: send {tool_call: 'running', ...}
-        TCP->>EventBus: send {tool_call: 'end', toolResult}
+        T->>E: send(tool_call running)
+        T->>E: send(tool_call end)
 
-        TCP->>TCP: 添加 tool result 到上下文
-        TCP-->>Loop: yield {type: 'response', data: {tool_call: 'end'}}
+        T->>T: 添加 tool result 到上下文
+        T-->>L: return tool_call end
 
-        TCP->>TCP: incrementToolCallCount()
-        alt 用户中断
-            TCP->>TCP: needContinueConversation = false
-            break
-        ToolCallCount>=MAX
-            TCP->>TCP: needContinueConversation = false
-            TCP-->>Loop: yield {maximum_tool_calls_reached: true}
-            break
-        end
+        T->>T: incrementToolCallCount()
     end
 
-    TCP-->>Loop: return {toolCallCount, needContinueConversation}
+    alt 用户中断
+        T->>T: needContinueConversation = false
+    else 工具调用达上限
+        T->>T: needContinueConversation = false
+        T-->>L: return maximum_tool_calls_reached
+    end
+
+    T-->>L: return metadata
 ```
 
 **文件位置**：`src/main/presenter/agentPresenter/loop/toolCallProcessor.ts`
