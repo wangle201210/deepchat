@@ -33,6 +33,25 @@ export type {
   SearchResult
 } from './thread.presenter'
 
+// Session types
+export type {
+  SessionStatus,
+  SessionConfig,
+  SessionBindings,
+  WorkspaceContext,
+  Session,
+  CreateSessionOptions,
+  CreateSessionParams,
+  CreateChildSessionParams,
+  ISessionPresenter
+} from './session.presenter'
+
+// Search types
+export type { ISearchPresenter } from './search.presenter'
+
+// Exporter types
+export type { IConversationExporter, NowledgeMemConfig } from './exporter.presenter'
+
 export type * from './agent-provider'
 
 // Generic Workspace types (for all Agent modes)
@@ -48,6 +67,9 @@ export type {
 
 // Tool Presenter types
 export type { IToolPresenter } from './tool.presenter'
+
+// Agent Presenter types
+export type { IAgentPresenter } from './agent.presenter'
 
 // Re-export legacy types temporarily for compatibility
 export * from './legacy.presenters'

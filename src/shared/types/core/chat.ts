@@ -50,6 +50,7 @@ export type AssistantMessageBlock = {
     | 'content'
     | 'search'
     | 'reasoning_content'
+    | 'plan'
     | 'error'
     | 'tool_call'
     | 'action'
@@ -101,3 +102,10 @@ export type AssistantMessageBlock = {
   image_data?: { data: string; mimeType: string }
   reasoning_time?: { start: number; end: number }
 }
+
+export type {
+  ChatMessage,
+  ChatMessageContent,
+  ChatMessageRole,
+  ChatMessageToolCall
+} from './chat-message'

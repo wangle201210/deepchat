@@ -26,11 +26,11 @@ import { ProviderInstanceManager } from './managers/providerInstanceManager'
 import { ModelManager } from './managers/modelManager'
 import { OllamaManager } from './managers/ollamaManager'
 import { EmbeddingManager } from './managers/embeddingManager'
-import { AgentLoopHandler } from './managers/agentLoopHandler'
+import { AgentLoopHandler } from '../agentPresenter/loop'
 import { ModelScopeSyncManager } from './managers/modelScopeSyncManager'
 import type { OllamaProvider } from './providers/ollamaProvider'
 import { ShowResponse } from 'ollama'
-import { AcpSessionPersistence } from './agent/acpSessionPersistence'
+import { AcpSessionPersistence } from '../agentPresenter/acp'
 import { AcpProvider } from './providers/acpProvider'
 
 export class LLMProviderPresenter implements ILlmProviderPresenter {
@@ -203,7 +203,7 @@ export class LLMProviderPresenter implements ILlmProviderPresenter {
     const stream = this.activeStreams.get(eventId)
     if (stream) {
       stream.abortController.abort()
-      // Deletion is handled by the consuming loop in threadPresenter upon receiving the 'end' event or abortion signal
+      // Deletion is handled by the consuming loop in sessionPresenter upon receiving the 'end' event or abortion signal
     }
   }
 

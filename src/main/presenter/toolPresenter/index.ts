@@ -7,12 +7,9 @@ import type {
   MCPToolResponse
 } from '@shared/presenter'
 import { ToolMapper } from './toolMapper'
-import {
-  AgentToolManager,
-  AgentToolCallResult
-} from '../llmProviderPresenter/agent/agentToolManager'
+import { AgentToolManager, type AgentToolCallResult } from '../agentPresenter/acp'
 import { jsonrepair } from 'jsonrepair'
-import { CommandPermissionHandler } from '../threadPresenter/handlers/commandPermissionHandler'
+import { CommandPermissionService } from '../permission'
 
 export interface IToolPresenter {
   getAllToolDefinitions(context: {
@@ -28,7 +25,7 @@ interface ToolPresenterOptions {
   mcpPresenter: IMCPPresenter
   yoBrowserPresenter: IYoBrowserPresenter
   configPresenter: IConfigPresenter
-  commandPermissionHandler?: CommandPermissionHandler
+  commandPermissionHandler?: CommandPermissionService
 }
 
 /**

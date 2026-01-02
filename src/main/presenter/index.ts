@@ -1,7 +1,6 @@
 import path from 'path'
 import { DialogPresenter } from './dialogPresenter/index'
 import { ipcMain, IpcMainInvokeEvent, app } from 'electron'
-// import { LlamaCppPresenter } from './llamaCppPresenter' // 保留原始注释
 import { WindowPresenter } from './windowPresenter'
 import { ShortcutPresenter } from './shortcutPresenter'
 import {
@@ -20,7 +19,9 @@ import {
   ISQLitePresenter,
   ISyncPresenter,
   ITabPresenter,
-  IThreadPresenter,
+  ISessionPresenter,
+  IConversationExporter,
+  IAgentPresenter,
   IUpgradePresenter,
   IWindowPresenter,
   IWorkspacePresenter,
@@ -29,7 +30,8 @@ import {
 } from '@shared/presenter'
 import { eventBus } from '@/eventbus'
 import { LLMProviderPresenter } from './llmProviderPresenter'
-import { ThreadPresenter } from './threadPresenter'
+import { SessionPresenter } from './sessionPresenter'
+import { MessageManager } from './sessionPresenter/managers/messageManager'
 import { DevicePresenter } from './devicePresenter'
 import { UpgradePresenter } from './upgradePresenter'
 import { FilePresenter } from './filePresenter/FilePresenter'
@@ -46,7 +48,11 @@ import { CONFIG_EVENTS, WINDOW_EVENTS } from '@/events'
 import { KnowledgePresenter } from './knowledgePresenter'
 import { WorkspacePresenter } from './workspacePresenter'
 import { ToolPresenter } from './toolPresenter'
-import { CommandPermissionHandler } from './threadPresenter/handlers/commandPermissionHandler'
+import { CommandPermissionService } from './permission'
+import { AgentPresenter } from './agentPresenter'
+import { SessionManager } from './agentPresenter/session/sessionManager'
+import { SearchPresenter } from './searchPresenter'
+import { ConversationExporterService } from './exporter'
 
 // IPC调用上下文接口
 interface IPCCallContext {
@@ -70,7 +76,11 @@ export class Presenter implements IPresenter {
   sqlitePresenter: ISQLitePresenter
   llmproviderPresenter: ILlmProviderPresenter
   configPresenter: IConfigPresenter
-  threadPresenter: IThreadPresenter
+  sessionPresenter: ISessionPresenter
+  searchPresenter: SearchPresenter
+  exporter: IConversationExporter
+  agentPresenter: IAgentPresenter & ISessionPresenter
+  sessionManager: SessionManager
   devicePresenter: IDevicePresenter
   upgradePresenter: IUpgradePresenter
   shortcutPresenter: IShortcutPresenter
@@ -87,7 +97,6 @@ export class Presenter implements IPresenter {
   workspacePresenter: IWorkspacePresenter
   toolPresenter: IToolPresenter
   yoBrowserPresenter: IYoBrowserPresenter
-  // llamaCppPresenter: LlamaCppPresenter // 保留原始注释
   dialogPresenter: IDialogPresenter
   lifecycleManager: ILifecycleManager
 
@@ -103,14 +112,40 @@ export class Presenter implements IPresenter {
     this.windowPresenter = new WindowPresenter(this.configPresenter)
     this.tabPresenter = new TabPresenter(this.windowPresenter)
     this.llmproviderPresenter = new LLMProviderPresenter(this.configPresenter, this.sqlitePresenter)
-    const commandPermissionHandler = new CommandPermissionHandler()
+    const commandPermissionHandler = new CommandPermissionService()
+    const messageManager = new MessageManager(this.sqlitePresenter)
     this.devicePresenter = new DevicePresenter()
-    this.threadPresenter = new ThreadPresenter(
-      this.sqlitePresenter,
-      this.llmproviderPresenter,
-      this.configPresenter,
-      commandPermissionHandler
-    )
+    this.searchPresenter = new SearchPresenter({
+      configPresenter: this.configPresenter,
+      windowPresenter: this.windowPresenter,
+      llmProviderPresenter: this.llmproviderPresenter
+    })
+    this.exporter = new ConversationExporterService({
+      sqlitePresenter: this.sqlitePresenter,
+      configPresenter: this.configPresenter
+    })
+    this.sessionPresenter = new SessionPresenter({
+      messageManager,
+      sqlitePresenter: this.sqlitePresenter,
+      llmProviderPresenter: this.llmproviderPresenter,
+      configPresenter: this.configPresenter,
+      exporter: this.exporter,
+      commandPermissionService: commandPermissionHandler
+    })
+    this.sessionManager = new SessionManager({
+      configPresenter: this.configPresenter,
+      sessionPresenter: this.sessionPresenter
+    })
+    this.agentPresenter = new AgentPresenter({
+      sessionPresenter: this.sessionPresenter,
+      sessionManager: this.sessionManager,
+      sqlitePresenter: this.sqlitePresenter,
+      llmProviderPresenter: this.llmproviderPresenter,
+      configPresenter: this.configPresenter,
+      searchPresenter: this.searchPresenter,
+      commandPermissionService: commandPermissionHandler,
+      messageManager
+    }) as unknown as IAgentPresenter & ISessionPresenter
     this.mcpPresenter = new McpPresenter(this.configPresenter)
     this.upgradePresenter = new UpgradePresenter(this.configPresenter)
     this.shortcutPresenter = new ShortcutPresenter(this.configPresenter)
@@ -143,7 +178,6 @@ export class Presenter implements IPresenter {
       commandPermissionHandler
     })
 
-    // this.llamaCppPresenter = new LlamaCppPresenter() // 保留原始注释
     this.setupEventBus() // 设置事件总线监听
   }
 
@@ -303,7 +337,9 @@ ipcMain.handle(
 
       // 通过名称获取对应的 Presenter 实例
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const calledPresenter: any = presenter[name as keyof Presenter]
+      let calledPresenter: any = presenter[name as keyof Presenter]
+      let resolvedMethod = method
+      let resolvedPayloads = payloads
 
       if (!calledPresenter) {
         console.warn(`[IPC Warning] Tab:${context.tabId} calling wrong presenter: ${name}`)
@@ -311,9 +347,9 @@ ipcMain.handle(
       }
 
       // 检查方法是否存在且为函数
-      if (isFunction(calledPresenter, method)) {
+      if (isFunction(calledPresenter, resolvedMethod)) {
         // 调用方法并返回结果
-        return calledPresenter[method](...payloads)
+        return calledPresenter[resolvedMethod](...resolvedPayloads)
       } else {
         console.warn(
           `[IPC Warning] Tab:${context.tabId} called method is not a function or does not exist: ${name}.${method}`

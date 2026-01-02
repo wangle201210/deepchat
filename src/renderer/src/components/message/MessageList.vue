@@ -59,7 +59,11 @@
       @bar-hover="minimap.handleHover"
       @bar-click="minimap.handleClick"
     />
-    <TraceDialog :message-id="traceMessageId" @close="traceMessageId = null" />
+    <TraceDialog
+      :message-id="traceMessageId"
+      :agent-id="chatStore.getActiveThreadId()"
+      @close="traceMessageId = null"
+    />
   </div>
 </template>
 
@@ -68,7 +72,7 @@
 import { ref, onMounted, nextTick, watch, computed, toRef, onBeforeUnmount } from 'vue'
 
 // === Types ===
-import { AssistantMessage, UserMessage } from '@shared/chat'
+import type { AssistantMessage, Message, UserMessage } from '@shared/chat'
 
 // === Components ===
 import MessageItemAssistant from './MessageItemAssistant.vue'
@@ -94,7 +98,7 @@ import type { ParentSelection } from '@shared/presenter'
 
 // === Props & Emits ===
 const props = defineProps<{
-  messages: Array<UserMessage | AssistantMessage>
+  messages: Array<Message>
 }>()
 
 // === Stores ===
