@@ -92,37 +92,6 @@
     "params": "פרמטרים",
     "responseData": "נתוני תגובה"
   },
-  "acp": {
-    "workspace": {
-      "collapse": "לִסְגוֹר",
-      "files": {
-        "contextMenu": {
-          "insertPath": "הכנס לתוך תיבת הקלט",
-          "openFile": "לפתוח קובץ",
-          "revealInFolder": "פתח במנהל הקבצים"
-        },
-        "empty": "עדיין אין קבצים",
-        "loading": "טוען קבצים...",
-        "section": "מִסְמָך"
-      },
-      "plan": {
-        "empty": "עדיין אין משימות",
-        "section": "לְתַכְנֵן",
-        "status": {
-          "completed": "הושלם",
-          "failed": "לְהִכָּשֵׁל",
-          "in_progress": "בתהליך",
-          "pending": "תָלוּי וְעוֹמֵד",
-          "skipped": "דילג"
-        }
-      },
-      "terminal": {
-        "empty": "עדיין אין פלט",
-        "section": "מָסוֹף"
-      },
-      "title": "סביבת עבודה"
-    }
-  },
   "mode": {
     "acpAgent": "סוכן ACP",
     "agent": "סוֹכֵן",
@@ -158,7 +127,24 @@
     },
     "terminal": {
       "empty": "עדיין אין פלט",
-      "section": "מָסוֹף"
+      "section": "מָסוֹף",
+      "status": {
+        "completed": "הצלחה",
+        "failed": "כישלון",
+        "timed_out": "פסק זמן",
+        "aborted": "הופסק",
+        "running": "בפעילות"
+      },
+      "contextMenu": {
+        "collapse": "קיפול",
+        "delete": "מחק רשומה",
+        "expand": "הרחב לצפייה",
+        "terminate": "פקודת סיום"
+      },
+      "noOutput": "ללא פלט",
+      "output": {
+        "truncated": "[מקוצר]"
+      }
     },
     "title": "סביבת עבודה"
   }

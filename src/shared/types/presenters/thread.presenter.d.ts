@@ -1,11 +1,4 @@
-import {
-  ChatMessage,
-  AssistantMessageBlock,
-  Message,
-  AssistantMessage,
-  UserMessage
-} from '../core/chat'
-import { MODEL_META, AcpWorkdirInfo } from './llmprovider.presenter'
+import { AssistantMessageBlock, Message } from '../../chat'
 
 /**
  * Thread/Conversation Presenter Interface
@@ -30,6 +23,7 @@ export type CONVERSATION_SETTINGS = {
   acpWorkdirMap?: Record<string, string | null>
   chatMode?: 'chat' | 'agent' | 'acp agent'
   agentWorkspacePath?: string | null
+  selectedVariantsMap?: Record<string, string>
 }
 
 export type ParentSelection = {
@@ -87,15 +81,6 @@ export interface MESSAGE {
   is_context_edge?: boolean
 }
 
-export interface SearchEngineTemplate {
-  id: string
-  name: string
-  url: string
-  icon: string
-  enabled: boolean
-  isDefault?: boolean
-}
-
 export interface SearchResult {
   title: string
   url: string
@@ -109,9 +94,6 @@ export interface SearchResult {
 }
 
 export interface IThreadPresenter {
-  searchAssistantModel: MODEL_META | null
-  searchAssistantProviderId: string | null
-
   // Basic conversation operations
   createConversation(
     title: string,
@@ -133,7 +115,8 @@ export interface IThreadPresenter {
     targetConversationId: string,
     targetMessageId: string,
     newTitle: string,
-    settings?: Partial<CONVERSATION_SETTINGS>
+    settings?: Partial<CONVERSATION_SETTINGS>,
+    selectedVariantsMap?: Record<string, string>
   ): Promise<string>
 
   createChildConversationFromSelection(payload: {
@@ -164,6 +147,7 @@ export interface IThreadPresenter {
   getActiveConversation(tabId: number): Promise<CONVERSATION | null>
   getActiveConversationId(tabId: number): Promise<string | null>
   clearActiveThread(tabId: number): Promise<void>
+  findTabForConversation(conversationId: string): Promise<number | null>
 
   getSearchResults(messageId: string, searchId?: string): Promise<SearchResult[]>
   clearAllMessages(conversationId: string): Promise<void>
@@ -173,76 +157,28 @@ export interface IThreadPresenter {
     conversationId: string,
     page: number,
     pageSize: number
-  ): Promise<{ total: number; list: MESSAGE[] }>
-  sendMessage(conversationId: string, content: string, role: MESSAGE_ROLE): Promise<MESSAGE | null>
-  startStreamCompletion(conversationId: string, queryMsgId?: string): Promise<void>
-  editMessage(messageId: string, content: string): Promise<MESSAGE>
+  ): Promise<{ total: number; list: Message[] }>
+  getMessageThread(
+    conversationId: string,
+    page: number,
+    pageSize: number
+  ): Promise<{ total: number; messages: Message[] }>
+  editMessage(messageId: string, content: string): Promise<Message>
   deleteMessage(messageId: string): Promise<void>
-  retryMessage(messageId: string, modelId?: string): Promise<MESSAGE>
-  getMessage(messageId: string): Promise<MESSAGE>
-  getMessageVariants(messageId: string): Promise<MESSAGE[]>
+  getMessage(messageId: string): Promise<Message>
+  getMessageVariants(messageId: string): Promise<Message[]>
   updateMessageStatus(messageId: string, status: MESSAGE_STATUS): Promise<void>
   updateMessageMetadata(messageId: string, metadata: Partial<MESSAGE_METADATA>): Promise<void>
   getMessageExtraInfo(messageId: string, type: string): Promise<Record<string, unknown>[]>
-
-  // Popup operations
-  translateText(text: string, tabId: number): Promise<string>
-  askAI(text: string, tabId: number): Promise<string>
+  getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
+  getLastUserMessage(conversationId: string): Promise<Message | null>
 
   // Context control
-  getContextMessages(conversationId: string): Promise<MESSAGE[]>
+  getContextMessages(conversationId: string): Promise<Message[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(tabId?: number): Promise<string>
-  stopMessageGeneration(messageId: string): Promise<void>
-  getSearchEngines(): Promise<SearchEngineTemplate[]>
-  getActiveSearchEngine(): Promise<SearchEngineTemplate>
-  setActiveSearchEngine(engineId: string): Promise<void>
-  setSearchEngine(engineId: string): Promise<boolean>
-  testSearchEngine(query?: string): Promise<boolean>
-  setSearchAssistantModel(model: MODEL_META, providerId: string): void
-  getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
-  continueStreamCompletion(conversationId: string, queryMsgId: string): Promise<AssistantMessage>
   toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
-  findTabForConversation(conversationId: string): Promise<number | null>
-
-  // ACP workdir controls
-  getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo>
-  setAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
-  warmupAcpProcess(agentId: string, workdir: string): Promise<void>
-  getAcpProcessModes(
-    agentId: string,
-    workdir: string
-  ): Promise<
-    | {
-        availableModes?: Array<{ id: string; name: string; description: string }>
-        currentModeId?: string
-      }
-    | undefined
-  >
-  setAcpPreferredProcessMode(agentId: string, workdir: string, modeId: string): Promise<void>
-  setAcpSessionMode(conversationId: string, modeId: string): Promise<void>
-  getAcpSessionModes(conversationId: string): Promise<{
-    current: string
-    available: Array<{ id: string; name: string; description: string }>
-  } | null>
-
-  // Permission handling
-  handlePermissionResponse(
-    messageId: string,
-    toolCallId: string,
-    granted: boolean,
-    permissionType: 'read' | 'write' | 'all',
-    remember?: boolean
-  ): Promise<void>
-  exportConversation(
-    conversationId: string,
-    format: 'markdown' | 'html' | 'txt'
-  ): Promise<{ filename: string; content: string }>
-
-  // Dev tools
-  getMessageRequestPreview(messageId: string): Promise<unknown>
 }
 
 export interface IMessageManager {
@@ -253,24 +189,29 @@ export interface IMessageManager {
     role: MESSAGE_ROLE,
     parentId: string,
     isVariant: boolean,
-    metadata: MESSAGE_METADATA
-  ): Promise<MESSAGE>
-  editMessage(messageId: string, content: string): Promise<MESSAGE>
+    metadata: MESSAGE_METADATA,
+    searchResults?: string
+  ): Promise<Message>
+  editMessage(messageId: string, content: string): Promise<Message>
   deleteMessage(messageId: string): Promise<void>
-  retryMessage(messageId: string, metadata: MESSAGE_METADATA): Promise<MESSAGE>
+  retryMessage(messageId: string, metadata: MESSAGE_METADATA): Promise<Message>
 
   // Message queries
-  getMessage(messageId: string): Promise<MESSAGE>
-  getMessageVariants(messageId: string): Promise<MESSAGE[]>
+  getMessage(messageId: string): Promise<Message>
+  getMessageVariants(messageId: string): Promise<Message[]>
   getMessageThread(
     conversationId: string,
     page: number,
     pageSize: number
   ): Promise<{
     total: number
-    list: MESSAGE[]
+    list: Message[]
   }>
-  getContextMessages(conversationId: string, contextLength: number): Promise<MESSAGE[]>
+  getContextMessages(
+    conversationId: string,
+    contextLength: number,
+    options?: { ensureUserStart?: boolean; normalizeUserText?: boolean }
+  ): Promise<Message[]>
 
   // Message status management
   updateMessageStatus(messageId: string, status: MESSAGE_STATUS): Promise<void>

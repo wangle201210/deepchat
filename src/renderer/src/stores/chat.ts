@@ -20,6 +20,7 @@ import {
 import router from '@/router'
 import { useI18n } from 'vue-i18n'
 import { useSoundStore } from './sound'
+import { useWorkspaceStore } from './workspace'
 import sfxfcMp3 from '/sounds/sfx-fc.mp3?url'
 import sfxtyMp3 from '/sounds/sfx-typing.mp3?url'
 import { downloadBlob } from '@/lib/download'
@@ -41,7 +42,9 @@ type PendingScrollTarget = {
 }
 
 export const useChatStore = defineStore('chat', () => {
-  const threadP = usePresenter('threadPresenter')
+  const threadP = usePresenter('sessionPresenter')
+  const agentP = usePresenter('agentPresenter')
+  const exporterP = usePresenter('exporter')
   const windowP = usePresenter('windowPresenter')
   const notificationP = usePresenter('notificationPresenter')
   const tabP = usePresenter('tabPresenter')
@@ -59,7 +62,7 @@ export const useChatStore = defineStore('chat', () => {
       dtThreads: CONVERSATION[]
     }[]
   >([])
-  const messagesMap = ref<Map<number, Array<AssistantMessage | UserMessage>>>(new Map())
+  const messagesMap = ref<Map<number, Array<Message>>>(new Map())
   const generatingThreadIds = ref(new Set<string>())
   const isSidebarOpen = ref(false)
   const isMessageNavigationOpen = ref(false)
@@ -72,7 +75,7 @@ export const useChatStore = defineStore('chat', () => {
 
   // 添加消息生成缓存
   const generatingMessagesCacheMap = ref<
-    Map<number, Map<string, { message: AssistantMessage | UserMessage; threadId: string }>>
+    Map<number, Map<string, { message: Message; threadId: string }>>
   >(new Map())
 
   // 对话配置状态
@@ -115,7 +118,7 @@ export const useChatStore = defineStore('chat', () => {
     activeThreadIdMap.value.set(getTabId(), threadId)
   }
   const getMessages = () => messagesMap.value.get(getTabId()) ?? []
-  const setMessages = (msgs: Array<AssistantMessage | UserMessage>) => {
+  const setMessages = (msgs: Array<Message>) => {
     messagesMap.value.set(getTabId(), msgs)
   }
   const getCurrentThreadMessages = () => {
@@ -189,7 +192,7 @@ export const useChatStore = defineStore('chat', () => {
 
   const activeAgentMcpSelections = computed(() => activeAgentMcpSelectionsState.value)
 
-  const variantAwareMessages = computed((): Array<AssistantMessage | UserMessage> => {
+  const variantAwareMessages = computed((): Array<Message> => {
     const messages = getMessages()
     const currentSelectedVariants = selectedVariantsMap.value
 
@@ -223,7 +226,7 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       return msg
-    }) as Array<AssistantMessage | UserMessage>
+    }) as Array<Message>
   })
 
   const formatContextLabel = (value: string) => {
@@ -540,7 +543,16 @@ export const useChatStore = defineStore('chat', () => {
       generatingThreadIds.value.add(threadId)
       // 设置当前会话的workingStatus为working
       updateThreadWorkingStatus(threadId, 'working')
-      const aiResponseMessage = await threadP.sendMessage(threadId, JSON.stringify(content), 'user')
+      const aiResponseMessage = await agentP.sendMessage(
+        threadId,
+        JSON.stringify(content),
+        getTabId(),
+        Object.fromEntries(selectedVariantsMap.value)
+      )
+
+      if (!aiResponseMessage) {
+        throw new Error('Failed to create assistant message')
+      }
 
       // 将消息添加到缓存
       getGeneratingMessagesCache().set(aiResponseMessage.id, {
@@ -549,11 +561,6 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       await loadMessages()
-      await threadP.startStreamCompletion(
-        threadId,
-        aiResponseMessage.id,
-        Object.fromEntries(selectedVariantsMap.value)
-      )
     } catch (error) {
       console.error('Failed to send message:', error)
       // 发生错误时，务必清理 loading 状态
@@ -570,7 +577,10 @@ export const useChatStore = defineStore('chat', () => {
   const retryMessage = async (messageId: string) => {
     if (!getActiveThreadId()) return
     try {
-      const aiResponseMessage = await threadP.retryMessage(messageId, chatConfig.value.modelId)
+      const aiResponseMessage = await agentP.retryMessage(
+        messageId,
+        Object.fromEntries(selectedVariantsMap.value)
+      )
       // 将消息添加到缓存
       getGeneratingMessagesCache().set(aiResponseMessage.id, {
         message: aiResponseMessage,
@@ -580,11 +590,6 @@ export const useChatStore = defineStore('chat', () => {
       generatingThreadIds.value.add(getActiveThreadId()!)
       // 设置当前会话的workingStatus为working
       updateThreadWorkingStatus(getActiveThreadId()!, 'working')
-      await threadP.startStreamCompletion(
-        getActiveThreadId()!,
-        messageId,
-        Object.fromEntries(selectedVariantsMap.value)
-      )
     } catch (error) {
       console.error('Failed to retry message:', error)
       throw error
@@ -598,7 +603,7 @@ export const useChatStore = defineStore('chat', () => {
       generatingThreadIds.value.add(activeThread)
       updateThreadWorkingStatus(activeThread, 'working')
 
-      const aiResponseMessage = await threadP.regenerateFromUserMessage(
+      const aiResponseMessage = await agentP.regenerateFromUserMessage(
         activeThread,
         userMessageId,
         Object.fromEntries(selectedVariantsMap.value)
@@ -1231,6 +1236,9 @@ export const useChatStore = defineStore('chat', () => {
   const cancelGenerating = async (threadId: string) => {
     if (!threadId) return
     try {
+      const workspaceStore = useWorkspaceStore()
+      await workspaceStore.terminateAllRunningCommands()
+
       // 找到当前正在生成的消息
       const cache = getGeneratingMessagesCache()
       const generatingMessage = Array.from(cache.entries()).find(
@@ -1238,7 +1246,7 @@ export const useChatStore = defineStore('chat', () => {
       ) as string[]
       if (generatingMessage) {
         const [messageId] = generatingMessage
-        await threadP.stopMessageGeneration(messageId)
+        await agentP.cancelLoop(messageId)
         // 从缓存中移除消息
         cache.delete(messageId)
         generatingThreadIds.value.delete(threadId)
@@ -1268,18 +1276,10 @@ export const useChatStore = defineStore('chat', () => {
       // 设置会话的workingStatus为working
       updateThreadWorkingStatus(conversationId, 'working')
 
-      // 创建一个新的助手消息
-      const aiResponseMessage = await threadP.sendMessage(
+      const aiResponseMessage = await agentP.continueLoop(
         conversationId,
-        JSON.stringify({
-          text: 'continue',
-          files: [],
-          links: [],
-          search: false,
-          think: false,
-          continue: true
-        }),
-        'user'
+        messageId,
+        Object.fromEntries(selectedVariantsMap.value)
       )
 
       if (!aiResponseMessage) {
@@ -1294,11 +1294,6 @@ export const useChatStore = defineStore('chat', () => {
       })
 
       await loadMessages()
-      await threadP.continueStreamCompletion(
-        conversationId,
-        messageId,
-        Object.fromEntries(selectedVariantsMap.value)
-      )
     } catch (error) {
       console.error('Failed to continue generation:', error)
       throw error
@@ -1645,7 +1640,7 @@ export const useChatStore = defineStore('chat', () => {
   const exportWithMainThread = async (threadId: string, format: 'markdown' | 'html' | 'txt') => {
     let result: { filename: string; content: string }
 
-    result = await threadP.exportConversation(threadId, format)
+    result = await exporterP.exportConversation(threadId, format)
     // 触发下载
     const blob = new Blob([result.content], {
       type: getContentType(format)
@@ -1659,7 +1654,7 @@ export const useChatStore = defineStore('chat', () => {
    * Submit thread to nowledge-mem API
    */
   const submitToNowledgeMem = async (threadId: string) => {
-    const result = await threadP.submitToNowledgeMem(threadId)
+    const result = await exporterP.submitToNowledgeMem(threadId)
 
     if (!result.success) {
       throw new Error(result.errors?.join(', ') || 'Submission failed')
@@ -1671,7 +1666,7 @@ export const useChatStore = defineStore('chat', () => {
    */
   const testNowledgeMemConnection = async () => {
     try {
-      const result = await threadP.testNowledgeMemConnection()
+      const result = await exporterP.testNowledgeMemConnection()
 
       if (!result.success) {
         throw new Error(result.error || 'Connection test failed')
@@ -1693,7 +1688,7 @@ export const useChatStore = defineStore('chat', () => {
     timeout?: number
   }) => {
     try {
-      await threadP.updateNowledgeMemConfig(config)
+      await exporterP.updateNowledgeMemConfig(config)
     } catch (error) {
       console.error('Failed to update nowledge-mem config:', error)
       throw error
@@ -1704,7 +1699,7 @@ export const useChatStore = defineStore('chat', () => {
    * Get nowledge-mem configuration
    */
   const getNowledgeMemConfig = () => {
-    return threadP.getNowledgeMemConfig()
+    return exporterP.getNowledgeMemConfig()
   }
 
   /**

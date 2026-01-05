@@ -7,8 +7,9 @@ import type {
   MCPToolResponse
 } from '@shared/presenter'
 import { ToolMapper } from './toolMapper'
-import { AgentToolManager } from '../llmProviderPresenter/agent/agentToolManager'
+import { AgentToolManager, type AgentToolCallResult } from '../agentPresenter/acp'
 import { jsonrepair } from 'jsonrepair'
+import { CommandPermissionService } from '../permission'
 
 export interface IToolPresenter {
   getAllToolDefinitions(context: {
@@ -24,6 +25,7 @@ interface ToolPresenterOptions {
   mcpPresenter: IMCPPresenter
   yoBrowserPresenter: IYoBrowserPresenter
   configPresenter: IConfigPresenter
+  commandPermissionHandler?: CommandPermissionService
 }
 
 /**
@@ -68,7 +70,8 @@ export class ToolPresenter implements IToolPresenter {
       if (!this.agentToolManager) {
         this.agentToolManager = new AgentToolManager({
           yoBrowserPresenter: this.options.yoBrowserPresenter,
-          agentWorkspacePath
+          agentWorkspacePath,
+          commandPermissionHandler: this.options.commandPermissionHandler
         })
       }
 
@@ -129,17 +132,29 @@ export class ToolPresenter implements IToolPresenter {
           }
         }
       }
-      const response = await this.agentToolManager.callTool(toolName, args)
+      const response = await this.agentToolManager.callTool(toolName, args, request.conversationId)
+      const resolvedResponse = this.resolveAgentToolResponse(response)
       return {
-        content: typeof response === 'string' ? response : JSON.stringify(response),
+        content: resolvedResponse.content,
         rawData: {
           toolCallId: request.id,
-          content: response
+          content: resolvedResponse.rawData?.content ?? resolvedResponse.content,
+          isError: resolvedResponse.rawData?.isError,
+          toolResult: resolvedResponse.rawData?.toolResult,
+          requiresPermission: resolvedResponse.rawData?.requiresPermission,
+          permissionRequest: resolvedResponse.rawData?.permissionRequest
         }
       }
     }
 
     // Route to MCP (default)
     return await this.options.mcpPresenter.callTool(request)
+  }
+
+  private resolveAgentToolResponse(response: AgentToolCallResult | string): AgentToolCallResult {
+    if (typeof response === 'string') {
+      return { content: response }
+    }
+    return response
   }
 }

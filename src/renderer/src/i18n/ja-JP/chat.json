@@ -92,37 +92,6 @@
     "expand": "展開",
     "title": "MCP UI"
   },
-  "acp": {
-    "workspace": {
-      "title": "ワークスペース",
-      "collapse": "折りたたむ",
-      "plan": {
-        "section": "プラン",
-        "empty": "タスクはまだありません",
-        "status": {
-          "pending": "保留中",
-          "in_progress": "進行中",
-          "completed": "完了",
-          "failed": "失敗",
-          "skipped": "スキップ"
-        }
-      },
-      "files": {
-        "section": "ファイル",
-        "empty": "ファイルはまだありません",
-        "loading": "ファイルを読み込み中...",
-        "contextMenu": {
-          "insertPath": "入力ボックスに挿入",
-          "openFile": "ファイルを開く",
-          "revealInFolder": "ファイルマネージャーで開く"
-        }
-      },
-      "terminal": {
-        "section": "ターミナル",
-        "empty": "出力はまだありません"
-      }
-    }
-  },
   "mode": {
     "acpAgent": "ACPエージェント",
     "agent": "エージェント",
@@ -158,7 +127,24 @@
     },
     "terminal": {
       "empty": "まだ出力はありません",
-      "section": "ターミナル"
+      "section": "ターミナル",
+      "contextMenu": {
+        "terminate": "コマンドを停止",
+        "delete": "記録を削除",
+        "expand": "展開",
+        "collapse": "折りたたむ"
+      },
+      "output": {
+        "truncated": "[切り捨て]"
+      },
+      "noOutput": "出力なし",
+      "status": {
+        "completed": "成功",
+        "failed": "失敗",
+        "running": "実行中",
+        "timed_out": "タイムアウトしました",
+        "aborted": "中止"
+      }
     },
     "title": "ワークスペース"
   }

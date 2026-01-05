@@ -97,6 +97,13 @@ export type LLMCoreStreamEvent =
   | ImageDataStreamEvent
   | RateLimitStreamEvent
 
+export type {
+  ChatMessage,
+  ChatMessageContent,
+  ChatMessageRole,
+  ChatMessageToolCall
+} from './chat-message'
+
 export const createStreamEvent = {
   text: (content: string): TextStreamEvent => ({ type: 'text', content }),
   reasoning: (reasoning_content: string): ReasoningStreamEvent => ({
@@ -176,7 +183,7 @@ export interface PermissionRequestPayload {
   tool_call_name?: string
   tool_call_params?: string
   description?: string
-  permissionType?: 'read' | 'write' | 'all'
+  permissionType?: 'read' | 'write' | 'all' | 'command'
   server_name?: string
   server_description?: string
   server_icons?: string

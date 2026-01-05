@@ -109,7 +109,7 @@ import { useMonaco } from 'stream-monaco'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 
 const { t } = useI18n()
-const threadPresenter = usePresenter('threadPresenter')
+const agentPresenter = usePresenter('agentPresenter')
 const uiSettingsStore = useUiSettingsStore()
 
 // Monaco Editor setup
@@ -145,6 +145,7 @@ type PreviewData = {
 
 const props = defineProps<{
   messageId: string | null
+  agentId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -266,7 +267,12 @@ const loadPreview = async (messageId: string) => {
   previewData.value = null
 
   try {
-    const result = await threadPresenter.getMessageRequestPreview(messageId)
+    if (!props.agentId) {
+      error.value = true
+      loading.value = false
+      return
+    }
+    const result = await agentPresenter.getMessageRequestPreview(props.agentId, messageId)
     // Only update state if this is still the latest request
     if (currentRequestId !== requestId.value) {
       return

@@ -3,10 +3,14 @@ import { BrowserWindow } from 'electron'
 import { MessageFile } from './chat'
 import { ShowResponse } from 'ollama'
 import { ShortcutKeySetting } from '@/presenter/configPresenter/shortcutKeySettings'
-import { ModelType } from '@shared/model'
+import { ApiEndpointType, ModelType } from '@shared/model'
 import type { NowledgeMemThread, NowledgeMemExportSummary } from '../nowledgeMem'
 import { ProviderChange, ProviderBatchUpdate } from './provider-operations'
 import type { AgentSessionLifecycleStatus } from './agent-provider'
+import type { IAgentPresenter } from './agent.presenter'
+import type { ISessionPresenter } from './session.presenter'
+import type { ISearchPresenter } from './search.presenter'
+import type { IConversationExporter } from './exporter.presenter'
 import type { IWorkspacePresenter } from './workspace'
 import type { IToolPresenter } from './tool.presenter'
 import type {
@@ -158,6 +162,7 @@ export interface ModelConfig {
   verbosity?: 'low' | 'medium' | 'high'
   maxCompletionTokens?: number // GPT-5 series uses this parameter to replace maxTokens
   conversationId?: string
+  apiEndpoint?: ApiEndpointType
 }
 
 export interface IModelConfig {
@@ -314,13 +319,6 @@ export interface TabCreateOptions {
   allowNonLocal?: boolean
 }
 
-export interface ILlamaCppPresenter {
-  init(): void
-  prompt(text: string): Promise<string>
-  startNewChat(): void
-  destroy(): Promise<void>
-}
-
 export interface IShortcutPresenter {
   registerShortcuts(): void
   unregisterShortcuts(): void
@@ -430,7 +428,10 @@ export interface IPresenter {
   sqlitePresenter: ISQLitePresenter
   llmproviderPresenter: ILlmProviderPresenter
   configPresenter: IConfigPresenter
-  threadPresenter: IThreadPresenter
+  sessionPresenter: ISessionPresenter
+  searchPresenter: ISearchPresenter
+  exporter: IConversationExporter
+  agentPresenter: IAgentPresenter & ISessionPresenter
   devicePresenter: IDevicePresenter
   upgradePresenter: IUpgradePresenter
   shortcutPresenter: IShortcutPresenter
@@ -688,30 +689,32 @@ export type RENDERER_MODEL_META = {
   name: string
   group: string
   providerId: string
-  enabled: boolean
-  isCustom: boolean
-  contextLength: number
-  maxTokens: number
+  enabled?: boolean
+  isCustom?: boolean
   vision?: boolean
   functionCall?: boolean
   reasoning?: boolean
   enableSearch?: boolean
   type?: ModelType
+  contextLength?: number
+  maxTokens?: number
+  description?: string
 }
 export type MODEL_META = {
   id: string
   name: string
   group: string
   providerId: string
-  isCustom: boolean
-  contextLength: number
-  maxTokens: number
-  description?: string
+  enabled?: boolean
+  isCustom?: boolean
   vision?: boolean
   functionCall?: boolean
   reasoning?: boolean
   enableSearch?: boolean
   type?: ModelType
+  contextLength?: number
+  maxTokens?: number
+  description?: string
 }
 export type LLM_PROVIDER = {
   id: string
@@ -720,7 +723,11 @@ export type LLM_PROVIDER = {
   apiKey: string
   copilotClientId?: string
   baseUrl: string
+  models?: MODEL_META[]
+  customModels?: MODEL_META[]
   enable: boolean
+  enabledModels?: string[]
+  disabledModels?: string[]
   custom?: boolean
   authMode?: 'apikey' | 'oauth' // Authentication mode
   oauthToken?: string // OAuth token
@@ -728,23 +735,39 @@ export type LLM_PROVIDER = {
     enabled: boolean
     qpsLimit: number
   }
+  rateLimitConfig?: {
+    enabled: boolean
+    qpsLimit: number
+  }
   websites?: {
     official: string
     apiKey: string
-    docs: string
-    models: string
+    name?: string
+    icon?: string
+    docs?: string
+    models?: string
+    defaultBaseUrl?: string
   }
 }
 
-export type LLM_PROVIDER_BASE = {
+export type LLM_PROVIDER_BASE = Omit<
+  LLM_PROVIDER,
+  'models' | 'customModels' | 'enabledModels' | 'disabledModels'
+> & {
+  models?: MODEL_META[]
+  customModels?: MODEL_META[]
+  enabledModels?: string[]
+  disabledModels?: string[]
   websites?: {
     official: string
     apiKey: string
-    docs: string
-    models: string
-    defaultBaseUrl: string
+    name?: string
+    icon?: string
+    docs?: string
+    models?: string
+    defaultBaseUrl?: string
   }
-} & LLM_PROVIDER
+}
 
 export type LLM_EMBEDDING_ATTRS = {
   dimensions: number
@@ -872,10 +895,15 @@ export interface AcpWorkdirInfo {
 export interface ModelScopeMcpSyncOptions {
   page_number?: number
   page_size?: number
+  timeout?: number
+  retryCount?: number
 }
 
 // ModelScope MCP sync result interface
 export interface ModelScopeMcpSyncResult {
+  success?: boolean
+  message?: string
+  synced?: number
   imported: number
   skipped: number
   errors: string[]
@@ -1059,8 +1087,6 @@ export type CONVERSATION = {
 }
 
 export interface IThreadPresenter {
-  searchAssistantModel: MODEL_META | null
-  searchAssistantProviderId: string | null
   // Basic conversation operations
   createConversation(
     title: string,
@@ -1114,6 +1140,7 @@ export interface IThreadPresenter {
   getActiveConversation(tabId: number): Promise<CONVERSATION | null>
   getActiveConversationId(tabId: number): Promise<string | null>
   clearActiveThread(tabId: number): Promise<void>
+  findTabForConversation(conversationId: string): Promise<number | null>
 
   getSearchResults(messageId: string, searchId?: string): Promise<SearchResult[]>
   clearAllMessages(conversationId: string): Promise<void>
@@ -1124,118 +1151,27 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: MESSAGE[] }>
-  sendMessage(conversationId: string, content: string, role: MESSAGE_ROLE): Promise<MESSAGE | null>
-  startStreamCompletion(
+  getMessageThread(
     conversationId: string,
-    queryMsgId?: string,
-    selectedVariantsMap?: Record<string, string>
-  ): Promise<void>
-  regenerateFromUserMessage(
-    conversationId: string,
-    userMessageId: string,
-    selectedVariantsMap?: Record<string, string>
-  ): Promise<MESSAGE>
+    page: number,
+    pageSize: number
+  ): Promise<{ total: number; messages: MESSAGE[] }>
   editMessage(messageId: string, content: string): Promise<MESSAGE>
   deleteMessage(messageId: string): Promise<void>
-  retryMessage(messageId: string, modelId?: string): Promise<MESSAGE>
   getMessage(messageId: string): Promise<MESSAGE>
   getMessageVariants(messageId: string): Promise<MESSAGE[]>
   updateMessageStatus(messageId: string, status: MESSAGE_STATUS): Promise<void>
   updateMessageMetadata(messageId: string, metadata: Partial<MESSAGE_METADATA>): Promise<void>
   getMessageExtraInfo(messageId: string, type: string): Promise<Record<string, unknown>[]>
-
-  // Popup operations
-  translateText(text: string, tabId: number): Promise<string>
-  askAI(text: string, tabId: number): Promise<string>
+  getMainMessageByParentId(conversationId: string, parentId: string): Promise<MESSAGE | null>
+  getLastUserMessage(conversationId: string): Promise<MESSAGE | null>
 
   // Context control
   getContextMessages(conversationId: string): Promise<MESSAGE[]>
   clearContext(conversationId: string): Promise<void>
   markMessageAsContextEdge(messageId: string, isEdge: boolean): Promise<void>
-  summaryTitles(tabId?: number): Promise<string>
-  stopMessageGeneration(messageId: string): Promise<void>
-  getSearchEngines(): Promise<SearchEngineTemplate[]>
-  getActiveSearchEngine(): Promise<SearchEngineTemplate>
-  setActiveSearchEngine(engineId: string): Promise<void>
-  setSearchEngine(engineId: string): Promise<boolean>
-  // Search engine testing
-  testSearchEngine(query?: string): Promise<boolean>
-  // Search assistant model settings
-  setSearchAssistantModel(model: MODEL_META, providerId: string): void
-  getMainMessageByParentId(conversationId: string, parentId: string): Promise<Message | null>
   destroy(): void
-  getAcpWorkdir(conversationId: string, agentId: string): Promise<AcpWorkdirInfo>
-  setAcpWorkdir(conversationId: string, agentId: string, workdir: string | null): Promise<void>
-  warmupAcpProcess(agentId: string, workdir: string): Promise<void>
-  getAcpProcessModes(
-    agentId: string,
-    workdir: string
-  ): Promise<
-    | {
-        availableModes?: Array<{ id: string; name: string; description: string }>
-        currentModeId?: string
-      }
-    | undefined
-  >
-  setAcpPreferredProcessMode(agentId: string, workdir: string, modeId: string): Promise<void>
-  setAcpSessionMode(conversationId: string, modeId: string): Promise<void>
-  getAcpSessionModes(conversationId: string): Promise<{
-    current: string
-    available: Array<{ id: string; name: string; description: string }>
-  } | null>
-  continueStreamCompletion(
-    conversationId: string,
-    queryMsgId: string,
-    selectedVariantsMap?: Record<string, string>
-  ): Promise<AssistantMessage>
   toggleConversationPinned(conversationId: string, isPinned: boolean): Promise<void>
-  findTabForConversation(conversationId: string): Promise<number | null>
-
-  // Permission handling
-  handlePermissionResponse(
-    messageId: string,
-    toolCallId: string,
-    granted: boolean,
-    permissionType: 'read' | 'write' | 'all',
-    remember?: boolean
-  ): Promise<void>
-  exportConversation(
-    conversationId: string,
-    format: 'markdown' | 'html' | 'txt'
-  ): Promise<{ filename: string; content: string }>
-
-  // Nowledge-mem integration
-  submitToNowledgeMem(conversationId: string): Promise<{
-    success: boolean
-    threadId?: string
-    data?: NowledgeMemThread
-    errors?: string[]
-  }>
-  exportToNowledgeMem(conversationId: string): Promise<{
-    success: boolean
-    data?: NowledgeMemThread
-    summary?: NowledgeMemExportSummary
-    errors?: string[]
-    warnings?: string[]
-  }>
-  testNowledgeMemConnection(): Promise<{
-    success: boolean
-    message?: string
-    error?: string
-  }>
-  updateNowledgeMemConfig(config: {
-    baseUrl?: string
-    apiKey?: string
-    timeout?: number
-  }): Promise<void>
-  getNowledgeMemConfig(): {
-    baseUrl: string
-    apiKey?: string
-    timeout: number
-  }
-
-  // Dev tools
-  getMessageRequestPreview(messageId: string): Promise<unknown>
 }
 
 export type MESSAGE_STATUS = 'sent' | 'pending' | 'error'
@@ -1463,26 +1399,26 @@ export interface FileMetaData {
 // Define model interface based on Ollama SDK
 export interface OllamaModel {
   name: string
-  model: string
+  model?: string
   modified_at: Date | string // Modified to allow Date or string
   size: number
   digest: string
   details: {
     format: string
     family: string
-    families: string[]
+    families?: string[]
     parameter_size: string
     quantization_level: string
   }
   // Merge some information from show interface
-  model_info: {
-    context_length: number
-    embedding_length: number
+  model_info?: {
+    context_length?: number
+    embedding_length?: number
     vision?: {
       embedding_length: number
     }
   }
-  capabilities: string[]
+  capabilities?: string[]
 }
 
 // Define progress callback interface
@@ -1579,8 +1515,18 @@ export interface MCPToolResponse {
   permissionRequest?: {
     toolName: string
     serverName: string
-    permissionType: 'read' | 'write' | 'all'
+    permissionType: 'read' | 'write' | 'all' | 'command'
     description: string
+    command?: string
+    commandSignature?: string
+    commandInfo?: {
+      command: string
+      riskLevel: 'low' | 'medium' | 'high' | 'critical'
+      suggestion: string
+      signature?: string
+      baseCommand?: string
+    }
+    conversationId?: string
   }
 }
 

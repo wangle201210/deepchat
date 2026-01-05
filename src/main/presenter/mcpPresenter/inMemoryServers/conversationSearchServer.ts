@@ -482,29 +482,49 @@ export class ConversationSearchServer {
             name: 'search_conversations',
             description:
               'Search historical conversation records, supports title and content search',
-            inputSchema: zodToJsonSchema(SearchConversationsArgsSchema)
+            inputSchema: zodToJsonSchema(SearchConversationsArgsSchema),
+            annotations: {
+              title: 'Search Conversations',
+              readOnlyHint: true
+            }
           },
           {
             name: 'search_messages',
             description:
               'Search historical message records, supports filtering by conversation ID, role and other conditions',
-            inputSchema: zodToJsonSchema(SearchMessagesArgsSchema)
+            inputSchema: zodToJsonSchema(SearchMessagesArgsSchema),
+            annotations: {
+              title: 'Search Messages',
+              readOnlyHint: true
+            }
           },
           {
             name: 'get_conversation_history',
             description: 'Get complete history of a specific conversation',
-            inputSchema: zodToJsonSchema(GetConversationHistoryArgsSchema)
+            inputSchema: zodToJsonSchema(GetConversationHistoryArgsSchema),
+            annotations: {
+              title: 'Get Conversation History',
+              readOnlyHint: true
+            }
           },
           {
             name: 'get_conversation_stats',
             description: 'Get conversation statistics including totals, recent activity and more',
-            inputSchema: zodToJsonSchema(GetConversationStatsArgsSchema)
+            inputSchema: zodToJsonSchema(GetConversationStatsArgsSchema),
+            annotations: {
+              title: 'Get Conversation Stats',
+              readOnlyHint: true
+            }
           },
           {
             name: 'create_new_tab',
             description:
               'Creates a new tab. If userInput is provided, it also creates a new chat session and sends the input as the first message, then returns tabId and threadId.',
-            inputSchema: zodToJsonSchema(CreateNewTabArgsSchema)
+            inputSchema: zodToJsonSchema(CreateNewTabArgsSchema),
+            annotations: {
+              title: 'Create New Tab',
+              destructiveHint: false
+            }
           }
         ]
       }
@@ -614,7 +634,7 @@ export class ConversationSearchServer {
             }
 
             // 步骤 2: 主进程创建会话。此操作会触发 CONVERSATION_EVENTS.ACTIVATED 事件，必须在 Vue/Pinia 就绪后执行
-            const newThreadId = await presenter.threadPresenter.createConversation(
+            const newThreadId = await presenter.sessionPresenter.createConversation(
               'New Chat', // 临时标题
               {}, // 默认设置
               newTabId

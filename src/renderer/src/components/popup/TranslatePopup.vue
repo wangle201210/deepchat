@@ -41,10 +41,9 @@ import { useI18n } from 'vue-i18n'
 import { usePresenter } from '@/composables/usePresenter'
 import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
-import type { IThreadPresenter } from '../../../../shared/presenter'
 
 const { t } = useI18n()
-const threadPresenter = usePresenter('threadPresenter')
+const agentPresenter = usePresenter('agentPresenter')
 
 // 状态
 const isOpen = ref(false)
@@ -126,10 +125,7 @@ const handleTranslateRequest = async (event: Event) => {
   translatedText.value = ''
 
   try {
-    const result = await (threadPresenter as IThreadPresenter).translateText(
-      newText,
-      window.api.getWebContentsId()
-    )
+    const result = await agentPresenter.translateText(newText, window.api.getWebContentsId())
     translatedText.value = result
   } catch (error) {
     translatedText.value = t('contextMenu.translate.error')
