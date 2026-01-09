@@ -8,7 +8,12 @@
       <div
         class="flex items-center gap-2 font-mono font-medium tracking-tight text-foreground/80 truncate leading-none min-w-0"
       >
-        <span class="truncate text-xs">{{ primaryLabel }}.{{ functionLabel }}</span>
+        <span class="truncate text-xs">
+          <template v-if="primaryLabel !== functionLabel">
+            {{ primaryLabel }}.{{ functionLabel }}
+          </template>
+          <template v-else>{{ functionLabel }}</template>
+        </span>
       </div>
     </div>
 
@@ -23,9 +28,9 @@
     >
       <div
         v-if="isExpanded"
-        class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4 max-w-full sm:max-w-2xl"
+        class="rounded-lg border bg-muted text-card-foreground px-2 py-3 mt-2 mb-4 w-full"
       >
-        <div class="flex flex-col sm:flex-row sm:gap-4 space-y-4 sm:space-y-0">
+        <div class="flex flex-col gap-4">
           <!-- 参数 -->
           <div v-if="hasParams" class="space-y-2 flex-1 min-w-0">
             <div class="flex items-center justify-between gap-2">
@@ -43,16 +48,25 @@
                 {{ paramsCopyText }}
               </button>
             </div>
-            <pre
-              class="rounded-md border bg-background text-xs p-2 whitespace-pre-wrap break-words max-h-64 overflow-auto"
-              >{{ paramsText }}</pre
-            >
+            <div class="min-h-0 max-h-40 overflow-auto">
+              <CodeBlockNode
+                :node="{
+                  type: 'code_block',
+                  language: 'json',
+                  code: paramsText,
+                  raw: paramsText
+                }"
+                :is-dark="themeStore.isDark"
+                :show-header="false"
+                class="rounded-md border bg-background text-xs p-2 min-h-0"
+              />
+            </div>
           </div>
 
           <hr v-if="hasParams && hasResponse" class="sm:hidden" />
 
           <!-- 响应 -->
-          <div v-if="hasResponse" class="space-y-2 flex-1 min-w-0">
+          <div v-if="hasResponse" :class="responseLayoutClass">
             <div class="flex items-center justify-between gap-2">
               <h5
                 class="text-xs font-medium text-accent-foreground flex flex-row gap-2 items-center"
@@ -71,7 +85,29 @@
                 {{ responseCopyText }}
               </button>
             </div>
+            <template v-if="diffData">
+              <div class="min-h-0 overflow-auto">
+                <CodeBlockNode
+                  :node="{
+                    type: 'code_block',
+                    language: diffLanguage,
+                    code: diffData.updatedCode,
+                    raw: diffData.updatedCode,
+                    diff: true,
+                    originalCode: diffData.originalCode,
+                    updatedCode: diffData.updatedCode
+                  }"
+                  :is-dark="themeStore.isDark"
+                  :show-header="false"
+                  class="rounded-md border bg-background text-xs p-2 h-full min-h-0"
+                />
+              </div>
+              <div v-if="diffData.replacements !== undefined" class="text-xs text-muted-foreground">
+                {{ t('toolCall.replacementsCount', { count: diffData.replacements }) }}
+              </div>
+            </template>
             <pre
+              v-else
               class="rounded-md border bg-background text-xs p-2 whitespace-pre-wrap break-words max-h-64 overflow-auto"
               >{{ responseText }}</pre
             >
@@ -87,30 +123,13 @@ import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { AssistantMessageBlock } from '@shared/chat'
 import { computed, ref } from 'vue'
+import { CodeBlockNode } from 'markstream-vue'
+import { useThemeStore } from '@/stores/theme'
+import { getLanguageFromFilename } from '@shared/utils/codeLanguage'
 
-const keyMap = {
-  'toolCall.calling': '工具调用中',
-  'toolCall.response': '工具响应',
-  'toolCall.end': '工具调用完成',
-  'toolCall.error': '工具调用错误',
-  'toolCall.title': '工具调用',
-  'toolCall.clickToView': '点击查看详情',
-  'toolCall.functionName': '函数名称',
-  'toolCall.params': '参数',
-  'toolCall.responseData': '响应数据',
-  'toolCall.terminalOutput': 'Terminal output',
-  'common.copy': '复制',
-  'common.copySuccess': '已复制'
-}
+const { t } = useI18n()
 
-const t = (() => {
-  try {
-    const { t } = useI18n()
-    return t
-  } catch (e) {
-    return (key: string) => keyMap[key] || key
-  }
-})()
+const themeStore = useThemeStore()
 
 const props = defineProps<{
   block: AssistantMessageBlock
@@ -129,11 +148,15 @@ const statusVariant = computed(() => {
 
 const primaryLabel = computed(() => {
   if (!props.block.tool_call) return t('toolCall.title')
+  const toolName = props.block.tool_call.name || t('toolCall.title')
   let serverName = props.block.tool_call.server_name
   if (props.block.tool_call.server_name?.includes('/')) {
     serverName = props.block.tool_call.server_name.split('/').pop()
   }
-  return serverName || props.block.tool_call.name || t('toolCall.title')
+  if (serverName && serverName !== toolName) {
+    return serverName
+  }
+  return toolName
 })
 
 const functionLabel = computed(() => {
@@ -165,7 +188,7 @@ const statusIconClass = computed(() => {
     case 'success':
       return 'text-emerald-500'
     case 'running':
-      return 'text-muted-foreground animate-pulse'
+      return 'text-cyan-500 animate-pulse'
     default:
       return 'text-muted-foreground'
   }
@@ -175,6 +198,69 @@ const paramsText = computed(() => props.block.tool_call?.params ?? '')
 const responseText = computed(() => props.block.tool_call?.response ?? '')
 const hasParams = computed(() => paramsText.value.trim().length > 0)
 const hasResponse = computed(() => responseText.value.trim().length > 0)
+
+const isDiffTool = computed(() => {
+  const name = props.block.tool_call?.name ?? ''
+  const normalized = name.replace(/[_-]/g, '').toLowerCase()
+  if (props.block.status !== 'success') return false
+  return normalized === 'edittext' || normalized === 'textreplace'
+})
+
+const diffData = computed(() => {
+  if (!isDiffTool.value || !hasResponse.value) return null
+  try {
+    const parsed = JSON.parse(responseText.value) as {
+      success?: boolean
+      originalCode?: unknown
+      updatedCode?: unknown
+      language?: unknown
+      replacements?: unknown
+    }
+    if (
+      parsed.success === true &&
+      typeof parsed.originalCode === 'string' &&
+      typeof parsed.updatedCode === 'string'
+    ) {
+      return {
+        originalCode: parsed.originalCode,
+        updatedCode: parsed.updatedCode,
+        language: typeof parsed.language === 'string' ? parsed.language : undefined,
+        replacements: typeof parsed.replacements === 'number' ? parsed.replacements : undefined
+      }
+    }
+  } catch (error) {
+    console.warn('[MessageBlockToolCall] Failed to parse diff response:', error)
+  }
+  return null
+})
+
+const paramsPath = computed(() => {
+  const params = props.block.tool_call?.params
+  if (!params) return ''
+  try {
+    const parsed = JSON.parse(params) as { path?: unknown }
+    if (parsed && typeof parsed.path === 'string') {
+      return parsed.path
+    }
+  } catch {
+    return ''
+  }
+  return ''
+})
+
+const diffLanguage = computed(() => {
+  if (diffData.value?.language) return diffData.value.language
+  return getLanguageFromFilename(paramsPath.value)
+})
+
+const hasDiff = computed(() => Boolean(diffData.value))
+
+const responseLayoutClass = computed(() => {
+  if (hasDiff.value) {
+    return 'flex-1 min-w-0 grid grid-rows-[auto_minmax(0,1fr)_auto] gap-2 min-h-72 max-h-72'
+  }
+  return 'space-y-2 flex-1 min-w-0'
+})
 
 const isTerminalTool = computed(() => {
   const name = props.block.tool_call?.name?.toLowerCase() || ''
