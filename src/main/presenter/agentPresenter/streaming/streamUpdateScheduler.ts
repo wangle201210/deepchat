@@ -2,7 +2,7 @@ import { eventBus, SendTarget } from '@/eventbus'
 import { STREAM_EVENTS } from '@/events'
 import type { LLMAgentEventData } from '@shared/presenter'
 
-export const STREAM_RENDER_FLUSH_INTERVAL_MS = 200
+export const STREAM_RENDER_FLUSH_INTERVAL_MS = 120
 export const STREAM_DB_FLUSH_INTERVAL_MS = 600
 
 interface PendingDelta {
