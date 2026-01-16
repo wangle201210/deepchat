@@ -119,22 +119,35 @@ export class MessageManager implements IMessageManager {
     return message
   }
 
-  async editMessage(messageId: string, content: string): Promise<Message> {
+  async editMessage(
+    messageId: string,
+    content: string,
+    options?: { emit?: boolean; emitParent?: boolean }
+  ): Promise<Message> {
     await this.sqlitePresenter.updateMessage(messageId, { content })
     const message = await this.sqlitePresenter.getMessage(messageId)
     if (!message) {
       throw new Error(`Message ${messageId} not found`)
     }
     const msg = this.convertToMessage(message)
-    eventBus.sendToRenderer(CONVERSATION_EVENTS.MESSAGE_EDITED, SendTarget.ALL_WINDOWS, messageId)
-    if (msg.parentId) {
-      eventBus.sendToRenderer(
-        CONVERSATION_EVENTS.MESSAGE_EDITED,
-        SendTarget.ALL_WINDOWS,
-        msg.parentId
-      )
+    const shouldEmit = options?.emit !== false
+    const shouldEmitParent = options?.emitParent !== false
+
+    if (shouldEmit) {
+      eventBus.sendToRenderer(CONVERSATION_EVENTS.MESSAGE_EDITED, SendTarget.ALL_WINDOWS, messageId)
+      if (shouldEmitParent && msg.parentId) {
+        eventBus.sendToRenderer(
+          CONVERSATION_EVENTS.MESSAGE_EDITED,
+          SendTarget.ALL_WINDOWS,
+          msg.parentId
+        )
+      }
     }
     return msg
+  }
+
+  async editMessageSilently(messageId: string, content: string): Promise<Message> {
+    return this.editMessage(messageId, content, { emit: false, emitParent: false })
   }
 
   async deleteMessage(messageId: string): Promise<void> {
@@ -166,6 +179,27 @@ export class MessageManager implements IMessageManager {
       throw new Error(`Message ${messageId} not found`)
     }
     return this.convertToMessage(message)
+  }
+
+  async getMessagesByIds(messageIds: string[]): Promise<Message[]> {
+    if (messageIds.length === 0) return []
+    const sqliteMessages = await this.sqlitePresenter.getMessagesByIds(messageIds)
+    const sqliteById = new Map(sqliteMessages.map((msg) => [msg.id, msg]))
+    const result: Message[] = []
+
+    for (const messageId of messageIds) {
+      const sqliteMessage = sqliteById.get(messageId)
+      if (!sqliteMessage) continue
+      if (sqliteMessage.role === 'assistant' && sqliteMessage.parent_id) {
+        const variants = await this.sqlitePresenter.getMessageVariants(sqliteMessage.parent_id)
+        if (variants.length > 0) {
+          sqliteMessage.variants = variants
+        }
+      }
+      result.push(this.convertToMessage(sqliteMessage))
+    }
+
+    return result
   }
 
   async getMessageVariants(messageId: string): Promise<Message[]> {
@@ -208,6 +242,10 @@ export class MessageManager implements IMessageManager {
       total: messages.length,
       list: messages.slice(start, end)
     }
+  }
+
+  async getMessageIds(conversationId: string): Promise<string[]> {
+    return this.sqlitePresenter.queryMessageIds(conversationId)
   }
 
   async updateMessageStatus(messageId: string, status: MESSAGE_STATUS): Promise<void> {

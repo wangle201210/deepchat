@@ -5,19 +5,24 @@ import { ModelType } from '@shared/model'
 import { CONVERSATION, ModelConfig, SearchResult, ChatMessage } from '@shared/presenter'
 import type { MCPToolDefinition } from '@shared/presenter'
 
-import { ContentEnricher } from '../../content/contentEnricher'
-import { BrowserContextBuilder } from '../../browser/BrowserContextBuilder'
 import { modelCapabilities } from '../../configPresenter/modelCapabilities'
 import { enhanceSystemPromptWithDateTime } from '../utility/promptEnhancer'
 import { ToolCallCenter } from '../tool/toolCallCenter'
 import { nanoid } from 'nanoid'
+
 import {
   addContextMessages,
   buildUserMessageContext,
   formatMessagesForCompletion,
   mergeConsecutiveMessages
 } from './messageFormatter'
+import { BrowserContextBuilder } from '../../browser/BrowserContextBuilder'
 import { selectContextMessages } from './messageTruncator'
+import {
+  buildSkillsMetadataPrompt,
+  buildSkillsPrompt,
+  getSkillsAllowedTools
+} from './skillsPromptBuilder'
 
 export type PendingToolCall = {
   id: string
@@ -33,7 +38,6 @@ export interface PreparePromptContentParams {
   userContent: string
   contextMessages: Message[]
   searchResults: SearchResult[] | null
-  urlResults: SearchResult[]
   userMessage: Message
   vision: boolean
   imageFiles: MessageFile[]
@@ -58,12 +62,32 @@ export interface PostToolExecutionContextParams {
   modelConfig: ModelConfig
 }
 
+function mergeToolSelections(base?: string[], extra?: string[]): string[] | undefined {
+  const merged = new Set<string>()
+  base?.forEach((tool) => merged.add(tool))
+  extra?.forEach((tool) => merged.add(tool))
+  if (merged.size === 0) {
+    return undefined
+  }
+  return Array.from(merged)
+}
+
+function appendPromptSection(base: string, section: string): string {
+  const trimmedSection = section.trim()
+  if (!trimmedSection) {
+    return base
+  }
+  if (!base) {
+    return trimmedSection
+  }
+  return `${base}\n\n${trimmedSection}`
+}
+
 export async function preparePromptContent({
   conversation,
   userContent,
   contextMessages,
   searchResults: _searchResults,
-  urlResults,
   userMessage,
   vision,
   imageFiles,
@@ -82,35 +106,34 @@ export async function preparePromptContent({
       | 'acp agent') ??
     'chat'
   const isAgentMode = chatMode === 'agent'
+  const isToolPromptMode = chatMode !== 'chat'
 
   const isImageGeneration = modelType === ModelType.ImageGeneration
-  const enrichedUserMessage =
-    !isImageGeneration && urlResults.length > 0
-      ? '\n\n' + ContentEnricher.enrichUserMessageWithUrlContent(userContent, urlResults)
-      : ''
 
-  const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt, isImageGeneration)
-  const agentWorkspacePath = conversation.settings.agentWorkspacePath?.trim() || null
-  const finalSystemPromptWithWorkspace =
-    isAgentMode && agentWorkspacePath
-      ? finalSystemPrompt
-        ? `${finalSystemPrompt}\n\nCurrent working directory: ${agentWorkspacePath}`
-        : `Current working directory: ${agentWorkspacePath}`
-      : finalSystemPrompt
+  const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt, {
+    isImageGeneration,
+    isAgentMode,
+    agentWorkspacePath: conversation.settings.agentWorkspacePath?.trim() || null
+  })
 
-  let browserContextPrompt = ''
   const { providerId, modelId } = conversation.settings
   const supportsVision = modelCapabilities.supportsVision(providerId, modelId)
+  const toolCallCenter = new ToolCallCenter(presenter.toolPresenter)
   let toolDefinitions: MCPToolDefinition[] = []
+  let effectiveEnabledMcpTools = enabledMcpTools
+
+  if (!isImageGeneration && isAgentMode) {
+    const skillsAllowedTools = await getSkillsAllowedTools(conversation.id)
+    effectiveEnabledMcpTools = mergeToolSelections(enabledMcpTools, skillsAllowedTools)
+  }
 
   if (!isImageGeneration) {
-    const toolCallCenter = new ToolCallCenter(presenter.toolPresenter)
     try {
       toolDefinitions = await toolCallCenter.getAllToolDefinitions({
-        enabledMcpTools,
+        enabledMcpTools: effectiveEnabledMcpTools,
         chatMode,
         supportsVision,
-        agentWorkspacePath
+        agentWorkspacePath: conversation.settings.agentWorkspacePath?.trim() || null
       })
     } catch (error) {
       console.warn('AgentPresenter: Failed to load tool definitions', error)
@@ -118,29 +141,51 @@ export async function preparePromptContent({
     }
   }
 
+  let finalSystemPromptWithExtras = finalSystemPrompt
+
   if (!isImageGeneration && isAgentMode) {
     try {
       const browserContext = await presenter.yoBrowserPresenter.getBrowserContext()
-      browserContextPrompt = BrowserContextBuilder.buildSystemPrompt(
+      const browserContextPrompt = BrowserContextBuilder.buildSystemPrompt(
         browserContext.tabs,
         browserContext.activeTabId
+      )
+      finalSystemPromptWithExtras = appendPromptSection(
+        finalSystemPromptWithExtras,
+        browserContextPrompt
       )
     } catch (error) {
       console.warn('AgentPresenter: Failed to load Yo Browser context/tools', error)
     }
   }
 
-  const finalSystemPromptWithBrowser = browserContextPrompt
-    ? finalSystemPromptWithWorkspace
-      ? `${finalSystemPromptWithWorkspace}\n${browserContextPrompt}`
-      : browserContextPrompt
-    : finalSystemPromptWithWorkspace
+  if (!isImageGeneration && isToolPromptMode && toolDefinitions.length > 0) {
+    const toolPrompt = toolCallCenter.buildToolSystemPrompt({
+      conversationId: conversation.id
+    })
+    finalSystemPromptWithExtras = appendPromptSection(finalSystemPromptWithExtras, toolPrompt)
+  }
+
+  if (!isImageGeneration && isAgentMode) {
+    try {
+      const skillsMetadataPrompt = await buildSkillsMetadataPrompt()
+      finalSystemPromptWithExtras = appendPromptSection(
+        finalSystemPromptWithExtras,
+        skillsMetadataPrompt
+      )
+
+      const skillsPrompt = await buildSkillsPrompt(conversation.id)
+      finalSystemPromptWithExtras = appendPromptSection(finalSystemPromptWithExtras, skillsPrompt)
+    } catch (error) {
+      console.warn('AgentPresenter: Failed to build skills prompt', error)
+    }
+  }
 
   const systemPromptTokens =
-    !isImageGeneration && finalSystemPromptWithBrowser
-      ? approximateTokenSize(finalSystemPromptWithBrowser)
+    !isImageGeneration && finalSystemPromptWithExtras
+      ? approximateTokenSize(finalSystemPromptWithExtras)
       : 0
-  const userMessageTokens = approximateTokenSize(userContent + enrichedUserMessage)
+  const userMessageTokens = approximateTokenSize(userContent)
   const toolDefinitionsTokens = toolDefinitions.reduce((acc, tool) => {
     return acc + approximateTokenSize(JSON.stringify(tool))
   }, 0)
@@ -158,10 +203,10 @@ export async function preparePromptContent({
 
   const formattedMessages = formatMessagesForCompletion(
     selectedContextMessages,
-    isImageGeneration ? '' : finalSystemPromptWithBrowser,
+    isImageGeneration ? '' : finalSystemPromptWithExtras,
     artifacts,
     userContent,
-    enrichedUserMessage,
+    '',
     imageFiles,
     vision,
     supportsFunctionCall
@@ -214,7 +259,7 @@ export async function buildContinueToolCallContext({
   const formattedMessages: ChatMessage[] = []
 
   if (systemPrompt) {
-    const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt)
+    const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt, {})
     formattedMessages.push({
       role: 'system',
       content: finalSystemPrompt
@@ -248,7 +293,7 @@ export async function buildPostToolExecutionContext({
   const supportsFunctionCall = Boolean(modelConfig?.functionCall)
 
   if (systemPrompt) {
-    const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt)
+    const finalSystemPrompt = enhanceSystemPromptWithDateTime(systemPrompt, {})
     formattedMessages.push({
       role: 'system',
       content: finalSystemPrompt

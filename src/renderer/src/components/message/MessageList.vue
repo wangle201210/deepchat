@@ -1,40 +1,56 @@
 <template>
   <div class="w-full h-full relative min-h-0">
-    <div
-      ref="messagesContainer"
-      class="message-list-container relative flex-1 scrollbar-hide overflow-y-auto w-full h-full pr-12 lg:pr-12"
-      @scroll="handleScroll"
+    <DynamicScroller
+      ref="dynamicScrollerRef"
+      class="message-list-container relative flex-1 scrollbar-hide overflow-y-auto w-full h-full pr-12 lg:pr-12 transition-opacity duration-300"
+      :class="{ 'opacity-0': !visible }"
+      :items="items"
+      list-class="w-full pt-4"
+      :min-item-size="48"
+      :buffer="200"
+      :emit-update="true"
+      key-field="id"
+      @update="handleVirtualUpdate"
     >
-      <div
-        ref="messageList"
-        class="w-full break-all transition-opacity duration-300 pt-4"
-        :class="{ 'opacity-0': !visible }"
-      >
-        <div
-          v-for="(msg, index) in messages"
-          :key="msg.id"
-          @mouseenter="minimap.handleHover(msg.id)"
-          @mouseleave="minimap.handleHover(null)"
+      <template v-slot="{ item, index, active }">
+        <DynamicScrollerItem
+          :item="item"
+          :active="active"
+          :size-dependencies="[
+            getMessageSizeKey(item),
+            getVariantSizeKey(item),
+            getRenderingStateKey(item)
+          ]"
+          :data-index="index"
+          class="w-full break-all"
         >
-          <MessageItemAssistant
-            v-if="msg.role === 'assistant'"
-            :ref="retry.setAssistantRef(index)"
-            :message="msg as AssistantMessage"
-            :is-capturing-image="capture.isCapturing.value"
-            @copy-image="handleCopyImage"
-            @variant-changed="scrollToMessage"
-            @trace="handleTrace"
-          />
-          <MessageItemUser
-            v-else-if="msg.role === 'user'"
-            :message="msg as UserMessage"
-            @retry="handleRetry(index)"
-            @scroll-to-bottom="scrollToBottom"
-          />
-        </div>
-      </div>
-      <div ref="scrollAnchor" class="h-8" />
-    </div>
+          <div @mouseenter="minimap.handleHover(item.id)" @mouseleave="minimap.handleHover(null)">
+            <MessageItemAssistant
+              v-if="item.message?.role === 'assistant'"
+              :message="item.message"
+              :is-capturing-image="capture.isCapturing.value"
+              @copy-image="handleCopyImage"
+              @variant-changed="wrapScrollToMessage"
+              @trace="handleTrace"
+            />
+            <MessageItemUser
+              v-else-if="item.message?.role === 'user'"
+              :message="item.message"
+              @retry="handleRetry(item.message?.id)"
+              @scroll-to-bottom="scrollToBottom"
+            />
+            <MessageItemPlaceholder
+              v-else
+              :message-id="item.id"
+              :height="getPlaceholderHeight(item.id)"
+            />
+          </div>
+        </DynamicScrollerItem>
+      </template>
+      <template #after>
+        <div ref="scrollAnchor" class="h-8" />
+      </template>
+    </DynamicScroller>
     <template v-if="!capture.isCapturing.value">
       <MessageActionButtons
         :show-clean-button="!showCancelButton"
@@ -52,12 +68,12 @@
       :rect="referenceStore.previewRect"
     />
     <MessageMinimap
-      v-if="messages.length > 0"
-      :messages="messages"
+      v-if="minimapMessages.length > 0"
+      :messages="minimapMessages"
       :hovered-message-id="minimap.hoveredMessageId.value"
       :scroll-info="minimap.scrollInfo"
       @bar-hover="minimap.handleHover"
-      @bar-click="minimap.handleClick"
+      @bar-click="wrapScrollToMessage"
     />
     <TraceDialog
       :message-id="traceMessageId"
@@ -69,26 +85,29 @@
 
 <script setup lang="ts">
 // === Vue Core ===
-import { ref, onMounted, nextTick, watch, computed, toRef, onBeforeUnmount } from 'vue'
+import { ref, onMounted, nextTick, watch, computed, onBeforeUnmount } from 'vue'
 
 // === Types ===
 import type { AssistantMessage, Message, UserMessage } from '@shared/chat'
+import type { MessageListItem } from '@/stores/chat'
 
 // === Components ===
 import MessageItemAssistant from './MessageItemAssistant.vue'
 import MessageItemUser from './MessageItemUser.vue'
+import MessageItemPlaceholder from './MessageItemPlaceholder.vue'
 import MessageActionButtons from './MessageActionButtons.vue'
 import ReferencePreview from './ReferencePreview.vue'
 import MessageMinimap from './MessageMinimap.vue'
 import TraceDialog from '../trace/TraceDialog.vue'
 
 // === Composables ===
-import { useResizeObserver, useEventListener } from '@vueuse/core'
+import { useResizeObserver, useEventListener, useDebounceFn } from '@vueuse/core'
 import { useMessageScroll } from '@/composables/message/useMessageScroll'
 import { useCleanDialog } from '@/composables/message/useCleanDialog'
 import { useMessageMinimap } from '@/composables/message/useMessageMinimap'
 import { useMessageCapture } from '@/composables/message/useMessageCapture'
-import { useMessageRetry } from '@/composables/message/useMessageRetry'
+import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
+import { getAllMessageDomInfo, getMessageDomInfo } from '@/lib/messageRuntimeCache'
 
 // === Stores ===
 import { useChatStore } from '@/stores/chat'
@@ -98,7 +117,7 @@ import type { ParentSelection } from '@shared/presenter'
 
 // === Props & Emits ===
 const props = defineProps<{
-  messages: Array<Message>
+  items: Array<MessageListItem>
 }>()
 
 // === Stores ===
@@ -106,18 +125,34 @@ const chatStore = useChatStore()
 const referenceStore = useReferenceStore()
 const workspaceStore = useWorkspaceStore()
 
+// === Local State (需要先声明,因为 useMessageScroll 需要引用) ===
+const dynamicScrollerRef = ref<InstanceType<typeof DynamicScroller> | null>(null)
+const scrollAnchor = ref<HTMLDivElement>()
+const visible = ref(false)
+const shouldAutoFollow = ref(true)
+const traceMessageId = ref<string | null>(null)
+let highlightRefreshTimer: number | null = null
+
+const previousHeights = new Map<string, number>()
+const messageResizeObservers = new Map<string, ResizeObserver>()
+const pendingHeightUpdate = ref(false)
+
 // === Composable Integrations ===
 // Scroll management
-const scroll = useMessageScroll()
+const scroll = useMessageScroll({
+  dynamicScrollerRef,
+  shouldAutoFollow,
+  scrollAnchor
+})
 const {
   messagesContainer,
-  scrollAnchor,
   aboveThreshold,
-  scrollToBottom: scrollToBottomImmediate,
+  scrollToBottom,
   scrollToMessage,
   handleScroll,
   updateScrollInfo,
-  setupScrollObserver
+  setupScrollObserver,
+  handleVirtualScrollUpdate
 } = scroll
 
 // Clean dialog
@@ -130,43 +165,164 @@ const minimap = useMessageMinimap(scroll.scrollInfo)
 const capture = useMessageCapture()
 
 // Message retry
-const retry = useMessageRetry(toRef(props, 'messages'))
 
-// === Local State ===
-const messageList = ref<HTMLDivElement>()
-const visible = ref(false)
-const shouldAutoFollow = ref(true)
-const traceMessageId = ref<string | null>(null)
-let highlightRefreshTimer: number | null = null
+const minimapMessages = computed(() => {
+  const mapped = props.items.map((item) => {
+    if (item.message) return item.message
+    return {
+      id: item.id,
+      role: 'user',
+      conversationId: chatStore.getActiveThreadId() ?? '',
+      content: { text: '', files: [], links: [], think: false, search: false },
+      timestamp: Date.now()
+    } as unknown as Message
+  })
+  if (mapped.length > 0) return mapped
+  const current = chatStore.getCurrentThreadMessages()
+  if (current.length > 0) return current
+  return chatStore.variantAwareMessages
+})
 
-const scheduleScrollToBottom = (force = false) => {
-  nextTick(() => {
-    const container = messagesContainer.value
-    if (!container) {
-      scrollToBottomImmediate()
-      shouldAutoFollow.value = true
-      return
+// === Constants ===
+const HIGHLIGHT_CLASS = 'selection-highlight'
+const HIGHLIGHT_ACTIVE_CLASS = 'selection-highlight-active'
+const HIGHLIGHT_REFRESH_DELAY = 80
+const HIGHLIGHT_DURATION = 2000
+const MAX_REASONABLE_HEIGHT = 2000
+const BUFFER_ZONE_MULTIPLIER = 2
+const EXTREME_POSITION_THRESHOLD = 100000
+
+const HEIGHT_CHANGE_THRESHOLD = 10
+const SCROLL_CHECK_DELAY = 150
+
+const trackMessageHeightChange = (messageId: string, newHeight: number) => {
+  const previousHeight = previousHeights.get(messageId) ?? 0
+  const heightDiff = Math.abs(newHeight - previousHeight)
+
+  if (heightDiff > HEIGHT_CHANGE_THRESHOLD && heightDiff < MAX_REASONABLE_HEIGHT) {
+    if (!pendingHeightUpdate.value) {
+      pendingHeightUpdate.value = true
+      nextTick(() => {
+        scrollerUpdate()
+        setTimeout(() => {
+          pendingHeightUpdate.value = false
+        }, SCROLL_CHECK_DELAY)
+      })
+    }
+  }
+
+  previousHeights.set(messageId, newHeight)
+}
+
+const scrollerUpdate = () => {
+  const scroller = dynamicScrollerRef.value
+  scroller?.updateVisibleItems?.(true)
+}
+
+const setupMessageResizeObserver = () => {
+  const container = messagesContainer.value
+  if (!container) return
+
+  const observerCallback = (entries: ResizeObserverEntry[]) => {
+    for (const entry of entries) {
+      const messageId = entry.target.getAttribute('data-message-id')
+      if (!messageId) continue
+
+      const newHeight = entry.contentRect.height
+      trackMessageHeightChange(messageId, newHeight)
+    }
+  }
+
+  const debouncedObserverCallback = useDebounceFn(observerCallback, 100)
+
+  const visibleMessages = container.querySelectorAll('[data-message-id]')
+
+  visibleMessages.forEach((element) => {
+    const el = element as HTMLElement
+    const messageId = el.getAttribute('data-message-id')
+    if (!messageId) return
+
+    const previousObserver = messageResizeObservers.get(messageId)
+    if (previousObserver) {
+      previousObserver.disconnect()
     }
 
-    const shouldScroll = force || shouldAutoFollow.value
+    const observer = new ResizeObserver(debouncedObserverCallback)
+    observer.observe(el)
+    messageResizeObservers.set(messageId, observer)
 
-    if (!shouldScroll) {
-      updateScrollInfo()
-      return
-    }
-
-    scrollToBottomImmediate()
-    if (force) {
-      shouldAutoFollow.value = true
-    }
+    previousHeights.set(messageId, el.getBoundingClientRect().height)
   })
 }
 
-const scrollToBottom = (force = false) => {
-  if (force) {
-    shouldAutoFollow.value = true
+const cleanupMessageResizeObservers = () => {
+  messageResizeObservers.forEach((observer) => {
+    observer.disconnect()
+  })
+  messageResizeObservers.clear()
+  previousHeights.clear()
+}
+
+// === Helper Functions ===
+const getTextLength = (value?: string) => value?.length ?? 0
+
+const getMessageSizeKey = (item: MessageListItem) => {
+  const message = item.message
+  if (!message) return `placeholder:${item.id}`
+
+  if (message.role === 'assistant') {
+    const blocks = (message as AssistantMessage).content
+    if (Array.isArray(blocks)) {
+      const contentLength = blocks.reduce((sum, block) => sum + getTextLength(block.content), 0)
+      return `assistant:${blocks.length}:${contentLength}:${message.status ?? ''}`
+    }
   }
-  scheduleScrollToBottom(force)
+
+  if (message.role === 'user') {
+    const userContent = (message as UserMessage).content
+    let contentLength = getTextLength(userContent.text)
+    if (Array.isArray(userContent.content)) {
+      contentLength += userContent.content.reduce(
+        (sum, block) => sum + getTextLength(block.content),
+        0
+      )
+    }
+    const fileCount = userContent.files?.length ?? 0
+    const promptCount = userContent.prompts?.length ?? 0
+    return `user:${contentLength}:${fileCount}:${promptCount}`
+  }
+
+  return `message:${message.id}`
+}
+
+const getVariantSizeKey = (item: MessageListItem) => {
+  const message = item.message
+  if (!message || message.role !== 'assistant') return ''
+  return chatStore.selectedVariantsMap[message.id] ?? ''
+}
+
+const getRenderingStateKey = (item: MessageListItem) => {
+  const message = item.message
+  if (!message) return `rendering:placeholder:${item.id}`
+
+  const loadingStates: string[] = []
+
+  if (message.role === 'assistant') {
+    const blocks = (message as AssistantMessage).content
+    if (Array.isArray(blocks)) {
+      blocks.forEach((block) => {
+        if (block.status === 'loading') {
+          loadingStates.push(`${block.type}`)
+        }
+      })
+    }
+  }
+
+  if (loadingStates.length > 0) {
+    return `rendering:loading:${loadingStates.sort().join(',')}`
+  }
+
+  return ''
 }
 
 // === Event Handlers ===
@@ -176,14 +332,31 @@ const handleCopyImage = async (
   fromTop: boolean = false,
   modelInfo?: { model_name: string; model_provider: string }
 ) => {
+  const targets = [messageId, parentId].filter(Boolean) as string[]
+  await chatStore.ensureMessagesLoadedByIds(targets)
+  await nextTick()
+
+  if (!chatStore.hasMessageDomInfo(messageId)) {
+    wrapScrollToMessage(messageId)
+    await nextTick()
+  }
+
   await capture.captureMessage({ messageId, parentId, fromTop, modelInfo })
 }
 
-const handleRetry = async (index: number) => {
-  const triggered = await retry.retryFromUserMessage(index)
-  if (triggered) {
+const handleRetry = async (messageId?: string) => {
+  if (!messageId) return
+  if (await chatStore.retryFromUserMessage(messageId)) {
     scrollToBottom(true)
   }
+}
+
+const getPlaceholderHeight = (messageId: string) => getMessageDomInfo(messageId)?.height
+
+const getAnchorList = () => {
+  const domEntries = getAllMessageDomInfo()
+  const idSet = new Set(props.items.map((item) => item.id))
+  return domEntries.filter((entry) => idSet.has(entry.id))
 }
 
 // === Computed ===
@@ -204,8 +377,6 @@ const handleTrace = (messageId: string) => {
   traceMessageId.value = messageId
 }
 
-const HIGHLIGHT_CLASS = 'selection-highlight'
-
 const hashText = (value: string) => {
   let hash = 0
   for (let i = 0; i < value.length; i += 1) {
@@ -216,71 +387,71 @@ const hashText = (value: string) => {
 }
 
 const clearSelectionHighlights = (container: HTMLElement) => {
-  const highlights = Array.from(container.querySelectorAll(`.${HIGHLIGHT_CLASS}`))
-  for (const highlight of highlights) {
+  container.querySelectorAll(`.${HIGHLIGHT_CLASS}`).forEach((highlight) => {
     const parent = highlight.parentNode
-    if (!parent) continue
+    if (!parent) return
+
     while (highlight.firstChild) {
       parent.insertBefore(highlight.firstChild, highlight)
     }
     parent.removeChild(highlight)
     parent.normalize()
-  }
+  })
 }
 
 const resolveSelectionOffsets = (fullText: string, selection: ParentSelection) => {
   const { startOffset, endOffset, selectedText, contextBefore, contextAfter } = selection
+
+  // Try exact offsets first
   if (
     Number.isFinite(startOffset) &&
     Number.isFinite(endOffset) &&
     startOffset >= 0 &&
     endOffset <= fullText.length &&
-    endOffset > startOffset
+    endOffset > startOffset &&
+    fullText.slice(startOffset, endOffset) === selectedText
   ) {
-    const matchedText = fullText.slice(startOffset, endOffset)
-    if (matchedText === selectedText) {
-      return { startOffset, endOffset }
-    }
+    return { startOffset, endOffset }
   }
 
-  const hasBefore = typeof contextBefore === 'string' && contextBefore.length > 0
-  const hasAfter = typeof contextAfter === 'string' && contextAfter.length > 0
+  if (!selectedText) return null
 
-  if (selectedText && hasBefore && hasAfter) {
-    const composite = `${contextBefore}${selectedText}${contextAfter}`
-    const idx = fullText.indexOf(composite)
+  const hasBefore = contextBefore && contextBefore.length > 0
+  const hasAfter = contextAfter && contextAfter.length > 0
+
+  // Try different context combinations
+  const searchStrategies = [
+    hasBefore && hasAfter && `${contextBefore}${selectedText}${contextAfter}`,
+    hasBefore && `${contextBefore}${selectedText}`,
+    hasAfter && `${selectedText}${contextAfter}`,
+    selectedText
+  ].filter(Boolean) as string[]
+
+  for (const strategy of searchStrategies) {
+    const idx = fullText.indexOf(strategy)
     if (idx !== -1) {
-      const resolvedStart = idx + contextBefore.length
+      const offset = strategy.startsWith(contextBefore!) ? contextBefore!.length : 0
+      const resolvedStart = idx + offset
       return { startOffset: resolvedStart, endOffset: resolvedStart + selectedText.length }
-    }
-  }
-
-  if (selectedText && hasBefore) {
-    const composite = `${contextBefore}${selectedText}`
-    const idx = fullText.indexOf(composite)
-    if (idx !== -1) {
-      const resolvedStart = idx + contextBefore.length
-      return { startOffset: resolvedStart, endOffset: resolvedStart + selectedText.length }
-    }
-  }
-
-  if (selectedText && hasAfter) {
-    const composite = `${selectedText}${contextAfter}`
-    const idx = fullText.indexOf(composite)
-    if (idx !== -1) {
-      const resolvedStart = idx
-      return { startOffset: resolvedStart, endOffset: resolvedStart + selectedText.length }
-    }
-  }
-
-  if (selectedText) {
-    const idx = fullText.indexOf(selectedText)
-    if (idx !== -1) {
-      return { startOffset: idx, endOffset: idx + selectedText.length }
     }
   }
 
   return null
+}
+
+const collectTextNodes = (container: HTMLElement) => {
+  const textNodes: Array<{ node: Text; start: number; end: number }> = []
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  let cursor = 0
+
+  while (walker.nextNode()) {
+    const node = walker.currentNode as Text
+    const length = node.nodeValue?.length ?? 0
+    textNodes.push({ node, start: cursor, end: cursor + length })
+    cursor += length
+  }
+
+  return textNodes
 }
 
 const applySelectionHighlight = (
@@ -289,48 +460,28 @@ const applySelectionHighlight = (
   childConversationId: string
 ) => {
   const fullText = container.textContent ?? ''
-  if (!fullText) return
-  if (selection.contentHash && selection.contentHash !== hashText(fullText)) {
-    return
-  }
+  if (!fullText || (selection.contentHash && selection.contentHash !== hashText(fullText))) return
+
   const offsets = resolveSelectionOffsets(fullText, selection)
-  if (!offsets) return
+  if (!offsets || offsets.startOffset >= offsets.endOffset) return
 
   const { startOffset, endOffset } = offsets
-  if (startOffset >= endOffset) return
+  const textNodes = collectTextNodes(container)
 
-  const textNodes: Array<{ node: Text; start: number; end: number }> = []
-  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
-  let cursor = 0
-  while (walker.nextNode()) {
-    const node = walker.currentNode as Text
-    const length = node.nodeValue?.length ?? 0
-    textNodes.push({ node, start: cursor, end: cursor + length })
-    cursor += length
-  }
+  for (const { node, start, end } of textNodes) {
+    if (end <= startOffset || start >= endOffset) continue
 
-  for (const entry of textNodes) {
-    if (entry.end <= startOffset || entry.start >= endOffset) {
-      continue
-    }
-
-    const node = entry.node
     const nodeText = node.nodeValue ?? ''
-    const startInNode = Math.max(0, startOffset - entry.start)
-    const endInNode = Math.min(nodeText.length, endOffset - entry.start)
+    const startInNode = Math.max(0, startOffset - start)
+    const endInNode = Math.min(nodeText.length, endOffset - start)
+    if (startInNode >= endInNode) continue
 
-    if (startInNode >= endInNode) {
-      continue
-    }
-
+    const fragment = document.createDocumentFragment()
     const beforeText = nodeText.slice(0, startInNode)
     const highlightText = nodeText.slice(startInNode, endInNode)
     const afterText = nodeText.slice(endInNode)
 
-    const fragment = document.createDocumentFragment()
-    if (beforeText) {
-      fragment.appendChild(document.createTextNode(beforeText))
-    }
+    if (beforeText) fragment.appendChild(document.createTextNode(beforeText))
 
     const highlight = document.createElement('span')
     highlight.className = HIGHLIGHT_CLASS
@@ -338,9 +489,7 @@ const applySelectionHighlight = (
     highlight.textContent = highlightText
     fragment.appendChild(highlight)
 
-    if (afterText) {
-      fragment.appendChild(document.createTextNode(afterText))
-    }
+    if (afterText) fragment.appendChild(document.createTextNode(afterText))
 
     node.parentNode?.replaceChild(fragment, node)
   }
@@ -368,23 +517,23 @@ const applySelectionHighlights = () => {
 }
 
 const scheduleSelectionHighlightRefresh = () => {
-  if (highlightRefreshTimer) {
-    clearTimeout(highlightRefreshTimer)
-    highlightRefreshTimer = null
-  }
+  if (highlightRefreshTimer) clearTimeout(highlightRefreshTimer)
+  highlightRefreshTimer = null
+
   nextTick(() => {
+    const container = messagesContainer.value
+    if (!container) return
+
     if (!chatStore.childThreadsByMessageId.size) {
-      const container = messagesContainer.value
-      if (container) {
-        clearSelectionHighlights(container)
-      }
+      clearSelectionHighlights(container)
       return
     }
+
     applySelectionHighlights()
     highlightRefreshTimer = window.setTimeout(() => {
       highlightRefreshTimer = null
       applySelectionHighlights()
-    }, 80)
+    }, HIGHLIGHT_REFRESH_DELAY)
   })
 }
 
@@ -398,27 +547,52 @@ const handleHighlightClick = (event: MouseEvent) => {
   chatStore.openThreadInNewTab(childConversationId)
 }
 
+const activateHighlight = (highlight: HTMLElement) => {
+  highlight.scrollIntoView({ block: 'center' })
+  highlight.classList.add(HIGHLIGHT_ACTIVE_CLASS)
+  setTimeout(() => highlight.classList.remove(HIGHLIGHT_ACTIVE_CLASS), HIGHLIGHT_DURATION)
+}
+
+const findHighlight = (container: HTMLElement, childConversationId: string) => {
+  return container.querySelector(
+    `.${HIGHLIGHT_CLASS}[data-child-conversation-id="${childConversationId}"]`
+  ) as HTMLElement | null
+}
+
 const scrollToSelectionHighlight = (childConversationId: string) => {
   if (!childConversationId) return false
   const container = messagesContainer.value
   if (!container) return false
-  const highlight = container.querySelector(
-    `.${HIGHLIGHT_CLASS}[data-child-conversation-id="${childConversationId}"]`
-  ) as HTMLElement | null
-  if (!highlight) return false
-  highlight.scrollIntoView({ block: 'center' })
-  highlight.classList.add('selection-highlight-active')
-  setTimeout(() => {
-    highlight.classList.remove('selection-highlight-active')
-  }, 2000)
-  return true
+
+  const highlight = findHighlight(container, childConversationId)
+  if (highlight) {
+    activateHighlight(highlight)
+    return true
+  }
+
+  // Find parent message
+  const targetMessageId = Array.from(chatStore.childThreadsByMessageId.entries()).find(
+    ([, children]) => children.some((child) => child.id === childConversationId)
+  )?.[0]
+
+  if (targetMessageId) {
+    wrapScrollToMessage(targetMessageId)
+    nextTick(() => {
+      scheduleSelectionHighlightRefresh()
+      const refreshedHighlight = findHighlight(container, childConversationId)
+      if (refreshedHighlight) activateHighlight(refreshedHighlight)
+    })
+    return true
+  }
+
+  return false
 }
 
 useEventListener(messagesContainer, 'click', handleHighlightClick)
 
 watch(
   () => [
-    props.messages.length,
+    props.items.length,
     chatStore.childThreadsByMessageId,
     chatStore.chatConfig.selectedVariantsMap
   ],
@@ -429,17 +603,117 @@ watch(
 )
 
 // === Lifecycle Hooks ===
+const handleScrollUpdate = useDebounceFn(() => {
+  if (chatStore.childThreadsByMessageId.size) {
+    scheduleSelectionHighlightRefresh()
+  }
+  recordVisibleDomInfo()
+}, HIGHLIGHT_REFRESH_DELAY)
+
+useEventListener(messagesContainer, 'scroll', () => {
+  handleScroll()
+  handleScrollUpdate()
+})
+
+const bindScrollContainer = () => {
+  const scrollerEl = dynamicScrollerRef.value?.$el as HTMLDivElement | undefined
+  if (scrollerEl && messagesContainer.value !== scrollerEl) {
+    messagesContainer.value = scrollerEl
+  }
+}
+
+const recordVisibleDomInfo = () => {
+  const container = messagesContainer.value
+  if (!container) return
+
+  const containerRect = container.getBoundingClientRect()
+  const bufferZone = containerRect.height * BUFFER_ZONE_MULTIPLIER
+  const entries: Array<{ id: string; top: number; height: number }> = []
+
+  container.querySelectorAll('[data-message-id]').forEach((node) => {
+    const messageId = node.getAttribute('data-message-id')
+    if (!messageId) return
+
+    const rect = (node as HTMLElement).getBoundingClientRect()
+    const absoluteTop = rect.top - containerRect.top + container.scrollTop
+
+    const isInReasonableRange =
+      absoluteTop > -bufferZone &&
+      absoluteTop < container.scrollHeight + bufferZone &&
+      rect.height > 0 &&
+      rect.height < MAX_REASONABLE_HEIGHT &&
+      Math.abs(rect.top) < EXTREME_POSITION_THRESHOLD
+
+    if (isInReasonableRange) {
+      entries.push({ id: messageId, top: absoluteTop, height: rect.height })
+    }
+  })
+
+  if (entries.length) chatStore.recordMessageDomInfo(entries)
+}
+
+const refreshVirtualScroller = async (messageId?: string) => {
+  await nextTick()
+  await new Promise((resolve) => requestAnimationFrame(resolve))
+
+  const scroller = dynamicScrollerRef.value
+  if (messageId && scroller?.scrollToItem) {
+    const index = props.items.findIndex((item) => item.id === messageId)
+    if (index !== -1) {
+      scroller.scrollToItem(index)
+    }
+  }
+
+  scroller?.updateVisibleItems?.(true)
+
+  await new Promise((resolve) => requestAnimationFrame(resolve))
+  scroller?.updateVisibleItems?.(true)
+}
+
+const wrapScrollToMessage = async (messageId: string) => {
+  void chatStore.ensureMessagesLoadedByIds([messageId])
+  scrollToMessage(messageId, () => props.items)
+  await refreshVirtualScroller(messageId)
+}
+
+const handleVirtualUpdate = (
+  startIndex: number,
+  endIndex: number,
+  visibleStartIndex?: number,
+  visibleEndIndex?: number
+) => {
+  const resolvedStart = visibleStartIndex ?? startIndex
+  const resolvedEnd = visibleEndIndex ?? endIndex
+  const safeStart = Number.isFinite(resolvedStart) ? resolvedStart : 0
+  const safeEnd = Number.isFinite(resolvedEnd) ? resolvedEnd : safeStart
+  void chatStore.prefetchMessagesForRange(safeStart, safeEnd)
+  recordVisibleDomInfo()
+  handleVirtualScrollUpdate()
+  setupMessageResizeObserver()
+}
+
+watch(
+  dynamicScrollerRef,
+  () => {
+    bindScrollContainer()
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
-  // Initialize scroll and visibility
-  scheduleScrollToBottom(true)
+  bindScrollContainer()
+
+  scrollToBottom(true)
   nextTick(() => {
     visible.value = true
     setupScrollObserver()
     updateScrollInfo()
+    recordVisibleDomInfo()
+    setupMessageResizeObserver()
   })
 
-  useResizeObserver(messageList, () => {
-    scheduleScrollToBottom()
+  useResizeObserver(messagesContainer, () => {
+    scrollToBottom()
   })
 
   watch(
@@ -451,7 +725,7 @@ onMounted(() => {
 
   // Update scroll info when message count changes
   watch(
-    () => props.messages.length,
+    () => props.items.length,
     (length, prevLength) => {
       const isGrowing = length > prevLength
       const isReset = prevLength > 0 && length < prevLength
@@ -460,7 +734,23 @@ onMounted(() => {
         return
       }
 
-      scheduleScrollToBottom(isReset)
+      scrollToBottom(isReset)
+    },
+    { flush: 'post' }
+  )
+
+  watch(
+    () => {
+      const lastMessage = props.items[props.items.length - 1]
+      return lastMessage
+        ? `${getMessageSizeKey(lastMessage)}:${getRenderingStateKey(lastMessage)}`
+        : ''
+    },
+    () => {
+      scrollToBottom()
+      nextTick(() => {
+        scrollerUpdate()
+      })
     },
     { flush: 'post' }
   )
@@ -468,20 +758,21 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   const container = messagesContainer.value
-  if (!container) return
-  clearSelectionHighlights(container)
-  if (highlightRefreshTimer) {
-    clearTimeout(highlightRefreshTimer)
-    highlightRefreshTimer = null
-  }
+  if (container) clearSelectionHighlights(container)
+
+  if (highlightRefreshTimer) clearTimeout(highlightRefreshTimer)
+
+  highlightRefreshTimer = null
+  cleanupMessageResizeObservers()
 })
 
 // === Expose ===
 defineExpose({
   scrollToBottom,
-  scrollToMessage,
+  scrollToMessage: wrapScrollToMessage,
   scrollToSelectionHighlight,
-  aboveThreshold
+  aboveThreshold,
+  getAnchorList
 })
 </script>
 

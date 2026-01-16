@@ -162,6 +162,17 @@ export const YO_BROWSER_EVENTS = {
   WINDOW_VISIBILITY_CHANGED: 'yo-browser:window-visibility-changed'
 }
 
+// Skills 相关事件
+export const SKILL_EVENTS = {
+  ACTIVATED: 'skill:activated',
+  DEACTIVATED: 'skill:deactivated'
+}
+
+// Skill sync events (cross-tool synchronization)
+export const SKILL_SYNC_EVENTS = {
+  NEW_DISCOVERIES: 'skill-sync:new-discoveries' // New skills discovered
+}
+
 // 悬浮按钮相关事件
 export const FLOATING_BUTTON_EVENTS = {
   CLICKED: 'floating-button:clicked', // 悬浮按钮被点击

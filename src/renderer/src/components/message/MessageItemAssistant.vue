@@ -1,7 +1,7 @@
 <template>
   <div
     :data-message-id="message.id"
-    class="flex flex-row pl-4 pr-11 group gap-2 w-full justify-start assistant-message-item"
+    class="flex flex-row pl-4 pt-5 pr-11 group gap-2 w-full justify-start assistant-message-item"
   >
     <div class="shrink-0 w-5 h-5 flex items-center justify-center">
       <ModelIcon
@@ -35,6 +35,7 @@
             v-else-if="block.type === 'reasoning_content' && block.content"
             :block="block"
             :usage="message.usage"
+            @toggle-collapse="handleCollapseToggle"
           />
           <MessageBlockPlan v-else-if="block.type === 'plan'" :block="block" />
           <MessageBlockSearch
@@ -48,12 +49,16 @@
             :message-id="currentMessage.id"
             :thread-id="currentThreadId"
           />
-          <MessageBlockPermissionRequest
+          <template
             v-else-if="block.type === 'action' && block.action_type === 'tool_call_permission'"
-            :block="block"
-            :message-id="currentMessage.id"
-            :conversation-id="currentThreadId"
-          />
+          >
+            <MessageBlockPermissionRequest
+              v-if="block.extra?.needsUserAction"
+              :block="block"
+              :message-id="currentMessage.id"
+              :conversation-id="currentThreadId"
+            />
+          </template>
           <MessageBlockAction
             v-else-if="block.type === 'action'"
             :message-id="currentMessage.id"
@@ -173,21 +178,12 @@ const emit = defineEmits<{
 // 获取当前会话ID
 const currentThreadId = computed(() => chatStore.getActiveThreadId() || '')
 
-// 将 currentVariantIndex 从 ref 改造为 computed 属性
-// 这确保了其值总是与 Pinia store 中的状态同步，从根本上消除了竞态条件。
+// currentVariantIndex: 0 = 主消息, 1-N = 对应的变体索引
 const currentVariantIndex = computed(() => {
-  const selectedVariantId = chatStore.selectedVariantsMap.get(props.message.id)
+  const selectedVariantId = chatStore.selectedVariantsMap[props.message.id]
+  if (!selectedVariantId) return 0
 
-  // 如果 store 中没有记录，则显示主消息 (索引 0)
-  if (!selectedVariantId) {
-    return 0
-  }
-
-  // 在所有变体中查找已选择的 ID
   const variantIndex = allVariants.value.findIndex((v) => v.id === selectedVariantId)
-
-  // 如果找到了，返回其索引 + 1 (因为索引 0 是主消息)
-  // 如果没找到 (数据过时或已删除)，则安全地回退到主消息
   return variantIndex !== -1 ? variantIndex + 1 : 0
 })
 
@@ -201,19 +197,31 @@ const currentMessage = computed(() => {
   return variant || props.message
 })
 
-// 计算当前消息的所有变体（包括缓存中的）
+// 计算当前消息的所有变体（包括缓存中的，过滤掉主消息本身）
 const allVariants = computed(() => {
   const messageVariants = props.message.variants || []
-  const combinedVariants = messageVariants.map((variant) => {
-    const cachedVariant = Array.from(chatStore.getGeneratingMessagesCache().values()).find(
-      (cached) => {
-        const msg = cached.message as AssistantMessage
-        return msg.is_variant && msg.id === variant.id
-      }
-    )
-    return cachedVariant ? cachedVariant.message : variant
+  const variantsById = new Map<string, AssistantMessage>()
+
+  // 只添加真正的变体（is_variant !== 0），过滤掉主消息本身
+  messageVariants.forEach((variant) => {
+    if (variant.is_variant !== 0) {
+      variantsById.set(variant.id, variant as AssistantMessage)
+    }
   })
-  return combinedVariants
+
+  for (const [, cached] of chatStore.getGeneratingMessagesCache().entries()) {
+    const msg = cached.message
+    if (
+      props.message.parentId &&
+      msg.role === 'assistant' &&
+      msg.is_variant &&
+      msg.parentId === props.message.parentId
+    ) {
+      variantsById.set(msg.id, msg as AssistantMessage)
+    }
+  }
+
+  return Array.from(variantsById.values())
 })
 
 // 计算变体总数
@@ -236,14 +244,12 @@ watch(
     // 仅当新变体被添加时触发
     // 并且当前会话不是正在生成中的消息，避免在生成过程中频繁切换
     if (newLength > oldLength && !chatStore.generatingThreadIds.has(currentThreadId.value)) {
-      const newVariantIndex = newLength // 新变体的索引
-
       const mainMessageId = props.message.id
-      // newVariantIndex 此时至少为 1
-      const selectedVariant = allVariants.value[newVariantIndex - 1]
+      // 获取最后一个变体（数组最后一个元素）
+      const lastVariant = allVariants.value[newLength - 1]
 
-      // 只有当 selectedVariant 存在时才调用 updateSelectedVariant，确保是有效的变体
-      chatStore.updateSelectedVariant(mainMessageId, selectedVariant ? selectedVariant.id : null)
+      // 只有当 lastVariant 存在时才调用 updateSelectedVariant，确保是有效的变体
+      chatStore.updateSelectedVariant(mainMessageId, lastVariant ? lastVariant.id : null)
     }
   }
 )
@@ -289,6 +295,10 @@ type HandleActionType =
   | 'fork'
   | 'trace'
 
+const handleCollapseToggle = () => {
+  emit('variantChanged', props.message.id)
+}
+
 const handleAction = (action: HandleActionType) => {
   if (action === 'retry') {
     chatStore.retryMessage(currentMessage.value.id)
@@ -320,30 +330,18 @@ const handleAction = (action: HandleActionType) => {
         .trim()
     )
   } else if (action === 'prev' || action === 'next') {
-    // 修改 prev/next 逻辑以遵循单向数据流
-    let newIndex = currentVariantIndex.value // 获取当前计算出的索引
+    let newIndex = currentVariantIndex.value
 
-    switch (action) {
-      case 'prev':
-        if (newIndex > 0) newIndex--
-        break
-      case 'next':
-        if (newIndex < totalVariants.value - 1) newIndex++
-        break
+    if (action === 'prev' && newIndex > 0) {
+      newIndex--
+    } else if (action === 'next' && newIndex < totalVariants.value - 1) {
+      newIndex++
     }
 
-    // 如果计算出的新索引与当前索引相同，则不执行任何操作
     if (newIndex === currentVariantIndex.value) return
 
-    const mainMessageId = props.message.id
-    // 如果 newIndex 是 0，则 selectedVariant 为 null，表示选择主消息
-    const selectedVariant = newIndex > 0 ? allVariants.value[newIndex - 1] : null
-    const selectedVariantId = selectedVariant ? selectedVariant.id : null
-
-    // 不再直接修改本地 state，而是调用 store 的 action 来更新全局状态
-    // store 的更新会通过 computed 属性自动反馈到 UI
-    chatStore.updateSelectedVariant(mainMessageId, selectedVariantId)
-
+    const selectedVariantId = newIndex > 0 ? allVariants.value[newIndex - 1]?.id : null
+    chatStore.updateSelectedVariant(props.message.id, selectedVariantId)
     emit('variantChanged', props.message.id)
   } else if (action === 'copyImage') {
     // 使用原始消息的ID，因为DOM中的data-message-id使用的是message.id

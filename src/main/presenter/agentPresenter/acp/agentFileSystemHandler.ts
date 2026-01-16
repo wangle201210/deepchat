@@ -1,17 +1,36 @@
 import fs from 'fs/promises'
 import path from 'path'
 import os from 'os'
+import { getSessionsRoot } from '../../sessionPresenter/sessionPaths'
 import { z } from 'zod'
 import { minimatch } from 'minimatch'
-import { createTwoFilesPatch } from 'diff'
+import { diffLines } from 'diff'
 import logger from '@shared/logger'
 import { validateGlobPattern, validateRegexPattern } from '@shared/regexValidator'
+import { getLanguageFromFilename } from '@shared/utils/codeLanguage'
 import { spawn } from 'child_process'
 import { RuntimeHelper } from '../../../lib/runtimeHelper'
 import { glob } from 'glob'
 
+// Auto-truncate threshold for read_file to avoid triggering tool output offload
+const READ_FILE_AUTO_TRUNCATE_THRESHOLD = 4500
+
 const ReadFileArgsSchema = z.object({
-  paths: z.array(z.string()).min(1).describe('Array of file paths to read')
+  paths: z.array(z.string()).min(1).describe('Array of file paths to read'),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Starting character offset (0-based), applied to each file independently'),
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe(
+      'Maximum characters to read per file. Large files are auto-truncated if not specified'
+    )
 })
 
 const WriteFileArgsSchema = z.object({
@@ -88,7 +107,8 @@ const TextReplaceArgsSchema = z.object({
 })
 
 const DirectoryTreeArgsSchema = z.object({
-  path: z.string()
+  path: z.string(),
+  depth: z.number().int().min(0).max(3).default(1)
 })
 
 const GetFileInfoArgsSchema = z.object({
@@ -114,7 +134,24 @@ interface TextReplaceResult {
   replacements: number
   diff?: string
   error?: string
+  originalContent?: string
+  modifiedContent?: string
 }
+
+interface DiffToolSuccessResponse {
+  success: true
+  originalCode: string
+  updatedCode: string
+  language: string
+  replacements?: number
+}
+
+interface DiffToolErrorResponse {
+  success: false
+  error: string
+}
+
+type DiffToolResponse = DiffToolSuccessResponse | DiffToolErrorResponse
 
 interface TreeEntry {
   name: string
@@ -129,16 +166,30 @@ interface GlobMatch {
   size?: number
 }
 
+interface LineRange {
+  start: number
+  end: number
+}
+
+interface PathValidationOptions {
+  enforceAllowed?: boolean
+  accessType?: 'read' | 'write'
+}
+
 export class AgentFileSystemHandler {
   private allowedDirectories: string[]
+  private conversationId?: string
+  private readonly sessionsRoot: string
 
-  constructor(allowedDirectories: string[]) {
+  constructor(allowedDirectories: string[], options: { conversationId?: string } = {}) {
     if (allowedDirectories.length === 0) {
       throw new Error('At least one allowed directory must be provided')
     }
     this.allowedDirectories = allowedDirectories.map((dir) =>
       this.normalizePath(path.resolve(this.expandHome(dir)))
     )
+    this.conversationId = options.conversationId
+    this.sessionsRoot = this.normalizePath(getSessionsRoot())
   }
 
   private normalizePath(p: string): string {
@@ -164,46 +215,197 @@ export class AgentFileSystemHandler {
     return filepath
   }
 
-  private async validatePath(requestedPath: string, baseDirectory?: string): Promise<string> {
+  resolvePath(requestedPath: string, baseDirectory?: string): string {
     const expandedPath = this.expandHome(requestedPath)
     const absolute = path.isAbsolute(expandedPath)
       ? path.resolve(expandedPath)
       : path.resolve(baseDirectory ?? this.allowedDirectories[0], expandedPath)
-    const normalizedRequested = this.normalizePath(absolute)
-    const isAllowed = this.isPathAllowed(normalizedRequested)
-    if (!isAllowed) {
-      throw new Error(
-        `Access denied - path outside allowed directories: ${absolute} not in ${this.allowedDirectories.join(', ')}`
-      )
+    return this.normalizePath(absolute)
+  }
+
+  isPathAllowedAbsolute(candidatePath: string): boolean {
+    const normalized = this.normalizePath(path.resolve(candidatePath))
+    return this.isPathAllowed(normalized)
+  }
+
+  private async validatePath(
+    requestedPath: string,
+    baseDirectory?: string,
+    options: PathValidationOptions = {}
+  ): Promise<string> {
+    const enforceAllowed = options.enforceAllowed ?? true
+    const normalizedRequested = this.resolvePath(requestedPath, baseDirectory)
+    if (options.accessType === 'read') {
+      this.assertSessionReadAllowed(normalizedRequested)
+    }
+    if (enforceAllowed) {
+      const isAllowed = this.isPathAllowed(normalizedRequested)
+      if (!isAllowed) {
+        throw new Error(
+          `Access denied - path outside allowed directories: ${normalizedRequested} not in ${this.allowedDirectories.join(', ')}`
+        )
+      }
     }
     try {
-      const realPath = await fs.realpath(absolute)
+      const realPath = await fs.realpath(normalizedRequested)
       const normalizedReal = this.normalizePath(realPath)
-      const isRealPathAllowed = this.isPathAllowed(normalizedReal)
-      if (!isRealPathAllowed) {
-        throw new Error('Access denied - symlink target outside allowed directories')
+      if (options.accessType === 'read') {
+        this.assertSessionReadAllowed(normalizedReal)
+      }
+      if (enforceAllowed) {
+        const isRealPathAllowed = this.isPathAllowed(normalizedReal)
+        if (!isRealPathAllowed) {
+          throw new Error('Access denied - symlink target outside allowed directories')
+        }
       }
       return realPath
     } catch {
-      const parentDir = path.dirname(absolute)
+      const parentDir = path.dirname(normalizedRequested)
       try {
         const realParentPath = await fs.realpath(parentDir)
         const normalizedParent = this.normalizePath(realParentPath)
-        const isParentAllowed = this.isPathAllowed(normalizedParent)
-        if (!isParentAllowed) {
-          throw new Error('Access denied - parent directory outside allowed directories')
+        if (enforceAllowed) {
+          const isParentAllowed = this.isPathAllowed(normalizedParent)
+          if (!isParentAllowed) {
+            throw new Error('Access denied - parent directory outside allowed directories')
+          }
         }
-        return absolute
+        return normalizedRequested
       } catch {
         throw new Error(`Parent directory does not exist: ${parentDir}`)
       }
     }
   }
 
-  private createUnifiedDiff(originalContent: string, newContent: string, filePath: string): string {
+  private isWithinSessionsRoot(candidatePath: string): boolean {
+    if (candidatePath === this.sessionsRoot) return true
+    const rootWithSeparator = this.sessionsRoot.endsWith(path.sep)
+      ? this.sessionsRoot
+      : `${this.sessionsRoot}${path.sep}`
+    return candidatePath.startsWith(rootWithSeparator)
+  }
+
+  private assertSessionReadAllowed(candidatePath: string): void {
+    if (!this.isWithinSessionsRoot(candidatePath)) return
+    if (!this.conversationId) {
+      throw new Error('Access denied - session files require an active conversation')
+    }
+    const sessionDir = this.normalizePath(path.join(this.sessionsRoot, this.conversationId))
+    if (candidatePath === sessionDir) return
+    const sessionWithSeparator = sessionDir.endsWith(path.sep)
+      ? sessionDir
+      : `${sessionDir}${path.sep}`
+    if (!candidatePath.startsWith(sessionWithSeparator)) {
+      throw new Error('Access denied - session files outside current conversation')
+    }
+  }
+
+  private countLines(value: string): number {
+    if (value.length === 0) return 0
+    const lineCount = value.split('\n').length
+    return value.endsWith('\n') ? lineCount - 1 : lineCount
+  }
+
+  private addContextRange(ranges: LineRange[], index: number, totalLines: number): void {
+    if (totalLines <= 0) return
+    const clamped = Math.min(Math.max(index, 0), totalLines - 1)
+    ranges.push({ start: clamped, end: clamped })
+  }
+
+  private expandRanges(ranges: LineRange[], totalLines: number, contextLines: number): LineRange[] {
+    if (totalLines <= 0 || ranges.length === 0) return []
+    const expanded = ranges.map((range) => ({
+      start: Math.max(0, range.start - contextLines),
+      end: Math.min(totalLines - 1, range.end + contextLines)
+    }))
+    expanded.sort((a, b) => a.start - b.start)
+    const merged: LineRange[] = []
+    for (const range of expanded) {
+      const last = merged[merged.length - 1]
+      if (!last || range.start > last.end + 1) {
+        merged.push({ ...range })
+        continue
+      }
+      last.end = Math.max(last.end, range.end)
+    }
+    return merged
+  }
+
+  private formatNoChanges(count: number): string {
+    return `... [No changes: ${count} lines] ...`
+  }
+
+  private buildCollapsedText(lines: string[], ranges: LineRange[]): string {
+    if (lines.length === 0) return ''
+    if (ranges.length === 0) {
+      return this.formatNoChanges(lines.length)
+    }
+    const output: string[] = []
+    let cursor = 0
+    for (const range of ranges) {
+      if (range.start > cursor) {
+        const gap = range.start - cursor
+        if (gap > 0) {
+          output.push(this.formatNoChanges(gap))
+        }
+      }
+      output.push(...lines.slice(range.start, range.end + 1))
+      cursor = range.end + 1
+    }
+    if (cursor < lines.length) {
+      const remaining = lines.length - cursor
+      if (remaining > 0) {
+        output.push(this.formatNoChanges(remaining))
+      }
+    }
+    return output.join('\n')
+  }
+
+  private buildTruncatedDiff(
+    originalContent: string,
+    updatedContent: string,
+    contextLines: number
+  ): { originalCode: string; updatedCode: string } {
     const normalizedOriginal = this.normalizeLineEndings(originalContent)
-    const normalizedNew = this.normalizeLineEndings(newContent)
-    return createTwoFilesPatch(filePath, filePath, normalizedOriginal, normalizedNew)
+    const normalizedUpdated = this.normalizeLineEndings(updatedContent)
+    const originalLines = normalizedOriginal.split('\n')
+    const updatedLines = normalizedUpdated.split('\n')
+    const originalRanges: LineRange[] = []
+    const updatedRanges: LineRange[] = []
+
+    let originalIndex = 0
+    let updatedIndex = 0
+    const parts = diffLines(normalizedOriginal, normalizedUpdated)
+
+    for (const part of parts) {
+      const lineCount = this.countLines(part.value)
+      if (part.added) {
+        if (lineCount > 0) {
+          updatedRanges.push({ start: updatedIndex, end: updatedIndex + lineCount - 1 })
+        }
+        this.addContextRange(originalRanges, originalIndex, originalLines.length)
+        updatedIndex += lineCount
+        continue
+      }
+      if (part.removed) {
+        if (lineCount > 0) {
+          originalRanges.push({ start: originalIndex, end: originalIndex + lineCount - 1 })
+        }
+        this.addContextRange(updatedRanges, updatedIndex, updatedLines.length)
+        originalIndex += lineCount
+        continue
+      }
+      originalIndex += lineCount
+      updatedIndex += lineCount
+    }
+
+    const expandedOriginal = this.expandRanges(originalRanges, originalLines.length, contextLines)
+    const expandedUpdated = this.expandRanges(updatedRanges, updatedLines.length, contextLines)
+
+    return {
+      originalCode: this.buildCollapsedText(originalLines, expandedOriginal),
+      updatedCode: this.buildCollapsedText(updatedLines, expandedUpdated)
+    }
   }
 
   private async getFileStats(filePath: string): Promise<{
@@ -358,7 +560,10 @@ export class AgentFileSystemHandler {
     args.push('--no-heading')
 
     // Search path
-    const validatedPath = await this.validatePath(rootPath)
+    const validatedPath = await this.validatePath(rootPath, undefined, {
+      enforceAllowed: false,
+      accessType: 'read'
+    })
     args.push(validatedPath)
 
     return new Promise((resolve, reject) => {
@@ -533,7 +738,10 @@ export class AgentFileSystemHandler {
         if (result.totalMatches >= maxResults) break
         const fullPath = path.join(currentPath, entry.name)
         try {
-          await this.validatePath(fullPath)
+          await this.validatePath(fullPath, undefined, {
+            enforceAllowed: false,
+            accessType: 'read'
+          })
           if (entry.isFile()) {
             if (minimatch(entry.name, filePattern, { nocase: !caseSensitive })) {
               await searchInFile(fullPath)
@@ -547,7 +755,10 @@ export class AgentFileSystemHandler {
       }
     }
 
-    const validatedPath = await this.validatePath(rootPath)
+    const validatedPath = await this.validatePath(rootPath, undefined, {
+      enforceAllowed: false,
+      accessType: 'read'
+    })
     const stats = await fs.stat(validatedPath)
 
     if (stats.isFile()) {
@@ -598,7 +809,6 @@ export class AgentFileSystemHandler {
         }
       }
 
-      const modifiedContent = normalizedOriginal.replace(regex, replacement)
       // Pattern already validated above, safe to create count regex
       const countRegex = new RegExp(pattern, caseSensitive ? 'g' : 'gi')
       const matches = Array.from(normalizedOriginal.matchAll(countRegex))
@@ -608,11 +818,12 @@ export class AgentFileSystemHandler {
         return {
           success: true,
           replacements: 0,
-          diff: 'No matches found for the given pattern.'
+          originalContent: normalizedOriginal,
+          modifiedContent: normalizedOriginal
         }
       }
 
-      const diff = this.createUnifiedDiff(normalizedOriginal, modifiedContent, filePath)
+      const modifiedContent = normalizedOriginal.replace(regex, replacement)
       if (!dryRun) {
         await fs.writeFile(filePath, modifiedContent, 'utf-8')
       }
@@ -620,7 +831,8 @@ export class AgentFileSystemHandler {
       return {
         success: true,
         replacements,
-        diff
+        originalContent: normalizedOriginal,
+        modifiedContent
       }
     } catch (error) {
       return {
@@ -636,11 +848,46 @@ export class AgentFileSystemHandler {
     if (!parsed.success) {
       throw new Error(`Invalid arguments: ${parsed.error}`)
     }
+
+    const { offset = 0, limit } = parsed.data
+
     const results = await Promise.all(
       parsed.data.paths.map(async (filePath: string) => {
         try {
-          const validPath = await this.validatePath(filePath, baseDirectory)
-          const content = await fs.readFile(validPath, 'utf-8')
+          const validPath = await this.validatePath(filePath, baseDirectory, {
+            enforceAllowed: false,
+            accessType: 'read'
+          })
+          const fullContent = await fs.readFile(validPath, 'utf-8')
+          const totalLength = fullContent.length
+
+          // Determine effective limit
+          let effectiveLimit = limit
+          let autoTruncated = false
+
+          // Auto-truncate large files when no explicit limit specified
+          if (limit === undefined && totalLength - offset > READ_FILE_AUTO_TRUNCATE_THRESHOLD) {
+            effectiveLimit = READ_FILE_AUTO_TRUNCATE_THRESHOLD
+            autoTruncated = true
+          }
+
+          // Apply offset and limit
+          const content =
+            effectiveLimit !== undefined
+              ? fullContent.slice(offset, offset + effectiveLimit)
+              : fullContent.slice(offset)
+
+          const endOffset = offset + content.length
+
+          // Build result with metadata when pagination is active or auto-truncated
+          if (offset > 0 || limit !== undefined || autoTruncated) {
+            let header = `${filePath} [chars ${offset}-${endOffset} of ${totalLength}]`
+            if (autoTruncated) {
+              header += ` (auto-truncated, use offset/limit to read more)`
+            }
+            return `${header}:\n${content}\n`
+          }
+
           return `${filePath}:\n${content}\n`
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error)
@@ -666,7 +913,10 @@ export class AgentFileSystemHandler {
     if (!parsed.success) {
       throw new Error(`Invalid arguments: ${parsed.error}`)
     }
-    const validPath = await this.validatePath(parsed.data.path, baseDirectory)
+    const validPath = await this.validatePath(parsed.data.path, baseDirectory, {
+      enforceAllowed: false,
+      accessType: 'read'
+    })
     const entries = await fs.readdir(validPath, { withFileTypes: true })
     const formatted = entries
       .map((entry) => {
@@ -741,11 +991,18 @@ export class AgentFileSystemHandler {
       modifiedContent = modifiedContent.replace(regex, parsed.data.replacement || '')
     }
 
-    const diff = createTwoFilesPatch(validPath, validPath, content, modifiedContent)
+    const { originalCode, updatedCode } = this.buildTruncatedDiff(content, modifiedContent, 3)
+    const language = getLanguageFromFilename(validPath)
     if (!parsed.data.dryRun) {
       await fs.writeFile(validPath, modifiedContent, 'utf-8')
     }
-    return diff
+    const response: DiffToolResponse = {
+      success: true,
+      originalCode,
+      updatedCode,
+      language
+    }
+    return JSON.stringify(response)
   }
 
   async grepSearch(args: unknown, baseDirectory?: string): Promise<string> {
@@ -754,7 +1011,10 @@ export class AgentFileSystemHandler {
       throw new Error(`Invalid arguments: ${parsed.error}`)
     }
 
-    const validPath = await this.validatePath(parsed.data.path, baseDirectory)
+    const validPath = await this.validatePath(parsed.data.path, baseDirectory, {
+      enforceAllowed: false,
+      accessType: 'read'
+    })
     const result = await this.runGrepSearch(validPath, parsed.data.pattern, {
       filePattern: parsed.data.filePattern,
       recursive: parsed.data.recursive,
@@ -810,7 +1070,24 @@ export class AgentFileSystemHandler {
       }
     )
 
-    return result.success ? result.diff || '' : result.error || 'Text replacement failed'
+    if (!result.success) {
+      return result.error || 'Text replacement failed'
+    }
+
+    const { originalCode, updatedCode } = this.buildTruncatedDiff(
+      result.originalContent ?? '',
+      result.modifiedContent ?? '',
+      3
+    )
+    const language = getLanguageFromFilename(validPath)
+    const response: DiffToolResponse = {
+      success: true,
+      originalCode,
+      updatedCode,
+      language,
+      replacements: result.replacements
+    }
+    return JSON.stringify(response)
   }
 
   async directoryTree(args: unknown, baseDirectory?: string): Promise<string> {
@@ -819,8 +1096,12 @@ export class AgentFileSystemHandler {
       throw new Error(`Invalid arguments: ${parsed.error}`)
     }
 
-    const buildTree = async (currentPath: string): Promise<TreeEntry[]> => {
-      const validPath = await this.validatePath(currentPath, baseDirectory)
+    const depth = parsed.data.depth
+    const buildTree = async (currentPath: string, currentDepth: number): Promise<TreeEntry[]> => {
+      const validPath = await this.validatePath(currentPath, baseDirectory, {
+        enforceAllowed: false,
+        accessType: 'read'
+      })
       const entries = await fs.readdir(validPath, { withFileTypes: true })
       const result: TreeEntry[] = []
 
@@ -832,7 +1113,9 @@ export class AgentFileSystemHandler {
 
         if (entry.isDirectory()) {
           const subPath = path.join(currentPath, entry.name)
-          entryData.children = await buildTree(subPath)
+          if (currentDepth < depth) {
+            entryData.children = await buildTree(subPath, currentDepth + 1)
+          }
         }
 
         result.push(entryData)
@@ -841,7 +1124,7 @@ export class AgentFileSystemHandler {
       return result
     }
 
-    const treeData = await buildTree(parsed.data.path)
+    const treeData = await buildTree(parsed.data.path, 0)
     return JSON.stringify(treeData, null, 2)
   }
 
@@ -851,7 +1134,10 @@ export class AgentFileSystemHandler {
       throw new Error(`Invalid arguments: ${parsed.error}`)
     }
 
-    const validPath = await this.validatePath(parsed.data.path, baseDirectory)
+    const validPath = await this.validatePath(parsed.data.path, baseDirectory, {
+      enforceAllowed: false,
+      accessType: 'read'
+    })
     const info = await this.getFileStats(validPath)
     return Object.entries(info)
       .map(([key, value]) => `${key}: ${value}`)
@@ -869,8 +1155,11 @@ export class AgentFileSystemHandler {
 
     // Determine root directory
     const searchRoot = root
-      ? await this.validatePath(root, baseDirectory)
-      : await this.validatePath(baseDirectory ?? this.allowedDirectories[0])
+      ? await this.validatePath(root, baseDirectory, { enforceAllowed: false, accessType: 'read' })
+      : await this.validatePath(baseDirectory ?? this.allowedDirectories[0], undefined, {
+          enforceAllowed: false,
+          accessType: 'read'
+        })
 
     // Default exclusions
     const defaultExclusions = [
@@ -894,15 +1183,10 @@ export class AgentFileSystemHandler {
     try {
       const matches = await glob(pattern, globOptions)
 
-      // Filter matches to ensure they're in allowed directories
+      // Preserve matches without allowlist filtering for read operations.
       const validMatches = await Promise.all(
         matches.map(async (filePath) => {
-          try {
-            await this.validatePath(filePath)
-            return filePath
-          } catch {
-            return null
-          }
+          return filePath
         })
       )
 

@@ -8,8 +8,8 @@ import type {
   MCPResourceContent
 } from '@shared/presenter'
 import { nanoid } from 'nanoid'
-import type { MessageManager } from '../../sessionPresenter/managers/messageManager'
 import type { GeneratingMessageState } from '../streaming/types'
+import type { StreamUpdateScheduler } from '../streaming/streamUpdateScheduler'
 import type { CommandPermissionService } from '../../permission/commandPermissionService'
 
 interface PermissionRequestPayload {
@@ -42,21 +42,21 @@ export class ToolCallHandler {
     'application/vnd.mcp-ui.remote-dom'
   ])
 
-  private readonly messageManager: MessageManager
   private readonly sqlitePresenter: ISQLitePresenter
   private readonly searchingMessages: Set<string>
   private readonly commandPermissionHandler?: CommandPermissionService
+  private readonly streamUpdateScheduler: StreamUpdateScheduler
 
   constructor(options: {
-    messageManager: MessageManager
     sqlitePresenter: ISQLitePresenter
     searchingMessages: Set<string>
     commandPermissionHandler?: CommandPermissionService
+    streamUpdateScheduler: StreamUpdateScheduler
   }) {
-    this.messageManager = options.messageManager
     this.sqlitePresenter = options.sqlitePresenter
     this.searchingMessages = options.searchingMessages
     this.commandPermissionHandler = options.commandPermissionHandler
+    this.streamUpdateScheduler = options.streamUpdateScheduler
   }
 
   async processToolCallStart(
@@ -98,9 +98,13 @@ export class ToolCallHandler {
 
     block.tool_call.params = event.tool_call_params || ''
 
-    if (event.tool_call === 'running') {
+    if (event.tool_call_server_name) {
       block.tool_call.server_name = event.tool_call_server_name
+    }
+    if (event.tool_call_server_icons) {
       block.tool_call.server_icons = event.tool_call_server_icons
+    }
+    if (event.tool_call_server_description) {
       block.tool_call.server_description = event.tool_call_server_description
     }
   }
@@ -127,6 +131,29 @@ export class ToolCallHandler {
       lastBlock.action_type === 'tool_call_permission'
     ) {
       lastBlock.status = 'success'
+    }
+
+    this.searchingMessages.delete(event.eventId)
+    state.isSearching = false
+    state.pendingToolCall = undefined
+  }
+
+  async processToolCallError(
+    state: GeneratingMessageState,
+    event: LLMAgentEventData
+  ): Promise<void> {
+    const toolCallBlock = state.message.content.find(
+      (block) =>
+        block.type === 'tool_call' &&
+        block.tool_call?.id === event.tool_call_id &&
+        block.status === 'loading'
+    )
+
+    if (toolCallBlock && toolCallBlock.type === 'tool_call') {
+      toolCallBlock.status = 'error'
+      if (toolCallBlock.tool_call) {
+        toolCallBlock.tool_call.response = event.tool_call_response || ''
+      }
     }
 
     this.searchingMessages.delete(event.eventId)
@@ -261,7 +288,15 @@ export class ToolCallHandler {
 
       this.finalizeLastBlock(state)
       state.message.content.push(...uiBlocks)
-      await this.messageManager.editMessage(event.eventId, JSON.stringify(state.message.content))
+      this.streamUpdateScheduler.enqueueDelta(
+        event.eventId,
+        state.conversationId,
+        state.message.parentId,
+        Boolean(state.message.is_variant),
+        state.tabId,
+        {},
+        state.message.content
+      )
       return true
     } catch (error) {
       console.error('[ToolCallHandler] Error processing MCP UI resources from tool call:', error)
@@ -379,7 +414,15 @@ export class ToolCallHandler {
         )
       }
 
-      await this.messageManager.editMessage(event.eventId, JSON.stringify(state.message.content))
+      this.streamUpdateScheduler.enqueueDelta(
+        event.eventId,
+        state.conversationId,
+        state.message.parentId,
+        Boolean(state.message.is_variant),
+        state.tabId,
+        {},
+        state.message.content
+      )
       return true
     } catch (error) {
       console.error('[ToolCallHandler] Error processing search results from tool call:', error)
@@ -414,7 +457,6 @@ export class ToolCallHandler {
 
     const lastBlock = state.message.content[state.message.content.length - 1]
     if (lastBlock && lastBlock.type === 'tool_call' && lastBlock.tool_call) {
-      lastBlock.status = 'success'
     }
 
     this.finalizeLastBlock(state)

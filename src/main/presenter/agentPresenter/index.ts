@@ -23,6 +23,7 @@ import { ContentBufferHandler } from './streaming/contentBufferHandler'
 import { LLMEventHandler } from './streaming/llmEventHandler'
 import { StreamGenerationHandler } from './streaming/streamGenerationHandler'
 import type { GeneratingMessageState } from './streaming/types'
+import { StreamUpdateScheduler } from './streaming/streamUpdateScheduler'
 import { ToolCallHandler } from './loop/toolCallHandler'
 import { PermissionHandler } from './permission/permissionHandler'
 import { UtilityHandler } from './utility/utilityHandler'
@@ -57,6 +58,7 @@ export class AgentPresenter implements IAgentPresenter {
   private streamGenerationHandler: StreamGenerationHandler
   private permissionHandler: PermissionHandler
   private utilityHandler: UtilityHandler
+  private streamUpdateScheduler: StreamUpdateScheduler
 
   constructor(options: AgentPresenterDependencies) {
     this.sessionPresenter = options.sessionPresenter
@@ -69,6 +71,10 @@ export class AgentPresenter implements IAgentPresenter {
     this.messageManager = options.messageManager ?? new MessageManager(options.sqlitePresenter)
     this.commandPermissionService = options.commandPermissionService
 
+    this.streamUpdateScheduler = new StreamUpdateScheduler({
+      messageManager: this.messageManager
+    })
+
     const handlerContext: ThreadHandlerContext = {
       sqlitePresenter: this.sqlitePresenter,
       messageManager: this.messageManager,
@@ -79,14 +85,14 @@ export class AgentPresenter implements IAgentPresenter {
 
     this.contentBufferHandler = new ContentBufferHandler({
       generatingMessages: this.generatingMessages,
-      messageManager: this.messageManager
+      streamUpdateScheduler: this.streamUpdateScheduler
     })
 
     this.toolCallHandler = new ToolCallHandler({
-      messageManager: this.messageManager,
       sqlitePresenter: this.sqlitePresenter,
       searchingMessages: this.searchingMessages,
-      commandPermissionHandler: this.commandPermissionService
+      commandPermissionHandler: this.commandPermissionService,
+      streamUpdateScheduler: this.streamUpdateScheduler
     })
 
     this.llmEventHandler = new LLMEventHandler({
@@ -95,6 +101,7 @@ export class AgentPresenter implements IAgentPresenter {
       messageManager: this.messageManager,
       contentBufferHandler: this.contentBufferHandler,
       toolCallHandler: this.toolCallHandler,
+      streamUpdateScheduler: this.streamUpdateScheduler,
       onConversationUpdated: (state) => this.handleConversationUpdates(state)
     })
 
@@ -139,7 +146,7 @@ export class AgentPresenter implements IAgentPresenter {
   async sendMessage(
     agentId: string,
     content: string,
-    _tabId?: number,
+    tabId?: number,
     selectedVariantsMap?: Record<string, string>
   ): Promise<AssistantMessage | null> {
     await this.logResolvedIfEnabled(agentId)
@@ -159,7 +166,7 @@ export class AgentPresenter implements IAgentPresenter {
       userMessage.id
     )
 
-    this.trackGeneratingMessage(assistantMessage, agentId)
+    this.trackGeneratingMessage(assistantMessage, agentId, tabId)
     await this.updateConversationAfterUserMessage(agentId)
     await this.sessionManager.startLoop(agentId, assistantMessage.id)
 
@@ -167,8 +174,10 @@ export class AgentPresenter implements IAgentPresenter {
       .startStreamCompletion(agentId, assistantMessage.id, selectedVariantsMap)
       .catch((error) => {
         console.error('[AgentPresenter] Failed to start stream completion:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
         eventBus.sendToRenderer(STREAM_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
-          eventId: assistantMessage.id
+          eventId: assistantMessage.id,
+          error: errorMessage
         })
       })
 
@@ -195,8 +204,10 @@ export class AgentPresenter implements IAgentPresenter {
       .continueStreamCompletion(agentId, messageId, selectedVariantsMap)
       .catch((error) => {
         console.error('[AgentPresenter] Failed to continue stream completion:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
         eventBus.sendToRenderer(STREAM_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
-          eventId: assistantMessage.id
+          eventId: assistantMessage.id,
+          error: errorMessage
         })
       })
 
@@ -243,8 +254,10 @@ export class AgentPresenter implements IAgentPresenter {
       .startStreamCompletion(message.conversationId, messageId, selectedVariantsMap)
       .catch((error) => {
         console.error('[AgentPresenter] Failed to retry stream completion:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
         eventBus.sendToRenderer(STREAM_EVENTS.ERROR, SendTarget.ALL_WINDOWS, {
-          eventId: assistantMessage.id
+          eventId: assistantMessage.id,
+          error: errorMessage
         })
       })
 
@@ -311,7 +324,11 @@ export class AgentPresenter implements IAgentPresenter {
     }
   }
 
-  private trackGeneratingMessage(message: AssistantMessage, conversationId: string): void {
+  private trackGeneratingMessage(
+    message: AssistantMessage,
+    conversationId: string,
+    tabId?: number
+  ): void {
     this.generatingMessages.set(message.id, {
       message,
       conversationId,
@@ -320,7 +337,8 @@ export class AgentPresenter implements IAgentPresenter {
       promptTokens: 0,
       reasoningStartTime: null,
       reasoningEndTime: null,
-      lastReasoningTime: null
+      lastReasoningTime: null,
+      tabId
     })
   }
 

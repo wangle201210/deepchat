@@ -42,6 +42,8 @@ export class WindowPresenter implements IWindowPresenter {
   private settingsWindow: BrowserWindow | null = null
   private tooltipOverlayWindows = new Map<number, BrowserWindow>()
   private pendingTooltipPayload = new Map<number, { x: number; y: number; text: string }>()
+  // TEMP: Tooltip overlay window creation is disabled while renderer tooltip overlay is unstable.
+  private isTooltipOverlayEnabled = false
 
   constructor(configPresenter: IConfigPresenter) {
     this.windows = new Map()
@@ -772,6 +774,11 @@ export class WindowPresenter implements IWindowPresenter {
     const contentProtectionEnabled = this.configPresenter.getContentProtectionEnabled()
     this.updateContentProtection(shellWindow, contentProtectionEnabled)
 
+    // 开发模式下自动打开 DevTools
+    if (is.dev) {
+      shellWindow.webContents.openDevTools()
+    }
+
     // --- 窗口事件监听 ---
 
     // 窗口准备就绪时显示
@@ -1068,6 +1075,10 @@ export class WindowPresenter implements IWindowPresenter {
     }
 
     // DevTools 不再自动打开，需要手动通过菜单或快捷键打开
+    // 开发环境直接自动开启，方便排查
+    if (is.dev) {
+      shellWindow.webContents.openDevTools({ mode: 'detach' })
+    }
 
     console.log(`Shell window ${windowId} created successfully.`)
 
@@ -1078,6 +1089,7 @@ export class WindowPresenter implements IWindowPresenter {
   }
 
   private getOrCreateTooltipOverlay(parentWindow: BrowserWindow): BrowserWindow | null {
+    if (!this.isTooltipOverlayEnabled) return null
     if (parentWindow.isDestroyed()) return null
     // Do not create overlay on macOS fullscreen; it hides traffic lights
     if (process.platform === 'darwin' && parentWindow.isFullScreen()) return null

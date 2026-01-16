@@ -24,6 +24,7 @@ export type CONVERSATION_SETTINGS = {
   chatMode?: 'chat' | 'agent' | 'acp agent'
   agentWorkspacePath?: string | null
   selectedVariantsMap?: Record<string, string>
+  activeSkills?: string[]
 }
 
 export type ParentSelection = {
@@ -158,6 +159,8 @@ export interface IThreadPresenter {
     page: number,
     pageSize: number
   ): Promise<{ total: number; list: Message[] }>
+  getMessageIds(conversationId: string): Promise<string[]>
+  getMessagesByIds(messageIds: string[]): Promise<Message[]>
   getMessageThread(
     conversationId: string,
     page: number,
@@ -198,6 +201,7 @@ export interface IMessageManager {
 
   // Message queries
   getMessage(messageId: string): Promise<Message>
+  getMessagesByIds(messageIds: string[]): Promise<Message[]>
   getMessageVariants(messageId: string): Promise<Message[]>
   getMessageThread(
     conversationId: string,
@@ -207,6 +211,7 @@ export interface IMessageManager {
     total: number
     list: Message[]
   }>
+  getMessageIds(conversationId: string): Promise<string[]>
   getContextMessages(
     conversationId: string,
     contextLength: number,

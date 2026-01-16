@@ -14,12 +14,17 @@ import { ThinkContent } from '@/components/think-content'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePresenter } from '@/composables/usePresenter'
 import { AssistantMessageBlock } from '@shared/chat'
+import { useThrottleFn } from '@vueuse/core'
 const props = defineProps<{
   block: AssistantMessageBlock
   usage: {
     reasoning_start_time: number
     reasoning_end_time: number
   }
+}>()
+
+const emit = defineEmits<{
+  (e: 'toggle-collapse', isCollapsed: boolean): void
 }>()
 const { t } = useI18n()
 
@@ -96,13 +101,16 @@ const headerText = computed(() => {
 
 watch(
   () => collapse.value,
-  () => {
-    configPresenter.setSetting('think_collapse', collapse.value)
+  (newValue) => {
+    configPresenter.setSetting('think_collapse', newValue)
+    emit('toggle-collapse', !newValue)
   }
 )
 
-watch(
-  () => [props.block.status, props.block.reasoning_time?.start],
+const statusWatchSource = () =>
+  [props.block.status, props.block.reasoning_time?.start, props.block.reasoning_time?.end] as const
+
+const handleStatusChange = useThrottleFn(
   () => {
     updateDisplayedSeconds()
     if (props.block.status === 'loading') {
@@ -111,15 +119,25 @@ watch(
       stopTimer()
     }
   },
+  500,
+  true,
+  true
+)
+
+watch(
+  statusWatchSource,
+  () => {
+    handleStatusChange()
+  },
   { immediate: true }
 )
 
 watch(
   () => reasoningDuration.value,
   () => {
-    if (props.block.status !== 'loading') {
-      updateDisplayedSeconds()
-    }
+    // Always update displayed seconds when reasoning duration changes
+    // This ensures real-time updates during streaming
+    updateDisplayedSeconds()
   }
 )
 

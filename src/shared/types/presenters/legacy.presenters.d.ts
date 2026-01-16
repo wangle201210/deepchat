@@ -13,6 +13,8 @@ import type { ISearchPresenter } from './search.presenter'
 import type { IConversationExporter } from './exporter.presenter'
 import type { IWorkspacePresenter } from './workspace'
 import type { IToolPresenter } from './tool.presenter'
+import type { ISkillPresenter } from '../skill'
+import type { ISkillSyncPresenter } from '../skillSync'
 import type {
   BrowserTabInfo,
   BrowserContextSnapshot,
@@ -353,11 +355,13 @@ export interface ISQLitePresenter {
     isVariant: number
   ): Promise<string>
   queryMessages(conversationId: string): Promise<Array<SQLITE_MESSAGE>>
+  queryMessageIds(conversationId: string): Promise<string[]>
   deleteAllMessages(): Promise<void>
   runTransaction(operations: () => void): Promise<void>
 
   // Added message management methods
   getMessage(messageId: string): Promise<SQLITE_MESSAGE | null>
+  getMessagesByIds(messageIds: string[]): Promise<SQLITE_MESSAGE[]>
   getMessageVariants(messageId: string): Promise<SQLITE_MESSAGE[]>
   updateMessage(
     messageId: string,
@@ -447,6 +451,8 @@ export interface IPresenter {
   knowledgePresenter: IKnowledgePresenter
   workspacePresenter: IWorkspacePresenter
   toolPresenter: IToolPresenter
+  skillPresenter: ISkillPresenter
+  skillSyncPresenter: ISkillSyncPresenter
   init(): void
   destroy(): void
 }
@@ -548,6 +554,12 @@ export interface IConfigPresenter {
   setSyncFolderPath(folderPath: string): void
   getLastSyncTime(): number
   setLastSyncTime(time: number): void
+  // Skills settings
+  getSkillsEnabled(): boolean
+  setSkillsEnabled(enabled: boolean): void
+  getSkillsPath(): string
+  setSkillsPath(skillsPath: string): void
+  getSkillSettings(): { skillsPath: string; enableSkills: boolean }
   // MCP configuration related methods
   getMcpServers(): Promise<Record<string, MCPServerConfig>>
   setMcpServers(servers: Record<string, MCPServerConfig>): Promise<void>
@@ -1060,6 +1072,7 @@ export type CONVERSATION_SETTINGS = {
   acpWorkdirMap?: Record<string, string | null>
   chatMode?: 'chat' | 'agent' | 'acp agent'
   agentWorkspacePath?: string | null
+  activeSkills?: string[] // Activated skills for this conversation
 }
 
 export type ParentSelection = {
@@ -1237,6 +1250,10 @@ export interface IDevicePresenter {
 
   // Directory selection and application restart
   selectDirectory(): Promise<{ canceled: boolean; filePaths: string[] }>
+  selectFiles(options?: {
+    filters?: { name: string; extensions: string[] }[]
+    multiple?: boolean
+  }): Promise<{ canceled: boolean; filePaths: string[] }>
   restartApp(): Promise<void>
 
   // Image caching

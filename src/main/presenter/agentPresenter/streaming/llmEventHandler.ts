@@ -9,6 +9,7 @@ import type { MessageManager } from '../../sessionPresenter/managers/messageMana
 import type { GeneratingMessageState } from './types'
 import type { ContentBufferHandler } from './contentBufferHandler'
 import type { ToolCallHandler } from '../loop/toolCallHandler'
+import type { StreamUpdateScheduler } from './streamUpdateScheduler'
 
 type ConversationUpdateHandler = (state: GeneratingMessageState) => Promise<void>
 
@@ -18,6 +19,7 @@ export class LLMEventHandler {
   private readonly messageManager: MessageManager
   private readonly contentBufferHandler: ContentBufferHandler
   private readonly toolCallHandler: ToolCallHandler
+  private readonly streamUpdateScheduler: StreamUpdateScheduler
   private readonly onConversationUpdated?: ConversationUpdateHandler
 
   constructor(options: {
@@ -26,6 +28,7 @@ export class LLMEventHandler {
     messageManager: MessageManager
     contentBufferHandler: ContentBufferHandler
     toolCallHandler: ToolCallHandler
+    streamUpdateScheduler: StreamUpdateScheduler
     onConversationUpdated?: ConversationUpdateHandler
   }) {
     this.generatingMessages = options.generatingMessages
@@ -33,6 +36,7 @@ export class LLMEventHandler {
     this.messageManager = options.messageManager
     this.contentBufferHandler = options.contentBufferHandler
     this.toolCallHandler = options.toolCallHandler
+    this.streamUpdateScheduler = options.streamUpdateScheduler
     this.onConversationUpdated = options.onConversationUpdated
   }
 
@@ -90,7 +94,15 @@ export class LLMEventHandler {
         },
         extra: { needContinue: true }
       })
-      await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+      this.streamUpdateScheduler.enqueueDelta(
+        eventId,
+        state.conversationId,
+        state.message.parentId,
+        Boolean(state.message.is_variant),
+        state.tabId,
+        {},
+        state.message.content
+      )
       return
     }
 
@@ -142,6 +154,9 @@ export class LLMEventHandler {
         case 'permission-denied':
         case 'continue':
           await this.toolCallHandler.processToolCallPermission(state, msg, currentTime)
+          break
+        case 'error':
+          await this.toolCallHandler.processToolCallError(state, msg)
           break
         case 'end':
           await this.toolCallHandler.processToolCallEnd(state, msg)
@@ -230,8 +245,43 @@ export class LLMEventHandler {
       }
     }
 
-    await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
-    eventBus.sendToRenderer(STREAM_EVENTS.RESPONSE, SendTarget.ALL_WINDOWS, msg)
+    const delta: Partial<LLMAgentEventData> = {}
+    if (content) delta.content = content
+    if (reasoning_content) {
+      delta.reasoning_content = reasoning_content
+      // Get the current reasoning_time from the last reasoning_content block
+      const lastBlock = state.message.content[state.message.content.length - 1]
+      if (lastBlock?.type === 'reasoning_content' && lastBlock.reasoning_time) {
+        delta.reasoning_time = lastBlock.reasoning_time
+      }
+    }
+    if (image_data) delta.image_data = image_data
+    if (totalUsage) delta.totalUsage = totalUsage
+
+    if (tool_call) {
+      delta.tool_call = tool_call
+      delta.tool_call_id = tool_call_id
+      delta.tool_call_name = tool_call_name
+      delta.tool_call_params = tool_call_params
+      delta.tool_call_response = msg.tool_call_response
+      delta.tool_call_server_name = tool_call_server_name
+      delta.tool_call_server_icons = tool_call_server_icons
+      delta.tool_call_server_description = tool_call_server_description
+      delta.tool_call_response_raw = tool_call_response_raw
+      if (msg.permission_request !== undefined) {
+        delta.permission_request = msg.permission_request
+      }
+    }
+
+    this.streamUpdateScheduler.enqueueDelta(
+      eventId,
+      state.conversationId,
+      state.message.parentId,
+      Boolean(state.message.is_variant),
+      state.tabId,
+      delta,
+      state.message.content
+    )
   }
 
   async handleLLMAgentError(msg: LLMAgentEventData): Promise<void> {
@@ -244,11 +294,23 @@ export class LLMEventHandler {
       }
 
       this.contentBufferHandler.cleanupContentBuffer(state)
+    }
 
-      await this.messageManager.handleMessageError(eventId, String(error))
+    // Flush stream buffers before persisting error to avoid stale snapshot overwrites.
+    await this.streamUpdateScheduler.flushAll(eventId, 'final')
+
+    await this.messageManager.handleMessageError(eventId, String(error))
+
+    if (state) {
       this.generatingMessages.delete(eventId)
       presenter.sessionManager.setStatus(state.conversationId, 'error')
       presenter.sessionManager.clearPendingPermission(state.conversationId)
+    } else {
+      const message = await this.messageManager.getMessage(eventId)
+      if (message) {
+        presenter.sessionManager.setStatus(message.conversationId, 'error')
+        presenter.sessionManager.clearPendingPermission(message.conversationId)
+      }
     }
 
     this.searchingMessages.delete(eventId)
@@ -279,10 +341,20 @@ export class LLMEventHandler {
             !(block.type === 'action' && block.action_type === 'tool_call_permission') &&
             block.status === 'loading'
           ) {
-            block.status = 'success'
+            if (block.type !== 'tool_call') {
+              block.status = 'success'
+            }
           }
         })
-        await this.messageManager.editMessage(eventId, JSON.stringify(state.message.content))
+        this.streamUpdateScheduler.enqueueDelta(
+          eventId,
+          state.conversationId,
+          state.message.parentId,
+          Boolean(state.message.is_variant),
+          state.tabId,
+          {},
+          state.message.content
+        )
         this.searchingMessages.delete(eventId)
         presenter.sessionManager.setStatus(state.conversationId, 'waiting_permission')
         return
@@ -293,6 +365,7 @@ export class LLMEventHandler {
       presenter.sessionManager.clearPendingPermission(state.conversationId)
     }
 
+    await this.streamUpdateScheduler.flushAll(eventId, 'final')
     this.searchingMessages.delete(eventId)
     eventBus.sendToRenderer(STREAM_EVENTS.END, SendTarget.ALL_WINDOWS, msg)
   }

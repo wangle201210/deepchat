@@ -25,6 +25,17 @@ import sfxfcMp3 from '/sounds/sfx-fc.mp3?url'
 import sfxtyMp3 from '/sounds/sfx-typing.mp3?url'
 import { downloadBlob } from '@/lib/download'
 import { useChatMode } from '@/components/chat-input/composables/useChatMode'
+import {
+  cacheMessage,
+  cacheMessages,
+  clearCachedMessagesForThread,
+  clearMessageDomInfo,
+  deleteCachedMessage,
+  getCachedMessage,
+  getMessageDomInfo,
+  hasCachedMessage,
+  setMessageDomInfo
+} from '@/lib/messageRuntimeCache'
 
 // 定义会话工作状态类型
 export type WorkingStatus = 'working' | 'error' | 'completed' | 'none'
@@ -39,6 +50,11 @@ type PendingContextMention = {
 type PendingScrollTarget = {
   messageId?: string
   childConversationId?: string
+}
+
+export type MessageListItem = {
+  id: string
+  message: Message | null
 }
 
 export const useChatStore = defineStore('chat', () => {
@@ -62,7 +78,8 @@ export const useChatStore = defineStore('chat', () => {
       dtThreads: CONVERSATION[]
     }[]
   >([])
-  const messagesMap = ref<Map<number, Array<Message>>>(new Map())
+  const messageIdsMap = ref<Map<number, string[]>>(new Map())
+  const messageCacheVersion = ref(0)
   const generatingThreadIds = ref(new Set<string>())
   const isSidebarOpen = ref(false)
   const isMessageNavigationOpen = ref(false)
@@ -109,7 +126,10 @@ export const useChatStore = defineStore('chat', () => {
   } | null>(null)
 
   // 用于管理当前激活会话的 selectedVariantsMap
-  const selectedVariantsMap = ref<Map<string, string>>(new Map())
+  const selectedVariantsMap = ref<Record<string, string>>({})
+
+  // 标志：是否正在更新变体选择（用于防止 LIST_UPDATED 循环）
+  let isUpdatingVariant = false
 
   // Getters
   const getTabId = () => window.api.getWebContentsId()
@@ -117,14 +137,44 @@ export const useChatStore = defineStore('chat', () => {
   const setActiveThreadId = (threadId: string | null) => {
     activeThreadIdMap.value.set(getTabId(), threadId)
   }
-  const getMessages = () => messagesMap.value.get(getTabId()) ?? []
-  const setMessages = (msgs: Array<Message>) => {
-    messagesMap.value.set(getTabId(), msgs)
+  const bumpMessageCacheVersion = () => {
+    messageCacheVersion.value += 1
+  }
+  const getMessageIds = () => messageIdsMap.value.get(getTabId()) ?? []
+  const setMessageIds = (ids: string[]) => {
+    messageIdsMap.value.set(getTabId(), ids)
+    bumpMessageCacheVersion()
+  }
+  const ensureMessageId = (messageId: string) => {
+    if (!messageId) return
+    const ids = getMessageIds()
+    if (ids.includes(messageId)) return
+    setMessageIds([...ids, messageId])
+  }
+  const getLoadedMessages = () => {
+    const ids = getMessageIds()
+    const messages: Message[] = []
+    for (const messageId of ids) {
+      const message = getCachedMessage(messageId)
+      if (message) {
+        messages.push(message)
+      }
+    }
+    return messages
+  }
+  const cacheMessageForView = (message: Message) => {
+    cacheMessage(message)
+    bumpMessageCacheVersion()
+  }
+  const cacheMessagesForView = (messages: Message[]) => {
+    if (messages.length === 0) return
+    cacheMessages(messages)
+    bumpMessageCacheVersion()
   }
   const getCurrentThreadMessages = () => {
     const activeThreadId = getActiveThreadId()
     if (!activeThreadId) return []
-    return getMessages()
+    return getLoadedMessages()
   }
   const getThreadsWorkingStatus = () => {
     if (!threadsWorkingStatusMap.value.has(getTabId())) {
@@ -137,6 +187,22 @@ export const useChatStore = defineStore('chat', () => {
       generatingMessagesCacheMap.value.set(getTabId(), new Map())
     }
     return generatingMessagesCacheMap.value.get(getTabId())!
+  }
+  const findMainAssistantMessageByParentId = (parentId: string) => {
+    if (!parentId) return null
+    const ids = getMessageIds()
+    for (const messageId of ids) {
+      const message = getCachedMessage(messageId)
+      if (
+        message &&
+        message.role === 'assistant' &&
+        !message.is_variant &&
+        message.parentId === parentId
+      ) {
+        return message as AssistantMessage
+      }
+    }
+    return null
   }
 
   const activeThread = computed(() => {
@@ -192,41 +258,58 @@ export const useChatStore = defineStore('chat', () => {
 
   const activeAgentMcpSelections = computed(() => activeAgentMcpSelectionsState.value)
 
-  const variantAwareMessages = computed((): Array<Message> => {
-    const messages = getMessages()
-    const currentSelectedVariants = selectedVariantsMap.value
-
-    if (currentSelectedVariants.size === 0) {
-      return messages
+  const resolveVariantMessage = (
+    message: Message,
+    currentSelectedVariants: Record<string, string>
+  ) => {
+    if (message.role === 'assistant' && currentSelectedVariants[message.id]) {
+      const selectedVariantId = currentSelectedVariants[message.id]
+      if (!selectedVariantId) return message
+      const selectedVariant = (message as AssistantMessage).variants?.find(
+        (v) => v.id === selectedVariantId
+      )
+      if (selectedVariant) {
+        const newMsg = JSON.parse(JSON.stringify(message))
+        newMsg.content = selectedVariant.content
+        newMsg.usage = selectedVariant.usage
+        newMsg.model_id = selectedVariant.model_id
+        newMsg.model_provider = selectedVariant.model_provider
+        newMsg.model_name = selectedVariant.model_name
+        return newMsg
+      }
     }
 
-    return messages.map((msg) => {
-      if (msg.role === 'assistant' && currentSelectedVariants.has(msg.id)) {
-        const selectedVariantId = currentSelectedVariants.get(msg.id)
+    return message
+  }
 
-        if (!selectedVariantId) {
-          return msg
-        }
+  const messageItems = computed((): MessageListItem[] => {
+    const ids = getMessageIds()
+    const cacheVersion = messageCacheVersion.value
+    const currentSelectedVariants = selectedVariantsMap.value
+    if (cacheVersion < 0) return []
 
-        const selectedVariant = (msg as AssistantMessage).variants?.find(
-          (v) => v.id === selectedVariantId
-        )
-
-        if (selectedVariant) {
-          const newMsg = JSON.parse(JSON.stringify(msg))
-
-          newMsg.content = selectedVariant.content
-          newMsg.usage = selectedVariant.usage
-          newMsg.model_id = selectedVariant.model_id
-          newMsg.model_provider = selectedVariant.model_provider
-          newMsg.model_name = selectedVariant.model_name
-
-          return newMsg
-        }
+    return ids.map((messageId) => {
+      const cached = getCachedMessage(messageId)
+      if (!cached) {
+        return { id: messageId, message: null }
       }
+      return {
+        id: messageId,
+        message: resolveVariantMessage(cached, currentSelectedVariants)
+      }
+    })
+  })
 
-      return msg
-    }) as Array<Message>
+  const variantAwareMessages = computed((): Array<Message> => {
+    return messageItems.value
+      .map((item) => item.message)
+      .filter((message): message is Message => Boolean(message))
+  })
+
+  const messageCount = computed(() => {
+    const cacheVersion = messageCacheVersion.value
+    if (cacheVersion < 0) return 0
+    return getMessageIds().length
   })
 
   const formatContextLabel = (value: string) => {
@@ -347,11 +430,40 @@ export const useChatStore = defineStore('chat', () => {
   }
 
   const clearActiveThread = async () => {
-    if (!getActiveThreadId()) return
+    const activeThreadId = getActiveThreadId()
+    if (!activeThreadId) return
     const tabId = getTabId()
     await threadP.clearActiveThread(tabId)
     setActiveThreadId(null)
-    selectedVariantsMap.value.clear()
+    setMessageIds([])
+    clearCachedMessagesForThread(activeThreadId)
+    clearMessageDomInfo()
+    selectedVariantsMap.value = {}
+    childThreadsByMessageId.value = new Map()
+    pendingContextMentions.value = new Map()
+    pendingScrollTargetByConversation.value = new Map()
+    chatConfig.value = {
+      ...chatConfig.value,
+      acpWorkdirMap: {},
+      agentWorkspacePath: null
+    }
+  }
+
+  const clearThreadCachesForTab = (threadId: string | null) => {
+    if (threadId) {
+      clearCachedMessagesForThread(threadId)
+      if (!generatingThreadIds.value.has(threadId)) {
+        const cache = getGeneratingMessagesCache()
+        for (const [messageId, cached] of cache.entries()) {
+          if (cached.threadId === threadId) {
+            cache.delete(messageId)
+          }
+        }
+      }
+    }
+    setMessageIds([])
+    clearMessageDomInfo()
+    selectedVariantsMap.value = {}
     childThreadsByMessageId.value = new Map()
     pendingContextMentions.value = new Map()
     pendingScrollTargetByConversation.value = new Map()
@@ -446,7 +558,7 @@ export const useChatStore = defineStore('chat', () => {
       return
     }
 
-    const messageIds = getMessages().map((message) => message.id)
+    const messageIds = getMessageIds()
     if (messageIds.length === 0) {
       childThreadsByMessageId.value = new Map()
       return
@@ -468,7 +580,7 @@ export const useChatStore = defineStore('chat', () => {
     const activeThreadId = getActiveThreadId()
     if (!activeThreadId) return
     if (pendingContextMentions.value.has(activeThreadId)) return
-    if (getMessages().length > 0) return
+    if (getMessageIds().length > 0) return
 
     const active = activeThread.value
     if (!active?.parentMessageId) return
@@ -481,52 +593,68 @@ export const useChatStore = defineStore('chat', () => {
     setPendingContextMention(activeThreadId, parentText, selectionLabel)
   }
 
+  const PREFETCH_BUFFER = 24
+  const PREFETCH_BATCH_SIZE = 80
+
+  const fetchMessagesByIds = async (messageIds: string[]) => {
+    if (!messageIds.length) return
+    for (let i = 0; i < messageIds.length; i += PREFETCH_BATCH_SIZE) {
+      const chunk = messageIds.slice(i, i + PREFETCH_BATCH_SIZE)
+      const messages = await threadP.getMessagesByIds(chunk)
+      const enriched = (await Promise.all(messages.map((msg) => enrichMessageWithExtra(msg)))) as
+        | AssistantMessage[]
+        | UserMessage[]
+      cacheMessagesForView(enriched as Message[])
+    }
+  }
+
+  const ensureMessagesLoadedByIds = async (messageIds: string[]) => {
+    const missing = messageIds.filter((messageId) => !hasCachedMessage(messageId))
+    if (!missing.length) return
+    await fetchMessagesByIds(missing)
+  }
+
+  const prefetchMessagesForRange = async (startIndex: number, endIndex: number) => {
+    const ids = getMessageIds()
+    if (!ids.length) return
+    const safeStart = Math.max(0, startIndex - PREFETCH_BUFFER)
+    const safeEnd = Math.min(ids.length, endIndex + PREFETCH_BUFFER + 1)
+    const targetIds = ids.slice(safeStart, safeEnd)
+    await ensureMessagesLoadedByIds(targetIds)
+  }
+
+  const prefetchAllMessages = async () => {
+    const ids = getMessageIds()
+    if (!ids.length) return
+    await ensureMessagesLoadedByIds(ids)
+  }
+
+  const recordMessageDomInfo = (entries: Array<{ id: string; top: number; height: number }>) => {
+    setMessageDomInfo(entries)
+  }
+
+  const hasMessageDomInfo = (messageId: string) => {
+    return Boolean(getMessageDomInfo(messageId))
+  }
+
   const loadMessages = async () => {
     if (!getActiveThreadId()) return
 
     try {
       childThreadsByMessageId.value = new Map()
-      const result = await threadP.getMessages(getActiveThreadId()!, 1, 100)
-      // 合并数据库消息和缓存中的消息
-      const mergedMessages = [...result.list]
-
-      // 查找当前会话的缓存消息
+      const messageIds = (await threadP.getMessageIds(getActiveThreadId()!)) || []
+      setMessageIds(Array.isArray(messageIds) ? messageIds : [])
       const activeThread = getActiveThreadId()
       for (const [, cached] of getGeneratingMessagesCache()) {
         if (cached.threadId === activeThread) {
-          const message = cached.message
-          if (message.is_variant && message.parentId) {
-            // 如果是变体消息，找到父消息并添加到其 variants 数组中
-            const parentMsg = mergedMessages.find((m) => m.parentId === message.parentId)
-            if (parentMsg) {
-              if (!parentMsg.variants) {
-                parentMsg.variants = []
-              }
-              const existingVariantIndex = parentMsg.variants.findIndex((v) => v.id === message.id)
-              if (existingVariantIndex !== -1) {
-                parentMsg.variants[existingVariantIndex] = await enrichMessageWithExtra(message)
-              } else {
-                parentMsg.variants.push(await enrichMessageWithExtra(message))
-              }
-            }
-          } else {
-            // 如果是非变体消息，直接更新或添加到消息列表
-            const existingIndex = mergedMessages.findIndex((m) => m.id === message.id)
-            if (existingIndex !== -1) {
-              mergedMessages[existingIndex] = await enrichMessageWithExtra(message)
-            } else {
-              mergedMessages.push(await enrichMessageWithExtra(message))
-            }
+          const enriched = await enrichMessageWithExtra(cached.message)
+          if (!enriched.is_variant) {
+            cacheMessageForView(enriched)
+            ensureMessageId(enriched.id)
           }
         }
       }
-
-      // 处理所有消息的 extra 信息
-      setMessages(
-        (await Promise.all(mergedMessages.map((msg) => enrichMessageWithExtra(msg)))) as
-          | AssistantMessage[]
-          | UserMessage[]
-      )
+      await prefetchMessagesForRange(0, Math.min(messageIds.length - 1, 50))
       await refreshChildThreadsForActiveThread()
       await maybeQueueContextMention()
     } catch (error) {
@@ -547,7 +675,7 @@ export const useChatStore = defineStore('chat', () => {
         threadId,
         JSON.stringify(content),
         getTabId(),
-        Object.fromEntries(selectedVariantsMap.value)
+        selectedVariantsMap.value
       )
 
       if (!aiResponseMessage) {
@@ -559,6 +687,8 @@ export const useChatStore = defineStore('chat', () => {
         message: aiResponseMessage,
         threadId
       })
+      cacheMessageForView(aiResponseMessage)
+      ensureMessageId(aiResponseMessage.id)
 
       await loadMessages()
     } catch (error) {
@@ -577,16 +707,42 @@ export const useChatStore = defineStore('chat', () => {
   const retryMessage = async (messageId: string) => {
     if (!getActiveThreadId()) return
     try {
-      const aiResponseMessage = await agentP.retryMessage(
-        messageId,
-        Object.fromEntries(selectedVariantsMap.value)
-      )
-      // 将消息添加到缓存
+      const aiResponseMessage = await agentP.retryMessage(messageId, selectedVariantsMap.value)
+      let didUpdateVariant = false
+      // 将正在生成的变体消息缓存起来，但不插入消息列表，避免额外的消息行
       getGeneratingMessagesCache().set(aiResponseMessage.id, {
         message: aiResponseMessage,
         threadId: getActiveThreadId()!
       })
+      // 将新变体挂到主消息，确保流式更新能渲染到当前消息上
+      if (aiResponseMessage.parentId) {
+        const mainMessage = findMainAssistantMessageByParentId(aiResponseMessage.parentId)
+        if (mainMessage) {
+          if (!mainMessage.variants) {
+            mainMessage.variants = []
+          }
+          const existingIndex = mainMessage.variants.findIndex((v) => v.id === aiResponseMessage.id)
+          if (existingIndex !== -1) {
+            mainMessage.variants[existingIndex] = aiResponseMessage
+          } else {
+            mainMessage.variants.push(aiResponseMessage)
+          }
+          cacheMessageForView({ ...mainMessage })
+          ensureMessageId(mainMessage.id)
+          await updateSelectedVariant(mainMessage.id, aiResponseMessage.id)
+          didUpdateVariant = true
+        }
+      }
       await loadMessages()
+      if (aiResponseMessage.parentId && !didUpdateVariant) {
+        const mainMessage = await threadP.getMainMessageByParentId(
+          getActiveThreadId()!,
+          aiResponseMessage.parentId
+        )
+        if (mainMessage) {
+          await updateSelectedVariant(mainMessage.id, aiResponseMessage.id)
+        }
+      }
       generatingThreadIds.value.add(getActiveThreadId()!)
       // 设置当前会话的workingStatus为working
       updateThreadWorkingStatus(getActiveThreadId()!, 'working')
@@ -606,17 +762,38 @@ export const useChatStore = defineStore('chat', () => {
       const aiResponseMessage = await agentP.regenerateFromUserMessage(
         activeThread,
         userMessageId,
-        Object.fromEntries(selectedVariantsMap.value)
+        selectedVariantsMap.value
       )
 
       getGeneratingMessagesCache().set(aiResponseMessage.id, {
         message: aiResponseMessage,
         threadId: getActiveThreadId()!
       })
+      cacheMessageForView(aiResponseMessage)
+      ensureMessageId(aiResponseMessage.id)
 
       await loadMessages()
     } catch (error) {
       console.error('Failed to regenerate from user message:', error)
+      throw error
+    }
+  }
+
+  const retryFromUserMessage = async (userMessageId: string) => {
+    const activeThread = getActiveThreadId()
+    if (!activeThread) return false
+
+    try {
+      const mainMessage = await threadP.getMainMessageByParentId(activeThread, userMessageId)
+      if (mainMessage) {
+        await retryMessage(mainMessage.id)
+        return true
+      }
+
+      await regenerateFromUserMessage(userMessageId)
+      return true
+    } catch (error) {
+      console.error('Failed to retry from user message:', error)
       throw error
     }
   }
@@ -639,7 +816,7 @@ export const useChatStore = defineStore('chat', () => {
         messageId,
         newThreadTitle,
         currentThread.settings,
-        Object.fromEntries(selectedVariantsMap.value)
+        selectedVariantsMap.value
       )
 
       // 切换到新会话
@@ -696,8 +873,14 @@ export const useChatStore = defineStore('chat', () => {
 
   const handleStreamResponse = (msg: {
     eventId: string
+    conversationId?: string
+    parentId?: string
+    is_variant?: boolean
+    stream_kind?: 'init' | 'delta' | 'final'
+    seq?: number
     content?: string
     reasoning_content?: string
+    reasoning_time?: { start: number; end: number }
     tool_call_id?: string
     tool_call_name?: string
     tool_call_params?: string
@@ -706,13 +889,49 @@ export const useChatStore = defineStore('chat', () => {
     tool_call_server_name?: string
     tool_call_server_icons?: string
     tool_call_server_description?: string
-    tool_call?: 'start' | 'end' | 'error' | 'update' | 'running'
+    tool_call_response_raw?: unknown
+    tool_call?:
+      | 'start'
+      | 'end'
+      | 'error'
+      | 'update'
+      | 'running'
+      | 'permission-required'
+      | 'permission-granted'
+      | 'permission-denied'
+      | 'continue'
+    permission_request?: {
+      toolName: string
+      serverName: string
+      permissionType: 'read' | 'write' | 'all' | 'command'
+      description: string
+      command?: string
+      commandSignature?: string
+      commandInfo?: {
+        command: string
+        riskLevel: 'low' | 'medium' | 'high' | 'critical'
+        suggestion: string
+        signature?: string
+        baseCommand?: string
+      }
+      providerId?: string
+      requestId?: string
+      sessionId?: string
+      agentId?: string
+      agentName?: string
+      conversationId?: string
+      options?: Array<{
+        id: string
+        label: string
+        description?: string
+      }>
+      rememberable?: boolean
+    }
     totalUsage?: {
       prompt_tokens: number
       completion_tokens: number
       total_tokens: number
     }
-    tool_call_response_raw?: unknown
     image_data?: {
       data: string
       mimeType: string
@@ -725,218 +944,379 @@ export const useChatStore = defineStore('chat', () => {
       estimatedWaitTime?: number
     }
   }) => {
+    const { eventId, conversationId, parentId, is_variant, stream_kind } = msg
+
+    // 非当前会话的消息直接忽略（性能优化）
+    if (conversationId && conversationId !== getActiveThreadId()) {
+      return
+    }
+
+    // 处理 init 事件：创建骨架消息行
+    if (stream_kind === 'init') {
+      if (hasCachedMessage(eventId)) {
+        return
+      }
+
+      const skeleton: AssistantMessage = {
+        id: eventId,
+        conversationId: conversationId ?? getActiveThreadId() ?? '',
+        parentId: parentId ?? '',
+        role: 'assistant',
+        content: [],
+        timestamp: Date.now(),
+        status: 'pending',
+        usage: {
+          context_usage: 0,
+          tokens_per_second: 0,
+          total_tokens: 0,
+          generation_time: 0,
+          first_token_time: 0,
+          reasoning_start_time: 0,
+          reasoning_end_time: 0,
+          input_tokens: 0,
+          output_tokens: 0
+        },
+        avatar: '',
+        name: '',
+        model_name: '',
+        model_id: '',
+        model_provider: '',
+        error: '',
+        is_variant: Number(is_variant),
+        variants: []
+      }
+
+      cacheMessageForView(skeleton)
+      if (!skeleton.is_variant) {
+        ensureMessageId(eventId)
+      }
+
+      return
+    }
+
     // 从缓存中查找消息
-    const cached = getGeneratingMessagesCache().get(msg.eventId)
-    if (cached) {
-      const curMsg = cached.message as AssistantMessage
-      if (curMsg.content) {
-        // 处理工具调用达到最大次数的情况
-        if (msg.maximum_tool_calls_reached) {
-          finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
-          curMsg.content.push({
-            type: 'action',
-            content: 'common.error.maximumToolCallsReached',
-            status: 'success',
+    const cached = getGeneratingMessagesCache().get(eventId)
+    const fallbackCached = cached ? null : (getCachedMessage(eventId) as Message | null)
+    const message = cached?.message ?? fallbackCached
+    const activeThreadId = cached?.threadId ?? getActiveThreadId()
+
+    if (!message || message.role !== 'assistant') {
+      return
+    }
+
+    const assistantMsg = message as AssistantMessage
+
+    if (!Array.isArray(assistantMsg.content)) {
+      return
+    }
+
+    // 处理工具调用达到最大次数的情况
+    if (msg.maximum_tool_calls_reached) {
+      finalizeAssistantMessageBlocks(assistantMsg.content)
+      assistantMsg.content.push({
+        type: 'action',
+        content: 'common.error.maximumToolCallsReached',
+        status: 'success',
+        timestamp: Date.now(),
+        action_type: 'maximum_tool_calls_reached',
+        tool_call: {
+          id: msg.tool_call_id,
+          name: msg.tool_call_name,
+          params: msg.tool_call_params,
+          server_name: msg.tool_call_server_name,
+          server_icons: msg.tool_call_server_icons,
+          server_description: msg.tool_call_server_description
+        },
+        extra: {
+          needContinue: true
+        }
+      })
+    } else if (msg.tool_call) {
+      if (msg.tool_call === 'permission-required') {
+        finalizeAssistantMessageBlocks(assistantMsg.content)
+        const permissionRequest = msg.permission_request
+        const permissionExtra: Record<string, string | boolean> = {
+          needsUserAction: true,
+          permissionType: permissionRequest?.permissionType ?? 'read'
+        }
+        if (permissionRequest) {
+          permissionExtra.permissionRequest = JSON.stringify(permissionRequest)
+          if (permissionRequest.commandInfo) {
+            permissionExtra.commandInfo = JSON.stringify(permissionRequest.commandInfo)
+          }
+          if (permissionRequest.toolName) {
+            permissionExtra.toolName = permissionRequest.toolName
+          }
+          if (permissionRequest.serverName) {
+            permissionExtra.serverName = permissionRequest.serverName
+          }
+          if (permissionRequest.providerId) {
+            permissionExtra.providerId = permissionRequest.providerId
+          }
+          if (permissionRequest.requestId) {
+            permissionExtra.permissionRequestId = permissionRequest.requestId
+          }
+          if (permissionRequest.rememberable === false) {
+            permissionExtra.rememberable = false
+          }
+          if (permissionRequest.agentId) {
+            permissionExtra.agentId = permissionRequest.agentId
+          }
+          if (permissionRequest.agentName) {
+            permissionExtra.agentName = permissionRequest.agentName
+          }
+          if (permissionRequest.sessionId) {
+            permissionExtra.sessionId = permissionRequest.sessionId
+          }
+        }
+        assistantMsg.content.push({
+          type: 'action',
+          content: msg.tool_call_response || '',
+          status: 'pending',
+          timestamp: Date.now(),
+          action_type: 'tool_call_permission',
+          tool_call: {
+            id: msg.tool_call_id,
+            name: msg.tool_call_name,
+            params: msg.tool_call_params || '',
+            server_name: msg.tool_call_server_name,
+            server_icons: msg.tool_call_server_icons,
+            server_description: msg.tool_call_server_description
+          },
+          extra: permissionExtra
+        })
+      } else if (
+        msg.tool_call === 'permission-granted' ||
+        msg.tool_call === 'permission-denied' ||
+        msg.tool_call === 'continue'
+      ) {
+        const permissionBlock = [...assistantMsg.content]
+          .reverse()
+          .find(
+            (block) =>
+              block.type === 'action' &&
+              block.action_type === 'tool_call_permission' &&
+              (msg.tool_call_id
+                ? block.tool_call?.id === msg.tool_call_id
+                : block.tool_call?.name === msg.tool_call_name)
+          )
+        if (permissionBlock?.type === 'action') {
+          if (msg.tool_call === 'permission-granted') {
+            permissionBlock.status = 'granted'
+            permissionBlock.content = msg.tool_call_response || ''
+            if (permissionBlock.extra) {
+              permissionBlock.extra.needsUserAction = false
+              if (
+                !permissionBlock.extra.grantedPermissions &&
+                typeof permissionBlock.extra.permissionType === 'string'
+              ) {
+                permissionBlock.extra.grantedPermissions = permissionBlock.extra.permissionType
+              }
+            }
+          } else if (msg.tool_call === 'permission-denied') {
+            permissionBlock.status = 'denied'
+            permissionBlock.content = msg.tool_call_response || ''
+            if (permissionBlock.extra) {
+              permissionBlock.extra.needsUserAction = false
+            }
+          } else {
+            permissionBlock.status = 'success'
+          }
+        }
+      } else if (msg.tool_call === 'start') {
+        finalizeAssistantMessageBlocks(assistantMsg.content)
+        playToolcallSound()
+        assistantMsg.content.push({
+          type: 'tool_call',
+          content: '',
+          status: 'loading',
+          timestamp: Date.now(),
+          tool_call: {
+            id: msg.tool_call_id,
+            name: msg.tool_call_name,
+            params: msg.tool_call_params || '',
+            server_name: msg.tool_call_server_name,
+            server_icons: msg.tool_call_server_icons,
+            server_description: msg.tool_call_server_description
+          }
+        })
+      } else if (msg.tool_call === 'update') {
+        const existingToolCallBlock = assistantMsg.content.find(
+          (block) =>
+            block.type === 'tool_call' &&
+            ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
+              block.tool_call?.name === msg.tool_call_name) &&
+            block.status === 'loading'
+        )
+        if (existingToolCallBlock?.type === 'tool_call' && existingToolCallBlock.tool_call) {
+          existingToolCallBlock.tool_call.params = msg.tool_call_params || ''
+          if (msg.tool_call_server_name) {
+            existingToolCallBlock.tool_call.server_name = msg.tool_call_server_name
+          }
+          if (msg.tool_call_server_icons) {
+            existingToolCallBlock.tool_call.server_icons = msg.tool_call_server_icons
+          }
+          if (msg.tool_call_server_description) {
+            existingToolCallBlock.tool_call.server_description = msg.tool_call_server_description
+          }
+        }
+      } else if (msg.tool_call === 'running') {
+        const existingToolCallBlock = assistantMsg.content.find(
+          (block) =>
+            block.type === 'tool_call' &&
+            ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
+              block.tool_call?.name === msg.tool_call_name) &&
+            block.status === 'loading'
+        )
+        if (existingToolCallBlock?.type === 'tool_call') {
+          existingToolCallBlock.status = 'loading'
+          if (existingToolCallBlock.tool_call) {
+            existingToolCallBlock.tool_call.params =
+              msg.tool_call_params || existingToolCallBlock.tool_call.params
+            if (msg.tool_call_server_name) {
+              existingToolCallBlock.tool_call.server_name = msg.tool_call_server_name
+            }
+            if (msg.tool_call_server_icons) {
+              existingToolCallBlock.tool_call.server_icons = msg.tool_call_server_icons
+            }
+            if (msg.tool_call_server_description) {
+              existingToolCallBlock.tool_call.server_description = msg.tool_call_server_description
+            }
+          }
+        } else {
+          finalizeAssistantMessageBlocks(assistantMsg.content)
+          assistantMsg.content.push({
+            type: 'tool_call',
+            content: '',
+            status: 'loading',
             timestamp: Date.now(),
-            action_type: 'maximum_tool_calls_reached',
             tool_call: {
               id: msg.tool_call_id,
               name: msg.tool_call_name,
-              params: msg.tool_call_params,
+              params: msg.tool_call_params || '',
               server_name: msg.tool_call_server_name,
               server_icons: msg.tool_call_server_icons,
               server_description: msg.tool_call_server_description
-            },
-            extra: {
-              needContinue: true
-            }
-          })
-        } else if (msg.tool_call) {
-          if (msg.tool_call === 'start') {
-            // 工具调用开始解析参数 - 创建新的工具调用块
-            finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
-
-            // 工具调用音效，与实际数据流同步
-            playToolcallSound()
-
-            curMsg.content.push({
-              type: 'tool_call',
-              content: '',
-              status: 'loading', // 使用loading状态表示正在解析参数
-              timestamp: Date.now(),
-              tool_call: {
-                id: msg.tool_call_id,
-                name: msg.tool_call_name,
-                params: msg.tool_call_params || '',
-                server_name: msg.tool_call_server_name,
-                server_icons: msg.tool_call_server_icons,
-                server_description: msg.tool_call_server_description
-              }
-            })
-          } else if (msg.tool_call === 'update') {
-            // 实时更新工具调用参数
-            const existingToolCallBlock = curMsg.content.find(
-              (block) =>
-                block.type === 'tool_call' &&
-                ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
-                  block.tool_call?.name === msg.tool_call_name) &&
-                block.status === 'loading'
-            )
-            if (
-              existingToolCallBlock &&
-              existingToolCallBlock.type === 'tool_call' &&
-              existingToolCallBlock.tool_call
-            ) {
-              // 更新参数内容
-              existingToolCallBlock.tool_call.params = msg.tool_call_params || ''
-            }
-          } else if (msg.tool_call === 'running') {
-            // 工具开始执行 - 查找对应的工具调用块并更新状态
-            const existingToolCallBlock = curMsg.content.find(
-              (block) =>
-                block.type === 'tool_call' &&
-                ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
-                  block.tool_call?.name === msg.tool_call_name) &&
-                block.status === 'loading'
-            )
-            if (existingToolCallBlock && existingToolCallBlock.type === 'tool_call') {
-              // 保持loading状态，但可以添加执行中的标识
-              existingToolCallBlock.status = 'loading'
-              if (existingToolCallBlock.tool_call) {
-                // 确保参数是最新的
-                existingToolCallBlock.tool_call.params =
-                  msg.tool_call_params || existingToolCallBlock.tool_call.params
-              }
-            } else {
-              // 如果没有找到现有的工具调用块，创建一个新的（兼容旧逻辑）
-              finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
-
-              curMsg.content.push({
-                type: 'tool_call',
-                content: '',
-                status: 'loading',
-                timestamp: Date.now(),
-                tool_call: {
-                  id: msg.tool_call_id,
-                  name: msg.tool_call_name,
-                  params: msg.tool_call_params || '',
-                  server_name: msg.tool_call_server_name,
-                  server_icons: msg.tool_call_server_icons,
-                  server_description: msg.tool_call_server_description
-                }
-              })
-            }
-          } else if (msg.tool_call === 'end' || msg.tool_call === 'error') {
-            // 查找对应的工具调用块
-            const existingToolCallBlock = curMsg.content.find(
-              (block) =>
-                block.type === 'tool_call' &&
-                ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
-                  block.tool_call?.name === msg.tool_call_name) &&
-                block.status === 'loading'
-            )
-            if (existingToolCallBlock && existingToolCallBlock.type === 'tool_call') {
-              if (msg.tool_call === 'error') {
-                existingToolCallBlock.status = 'error'
-                if (existingToolCallBlock.tool_call) {
-                  existingToolCallBlock.tool_call.response =
-                    msg.tool_call_response || 'tool call failed'
-                }
-              } else {
-                existingToolCallBlock.status = 'success'
-                if (msg.tool_call_response && existingToolCallBlock.tool_call) {
-                  existingToolCallBlock.tool_call.response = msg.tool_call_response
-                }
-              }
-            }
-          }
-        }
-        // 处理图像数据
-        else if (msg.image_data) {
-          finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
-          curMsg.content.push({
-            type: 'image',
-            content: 'image',
-            status: 'success',
-            timestamp: Date.now(),
-            image_data: {
-              data: msg.image_data.data,
-              mimeType: msg.image_data.mimeType
             }
           })
         }
-        // 处理速率限制
-        else if (msg.rate_limit) {
-          finalizeAssistantMessageBlocks(curMsg.content) // 使用保护逻辑
-          curMsg.content.push({
-            type: 'action',
-            content: 'chat.messages.rateLimitWaiting',
-            status: 'loading',
-            timestamp: Date.now(),
-            action_type: 'rate_limit',
-            extra: {
-              providerId: msg.rate_limit.providerId,
-              qpsLimit: msg.rate_limit.qpsLimit,
-              currentQps: msg.rate_limit.currentQps,
-              queueLength: msg.rate_limit.queueLength,
-              estimatedWaitTime: msg.rate_limit.estimatedWaitTime ?? 0
-            }
-          })
-        }
-        // 处理普通内容
-        else if (msg.content) {
-          const lastContentBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastContentBlock) {
-            lastContentBlock.status = 'success'
-            if (lastContentBlock.type === 'content') {
-              lastContentBlock.content += msg.content
+      } else if (msg.tool_call === 'end' || msg.tool_call === 'error') {
+        const existingToolCallBlock = assistantMsg.content.find(
+          (block) =>
+            block.type === 'tool_call' &&
+            ((msg.tool_call_id && block.tool_call?.id === msg.tool_call_id) ||
+              block.tool_call?.name === msg.tool_call_name) &&
+            block.status === 'loading'
+        )
+        if (existingToolCallBlock?.type === 'tool_call') {
+          if (msg.tool_call === 'error') {
+            existingToolCallBlock.status = 'error'
+            if (existingToolCallBlock.tool_call) {
+              existingToolCallBlock.tool_call.response =
+                msg.tool_call_response || 'tool call failed'
             }
           } else {
-            curMsg.content.push({
-              type: 'content',
-              content: msg.content,
-              status: 'loading',
-              timestamp: Date.now()
-            })
-          }
-          // 打字机音效，与实际数据流同步
-          playTypewriterSound()
-        }
-
-        // 处理推理内容
-        if (msg.reasoning_content) {
-          const lastReasoningBlock = curMsg.content[curMsg.content.length - 1]
-          if (lastReasoningBlock) {
-            lastReasoningBlock.status = 'success'
-            if (lastReasoningBlock.type === 'reasoning_content') {
-              lastReasoningBlock.content += msg.reasoning_content
+            existingToolCallBlock.status = 'success'
+            if (msg.tool_call_response && existingToolCallBlock.tool_call) {
+              existingToolCallBlock.tool_call.response = msg.tool_call_response
             }
-          } else {
-            curMsg.content.push({
-              type: 'reasoning_content',
-              content: msg.reasoning_content,
-              status: 'loading',
-              timestamp: Date.now()
-            })
           }
         }
       }
-
-      // 处理使用情况统计
-      if (msg.totalUsage) {
-        curMsg.usage = {
-          ...curMsg.usage,
-          total_tokens: msg.totalUsage.total_tokens,
-          input_tokens: msg.totalUsage.prompt_tokens,
-          output_tokens: msg.totalUsage.completion_tokens
+    } else if (msg.image_data) {
+      finalizeAssistantMessageBlocks(assistantMsg.content)
+      assistantMsg.content.push({
+        type: 'image',
+        content: 'image',
+        status: 'success',
+        timestamp: Date.now(),
+        image_data: {
+          data: msg.image_data.data,
+          mimeType: msg.image_data.mimeType
         }
+      })
+    } else if (msg.rate_limit) {
+      finalizeAssistantMessageBlocks(assistantMsg.content)
+      assistantMsg.content.push({
+        type: 'action',
+        content: 'chat.messages.rateLimitWaiting',
+        status: 'loading',
+        timestamp: Date.now(),
+        action_type: 'rate_limit',
+        extra: {
+          providerId: msg.rate_limit.providerId,
+          qpsLimit: msg.rate_limit.qpsLimit,
+          currentQps: msg.rate_limit.currentQps,
+          queueLength: msg.rate_limit.queueLength,
+          estimatedWaitTime: msg.rate_limit.estimatedWaitTime ?? 0
+        }
+      })
+    } else if (msg.content) {
+      const lastContentBlock = assistantMsg.content[assistantMsg.content.length - 1]
+      if (lastContentBlock?.type === 'content') {
+        lastContentBlock.content += msg.content
+      } else {
+        // Finalize previous blocks (e.g., reasoning_content) before adding new content block
+        finalizeAssistantMessageBlocks(assistantMsg.content)
+        assistantMsg.content.push({
+          type: 'content',
+          content: msg.content,
+          status: 'loading',
+          timestamp: Date.now()
+        })
+      }
+      playTypewriterSound()
+    }
+
+    if (msg.reasoning_content) {
+      const lastReasoningBlock = assistantMsg.content[assistantMsg.content.length - 1]
+      if (lastReasoningBlock?.type === 'reasoning_content') {
+        lastReasoningBlock.content += msg.reasoning_content
+        // Update reasoning_time from stream data
+        if (msg.reasoning_time) {
+          lastReasoningBlock.reasoning_time = msg.reasoning_time
+        }
+      } else {
+        const now = Date.now()
+        assistantMsg.content.push({
+          type: 'reasoning_content',
+          content: msg.reasoning_content,
+          status: 'loading',
+          timestamp: now,
+          reasoning_time: msg.reasoning_time ?? { start: now, end: now }
+        })
+      }
+    }
+
+    if (msg.totalUsage) {
+      assistantMsg.usage = {
+        ...assistantMsg.usage,
+        total_tokens: msg.totalUsage.total_tokens,
+        input_tokens: msg.totalUsage.prompt_tokens,
+        output_tokens: msg.totalUsage.completion_tokens
+      }
+    }
+
+    if (activeThreadId === getActiveThreadId()) {
+      cacheMessageForView(assistantMsg)
+      if (!assistantMsg.is_variant) {
+        ensureMessageId(assistantMsg.id)
       }
 
-      // 如果是当前激活的会话，更新显示
-      if (cached.threadId === getActiveThreadId()) {
-        const msgIndex = getMessages().findIndex((m) => m.id === msg.eventId)
-        if (msgIndex !== -1) {
-          getMessages()[msgIndex] = curMsg
+      if (assistantMsg.is_variant && assistantMsg.parentId) {
+        const mainMessage = findMainAssistantMessageByParentId(assistantMsg.parentId)
+        if (mainMessage) {
+          if (!mainMessage.variants) {
+            mainMessage.variants = []
+          }
+          const variantIndex = mainMessage.variants.findIndex((v) => v.id === assistantMsg.id)
+          if (variantIndex !== -1) {
+            mainMessage.variants[variantIndex] = assistantMsg
+          } else {
+            mainMessage.variants.push(assistantMsg)
+          }
+          cacheMessageForView(mainMessage)
+          ensureMessageId(mainMessage.id)
         }
       }
     }
@@ -997,20 +1377,16 @@ export const useChatStore = defineStore('chat', () => {
         if (mainMessage) {
           const enrichedMainMessage = await enrichMessageWithExtra(mainMessage)
           // 如果是当前激活的会话，更新显示
-          if (getActiveThreadId() === getActiveThreadId()) {
-            const mainMsgIndex = getMessages().findIndex((m) => m.id === mainMessage.id)
-            if (mainMsgIndex !== -1) {
-              getMessages()[mainMsgIndex] = enrichedMainMessage as AssistantMessage | UserMessage
-            }
+          if (getActiveThreadId() === cached.threadId) {
+            cacheMessageForView(enrichedMainMessage as AssistantMessage | UserMessage)
+            ensureMessageId(enrichedMainMessage.id)
           }
         }
       } else {
         // 如果是当前激活的会话，更新显示
-        if (getActiveThreadId() === getActiveThreadId()) {
-          const msgIndex = getMessages().findIndex((m) => m.id === msg.eventId)
-          if (msgIndex !== -1) {
-            getMessages()[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
-          }
+        if (getActiveThreadId() === cached.threadId) {
+          cacheMessageForView(enrichedMessage as AssistantMessage | UserMessage)
+          ensureMessageId(enrichedMessage.id)
         }
       }
     }
@@ -1023,19 +1399,11 @@ export const useChatStore = defineStore('chat', () => {
 
     // 如果缓存中没有，尝试从当前消息列表中查找对应的会话ID
     if (!threadId) {
-      // 遍历所有会话的消息列表
-      for (const [tid, msgs] of messagesMap.value.entries()) {
-        const found = msgs.some((m) => {
-          if (m.id === msg.eventId) return true
-          if ((m as AssistantMessage).variants) {
-            return (m as AssistantMessage).variants?.some((v) => v.id === msg.eventId)
-          }
-          return false
-        })
-        if (found) {
-          threadId = tid.toString()
-          break
-        }
+      try {
+        const foundMessage = await threadP.getMessage(msg.eventId)
+        threadId = foundMessage.conversationId
+      } catch (error) {
+        console.warn('Failed to locate message thread for stream error:', error)
       }
     }
 
@@ -1046,26 +1414,24 @@ export const useChatStore = defineStore('chat', () => {
 
         if (enrichedMessage.is_variant && enrichedMessage.parentId) {
           // 处理变体消息的错误状态
-          const parentMsgIndex = getMessages().findIndex((m) => m.id === enrichedMessage.parentId)
-          if (parentMsgIndex !== -1) {
-            const parentMsg = getMessages()[parentMsgIndex] as AssistantMessage
-            if (!parentMsg.variants) {
-              parentMsg.variants = []
+          const mainMessage = findMainAssistantMessageByParentId(enrichedMessage.parentId)
+          if (mainMessage) {
+            if (!mainMessage.variants) {
+              mainMessage.variants = []
             }
-            const variantIndex = parentMsg.variants.findIndex((v) => v.id === enrichedMessage.id)
+            const variantIndex = mainMessage.variants.findIndex((v) => v.id === enrichedMessage.id)
             if (variantIndex !== -1) {
-              parentMsg.variants[variantIndex] = enrichedMessage
+              mainMessage.variants[variantIndex] = enrichedMessage
             } else {
-              parentMsg.variants.push(enrichedMessage)
+              mainMessage.variants.push(enrichedMessage)
             }
-            getMessages()[parentMsgIndex] = { ...parentMsg }
+            cacheMessageForView({ ...mainMessage })
+            ensureMessageId(mainMessage.id)
           }
         } else {
           // 非变体消息的原有错误处理逻辑
-          const messageIndex = getMessages().findIndex((m) => m.id === msg.eventId)
-          if (messageIndex !== -1) {
-            getMessages()[messageIndex] = enrichedMessage as AssistantMessage | UserMessage
-          }
+          cacheMessageForView(enrichedMessage as AssistantMessage | UserMessage)
+          ensureMessageId(enrichedMessage.id)
         }
         const wid = window.api.getWindowId() || 0
         // 检查窗口是否聚焦，如果未聚焦则发送错误通知
@@ -1135,11 +1501,9 @@ export const useChatStore = defineStore('chat', () => {
         }
         // Populate the in-memory map from the loaded settings
         if (conversation.settings.selectedVariantsMap) {
-          selectedVariantsMap.value = new Map(
-            Object.entries(conversation.settings.selectedVariantsMap)
-          )
+          selectedVariantsMap.value = { ...conversation.settings.selectedVariantsMap }
         } else {
-          selectedVariantsMap.value.clear()
+          selectedVariantsMap.value = {}
         }
       }
     } catch (error) {
@@ -1171,13 +1535,13 @@ export const useChatStore = defineStore('chat', () => {
     if (!activeThreadId) return
 
     try {
-      const messages = getMessages()
+      const messages = getLoadedMessages()
       let parentMessage: AssistantMessage | undefined
       let parentIndex = -1
       const mainMsgIndex = messages.findIndex((m) => m.id === messageId)
       if (mainMsgIndex !== -1 && (messages[mainMsgIndex] as AssistantMessage).is_variant === 0) {
-        if (selectedVariantsMap.value.has(messageId)) {
-          selectedVariantsMap.value.delete(messageId)
+        if (selectedVariantsMap.value[messageId]) {
+          delete selectedVariantsMap.value[messageId]
           await updateSelectedVariant(messageId, null)
         }
       } else {
@@ -1201,6 +1565,7 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       await threadP.deleteMessage(messageId)
+      deleteCachedMessage(messageId)
       await loadMessages()
     } catch (error) {
       console.error('Failed to delete message:', error)
@@ -1212,9 +1577,11 @@ export const useChatStore = defineStore('chat', () => {
     if (!threadId) return
     try {
       await threadP.clearAllMessages(threadId)
+      clearCachedMessagesForThread(threadId)
       // 清空本地消息列表
       if (threadId === getActiveThreadId()) {
-        setMessages([])
+        setMessageIds([])
+        clearMessageDomInfo()
       }
       // 清空生成缓存中的相关消息
       const cache = getGeneratingMessagesCache()
@@ -1258,10 +1625,10 @@ export const useChatStore = defineStore('chat', () => {
         }
         // 获取更新后的消息
         const updatedMessage = await threadP.getMessage(messageId)
-        // 更新消息列表中的对应消息
-        const messageIndex = getMessages().findIndex((msg) => msg.id === messageId)
-        if (messageIndex !== -1) {
-          getMessages()[messageIndex] = updatedMessage
+        const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
+        cacheMessageForView(enrichedMessage)
+        if (!enrichedMessage.is_variant) {
+          ensureMessageId(enrichedMessage.id)
         }
       }
     } catch (error) {
@@ -1279,7 +1646,7 @@ export const useChatStore = defineStore('chat', () => {
       const aiResponseMessage = await agentP.continueLoop(
         conversationId,
         messageId,
-        Object.fromEntries(selectedVariantsMap.value)
+        selectedVariantsMap.value
       )
 
       if (!aiResponseMessage) {
@@ -1292,6 +1659,8 @@ export const useChatStore = defineStore('chat', () => {
         message: aiResponseMessage,
         threadId: conversationId
       })
+      cacheMessageForView(aiResponseMessage)
+      ensureMessageId(aiResponseMessage.id)
 
       await loadMessages()
     } catch (error) {
@@ -1328,41 +1697,43 @@ export const useChatStore = defineStore('chat', () => {
   const handleMessageEdited = async (msgId: string) => {
     // 首先检查是否在生成缓存中
     const cached = getGeneratingMessagesCache().get(msgId)
+    const activeThreadId = getActiveThreadId()
+    if (!cached && !activeThreadId) return
+
+    // 获取最新的消息
+    const updatedMessage = await threadP.getMessage(msgId)
+    // 处理 extra 信息
+    const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
+
+    // 更新缓存
     if (cached) {
-      // 如果在缓存中，获取最新的消息
-      const updatedMessage = await threadP.getMessage(msgId)
-      // 处理 extra 信息
-      const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
-
-      // 更新缓存
       cached.message = enrichedMessage as AssistantMessage | UserMessage
+    }
 
-      // 如果是当前会话的消息，也更新显示
-      if (cached.threadId === getActiveThreadId()) {
-        const msgIndex = getMessages().findIndex((m) => m.id === msgId)
-        if (msgIndex !== -1) {
-          getMessages()[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
-        }
-      }
-    } else if (getActiveThreadId()) {
-      // 如果不在缓存中，先尝试获取主消息
-      const mainMessage = await threadP.getMainMessageByParentId(getActiveThreadId()!, msgId)
+    if (!activeThreadId) return
+
+    // 非当前会话的消息直接忽略，避免跨会话污染
+    if (enrichedMessage.conversationId !== activeThreadId) {
+      return
+    }
+
+    // 如果是当前会话的消息，也更新显示
+    if (enrichedMessage.is_variant && enrichedMessage.parentId) {
+      const mainMessage = await threadP.getMainMessageByParentId(
+        activeThreadId,
+        enrichedMessage.parentId
+      )
       if (mainMessage) {
-        // 如果找到主消息，说明当前消息是变体消息
         const enrichedMainMessage = await enrichMessageWithExtra(mainMessage)
-        const mainMsgIndex = getMessages().findIndex((m) => m.id === mainMessage.id)
-        if (mainMsgIndex !== -1) {
-          getMessages()[mainMsgIndex] = enrichedMainMessage as AssistantMessage | UserMessage
-        }
-      } else {
-        // 如果不是变体消息，直接更新当前消息
-        const msgIndex = getMessages().findIndex((m) => m.id === msgId)
-        if (msgIndex !== -1) {
-          const updatedMessage = await threadP.getMessage(msgId)
-          const enrichedMessage = await enrichMessageWithExtra(updatedMessage)
-          getMessages()[msgIndex] = enrichedMessage as AssistantMessage | UserMessage
-        }
+        cacheMessageForView(enrichedMainMessage as AssistantMessage | UserMessage)
+        ensureMessageId(enrichedMainMessage.id)
+        return
       }
+    }
+
+    cacheMessageForView(enrichedMessage as AssistantMessage | UserMessage)
+    if (!enrichedMessage.is_variant) {
+      ensureMessageId(enrichedMessage.id)
     }
   }
 
@@ -1372,31 +1743,37 @@ export const useChatStore = defineStore('chat', () => {
     const activeThreadId = getActiveThreadId()
     if (!activeThreadId) return
 
-    // 更新内存中的 Map
+    isUpdatingVariant = true
+
+    // 更新内存中的映射
     if (selectedVariantId && selectedVariantId !== mainMessageId) {
-      selectedVariantsMap.value.set(mainMessageId, selectedVariantId)
+      selectedVariantsMap.value[mainMessageId] = selectedVariantId
     } else {
-      selectedVariantsMap.value.delete(mainMessageId)
+      delete selectedVariantsMap.value[mainMessageId]
     }
 
-    // 同步更新 chatConfig 内的 selectedVariantsMap
+    // 同步更新 chatConfig
     if (chatConfig.value) {
-      chatConfig.value.selectedVariantsMap = Object.fromEntries(selectedVariantsMap.value)
+      chatConfig.value.selectedVariantsMap = { ...selectedVariantsMap.value }
     }
 
     // 持久化到后端
     try {
       await threadP.updateConversationSettings(activeThreadId, {
-        selectedVariantsMap: Object.fromEntries(selectedVariantsMap.value)
+        selectedVariantsMap: selectedVariantsMap.value
       })
     } catch (error) {
       console.error('Failed to update selected variant:', error)
+    } finally {
+      setTimeout(() => {
+        isUpdatingVariant = false
+      }, 100)
     }
   }
 
   const clearSelectedVariantForMessage = (mainMessageId: string): boolean => {
     if (!mainMessageId) return false
-    if (!selectedVariantsMap.value.has(mainMessageId)) return false
+    if (!selectedVariantsMap.value[mainMessageId]) return false
     void updateSelectedVariant(mainMessageId, null)
     return true
   }
@@ -1535,14 +1912,17 @@ export const useChatStore = defineStore('chat', () => {
         // 2. 用主进程推送的最新、完整的、已格式化好的列表直接替换本地状态
         threads.value = updatedGroupedList
 
-        // 3. 检查列表更新之前的活动会话是否还存在于新列表中
+        // 3. 检查活动会话是否还存在
         if (currentActiveId) {
           const flatList = updatedGroupedList.flatMap((g) => g.dtThreads)
-          const activeThreadExists = flatList.some((thread) => thread.id === currentActiveId)
+          const activeThread = flatList.find((thread) => thread.id === currentActiveId)
 
-          // 如果活动会话不存在了（如在其他窗口被删除），只清空当前tab的活动状态，待其他流程处理
-          if (!activeThreadExists) {
+          if (!activeThread) {
+            // 如果活动会话不存在了（如在其他窗口被删除），清空当前tab的活动状态
             clearActiveThread()
+          } else if (!isUpdatingVariant && activeThread.settings.selectedVariantsMap) {
+            // 只在非变体更新期间，同步 selectedVariantsMap（防止其他窗口的更新被覆盖）
+            selectedVariantsMap.value = { ...activeThread.settings.selectedVariantsMap }
           }
         }
       }
@@ -1556,7 +1936,11 @@ export const useChatStore = defineStore('chat', () => {
       }
 
       // 如果是当前tab或新激活的会话在当前窗口中，则正常处理
+      const prevActiveThreadId = getActiveThreadId()
       activeThreadIdMap.value.set(getTabId(), msg.conversationId)
+      if (prevActiveThreadId && prevActiveThreadId !== msg.conversationId) {
+        clearThreadCachesForTab(prevActiveThreadId)
+      }
 
       // 如果存在状态为completed或error的会话，从Map中移除
       if (msg.conversationId) {
@@ -1581,7 +1965,9 @@ export const useChatStore = defineStore('chat', () => {
       if (msg.tabId !== getTabId()) {
         return
       }
+      const prevActiveThreadId = getActiveThreadId()
       setActiveThreadId(null)
+      clearThreadCachesForTab(prevActiveThreadId)
     })
 
     window.electron.ipcRenderer.on(CONVERSATION_EVENTS.SCROLL_TO_MESSAGE, (_, payload) => {
@@ -1757,13 +2143,15 @@ export const useChatStore = defineStore('chat', () => {
     isMessageNavigationOpen,
     activeThreadIdMap,
     threads,
-    messagesMap,
+    messageIdsMap,
     generatingThreadIds,
     selectedVariantsMap,
     childThreadsByMessageId,
     // Getters
     activeThread,
+    messageItems,
     variantAwareMessages,
+    messageCount,
     activeContextMention,
     activePendingScrollTarget,
     isAcpMode,
@@ -1777,6 +2165,11 @@ export const useChatStore = defineStore('chat', () => {
     handleStreamEnd,
     handleStreamError,
     handleMessageEdited,
+    prefetchMessagesForRange,
+    ensureMessagesLoadedByIds,
+    prefetchAllMessages,
+    recordMessageDomInfo,
+    hasMessageDomInfo,
     // 导出配置相关的状态和方法
     chatConfig,
     updateChatConfig,
@@ -1802,7 +2195,7 @@ export const useChatStore = defineStore('chat', () => {
     toggleThreadPinned,
     getActiveThreadId,
     getGeneratingMessagesCache,
-    getMessages,
+    getMessageIds,
     getCurrentThreadMessages,
     exportThread,
     submitToNowledgeMem,
@@ -1811,6 +2204,7 @@ export const useChatStore = defineStore('chat', () => {
     getNowledgeMemConfig,
     showProviderSelector,
     regenerateFromUserMessage,
+    retryFromUserMessage,
     updateSelectedVariant
   }
 })

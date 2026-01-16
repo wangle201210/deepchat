@@ -3,8 +3,14 @@ import type { UsageStats, RateLimitInfo } from './usage'
 
 export interface LLMAgentEventData {
   eventId: string
+  conversationId?: string
+  parentId?: string
+  is_variant?: boolean
+  stream_kind?: 'init' | 'delta' | 'final'
+  seq?: number
   content?: string
   reasoning_content?: string
+  reasoning_time?: { start: number; end: number }
   tool_call_id?: string
   tool_call_name?: string
   tool_call_params?: string
@@ -14,7 +20,16 @@ export interface LLMAgentEventData {
   tool_call_server_icons?: string
   tool_call_server_description?: string
   tool_call_response_raw?: unknown
-  tool_call?: 'start' | 'running' | 'end' | 'error' | 'update' | 'permission-required'
+  tool_call?:
+    | 'start'
+    | 'running'
+    | 'end'
+    | 'error'
+    | 'update'
+    | 'permission-required'
+    | 'permission-granted'
+    | 'permission-denied'
+    | 'continue'
   permission_request?: {
     toolName: string
     serverName: string
